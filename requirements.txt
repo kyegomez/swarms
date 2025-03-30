@@ -29,3 +29,6 @@ flake8-comprehensions>=3.12.0
 flake8-simplify>=0.19.3
 flake8-unused-arguments>=0.0.4
 pyupgrade>=3.15.0
+typedb-client>=2.25.0
+typedb-protocol>=2.25.0
+typedb-driver>=2.25.0
