@@ -43,7 +43,7 @@
     
     - [x] Priority Access to Swarms
     
-    - [x] High-Performance GPUs
+    - [x] High-Performance Infrastructure
     
     - [x] Exclusive Webinars and Tutorials
     
@@ -56,16 +56,13 @@
 ### Enterprise Tier
 
 !!! tip "Enterprise"
-    **$50/user/month** or **$510/user/year** (Save 15% on annual billing)
-    
-    <small>Regular price: $600/user/year ($50 × 12 months)</small>
+    **Contact for more Information**
     
     [Book a Call](https://cal.com/swarms){ .md-button .md-button--primary }
 
     **Everything in Premium, plus:**
     
-    
-    - [x] High-Performance GPUs
+    - [x] High-Performance Infrastructure
     
     - [x] Batch API
     
@@ -84,6 +81,11 @@
     - [x] Priority Support
     
     - [x] Pay-Per-Use Pricing
+
+    - [x] Enterprise Telemetry Platform
+
+    - [x] Regular Check-In Strategy Sessions
+    
 
 ## Feature Comparison
 
@@ -123,4 +125,4 @@
 !!! success "Need Help?"
     - For general questions: [Contact Support](mailto:kye@swarms.world)
     - For enterprise inquiries: [Book a Call](https://cal.com/swarms)
-    - Upgrade Your Membership: [Join our Discord](https://swarms.world/platform/account)
+    - Upgrade Your Membership: [Upgrade Now](https://swarms.world/platform/account)
