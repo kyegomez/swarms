@@ -1,7 +1,7 @@
 from swarms.agents.agent_judge import AgentJudge
 
 
-judge = AgentJudge(model_name="gpt-4o", max_loops=1)
+judge = AgentJudge(model_name="gpt-4o-mini", max_loops=1)
 
 
 outputs = [

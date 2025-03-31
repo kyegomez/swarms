@@ -1,4 +1,5 @@
 import concurrent.futures
+import random
 from datetime import datetime
 from typing import Callable, List
 
@@ -7,6 +8,13 @@ from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.multi_agent_exec import get_agents_info
+from swarms.utils.history_output_formatter import (
+    history_output_formatter,
+)
+from swarms.prompts.multi_agent_collab_prompt import (
+    MULTI_AGENT_COLLAB_PROMPT_TWO,
+)
 
 
 class AgentResponse(BaseModel):
@@ -230,14 +238,22 @@ class GroupChat:
         speaker_fn: SpeakerFunction = round_robin,
         max_loops: int = 1,
         rules: str = "",
+        output_type: str = "string",
     ):
         self.name = name
         self.description = description
         self.agents = agents
         self.speaker_fn = speaker_fn
         self.max_loops = max_loops
-        self.conversation = Conversation(time_enabled=False)
+        self.output_type = output_type
         self.rules = rules
+
+        self.conversation = Conversation(
+            time_enabled=False, rules=rules
+        )
+
+        agent_context = f"\n Group Chat Name: {self.name}\nGroup Chat Description: {self.description}\n Agents in your Group Chat: {get_agents_info(self.agents)}"
+        self.conversation.add(role="System", content=agent_context)
 
         self.reliability_check()
 
@@ -248,23 +264,24 @@ class GroupChat:
         Raises:
             ValueError: If any required components are missing or invalid
         """
+
         if len(self.agents) < 2:
             raise ValueError(
                 "At least two agents are required for a group chat"
             )
-        if self.speaker_fn is None:
-            raise ValueError("No speaker function provided")
+
         if self.max_loops <= 0:
             raise ValueError("Max loops must be greater than 0")
+
         for agent in self.agents:
-            if not isinstance(agent, Agent):
-                raise ValueError(
-                    f"Invalid agent type: {type(agent)}. Must be Agent instance"
-                )
+            agent.system_prompt += MULTI_AGENT_COLLAB_PROMPT_TWO
 
     def run(self, task: str, img: str = None, *args, **kwargs) -> str:
         """
-        Executes a conversation between agents about the given task.
+        Executes a dynamic conversation between agents about the given task.
+
+        Agents are selected randomly to speak, creating a more natural flow
+        with varying conversation lengths.
 
         Args:
             task (str): The task or topic for agents to discuss
@@ -279,106 +296,85 @@ class GroupChat:
             ValueError: If task is empty or invalid
             Exception: If any error occurs during conversation
         """
+
         if not task or not isinstance(task, str):
             raise ValueError("Task must be a non-empty string")
 
         # Initialize conversation with context
-        agent_context = f"Group Chat Name: {self.name}\nGroup Chat Description: {self.description}\nRules: {self.rules}\n Other agents: {', '.join([a.agent_name for a in self.agents])}"
-        self.conversation.add(role="system", content=agent_context)
         self.conversation.add(role="User", content=task)
-
-        print(
-            f"....... conversation history: \n {self.conversation.return_history_as_string()}"
-        )
 
         try:
             turn = 0
-            consecutive_silent_turns = 0
-            max_silent_turns = 2  # End conversation if no one speaks for this many turns
+            # Determine a random number of conversation turns
+            target_turns = random.randint(1, 4)
+            logger.debug(
+                f"Planning for approximately {target_turns} conversation turns"
+            )
 
-            while turn < self.max_loops:
-                context = self.conversation.return_messages_as_list()
+            # Keep track of which agent spoke last to create realistic exchanges
+            last_speaker = None
 
-                # Get agents who should speak this turn
-                speaking_agents = [
-                    agent
-                    for agent in self.agents
-                    if self.speaker_fn(context, agent)
-                ]
+            while turn < target_turns:
 
-                if not speaking_agents:
-                    consecutive_silent_turns += 1
-                    if consecutive_silent_turns >= max_silent_turns:
-                        logger.debug(
-                            "Multiple silent turns, ending conversation"
-                        )
-                        break
-                    continue
+                # Select an agent to speak (different from the last speaker if possible)
+                available_agents = self.agents.copy()
 
-                consecutive_silent_turns = (
-                    0  # Reset counter when agents speak
-                )
+                if last_speaker and len(available_agents) > 1:
+                    available_agents.remove(last_speaker)
 
-                # Process each speaking agent
-                for agent in speaking_agents:
-                    try:
-                        # Build context-aware prompt
-                        prompt = (
-                            f"You're {agent.agent_name} participating in a group chat.\n"
-                            f"Chat Purpose: {self.description}\n"
-                            f"Current Discussion: {task}\n"
-                            f"Chat History:\n{self.conversation.return_history_as_string()}\n"
-                            f"As {agent.agent_name}, please provide your response:"
-                        )
+                current_speaker = random.choice(available_agents)
 
-                        print(
-                            f"....... what the agent sees prompt: \n {prompt}"
-                        )
+                try:
+                    # Build complete context with conversation history
+                    conversation_history = (
+                        self.conversation.return_history_as_string()
+                    )
 
-                        message = agent.run(
-                            task=prompt,
-                            img=img,
-                            *args,
-                            **kwargs,
-                        )
+                    # Prepare a prompt that explicitly encourages responding to others
+                    if last_speaker:
+                        prompt = f"The previous message was from {last_speaker.agent_name}. As {current_speaker.agent_name}, please respond to what they and others have said about: {task}"
+                    else:
+                        prompt = f"As {current_speaker.agent_name}, please start the discussion about: {task}"
 
-                        if not message or message.isspace():
-                            logger.warning(
-                                f"Empty response from {agent.agent_name}, skipping"
-                            )
-                            continue
+                    # Get the agent's response with full context awareness
+                    message = current_speaker.run(
+                        task=f"{conversation_history} {prompt}",
+                    )
 
+                    # Only add meaningful responses
+                    if message and not message.isspace():
                         self.conversation.add(
-                            role=agent.agent_name, content=message
+                            role=current_speaker.agent_name,
+                            content=message,
                         )
 
                         logger.info(
-                            f"Turn {turn}, {agent.agent_name} responded"
+                            f"Turn {turn}, {current_speaker.agent_name} responded"
                         )
 
-                    except Exception as e:
-                        logger.error(
-                            f"Error from {agent.agent_name}: {e}"
-                        )
-                        # Continue with other agents instead of crashing
-                        continue
+                        # Update the last speaker
+                        last_speaker = current_speaker
+                        turn += 1
 
-                turn += 1
+                        # Occasionally end early to create natural variation
+                        if (
+                            turn > 3 and random.random() < 0.15
+                        ):  # 15% chance to end after at least 3 turns
+                            logger.debug(
+                                "Random early conversation end"
+                            )
+                            break
 
-                # Check if conversation has reached a natural conclusion
-                last_messages = (
-                    context[-3:] if len(context) >= 3 else context
-                )
-                if all(
-                    "conclusion" in msg.lower()
-                    for msg in last_messages
-                ):
-                    logger.debug(
-                        "Natural conversation conclusion detected"
+                except Exception as e:
+                    logger.error(
+                        f"Error from {current_speaker.agent_name}: {e}"
                     )
-                    break
+                    # Skip this agent and continue conversation
+                    continue
 
-            return self.conversation.return_history_as_string()
+            return history_output_formatter(
+                self.conversation, self.output_type
+            )
 
         except Exception as e:
             logger.error(f"Error in chat: {e}")

@@ -4,7 +4,8 @@ from loguru import logger
 from swarms.structs.agent import Agent
 
 # Prompt templates for different agent roles
-GENERATOR_PROMPT = """You are a knowledgeable assistant tasked with providing accurate information on a wide range of topics.
+GENERATOR_PROMPT = """
+You are a knowledgeable assistant tasked with providing accurate information on a wide range of topics.
 
 Your responsibilities:
 1. Provide accurate information based on your training data
@@ -22,7 +23,8 @@ When responding to queries:
 Remember, it's better to acknowledge ignorance than to provide incorrect information.
 """
 
-CRITIC_PROMPT = """You are a critical reviewer tasked with identifying potential inaccuracies, hallucinations, or unsupported claims in AI-generated text.
+CRITIC_PROMPT = """
+You are a critical reviewer tasked with identifying potential inaccuracies, hallucinations, or unsupported claims in AI-generated text.
 
 Your responsibilities:
 1. Carefully analyze the provided text for factual errors
@@ -47,7 +49,8 @@ Focus particularly on:
 Be thorough and specific in your critique. Provide actionable feedback for improvement.
 """
 
-REFINER_PROMPT = """You are a refinement specialist tasked with improving text based on critical feedback.
+REFINER_PROMPT = """
+You are a refinement specialist tasked with improving text based on critical feedback.
 
 Your responsibilities:
 1. Carefully review the original text and the critical feedback
@@ -67,7 +70,8 @@ Guidelines for refinement:
 The refined text should be helpful and informative while being scrupulously accurate.
 """
 
-VALIDATOR_PROMPT = """You are a validation expert tasked with ensuring the highest standards of accuracy in refined AI outputs.
+VALIDATOR_PROMPT = """
+You are a validation expert tasked with ensuring the highest standards of accuracy in refined AI outputs.
 
 Your responsibilities:
 1. Verify that all critical issues from previous feedback have been properly addressed

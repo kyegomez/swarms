@@ -89,7 +89,6 @@ class BaseSwarm(ABC):
         stopping_function: Optional[Callable] = None,
         stopping_condition: Optional[str] = "stop",
         stopping_condition_args: Optional[Dict] = None,
-        agentops_on: Optional[bool] = False,
         speaker_selection_func: Optional[Callable] = None,
         rules: Optional[str] = None,
         collective_memory_system: Optional[Any] = False,
@@ -112,7 +111,6 @@ class BaseSwarm(ABC):
         self.stopping_function = stopping_function
         self.stopping_condition = stopping_condition
         self.stopping_condition_args = stopping_condition_args
-        self.agentops_on = agentops_on
         self.speaker_selection_func = speaker_selection_func
         self.rules = rules
         self.collective_memory_system = collective_memory_system
@@ -166,11 +164,6 @@ class BaseSwarm(ABC):
                 stopping_condition_args = {}
             self.stopping_condition_args = stopping_condition_args
             self.stopping_condition = stopping_condition
-
-        # If agentops is enabled, try to import agentops
-        if agentops_on is True:
-            for agent in self.agents:
-                agent.agent_ops_on = True
 
         # Handle speaker selection function
         if speaker_selection_func is not None:

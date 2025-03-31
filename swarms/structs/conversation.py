@@ -119,7 +119,7 @@ class Conversation(BaseStructure):
             content (Union[str, dict, list]): The content of the message to be added.
         """
         now = datetime.datetime.now()
-        timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+        now.strftime("%Y-%m-%d %H:%M:%S")
 
         # Base message with role
         message = {
@@ -129,8 +129,12 @@ class Conversation(BaseStructure):
         # Handle different content types
         if isinstance(content, dict) or isinstance(content, list):
             message["content"] = content
+        elif self.time_enabled:
+            message["content"] = (
+                f"Time: {now.strftime('%Y-%m-%d %H:%M:%S')} \n {content}"
+            )
         else:
-            message["content"] = f"Time: {timestamp} \n {content}"
+            message["content"] = content
 
         # Add the message to history immediately without waiting for token count
         self.conversation_history.append(message)
@@ -509,6 +513,16 @@ class Conversation(BaseStructure):
             str: The final message formatted as 'role: content'.
         """
         return f"{self.conversation_history[-1]['role']}: {self.conversation_history[-1]['content']}"
+
+    def get_final_message_content(self):
+        """Return the content of the final message from the conversation history.
+
+        Returns:
+            str: The content of the final message.
+        """
+        output = self.conversation_history[-1]["content"]
+        # print(output)
+        return output
 
 
 # # Example usage

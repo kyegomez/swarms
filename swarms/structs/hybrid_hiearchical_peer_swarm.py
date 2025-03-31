@@ -2,6 +2,7 @@ import os
 from typing import List
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.multi_agent_exec import get_swarms_info
 from swarms.structs.swarm_router import SwarmRouter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -120,11 +121,26 @@ class HybridHierarchicalClusterSwarm:
         self.router_agent = Agent(
             agent_name="Router Agent",
             agent_description="A router agent that routes tasks to the appropriate swarms.",
-            system_prompt=f"{router_system_prompt}\n\n{self.get_swarms_info()}",
+            system_prompt=f"{router_system_prompt}\n\n{get_swarms_info()}",
             tools_list_dictionary=tools,
             model_name=router_agent_model_name,
             max_loops=1,
+            output_type="final",
         )
+
+    def convert_str_to_dict(self, response: str):
+        # Handle response whether it's a string or dictionary
+        if isinstance(response, str):
+            try:
+                import json
+
+                response = json.loads(response)
+            except json.JSONDecodeError:
+                raise ValueError(
+                    "Invalid JSON response from router agent"
+                )
+
+        return response
 
     def run(self, task: str, *args, **kwargs):
         """
@@ -146,23 +162,19 @@ class HybridHierarchicalClusterSwarm:
 
         response = self.router_agent.run(task=task)
 
-        # Handle response whether it's a string or dictionary
         if isinstance(response, str):
-            try:
-                import json
-
-                response = json.loads(response)
-            except json.JSONDecodeError:
-                raise ValueError(
-                    "Invalid JSON response from router agent"
-                )
+            response = self.convert_str_to_dict(response)
+        else:
+            pass
 
         swarm_name = response.get("swarm_name")
         task_description = response.get("task_description")
 
         if not swarm_name or not task_description:
             raise ValueError(
-                "Invalid response from router agent: missing swarm_name or task_description."
+                "Invalid response from router agent: both 'swarm_name' and 'task_description' must be present. "
+                f"Received: swarm_name={swarm_name}, task_description={task_description}. "
+                f"Please check the response format from the model: {self.router_agent.model_name}."
             )
 
         self.route_task(swarm_name, task_description)
@@ -242,32 +254,3 @@ class HybridHierarchicalClusterSwarm:
                     results.append(f"Error processing task: {str(e)}")
 
         return results
-
-    def get_swarms_info(self) -> str:
-        """
-        Fetches and formats information about all available swarms in the system.
-
-        Returns:
-            str: A formatted string containing names and descriptions of all swarms.
-        """
-        if not self.swarms:
-            return "No swarms currently available in the system."
-
-        swarm_info = [
-            "Available Swarms:",
-            "",
-        ]  # Empty string for line spacing
-
-        for idx, swarm in enumerate(self.swarms, 1):
-            swarm_info.extend(
-                [
-                    f"[Swarm {idx}]",
-                    f"Name: {swarm.name}",
-                    f"Description: {swarm.description}",
-                    f"Length of Agents: {len(swarm.agents)}",
-                    f"Swarm Type: {swarm.swarm_type}",
-                    "",  # Empty string for line spacing between swarms
-                ]
-            )
-
-        return "\n".join(swarm_info).strip()

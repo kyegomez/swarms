@@ -1,8 +1,9 @@
-from typing import List, Optional
-from swarms.structs.agent import Agent
-from swarms.structs.rearrange import AgentRearrange
-from swarms.structs.output_types import OutputType
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List, Optional
+
+from swarms.structs.agent import Agent
+from swarms.structs.output_types import OutputType
+from swarms.structs.rearrange import AgentRearrange
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="sequential_workflow")
@@ -10,18 +11,20 @@ logger = initialize_logger(log_folder="sequential_workflow")
 
 class SequentialWorkflow:
     """
-    Initializes a SequentialWorkflow object, which orchestrates the execution of a sequence of agents.
+    A class that orchestrates the execution of a sequence of agents in a defined workflow.
 
     Args:
         name (str, optional): The name of the workflow. Defaults to "SequentialWorkflow".
         description (str, optional): A description of the workflow. Defaults to "Sequential Workflow, where agents are executed in a sequence."
-        agents (List[Agent], optional): The list of agents in the workflow. Defaults to None.
-        max_loops (int, optional): The maximum number of loops to execute the workflow. Defaults to 1.
-        *args: Variable length argument list.
-        **kwargs: Arbitrary keyword arguments.
+        agents (List[Agent], optional): A list of agents that will be part of the workflow. Defaults to an empty list.
+        max_loops (int, optional): The maximum number of times to execute the workflow. Defaults to 1.
+        output_type (OutputType, optional): The format of the output from the workflow. Defaults to "dict".
+        shared_memory_system (callable, optional): A callable for managing shared memory between agents. Defaults to None.
+        *args: Additional positional arguments.
+        **kwargs: Additional keyword arguments.
 
     Raises:
-        ValueError: If agents list is None or empty, or if max_loops is 0
+        ValueError: If the agents list is None or empty, or if max_loops is set to 0.
     """
 
     def __init__(
@@ -31,9 +34,7 @@ class SequentialWorkflow:
         agents: List[Agent] = [],
         max_loops: int = 1,
         output_type: OutputType = "dict",
-        return_json: bool = False,
         shared_memory_system: callable = None,
-        return_entire_history: bool = False,
         *args,
         **kwargs,
     ):
@@ -42,9 +43,7 @@ class SequentialWorkflow:
         self.agents = agents
         self.max_loops = max_loops
         self.output_type = output_type
-        self.return_json = return_json
         self.shared_memory_system = shared_memory_system
-        self.return_entire_history = return_entire_history
 
         self.reliability_check()
         self.flow = self.sequential_flow()
@@ -56,7 +55,6 @@ class SequentialWorkflow:
             flow=self.flow,
             max_loops=max_loops,
             output_type=output_type,
-            return_json=return_json,
             shared_memory_system=shared_memory_system,
             *args,
             **kwargs,
@@ -101,7 +99,7 @@ class SequentialWorkflow:
         if self.max_loops == 0:
             raise ValueError("max_loops cannot be 0")
 
-        logger.info("Checks completed your swarm is ready.")
+        logger.info("Checks completed; your swarm is ready.")
 
     def run(
         self,
@@ -114,25 +112,25 @@ class SequentialWorkflow:
         no_use_clusterops: bool = True,
         *args,
         **kwargs,
-    ) -> str:
+    ):
         """
-        Executes a task through the agents in the dynamically constructed flow.
+        Executes a specified task through the agents in the dynamically constructed flow.
 
         Args:
             task (str): The task for the agents to execute.
-            device (str): The device to use for the agents to execute.
-            all_cores (bool): Whether to use all cores.
-            all_gpus (bool): Whether to use all gpus.
-            device_id (int): The device id to use for the agents to execute.
-            no_use_clusterops (bool): Whether to use clusterops.
-
+            img (Optional[str]): An optional image input for the agents.
+            device (str): The device to use for the agents to execute. Defaults to "cpu".
+            all_cores (bool): Whether to utilize all CPU cores. Defaults to False.
+            all_gpus (bool): Whether to utilize all available GPUs. Defaults to False.
+            device_id (int): The specific device ID to use for execution. Defaults to 0.
+            no_use_clusterops (bool): Whether to avoid using cluster operations. Defaults to True.
 
         Returns:
             str: The final result after processing through all agents.
 
         Raises:
-            ValueError: If task is None or empty
-            Exception: If any error occurs during task execution
+            ValueError: If the task is None or empty.
+            Exception: If any error occurs during task execution.
         """
 
         try:
@@ -143,17 +141,6 @@ class SequentialWorkflow:
                 **kwargs,
             )
 
-            if self.output_type == "dict":
-                result = (
-                    self.agent_rearrange.conversation.return_messages_as_dictionary()
-                )
-            elif self.output_type == "list":
-                result = (
-                    self.agent_rearrange.conversation.return_messages_as_list()
-                )
-            elif self.output_type == "str" or self.return_json:
-                result = self.agent_rearrange.conversation.get_str()
-
             return result
         except Exception as e:
             logger.error(
@@ -161,7 +148,7 @@ class SequentialWorkflow:
             )
             raise e
 
-    def __call__(self, task: str, *args, **kwargs) -> str:
+    def __call__(self, task: str, *args, **kwargs):
         return self.run(task, *args, **kwargs)
 
     def run_batched(self, tasks: List[str]) -> List[str]:
@@ -169,14 +156,14 @@ class SequentialWorkflow:
         Executes a batch of tasks through the agents in the dynamically constructed flow.
 
         Args:
-            tasks (List[str]): The tasks for the agents to execute.
+            tasks (List[str]): A list of tasks for the agents to execute.
 
         Returns:
-            List[str]: The final results after processing through all agents.
+            List[str]: A list of final results after processing through all agents.
 
         Raises:
-            ValueError: If tasks is None or empty
-            Exception: If any error occurs during task execution
+            ValueError: If tasks is None or empty.
+            Exception: If any error occurs during task execution.
         """
         if not tasks or not all(
             isinstance(task, str) for task in tasks
@@ -195,7 +182,7 @@ class SequentialWorkflow:
 
     async def run_async(self, task: str) -> str:
         """
-        Executes the task through the agents in the dynamically constructed flow asynchronously.
+        Executes the specified task through the agents in the dynamically constructed flow asynchronously.
 
         Args:
             task (str): The task for the agents to execute.
@@ -204,8 +191,8 @@ class SequentialWorkflow:
             str: The final result after processing through all agents.
 
         Raises:
-            ValueError: If task is None or empty
-            Exception: If any error occurs during task execution
+            ValueError: If task is None or empty.
+            Exception: If any error occurs during task execution.
         """
         if not task or not isinstance(task, str):
             raise ValueError("Task must be a non-empty string")
@@ -223,14 +210,14 @@ class SequentialWorkflow:
         Executes a batch of tasks through the agents in the dynamically constructed flow concurrently.
 
         Args:
-            tasks (List[str]): The tasks for the agents to execute.
+            tasks (List[str]): A list of tasks for the agents to execute.
 
         Returns:
-            List[str]: The final results after processing through all agents.
+            List[str]: A list of final results after processing through all agents.
 
         Raises:
-            ValueError: If tasks is None or empty
-            Exception: If any error occurs during task execution
+            ValueError: If tasks is None or empty.
+            Exception: If any error occurs during task execution.
         """
         if not tasks or not all(
             isinstance(task, str) for task in tasks

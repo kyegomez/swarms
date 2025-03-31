@@ -5,20 +5,6 @@ import warnings
 from threading import Thread
 
 
-def disable_langchain():
-    """
-    Disables the LangChain deprecation warning.
-    """
-    from langchain_core._api.deprecation import (
-        LangChainDeprecationWarning,
-    )
-
-    # Ignore LangChainDeprecationWarning
-    warnings.filterwarnings(
-        "ignore", category=LangChainDeprecationWarning
-    )
-
-
 def disable_logging():
     """
     Disables logging for specific modules and sets up file and stream handlers.
@@ -47,7 +33,6 @@ def disable_logging():
         "numexpr",
         "git",
         "wandb.docker.auth",
-        "langchain",
         "distutils",
         "urllib3",
         "elasticsearch",
@@ -79,8 +64,6 @@ def disable_logging():
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.ERROR)
     logging.getLogger().addHandler(stream_handler)
-
-    disable_langchain()
 
 
 def set_logger_level(logger_name: str) -> None:

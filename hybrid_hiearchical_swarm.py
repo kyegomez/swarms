@@ -8,42 +8,48 @@ from swarms.structs.hybrid_hiearchical_peer_swarm import (
 litigation_agent = Agent(
     agent_name="Litigator",
     system_prompt="You handle lawsuits. Analyze facts, build arguments, and develop case strategy.",
-    model_name="groq/deepseek-r1-distill-qwen-32b",
+    model_name="gpt-4o-mini",
+    auto_generate_prompt=False,
     max_loops=1,
 )
 
 corporate_agent = Agent(
     agent_name="Corporate-Attorney",
     system_prompt="You handle business law. Advise on corporate structure, governance, and transactions.",
-    model_name="groq/deepseek-r1-distill-qwen-32b",
+    model_name="gpt-4o-mini",
+    auto_generate_prompt=False,
     max_loops=1,
 )
 
 ip_agent = Agent(
     agent_name="IP-Attorney",
     system_prompt="You protect intellectual property. Handle patents, trademarks, copyrights, and trade secrets.",
-    model_name="groq/deepseek-r1-distill-qwen-32b",
+    model_name="gpt-4o-mini",
+    auto_generate_prompt=False,
     max_loops=1,
 )
 
 employment_agent = Agent(
     agent_name="Employment-Attorney",
     system_prompt="You handle workplace matters. Address hiring, termination, discrimination, and labor issues.",
-    model_name="groq/deepseek-r1-distill-qwen-32b",
+    model_name="gpt-4o-mini",
+    auto_generate_prompt=False,
     max_loops=1,
 )
 
 paralegal_agent = Agent(
     agent_name="Paralegal",
     system_prompt="You assist attorneys. Conduct research, draft documents, and organize case files.",
-    model_name="groq/deepseek-r1-distill-qwen-32b",
+    model_name="gpt-4o-mini",
+    auto_generate_prompt=False,
     max_loops=1,
 )
 
 doc_review_agent = Agent(
     agent_name="Document-Reviewer",
     system_prompt="You examine documents. Extract key information and identify relevant content.",
-    model_name="groq/deepseek-r1-distill-qwen-32b",
+    model_name="gpt-4o-mini",
+    auto_generate_prompt=False,
     max_loops=1,
 )
 
@@ -115,5 +121,5 @@ hybrid_hiearchical_swarm = HybridHierarchicalClusterSwarm(
 
 if __name__ == "__main__":
     hybrid_hiearchical_swarm.run(
-        "What is the best way to file for a patent? for ai technology "
+        "What are the most effective methods for filing a patent in the field of AI technology? Please provide a list of user-friendly platforms that facilitate the patent filing process, along with their website links."
     )

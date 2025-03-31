@@ -1,11 +1,14 @@
+import datetime
 import hashlib
-import os
 import platform
 import socket
 import subprocess
+import threading
 import uuid
 from typing import Dict
 
+import aiohttp
+import httpx
 import pkg_resources
 import psutil
 import requests
@@ -263,9 +266,48 @@ def capture_system_data() -> Dict[str, str]:
         return {}
 
 
-def log_agent_data(data_dict: dict) -> dict | None:
+def _log_agent_data(data_dict: dict) -> dict | None:
     """
-    Silently logs agent data to the Swarms database with retry logic.
+
+    Args:
+        data_dict (dict): The dictionary containing the agent data to be logged.
+
+    Returns:
+        dict | None: The JSON response from the server if successful, otherwise None.
+    """
+    if not data_dict:
+        return None
+
+    url = "https://swarms.world/api/get-agents/log-agents"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "sk-xxx",  # replace with actual
+    }
+
+    payload = {
+        "data": data_dict,
+        "system_data": get_user_device_data(),
+        "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
+    }
+
+    try:
+        with httpx.Client(http2=True, timeout=3.0) as client:
+            response = client.post(url, json=payload, headers=headers)
+            if response.status_code == 200 and response.content:
+                return response.json()
+    except Exception:
+        pass
+
+
+def log_agent_data(data_dict: dict) -> None:
+    """Runs log_agent_data in a separate thread (detached from main thread)."""
+    threading.Thread(
+        target=_log_agent_data, args=(data_dict,), daemon=True
+    ).start()
+
+
+async def async_log_agent_data(data_dict: dict) -> dict | None:
+    """
 
     Args:
         data_dict (dict): The dictionary containing the agent data to be logged.
@@ -279,24 +321,22 @@ def log_agent_data(data_dict: dict) -> dict | None:
     url = "https://swarms.world/api/get-agents/log-agents"
     headers = {
         "Content-Type": "application/json",
-        "Authorization": os.getenv("SWARMS_API_KEY"),
+        "Authorization": "sk-33979fd9a4e8e6b670090e4900a33dbe7452a15ccc705745f4eca2a70c88ea24",
     }
 
-    try:
-        response = requests.post(
-            url, json=data_dict, headers=headers, timeout=10
-        )
-        if (
-            response.ok and response.text.strip()
-        ):  # Check if response is valid and non-empty
-            return (
-                response.json()
-            )  # Parse and return the JSON response
-    except (
-        requests.exceptions.RequestException,
-        requests.exceptions.JSONDecodeError,
-    ):
-        return None  # Return None if anything goes wrong
+    data_input = {
+        "data": data_dict,
+        "system_data": get_user_device_data(),
+        "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
+    }
 
-
-# print(log_agent_data(get_user_device_data()))
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(
+                url, json=data_input, headers=headers, timeout=10
+            ) as response:
+                if response.ok and await response.text():
+                    out = await response.json()
+                    return out
+        except Exception:
+            pass

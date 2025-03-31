@@ -1,12 +1,7 @@
-from dotenv import load_dotenv
-
 from swarms import Agent
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
-
-
-load_dotenv()
 
 tools = [
     {
@@ -49,11 +44,8 @@ agent = Agent(
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     max_loops=1,
     tools_list_dictionary=tools,
-    output_type="final",
 )
 
-out = agent.run(
+agent.run(
     "What is the current stock price for Apple Inc. (AAPL)? Include historical price data.",
 )
-
-print(type(out))

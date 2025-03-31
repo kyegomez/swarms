@@ -1,59 +1,40 @@
 import os
-import logging
 import warnings
-import concurrent.futures
-from dotenv import load_dotenv
-from loguru import logger
+from pathlib import Path
 from swarms.utils.disable_logging import disable_logging
+from loguru import logger
 
 
 def bootup():
-    """Initialize swarms environment and configuration
-
-    Handles environment setup, logging configuration, telemetry,
-    and workspace initialization.
-    """
+    """Super-fast initialization of swarms environment"""
     try:
-        # Load environment variables
-        load_dotenv()
+        # Cache env vars
+        verbose = os.getenv("SWARMS_VERBOSE_GLOBAL", "False").lower()
+        workspace_path = Path.cwd() / "agent_workspace"
 
-        # Configure logging
-        if (
-            os.getenv("SWARMS_VERBOSE_GLOBAL", "False").lower()
-            == "false"
-        ):
-            logger.disable("")
-            logging.disable(logging.CRITICAL)
-
+        # Configure logging early
+        if verbose == "false":
+            logger.disable("CRITICAL")
         else:
             logger.enable("")
 
-        # Silent wandb
+        # Silence wandb
         os.environ["WANDB_SILENT"] = "true"
 
-        # Configure workspace
-        workspace_dir = os.path.join(os.getcwd(), "agent_workspace")
-        os.makedirs(workspace_dir, exist_ok=True)
-        os.environ["WORKSPACE_DIR"] = workspace_dir
+        # Setup workspace dir only if needed
+        if not workspace_path.exists():
+            workspace_path.mkdir(parents=True, exist_ok=True)
+        os.environ["WORKSPACE_DIR"] = str(workspace_path)
 
-        # Suppress warnings
+        # Suppress deprecation warnings
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # Run telemetry functions concurrently
+        # Run lightweight telemetry
         try:
-            with concurrent.futures.ThreadPoolExecutor(
-                max_workers=2
-            ) as executor:
-
-                future_disable_logging = executor.submit(
-                    disable_logging
-                )
-
-                # Wait for completion and check for exceptions
-                future_disable_logging.result()
+            disable_logging()
         except Exception as e:
-            logger.error(f"Error running telemetry functions: {e}")
+            logger.error(f"Telemetry error: {e}")
 
     except Exception as e:
-        logger.error(f"Error during bootup: {str(e)}")
+        logger.error(f"Bootup error: {str(e)}")
         raise

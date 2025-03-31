@@ -427,8 +427,6 @@ We provide vast array of features to save agent states using json, yaml, toml, u
 | `tokens_checks()` | Performs token checks for the agent. |
 | `print_dashboard()` | Prints the dashboard of the agent. |
 | `get_docs_from_doc_folders()` | Fetches all the documents from the doc folders. |
-| `activate_agentops()` | Activates agent operations. |
-| `check_end_session_agentops()` | Checks the end of the session for agent operations. |
 
 
 
@@ -480,8 +478,6 @@ agent.print_dashboard()
 agent.get_docs_from_doc_folders()
 
 # Activate agent ops
-agent.activate_agentops()
-agent.check_end_session_agentops()
 
 # Dump the model to a JSON file
 agent.model_dump_json()

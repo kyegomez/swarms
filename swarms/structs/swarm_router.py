@@ -193,7 +193,8 @@ class SwarmRouter:
         )
 
         # Handle Automated Prompt Engineering
-        self.activate_ape()
+        if self.auto_generate_prompts is True:
+            self.activate_ape()
 
         # Handle shared memory
         if self.shared_memory_system is not None:

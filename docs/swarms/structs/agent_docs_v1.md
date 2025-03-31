@@ -528,8 +528,6 @@ agent.print_dashboard()
 agent.get_docs_from_doc_folders()
 
 # Activate agent ops
-agent.activate_agentops()
-agent.check_end_session_agentops()
 
 # Dump the model to a JSON file
 agent.model_dump_json()

@@ -24,9 +24,6 @@ from swarms.structs.stopping_conditions import (
     check_success,
 )
 
-# Hybrid Hierarchical-Peer Model
-
-
 __all__ = [
     # "ToolAgent",
     "check_done",

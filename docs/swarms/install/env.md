@@ -58,7 +58,6 @@ Swarms uses environment variables for configuration management and secure creden
    - `YOU_API_KEY`: You.com search integration
 
 2. **Analytics & Monitoring**
-   - `AGENTOPS_API_KEY`: AgentOps monitoring
    - `EXA_API_KEY`: Exa.ai services
 
 3. **Browser Automation**

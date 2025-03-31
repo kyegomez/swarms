@@ -46,6 +46,8 @@ from swarms.structs.multi_agent_exec import (
     run_agents_with_resource_monitoring,
     run_agents_with_tasks_concurrently,
     run_single_agent,
+    get_agents_info,
+    get_swarms_info,
 )
 from swarms.structs.multi_agent_orchestrator import MultiAgentRouter
 from swarms.structs.queue_swarm import TaskQueueSwarm
@@ -78,14 +80,6 @@ from swarms.structs.swarming_architectures import (
     sigmoid_swarm,
     staircase_swarm,
     star_swarm,
-)
-from swarms.structs.swarms_api import (
-    AgentInput,
-    SwarmAPIError,
-    SwarmAuthenticationError,
-    SwarmRequest,
-    SwarmsAPIClient,
-    SwarmValidationError,
 )
 
 __all__ = [
@@ -153,15 +147,11 @@ __all__ = [
     "MultiAgentRouter",
     "MemeAgentGenerator",
     "ModelRouter",
-    "SwarmsAPIClient",
-    "SwarmRequest",
-    "SwarmAuthenticationError",
-    "SwarmAPIError",
-    "SwarmValidationError",
-    "AgentInput",
     "AgentsBuilder",
     "MALT",
     "DeHallucinationSwarm",
     "DeepResearchSwarm",
     "HybridHierarchicalClusterSwarm",
+    "get_agents_info",
+    "get_swarms_info",
 ]

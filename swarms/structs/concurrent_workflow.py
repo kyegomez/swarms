@@ -262,7 +262,7 @@ class ConcurrentWorkflow(BaseSwarm):
         ) -> AgentOutputSchema:
             start_time = datetime.now()
             try:
-                output = agent.run(task=task, img=img)
+                output = agent.run(task=task)
 
                 self.conversation.add(
                     agent.agent_name,
