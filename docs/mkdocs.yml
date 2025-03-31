@@ -254,7 +254,7 @@ nav:
     - Swarms Tools:
       - Overview: "swarms_tools/overview.md"
 
-      Vertical Tools:
+      - Vertical Tools:
         - Finance: "swarms_tools/finance.md"
         - Search: "swarms_tools/search.md"
         - Social Media:
