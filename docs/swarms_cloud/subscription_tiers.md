@@ -1,7 +1,7 @@
 # Swarms Cloud Subscription Tiers
 
 !!! abstract "Overview"
-    Choose the perfect plan for your AI development needs. All plans include our core features with additional benefits as you scale up.
+    Choose the perfect plan for your agent infrastructure needs. All plans include our core features with additional benefits as you scale up.
 
 ## Pricing Plans
 
