@@ -288,17 +288,6 @@ nav:
     - Swarms UI:
       - Overview: "swarms/ui/main.md"
 
-  - Contributors:
-    - Bounty Program: "corporate/bounty_program.md"
-    - Contributing: 
-      - Contributing: "swarms/contributing.md"
-      - Tests: "swarms/framework/test.md"
-      - Code Cleanliness: "swarms/framework/code_cleanliness.md"
-      - Philosophy: "swarms/concept/philosophy.md"
-    - Changelog:
-      - Swarms 5.6.8: "swarms/changelog/5_6_8.md"
-      - Swarms 5.8.1: "swarms/changelog/5_8_1.md"
-      - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
   - Swarm Models:
     - Overview: "swarms/models/index.md"
     # - Models Available: "swarms/models/index.md"
@@ -352,6 +341,18 @@ nav:
     - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
     - Swarms Products: "swarms/products.md"
     - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
+
+    - Contributors:
+      - Bounty Program: "corporate/bounty_program.md"
+      - Contributing: 
+        - Contributing: "swarms/contributing.md"
+        - Tests: "swarms/framework/test.md"
+        - Code Cleanliness: "swarms/framework/code_cleanliness.md"
+        - Philosophy: "swarms/concept/philosophy.md"
+      - Changelog:
+        - Swarms 5.6.8: "swarms/changelog/5_6_8.md"
+        - Swarms 5.8.1: "swarms/changelog/5_8_1.md"
+        - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
     
     # - Prompts API: 
     #   - Add Prompts: "swarms_platform/prompts/add_prompt.md"
