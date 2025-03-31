@@ -253,11 +253,13 @@ nav:
     
     - Swarms Tools:
       - Overview: "swarms_tools/overview.md"
-      - Finance: "swarms_tools/finance.md"
-      - Search: "swarms_tools/search.md"
-      - Social Media:
-        - Overview: "swarms_tools/social_media.md"
-        - Twitter: "swarms_tools/twitter.md"
+
+      Vertical Tools:
+        - Finance: "swarms_tools/finance.md"
+        - Search: "swarms_tools/search.md"
+        - Social Media:
+          - Overview: "swarms_tools/social_media.md"
+          - Twitter: "swarms_tools/twitter.md"
 
     - Swarms Memory:
       - Overview: "swarms_memory/index.md"
