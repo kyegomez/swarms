@@ -250,7 +250,21 @@ nav:
             - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
         - Structs:
           - Conversation: "swarms/structs/conversation.md"
-    # - Full API Reference: "swarms/framework/reference.md"
+    
+    - Swarms Tools:
+      - Overview: "swarms_tools/overview.md"
+      - Finance: "swarms_tools/finance.md"
+      - Search: "swarms_tools/search.md"
+      - Social Media:
+        - Overview: "swarms_tools/social_media.md"
+        - Twitter: "swarms_tools/twitter.md"
+
+    - Swarms Memory:
+      - Overview: "swarms_memory/index.md"
+      - Memory Systems:
+        - ChromaDB: "swarms_memory/chromadb.md"
+        - Pinecone: "swarms_memory/pinecone.md"
+        - Faiss: "swarms_memory/faiss.md"
     
   - Examples:
     - Overview: "swarms/examples/unique_swarms.md"
@@ -306,13 +320,6 @@ nav:
       - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
       - Multi Modal Models Available: "swarms/models/multimodal_models.md"
       - GPT4VisionAPI: "swarms/models/gpt4v.md"
-  - Swarms Tools:
-    - Overview: "swarms_tools/overview.md"
-    - Finance: "swarms_tools/finance.md"
-    - Search: "swarms_tools/search.md"
-    - Social Media:
-      - Overview: "swarms_tools/social_media.md"
-      - Twitter: "swarms_tools/twitter.md"
   - Swarms Cloud API:
     - Overview: "swarms_cloud/swarms_api.md"
     - Swarms API Pricing: "swarms_cloud/api_pricing.md"
@@ -324,12 +331,6 @@ nav:
       # - CreateNow API: "swarms_cloud/create_api.md"
     - Self Hosted Swarms:
       - Deploying Swarms on Google Cloud Run: "swarms_cloud/cloud_run.md"
-  - Swarms Memory:
-    - Overview: "swarms_memory/index.md"
-    - Memory Systems:
-      - ChromaDB: "swarms_memory/chromadb.md"
-      - Pinecone: "swarms_memory/pinecone.md"
-      - Faiss: "swarms_memory/faiss.md"
   - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"
     # - Agent Marketplace: "swarms_platform/share_discover.md"
