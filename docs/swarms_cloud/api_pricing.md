@@ -11,7 +11,9 @@
 The Swarm API operates on a credit-based system with the following characteristics:
 
 - **Credits** are the currency used within the platform
+
 - 1 credit = $1 USD
+
 - Credits can be purchased with USD or $swarms Solana tokens
 
 ### Credit Types
@@ -69,28 +71,42 @@ Output Token Cost = Output Token Cost × 0.25
 
 !!! example "Basic Workflow Example"
     **Parameters:**
+    
     - 3 agents
+    
     - 10,000 input tokens total
+    
     - 25,000 output tokens total
 
     **Calculation:**
+    
     - Agent cost: 3 × $0.01 = $0.03
+    
     - Input token cost: (10,000 / 1,000,000) × $2.00 × 3 = $0.06
+    
     - Output token cost: (25,000 / 1,000,000) × $4.50 × 3 = $0.3375
+    
     - **Total cost: $0.4275**
 
 #### Scenario 2: Complex Workflow (Night-time)
 
 !!! example "Complex Workflow Example"
     **Parameters:**
+    
     - 5 agents
+    
     - 50,000 input tokens total
+    
     - 125,000 output tokens total
 
     **Calculation:**
+    
     - Agent cost: 5 × $0.01 = $0.05
+    
     - Input token cost: (50,000 / 1,000,000) × $2.00 × 5 × 0.25 = $0.125
+    
     - Output token cost: (125,000 / 1,000,000) × $4.50 × 5 × 0.25 = $0.703125
+    
     - **Total cost: $0.878125**
 
 ## Purchasing Credits
@@ -98,26 +114,38 @@ Output Token Cost = Output Token Cost × 0.25
 Credits can be purchased through our platform in two ways:
 
 ### USD Payment
+
 - Available through our [account page](https://swarms.world/platform/account)
+
 - Secure payment processing
+
 - Minimum purchase: $10
 
 ### $swarms Token Payment
+
 - Use Solana-based $swarms tokens
+
 - Tokens can be purchased on supported exchanges
+
 - Connect your Solana wallet on our [account page](https://swarms.world/platform/account)
 
 ## Free Credits
 
 !!! info "Free Credit Program"
     We occasionally offer free credits to:
+    
     - New users (welcome bonus)
+    
     - During promotional periods
+    
     - For educational and research purposes
 
     **Important Notes:**
+    
     - Used before standard credits
+    
     - May have expiration dates
+    
     - May have usage restrictions
 
 ## Billing and Usage Tracking
@@ -126,12 +154,16 @@ Track your credit usage through our comprehensive logging and reporting features
 
 ### API Logs
 - Access detailed logs via the `/v1/swarm/logs` endpoint
+
 - View cost breakdowns for each execution
 
 ### Dashboard
 - Real-time credit balance display
+
 - Historical usage graphs
+
 - Detailed cost analysis
+
 - Available at [https://swarms.world/platform/dashboard](https://swarms.world/platform/dashboard)
 
 ## FAQ
