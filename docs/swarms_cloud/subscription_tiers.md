@@ -29,9 +29,10 @@
 ### Premium Tier
 
 !!! success "Premium"
-    **$100/month** or **$1,020/year** (Save 15% on annual billing)
-    
-    <small>Regular price: $1,200/year ($100 × 12 months)</small>
+
+    **Monthly $100/month**
+
+    **Yearly $1,020/year** (Save 15% on annual billing)
     
     [Subscribe Now](https://swarms.world/platform/account){ .md-button .md-button--primary }
 
@@ -85,7 +86,7 @@
     - [x] Enterprise Telemetry Platform
 
     - [x] Regular Check-In Strategy Sessions
-    
+
 
 ## Feature Comparison
 
