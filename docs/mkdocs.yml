@@ -254,12 +254,11 @@ nav:
     
   - Examples:
     - Overview: "swarms/examples/unique_swarms.md"
-
     - Swarms API Examples:
       - Medical Swarm: "swarms/examples/swarms_api_medical.md"
       - Finance Swarm: "swarms/examples/swarms_api_finance.md"
       - ML Model Code Generation Swarm: "swarms/examples/swarms_api_ml_model.md"
-    - Various Model Providers:
+    - Individal LLM Examples:
       - OpenAI: "swarms/examples/openai_example.md"
       - Anthropic: "swarms/examples/claude.md"
       - Groq: "swarms/examples/groq.md"
@@ -278,10 +277,13 @@ nav:
         - Quant Crypto Agent: "swarms/examples/quant_crypto_agent.md"
     - Meme Agents:
       - Bob The Builder: "swarms/examples/bob_the_builder.md"
-      - Meme Agent Builder: "swarms/examples/meme_agents.md"
     - Multi-Agent Collaboration:
       - Swarms DAO: "swarms/examples/swarms_dao.md"
       - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
+      - Group Chat Example: "swarms/examples/groupchat_example.md"
+      - Meme Agent Builder: "swarms/examples/meme_agents.md"
+      - External Agents:
+        - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
     - Swarms UI:
       - Overview: "swarms/ui/main.md"
 

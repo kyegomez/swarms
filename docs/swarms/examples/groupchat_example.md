@@ -1,8 +1,28 @@
+# Groupchat Example
+
+- Import required modules
+
+- Configure your agents first
+
+- Set your api keys for your model provider in the `.env` file such as `OPENAI_API_KEY="sk-"`
+
+- Conigure `GroupChat` with it's various settings
+
+
+## Install
+```bash
+pip install swarms
+```
+
+---------
+
+## Main Code
+
+```python
 from dotenv import load_dotenv
 import os
 
-from swarms.structs.agent import Agent
-from swarms.structs.groupchat import GroupChat
+from swarms import Agent, GroupChat
 
 if __name__ == "__main__":
 
@@ -13,8 +33,8 @@ if __name__ == "__main__":
 
     # Example agents
     agent1 = Agent(
-        agent_name="Financial-Analysis-Agent",
-        description="You are a financial analyst specializing in investment strategies.",
+        agent_name="Expense-Analysis-Agent",
+        description="You are an accounting agent specializing in analyzing potential expenses.",
         model_name="gpt-4o-mini",
         max_loops=1,
         autosave=False,
@@ -30,8 +50,8 @@ if __name__ == "__main__":
     )
 
     agent2 = Agent(
-        agent_name="Tax-Adviser-Agent",
-        description="You are a tax adviser who provides clear and concise guidance on tax-related queries.",
+        agent_name="Budget-Adviser-Agent",
+        description="You are a budget adviser who provides insights on managing and optimizing expenses.",
         model_name="gpt-4o-mini",
         max_loops=1,
         autosave=False,
@@ -49,14 +69,14 @@ if __name__ == "__main__":
     agents = [agent1, agent2]
 
     chat = GroupChat(
-        name="Investment Advisory",
-        description="Financial and tax analysis group",
+        name="Expense Advisory",
+        description="Accounting group focused on discussing potential expenses",
         agents=agents,
         max_loops=1,
         output_type="all",
     )
 
     history = chat.run(
-        "What are the best Japanese business methodologies to take over a market say like minerals and mining?. I need a 4,000 word report. Work together to write the report."
+        "What potential expenses should we consider for the upcoming quarter? Please collaborate to outline a comprehensive list."
     )
-    # print(history)
+```
