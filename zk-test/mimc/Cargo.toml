@@ -1,0 +1,26 @@
+[package]
+name = "mimc"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+#ark
+ark-ff = "0.3.0"
+ark-ec = "0.3.0"
+ark-bn254 = "0.3.0"
+ark-serialize = "0.3.0"
+sha2 = "0.9.8"
+
+bls12_381 = "0.8"
+rand = "0.8"
+rand_core = "0.6.4"
+ff = "0.13.0"
+
+#代理重加密库
+recrypt = "0.13.1"
+
+#大整数处理
+num-bigint = "0.4.4"
+

@@ -1,0 +1,103 @@
+{
+  "scheme": "marlin",
+  "curve": "bn128",
+  "proof": {
+    "commitments": [
+      [
+        [
+          [
+            "0x0658c018134937d6b0b43e1fd4011021711df6919357ca764251472131c34e27",
+            "0x092297510bb1e6db109e03af5080e2877a65959a61b0bf372ad79ae2f0bf11ab"
+          ],
+          null
+        ],
+        [
+          [
+            "0x0fadef2277c46865730a971335bd1003b7f9443e4da122f1f93ac854dba96216",
+            "0x0ce45c00c74c81563a8ff15495dd01bdfe79e88b1b50cc5ff3816889c16aaeae"
+          ],
+          null
+        ],
+        [
+          [
+            "0x01d8e6929c16275a7fe2df9e6c984ed08175b16461d1449c20fdf3e91edb219c",
+            "0x0366db7238d267193f9bfb3ae51afde8c78c2ce5f35f3c9726f4fc6cb28ba92e"
+          ],
+          null
+        ],
+        [
+          [
+            "0x29b769509ed692dd31efad63b37dd5eef5941c49e7c6fa7e1780b74dba74a08e",
+            "0x2685ced3aa6e7893b43307bf043806f3aa41e0551809fe2d9e8e8831be5a6c76"
+          ],
+          null
+        ]
+      ],
+      [
+        [
+          [
+            "0x01104e1c107ac38c77552a8505225100e9aed180504bd1fe9708d89bece51743",
+            "0x290bb6f5344abe78fab99ad2c2c2f00ab3508eea46d10c6243925ba3ae72fd1d"
+          ],
+          null
+        ],
+        [
+          [
+            "0x2f173b4544ae16fa92368b88612749e8238333f7738775ca8231034e6294e591",
+            "0x277f3723142ae875e119ebab2aa6c556a40346f8783040bd6df55827bf69d4c2"
+          ],
+          [
+            "0x128c618de8e2a0150907ee331dab486970d1e05fa665f04e4b913a0b5a4fe802",
+            "0x194b0a08e501789131133cada10977e7f45d64ad81f61372069e1c30798f65c7"
+          ]
+        ],
+        [
+          [
+            "0x08fbf99babc3eaf71d906507b8dedfec5ed0c016f888f8d4d08bbddf4952ad64",
+            "0x2114f2437d8297ebe4e9e278dd7508f675ceb41ff24be3165ff676e569525180"
+          ],
+          null
+        ]
+      ],
+      [
+        [
+          [
+            "0x0446996b7e4f75ab653b5144549b23b689773b877c2bf101632e216d5f8b7f8b",
+            "0x07820207931da78512c34dac6ca328b688f4a59623e1196a9211cfe680e2e4b6"
+          ],
+          [
+            "0x246f6548de38abb9e8e79ca4f30aa0e0629d0cfff1cfcd783e214f08e0ba26c3",
+            "0x24c477bbcf2d2ad91f474838a505497a17ac8dd0be03faea0a794943f9cdbf78"
+          ]
+        ],
+        [
+          [
+            "0x2e54c241f0530d6114d6714c75d2e064c0cde2ea5f14ae3cb77317c41a334db5",
+            "0x15ed433d2924a4ebded9ae126824558c96fbc8c9ebe0e1b0a3651db7b4740dc9"
+          ],
+          null
+        ]
+      ]
+    ],
+    "evaluations": [
+      "0x2f63878480304d570280256094d861d8380f135731142ffac4f04bd205082735",
+      "0x0cc484c1d0a694ff97f5f61f38510a3a7e408f9c282c99be228ff04ba6694a95",
+      "0x2946ce3f31175046ab1da81848d14568c0e81135eab532256504a0e2c503b759",
+      "0x250c387c40d2a025024130a0cb4de54191c55580cd7a03c06e2937ccb2321257"
+    ],
+    "pc_lc_opening_1": [
+      "0x21397cabc15e6d8cbd39eacd0368336856ca1f2b673a141b90858e44a3356ec1",
+      "0x23dffb245e4fcf943184ad46c7ee33dbbc56b344b76467a24f43de495081a35f"
+    ],
+    "pc_lc_opening_1_degree": "0x066ee77dd1570c273189df2200e3481b1913a78e83ca62ec18d51299e6d5f29b",
+    "pc_lc_opening_2": [
+      "0x1decedd7b86933fda359a1fa96c94c0fa20a985f4cab972f7e2a8d0d21143cbf",
+      "0x03807bacedb16ea77423c1eb784683738fc71288730e1fa58af969ff61e4619b"
+    ],
+    "prover_messages_count": 3
+  },
+  "inputs": [
+    "0x0000000000000000000000000000000000000000000000000000000000000002",
+    "0x0000000000000000000000000000000000000000000000000000000000000400"
+  ]
+}

@@ -1,0 +1,43 @@
+import "utils/pack/bool/unpack256" as unpack256;
+import "utils/casts/field_to_u32" as field_to_u32;
+//计算 g^r 
+//第一步 :将field类型的r转换为bool[256]
+//第二步:判断r的每一位上是否等于1 即 bool[i] == 1, 如果等于计算这一位的t=g^EXP[i]的值
+//第三步:判断当前bool[i]的区间 即 EXP_PRAMA[i/16]
+//第四步:循环左移g^EXP[16]^EXP[i/16]
+//最终将 result = result *t,遍历256位将其累积计算 g^r的值
+const u32[16] EXP_PRAMA = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+const u32[17]  EXP =[1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384,32768,65536];
+const u32 MAX = 65536;
+def commit(field r, field g) -> field {
+    field mut result = 1;
+    field mut t = 1;
+    field mut e = 1;
+    bool[256] exp_r = unpack256(r);
+    for u32 i in 0..256 {
+          for u32 j in 0..EXP_PRAMA[(255-i)/16] {
+            e = e * g ** MAX;
+        }
+       t = if exp_r[i] == true {
+            
+          
+         e *(g ** (EXP[(255-i)%16]))
+        } else {
+            1
+        };
+
+        
+       
+        result = result * t;
+        e = 1;
+    }
+    return result;
+}
+
+def main(private field r, field g, field expect_commit) {
+
+    field mut res_commit = commit(r,g);
+    
+    assert(res_commit == expect_commit);
+    return ;
+}

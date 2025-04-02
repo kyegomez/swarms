@@ -1,0 +1,7 @@
+import "hashes/mimcSponge/mimcSponge" as mimc;
+
+def main(private field[20] sk, field k) -> field[20]{
+   
+   return mimc(sk,k);
+    
+}

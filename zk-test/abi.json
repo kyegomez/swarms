@@ -1,0 +1,25 @@
+{
+  "inputs": [
+    {
+      "name": "r",
+      "public": false,
+      "type": "field"
+    },
+    {
+      "name": "g",
+      "public": true,
+      "type": "field"
+    },
+    {
+      "name": "expect_commit",
+      "public": true,
+      "type": "field"
+    }
+  ],
+  "output": {
+    "type": "tuple",
+    "components": {
+      "elements": []
+    }
+  }
+}
