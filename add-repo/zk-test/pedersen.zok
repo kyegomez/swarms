@@ -1,0 +1,39 @@
+import "ecc/edwardsScalarMult" as scalarmul;
+import "ecc/edwardsAdd" as add;
+import "ecc/babyjubjubParams" as babyJubJubParams;
+from "ecc/babyjubjubParams" import BabyJubJubParams;
+import "utils/pack/bool/nonStrictUnpack256" as pack256;
+
+def commit(field r, field[2] g, BabyJubJubParams context) -> field[2]{
+   
+    bool[256] exp_r =pack256(r);
+    return scalarmul(exp_r,g,context);
+}
+def main( private field r, field[2] g, field[2] expect_commit) {
+    
+    BabyJubJubParams context = babyJubJubParams();
+    
+    field[2] result = commit(r,g,context);
+
+    assert(result == expect_commit);
+
+    return;
+}
+
+/*//计算基于bn254的pedersen承诺
+def commit(field v, field r, field[2] g, field[2] h, BabyJubJubParams context) -> field[2]{
+    bool[256] exp_v =pack256(v);
+    bool[256] exp_r =pack256(r);
+    return add(scalarmul(exp_v,g,context),scalarmul(exp_r,h,context),context);
+}
+
+def main(private field v, private field r, field[2] g, field[2] h, field[2] expect_commit) {
+    
+    BabyJubJubParams context = babyJubJubParams();
+    
+    field[2] result = commit(v,r,g,h,context);
+
+    assert(result == expect_commit);
+
+    return;
+}*/
