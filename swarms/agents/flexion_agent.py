@@ -9,7 +9,8 @@ from loguru import logger
 
 
 # Define Reflexion prompt with detailed instructions
-REFLEXION_PROMPT = """You are Reflexion, an advanced AI assistant designed to generate high-quality responses and continuously improve through self-reflection.
+REFLEXION_PROMPT = """
+You are Reflexion, an advanced AI assistant designed to generate high-quality responses and continuously improve through self-reflection.
 
 CAPABILITIES:
 - Deep reasoning: Break down complex problems step-by-step
