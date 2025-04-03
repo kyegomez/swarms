@@ -13,9 +13,10 @@ poetry build && echo "✅ Build successful!" || echo "❌ Build failed!"
 echo "📦 Publishing to PyPI..."
 poetry publish && echo "✅ Package published!" || echo "❌ Publishing failed!"
 
-echo "📝 Committing changes to Git..."
+echo "📝 Enter your commit message:"
+read commit_message
 git add . && echo "✅ Changes staged!"
-git commit -m "Update and publish" && echo "✅ Changes committed!"
+git commit -m "$commit_message" && echo "✅ Changes committed!"
 
 echo "🚀 Pushing to remote repository..."
 git push && echo "✅ Changes pushed to remote!"
