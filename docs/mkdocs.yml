@@ -330,6 +330,7 @@ nav:
     - Swarms API Pricing in Chinese: "swarms_cloud/chinese_api_pricing.md"
     - Swarm Types: "swarms_cloud/swarm_types.md"
     - Swarms Cloud Subscription Tiers: "swarms_cloud/subscription_tiers.md"
+    - Swarms API Best Practices: "swarms_cloud/best_practices.md"
     - Swarm Ecosystem APIs:
       - MCS API: "swarms_cloud/mcs_api.md"
       # - CreateNow API: "swarms_cloud/create_api.md"
