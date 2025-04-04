@@ -1,5 +1,6 @@
 from swarms.utils.vllm_wrapper import VLLMWrapper
 
+
 def main():
     # Initialize the vLLM wrapper with a model
     # Note: You'll need to have the model downloaded or specify a HuggingFace model ID
@@ -31,14 +32,15 @@ def main():
     tasks = [
         "What is vLLM?",
         "How does vLLM improve inference speed?",
-        "What are the main features of vLLM?"
+        "What are the main features of vLLM?",
     ]
-    
+
     responses = llm.batched_run(tasks, batch_size=2)
     print("\nBatched responses:")
     for task, response in zip(tasks, responses):
         print(f"\nTask: {task}")
         print(f"Response: {response}")
 
+
 if __name__ == "__main__":
-    main() 
+    main()

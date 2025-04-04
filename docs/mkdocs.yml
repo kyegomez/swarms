@@ -283,6 +283,7 @@ nav:
       - Ollama: "swarms/examples/ollama.md"
       - OpenRouter: "swarms/examples/openrouter.md"
       - XAI: "swarms/examples/xai.md"
+      - VLLM: "swarms/examples/vllm_integration.md"
     - Swarms Tools: 
       - Agent with Yahoo Finance: "swarms/examples/yahoo_finance.md"
       - Twitter Agents: "swarms_tools/twitter.md"
@@ -299,6 +300,7 @@ nav:
       - Group Chat Example: "swarms/examples/groupchat_example.md"
       - Meme Agent Builder: "swarms/examples/meme_agents.md"
       - Sequential Workflow Example: "swarms/examples/sequential_example.md"
+      - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
       - External Agents:
         - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
     - Swarms UI:

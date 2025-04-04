@@ -6,10 +6,14 @@ try:
 except ImportError:
     import subprocess
     import sys
+
     print("Installing vllm")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-U", "vllm"])
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "-U", "vllm"]
+    )
     print("vllm installed")
     from vllm import LLM, SamplingParams
+
 
 class VLLMWrapper:
     """
@@ -54,7 +58,7 @@ class VLLMWrapper:
         self.tools_list_dictionary = tools_list_dictionary
         self.tool_choice = tool_choice
         self.parallel_tool_calls = parallel_tool_calls
-        
+
         # Initialize vLLM
         self.llm = LLM(model=model_name, **kwargs)
         self.sampling_params = SamplingParams(
@@ -90,12 +94,12 @@ class VLLMWrapper:
         """
         try:
             prompt = self._prepare_prompt(task)
-            
+
             outputs = self.llm.generate(prompt, self.sampling_params)
             response = outputs[0].outputs[0].text.strip()
-            
+
             return response
-            
+
         except Exception as error:
             logger.error(f"Error in VLLMWrapper: {error}")
             raise error
@@ -114,7 +118,9 @@ class VLLMWrapper:
         """
         return self.run(task, *args, **kwargs)
 
-    def batched_run(self, tasks: List[str], batch_size: int = 10) -> List[str]:
+    def batched_run(
+        self, tasks: List[str], batch_size: int = 10
+    ) -> List[str]:
         """
         Run the model for multiple tasks in batches.
 
@@ -125,14 +131,16 @@ class VLLMWrapper:
         Returns:
             List[str]: List of model responses.
         """
-        logger.info(f"Running tasks in batches of size {batch_size}. Total tasks: {len(tasks)}")
+        logger.info(
+            f"Running tasks in batches of size {batch_size}. Total tasks: {len(tasks)}"
+        )
         results = []
-        
+
         for i in range(0, len(tasks), batch_size):
-            batch = tasks[i:i + batch_size]
+            batch = tasks[i : i + batch_size]
             for task in batch:
                 logger.info(f"Running task: {task}")
                 results.append(self.run(task))
-                
+
         logger.info("Completed all tasks.")
-        return results 
+        return results

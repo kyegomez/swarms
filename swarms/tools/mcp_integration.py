@@ -1,554 +1,392 @@
-from contextlib import AsyncExitStack
-from types import TracebackType
-from typing import (
-    Any,
-    Callable,
-    Coroutine,
-    List,
-    Literal,
-    Optional,
-    TypedDict,
-    cast,
-)
+from __future__ import annotations
 
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.sse import sse_client
-from mcp.client.stdio import stdio_client
-from mcp.types import (
-    CallToolResult,
-    EmbeddedResource,
-    ImageContent,
-    PromptMessage,
-    TextContent,
+from typing import Any, List
+
+
+from loguru import logger
+
+import abc
+import asyncio
+from contextlib import AbstractAsyncContextManager, AsyncExitStack
+from pathlib import Path
+from typing import Literal
+
+from anyio.streams.memory import (
+    MemoryObjectReceiveStream,
+    MemoryObjectSendStream,
 )
-from mcp.types import (
+from mcp import (
+    ClientSession,
+    StdioServerParameters,
     Tool as MCPTool,
+    stdio_client,
 )
+from mcp.client.sse import sse_client
+from mcp.types import CallToolResult, JSONRPCMessage
+from typing_extensions import NotRequired, TypedDict
+
+from swarms.utils.any_to_str import any_to_str
 
 
-def convert_mcp_prompt_message_to_message(
-    message: PromptMessage,
-) -> str:
-    """Convert an MCP prompt message to a string message.
+class MCPServer(abc.ABC):
+    """Base class for Model Context Protocol servers."""
 
-    Args:
-        message: MCP prompt message to convert
+    @abc.abstractmethod
+    async def connect(self):
+        """Connect to the server. For example, this might mean spawning a subprocess or
+        opening a network connection. The server is expected to remain connected until
+        `cleanup()` is called.
+        """
+        pass
 
-    Returns:
-        a string message
-    """
-    if message.content.type == "text":
-        if message.role == "user":
-            return str(message.content.text)
-        elif message.role == "assistant":
-            return str(
-                message.content.text
-            )  # Fixed attribute name from str to text
-        else:
-            raise ValueError(
-                f"Unsupported prompt message role: {message.role}"
+    @property
+    @abc.abstractmethod
+    def name(self) -> str:
+        """A readable name for the server."""
+        pass
+
+    @abc.abstractmethod
+    async def cleanup(self):
+        """Cleanup the server. For example, this might mean closing a subprocess or
+        closing a network connection.
+        """
+        pass
+
+    @abc.abstractmethod
+    async def list_tools(self) -> list[MCPTool]:
+        """List the tools available on the server."""
+        pass
+
+    @abc.abstractmethod
+    async def call_tool(
+        self, tool_name: str, arguments: dict[str, Any] | None
+    ) -> CallToolResult:
+        """Invoke a tool on the server."""
+        pass
+
+
+class _MCPServerWithClientSession(MCPServer, abc.ABC):
+    """Base class for MCP servers that use a `ClientSession` to communicate with the server."""
+
+    def __init__(self, cache_tools_list: bool):
+        """
+        Args:
+            cache_tools_list: Whether to cache the tools list. If `True`, the tools list will be
+            cached and only fetched from the server once. If `False`, the tools list will be
+            fetched from the server on each call to `list_tools()`. The cache can be invalidated
+            by calling `invalidate_tools_cache()`. You should set this to `True` if you know the
+            server will not change its tools list, because it can drastically improve latency
+            (by avoiding a round-trip to the server every time).
+        """
+        self.session: ClientSession | None = None
+        self.exit_stack: AsyncExitStack = AsyncExitStack()
+        self._cleanup_lock: asyncio.Lock = asyncio.Lock()
+        self.cache_tools_list = cache_tools_list
+
+        # The cache is always dirty at startup, so that we fetch tools at least once
+        self._cache_dirty = True
+        self._tools_list: list[MCPTool] | None = None
+
+    @abc.abstractmethod
+    def create_streams(
+        self,
+    ) -> AbstractAsyncContextManager[
+        tuple[
+            MemoryObjectReceiveStream[JSONRPCMessage | Exception],
+            MemoryObjectSendStream[JSONRPCMessage],
+        ]
+    ]:
+        """Create the streams for the server."""
+        pass
+
+    async def __aenter__(self):
+        await self.connect()
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        await self.cleanup()
+
+    def invalidate_tools_cache(self):
+        """Invalidate the tools cache."""
+        self._cache_dirty = True
+
+    async def connect(self):
+        """Connect to the server."""
+        try:
+            transport = await self.exit_stack.enter_async_context(
+                self.create_streams()
+            )
+            read, write = transport
+            session = await self.exit_stack.enter_async_context(
+                ClientSession(read, write)
+            )
+            await session.initialize()
+            self.session = session
+        except Exception as e:
+            logger.error(f"Error initializing MCP server: {e}")
+            await self.cleanup()
+            raise
+
+    async def list_tools(self) -> list[MCPTool]:
+        """List the tools available on the server."""
+        if not self.session:
+            raise Exception(
+                "Server not initialized. Make sure you call `connect()` first."
             )
 
-    raise ValueError(
-        f"Unsupported prompt message content type: {message.content.type}"
-    )
+        # Return from cache if caching is enabled, we have tools, and the cache is not dirty
+        if (
+            self.cache_tools_list
+            and not self._cache_dirty
+            and self._tools_list
+        ):
+            return self._tools_list
 
+        # Reset the cache dirty to False
+        self._cache_dirty = False
 
-async def load_mcp_prompt(
-    session: ClientSession,
-    name: str,
-    arguments: Optional[dict[str, Any]] = None,
-) -> List[str]:
-    """Load MCP prompt and convert to messages."""
-    response = await session.get_prompt(name, arguments)
-
-    return [
-        convert_mcp_prompt_message_to_message(message)
-        for message in response.messages
-    ]
-
-
-DEFAULT_ENCODING = "utf-8"
-DEFAULT_ENCODING_ERROR_HANDLER = "strict"
-
-DEFAULT_HTTP_TIMEOUT = 5
-DEFAULT_SSE_READ_TIMEOUT = 60 * 5
-
-
-class StdioConnection(TypedDict):
-    transport: Literal["stdio"]
-
-    command: str
-    """The executable to run to start the server."""
-
-    args: list[str]
-    """Command line arguments to pass to the executable."""
-
-    env: dict[str, str] | None
-    """The environment to use when spawning the process."""
-
-    encoding: str
-    """The text encoding used when sending/receiving messages to the server."""
-
-    encoding_error_handler: Literal["strict", "ignore", "replace"]
-    """
-    The text encoding error handler.
-
-    See https://docs.python.org/3/library/codecs.html#codec-base-classes for
-    explanations of possible values
-    """
-
-
-class SSEConnection(TypedDict):
-    transport: Literal["sse"]
-
-    url: str
-    """The URL of the SSE endpoint to connect to."""
-
-    headers: dict[str, Any] | None
-    """HTTP headers to send to the SSE endpoint"""
-
-    timeout: float
-    """HTTP timeout"""
-
-    sse_read_timeout: float
-    """SSE read timeout"""
-
-
-NonTextContent = ImageContent | EmbeddedResource
-
-
-def _convert_call_tool_result(
-    call_tool_result: CallToolResult,
-) -> tuple[str | list[str], list[NonTextContent] | None]:
-    text_contents: list[TextContent] = []
-    non_text_contents = []
-    for content in call_tool_result.content:
-        if isinstance(content, TextContent):
-            text_contents.append(content)
-        else:
-            non_text_contents.append(content)
-
-    tool_content: str | list[str] = [
-        content.text for content in text_contents
-    ]
-    if len(text_contents) == 1:
-        tool_content = tool_content[0]
-
-    if call_tool_result.isError:
-        raise ValueError("Error calling tool")
-
-    return tool_content, non_text_contents or None
-
-
-def convert_mcp_tool_to_function(
-    session: ClientSession,
-    tool: MCPTool,
-) -> Callable[
-    ...,
-    Coroutine[
-        Any, Any, tuple[str | list[str], list[NonTextContent] | None]
-    ],
-]:
-    """Convert an MCP tool to a callable function.
-
-    NOTE: this tool can be executed only in a context of an active MCP client session.
-
-    Args:
-        session: MCP client session
-        tool: MCP tool to convert
-
-    Returns:
-        a callable function
-    """
+        # Fetch the tools from the server
+        self._tools_list = (await self.session.list_tools()).tools
+        return self._tools_list
 
     async def call_tool(
-        **arguments: dict[str, Any],
-    ) -> tuple[str | list[str], list[NonTextContent] | None]:
-        """Execute the tool with the given arguments."""
-        call_tool_result = await session.call_tool(
-            tool.name, arguments
+        self, arguments: dict[str, Any] | None
+    ) -> CallToolResult:
+        """Invoke a tool on the server."""
+        tool_name = arguments.get("tool_name") or arguments.get(
+            "name"
         )
-        return _convert_call_tool_result(call_tool_result)
 
-    # Add metadata as attributes to the function
-    call_tool.__name__ = tool.name
-    call_tool.__doc__ = tool.description or ""
-    call_tool.schema = tool.inputSchema
+        if not tool_name:
+            raise Exception("No tool name found in arguments")
 
-    return call_tool
+        if not self.session:
+            raise Exception(
+                "Server not initialized. Make sure you call `connect()` first."
+            )
+
+        return await self.session.call_tool(tool_name, arguments)
+
+    async def cleanup(self):
+        """Cleanup the server."""
+        async with self._cleanup_lock:
+            try:
+                await self.exit_stack.aclose()
+                self.session = None
+            except Exception as e:
+                logger.error(f"Error cleaning up server: {e}")
 
 
-async def load_mcp_tools(session: ClientSession) -> list[Callable]:
-    """Load all available MCP tools and convert them to callable functions."""
-    tools = await session.list_tools()
-    return [
-        convert_mcp_tool_to_function(session, tool)
-        for tool in tools.tools
+class MCPServerStdioParams(TypedDict):
+    """Mirrors `mcp.client.stdio.StdioServerParameters`, but lets you pass params without another
+    import.
+    """
+
+    command: str
+    """The executable to run to start the server. For example, `python` or `node`."""
+
+    args: NotRequired[list[str]]
+    """Command line args to pass to the `command` executable. For example, `['foo.py']` or
+    `['server.js', '--port', '8080']`."""
+
+    env: NotRequired[dict[str, str]]
+    """The environment variables to set for the server. ."""
+
+    cwd: NotRequired[str | Path]
+    """The working directory to use when spawning the process."""
+
+    encoding: NotRequired[str]
+    """The text encoding used when sending/receiving messages to the server. Defaults to `utf-8`."""
+
+    encoding_error_handler: NotRequired[
+        Literal["strict", "ignore", "replace"]
     ]
+    """The text encoding error handler. Defaults to `strict`.
+
+    See https://docs.python.org/3/library/codecs.html#codec-base-classes for
+    explanations of possible values.
+    """
 
 
-class MultiServerMCPClient:
-    """Client for connecting to multiple MCP servers and loading tools from them."""
+class MCPServerStdio(_MCPServerWithClientSession):
+    """MCP server implementation that uses the stdio transport. See the [spec]
+    (https://spec.modelcontextprotocol.io/specification/2024-11-05/basic/transports/#stdio) for
+    details.
+    """
 
     def __init__(
         self,
-        connections: dict[
-            str, StdioConnection | SSEConnection
-        ] = None,
-    ) -> None:
-        """Initialize a MultiServerMCPClient with MCP servers connections.
+        params: MCPServerStdioParams,
+        cache_tools_list: bool = False,
+        name: str | None = None,
+    ):
+        """Create a new MCP server based on the stdio transport.
 
         Args:
-            connections: A dictionary mapping server names to connection configurations.
-                Each configuration can be either a StdioConnection or SSEConnection.
-                If None, no initial connections are established.
-
-        Example:
-
-            ```python
-            async with MultiServerMCPClient(
-                {
-                    "math": {
-                        "command": "python",
-                        # Make sure to update to the full absolute path to your math_server.py file
-                        "args": ["/path/to/math_server.py"],
-                        "transport": "stdio",
-                    },
-                    "weather": {
-                        # make sure you start your weather server on port 8000
-                        "url": "http://localhost:8000/sse",
-                        "transport": "sse",
-                    }
-                }
-            ) as client:
-                all_tools = client.get_tools()
-                ...
-            ```
+            params: The params that configure the server. This includes the command to run to
+                start the server, the args to pass to the command, the environment variables to
+                set for the server, the working directory to use when spawning the process, and
+                the text encoding used when sending/receiving messages to the server.
+            cache_tools_list: Whether to cache the tools list. If `True`, the tools list will be
+                cached and only fetched from the server once. If `False`, the tools list will be
+                fetched from the server on each call to `list_tools()`. The cache can be
+                invalidated by calling `invalidate_tools_cache()`. You should set this to `True`
+                if you know the server will not change its tools list, because it can drastically
+                improve latency (by avoiding a round-trip to the server every time).
+            name: A readable name for the server. If not provided, we'll create one from the
+                command.
         """
-        self.connections = connections
-        self.exit_stack = AsyncExitStack()
-        self.sessions: dict[str, ClientSession] = {}
-        self.server_name_to_tools: dict[str, list[Callable]] = {}
+        super().__init__(cache_tools_list)
 
-    async def _initialize_session_and_load_tools(
-        self, server_name: str, session: ClientSession
-    ) -> None:
-        """Initialize a session and load tools from it.
-
-        Args:
-            server_name: Name to identify this server connection
-            session: The ClientSession to initialize
-        """
-        # Initialize the session
-        await session.initialize()
-        self.sessions[server_name] = session
-
-        # Load tools from this server
-        server_tools = await load_mcp_tools(session)
-        self.server_name_to_tools[server_name] = server_tools
-
-    async def connect_to_server(
-        self,
-        server_name: str,
-        *,
-        transport: Literal["stdio", "sse"] = "stdio",
-        **kwargs,
-    ) -> None:
-        """Connect to an MCP server using either stdio or SSE.
-
-        This is a generic method that calls either connect_to_server_via_stdio or connect_to_server_via_sse
-        based on the provided transport parameter.
-
-        Args:
-            server_name: Name to identify this server connection
-            transport: Type of transport to use ("stdio" or "sse"), defaults to "stdio"
-            **kwargs: Additional arguments to pass to the specific connection method
-
-        Raises:
-            ValueError: If transport is not recognized
-            ValueError: If required parameters for the specified transport are missing
-        """
-        if transport == "sse":
-            if "url" not in kwargs:
-                raise ValueError(
-                    "'url' parameter is required for SSE connection"
-                )
-            await self.connect_to_server_via_sse(
-                server_name,
-                url=kwargs["url"],
-                headers=kwargs.get("headers"),
-                timeout=kwargs.get("timeout", DEFAULT_HTTP_TIMEOUT),
-                sse_read_timeout=kwargs.get(
-                    "sse_read_timeout", DEFAULT_SSE_READ_TIMEOUT
-                ),
-            )
-        elif transport == "stdio":
-            if "command" not in kwargs:
-                raise ValueError(
-                    "'command' parameter is required for stdio connection"
-                )
-            if "args" not in kwargs:
-                raise ValueError(
-                    "'args' parameter is required for stdio connection"
-                )
-            await self.connect_to_server_via_stdio(
-                server_name,
-                command=kwargs["command"],
-                args=kwargs["args"],
-                env=kwargs.get("env"),
-                encoding=kwargs.get("encoding", DEFAULT_ENCODING),
-                encoding_error_handler=kwargs.get(
-                    "encoding_error_handler",
-                    DEFAULT_ENCODING_ERROR_HANDLER,
-                ),
-            )
-        else:
-            raise ValueError(
-                f"Unsupported transport: {transport}. Must be 'stdio' or 'sse'"
-            )
-
-    async def connect_to_server_via_stdio(
-        self,
-        server_name: str,
-        *,
-        command: str,
-        args: list[str],
-        env: dict[str, str] | None = None,
-        encoding: str = DEFAULT_ENCODING,
-        encoding_error_handler: Literal[
-            "strict", "ignore", "replace"
-        ] = DEFAULT_ENCODING_ERROR_HANDLER,
-    ) -> None:
-        """Connect to a specific MCP server using stdio
-
-        Args:
-            server_name: Name to identify this server connection
-            command: Command to execute
-            args: Arguments for the command
-            env: Environment variables for the command
-            encoding: Character encoding
-            encoding_error_handler: How to handle encoding errors
-        """
-        server_params = StdioServerParameters(
-            command=command,
-            args=args,
-            env=env,
-            encoding=encoding,
-            encoding_error_handler=encoding_error_handler,
-        )
-
-        # Create and store the connection
-        stdio_transport = await self.exit_stack.enter_async_context(
-            stdio_client(server_params)
-        )
-        read, write = stdio_transport
-        session = cast(
-            ClientSession,
-            await self.exit_stack.enter_async_context(
-                ClientSession(read, write)
+        self.params = StdioServerParameters(
+            command=params["command"],
+            args=params.get("args", []),
+            env=params.get("env"),
+            cwd=params.get("cwd"),
+            encoding=params.get("encoding", "utf-8"),
+            encoding_error_handler=params.get(
+                "encoding_error_handler", "strict"
             ),
         )
 
-        await self._initialize_session_and_load_tools(
-            server_name, session
-        )
+        self._name = name or f"stdio: {self.params.command}"
 
-    async def connect_to_server_via_sse(
+    def create_streams(
         self,
-        server_name: str,
-        *,
-        url: str,
-        headers: dict[str, Any] | None = None,
-        timeout: float = DEFAULT_HTTP_TIMEOUT,
-        sse_read_timeout: float = DEFAULT_SSE_READ_TIMEOUT,
-    ) -> None:
-        """Connect to a specific MCP server using SSE
+    ) -> AbstractAsyncContextManager[
+        tuple[
+            MemoryObjectReceiveStream[JSONRPCMessage | Exception],
+            MemoryObjectSendStream[JSONRPCMessage],
+        ]
+    ]:
+        """Create the streams for the server."""
+        return stdio_client(self.params)
+
+    @property
+    def name(self) -> str:
+        """A readable name for the server."""
+        return self._name
+
+
+class MCPServerSseParams(TypedDict):
+    """Mirrors the params in`mcp.client.sse.sse_client`."""
+
+    url: str
+    """The URL of the server."""
+
+    headers: NotRequired[dict[str, str]]
+    """The headers to send to the server."""
+
+    timeout: NotRequired[float]
+    """The timeout for the HTTP request. Defaults to 5 seconds."""
+
+    sse_read_timeout: NotRequired[float]
+    """The timeout for the SSE connection, in seconds. Defaults to 5 minutes."""
+
+
+class MCPServerSse(_MCPServerWithClientSession):
+    """MCP server implementation that uses the HTTP with SSE transport. See the [spec]
+    (https://spec.modelcontextprotocol.io/specification/2024-11-05/basic/transports/#http-with-sse)
+    for details.
+    """
+
+    def __init__(
+        self,
+        params: MCPServerSseParams,
+        cache_tools_list: bool = False,
+        name: str | None = None,
+    ):
+        """Create a new MCP server based on the HTTP with SSE transport.
 
         Args:
-            server_name: Name to identify this server connection
-            url: URL of the SSE server
-            headers: HTTP headers to send to the SSE endpoint
-            timeout: HTTP timeout
-            sse_read_timeout: SSE read timeout
+            params: The params that configure the server. This includes the URL of the server,
+                the headers to send to the server, the timeout for the HTTP request, and the
+                timeout for the SSE connection.
+
+            cache_tools_list: Whether to cache the tools list. If `True`, the tools list will be
+                cached and only fetched from the server once. If `False`, the tools list will be
+                fetched from the server on each call to `list_tools()`. The cache can be
+                invalidated by calling `invalidate_tools_cache()`. You should set this to `True`
+                if you know the server will not change its tools list, because it can drastically
+                improve latency (by avoiding a round-trip to the server every time).
+
+            name: A readable name for the server. If not provided, we'll create one from the
+                URL.
         """
-        # Create and store the connection
-        sse_transport = await self.exit_stack.enter_async_context(
-            sse_client(url, headers, timeout, sse_read_timeout)
-        )
-        read, write = sse_transport
-        session = cast(
-            ClientSession,
-            await self.exit_stack.enter_async_context(
-                ClientSession(read, write)
+        super().__init__(cache_tools_list)
+
+        self.params = params
+        self._name = name or f"sse: {self.params['url']}"
+
+    def create_streams(
+        self,
+    ) -> AbstractAsyncContextManager[
+        tuple[
+            MemoryObjectReceiveStream[JSONRPCMessage | Exception],
+            MemoryObjectSendStream[JSONRPCMessage],
+        ]
+    ]:
+        """Create the streams for the server."""
+        return sse_client(
+            url=self.params["url"],
+            headers=self.params.get("headers", None),
+            timeout=self.params.get("timeout", 5),
+            sse_read_timeout=self.params.get(
+                "sse_read_timeout", 60 * 5
             ),
         )
 
-        await self._initialize_session_and_load_tools(
-            server_name, session
-        )
-
-    def get_tools(self) -> list[Callable]:
-        """Get a list of all tools from all connected servers."""
-        all_tools: list[Callable] = []
-        for server_tools in self.server_name_to_tools.values():
-            all_tools.extend(server_tools)
-        return all_tools
-
-    async def get_prompt(
-        self,
-        server_name: str,
-        prompt_name: str,
-        arguments: Optional[dict[str, Any]] = None,
-    ) -> List[str]:
-        """Get a prompt from a given MCP server."""
-        session = self.sessions[server_name]
-        return await load_mcp_prompt(session, prompt_name, arguments)
-
-    async def __aenter__(self) -> "MultiServerMCPClient":
-        try:
-            connections = self.connections or {}
-            for server_name, connection in connections.items():
-                connection_dict = connection.copy()
-                transport = connection_dict.pop("transport")
-                if transport == "stdio":
-                    await self.connect_to_server_via_stdio(
-                        server_name, **connection_dict
-                    )
-                elif transport == "sse":
-                    await self.connect_to_server_via_sse(
-                        server_name, **connection_dict
-                    )
-                else:
-                    raise ValueError(
-                        f"Unsupported transport: {transport}. Must be 'stdio' or 'sse'"
-                    )
-            return self
-        except Exception:
-            await self.exit_stack.aclose()
-            raise
-
-    async def __aexit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        await self.exit_stack.aclose()
+    @property
+    def name(self) -> str:
+        """A readable name for the server."""
+        return self._name
 
 
-# #!/usr/bin/env python3
-# import asyncio
-# import os
-# import json
-# from typing import List, Any, Callable
+def mcp_flow_get_tool_schema(
+    params: MCPServerSseParams,
+) -> MCPServer:
+    server = MCPServerSse(params, cache_tools_list=True)
 
-# # # Import our MCP client module
-# # from mcp_client import MultiServerMCPClient
+    # Connect the server
+    asyncio.run(server.connect())
 
+    # Return the server
+    output = asyncio.run(server.list_tools())
 
-# async def main():
-#     """Test script for demonstrating MCP client usage."""
-#     print("Starting MCP Client test...")
+    # Cleanup the server
+    asyncio.run(server.cleanup())
 
-#     # Create a connection to multiple MCP servers
-#     # You'll need to update these paths to match your setup
-#     async with MultiServerMCPClient(
-#         {
-#             "math": {
-#                 "transport": "stdio",
-#                 "command": "python",
-#                 "args": ["/path/to/math_server.py"],
-#                 "env": {"DEBUG": "1"},
-#             },
-#             "search": {
-#                 "transport": "sse",
-#                 "url": "http://localhost:8000/sse",
-#                 "headers": {
-#                     "Authorization": f"Bearer {os.environ.get('API_KEY', '')}"
-#                 },
-#             },
-#         }
-#     ) as client:
-#         # Get all available tools
-#         tools = client.get_tools()
-#         print(f"Found {len(tools)} tools across all servers")
-
-#         # Print tool information
-#         for i, tool in enumerate(tools):
-#             print(f"\nTool {i+1}: {tool.__name__}")
-#             print(f"  Description: {tool.__doc__}")
-#             if hasattr(tool, "schema") and tool.schema:
-#                 print(
-#                     f"  Schema: {json.dumps(tool.schema, indent=2)[:100]}..."
-#                 )
-
-#         # Example: Use a specific tool if available
-#         calculator_tool = next(
-#             (t for t in tools if t.__name__ == "calculator"), None
-#         )
-#         if calculator_tool:
-#             print("\n\nTesting calculator tool:")
-#             try:
-#                 # Call the tool as an async function
-#                 result, artifacts = await calculator_tool(
-#                     expression="2 + 2 * 3"
-#                 )
-#                 print(f"  Calculator result: {result}")
-#                 if artifacts:
-#                     print(
-#                         f"  With {len(artifacts)} additional artifacts"
-#                     )
-#             except Exception as e:
-#                 print(f"  Error using calculator: {e}")
-
-#         # Example: Load a prompt from a server
-#         try:
-#             print("\n\nTesting prompt loading:")
-#             prompt_messages = await client.get_prompt(
-#                 "math",
-#                 "calculation_introduction",
-#                 {"user_name": "Test User"},
-#             )
-#             print(
-#                 f"  Loaded prompt with {len(prompt_messages)} messages:"
-#             )
-#             for i, msg in enumerate(prompt_messages):
-#                 print(f"  Message {i+1}: {msg[:50]}...")
-#         except Exception as e:
-#             print(f"  Error loading prompt: {e}")
+    return output.model_dump()
 
 
-# async def create_custom_tool():
-#     """Example of creating a custom tool function."""
+def mcp_flow(
+    params: MCPServerSseParams,
+    function_call: dict[str, Any],
+) -> MCPServer:
+    server = MCPServerSse(params, cache_tools_list=True)
 
-#     # Define a tool function with metadata
-#     async def add_numbers(a: float, b: float) -> tuple[str, None]:
-#         """Add two numbers together."""
-#         result = a + b
-#         return f"The sum of {a} and {b} is {result}", None
+    # Connect the server
+    asyncio.run(server.connect())
 
-#     # Add metadata to the function
-#     add_numbers.__name__ = "add_numbers"
-#     add_numbers.__doc__ = (
-#         "Add two numbers together and return the result."
-#     )
-#     add_numbers.schema = {
-#         "type": "object",
-#         "properties": {
-#             "a": {"type": "number", "description": "First number"},
-#             "b": {"type": "number", "description": "Second number"},
-#         },
-#         "required": ["a", "b"],
-#     }
+    # Return the server
+    output = asyncio.run(server.call_tool(function_call))
 
-#     # Use the tool
-#     result, _ = await add_numbers(a=5, b=7)
-#     print(f"\nCustom tool result: {result}")
+    output = output.model_dump()
+
+    # Cleanup the server
+    asyncio.run(server.cleanup())
+
+    return any_to_str(output)
 
 
-# if __name__ == "__main__":
-#     # Run both examples
-#     loop = asyncio.get_event_loop()
-#     loop.run_until_complete(main())
-#     loop.run_until_complete(create_custom_tool())
+def batch_mcp_flow(
+    params: List[MCPServerSseParams],
+    function_call: List[dict[str, Any]] = [],
+) -> MCPServer:
+    output_list = []
+
+    for param in params:
+        output = mcp_flow(param, function_call)
+        output_list.append(output)
+
+    return output_list

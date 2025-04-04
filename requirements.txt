@@ -22,4 +22,4 @@ pytest>=8.1.1
 networkx
 aiofiles
 httpx
-vllm>=0.2.0
+# vllm>=0.2.0

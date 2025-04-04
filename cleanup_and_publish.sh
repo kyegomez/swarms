@@ -7,6 +7,10 @@ black . && echo "✅ Code formatting complete!" || echo "❌ Black formatting fa
 echo "🔍 Running Ruff linter..."
 ruff check . --fix && echo "✅ Linting complete!" || echo "❌ Linting failed!"
 
+
+echo "Creating llm.txt file..."
+python3 llm_txt.py && echo "✅ llm.txt file created!" || echo "❌ llm.txt file creation failed!"
+
 echo "🏗️  Building package..."
 poetry build && echo "✅ Build successful!" || echo "❌ Build failed!"
 
