@@ -19,9 +19,21 @@ load_dotenv()
 model = VLLM(model_name="meta-llama/Llama-4-Maverick-17B-128E")
 ```
 
-!!! tip "Environment Setup"
-    Make sure to set up your environment variables properly before running the code.
-    Create a `.env` file in your project root if needed.
+## Available Models
+
+| Model Name | Description | Type |
+|------------|-------------|------|
+| meta-llama/Llama-4-Maverick-17B-128E | Base model with 128 experts | Base |
+| meta-llama/Llama-4-Maverick-17B-128E-Instruct | Instruction-tuned version with 128 experts | Instruct |
+| meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8 | FP8 quantized instruction model | Instruct (Optimized) |
+| meta-llama/Llama-4-Scout-17B-16E | Base model with 16 experts | Base |
+| meta-llama/Llama-4-Scout-17B-16E-Instruct | Instruction-tuned version with 16 experts | Instruct |
+
+!!! tip "Model Selection"
+    - Choose Instruct models for better performance on instruction-following tasks
+    - FP8 models offer better memory efficiency with minimal performance impact
+    - Scout models (16E) are lighter but still powerful
+    - Maverick models (128E) offer maximum performance but require more resources
 
 ## Detailed Implementation
 
