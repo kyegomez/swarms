@@ -46,6 +46,11 @@ from swarms.structs.safe_loading import (
 )
 from swarms.telemetry.main import log_agent_data
 from swarms.tools.base_tool import BaseTool
+from swarms.tools.mcp_integration import (
+    MCPServerSseParams,
+    batch_mcp_flow,
+    mcp_flow_get_tool_schema,
+)
 from swarms.tools.tool_parse_exec import parse_and_execute_json
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.data_to_text import data_to_text
@@ -55,14 +60,9 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
+from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.str_to_dict import str_to_dict
-
-from swarms.tools.mcp_integration import (
-    batch_mcp_flow,
-    mcp_flow_get_tool_schema,
-    MCPServerSseParams,
-)
 
 
 # Utils
@@ -102,6 +102,51 @@ agent_output_type = Literal[
     "memory-dict",
 ]
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
+
+
+# Agent Exceptions
+
+
+class AgentError(Exception):
+    """Base class for all agent-related exceptions."""
+
+    pass
+
+
+class AgentInitializationError(AgentError):
+    """Exception raised when the agent fails to initialize properly. Please check the configuration and parameters."""
+
+    pass
+
+
+class AgentRunError(AgentError):
+    """Exception raised when the agent encounters an error during execution. Ensure that the task and environment are set up correctly."""
+
+    pass
+
+
+class AgentLLMError(AgentError):
+    """Exception raised when there is an issue with the language model (LLM). Verify the model's availability and compatibility."""
+
+    pass
+
+
+class AgentToolError(AgentError):
+    """Exception raised when the agent fails to utilize a tool. Check the tool's configuration and availability."""
+
+    pass
+
+
+class AgentMemoryError(AgentError):
+    """Exception raised when the agent encounters a memory-related issue. Ensure that memory resources are properly allocated and accessible."""
+
+    pass
+
+
+class AgentLLMInitializationError(AgentError):
+    """Exception raised when the LLM fails to initialize properly. Please check the configuration and parameters."""
+
+    pass
 
 
 # [FEAT][AGENT]
@@ -479,6 +524,12 @@ class Agent:
         self.no_print = no_print
         self.tools_list_dictionary = tools_list_dictionary
         self.mcp_servers = mcp_servers
+        self._cached_llm = (
+            None  # Add this line to cache the LLM instance
+        )
+        self._default_model = (
+            "gpt-4o-mini"  # Move default model name here
+        )
 
         if (
             self.agent_name is not None
@@ -599,50 +650,49 @@ class Agent:
             self.tools_list_dictionary = self.mcp_tool_handling()
 
     def llm_handling(self):
-        from swarms.utils.litellm_wrapper import LiteLLM
+        # Use cached instance if available
+        if self._cached_llm is not None:
+            return self._cached_llm
 
         if self.model_name is None:
-            # raise ValueError("Model name cannot be None")
             logger.warning(
-                "Model name is not provided, using gpt-4o-mini. You can configure any model from litellm if desired."
+                f"Model name is not provided, using {self._default_model}. You can configure any model from litellm if desired."
             )
-            self.model_name = "gpt-4o-mini"
+            self.model_name = self._default_model
 
         try:
+            # Simplify initialization logic
+            common_args = {
+                "model_name": self.model_name,
+                "temperature": self.temperature,
+                "max_tokens": self.max_tokens,
+                "system_prompt": self.system_prompt,
+            }
+
             if self.llm_args is not None:
-                llm = LiteLLM(
-                    model_name=self.model_name, **self.llm_args
+                self._cached_llm = LiteLLM(
+                    **{**common_args, **self.llm_args}
                 )
             elif self.tools_list_dictionary is not None:
-
-                length_of_tools_list_dictionary = len(
-                    self.tools_list_dictionary
-                )
-
-                if length_of_tools_list_dictionary > 0:
-
-                    parallel_tool_calls = True
-
-                llm = LiteLLM(
-                    model_name=self.model_name,
-                    temperature=self.temperature,
-                    max_tokens=self.max_tokens,
-                    system_prompt=self.system_prompt,
+                self._cached_llm = LiteLLM(
+                    **common_args,
                     tools_list_dictionary=self.tools_list_dictionary,
                     tool_choice="auto",
-                    parallel_tool_calls=parallel_tool_calls,
+                    parallel_tool_calls=len(
+                        self.tools_list_dictionary
+                    )
+                    > 1,
                 )
             else:
-                llm = LiteLLM(
-                    model_name=self.model_name,
-                    temperature=self.temperature,
-                    max_tokens=self.max_tokens,
-                    system_prompt=self.system_prompt,
-                    stream=self.streaming_on,
+                self._cached_llm = LiteLLM(
+                    **common_args, stream=self.streaming_on
                 )
-            return llm
-        except Exception as e:
-            logger.error(f"Error in llm_handling: {e}")
+
+            return self._cached_llm
+        except AgentLLMInitializationError as e:
+            logger.error(
+                f"Error in llm_handling: {e} Your current configuration is not supported. Please check the configuration and parameters."
+            )
             return None
 
     def mcp_execution_flow(self, response: any):
@@ -2336,6 +2386,8 @@ class Agent:
 
         Args:
             task (str): The task to be performed by the `llm` object.
+            img (str, optional): Path or URL to an image file.
+            audio (str, optional): Path or URL to an audio file.
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
 
@@ -2347,22 +2399,22 @@ class Agent:
             TypeError: If task is not a string or llm object is None.
             ValueError: If task is empty.
         """
-        if not isinstance(task, str):
-            raise TypeError("Task must be a string")
+        # if not isinstance(task, str):
+        #     task = any_to_str(task)
 
-        if task is None:
-            raise ValueError("Task cannot be None")
+        # if img is not None:
+        #     kwargs['img'] = img
 
-        # if self.llm is None:
-        #     raise TypeError("LLM object cannot be None")
+        # if audio is not None:
+        #     kwargs['audio'] = audio
 
         try:
-            out = self.llm.run(task, *args, **kwargs)
+            out = self.llm.run(task=task, *args, **kwargs)
 
             return out
-        except AttributeError as e:
+        except AgentLLMError as e:
             logger.error(
-                f"Error calling LLM: {e} You need a class with a run(task: str) method"
+                f"Error calling LLM: {e}. Task: {task}, Args: {args}, Kwargs: {kwargs}"
             )
             raise e
 

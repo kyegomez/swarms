@@ -200,7 +200,7 @@ stock_analysis_agents = [
     fundamental_analyst,
     sentiment_analyst,
     quant_analyst,
-    portfolio_strategist
+    portfolio_strategist,
 ]
 
 swarm = ConcurrentWorkflow(
@@ -209,4 +209,6 @@ swarm = ConcurrentWorkflow(
     agents=stock_analysis_agents,
 )
 
-swarm.run("Analyze the best etfs for gold and other similiar commodities in volatile markets")
+swarm.run(
+    "Analyze the best etfs for gold and other similiar commodities in volatile markets"
+)
