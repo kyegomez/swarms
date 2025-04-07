@@ -27,6 +27,12 @@ except ImportError:
     litellm.ssl_verify = False
 
 
+class LiteLLMException(Exception):
+    """
+    Exception for LiteLLM.
+    """
+
+
 def get_audio_base64(audio_source: str) -> str:
     """
     Convert audio from a given source to a base64 encoded string.
@@ -79,6 +85,7 @@ class LiteLLM:
         audio: str = None,
         retries: int = 3,
         verbose: bool = False,
+        caching: bool = False,
         *args,
         **kwargs,
     ):
@@ -102,6 +109,7 @@ class LiteLLM:
         self.tools_list_dictionary = tools_list_dictionary
         self.tool_choice = tool_choice
         self.parallel_tool_calls = parallel_tool_calls
+        self.caching = caching
         self.modalities = []
         self._cached_messages = {}  # Cache for prepared messages
         self.messages = []  # Initialize messages list
@@ -253,6 +261,7 @@ class LiteLLM:
                 "stream": self.stream,
                 "temperature": self.temperature,
                 "max_tokens": self.max_tokens,
+                "caching": self.caching,
                 **kwargs,
             }
 
@@ -286,7 +295,7 @@ class LiteLLM:
             response = completion(**completion_params)
             return response.choices[0].message.content
 
-        except Exception as error:
+        except LiteLLMException as error:
             logger.error(f"Error in LiteLLM run: {str(error)}")
             if "rate_limit" in str(error).lower():
                 logger.warning(

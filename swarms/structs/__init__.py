@@ -2,7 +2,6 @@ from swarms.structs.agent import Agent
 from swarms.structs.agent_builder import AgentsBuilder
 from swarms.structs.agents_available import showcase_available_agents
 from swarms.structs.async_workflow import AsyncWorkflow
-from experimental.auto_swarm import AutoSwarm, AutoSwarmRouter
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.base_workflow import BaseWorkflow
