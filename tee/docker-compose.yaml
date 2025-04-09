@@ -1,0 +1,19 @@
+services:
+  swarms-agent-server:
+    image: swarms-agent-node:latest
+    platform: linux/amd64
+    volumes:
+      - /var/run/tappd.sock:/var/run/tappd.sock
+      - swarms:/app
+    restart: always
+    ports:
+      - 8000:8000
+    command: # Sample MCP Server
+      - /bin/sh
+      - -c
+      - |
+        cd /app/mcp_example
+        python mcp_test.py
+
+volumes:
+  swarms:
