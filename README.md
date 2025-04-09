@@ -163,6 +163,10 @@ For more documentation on the CLI [CLICK HERE](https://docs.swarms.world/en/late
 
 ---
 
+## TEE
+
+Head to the [TEE README](./tee/README.md) for more detailed instructions.
+
 # Usage Examples 🤖
 Here are some example scripts to get you started. For more comprehensive documentation, visit our [docs](https://docs.swarms.world/en/latest/).
 
