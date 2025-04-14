@@ -244,6 +244,7 @@ nav:
         - Auto Agent Builder: "swarms/structs/auto_agent_builder.md"
         - Various Execution Methods: "swarms/structs/various_execution_methods.md"
         - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
+        - Deep Research Swarm: "swarms/structs/deep_research_swarm.md"
         - Workflows:
             - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
             - AsyncWorkflow: "swarms/structs/async_workflow.md"
