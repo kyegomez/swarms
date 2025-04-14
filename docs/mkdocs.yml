@@ -355,6 +355,7 @@ nav:
       # - CreateNow API: "swarms_cloud/create_api.md"
     - Self Hosted Swarms:
       - Deploying Swarms on Google Cloud Run: "swarms_cloud/cloud_run.md"
+      - Phala Deployment: "swarms_cloud/phala_deploy.md"
   - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"
     # - Agent Marketplace: "swarms_platform/share_discover.md"
