@@ -269,7 +269,7 @@ nav:
         - Pinecone: "swarms_memory/pinecone.md"
         - Faiss: "swarms_memory/faiss.md"
 
-    - Self Hosted Swarms:
+    - Deployment Solutions:
       - Deploying Swarms on Google Cloud Run: "swarms_cloud/cloud_run.md"
       - Phala Deployment: "swarms_cloud/phala_deploy.md"
 
