@@ -1,4 +1,4 @@
-from swarms import Agent
+from swarms.structs.agent import Agent
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
@@ -13,7 +13,7 @@ agent = Agent(
     agent_description="Personal finance advisor agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     max_loops=2,
-    model_name="groq/llama-3.3-70b-versatile",
+    model_name="gpt-4o-mini",
     dynamic_temperature_enabled=True,
     user_name="swarms_corp",
     retry_attempts=3,
@@ -27,8 +27,6 @@ agent = Agent(
     role="director",
 )
 
-print(
-    agent.run(
-        "Conduct an analysis of the best real undervalued ETFs. Think for 2 loops internally"
-    )
+agent.run(
+    "Conduct an analysis of the best real undervalued ETFs. Think for 2 loops internally"
 )

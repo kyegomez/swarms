@@ -46,11 +46,12 @@ from swarms.structs.safe_loading import (
 )
 from swarms.telemetry.main import log_agent_data
 from swarms.tools.base_tool import BaseTool
-from swarms.tools.mcp_integration import (
-    MCPServerSseParams,
-    batch_mcp_flow,
-    mcp_flow_get_tool_schema,
-)
+
+# from swarms.tools.mcp_integration import (
+#     MCPServerSseParams,
+#     batch_mcp_flow,
+#     mcp_flow_get_tool_schema,
+# )
 from swarms.tools.tool_parse_exec import parse_and_execute_json
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.data_to_text import data_to_text
@@ -62,7 +63,6 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.pdf_to_text import pdf_to_text
-from swarms.utils.str_to_dict import str_to_dict
 
 
 # Utils
@@ -403,7 +403,7 @@ class Agent:
         role: agent_roles = "worker",
         no_print: bool = False,
         tools_list_dictionary: Optional[List[Dict[str, Any]]] = None,
-        mcp_servers: List[MCPServerSseParams] = [],
+        # mcp_servers: List[MCPServerSseParams] = [],
         *args,
         **kwargs,
     ):
@@ -523,7 +523,7 @@ class Agent:
         self.role = role
         self.no_print = no_print
         self.tools_list_dictionary = tools_list_dictionary
-        self.mcp_servers = mcp_servers
+        # self.mcp_servers = mcp_servers
         self._cached_llm = (
             None  # Add this line to cache the LLM instance
         )
@@ -643,11 +643,11 @@ class Agent:
         if self.llm is None:
             self.llm = self.llm_handling()
 
-        if (
-            self.tools_list_dictionary is None
-            and self.mcp_servers is not None
-        ):
-            self.tools_list_dictionary = self.mcp_tool_handling()
+        # if (
+        #     self.tools_list_dictionary is None
+        #     and self.mcp_servers is not None
+        # ):
+        #     self.tools_list_dictionary = self.mcp_tool_handling()
 
     def llm_handling(self):
         # Use cached instance if available
@@ -695,68 +695,68 @@ class Agent:
             )
             return None
 
-    def mcp_execution_flow(self, response: any):
-        """
-        Executes the MCP (Model Context Protocol) flow based on the provided response.
+    # def mcp_execution_flow(self, response: any):
+    #     """
+    #     Executes the MCP (Model Context Protocol) flow based on the provided response.
 
-        This method takes a response, converts it from a string to a dictionary format,
-        and checks for the presence of a tool name or a name in the response. If either
-        is found, it retrieves the tool name and proceeds to call the batch_mcp_flow
-        function to execute the corresponding tool actions.
+    #     This method takes a response, converts it from a string to a dictionary format,
+    #     and checks for the presence of a tool name or a name in the response. If either
+    #     is found, it retrieves the tool name and proceeds to call the batch_mcp_flow
+    #     function to execute the corresponding tool actions.
 
-        Args:
-            response (any): The response to be processed, which can be in string format
-            that represents a dictionary.
+    #     Args:
+    #         response (any): The response to be processed, which can be in string format
+    #         that represents a dictionary.
 
-        Returns:
-            The output from the batch_mcp_flow function, which contains the results of
-            the tool execution. If an error occurs during processing, it logs the error
-            and returns None.
+    #     Returns:
+    #         The output from the batch_mcp_flow function, which contains the results of
+    #         the tool execution. If an error occurs during processing, it logs the error
+    #         and returns None.
 
-        Raises:
-            Exception: Logs any exceptions that occur during the execution flow.
-        """
-        try:
-            response = str_to_dict(response)
+    #     Raises:
+    #         Exception: Logs any exceptions that occur during the execution flow.
+    #     """
+    #     try:
+    #         response = str_to_dict(response)
 
-            tool_output = batch_mcp_flow(
-                self.mcp_servers,
-                function_call=response,
-            )
+    #         tool_output = batch_mcp_flow(
+    #             self.mcp_servers,
+    #             function_call=response,
+    #         )
 
-            return tool_output
-        except Exception as e:
-            logger.error(f"Error in mcp_execution_flow: {e}")
-            return None
+    #         return tool_output
+    #     except Exception as e:
+    #         logger.error(f"Error in mcp_execution_flow: {e}")
+    #         return None
 
-    def mcp_tool_handling(self):
-        """
-        Handles the retrieval of tool schemas from the MCP servers.
+    # def mcp_tool_handling(self):
+    #     """
+    #     Handles the retrieval of tool schemas from the MCP servers.
 
-        This method iterates over the list of MCP servers, retrieves the tool schema
-        for each server using the mcp_flow_get_tool_schema function, and compiles
-        these schemas into a list. The resulting list is stored in the
-        tools_list_dictionary attribute.
+    #     This method iterates over the list of MCP servers, retrieves the tool schema
+    #     for each server using the mcp_flow_get_tool_schema function, and compiles
+    #     these schemas into a list. The resulting list is stored in the
+    #     tools_list_dictionary attribute.
 
-        Returns:
-            list: A list of tool schemas retrieved from the MCP servers. If an error
-            occurs during the retrieval process, it logs the error and returns None.
+    #     Returns:
+    #         list: A list of tool schemas retrieved from the MCP servers. If an error
+    #         occurs during the retrieval process, it logs the error and returns None.
 
-        Raises:
-            Exception: Logs any exceptions that occur during the tool handling process.
-        """
-        try:
-            self.tools_list_dictionary = []
+    #     Raises:
+    #         Exception: Logs any exceptions that occur during the tool handling process.
+    #     """
+    #     try:
+    #         self.tools_list_dictionary = []
 
-            for mcp_server in self.mcp_servers:
-                tool_schema = mcp_flow_get_tool_schema(mcp_server)
-                self.tools_list_dictionary.append(tool_schema)
+    #         for mcp_server in self.mcp_servers:
+    #             tool_schema = mcp_flow_get_tool_schema(mcp_server)
+    #             self.tools_list_dictionary.append(tool_schema)
 
-            print(self.tools_list_dictionary)
-            return self.tools_list_dictionary
-        except Exception as e:
-            logger.error(f"Error in mcp_tool_handling: {e}")
-            return None
+    #         print(self.tools_list_dictionary)
+    #         return self.tools_list_dictionary
+    #     except Exception as e:
+    #         logger.error(f"Error in mcp_tool_handling: {e}")
+    #         return None
 
     def setup_config(self):
         # The max_loops will be set dynamically if the dynamic_loop
@@ -2490,10 +2490,12 @@ class Agent:
                 **kwargs,
             )
 
-            if self.tools_list_dictionary is not None:
-                return str_to_dict(output)
-            else:
-                return output
+            return output
+
+            # if self.tools_list_dictionary is not None:
+            #     return str_to_dict(output)
+            # else:
+            #     return output
 
         except ValueError as e:
             self._handle_run_error(e)

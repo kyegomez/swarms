@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "7.6.7"
+version = "7.7.0"
 description = "Swarms - TGSC"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -77,7 +77,6 @@ numpy = "*"
 litellm = "*"
 torch = "*"
 httpx = "*"
-mcp = "*"
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"

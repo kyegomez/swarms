@@ -292,8 +292,11 @@ class LiteLLM:
                 return response.choices[0].message.content
 
             # Standard completion
-            response = completion(**completion_params)
-            return response.choices[0].message.content
+            if self.stream:
+                return completion(**completion_params)
+            else:
+                response = completion(**completion_params)
+                return response.choices[0].message.content
 
         except LiteLLMException as error:
             logger.error(f"Error in LiteLLM run: {str(error)}")
@@ -364,16 +367,18 @@ class LiteLLM:
 
             # Standard completion
             response = await acompletion(**completion_params)
-            return response.choices[0].message.content
+
+            print(response)
+            return response
 
         except Exception as error:
             logger.error(f"Error in LiteLLM arun: {str(error)}")
-            if "rate_limit" in str(error).lower():
-                logger.warning(
-                    "Rate limit hit, retrying with exponential backoff..."
-                )
-                await asyncio.sleep(2)  # Use async sleep
-                return await self.arun(task, *args, **kwargs)
+            # if "rate_limit" in str(error).lower():
+            #     logger.warning(
+            #         "Rate limit hit, retrying with exponential backoff..."
+            #     )
+            #     await asyncio.sleep(2)  # Use async sleep
+            #     return await self.arun(task, *args, **kwargs)
             raise error
 
     async def _process_batch(
