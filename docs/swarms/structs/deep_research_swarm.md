@@ -141,7 +141,7 @@
 
 ??? note "Custom Research Agent"
     ```python
-    from swarms.agents import Agent
+    from swarms import Agent
 
     custom_agent = Agent(
         agent_name="SpecializedResearcher",
