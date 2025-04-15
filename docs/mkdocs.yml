@@ -364,6 +364,9 @@ nav:
     - Swarm Platform API Keys: "swarms_platform/apikeys.md"
     - Account Management: "swarms_platform/account_management.md"
 
+  - Swarms Rust:
+    - Overview: "swarms_rs/overview.md"
+
     
     # - Prompts API: 
     #   - Add Prompts: "swarms_platform/prompts/add_prompt.md"
