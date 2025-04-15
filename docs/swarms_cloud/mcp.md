@@ -322,15 +322,11 @@ swarm_config = {
 }
 
 
-async def fetch_weather_and_resource():
+async def swarm_completion():
     """Connect to a server over SSE and fetch available swarms."""
 
     async with Client(
         transport="http://localhost:8000/sse"
-        # SSETransport(
-        #     url="http://localhost:8000/sse",
-        #     headers={"x_api_key": os.getenv("SWARMS_API_KEY"), "Content-Type": "application/json"}
-        # )
     ) as client:
         # Basic connectivity testing
         # print("Ping check:", await client.ping())
@@ -342,7 +338,7 @@ async def fetch_weather_and_resource():
 
 # Execute the function
 if __name__ == "__main__":
-    asyncio.run(fetch_weather_and_resource())
+    asyncio.run(swarm_completion())
 
 
 ```
