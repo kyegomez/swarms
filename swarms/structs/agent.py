@@ -1,3 +1,4 @@
+import concurrent.futures
 import asyncio
 import json
 import logging
@@ -525,6 +526,7 @@ class Agent:
         self.no_print = no_print
         self.tools_list_dictionary = tools_list_dictionary
         # self.mcp_servers = mcp_servers
+
         self._cached_llm = (
             None  # Add this line to cache the LLM instance
         )
@@ -559,72 +561,76 @@ class Agent:
             max_workers=executor_workers
         )
 
-        # Initialize the tool struct
-        if (
-            exists(tools)
-            or exists(list_base_models)
-            or exists(tool_schema)
-        ):
+        self.init_handling()
 
-            self.tool_struct = BaseTool(
-                tools=tools,
-                base_models=list_base_models,
-                tool_system_prompt=tool_system_prompt,
-            )
+    def init_handling(self):
+        # Define tasks as pairs of (function, condition)
+        # Each task will only run if its condition is True
+        tasks = [
+            (self.setup_config, True),  # Always run setup_config
+            (
+                self.get_docs_from_doc_folders,
+                exists(self.docs_folder),
+            ),
+            (self.handle_tool_init, True),  # Always run tool init
+            (
+                self.handle_tool_schema_ops,
+                exists(self.tool_schema)
+                or exists(self.list_base_models),
+            ),
+            (
+                self.handle_sop_ops,
+                exists(self.sop) or exists(self.sop_list),
+            ),
+        ]
 
-        # Some common configuration settings
-        threading.Thread(
-            target=self.setup_config, daemon=True
-        ).start()
+        # Filter out tasks whose conditions are False
+        filtered_tasks = [
+            task for task, condition in tasks if condition
+        ]
 
-        # If docs folder exists then get the docs from docs folder
-        if exists(self.docs_folder):
-            threading.Thread(
-                target=self.get_docs_from_doc_folders
-            ).start()
-
-        if tools is not None:
-            logger.info(
-                "Tools provided make sure the functions have documentation ++ type hints, otherwise tool execution won't be reliable."
-            )
-            # Add the tool prompt to the memory
-            self.short_memory.add(
-                role="system", content=tool_system_prompt
-            )
-
-            # Log the tools
-            logger.info(
-                f"Tools provided: Accessing {len(tools)} tools"
-            )
-
-            # Transform the tools into an openai schema
-            # self.convert_tool_into_openai_schema()
-
-            # Transform the tools into an openai schema
-            tool_dict = (
-                self.tool_struct.convert_tool_into_openai_schema()
-            )
-            self.short_memory.add(role="system", content=tool_dict)
-
-            # Now create a function calling map for every tools
-            self.function_map = {
-                tool.__name__: tool for tool in tools
+        # Execute all tasks concurrently
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=os.cpu_count() * 4
+        ) as executor:
+            # Map tasks to futures and collect results
+            results = {}
+            future_to_task = {
+                executor.submit(task): task.__name__
+                for task in filtered_tasks
             }
 
-        # If the tool schema exists or a list of base models exists then convert the tool schema into an openai schema
-        if exists(tool_schema) or exists(list_base_models):
-            threading.Thread(
-                target=self.handle_tool_schema_ops()
-            ).start()
+            # Wait for each future to complete and collect results/exceptions
+            for future in concurrent.futures.as_completed(
+                future_to_task
+            ):
+                task_name = future_to_task[future]
+                try:
+                    result = future.result()
+                    results[task_name] = result
+                    logging.info(
+                        f"Task {task_name} completed successfully"
+                    )
+                except Exception as e:
+                    results[task_name] = None
+                    logging.error(
+                        f"Task {task_name} failed with error: {e}"
+                    )
 
-        # If the sop or sop_list exists then handle the sop ops
-        if exists(self.sop) or exists(self.sop_list):
-            threading.Thread(target=self.handle_sop_ops()).start()
+        # Run sequential operations after all concurrent tasks are done
+        self.agent_output = self.agent_output_model()
+        log_agent_data(self.to_dict())
 
+        if self.llm is None:
+            self.llm = self.llm_handling()
+
+    def agent_output_model(self):
         # Many steps
-        self.agent_output = ManySteps(
-            agent_id=agent_id,
-            agent_name=agent_name,
+        id = agent_id()
+
+        return ManySteps(
+            agent_id=id,
+            agent_name=self.agent_name,
             # run_id=run_id,
             task="",
             max_loops=self.max_loops,
@@ -637,18 +643,6 @@ class Agent:
             interactive=self.interactive,
             dynamic_temperature_enabled=self.dynamic_temperature_enabled,
         )
-
-        # Telemetry Processor to log agent data
-        log_agent_data(self.to_dict())
-
-        if self.llm is None:
-            self.llm = self.llm_handling()
-
-        # if (
-        #     self.tools_list_dictionary is None
-        #     and self.mcp_servers is not None
-        # ):
-        #     self.tools_list_dictionary = self.mcp_tool_handling()
 
     def llm_handling(self):
         # Use cached instance if available
@@ -695,6 +689,48 @@ class Agent:
                 f"Error in llm_handling: {e} Your current configuration is not supported. Please check the configuration and parameters."
             )
             return None
+
+    def handle_tool_init(self):
+        # Initialize the tool struct
+        if (
+            exists(self.tools)
+            or exists(self.list_base_models)
+            or exists(self.tool_schema)
+        ):
+
+            self.tool_struct = BaseTool(
+                tools=self.tools,
+                base_models=self.list_base_models,
+                tool_system_prompt=self.tool_system_prompt,
+            )
+
+        if self.tools is not None:
+            logger.info(
+                "Tools provided make sure the functions have documentation ++ type hints, otherwise tool execution won't be reliable."
+            )
+            # Add the tool prompt to the memory
+            self.short_memory.add(
+                role="system", content=self.tool_system_prompt
+            )
+
+            # Log the tools
+            logger.info(
+                f"Tools provided: Accessing {len(self.tools)} tools"
+            )
+
+            # Transform the tools into an openai schema
+            # self.convert_tool_into_openai_schema()
+
+            # Transform the tools into an openai schema
+            tool_dict = (
+                self.tool_struct.convert_tool_into_openai_schema()
+            )
+            self.short_memory.add(role="system", content=tool_dict)
+
+            # Now create a function calling map for every tools
+            self.function_map = {
+                tool.__name__: tool for tool in self.tools
+            }
 
     # def mcp_execution_flow(self, response: any):
     #     """
@@ -956,14 +992,24 @@ class Agent:
             agent(task="What is the capital of France?", img="path/to/image.jpg", is_last=True)
         """
         try:
-            self.check_if_no_prompt_then_autogenerate(task)
+            # 1. Batch process initial setup
+            setup_tasks = [
+                lambda: self.check_if_no_prompt_then_autogenerate(
+                    task
+                ),
+                lambda: self.short_memory.add(
+                    role=self.user_name, content=task
+                ),
+                lambda: (
+                    self.plan(task) if self.plan_enabled else None
+                ),
+            ]
 
-            # Add task to memory
-            self.short_memory.add(role=self.user_name, content=task)
-
-            # Plan
-            if self.plan_enabled is True:
-                self.plan(task)
+            # Execute setup tasks concurrently
+            with ThreadPoolExecutor(
+                max_workers=len(setup_tasks)
+            ) as executor:
+                executor.map(lambda f: f(), setup_tasks)
 
             # Set the loop count
             loop_count = 0
@@ -1036,15 +1082,31 @@ class Agent:
                         # Convert to a str if the response is not a str
                         response = self.parse_llm_output(response)
 
-                        self.short_memory.add(
-                            role=self.agent_name, content=response
-                        )
+                        # self.short_memory.add(
+                        #     role=self.agent_name, content=response
+                        # )
 
-                        # Print
-                        self.pretty_print(response, loop_count)
+                        # # Print
+                        # self.pretty_print(response, loop_count)
 
-                        # Output Cleaner
-                        self.output_cleaner_op(response)
+                        # # Output Cleaner
+                        # self.output_cleaner_op(response)
+
+                        # 9. Batch memory updates and prints
+                        update_tasks = [
+                            lambda: self.short_memory.add(
+                                role=self.agent_name, content=response
+                            ),
+                            lambda: self.pretty_print(
+                                response, loop_count
+                            ),
+                            lambda: self.output_cleaner_op(response),
+                        ]
+
+                        with ThreadPoolExecutor(
+                            max_workers=len(update_tasks)
+                        ) as executor:
+                            executor.map(lambda f: f(), update_tasks)
 
                         # Check and execute tools
                         if self.tools is not None:
@@ -1121,7 +1183,7 @@ class Agent:
                     break
 
                 if self.interactive:
-                    logger.info("Interactive mode enabled.")
+                    # logger.info("Interactive mode enabled.")
                     user_input = input("You: ")
 
                     # User-defined exit command
@@ -1148,10 +1210,21 @@ class Agent:
                 if self.autosave is True:
                     self.save()
 
-            log_agent_data(self.to_dict())
+            # log_agent_data(self.to_dict())
 
-            if self.autosave is True:
-                self.save()
+            # if self.autosave is True:
+            #     self.save()
+
+            # 14. Batch final operations
+            final_tasks = [
+                lambda: log_agent_data(self.to_dict()),
+                lambda: self.save() if self.autosave else None,
+            ]
+
+            with ThreadPoolExecutor(
+                max_workers=len(final_tasks)
+            ) as executor:
+                executor.map(lambda f: f(), final_tasks)
 
             return history_output_formatter(
                 self.short_memory, type=self.output_type
@@ -1213,12 +1286,6 @@ class Agent:
                 self.run,
                 task=task,
                 img=img,
-                is_last=is_last,
-                device=device,
-                device_id=device_id,
-                all_cores=all_cores,
-                do_not_use_cluster_ops=do_not_use_cluster_ops,
-                all_gpus=all_gpus,
                 *args,
                 **kwargs,
             )
@@ -1254,12 +1321,7 @@ class Agent:
             return self.run(
                 task=task,
                 img=img,
-                is_last=is_last,
-                device=device,
-                device_id=device_id,
-                all_cores=all_cores,
-                do_not_use_cluster_ops=do_not_use_cluster_ops,
-                all_gpus=all_gpus * args,
+                *args,
                 **kwargs,
             )
         except Exception as error:

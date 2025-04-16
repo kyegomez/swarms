@@ -12,7 +12,7 @@ agent = Agent(
     agent_name="Financial-Analysis-Agent",
     agent_description="Personal finance advisor agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-    max_loops=1,
+    max_loops="auto",
     model_name="gpt-4o-mini",
     dynamic_temperature_enabled=True,
     user_name="swarms_corp",
@@ -23,7 +23,7 @@ agent = Agent(
     auto_generate_prompt=False,  # Auto generate prompt for the agent based on name, description, and system prompt, task
     max_tokens=4000,  # max output tokens
     saved_state_path="agent_00.json",
-    interactive=False,
+    interactive=True,
     role="director",
 )
 
