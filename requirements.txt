@@ -23,3 +23,4 @@ networkx
 aiofiles
 httpx
 # vllm>=0.2.0
+mkdocs-i18n>=0.4.4
