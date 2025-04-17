@@ -71,9 +71,9 @@ Swarms documentation is powered by [MkDocs](https://www.mkdocs.org/), an extensi
 - **MkDocs** and **Material for MkDocs** theme (`pip install mkdocs mkdocs-material`)
 - A GitHub account with permissions to fork and submit pull requests
 
-### 5.2 Forking the Documentation Repository
+### 5.2 Forking the Swarms Repository
 
-1. Visit: `https://github.com/kyegomez/swarms/tree/master/docs`
+1. Visit: `https://github.com/kyegomez/swarms`
 2. Click on **Fork** to create your version of the repository
 
 ### 5.3 Clone and Configure Locally
