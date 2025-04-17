@@ -1,0 +1,82 @@
+
+Multi-Agent MCP Test Environment
+Type 'exit' to quit
+
+Available commands:
+- math: <calculation> (e.g., 'math: add 5 and 3')
+- finance: <calculation> (e.g., 'finance: calculate compound interest on 1000 at 5% for 3 years')
+- Any other calculation will use the super agent
+
+
+Enter your calculation request: add 3 adn33
+╭──────────────────────────── Agent Name: Super-Calculator [Max Loops: 1] ────────────────────────────╮
+│ Super-Calculator: <litellm.litellm_core_utils.streaming_handler.CustomStreamWrapper object at       │
+│ 0x7fb7c003e020>                                                                                     │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────╯
+You: 2025-04-17 17:36:24 | INFO     | swarms.structs.agent:_run:1123 - Interactive mode enabled.
+
+
+
+
+Super Agent Response:
+--------------------------------------------------
+Calculation Result: System: : Your Name: Super-Calculator 
+
+ Your Description: Multi-capable calculation expert 
+
+ You have access to multiple calculation servers. Use them appropriately.
+
+
+Human:: add 3 adn33
+
+
+Super-Calculator: <litellm.litellm_core_utils.streaming_handler.CustomStreamWrapper object at 0x7fb7c003e020>
+
+
+User: 
+
+
+--------------------------------------------------
+
+Enter your calculation request: ╭──────────────────────────── Agent Name: Super-Calculator [Max Loops: 
+╭──────────────────────────── Agent Name: Super-Calculator [Max Loops: 1] ────────────────────────────╮
+│ Super-Calculator: <litellm.litellm_core_utils.streaming_handler.CustomStreamWrapper object at       │
+│ 0x7fb7c007d960>                                                                                     │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────╯
+2025-04-17 17:36:33 | INFO     | swarms.structs.agent:_run:1123 - Interactive mode enabled.
+You: 
+Super Agent Response:
+--------------------------------------------------
+Calculation Result: System: : Your Name: Super-Calculator 
+
+ Your Description: Multi-capable calculation expert 
+
+ You have access to multiple calculation servers. Use them appropriately.
+
+
+Human:: add 3 adn33
+
+
+Super-Calculator: <litellm.litellm_core_utils.streaming_handler.CustomStreamWrapper object at 0x7fb7c003e020>
+
+
+User: 
+
+
+Human:: 
+
+
+Super-Calculator: <litellm.litellm_core_utils.streaming_handler.CustomStreamWrapper object at 0x7fb7c007d960>
+
+
+User: 
+
+
+--------------------------------------------------
+
+Enter your calculation request: add 3 and 33
+╭──────────────────────────── Agent Name: Super-Calculator [Max Loops: 1] ────────────────────────────╮
+│ Super-Calculator: <litellm.litellm_core_utils.streaming_handler.CustomStreamWrapper object at       │
+│ 0x7fb7c007f280>                                                                                     │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────╯
+You: 2025-04-17 17:36:52 | INFO     | swarms.structs.agent:_run:1123 - Interactive mode enabled.
