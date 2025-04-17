@@ -54,7 +54,10 @@ def main():
     
     while True:
         try:
-            user_input = input("\nEnter your request: ")
+            user_input = input("\nEnter your request (or Ctrl+C to exit): ")
+        except KeyboardInterrupt:
+            print("\nExiting gracefully...")
+            break
             
             if user_input.lower() == 'exit':
                 break
