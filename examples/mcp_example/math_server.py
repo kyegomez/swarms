@@ -1,5 +1,6 @@
+
 from fastmcp import FastMCP
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 # Initialize MCP server
 mcp = FastMCP("Math-Server")
@@ -20,6 +21,14 @@ def multiply(a: int, b: int) -> int:
     except Exception as e:
         return {"error": str(e)}
 
+@mcp.tool()
+def subtract(a: int, b: int) -> int:
+    """Subtract two numbers"""
+    try:
+        return a - b
+    except Exception as e:
+        return {"error": str(e)}
+
 if __name__ == "__main__":
-    print("Starting Math Server...")
-    mcp.run(transport="sse")
+    print("Starting Math Server on port 6274...")
+    mcp.run(port=6274, transport="sse")

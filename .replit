@@ -58,3 +58,24 @@ args = "sleep 2"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python examples/mcp_example/test_integration.py"
+
+[[workflows.workflow]]
+name = "Run Multiple MCP"
+author = 13983571
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python examples/mcp_example/math_server.py & "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python examples/mcp_example/calc_server.py &"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python examples/mcp_example/test_integration.py"
