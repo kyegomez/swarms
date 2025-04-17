@@ -2,33 +2,38 @@
 from fastmcp import FastMCP
 from typing import Dict, Any
 
-# Initialize MCP server
+# Initialize MCP server for math operations
 mcp = FastMCP("Math-Server")
 
 @mcp.tool()
-def add(a: int, b: int) -> int:
-    """Add two numbers together"""
-    try:
-        return a + b
-    except Exception as e:
-        return {"error": str(e)}
+def add(a: float, b: float) -> float:
+    """Add two numbers"""
+    return a + b
 
 @mcp.tool()
-def multiply(a: int, b: int) -> int:
-    """Multiply two numbers together"""
-    try:
-        return a * b 
-    except Exception as e:
-        return {"error": str(e)}
+def subtract(a: float, b: float) -> float:
+    """Subtract b from a"""
+    return a - b
 
 @mcp.tool()
-def subtract(a: int, b: int) -> int:
-    """Subtract two numbers"""
-    try:
-        return a - b
-    except Exception as e:
-        return {"error": str(e)}
+def multiply(a: float, b: float) -> float:
+    """Multiply two numbers"""
+    return a * b
+
+@mcp.tool()
+def divide(a: float, b: float) -> float:
+    """Divide a by b"""
+    if b == 0:
+        return {"error": "Cannot divide by zero"}
+    return a / b
+
+@mcp.tool()
+def calculate_percentage(part: float, whole: float) -> float:
+    """Calculate percentage"""
+    if whole == 0:
+        return {"error": "Cannot calculate percentage with zero total"}
+    return (part / whole) * 100
 
 if __name__ == "__main__":
     print("Starting Math Server on port 6274...")
-    mcp.run(transport="sse", host="0.0.0.0", port=6274)
+    mcp.run(transport="sse")
