@@ -120,12 +120,19 @@ class MultiAgentMathSystem:
 
                 results = asyncio.run(self.process_task(user_input))
                 
-                print("\nResults:")
+                print("\n" + "="*50)
+                print("Results:")
+                print("="*50)
                 for result in results:
                     if "error" in result:
-                        print(f"\n{result['agent']} encountered an error: {result['error']}")
+                        print(f"\n[{result['agent']}]")
+                        print("-"*50)
+                        print(f"Error: {result['error']}")
                     else:
-                        print(f"\n{result['agent']}: {result['response']}")
+                        print(f"\n[{result['agent']}]")
+                        print("-"*50)
+                        print(f"{result['response']}")
+                print("\n" + "="*50)
 
             except Exception as e:
                 print(f"System error: {str(e)}")
