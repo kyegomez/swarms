@@ -44,11 +44,7 @@ class MultiAgentMathSystem:
         math_url = "http://0.0.0.0:8000"
         stock_url = "http://0.0.0.0:8001"
         self.calculator = MathAgent("Calculator", math_url)
-        self.stock_analyst = MathAgent(
-            "StockAnalyst", 
-            stock_url,
-            "Stock market analysis agent specializing in financial calculations and market analysis"
-        )
+        self.stock_analyst = MathAgent("StockAnalyst", stock_url)
 
     async def process_task(self, task: str):
         # Process with both agents
