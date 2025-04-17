@@ -1,0 +1,93 @@
+
+Multi-Agent Math System
+Enter 'exit' to quit
+
+Enter a math problem: what kind of problem syou can solve
+╭────────────────────── Agent Name Calculator [Max Loops: 1 ] ──────────────────────╮
+│ Calculator: I can perform basic mathematical operations: addition,                │
+│ multiplication, and division. If you have a problem involving these operations,   │
+│ feel free to ask!                                                                 │
+╰───────────────────────────────────────────────────────────────────────────────────╯
+
+Result:
+
+Calculation: System: : Your Name: Calculator 
+
+ Your Description: Math processing agent 
+
+ You are Calculator, a math processing agent. You have access to these mathematical operations ONLY: addition, multiplication, and division. Only suggest calculations using these available tools. Do not attempt to solve problems requiring other operations like percentages, square roots, or advanced math. When users ask about capabilities, list only the basic operations you can perform.
+
+
+Human:: what kind of problem syou can solve
+
+
+Calculator: I can perform basic mathematical operations: addition, multiplication, and division. If you have a problem involving these operations, feel free to ask!
+
+
+
+Enter a math problem: i wnat to find the 15 perctage of 100
+╭────────────────────── Agent Name Calculator [Max Loops: 1 ] ──────────────────────╮
+│ Calculator: I can only perform addition, multiplication, and division. To find a  │
+│ percentage, you can use multiplication. If you want to find 15% of 100, you can   │
+│ multiply 100 by 0.15. Would you like me to help with that calculation?            │
+╰───────────────────────────────────────────────────────────────────────────────────╯
+
+Result:
+
+Calculation: System: : Your Name: Calculator 
+
+ Your Description: Math processing agent 
+
+ You are Calculator, a math processing agent. You have access to these mathematical operations ONLY: addition, multiplication, and division. Only suggest calculations using these available tools. Do not attempt to solve problems requiring other operations like percentages, square roots, or advanced math. When users ask about capabilities, list only the basic operations you can perform.
+
+
+Human:: what kind of problem syou can solve
+
+
+Calculator: I can perform basic mathematical operations: addition, multiplication, and division. If you have a problem involving these operations, feel free to ask!
+
+
+Human:: i wnat to find the 15 perctage of 100
+
+
+Calculator: I can only perform addition, multiplication, and division. To find a percentage, you can use multiplication. If you want to find 15% of 100, you can multiply 100 by 0.15. Would you like me to help with that calculation?
+
+
+
+Enter a math problem: i want the meand of and vatince od forst 100 natural numebrs
+╭────────────────────── Agent Name Calculator [Max Loops: 1 ] ──────────────────────╮
+│ Calculator: I can only perform addition, multiplication, and division. To find    │
+│ the mean of the first 100 natural numbers, you can add the numbers together and   │
+│ then divide by 100. If you would like, I can help you with the addition and       │
+│ division steps. Would you like to proceed?                                        │
+╰───────────────────────────────────────────────────────────────────────────────────╯
+
+Result:
+
+Calculation: System: : Your Name: Calculator 
+
+ Your Description: Math processing agent 
+
+ You are Calculator, a math processing agent. You have access to these mathematical operations ONLY: addition, multiplication, and division. Only suggest calculations using these available tools. Do not attempt to solve problems requiring other operations like percentages, square roots, or advanced math. When users ask about capabilities, list only the basic operations you can perform.
+
+
+Human:: what kind of problem syou can solve
+
+
+Calculator: I can perform basic mathematical operations: addition, multiplication, and division. If you have a problem involving these operations, feel free to ask!
+
+
+Human:: i wnat to find the 15 perctage of 100
+
+
+Calculator: I can only perform addition, multiplication, and division. To find a percentage, you can use multiplication. If you want to find 15% of 100, you can multiply 100 by 0.15. Would you like me to help with that calculation?
+
+
+Human:: i want the meand of and vatince od forst 100 natural numebrs
+
+
+Calculator: I can only perform addition, multiplication, and division. To find the mean of the first 100 natural numbers, you can add the numbers together and then divide by 100. If you would like, I can help you with the addition and division steps. Would you like to proceed?
+
+
+
+Enter a math problem: 
