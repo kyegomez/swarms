@@ -66,11 +66,11 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python examples/mcp_example/math_server.py & "
+args = "python examples/mcp_example/math_server.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python examples/mcp_example/calc_server.py &"
+args = "python examples/mcp_example/calc_server.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

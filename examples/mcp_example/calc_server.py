@@ -33,4 +33,4 @@ def break_even_point(fixed_costs: float, price_per_unit: float, cost_per_unit: f
 
 if __name__ == "__main__":
     print("Starting Business Calculator Server on port 6275...")
-    mcp.run(transport="sse")
+    mcp.run(host="0.0.0.0", port=6275, transport="sse")
