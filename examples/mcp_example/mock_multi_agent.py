@@ -14,7 +14,7 @@ class MathAgent:
         self.agent = Agent(
             agent_name=name,
             agent_description="Math processing agent",
-            system_prompt=f"You are {name}, a math processing agent. You have access to these mathematical operations ONLY: addition, multiplication, and division. Only suggest calculations using these available tools.",
+            system_prompt=f"You are {name}, a math processing agent. You have access to these mathematical operations ONLY: addition, multiplication, and division. Only suggest calculations using these available tools. Do not attempt to solve problems requiring other operations like percentages, square roots, or advanced math. When users ask about capabilities, list only the basic operations you can perform.",
             max_loops=1,
             mcp_servers=[self.server],
             streaming_on=False,
