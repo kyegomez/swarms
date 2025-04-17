@@ -13,7 +13,7 @@ class MathAgent:
         
         self.agent = Agent(
             agent_name=name,
-            agent_description="Math processing agent",
+            agent_description=f"{'Calculator' if name == 'Calculator' else 'Stock Analyst'} agent specializing in {'mathematical calculations' if name == 'Calculator' else 'stock market analysis'}. For Calculator: use add, multiply, divide operations. For Stock Analyst: use moving averages and percentage change calculations.",
             system_prompt=f"You are {name}, a math processing agent. You have access to these mathematical operations ONLY: addition, multiplication, and division. Only suggest calculations using these available tools. Do not attempt to solve problems requiring other operations like percentages, square roots, or advanced math. When users ask about capabilities, list only the basic operations you can perform.",
             max_loops=1,
             mcp_servers=[self.server],
@@ -75,12 +75,12 @@ class MultiAgentMathSystem:
 
                 results = asyncio.run(self.process_task(user_input))
                 
-                print("\nResult:")
-                result = results[0]  # We now only have one result
-                if "error" in result:
-                    print(f"\nCalculator encountered an error: {result['error']}")
-                else:
-                    print(f"\nCalculation: {result['response']}")
+                print("\nResults:")
+                for result in results:
+                    if "error" in result:
+                        print(f"\n{result['agent']} encountered an error: {result['error']}")
+                    else:
+                        print(f"\n{result['agent']}: {result['response']}")
 
             except Exception as e:
                 print(f"System error: {str(e)}")

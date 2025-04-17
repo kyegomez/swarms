@@ -27,4 +27,4 @@ def calculate_percentage_change(old_value: float, new_value: float) -> float:
 
 if __name__ == "__main__":
     print("Starting Mock Stock Server on port 8001...")
-    mcp.run(transport="sse", host="0.0.0.0", port=8001)
+    mcp.run(transport="sse", port=8001)
