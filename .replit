@@ -82,3 +82,12 @@ args = "sleep 2"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python examples/mcp_example/mock_multi_agent.py"
+
+[[workflows.workflow]]
+name = "Run Tests"
+author = 13983571
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m unittest tests/test_basic_example.py -v"
