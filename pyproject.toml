@@ -78,6 +78,7 @@ litellm = "*"
 torch = "*"
 httpx = "*"
 langchain-openai = "^0.3.14"
+fastmcp = "^2.2.0"
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"
