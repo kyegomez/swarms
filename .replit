@@ -65,7 +65,15 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python examples/mcp_example/mock_math_server.py & "
+args = "python examples/mcp_example/mock_stock_server.py &"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python examples/mcp_example/mock_math_server.py &"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

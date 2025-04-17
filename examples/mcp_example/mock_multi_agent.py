@@ -41,12 +41,22 @@ class MathAgent:
 
 class MultiAgentMathSystem:
     def __init__(self):
-        base_url = "http://0.0.0.0:8000"
-        self.calculator = MathAgent("Calculator", base_url)
+        math_url = "http://0.0.0.0:8000"
+        stock_url = "http://0.0.0.0:8001"
+        self.calculator = MathAgent("Calculator", math_url)
+        self.stock_analyst = MathAgent(
+            "StockAnalyst", 
+            stock_url,
+            "Stock market analysis agent specializing in financial calculations and market analysis"
+        )
 
     async def process_task(self, task: str):
-        result = await self.calculator.process(task)
-        return [result]  # Keep list format for compatibility
+        # Process with both agents
+        results = await asyncio.gather(
+            self.calculator.process(task),
+            self.stock_analyst.process(task)
+        )
+        return results
 
     def run_interactive(self):
         print("\nMulti-Agent Math System")
