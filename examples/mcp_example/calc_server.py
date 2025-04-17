@@ -1,36 +1,33 @@
 
 from fastmcp import FastMCP
-from typing import Dict, Any
+from litellm import LiteLLM
+import logging
 
-# Initialize MCP server for business calculations
+# Configure logging
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger(__name__)
+
+# Initialize MCP server for financial calculations
 mcp = FastMCP("Calc-Server")
 
-@mcp.tool()
-def profit_margin(revenue: float, cost: float) -> Dict[str, Any]:
-    """Calculate profit margin from revenue and cost"""
+@mcp.tool(name="compound_interest", description="Calculate compound interest")
+def compound_interest(principal: float, rate: float, time: float) -> float:
     try:
-        profit = revenue - cost
-        margin = (profit / revenue) * 100
-        return {
-            "profit": profit,
-            "margin_percentage": margin,
-            "summary": f"On revenue of ${revenue:.2f} and costs of ${cost:.2f}, profit is ${profit:.2f} with a margin of {margin:.1f}%"
-        }
+        result = principal * (1 + rate/100) ** time
+        return round(result, 2)
     except Exception as e:
-        return {"error": str(e)}
+        logger.error(f"Error calculating compound interest: {e}")
+        raise
 
-@mcp.tool()
-def break_even_point(fixed_costs: float, price_per_unit: float, cost_per_unit: float) -> Dict[str, Any]:
-    """Calculate break-even point"""
+@mcp.tool(name="percentage", description="Calculate percentage")
+def percentage(value: float, percent: float) -> float:
     try:
-        bep = fixed_costs / (price_per_unit - cost_per_unit)
-        return {
-            "break_even_units": bep,
-            "summary": f"You need to sell {bep:.0f} units to break even"
-        }
+        return (value * percent) / 100
     except Exception as e:
-        return {"error": str(e)}
+        logger.error(f"Error calculating percentage: {e}")
+        raise
 
 if __name__ == "__main__":
-    print("Starting Business Calculator Server on port 6275...")
-    mcp.run(transport="sse", transport_kwargs={"host": "0.0.0.0", "port": 6275})
+    print("Starting Calculation Server on port 6275...")
+    llm = LiteLLM()
+    mcp.run(transport="sse", host="0.0.0.0", port=6275)
