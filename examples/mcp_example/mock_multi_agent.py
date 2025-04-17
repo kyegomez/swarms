@@ -40,14 +40,44 @@ class MathAgent:
                         "response": "I can analyze stock data using moving averages and calculate percentage changes. For example: 'calculate moving average of [10,20,30,40,50] over 3 periods'"
                     }
             
-            # Check if input is math-related
-            math_keywords = ['add', 'plus', '+', 'multiply', 'times', '*', 'x', 'divide', '/', 'by']
-            if not any(keyword in task.lower() for keyword in math_keywords):
-                return {
-                    "agent": self.agent.agent_name,
-                    "task": task,
-                    "response": "Please provide a mathematical operation (add, multiply, or divide)"
-                }
+            # Check if input is stock-related (for StockAnalyst)
+            if self.agent.agent_name == "StockAnalyst" and "moving average" in task.lower():
+                try:
+                    import re
+                    # Extract list of numbers and period
+                    numbers = re.findall(r'\[([\d,\s]+)\]', task)
+                    period = re.findall(r'over\s+(\d+)\s+periods', task)
+                    
+                    if numbers and period:
+                        numbers = [float(n) for n in numbers[0].split(',')]
+                        period = int(period[0])
+                        if len(numbers) >= period:
+                            # Calculate moving average
+                            averages = []
+                            for i in range(len(numbers) - period + 1):
+                                avg = sum(numbers[i:i+period]) / period
+                                averages.append(round(avg, 2))
+                            return {
+                                "agent": self.agent.agent_name,
+                                "task": task,
+                                "response": f"Moving averages: {averages}"
+                            }
+                except Exception as e:
+                    return {
+                        "agent": self.agent.agent_name,
+                        "task": task,
+                        "error": f"Error calculating moving average: {str(e)}"
+                    }
+            
+            # Check if input is math-related (for Calculator)
+            if self.agent.agent_name == "Calculator":
+                math_keywords = ['add', 'plus', '+', 'multiply', 'times', '*', 'x', 'divide', '/', 'by']
+                if not any(keyword in task.lower() for keyword in math_keywords):
+                    return {
+                        "agent": self.agent.agent_name,
+                        "task": task,
+                        "response": "Please provide a mathematical operation (add, multiply, or divide)"
+                    }
             
             response = await self.agent.arun(task)
             return {
