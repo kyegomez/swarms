@@ -1,4 +1,3 @@
-
 from swarms import Agent
 from swarms.tools.mcp_integration import MCPServerSseParams
 from swarms.prompts.finance_agent_sys_prompt import FINANCIAL_AGENT_SYS_PROMPT
@@ -37,7 +36,8 @@ finance_agent = Agent(
     max_loops=1,
     mcp_servers=[calc_server],
     interactive=True,
-    streaming_on=True
+    streaming_on=True,
+    model_name="gpt-4o-mini"
 )
 
 # Multi-server agent with access to all operations
@@ -48,7 +48,8 @@ super_agent = Agent(
     max_loops=1,
     mcp_servers=[math_server, calc_server],
     interactive=True,
-    streaming_on=True
+    streaming_on=True,
+    model_name="gpt-4o-mini"
 )
 
 def main():
@@ -58,7 +59,7 @@ def main():
     while True:
         try:
             user_input = input("\nEnter your calculation request: ")
-            
+
             if user_input.lower() == 'exit':
                 break
 
