@@ -66,5 +66,5 @@ def divide(a: float, b: float) -> float:
 
 if __name__ == "__main__":
     print("Starting Math Server on port 6274...")
-    llm = LiteLLM()  # This will use the default model
-    mcp.run(transport="sse", host="0.0.0.0", port=6274)
+    llm = LiteLLM(model_name="gpt-4", temperature=0.3)
+    mcp.run(transport="sse", port=6274)
