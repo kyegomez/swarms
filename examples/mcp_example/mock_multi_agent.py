@@ -14,7 +14,7 @@ class MathAgent:
         self.agent = Agent(
             agent_name=name,
             agent_description="Math processing agent",
-            system_prompt=f"You are {name}, a math processing agent. Use the provided tools to solve math problems.",
+            system_prompt=f"You are {name}, a math processing agent. You have access to these mathematical operations ONLY: addition, multiplication, and division. Only suggest calculations using these available tools.",
             max_loops=1,
             mcp_servers=[self.server],
             streaming_on=False,
