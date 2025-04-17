@@ -52,9 +52,20 @@ super_agent = Agent(
     model_name="gpt-4o-mini"
 )
 
+def format_agent_output(agent_name: str, output: str) -> str:
+    return f"""
+╭─── {agent_name} Response ───╮
+{output}
+╰───────────────────────────╯
+"""
+
 def main():
     print("\nMulti-Agent MCP Test Environment")
     print("Type 'exit' to quit\n")
+    print("Available commands:")
+    print("- math: <calculation> (e.g., 'math: add 5 and 3')")
+    print("- finance: <calculation> (e.g., 'finance: calculate compound interest on 1000 at 5% for 3 years')")
+    print("- Any other calculation will use the super agent\n")
 
     while True:
         try:
@@ -66,13 +77,22 @@ def main():
             # Route request to appropriate agent based on keywords
             if 'finance' in user_input.lower():
                 response = finance_agent.run(user_input)
-                print(f"\nFinance Agent Response: {response}")
+                print("\nFinance Agent Response:")
+                print("-" * 50)
+                print(f"Response: {response}")
+                print("-" * 50)
             elif 'math' in user_input.lower():
                 response = math_agent.run(user_input)
-                print(f"\nMath Agent Response: {response}")
+                print("\nMath Agent Response:")
+                print("-" * 50) 
+                print(f"Response: {response}")
+                print("-" * 50)
             else:
                 response = super_agent.run(user_input)
-                print(f"\nSuper Agent Response: {response}")
+                print("\nSuper Agent Response:")
+                print("-" * 50)
+                print(f"Response: {response}")
+                print("-" * 50)
 
         except KeyboardInterrupt:
             print("\nExiting gracefully...")
