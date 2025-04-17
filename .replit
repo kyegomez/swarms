@@ -4,6 +4,7 @@ modules = ["python-3.10", "bash"]
 channel = "stable-24_05"
 
 [workflows]
+runButton = "Run Interactive Agents"
 
 [[workflows.workflow]]
 name = "Run MCP Tests"
@@ -13,3 +14,12 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python -m pytest tests/tools/test_mcp_integration.py -v"
+
+[[workflows.workflow]]
+name = "Run Interactive Agents"
+author = 13983571
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m pytest tests/tools/test_mcp_integration.py::test_interactive_multi_agent_mcp -s"
