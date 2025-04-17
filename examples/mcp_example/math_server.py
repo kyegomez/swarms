@@ -1,42 +1,32 @@
-import asyncio
-from mcp import run
-from swarms.utils.litellm_wrapper import LiteLLM
 
+from fastmcp import FastMCP
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Initialize MCP server
+mcp = FastMCP("Math-Server")
+
+@mcp.tool(name="add")
 def add(a: float, b: float) -> float:
-    """Add two numbers together."""
-    return a + b
+    return float(a) + float(b)
 
+@mcp.tool(name="subtract") 
 def subtract(a: float, b: float) -> float:
-    """Subtract b from a."""
-    return a - b
+    return float(a) - float(b)
 
+@mcp.tool(name="multiply")
 def multiply(a: float, b: float) -> float:
-    """Multiply two numbers together."""
-    return a * b
+    return float(a) * float(b)
 
+@mcp.tool(name="divide")
 def divide(a: float, b: float) -> float:
-    """Divide a by b."""
-    if b == 0:
+    if float(b) == 0:
         raise ValueError("Cannot divide by zero")
-    return a / b
-
-# Create tool registry
-tools = {
-    "add": add,
-    "subtract": subtract, 
-    "multiply": multiply,
-    "divide": divide
-}
-
-async def handle_tool(name: str, args: dict) -> dict:
-    """Handle tool execution."""
-    try:
-        result = tools[name](**args)
-        return {"result": result}
-    except Exception as e:
-        return {"error": str(e)}
+    return float(a) / float(b)
 
 if __name__ == "__main__":
     print("Starting Math Server on port 6274...")
-    llm = LiteLLM()
-    run(transport="sse", port=6274, tool_handler=handle_tool)
+    mcp.run(transport="sse", port=6274)

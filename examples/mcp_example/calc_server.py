@@ -1,31 +1,22 @@
 
-import asyncio
-from mcp import run
-from swarms.utils.litellm_wrapper import LiteLLM
+from fastmcp import FastMCP
+import logging
 
-def calculate_compound_interest(principal: float, rate: float, time: float) -> float:
-    """Calculate compound interest."""
-    return principal * (1 + rate/100) ** time - principal
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def calculate_simple_interest(principal: float, rate: float, time: float) -> float:
-    """Calculate simple interest."""
+# Initialize MCP server
+mcp = FastMCP("Calc-Server")
+
+@mcp.tool(name="compound_interest")
+def compound_interest(principal: float, rate: float, time: float) -> float:
+    return principal * (1 + rate/100) ** time
+
+@mcp.tool(name="simple_interest")
+def simple_interest(principal: float, rate: float, time: float) -> float:
     return (principal * rate * time) / 100
-
-# Create tool registry  
-tools = {
-    "calculate_compound_interest": calculate_compound_interest,
-    "calculate_simple_interest": calculate_simple_interest,
-}
-
-async def handle_tool(name: str, args: dict) -> dict:
-    """Handle tool execution."""
-    try:
-        result = tools[name](**args)
-        return {"result": result}
-    except Exception as e:
-        return {"error": str(e)}
 
 if __name__ == "__main__":
     print("Starting Calculation Server on port 6275...")
-    llm = LiteLLM()
-    run(transport="sse", port=6275, tool_handler=handle_tool)
+    mcp.run(transport="sse", port=6275)
