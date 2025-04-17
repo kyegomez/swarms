@@ -4,7 +4,7 @@
 
 The Swarms documentation serves as the primary gateway for developer and user engagement within the Swarms ecosystem. Comprehensive, clear, and consistently updated documentation accelerates adoption, reduces support requests, and helps maintain a thriving developer community. This guide offers an in-depth, actionable framework for contributing to the Swarms documentation site, covering the full lifecycle from initial setup to the implementation of our bounty-based rewards program. 
 
-This enterprise-focused guide is designed for first-time contributors, experienced engineers, and technical writers alike. It emphasizes professional standards, collaborative development practices, and incentivized participation through our structured rewards program. Contributors play a key role in helping us scale and evolve our ecosystem by improving the clarity, accessibility, and technical depth of our documentation.
+This guide is designed for first-time contributors, experienced engineers, and technical writers alike. It emphasizes professional standards, collaborative development practices, and incentivized participation through our structured rewards program. Contributors play a key role in helping us scale and evolve our ecosystem by improving the clarity, accessibility, and technical depth of our documentation.
 
 ---
 
@@ -14,9 +14,13 @@ Documentation in the Swarms ecosystem is not simply static text. It is a living,
 
 **Objectives of this Guide:**
 
+
 - Define a standardized contribution workflow for Swarms documentation.
+
 - Clarify documentation roles, responsibilities, and submission expectations.
+
 - Establish quality benchmarks, review procedures, and formatting rules.
+
 - Introduce the Swarms Documentation Bounty Program to incentivize excellence.
 
 ---
@@ -36,10 +40,15 @@ By treating documentation as a core product component, we ensure continuity, sca
 
 The Swarms ecosystem consists of multiple tightly integrated components that serve developers and enterprise clients alike:
 
+
 - **Core Documentation Repository**: The main documentation hub for all Swarms technologies [GitHub](https://github.com/kyegomez/swarms).
+
 - **Rust SDK (`swarms_rs`)**: Official documentation for the Rust implementation. [Repo](https://github.com/The-Swarm-Corporation/swarms-rs).
+
 - **Tools Documentation (`swarms_tools`)**: Guides for CLI and GUI utilities.
+
 - **Hosted API Reference**: Up-to-date REST API documentation: [Swarms API Docs](https://docs.swarms.world/en/latest/swarms_cloud/swarms_api/).
+
 - **Marketplace & Chat**: Web platforms and communication interfaces [swarms.world](https://swarms.world).
 
 All contributions funnel through the `docs/` directory in the core repo and are structured via MkDocs.
@@ -51,13 +60,17 @@ All contributions funnel through the `docs/` directory in the core repo and are 
 Swarms documentation is powered by [MkDocs](https://www.mkdocs.org/), an extensible static site generator tailored for project documentation. To contribute, you should be comfortable with:
 
 - **Markdown**: For formatting structure, code snippets, lists, and links.
+
 - **MkDocs Configuration**: `mkdocs.yml` manages structure, theme, and navigation.
+
 - **Version Control**: GitHub for branching, version tracking, and collaboration.
 
 **Recommended Tooling:**
 
 - Markdown linters to enforce syntax consistency.
+
 - Spellcheckers to ensure grammatical accuracy.
+
 - Doc generators for automated API reference extraction.
 
 ---
@@ -66,14 +79,19 @@ Swarms documentation is powered by [MkDocs](https://www.mkdocs.org/), an extensi
 
 ### 5.1 System Requirements
 
+
 - **Git** v2.30 or higher
+
 - **Node.js** and **npm** for related dependency management
+
 - **MkDocs** and **Material for MkDocs** theme (`pip install mkdocs mkdocs-material`)
+
 - A GitHub account with permissions to fork and submit pull requests
 
 ### 5.2 Forking the Swarms Repository
 
 1. Visit: `https://github.com/kyegomez/swarms`
+
 2. Click on **Fork** to create your version of the repository
 
 ### 5.3 Clone and Configure Locally
@@ -105,7 +123,9 @@ docs/
 ### 6.1 SDK/Tools Directories
 
 - **Rust SDK (`docs/swarms_rs`)**: Guides, references, and API walkthroughs for the Rust-based implementation.
+
 - **Swarms Tools (`docs/swarms_tools`)**: CLI guides, GUI usage instructions, and architecture documentation.
+
 
 Add new `.md` files in the folder corresponding to your documentation type.
 
@@ -130,22 +150,31 @@ nav:
 
 ### 7.1 Content Standards
 
+
 - **Clarity**: Explain complex ideas in simple, direct language.
+
 - **Style Consistency**: Match the tone and structure of existing docs.
+
 - **Accuracy**: Validate all technical content and code snippets.
+
 - **Accessibility**: Include alt text for images and use semantic Markdown.
 
 ### 7.2 Markdown Best Practices
 
 - Sequential heading levels (`#`, `##`, `###`)
+
 - Use fenced code blocks with language identifiers
+
 - Create readable line spacing and avoid unnecessary line breaks
+
 
 ### 7.3 File Placement Protocol
 
 Place `.md` files into the correct subdirectory:
 
+
 - **Rust SDK Docs**: `docs/swarms_rs/`
+
 - **Tooling Docs**: `docs/swarms_tools/`
 
 ---
@@ -172,6 +201,7 @@ mkdocs serve
 
 - Use prefix and description, e.g.:
   - `feature/docs-api-pagination`
+
   - `fix/docs-typo-tooling`
 
 ### 9.2 Writing Clear Commits
@@ -200,7 +230,9 @@ docs(swarms_tools): correct CLI usage example
 Every PR undergoes automated and human review:
 
 - **CI Checks**: Syntax validation, link checking, and formatting
+
 - **Manual Review**: Maintain clarity, completeness, and relevance
+
 - **Iteration**: Collaborate through feedback and finalize changes
 
 Once approved, maintainers will merge and deploy the updated documentation.
@@ -213,9 +245,13 @@ To foster continuous improvement, we offer structured rewards for eligible contr
 
 ### 11.1 Contribution Types
 
+
 - Creating comprehensive new tutorials and deep dives
+
 - Updating outdated references and examples
+
 - Fixing typos, grammar, and formatting errors
+
 - Translating existing content
 
 ### 11.2 Reward Structure
@@ -239,18 +275,26 @@ To foster continuous improvement, we offer structured rewards for eligible contr
 ## 12. Best Practices for Efficient Contribution
 
 - **Stay Updated**: Sync your fork weekly to avoid merge conflicts
+
 - **Atomic PRs**: Submit narrowly scoped changes for faster review
+
 - **Use Visuals**: Support documentation with screenshots or diagrams
+
 - **Cross-Reference**: Link to related documentation for completeness
+
 - **Version Awareness**: Specify SDK/tool versions in code examples
 
 ---
 
 ## 13. Style Guide Snapshot
 
+
 - **Voice**: Informative, concise, and respectful
+
 - **Terminology**: Use standardized terms (`Swarm`, `Swarms`) consistently
+
 - **Code**: Format snippets using language-specific linters
+
 - **Accessibility**: Include alt attributes and avoid ambiguous links
 
 ---
@@ -260,7 +304,9 @@ To foster continuous improvement, we offer structured rewards for eligible contr
 We use analytics and community input to prioritize improvements:
 
 - **Traffic Reports**: Track most/least visited pages
+
 - **Search Logs**: Detect content gaps from common search terms
+
 - **Feedback Forms**: Collect real-world user input
 
 Schedule quarterly audits to refine structure and content across all repositories.
@@ -271,9 +317,13 @@ Schedule quarterly audits to refine structure and content across all repositorie
 
 Promote your contributions via:
 
+
 - **Swarms Discord**: https://discord.gg/jM3Z6M9uMq
+
 - **Swarms Telegram**: https://t.me/swarmsgroupchat
+
 - **Swarms Twitter**: https://x.com/swarms_corp
+
 - **Startup Program Showcases**: https://www.swarms.xyz/programs/startups
 
 Active contributors are often spotlighted for leadership roles and community awards.
@@ -283,8 +333,11 @@ Active contributors are often spotlighted for leadership roles and community awa
 ## 16. Resource Index
 
 - Core GitHub Repo: https://github.com/kyegomez/swarms
+
 - Rust SDK Repo: https://github.com/The-Swarm-Corporation/swarms-rs
+
 - Swarms API Docs: https://docs.swarms.world/en/latest/swarms_cloud/swarms_api/
+
 - Marketplace: https://swarms.world
 
 Join our monthly Documentation Office Hours for real-time mentorship and Q&A.
