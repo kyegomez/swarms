@@ -3,6 +3,15 @@ from swarms.prompts.finance_agent_sys_prompt import FINANCIAL_AGENT_SYS_PROMPT
 from swarms.tools.mcp_integration import MCPServerSseParams
 import logging
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Use either Swarms API key or OpenAI API key
+api_key = os.getenv("SWARMS_API_KEY") or os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("Please set either SWARMS_API_KEY or OPENAI_API_KEY in your environment")
 
 def setup_agent(name: str, description: str, servers: list) -> Agent:
     """Setup an agent with MCP server connections"""
