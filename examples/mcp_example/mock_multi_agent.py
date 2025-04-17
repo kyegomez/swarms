@@ -42,15 +42,11 @@ class MathAgent:
 class MultiAgentMathSystem:
     def __init__(self):
         base_url = "http://0.0.0.0:8000"
-        self.agents = [
-            MathAgent("Calculator-1", base_url),
-            MathAgent("Calculator-2", base_url)
-        ]
+        self.calculator = MathAgent("Calculator", base_url)
 
     async def process_task(self, task: str):
-        tasks = [agent.process(task) for agent in self.agents]
-        results = await asyncio.gather(*tasks)
-        return results
+        result = await self.calculator.process(task)
+        return [result]  # Keep list format for compatibility
 
     def run_interactive(self):
         print("\nMulti-Agent Math System")
@@ -64,12 +60,12 @@ class MultiAgentMathSystem:
 
                 results = asyncio.run(self.process_task(user_input))
                 
-                print("\nResults:")
-                for result in results:
-                    if "error" in result:
-                        print(f"\n{result['agent']} encountered an error: {result['error']}")
-                    else:
-                        print(f"\n{result['agent']} response: {result['response']}")
+                print("\nResult:")
+                result = results[0]  # We now only have one result
+                if "error" in result:
+                    print(f"\nCalculator encountered an error: {result['error']}")
+                else:
+                    print(f"\nCalculation: {result['response']}")
 
             except Exception as e:
                 print(f"System error: {str(e)}")
