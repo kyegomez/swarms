@@ -24,4 +24,4 @@ def power(base: float, exponent: float) -> float:
 
 if __name__ == "__main__":
     print("Starting Calc Server on port 6275...")
-    mcp.run(port=6275, transport="sse")
+    mcp.run(transport="sse", transport_kwargs={"host": "0.0.0.0", "port": 6275})

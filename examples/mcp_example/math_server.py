@@ -31,4 +31,4 @@ def subtract(a: int, b: int) -> int:
 
 if __name__ == "__main__":
     print("Starting Math Server on port 6274...")
-    mcp.run(port=6274, transport="sse")
+    mcp.run(transport="sse", transport_kwargs={"host": "0.0.0.0", "port": 6274})
