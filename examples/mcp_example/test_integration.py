@@ -16,8 +16,22 @@ if not api_key:
 math_server = MCPServerSseParams(
     url="http://0.0.0.0:6274",
     headers={"Content-Type": "application/json"},
-    timeout=10.0
+    timeout=10.0,
+    sse_read_timeout=300.0  # 5 minute timeout for long-running operations
 )
+
+# Error handling wrapper
+def setup_mcp_server(server_params: MCPServerSseParams):
+    try:
+        math_agent = setup_agent(
+            "Math-Agent",
+            "Handles mathematical calculations",
+            [server_params]
+        )
+        return math_agent
+    except Exception as e:
+        logger.error(f"Failed to setup MCP server: {e}")
+        raise
 
 def setup_agent(name: str, description: str, servers: list) -> Agent:
     """Setup an agent with MCP server connections"""
