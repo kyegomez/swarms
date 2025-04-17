@@ -367,6 +367,7 @@ nav:
 
   - Swarms Rust:
     - Overview: "swarms_rs/overview.md"
+    - Agents: "swarms_rs/agents.md"
 
     
     # - Prompts API: 
