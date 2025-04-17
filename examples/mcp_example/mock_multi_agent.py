@@ -17,7 +17,10 @@ class MathAgent:
             system_prompt=f"You are {name}, a math processing agent. Use the provided tools to solve math problems.",
             max_loops=1,
             mcp_servers=[self.server],
-            streaming_on=True
+            streaming_on=False,
+            model_name="gpt-4o-mini",
+            temperature=0.1,
+            max_tokens=1000
         )
 
     async def process(self, task: str):
@@ -26,7 +29,7 @@ class MathAgent:
             return {
                 "agent": self.agent.agent_name,
                 "task": task,
-                "response": response
+                "response": str(response)
             }
         except Exception as e:
             logging.error(f"Error in {self.agent.agent_name}: {str(e)}")
