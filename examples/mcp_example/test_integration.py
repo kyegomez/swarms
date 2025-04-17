@@ -21,7 +21,8 @@ def setup_agent(name: str, description: str, servers: list) -> Agent:
         system_prompt="You are a math assistant. Process mathematical operations using the provided MCP tools.",
         max_loops=1,
         mcp_servers=servers,
-        streaming_on=False
+        streaming_on=False,
+        model_name="gpt-4o-mini" # Added model_name here
     )
 
 def main():
