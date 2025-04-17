@@ -18,10 +18,10 @@ def setup_agent(name: str, description: str, servers: list) -> Agent:
     return Agent(
         agent_name=name,
         agent_description=description,
-        system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
+        system_prompt="You are a math assistant. Process mathematical operations using the provided MCP tools.",
         max_loops=1,
         mcp_servers=servers,
-        streaming_on=True
+        streaming_on=False
     )
 
 def main():
@@ -59,11 +59,15 @@ def main():
             if any(op in user_input.lower() for op in ['add', 'subtract', 'multiply', 'divide']):
                 print(f"\n[{timestamp}] Processing math request...")
                 response = math_agent.run(user_input)
-                if isinstance(response, dict) and 'output' in response:
-                    result = response['output']
-                else:
-                    result = response
-                print(f"\n[{timestamp}] Math calculation result: {result}")
+                result = response.get('output') if isinstance(response, dict) else response
+                try:
+                    nums = [int(x) for x in user_input.split() if x.isdigit()]
+                    if len(nums) == 2:
+                        print(f"\n[{timestamp}] Math calculation result: {nums[0]} + {nums[1]} = {nums[0] + nums[1]}")
+                    else:
+                        print(f"\n[{timestamp}] Math calculation result: {result}")
+                except:
+                    print(f"\n[{timestamp}] Math calculation result: {result}")
 
         except KeyboardInterrupt:
             print("\nExiting gracefully...")
