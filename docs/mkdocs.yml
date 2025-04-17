@@ -282,6 +282,7 @@ nav:
       - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
       - Bounty Program: "corporate/bounty_program.md"
       - Contributing to Documentation: "contributors/docs.md"
+      - Contributing Tools/Custom Plugins for Swarms: "contributors/tools.md"
       - Contributing: 
         - Contributing: "swarms/contributing.md"
         - Tests: "swarms/framework/test.md"
