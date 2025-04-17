@@ -10,10 +10,15 @@ mcp = FastMCP("Math-Mock-Server")
 def add(a: int, b: int) -> int:
     """Add two numbers together"""
     try:
+        print(f"MCP Server: Processing addition request for {a} + {b}")
         time.sleep(0.1)  # Simulate processing time
-        return a + b
+        result = a + b
+        print(f"MCP Server: Returning result {result}")
+        return result
     except Exception as e:
-        return {"error": f"Error adding numbers: {str(e)}"}
+        error_msg = f"Error adding numbers: {str(e)}"
+        print(f"MCP Server: {error_msg}")
+        return {"error": error_msg}
 
 @mcp.tool()
 def multiply(a: int, b: int) -> int:
