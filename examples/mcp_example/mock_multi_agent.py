@@ -25,6 +25,15 @@ class MathAgent:
 
     async def process(self, task: str):
         try:
+            # Check if input is math-related
+            math_keywords = ['add', 'plus', '+', 'multiply', 'times', '*', 'x', 'divide', '/', 'by']
+            if not any(keyword in task.lower() for keyword in math_keywords):
+                return {
+                    "agent": self.agent.agent_name,
+                    "task": task,
+                    "response": "Please provide a mathematical operation (add, multiply, or divide)"
+                }
+            
             response = await self.agent.arun(task)
             return {
                 "agent": self.agent.agent_name,
