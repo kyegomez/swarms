@@ -58,7 +58,11 @@ def main():
 
             if any(op in user_input.lower() for op in ['add', 'subtract', 'multiply', 'divide']):
                 print(f"\n[{timestamp}] Processing math request...")
-                result = math_agent.run(user_input)
+                response = math_agent.run(user_input)
+                if isinstance(response, dict) and 'output' in response:
+                    result = response['output']
+                else:
+                    result = response
                 print(f"\n[{timestamp}] Math calculation result: {result}")
 
         except KeyboardInterrupt:
