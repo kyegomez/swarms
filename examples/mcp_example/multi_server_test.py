@@ -26,7 +26,8 @@ math_agent = Agent(
     max_loops=1,
     mcp_servers=[math_server],
     interactive=True,
-    streaming_on=True
+    streaming_on=True,
+    model_name="gpt-4o-mini"
 )
 
 finance_agent = Agent(
