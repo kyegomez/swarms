@@ -29,5 +29,5 @@ def percentage(value: float, percent: float) -> float:
 
 if __name__ == "__main__":
     print("Starting Calculation Server on port 6275...")
-    llm = LiteLLM()
+    llm = LiteLLM(system_prompt="You are a financial calculation expert.")
     mcp.run(transport="sse", host="0.0.0.0", port=6275)
