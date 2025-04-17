@@ -40,6 +40,14 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
+args = "python examples/mcp_example/math_server.py & "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
 args = "python examples/mcp_example/test_integration.py"
 
 [[workflows.workflow]]
