@@ -2,3 +2,14 @@ modules = ["python-3.10", "bash"]
 
 [nix]
 channel = "stable-24_05"
+
+[workflows]
+
+[[workflows.workflow]]
+name = "Run MCP Tests"
+author = 13983571
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m pytest tests/tools/test_mcp_integration.py -v"

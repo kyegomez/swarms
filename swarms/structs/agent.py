@@ -695,6 +695,7 @@ class Agent:
             exists(self.tools)
             or exists(self.list_base_models)
             or exists(self.tool_schema)
+            or exists(self.mcp_servers)
         ):
 
             self.tool_struct = BaseTool(
@@ -1107,11 +1108,12 @@ class Agent:
                         ) as executor:
                             executor.map(lambda f: f(), update_tasks)
 
-                        # Check and execute tools
-                        if self.tools is not None:
-                            out = self.parse_and_execute_tools(
-                                response
-                            )
+                        # Check and execute tools (including MCP)
+                        if self.tools is not None or hasattr(self, 'mcp_servers'):
+                            if self.tools:
+                                out = self.parse_and_execute_tools(response)
+                            if hasattr(self, 'mcp_servers') and self.mcp_servers:
+                                out = self.mcp_execution_flow(response)
 
                             self.short_memory.add(
                                 role="Tool Executor", content=out

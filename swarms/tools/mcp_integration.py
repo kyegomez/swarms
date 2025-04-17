@@ -363,20 +363,30 @@ def mcp_flow(
     params: MCPServerSseParams,
     function_call: dict[str, Any],
 ) -> MCPServer:
-    server = MCPServerSse(params, cache_tools_list=True)
+    try:
+        server = MCPServerSse(params, cache_tools_list=True)
+        
+        # Connect the server
+        asyncio.run(server.connect())
+        
+        # Extract tool name and args from function call
+        tool_name = function_call.get("tool_name") or function_call.get("name")
+        if not tool_name:
+            raise ValueError("No tool name provided in function call")
 
-    # Connect the server
-    asyncio.run(server.connect())
-
-    # Return the server
-    output = asyncio.run(server.call_tool(function_call))
-
-    output = output.model_dump()
-
-    # Cleanup the server
-    asyncio.run(server.cleanup())
-
-    return any_to_str(output)
+        # Call the tool
+        output = asyncio.run(server.call_tool(function_call))
+        
+        # Convert to serializable format
+        output = output.model_dump() if hasattr(output, "model_dump") else output
+        
+        # Cleanup the server
+        asyncio.run(server.cleanup())
+        
+        return any_to_str(output)
+    except Exception as e:
+        logger.error(f"Error in MCP flow: {e}")
+        raise
 
 
 def batch_mcp_flow(
