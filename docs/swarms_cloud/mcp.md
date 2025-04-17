@@ -339,6 +339,4 @@ async def swarm_completion():
 # Execute the function
 if __name__ == "__main__":
     asyncio.run(swarm_completion())
-
-
 ```
