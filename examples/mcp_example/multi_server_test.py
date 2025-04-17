@@ -88,15 +88,20 @@ def main():
                 print(f"Response: {response}")
                 print("-" * 50)
             else:
-                response = super_agent.run(user_input)
-                print("\nSuper Agent Response:")
-                print("-" * 50)
-                if isinstance(response, dict):
-                    result = response.get('result', response)
-                    print(f"Calculation Result: {result}")
-                else:
-                    print(f"Calculation Result: {response}")
-                print("-" * 50)
+                try:
+                    response = super_agent.run(user_input)
+                    print("\nSuper Agent Response:")
+                    print("-" * 50)
+                    if isinstance(response, dict):
+                        result = response.get('result', response)
+                        print(f"Result: {result}")
+                    elif hasattr(response, 'content'):
+                        print(f"Result: {response.content}")
+                    else:
+                        print(f"Result: {response}")
+                    print("-" * 50)
+                except Exception as e:
+                    print(f"Error processing calculation: {str(e)}")
 
         except KeyboardInterrupt:
             print("\nExiting gracefully...")
