@@ -1,5 +1,4 @@
 from swarms import Agent
-from swarms.prompts.finance_agent_sys_prompt import FINANCIAL_AGENT_SYS_PROMPT 
 from swarms.tools.mcp_integration import MCPServerSseParams
 import logging
 from datetime import datetime
@@ -13,6 +12,13 @@ api_key = os.getenv("SWARMS_API_KEY") or os.getenv("OPENAI_API_KEY")
 if not api_key:
     raise ValueError("Please set either SWARMS_API_KEY or OPENAI_API_KEY in your environment")
 
+# Configure MCP server connections
+math_server = MCPServerSseParams(
+    url="http://0.0.0.0:6274",
+    headers={"Content-Type": "application/json"},
+    timeout=10.0
+)
+
 def setup_agent(name: str, description: str, servers: list) -> Agent:
     """Setup an agent with MCP server connections"""
     return Agent(
@@ -22,24 +28,11 @@ def setup_agent(name: str, description: str, servers: list) -> Agent:
         max_loops=1,
         mcp_servers=servers,
         streaming_on=False,
-        model_name="gpt-4o-mini" # Added model_name here
+        model_name="gpt-4o-mini"
     )
 
 def main():
-    # Configure MCP server connections
-    math_server = MCPServerSseParams(
-        url="http://0.0.0.0:6274",
-        headers={"Content-Type": "application/json"},
-        timeout=10.0
-    )
-
-    calc_server = MCPServerSseParams(
-        url="http://0.0.0.0:6275",
-        headers={"Content-Type": "application/json"},
-        timeout=10.0
-    )
-
-    # Initialize specialized agents
+    # Initialize specialized math agent
     math_agent = setup_agent(
         "Math-Agent",
         "Handles mathematical calculations",
@@ -57,18 +50,9 @@ def main():
             if user_input.lower() == 'exit':
                 break
 
-            if any(op in user_input.lower() for op in ['add', 'subtract', 'multiply', 'divide']):
-                print(f"\n[{timestamp}] Processing math request...")
-                response = math_agent.run(user_input)
-                result = response.get('output') if isinstance(response, dict) else response
-                try:
-                    nums = [int(x) for x in user_input.split() if x.isdigit()]
-                    if len(nums) == 2:
-                        print(f"\n[{timestamp}] Math calculation result: {nums[0]} + {nums[1]} = {nums[0] + nums[1]}")
-                    else:
-                        print(f"\n[{timestamp}] Math calculation result: {result}")
-                except:
-                    print(f"\n[{timestamp}] Math calculation result: {result}")
+            print(f"\n[{timestamp}] Processing math request...")
+            response = math_agent.run(user_input)
+            print(f"\n[{timestamp}] Math calculation result: {response}")
 
         except KeyboardInterrupt:
             print("\nExiting gracefully...")
