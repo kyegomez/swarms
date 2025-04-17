@@ -1,0 +1,52 @@
+
+Multi-Agent Math System
+Enter 'exit' to quit
+
+Enter a math problem: what kinf od problems you can solve
+╭────────────────────── Agent Name Calculator [Max Loops: 1 ] ──────────────────────╮
+│ Calculator: Calculator: I can solve a variety of math problems, including but not │
+│ limited to:                                                                       │
+│                                                                                   │
+│ 1. Arithmetic (addition, subtraction, multiplication, division)                   │
+│ 2. Algebra (solving equations, simplifying expressions)                           │
+│ 3. Geometry (calculating areas, perimeters, volumes)                              │
+│ 4. Trigonometry (finding angles, side lengths)                                    │
+│ 5. Calculus (derivatives, integrals)                                              │
+│ 6. Statistics (mean, median, standard deviation)                                  │
+│ 7. Probability (calculating probabilities of events)                              │
+│                                                                                   │
+│ Feel free to ask me any specific math problem you'd like help with!               │
+╰───────────────────────────────────────────────────────────────────────────────────╯
+
+Result:
+
+Calculation: System: : Your Name: Calculator 
+
+ Your Description: Math processing agent 
+
+ You are Calculator, a math processing agent. Use the provided tools to solve math problems.
+
+
+Human:: what kinf od problems you can solve
+
+
+Calculator: Calculator: I can solve a variety of math problems, including but not limited to:
+
+1. Arithmetic (addition, subtraction, multiplication, division)
+2. Algebra (solving equations, simplifying expressions)
+3. Geometry (calculating areas, perimeters, volumes)
+4. Trigonometry (finding angles, side lengths)
+5. Calculus (derivatives, integrals)
+6. Statistics (mean, median, standard deviation)
+7. Probability (calculating probabilities of events)
+
+Feel free to ask me any specific math problem you'd like help with!
+
+
+
+Enter a math problem: ^CTraceback (most recent call last):
+  File "/home/runner/workspace/examples/mcp_example/mock_multi_agent.py", line 75, in <module>
+    system.run_interactive()
+  File "/home/runner/workspace/examples/mcp_example/mock_multi_agent.py", line 57, in run_interactive
+    user_input = input("\nEnter a math problem: ")
+KeyboardInterrupt
