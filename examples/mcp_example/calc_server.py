@@ -1,33 +1,31 @@
 
-from fastmcp import FastMCP
-from litellm import LiteLLM
-import logging
+import asyncio
+from mcp import run
+from swarms.utils.litellm_wrapper import LiteLLM
 
-# Configure logging
-logging.basicConfig(level=logging.ERROR)
-logger = logging.getLogger(__name__)
+def calculate_compound_interest(principal: float, rate: float, time: float) -> float:
+    """Calculate compound interest."""
+    return principal * (1 + rate/100) ** time - principal
 
-# Initialize MCP server for financial calculations
-mcp = FastMCP("Calc-Server")
+def calculate_simple_interest(principal: float, rate: float, time: float) -> float:
+    """Calculate simple interest."""
+    return (principal * rate * time) / 100
 
-@mcp.tool(name="compound_interest", description="Calculate compound interest")
-def compound_interest(principal: float, rate: float, time: float) -> float:
+# Create tool registry  
+tools = {
+    "calculate_compound_interest": calculate_compound_interest,
+    "calculate_simple_interest": calculate_simple_interest,
+}
+
+async def handle_tool(name: str, args: dict) -> dict:
+    """Handle tool execution."""
     try:
-        result = principal * (1 + rate/100) ** time
-        return round(result, 2)
+        result = tools[name](**args)
+        return {"result": result}
     except Exception as e:
-        logger.error(f"Error calculating compound interest: {e}")
-        raise
-
-@mcp.tool(name="percentage", description="Calculate percentage")
-def percentage(value: float, percent: float) -> float:
-    try:
-        return (value * percent) / 100
-    except Exception as e:
-        logger.error(f"Error calculating percentage: {e}")
-        raise
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     print("Starting Calculation Server on port 6275...")
-    llm = LiteLLM(model_name="gpt-4", system_prompt="You are a financial calculation expert.", temperature=0.3)
-    mcp.run(transport="sse", port=6275)
+    llm = LiteLLM()
+    run(transport="sse", port=6275, tool_handler=handle_tool)

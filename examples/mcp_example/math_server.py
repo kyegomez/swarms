@@ -1,70 +1,42 @@
-import logging
-from fastmcp import FastMCP
-from litellm import LiteLLM
+import asyncio
+from mcp import run
+from swarms.utils.litellm_wrapper import LiteLLM
 
-# Configure logging
-logging.basicConfig(level=logging.ERROR)
-logger = logging.getLogger(__name__)
-
-# Initialize MCP server for math operations
-mcp = FastMCP("Math-Server")
-
-@mcp.tool(name="add", description="Add two numbers") 
 def add(a: float, b: float) -> float:
-    try:
-        result = float(a) + float(b)
-        return result
-    except (ValueError, TypeError) as e:
-        logger.error(f"Invalid input types for addition: {e}")
-        raise ValueError("Inputs must be valid numbers")
-    except Exception as e:
-        logger.error(f"Unexpected error in add operation: {e}")
-        raise
+    """Add two numbers together."""
+    return a + b
 
-@mcp.tool(name="subtract", description="Subtract b from a")
 def subtract(a: float, b: float) -> float:
-    try:
-        result = float(a) - float(b)
-        return result
-    except (ValueError, TypeError) as e:
-        logger.error(f"Invalid input types for subtraction: {e}")
-        raise ValueError("Inputs must be valid numbers")
-    except Exception as e:
-        logger.error(f"Unexpected error in subtract operation: {e}")
-        raise
+    """Subtract b from a."""
+    return a - b
 
-@mcp.tool(name="multiply", description="Multiply two numbers together")
 def multiply(a: float, b: float) -> float:
-    try:
-        result = float(a) * float(b)
-        return result
-    except (ValueError, TypeError) as e:
-        logger.error(f"Invalid input types for multiplication: {e}")
-        raise ValueError("Inputs must be valid numbers")
-    except Exception as e:
-        logger.error(f"Unexpected error in multiply operation: {e}")
-        raise
+    """Multiply two numbers together."""
+    return a * b
 
-@mcp.tool(name="divide", description="Divide a by b")
 def divide(a: float, b: float) -> float:
+    """Divide a by b."""
+    if b == 0:
+        raise ValueError("Cannot divide by zero")
+    return a / b
+
+# Create tool registry
+tools = {
+    "add": add,
+    "subtract": subtract, 
+    "multiply": multiply,
+    "divide": divide
+}
+
+async def handle_tool(name: str, args: dict) -> dict:
+    """Handle tool execution."""
     try:
-        if float(b) == 0:
-            raise ZeroDivisionError("Cannot divide by zero")
-        result = float(a) / float(b)
-        return result
-    except (ValueError, TypeError) as e:
-        logger.error(f"Invalid input types for division: {e}")
-        raise ValueError("Inputs must be valid numbers")
-    except ZeroDivisionError as e:
-        logger.error(f"ZeroDivisionError: {e}")
-        raise
+        result = tools[name](**args)
+        return {"result": result}
     except Exception as e:
-        logger.error(f"Unexpected error in divide operation: {e}")
-        raise
-
-
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     print("Starting Math Server on port 6274...")
-    llm = LiteLLM(model_name="gpt-4", temperature=0.3)
-    mcp.run(transport="sse", port=6274)
+    llm = LiteLLM()
+    run(transport="sse", port=6274, tool_handler=handle_tool)

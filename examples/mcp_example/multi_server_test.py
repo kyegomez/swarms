@@ -89,13 +89,14 @@ def main():
                 print("-" * 50)
             else:
                 response = super_agent.run(user_input)
-                if isinstance(response, str):
-                    print("\nSuper Agent Response:")
-                    print("-" * 50)
-                    print(f"Calculation Result: {response}")
-                    print("-" * 50)
+                print("\nSuper Agent Response:")
+                print("-" * 50)
+                if isinstance(response, dict):
+                    result = response.get('result', response)
+                    print(f"Calculation Result: {result}")
                 else:
-                    print("\nError: Unexpected response format")
+                    print(f"Calculation Result: {response}")
+                print("-" * 50)
 
         except KeyboardInterrupt:
             print("\nExiting gracefully...")
