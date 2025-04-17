@@ -25,6 +25,21 @@ class MathAgent:
 
     async def process(self, task: str):
         try:
+            # Check if asking about capabilities
+            if any(word in task.lower() for word in ['what', 'how', 'can', 'capabilities', 'help']):
+                if self.agent.agent_name == "Calculator":
+                    return {
+                        "agent": self.agent.agent_name,
+                        "task": task,
+                        "response": "I can perform basic mathematical operations: addition (use '+' or 'plus'), multiplication (use '*' or 'times'), and division (use '/' or 'divide by'). For example: '5 plus 3' or '10 divide by 2'"
+                    }
+                else:  # StockAnalyst
+                    return {
+                        "agent": self.agent.agent_name,
+                        "task": task,
+                        "response": "I can analyze stock data using moving averages and calculate percentage changes. For example: 'calculate moving average of [10,20,30,40,50] over 3 periods'"
+                    }
+            
             # Check if input is math-related
             math_keywords = ['add', 'plus', '+', 'multiply', 'times', '*', 'x', 'divide', '/', 'by']
             if not any(keyword in task.lower() for keyword in math_keywords):
