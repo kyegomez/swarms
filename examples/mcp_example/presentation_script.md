@@ -26,7 +26,40 @@ python examples/mcp_example/mock_multi_agent.py
 - MCPServerSseParams for server connections
 - Automatic task routing based on agent specialization
 
-## 3. Demo Flow
+## 3. MCP Integration Details
+
+### Server Implementation:
+```python
+# Math Server Example
+from fastmcp import FastMCP
+
+mcp = FastMCP("Math-Server")
+
+@mcp.tool()
+def add(a: int, b: int) -> int:
+    """Add two numbers together"""
+    return a + b
+```
+
+### Client Integration:
+```python
+from swarms.tools.mcp_integration import MCPServerSseParams
+
+# Configure MCP server connection
+server = MCPServerSseParams(
+    url="http://0.0.0.0:8000",
+    headers={"Content-Type": "application/json"}
+)
+
+# Initialize agent with MCP capabilities
+agent = Agent(
+    agent_name="Calculator",
+    mcp_servers=[server],
+    max_loops=1
+)
+```
+
+## 4. Demo Flow
 
 1. Math Operations:
 ```
@@ -40,7 +73,7 @@ Enter a math problem: get price of AAPL
 Enter a math problem: calculate moving average of [10,20,30,40,50] over 3 periods
 ```
 
-## 4. Integration Highlights
+## 5. Integration Highlights
 
 1. Server Configuration:
 - FastMCP initialization
@@ -55,7 +88,12 @@ Enter a math problem: calculate moving average of [10,20,30,40,50] over 3 period
 3. Communication Flow:
 - Client request → Agent processing → MCP server → Response handling
 
-## 5. Code Architecture
+4. Error Handling:
+- Graceful error management
+- Automatic retry mechanisms
+- Clear error reporting
+
+## 6. Code Architecture
 
 ### Server Example (Math Server):
 ```python
@@ -71,9 +109,35 @@ calculator = MathAgent("Calculator", "http://0.0.0.0:8000")
 stock_analyst = MathAgent("StockAnalyst", "http://0.0.0.0:8001")
 ```
 
-## 6. Key Benefits
+## 7. Key Benefits
 
 1. Modular Architecture
 2. Specialized Agents
 3. Clean API Integration
 4. Scalable Design
+5. Standardized Communication Protocol
+6. Easy Tool Registration
+7. Flexible Server Implementation
+
+## 8. Testing & Validation
+
+1. Basic Connectivity:
+```python
+def test_server_connection():
+    params = {"url": "http://0.0.0.0:8000"}
+    server = MCPServerSse(params)
+    asyncio.run(server.connect())
+    assert server.session is not None
+```
+
+2. Tool Execution:
+```python
+def test_tool_execution():
+    params = {"url": "http://0.0.0.0:8000"}
+    function_call = {
+        "tool_name": "add",
+        "arguments": {"a": 5, "b": 3}
+    }
+    result = mcp_flow(params, function_call)
+    assert result is not None
+```
