@@ -49,7 +49,11 @@ class MathAgent:
                         "task":
                         task,
                         "response":
-                        "I can perform basic mathematical operations: addition (use '+' or 'plus'), multiplication (use '*' or 'times'), and division (use '/' or 'divide by'). For example: '5 plus 3' or '10 divide by 2'"
+                        "[Calculator Agent] I can perform basic mathematical operations:\n" +
+                        "- Addition (use '+' or 'plus')\n" +
+                        "- Multiplication (use '*' or 'times')\n" +
+                        "- Division (use '/' or 'divide by')\n" +
+                        "Example: '5 plus 3' or '10 divide by 2'"
                     }
                 else:  # StockAnalyst
                     return {
@@ -58,7 +62,10 @@ class MathAgent:
                         "task":
                         task,
                         "response":
-                        "I can analyze stock data using moving averages and calculate percentage changes. For example: 'calculate moving average of [10,20,30,40,50] over 3 periods'"
+                        "[Stock Analyst Agent] I can perform stock market analysis:\n" +
+                        "- Calculate moving averages\n" +
+                        "- Get current stock prices\n" +
+                        "Example: 'calculate moving average of [10,20,30,40,50] over 3 periods' or 'get price of AAPL'"
                     }
 
             # Only process if task is relevant to this agent
