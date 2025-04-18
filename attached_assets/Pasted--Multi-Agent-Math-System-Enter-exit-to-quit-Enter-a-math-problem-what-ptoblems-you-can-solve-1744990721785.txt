@@ -1,0 +1,68 @@
+
+Multi-Agent Math System
+Enter 'exit' to quit
+
+Enter a math problem: what ptoblems you can solve
+
+Results:
+==================================================
+I can perform basic mathematical operations: addition (use '+' or 'plus'), multiplication (use '*' or 'times'), and division (use '/' or 'divide by'). For example: '5 plus 3' or '10 divide by 2'
+I can analyze stock data using moving averages and calculate percentage changes. For example: 'calculate moving average of [10,20,30,40,50] over 3 periods'
+==================================================
+
+Enter a math problem: get the altes stock data
+╭───────────────────────── Agent Name StockAnalyst [Max Loops: 1 ] ─────────────────────────╮
+│ StockAnalyst: I'm unable to retrieve stock data directly. However, if you have specific   │
+│ numbers or data points related to Altes stock, I can help you perform calculations using  │
+│ addition, multiplication, or division. Please provide the data you want to analyze!       │
+╰───────────────────────────────────────────────────────────────────────────────────────────╯
+
+Results:
+==================================================
+System: : Your Name: StockAnalyst 
+
+ Your Description: Stock Analyst agent specializing in stock market analysis. For Calculator: use add, multiply, divide operations. For Stock Analyst: use moving averages and percentage change calculations. 
+
+ You are StockAnalyst, a math processing agent. You have access to these mathematical operations ONLY: addition, multiplication, and division. Only suggest calculations using these available tools. Do not attempt to solve problems requiring other operations like percentages, square roots, or advanced math. When users ask about capabilities, list only the basic operations you can perform.
+
+
+Human:: get the altes stock data
+
+
+StockAnalyst: I'm unable to retrieve stock data directly. However, if you have specific numbers or data points related to Altes stock, I can help you perform calculations using addition, multiplication, or division. Please provide the data you want to analyze!
+
+
+==================================================
+
+Enter a math problem: add 2 nmimebts 3 and 4
+╭────────────────────────── Agent Name Calculator [Max Loops: 1 ] ──────────────────────────╮
+│ Calculator: It seems there was a typo in your request. If you want to add the numbers 3   │
+│ and 4, the calculation would be:                                                          │
+│                                                                                           │
+│ 3 + 4                                                                                     │
+│                                                                                           │
+│ Would you like me to perform that calculation?                                            │
+╰───────────────────────────────────────────────────────────────────────────────────────────╯
+
+Results:
+==================================================
+System: : Your Name: Calculator 
+
+ Your Description: Calculator agent specializing in mathematical calculations. For Calculator: use add, multiply, divide operations. For Stock Analyst: use moving averages and percentage change calculations. 
+
+ You are Calculator, a math processing agent. You have access to these mathematical operations ONLY: addition, multiplication, and division. Only suggest calculations using these available tools. Do not attempt to solve problems requiring other operations like percentages, square roots, or advanced math. When users ask about capabilities, list only the basic operations you can perform.
+
+
+Human:: add 2 nmimebts 3 and 4
+
+
+Calculator: It seems there was a typo in your request. If you want to add the numbers 3 and 4, the calculation would be:
+
+3 + 4
+
+Would you like me to perform that calculation?
+
+
+==================================================
+
+Enter a math problem: 
