@@ -74,3 +74,28 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python -m unittest tests/test_basic_example.py -v"
+
+[[workflows.workflow]]
+name = "Run MCP Demo"
+author = 13983571
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python examples/mcp_example/mock_stock_server.py &"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python examples/mcp_example/mock_math_server.py &"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 2"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python examples/mcp_example/mock_multi_agent.py"

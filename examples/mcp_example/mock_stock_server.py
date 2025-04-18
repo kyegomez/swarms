@@ -36,4 +36,4 @@ def calculate_moving_average(prices: list[float], window: int) -> Dict[str, Unio
 
 if __name__ == "__main__":
     print("Starting Mock Stock Server on port 8001...")
-    mcp.run(transport="sse", transport_kwargs={"host": "0.0.0.0", "port": 8001})
+    mcp.run(transport="sse", host="0.0.0.0", port=8001)
