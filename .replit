@@ -4,7 +4,7 @@ modules = ["python-3.10", "bash"]
 channel = "stable-24_05"
 
 [workflows]
-runButton = "Run Mock MCP System"
+runButton = "Run MCP Demo"
 
 [[workflows.workflow]]
 name = "Run MCP Tests"
