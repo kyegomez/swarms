@@ -44,7 +44,7 @@ args = "python examples/mcp_example/test_integration.py"
 [[workflows.workflow]]
 name = "Run Mock MCP System"
 author = 13983571
-mode = "sequential"
+mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
