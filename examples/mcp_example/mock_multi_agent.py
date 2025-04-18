@@ -23,6 +23,15 @@ class MathAgent:
             max_tokens=1000
         )
 
+    def is_relevant_task(self, task: str) -> bool:
+        task_lower = task.lower()
+        if self.agent.agent_name == "Calculator":
+            math_keywords = ['add', 'plus', '+', 'multiply', 'times', '*', 'x', 'divide', '/', 'by']
+            return any(keyword in task_lower for keyword in math_keywords)
+        else:  # StockAnalyst
+            stock_keywords = ['moving average', 'stock', 'market', 'percentage', 'change']
+            return any(keyword in task_lower for keyword in stock_keywords)
+
     async def process(self, task: str):
         try:
             # Check if asking about capabilities
@@ -39,6 +48,14 @@ class MathAgent:
                         "task": task,
                         "response": "I can analyze stock data using moving averages and calculate percentage changes. For example: 'calculate moving average of [10,20,30,40,50] over 3 periods'"
                     }
+
+            # Only process if task is relevant to this agent
+            if not self.is_relevant_task(task):
+                return {
+                    "agent": self.agent.agent_name,
+                    "task": task,
+                    "response": None  # Indicate this agent should not handle this task
+                }
             
             # Check if input is stock-related (for StockAnalyst)
             if self.agent.agent_name == "StockAnalyst" and "moving average" in task.lower():
@@ -124,14 +141,15 @@ class MultiAgentMathSystem:
                 print("Results:")
                 print("="*50)
                 for result in results:
-                    if "error" in result:
-                        print(f"\n[{result['agent']}]")
-                        print("-"*50)
-                        print(f"Error: {result['error']}")
-                    else:
-                        print(f"\n[{result['agent']}]")
-                        print("-"*50)
-                        print(f"{result['response']}")
+                    if result["response"] is not None:  # Only show responses from relevant agents
+                        if "error" in result:
+                            print(f"\n[{result['agent']}]")
+                            print("-"*50)
+                            print(f"Error: {result['error']}")
+                        else:
+                            print(f"\n[{result['agent']}]")
+                            print("-"*50)
+                            print(f"{result['response']}")
                 print("\n" + "="*50)
 
             except Exception as e:
