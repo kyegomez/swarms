@@ -137,23 +137,31 @@ class MultiAgentMathSystem:
 
                 results = asyncio.run(self.process_task(user_input))
                 
-                print("\nResults:")
-                print("="*50)
+                responses = []
                 for result in results:
-                    if result["response"] is not None:  # Only show responses from relevant agents
+                    if result["response"] is not None:
                         if "error" in result:
-                            print(f"Error: {result['error']}")
+                            responses.append(f"Error: {result['error']}")
                         else:
-                            # Only show the actual calculation result, not the system information
                             response = result["response"]
                             if isinstance(response, str):
-                                # Remove system information and keep only the calculation part
+                                # Clean up calculation results
                                 if "=" in response:
                                     calculation = response.split("=")[-1].strip()
-                                    print(f"Result: {calculation}")
+                                    responses.append(calculation)
                                 else:
-                                    print(response)
-                print("="*50)
+                                    # Remove system/agent information
+                                    clean_response = response.split("System:")[0].strip()
+                                    clean_response = clean_response.split("Human:")[0].strip()
+                                    if clean_response:
+                                        responses.append(clean_response)
+                
+                if responses:
+                    print("\nResult:")
+                    print("-"*30)
+                    for response in responses:
+                        print(response)
+                    print("-"*30)
 
             except Exception as e:
                 print(f"System error: {str(e)}")
