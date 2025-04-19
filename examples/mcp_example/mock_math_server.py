@@ -42,4 +42,24 @@ def divide(a: int, b: int) -> float:
 
 if __name__ == "__main__":
     print("Starting Mock Math Server on port 8000...")
+    # Initialize connection params
+    server_params = MCPServerSseParams(
+        url="http://0.0.0.0:8000/mcp",
+        headers={"Content-Type": "application/json"},
+        timeout=5.0,
+        sse_read_timeout=30.0
+    )
+    
+    # Initialize the agent
+    agent = Agent(
+        agent_name="Math-Processing-Agent",
+        agent_description="Specialized agent for mathematical operations",
+        system_prompt="You are a mathematical computation specialist. Use the available tools to perform calculations.",
+        max_loops=1,
+        mcp_servers=[server_params],
+        streaming_on=True,
+        model_name="gpt-4o-mini"
+    )
+    
+    # Start the MCP server
     mcp.run(transport="sse", host="0.0.0.0", port=8000)
