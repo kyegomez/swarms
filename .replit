@@ -98,4 +98,4 @@ args = "sleep 2"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python examples/mcp_example/mock_multi_agent.py"
+args = "python examples/mcp_example/mcp_client.py"
