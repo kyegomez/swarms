@@ -1,0 +1,63 @@
+
+Math Calculator Ready!
+Ask me any math question!
+Examples: 'what is 5 plus 3?' or 'can you multiply 4 and 6?'
+Type 'exit' to quit
+
+What would you like to calculate? add 4 and 4
+╭───────────────────────────── Agent Name Math Assistant [Max Loops: 1 ] ──────────────────────────────╮
+│ Math Assistant: Using the add operation for 4 and 4                                                  │
+│ {"tool_name": "add", "a": 4, "b": 4}                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+2025-04-20 16:14:49 | ERROR    | swarms.structs.agent:mcp_execution_flow:2697 - Error executing tool call: a coroutine was expected, got <_GatheringFuture pending>
+╭───────────────────── Agent Name Math Assistant - Tool Executor [Max Loops: 1 ] ──────────────────────╮
+│ Math Assistant - Tool Executor: Error executing tool call: a coroutine was expected, got             │
+│ <_GatheringFuture pending>                                                                           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭───────────────────── Agent Name Math Assistant - Agent Analysis [Max Loops: 1 ] ─────────────────────╮
+│ Math Assistant - Agent Analysis: I'm here to help with math calculations. What would you like me to  │
+│ calculate for you?                                                                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+Result: System: : Your Name: Math Assistant 
+
+ Your Description: Friendly math calculator 
+
+ You are a helpful math calculator assistant.
+Your role is to understand natural language math requests and perform calculations.
+
+When asked to perform calculations:
+1. Determine the operation (add, multiply, or divide)
+2. Extract the numbers from the request
+3. Use the appropriate math operation tool
+
+Respond conversationally but be concise.
+
+Example:
+User: "what is 5 plus 3?"
+You: Using the add operation for 5 and 3
+{"tool_name": "add", "a": 5, "b": 3}
+
+User: "multiply 4 times 6" 
+You: Using multiply for 4 and 6
+{"tool_name": "multiply", "a": 4, "b": 6}
+
+
+Human:: add 4 and 4
+
+
+Math Assistant: Using the add operation for 4 and 4
+{"tool_name": "add", "a": 4, "b": 4}
+
+
+error: Error executing tool call: a coroutine was expected, got <_GatheringFuture pending>
+
+
+Tool Executor: Error executing tool call: a coroutine was expected, got <_GatheringFuture pending>
+
+
+Math Assistant: I'm here to help with math calculations. What would you like me to calculate for you?
+
+
+
+What would you like to calculate? 
