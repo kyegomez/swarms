@@ -26,8 +26,7 @@ def main():
         system_prompt=MATH_AGENT_PROMPT,
         max_loops=1,
         mcp_servers=[math_server],
-        streaming_on=True,
-        model_name="gpt-4o-mini"
+        streaming_on=True
     )
 
     # Initialize stock agent
@@ -37,8 +36,7 @@ def main():
         system_prompt=FINANCE_AGENT_PROMPT,
         max_loops=1,
         mcp_servers=[stock_server],
-        streaming_on=True,
-        model_name="gpt-4o-mini"
+        streaming_on=True
     )
 
     print("\nMulti-Agent System Initialized")
