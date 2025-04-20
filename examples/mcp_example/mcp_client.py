@@ -21,16 +21,13 @@ logger.add(sys.stdout,
 def get_server_params():
     """Get the MCP server connection parameters."""
     return MCPServerSseParams(
-        url="http://0.0.0.0:8000",  # Using 0.0.0.0 to be accessible
-        sse_path="/sse",  # Specify SSE endpoint
-        messages_path="/messages",  # Specify messages endpoint
+        url="http://0.0.0.0:8000",  # Use 0.0.0.0 to be accessible
         headers={
             "Content-Type": "application/json",
             "Accept": "text/event-stream"
         },
-        timeout=15.0,  # Longer timeout
-        sse_read_timeout=60.0,  # Longer read timeout
-        require_session_id=False  # Match server configuration
+        timeout=15.0,  # Longer timeout 
+        sse_read_timeout=60.0  # Longer read timeout
     )
 
 
