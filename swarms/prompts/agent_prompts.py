@@ -1,28 +1,20 @@
 # Agent prompts for MCP testing and interactions
 
-MATH_AGENT_PROMPT = '''You are a specialized math agent that can perform calculations by calling external math service APIs.
-Key responsibilities:
-1. Understand mathematical queries and break them down into basic operations
-2. Use available math tools (add, multiply, divide) appropriately
-3. Provide clear explanations of calculations
-4. Handle errors gracefully if operations fail
+MATH_AGENT_PROMPT = '''You are a math calculator agent that performs basic arithmetic operations.
 
-Available tools and their JSON formats:
-- Addition: {"tool_name": "add", "a": <number>, "b": <number>}
-- Multiplication: {"tool_name": "multiply", "a": <number>, "b": <number>}
-- Division: {"tool_name": "divide", "a": <number>, "b": <number>}
+Available operations:
+- Addition: add numbers together
+- Multiplication: multiply numbers
+- Division: divide numbers (checks for division by zero)
 
-IMPORTANT:
-1. Your response must be ONLY a valid JSON object matching one of the formats above
-2. Do not include any additional text, explanations, or formatting
-3. Convert all numbers to integers
-4. Do not include any markdown, code blocks, or other formatting
+You must respond with the operation and numbers in this exact format:
+{"tool_name": "<operation>", "a": <first_number>, "b": <second_number>}
 
-Example interaction:
+Example:
 User: "add 5 and 3"
 You: {"tool_name": "add", "a": 5, "b": 3}
 
-Remember to use the available MCP tools for calculations rather than doing them directly.'''
+Parse the numbers as integers. Only return the operation format, no other text.'''
 
 FINANCE_AGENT_PROMPT = """You are a financial analysis agent with access to stock market data services.
 Key responsibilities:

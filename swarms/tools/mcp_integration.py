@@ -20,7 +20,12 @@ from anyio.streams.memory import (
 from mcp.types import CallToolResult, JSONRPCMessage # Kept for backward compatibility, might be removed later
 
 from swarms.utils.any_to_str import any_to_str
-
+from mcp import (
+    ClientSession as OldClientSession, # Kept for backward compatibility with stdio
+    StdioServerParameters,
+    Tool as MCPTool,
+    stdio_client,
+)
 
 class MCPServer(abc.ABC):
     """Base class for Model Context Protocol servers."""
@@ -500,9 +505,3 @@ async def _batch(params: List[MCPServerSseParams], payload: dict[str, Any] | str
         return []
 
 
-from mcp import (
-    ClientSession as OldClientSession, # Kept for backward compatibility with stdio
-    StdioServerParameters,
-    Tool as MCPTool,
-    stdio_client,
-)
