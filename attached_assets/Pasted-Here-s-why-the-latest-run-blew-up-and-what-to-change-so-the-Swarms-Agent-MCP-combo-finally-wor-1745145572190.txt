@@ -1,0 +1,107 @@
+Here’s why the latest run blew up and what to change so the **Swarms Agent + MCP** combo finally works:
+
+---
+
+### 1  Fix the import that’s blowing up
+
+`mcp` exposes **ClientSession**, not **Client**.  
+Change the top‑of‑file imports in **swarms/tools/mcp_integration.py**
+
+```diff
+- from mcp import Client as ClientSession
+- from fastmcp.client.sse import sse_client        # (this package doesn’t exist)
++ from mcp import ClientSession                    # core SDK class
++ from mcp.client.sse import sse_client            # SSE transport helper
+```
+
+(See MCP quick‑start that shows `from mcp import ClientSession` citeturn3search8)
+
+---
+
+### 2  Use `typing_extensions.NotRequired` on Python ≤ 3.10
+
+Python 3.11 added `typing.NotRequired`; on 3.10 you must pull it from
+`typing_extensions`:
+
+```python
+from typing_extensions import NotRequired, TypedDict
+```
+
+You already have that line – keep it.
+
+---
+
+### 3  Let your `Agent` actually hold the server list
+
+The attribute‑error you saw (`'Agent' object has no attribute 'mcp_servers'`)
+happens because the constructor parameter was commented out.
+
+Add the param and stash it:
+
+```diff
+-class Agent:
+-    def __init__(self,
++class Agent:
++    def __init__(self,
+         ...
+-        # mcp_servers: List[MCPServerSseParams] = [],
++        mcp_servers: Optional[list[MCPServerSseParams]] = None,
+         *args, **kwargs):
+         ...
+-        # self.mcp_servers = mcp_servers
++        self.mcp_servers = mcp_servers or []
+```
+
+Now `handle_tool_init()` can safely look at `self.mcp_servers`.
+
+---
+
+### 4  Example “smoke test” with the Browserbase MCP server
+
+```python
+# examples/mcp_example/mcp_client.py
+from swarms.structs.agent import Agent
+from swarms.prompts.agent_prompts import MATH_AGENT_PROMPT
+from swarms.tools.mcp_integration import MCPServerSseParams
+
+browserbase = MCPServerSseParams(
+    url="http://127.0.0.1:6274",          # running Browserbase MCP server
+    headers={"Content-Type": "application/json"},
+)
+
+math_bot = Agent(
+    agent_name="Math‑MCP‑Bot",
+    agent_description="Performs arithmetic via MCP tools",
+    system_prompt=MATH_AGENT_PROMPT,
+    max_loops=1,
+    mcp_servers=[browserbase],            # <-- now recognised
+    output_type="final",
+)
+
+print(math_bot.run("Use the add tool to add 2 and 2"))
+```
+
+Make sure you’ve installed the SDK:
+
+```bash
+pip install "mcp>=0.3.0"  typing_extensions
+```
+
+and that the Browserbase server from the README snippet is running (or any
+other MCP SSE server).
+
+---
+
+### 5  What to do *if* you really want “fastmcp”
+
+There isn’t a published `fastmcp` Python package today (hence the
+`ModuleNotFoundError`). Stick with the official `mcp` SDK until/if the
+fast‑variant is released. When it lands the only changes you’d make are the
+two import lines in **mcp_integration.py**; the rest of the Swarms integration
+stays identical.
+
+---
+
+Apply those three code edits, reinstall dependencies, and your smoke test
+should run without import errors. If you hit the next snag, drop the new
+traceback and we’ll keep tightening the bolts.
