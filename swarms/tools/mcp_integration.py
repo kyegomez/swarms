@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from typing_extensions import NotRequired, TypedDict
 from contextlib import AbstractAsyncContextManager
-from fastmcp import Client as ClientSession
-from fastmcp.client.sse import sse_client
-from fastmcp.client.stdio import stdio_client, StdioServerParameters
+from mcp import Client as ClientSession
+from mcp.client.sse import sse_client
+from mcp.client.stdio import stdio_client, StdioServerParameters
 
 from loguru import logger
 import abc
