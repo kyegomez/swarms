@@ -79,7 +79,8 @@ torch = "*"
 httpx = "*"
 langchain-openai = "^0.3.14"
 fastmcp = {version = ">=2.0", extras = ["sse"]}
-mcp = ">=1.6.0"
+mcp = ">=0.3.0"
+typing-extensions = "^4.13.2"
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"

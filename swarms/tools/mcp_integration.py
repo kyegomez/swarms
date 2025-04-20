@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from typing_extensions import NotRequired, TypedDict
 from contextlib import AbstractAsyncContextManager
-from mcp import Client as ClientSession
+from mcp import ClientSession
 from mcp.client.sse import sse_client
 from mcp.client.stdio import stdio_client, StdioServerParameters
 
