@@ -31,26 +31,26 @@ def main():
     try:
         # Create the server parameters correctly
         logger.info("Creating MCP server parameters...")
-        mcp_server = {
-            "url": "http://0.0.0.0:8000",
-            "headers": {
+        mcp_server = MCPServerSseParams(
+            url="http://0.0.0.0:8000",
+            headers={
                 "Content-Type": "application/json",
                 "Accept": "text/event-stream"
             },
-            "timeout": 10.0,
-            "sse_read_timeout": 30.0
-        }
+            timeout=10.0,
+            sse_read_timeout=30.0
+        )
 
         # Log the server params to verify they're correct
-        logger.info(f"MCP Server URL: {mcp_server['url']}")
-        logger.info(f"MCP Headers: {mcp_server['headers']}")
+        logger.info(f"MCP Server URL: {mcp_server.url}")
+        logger.info("MCP Headers configured")
 
         # Create agent with minimal configuration
         logger.info("Creating Agent with MCP integration...")
         agent = Agent(
             agent_name="MCP Test Agent",
             system_prompt=MATH_PROMPT,
-            mcp_servers=[mcp_server],  # Pass server config as a list of dicts
+            mcp_servers=[mcp_server],  # Pass server params object
             verbose=True)
 
         print("\nAgent created successfully!")
