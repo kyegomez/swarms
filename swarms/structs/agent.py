@@ -518,7 +518,7 @@ class Agent:
         self.role = role
         self.no_print = no_print
         self.tools_list_dictionary = tools_list_dictionary
-        self.mcp_servers = mcp_servers
+        self.mcp_servers = mcp_servers or [] # Initialize mcp_servers to an empty list if None
 
         self._cached_llm = (
             None  # Add this line to cache the LLM instance
@@ -1861,16 +1861,7 @@ class Agent:
         return previous_state, f"Restored to {previous_state}"
 
     # Response Filtering
-    def add_response_filter(self, filter_word: str) -> None:
-        """
-        Add a response filter tofilter out certain words from the response
-
-        Example:
-        agent.add_response_filter("Trump")
-        agent.run("Generate a report on Trump")
-
-
-        """
+    def add_response_filter(self, filter_word: str) -> None:        """
         logger.info(f"Adding response filter: {filter_word}")
         self.reponse_filters.append(filter_word)
 
@@ -2775,3 +2766,32 @@ class Agent:
                 role="Output Cleaner",
                 content=response,
             )
+    def mcp_execution_flow(self, response: str | dict) -> str | None:
+        """
+        Detect an LLM function-call style response and proxy the call to the
+        configured MCP servers. Returns the tool output as a string so it can
+        be fed back into the conversation.
+        """
+        if not self.mcp_servers:
+            return None
+
+        try:
+            # LLM may give us a JSON string or already-parsed dict
+            if isinstance(response, str):
+                call_dict = json.loads(response)
+            else:
+                call_dict = response
+
+            if not isinstance(call_dict, dict):
+                return None            # nothing to do
+
+            if "tool_name" not in call_dict and "name" not in call_dict:
+                return None            # not a tool call
+
+            from swarms.tools.mcp_integration import batch_mcp_flow
+            out = batch_mcp_flow(self.mcp_servers, call_dict)
+            return any_to_str(out)
+
+        except Exception as e:
+            logger.error(f"MCP flow failed: {e}")
+            return f"[MCP-error] {e}"
