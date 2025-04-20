@@ -370,6 +370,9 @@ nav:
     - Overview: "swarms_rs/overview.md"
     - Agents: "swarms_rs/agents.md"
 
+  - Governance:
+    - Tokenomics: "web3/token.md"
+
     
     # - Prompts API: 
     #   - Add Prompts: "swarms_platform/prompts/add_prompt.md"
