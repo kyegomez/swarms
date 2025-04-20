@@ -844,7 +844,7 @@ class Agent:
             else:
                                 # Use a default temperature
                 self.llm.temperature = 0.5
-        except Exception as error:
+                except Exception as error:
             logger.error(
                 f"Error dynamically changing temperature: {error}"
             )
@@ -1932,14 +1932,13 @@ class Agent:
             raise error
 
     def add_tool(self, tool: Callable):
-        """Add a single tool to the agent's tools list."""
+        """Add a single tool to the agent's tools list.
 
         Args:
             tool (Callable): The tool function to add
 
         Returns:
-            The result of appending the tool to the tools list
-        """
+            The result of appending the tool to the tools list"""
         logger.info(f"Adding tool: {tool.__name__}")
         return self.tools.append(tool)
 
