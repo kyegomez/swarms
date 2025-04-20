@@ -47,6 +47,7 @@ from swarms.structs.safe_loading import (
 )
 from swarms.telemetry.main import log_agent_data
 from swarms.tools.base_tool import BaseTool
+from swarms.tools.mcp_integration import MCPServerSseParams, batch_mcp_flow, mcp_flow_get_tool_schema
 from swarms.tools.tool_parse_exec import parse_and_execute_json
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.data_to_text import data_to_text
@@ -2777,8 +2778,8 @@ class Agent:
     def mcp_execution_flow(self, payload: dict) -> str | None:
         """Forward the tool-call dict to every MCP server in self.mcp_servers"""
         try:
-            result = asyncio.run(batch_mcp_flow(self.mcp_servers, [payload]))
-            return any_to_str(result)
+            result = batch_mcp_flow(self.mcp_servers, [payload])
+            return any_to_str(result) 
         except Exception as err:
             logger.error(f"MCP flow failed: {err}")
             return f"[MCP-error] {err}"
