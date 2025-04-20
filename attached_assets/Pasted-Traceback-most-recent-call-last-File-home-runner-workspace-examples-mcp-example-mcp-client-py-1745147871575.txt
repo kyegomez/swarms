@@ -1,0 +1,47 @@
+Traceback (most recent call last):
+  File "/home/runner/workspace/examples/mcp_example/mcp_client.py", line 1, in <module>
+    from swarms import Agent
+  File "/home/runner/workspace/swarms/__init__.py", line 9, in <module>
+    from swarms.agents import *  # noqa: E402, F403
+  File "/home/runner/workspace/swarms/agents/__init__.py", line 1, in <module>
+    from swarms.agents.agent_judge import AgentJudge
+  File "/home/runner/workspace/swarms/agents/agent_judge.py", line 4, in <module>
+    from swarms.structs.agent import Agent
+  File "/home/runner/workspace/swarms/structs/__init__.py", line 1, in <module>
+    from swarms.structs.agent import Agent
+  File "/home/runner/workspace/swarms/structs/agent.py", line 1870
+    logger.info(f"Adding response filter: {filter_word}")
+IndentationError: unexpected indent
+`IndentationError: unexpected indent` means Python found a line that is indented farther than the block it lives in.  
+In `agent.py` the culprit is inside **`add_response_filter`** (around line 1870).  
+Just move the `logger.info(…)` line two spaces to the **left** (so it lines up with the first statement in the function) and, while you’re there, fix the small typo in the attribute name.
+
+```python
+# ── swarms/structs/agent.py ─────────────────────────────
+    # Response Filtering
+    def add_response_filter(self, filter_word: str) -> None:
+        """
+        Add a response filter to filter out certain words from the response.
+        """
+        logger.info(f"Adding response filter: {filter_word}")
+        # attribute is self.response_filters (an "s"), not self.reponse_filters
+        self.response_filters.append(filter_word)
+```
+
+Full diff‑style patch  (*only the three changed lines shown*):
+```diff
+@@
+-        logger.info(f"Adding response filter: {filter_word}")
+-        self.reponse_filters.append(filter_word)
++        logger.info(f"Adding response filter: {filter_word}")
++        self.response_filters.append(filter_word)
+```
+
+After you save the file:
+
+```bash
+black swarms/structs/agent.py     # optional but keeps everything well‑indented
+python -m py_compile swarms/structs/agent.py
+```
+
+Compilation should pass and the `mcp_client.py` script will start without the indentation error.
