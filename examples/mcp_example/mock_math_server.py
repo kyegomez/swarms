@@ -1,26 +1,49 @@
-
 from fastmcp import FastMCP
+from typing import Dict, Any
+import asyncio
+from loguru import logger
 
-mcp = FastMCP("Math-Mock-Server")
+# Create FastMCP instance with SSE transport
+mcp = FastMCP(
+    host="0.0.0.0",
+    port=8000,
+    require_session_id=False,
+    transport="sse"  # Explicitly specify SSE transport
+)
 
 @mcp.tool()
 def add(a: int, b: int) -> int:
-    """Add two numbers together"""
+    """Add two numbers."""
     return a + b
 
 @mcp.tool()
 def multiply(a: int, b: int) -> int:
-    """Multiply two numbers together"""
+    """Multiply two numbers."""
     return a * b
 
 @mcp.tool()
 def divide(a: int, b: int) -> float:
-    """Divide two numbers"""
+    """Divide two numbers."""
     if b == 0:
-        return {"error": "Cannot divide by zero"}
+        raise ValueError("Cannot divide by zero")
     return a / b
 
+async def run_server():
+    """Run the server with proper error handling."""
+    try:
+        logger.info("Starting math server on http://0.0.0.0:8000")
+        await mcp.run_async()
+    except Exception as e:
+        logger.error(f"Server error: {e}")
+        raise
+    finally:
+        await mcp.cleanup()
+
 if __name__ == "__main__":
-    print("Starting Mock Math Server on port 8000...")
-    # FastMCP expects transport_kwargs as separate parameters
-    mcp.run(transport="sse", host="0.0.0.0", port=8000)
+    try:
+        asyncio.run(run_server())
+    except KeyboardInterrupt:
+        logger.info("Server stopped by user")
+    except Exception as e:
+        logger.error(f"Fatal error: {e}")
+        raise
