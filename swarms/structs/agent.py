@@ -404,7 +404,7 @@ class Agent:
         role: agent_roles = "worker",
         no_print: bool = False,
         tools_list_dictionary: Optional[List[Dict[str, Any]]] = None,
-        # mcp_servers: List[MCPServerSseParams] = [],
+        mcp_servers: Optional[list] = None,  # list[MCPServerSseParams]
         *args,
         **kwargs,
     ):
@@ -524,7 +524,7 @@ class Agent:
         self.role = role
         self.no_print = no_print
         self.tools_list_dictionary = tools_list_dictionary
-        # self.mcp_servers = mcp_servers
+        self.mcp_servers = mcp_servers
 
         self._cached_llm = (
             None  # Add this line to cache the LLM instance
