@@ -14,7 +14,6 @@ from typing import (
     Callable,
     Dict,
     List,
-    Literal,
     Optional,
     Tuple,
     Union,
@@ -55,6 +54,7 @@ from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
+    HistoryOutputType,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
@@ -85,18 +85,6 @@ def exists(val):
 
 
 # Agent output types
-# agent_output_type = Union[BaseModel, dict, str]
-agent_output_type = Literal[
-    "string",
-    "str",
-    "list",
-    "json",
-    "dict",
-    "yaml",
-    "json_schema",
-    "memory-list",
-    "memory-dict",
-]
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
 
@@ -342,7 +330,7 @@ class Agent:
         # [Tools]
         custom_tools_prompt: Optional[Callable] = None,
         tool_schema: ToolUsageType = None,
-        output_type: agent_output_type = "str",
+        output_type: HistoryOutputType = "str",
         function_calling_type: str = "json",
         output_cleaner: Optional[Callable] = None,
         function_calling_format_type: Optional[str] = "OpenAI",
@@ -1138,8 +1126,7 @@ class Agent:
             if self.autosave is True:
                 log_agent_data(self.to_dict())
 
-                if self.autosave is True:
-                    self.save()
+                self.save()
 
             # log_agent_data(self.to_dict())
 
@@ -1167,7 +1154,7 @@ class Agent:
         except KeyboardInterrupt as error:
             self._handle_run_error(error)
 
-    def _handle_run_error(self, error: any):
+    def __handle_run_error(self, error: any):
         log_agent_data(self.to_dict())
 
         if self.autosave is True:
@@ -1177,6 +1164,14 @@ class Agent:
             f"Error detected running your agent {self.agent_name} \n Error {error} \n Optimize your input parameters and or add an issue on the swarms github and contact our team on discord for support ;) "
         )
         raise error
+
+    def _handle_run_error(self, error: any):
+        process_thread = threading.Thread(
+            target=self.__handle_run_error,
+            args=(error,),
+            daemon=True,
+        )
+        process_thread.start()
 
     async def arun(
         self,

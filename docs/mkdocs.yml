@@ -247,7 +247,6 @@ nav:
         - Deep Research Swarm: "swarms/structs/deep_research_swarm.md"
         - Workflows:
             - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
-            - AsyncWorkflow: "swarms/structs/async_workflow.md"
             - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
         - Structs:
           - Conversation: "swarms/structs/conversation.md"

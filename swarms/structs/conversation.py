@@ -105,7 +105,7 @@ class Conversation(BaseStructure):
         if tokenizer is not None:
             self.truncate_memory_with_tokenizer()
 
-    def add(
+    def _add(
         self,
         role: str,
         content: Union[str, dict, list],
@@ -118,8 +118,6 @@ class Conversation(BaseStructure):
             role (str): The role of the speaker (e.g., 'User', 'System').
             content (Union[str, dict, list]): The content of the message to be added.
         """
-        now = datetime.datetime.now()
-        now.strftime("%Y-%m-%d %H:%M:%S")
 
         # Base message with role
         message = {
@@ -131,7 +129,7 @@ class Conversation(BaseStructure):
             message["content"] = content
         elif self.time_enabled:
             message["content"] = (
-                f"Time: {now.strftime('%Y-%m-%d %H:%M:%S')} \n {content}"
+                f"Time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} \n {content}"
             )
         else:
             message["content"] = content
@@ -159,9 +157,21 @@ class Conversation(BaseStructure):
                 True  # Make thread terminate when main program exits
             )
             token_thread.start()
-        elif self.autosave:
-            # If token counting is disabled but autosave is enabled, save immediately
-            self.save_as_json(self.save_filepath)
+
+    def add(self, role: str, content: Union[str, dict, list]):
+        """Add a message to the conversation history.
+
+        Args:
+            role (str): The role of the speaker (e.g., 'User', 'System').
+            content (Union[str, dict, list]): The content of the message to be added.
+        """
+        process_thread = threading.Thread(
+            target=self._add,
+            args=(role, content),
+            daemon=True,
+        )
+        process_thread.start()
+        # process_thread.join()
 
     def delete(self, index: str):
         """Delete a message from the conversation history.
@@ -523,6 +533,27 @@ class Conversation(BaseStructure):
         output = self.conversation_history[-1]["content"]
         # print(output)
         return output
+
+    def return_all_except_first(self):
+        """Return all messages except the first one.
+
+        Returns:
+            list: List of messages except the first one.
+        """
+        return self.conversation_history[2:]
+
+    def return_all_except_first_string(self):
+        """Return all messages except the first one as a string.
+
+        Returns:
+            str: All messages except the first one as a string.
+        """
+        return "\n".join(
+            [
+                f"{msg['content']}"
+                for msg in self.conversation_history[2:]
+            ]
+        )
 
 
 # # Example usage
