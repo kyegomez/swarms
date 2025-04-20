@@ -1932,7 +1932,7 @@ class Agent:
             raise error
 
     def add_tool(self, tool: Callable):
-        """Add a single tool to the agent's tools list.
+        """Add a single tool to the agent's tools list."""
 
         Args:
             tool (Callable): The tool function to add
