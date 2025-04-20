@@ -14,7 +14,7 @@ Token Contract Address: `74SBV4zDXxTRgv1pEMoECskKBkZHc2yGPnc7GYVepump`
 - **Token Name:** Swarms Coin  
 - **Ticker:** `$swarms`  
 - **Blockchain:** Solana  
-- **Utility:** Powering decentralized AI agents and incentivizing developers
+- **Utility:** Powering the agentic economy.
 
 ---
 

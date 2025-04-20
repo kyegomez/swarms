@@ -371,6 +371,7 @@ nav:
     - Agents: "swarms_rs/agents.md"
 
   - Governance:
+    - Resources: "governance/main.md"
     - Tokenomics: "web3/token.md"
 
     
