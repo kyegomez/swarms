@@ -22,4 +22,4 @@ def divide(a: int, b: int) -> float:
 
 if __name__ == "__main__":
     print("Starting Mock Math Server on port 8000...")
-    mcp.run(transport="sse", transport_kwargs={"port": 8000, "host": "0.0.0.0"})
+    mcp.run(transport="sse", port=8000, host="0.0.0.0")

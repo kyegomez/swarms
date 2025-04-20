@@ -47,12 +47,6 @@ from swarms.structs.safe_loading import (
 )
 from swarms.telemetry.main import log_agent_data
 from swarms.tools.base_tool import BaseTool
-
-# from swarms.tools.mcp_integration import (
-#     MCPServerSseParams,
-#     batch_mcp_flow,
-#     mcp_flow_get_tool_schema,
-# )
 from swarms.tools.tool_parse_exec import parse_and_execute_json
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.data_to_text import data_to_text
@@ -838,7 +832,7 @@ class Agent:
             # If no components available, fall back to task
             if not components and task:
                 logger.warning(
-                    "No agent details found. Using task as fallback for prompt generation."
+                    "No agent details found. Usingtask as fallback for prompt generation."
                 )
                 self.system_prompt = auto_generate_prompt(
                     task, self.llm
@@ -1869,7 +1863,7 @@ class Agent:
     # Response Filtering
     def add_response_filter(self, filter_word: str) -> None:
         """
-        Add a response filter to filter out certain words from the response
+        Add a response filter tofilter out certain words from the response
 
         Example:
         agent.add_response_filter("Trump")

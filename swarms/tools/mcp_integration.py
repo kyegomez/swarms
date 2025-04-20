@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from typing_extensions import NotRequired, TypedDict
 from contextlib import AbstractAsyncContextManager
-from fastmcp import FastClientSession as ClientSession
+from fastmcp import Client as ClientSession
 from fastmcp.servers import fast_sse_client as sse_client
 
 from loguru import logger
