@@ -16,7 +16,7 @@ def main():
         agent_name="Math Agent",
         agent_description="Specialized agent for mathematical computations",
         system_prompt=MATH_AGENT_PROMPT,
-        max_loops=1,
+        max_loops=auto,
         mcp_servers=[math_server],
         streaming_on=True
     )
