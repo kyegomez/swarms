@@ -21,14 +21,16 @@ logger.add(sys.stdout,
 def get_server_params():
     """Get the MCP server connection parameters."""
     return MCPServerSseParams(
-        url=
-        "http://127.0.0.1:8000",  # Use 127.0.0.1 instead of localhost/0.0.0.0
+        url="http://0.0.0.0:8000",  # Using 0.0.0.0 to be accessible
+        sse_path="/sse",  # Specify SSE endpoint
+        messages_path="/messages",  # Specify messages endpoint
         headers={
             "Content-Type": "application/json",
             "Accept": "text/event-stream"
         },
         timeout=15.0,  # Longer timeout
-        sse_read_timeout=60.0  # Longer read timeout
+        sse_read_timeout=60.0,  # Longer read timeout
+        require_session_id=False  # Match server configuration
     )
 
 
@@ -79,16 +81,21 @@ async def get_tools_list():
 def test_server_connection():
     """Test if the server is reachable and responsive."""
     try:
-        # Create a short-lived connection to check server
-        server = MCPServerSse(get_server_params())
-
-        # Try connecting (this is synchronous)
-        asyncio.run(server.connect())
-        asyncio.run(server.cleanup())
-        logger.info("✅ Server connection test successful")
-        return True
+        params = get_server_params()
+        health_url = f"{params.url}{params.sse_path}"
+        response = httpx.get(
+            health_url,
+            headers={"Accept": "text/event-stream"},
+            timeout=5.0
+        )
+        if response.status_code == 200:
+            logger.info("✅ SSE endpoint is up")
+            return True
+        else:
+            logger.error(f"❌ Unexpected status {response.status_code}")
+            return False
     except Exception as e:
-        logger.error(f"❌ Server connection test failed: {e}")
+        logger.error(f"❌ Connection to SSE endpoint failed: {e}")
         return False
 
 
