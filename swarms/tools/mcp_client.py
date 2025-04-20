@@ -43,6 +43,7 @@ async def _execute_mcp_tool(
     method: Literal["stdio", "sse"] = "sse",
     parameters: Dict[Any, Any] = None,
     output_type: Literal["str", "dict"] = "str",
+    timeout: float = 30.0,
     *args,
     **kwargs,
 ) -> Dict[Any, Any]:

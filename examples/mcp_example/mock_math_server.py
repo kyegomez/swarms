@@ -5,10 +5,11 @@ from loguru import logger
 
 # Create FastMCP instance with SSE transport
 mcp = FastMCP(
-    host="0.0.0.0",
+    host="0.0.0.0", 
     port=8000,
+    transport="sse",
     require_session_id=False,
-    transport="sse"  # Explicitly specify SSE transport
+    timeout=30.0
 )
 
 @mcp.tool()
