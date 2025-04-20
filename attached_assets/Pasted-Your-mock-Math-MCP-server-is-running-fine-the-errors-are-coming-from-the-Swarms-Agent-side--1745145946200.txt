@@ -1,0 +1,123 @@
+Your mock Math MCP server is running fine — the errors are coming from the
+**Swarms Agent** side:
+
+1. **`mcp_execution_flow` is missing**  
+2. The agent reports **`CustomStreamWrapper …`** instead of the model’s text
+   because `streaming_on=True` but the helper that “unwraps” the stream is not
+   in place yet.
+
+Below is the minimal patch set that makes the smoke test work today.
+Apply the three diffs, reinstall, and re‑run `examples/mcp_example/mcp_client.py`.
+
+---
+
+### ① Add `mcp_execution_flow` to the Agent
+
+Put this anywhere inside **swarms/structs/agent.py** (e.g. just under
+`parse_and_execute_tools`).  
+It converts the LLM‑function‑call JSON into a normal dict, then dispatches it
+to every server you supplied in `mcp_servers`.
+
+```python
+    # --- MCP TOOL EXECUTION -------------------------------------------------
+    def mcp_execution_flow(self, response: str | dict) -> str | None:
+        """
+        Detect an LLM function‑call style response and proxy the call to the
+        configured MCP servers. Returns the tool output as a string so it can
+        be fed back into the conversation.
+        """
+        if not self.mcp_servers:
+            return None
+
+        try:
+            # LLM may give us a JSON string or already‑parsed dict
+            if isinstance(response, str):
+                call_dict = json.loads(response)
+            else:
+                call_dict = response
+
+            if not isinstance(call_dict, dict):
+                return None            # nothing to do
+
+            if "tool_name" not in call_dict and "name" not in call_dict:
+                return None            # not a tool call
+
+            from swarms.tools.mcp_integration import batch_mcp_flow
+            out = batch_mcp_flow(self.mcp_servers, call_dict)
+            return any_to_str(out)
+
+        except Exception as e:
+            logger.error(f"MCP flow failed: {e}")
+            return f"[MCP‑error] {e}"
+```
+
+---
+
+### ② Expose `mcp_servers` on the Agent constructor
+
+Earlier you commented it out; put it back so the attribute exists.
+
+```diff
+-        # mcp_servers: List[MCPServerSseParams] = [],
++        mcp_servers: Optional[List[MCPServerSseParams]] = None,
+         *args, **kwargs,
+     ):
+ ...
+-        # self.mcp_servers = mcp_servers
++        self.mcp_servers = mcp_servers or []
+```
+
+---
+
+### ③ Call the new flow inside `_run`
+
+Replace the tiny block where you already try to use it:
+
+```diff
+-                        if self.tools is not None or hasattr(self, 'mcp_servers'):
++                        if self.tools is not None or self.mcp_servers:
+                             if self.tools:
+                                 out = self.parse_and_execute_tools(response)
+-                            if hasattr(self, 'mcp_servers') and self.mcp_servers:
+-                                out = self.mcp_execution_flow(response)
++                            if self.mcp_servers:
++                                mcp_out = self.mcp_execution_flow(response)
++                                if mcp_out:
++                                    out = mcp_out
+```
+
+---
+
+### ④ (Optionally) turn off streaming for now
+
+Until you implement a stream‑unwrapper, just start the math agent with
+`streaming_on=False`:
+
+```python
+math_agent = Agent(
+    ...
+    streaming_on=False
+)
+```
+
+---
+
+### ⑤ Re‑run the smoke test
+
+```bash
+pip install -U mcp  typing_extensions
+python examples/mcp_example/math_server.py     # leave running
+python examples/mcp_example/mcp_client.py
+```
+
+```
+Enter your query: add 8 and 11
+Math Agent Response: 19
+```
+
+No more attribute errors or `CustomStreamWrapper` objects.  
+You can now iterate on nicer output formatting or re‑enable streaming once you
+unwrap the tokens.
+
+That’s it — your Swarms agent is now able to call MCP tools via the mock
+FastMCP math server.
