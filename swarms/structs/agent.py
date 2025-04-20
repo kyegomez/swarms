@@ -727,69 +727,6 @@ class Agent:
                 tool.__name__: tool for tool in self.tools
             }
 
-    # def mcp_execution_flow(self, response: any):
-    #     """
-    #     Executes the MCP (Model Context Protocol) flow based on the provided response.
-
-    #     This method takes a response, converts it from a string to a dictionary format,
-    #     and checks for the presence of a tool name or a name in the response. If either
-    #     is found, it retrieves the tool name and proceeds to call the batch_mcp_flow
-    #     function to execute the corresponding tool actions.
-
-    #     Args:
-    #         response (any): The response to be processed, which can be in string format
-    #         that represents a dictionary.
-
-    #     Returns:
-    #         The output from the batch_mcp_flow function, which contains the results of
-    #         the tool execution. If an error occurs during processing, it logs the error
-    #         and returns None.
-
-    #     Raises:
-    #         Exception: Logs any exceptions that occur during the execution flow.
-    #     """
-    #     try:
-    #         response = str_to_dict(response)
-
-    #         tool_output = batch_mcp_flow(
-    #             self.mcp_servers,
-    #             function_call=response,
-    #         )
-
-    #         return tool_output
-    #     except Exception as e:
-    #         logger.error(f"Error in mcp_execution_flow: {e}")
-    #         return None
-
-    # def mcp_tool_handling(self):
-    #     """
-    #     Handles the retrieval of tool schemas from the MCP servers.
-
-    #     This method iterates over the list of MCP servers, retrieves the tool schema
-    #     for each server using the mcp_flow_get_tool_schema function, and compiles
-    #     these schemas into a list. The resulting list is stored in the
-    #     tools_list_dictionary attribute.
-
-    #     Returns:
-    #         list: A list of tool schemas retrieved from the MCP servers. If an error
-    #         occurs during the retrieval process, it logs the error and returns None.
-
-    #     Raises:
-    #         Exception: Logs any exceptions that occur during the tool handling process.
-    #     """
-    #     try:
-    #         self.tools_list_dictionary = []
-
-    #         for mcp_server in self.mcp_servers:
-    #             tool_schema = mcp_flow_get_tool_schema(mcp_server)
-    #             self.tools_list_dictionary.append(tool_schema)
-
-    #         print(self.tools_list_dictionary)
-    #         return self.tools_list_dictionary
-    #     except Exception as e:
-    #         logger.error(f"Error in mcp_tool_handling: {e}")
-    #         return None
-
     def setup_config(self):
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops is True:
@@ -905,7 +842,7 @@ class Agent:
                 # Randomly change the temperature attribute of self.llm object
                 self.llm.temperature = random.uniform(0.0, 1.0)
             else:
-                # Use a default temperature
+                                # Use a default temperature
                 self.llm.temperature = 0.5
         except Exception as error:
             logger.error(
@@ -1936,7 +1873,7 @@ class Agent:
         self.retry_interval = retry_interval
 
     def reset(self):
-        """Reset the agent"""
+        """Reset the agent"""Reset the agent"""
         self.short_memory = None
 
     def ingest_docs(self, docs: List[str], *args, **kwargs):
@@ -2775,14 +2712,16 @@ class Agent:
                 role="Output Cleaner",
                 content=response,
             )
-    def mcp_execution_flow(self, payload: dict) -> str | None:
-        """Forward the tool-call dict to every MCP server in self.mcp_servers"""
+    def mcp_execution_flow(self, response: str) -> str:
+        """
+        Forward the JSON tool-call coming from the LLM to all MCP servers
+        listed in self.mcp_servers.
+        """
         try:
-            # Use asyncio.run which handles creating and closing the event loop
-            result = asyncio.run(batch_mcp_flow(self.mcp_servers, [payload]))
-            if not result:
-                return "No result returned from MCP server"
-            return any_to_str(result)
+            payload = json.loads(response)  # {"tool_name": ...}
+            results = batch_mcp_flow(self.mcp_servers, payload)
+            # batch_mcp_flow already blocks, so results is a list[str]
+            return any_to_str(results[0] if len(results) == 1 else results)
         except Exception as err:
             logger.error(f"MCP flow failed: {err}")
             return f"[MCP-error] {err}"

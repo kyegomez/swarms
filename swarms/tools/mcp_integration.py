@@ -346,22 +346,28 @@ async def mcp_flow(
         raise
 
 
-async def batch_mcp_flow(
-    params: List[MCPServerSseParams],
-    function_call: List[dict[str, Any]] = [],
-) -> List[Any]: # Updated return type to List[Any]
-    async def process_param(param):
+# Helper function to call one MCP server
+async def _call_one_server(param: MCPServerSseParams, payload: dict[str, Any]) -> Any:
+    """Make a call to a single MCP server with proper async context management."""
+    async with MCPServerSse(param, cache_tools_list=True) as srv:
+        res = await srv.call_tool(payload)
         try:
-            async with MCPServerSse(param) as server:
-                return await call_tool_fast(server, function_call[0])
-        except IndexError:
-            return None # Handle case where function_call is empty
-        except Exception as e:
-            logger.error(f"Error processing parameter: {param}, error: {e}")
-            return None
+            return res.model_dump()  # For fast-mcp ≥0.2
+        except AttributeError:
+            return res  # Plain dict or string
 
-    results = await asyncio.gather(*(process_param(param) for param in params))
-    return [any_to_str(r) for r in results if r is not None]
+# Synchronous wrapper for the Agent to use
+def batch_mcp_flow(params: List[MCPServerSseParams], payload: dict[str, Any]) -> List[Any]:
+    """Blocking helper that fans out to all MCP servers in params."""
+    return asyncio.run(_batch(params, payload))
+
+# Async implementation of batch processing
+async def _batch(params: List[MCPServerSseParams], payload: dict[str, Any]) -> List[Any]:
+    """Fan out to all MCP servers asynchronously and gather results."""
+    coros = [_call_one_server(p, payload) for p in params]
+    results = await asyncio.gather(*coros, return_exceptions=True)
+    # Filter out exceptions and convert to strings
+    return [any_to_str(r) for r in results if not isinstance(r, Exception)]
 
 
 from mcp import (

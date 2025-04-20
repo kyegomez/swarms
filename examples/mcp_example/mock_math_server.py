@@ -23,4 +23,4 @@ def divide(a: int, b: int) -> float:
 if __name__ == "__main__":
     print("Starting Mock Math Server on port 8000...")
     # Fix the parameters to match the FastMCP API
-    mcp.run(transport="sse", port=8000)
+    mcp.run(transport="sse", host="0.0.0.0", port=8000)
