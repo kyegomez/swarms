@@ -1,0 +1,110 @@
+### Why you’re seeing **`name 'batch_mcp_flow' is not defined`**
+
+1. In **`swarms/structs/agent.py`** the method `mcp_execution_flow()` (or the block that calls MCP) still tries to invoke `batch_mcp_flow`.
+2. At the very top of the file the import that *defines* that symbol was commented out when you switched to fast‑MCP:
+
+```python
+# from swarms.tools.mcp_integration import (
+#     MCPServerSseParams,
+#     batch_mcp_flow,          #  ← you lost this
+#     mcp_flow_get_tool_schema,
+# )
+```
+
+3. When Python hits `batch_mcp_flow(…)` it isn’t in the module’s namespace, so the call blows up and your agent prints the MCP‑error.
+
+---
+
+## Two‑step fix
+
+> Below assumes your `swarms/tools/mcp_integration.py` already contains a working (sync) wrapper named `batch_mcp_flow` that *returns a string*, **not** a coroutine object.  
+> If you kept it **async**, see the “If your wrapper is still async” note at the end.
+
+---
+
+### 1  · Restore the import in **`agent.py`**
+
+Un‑comment (or add) the line:
+
+```python
+from swarms.tools.mcp_integration import batch_mcp_flow
+```
+
+Keep the `MCPServerSseParams` import too if you reference it elsewhere.
+
+---
+
+### 2  · Make sure `batch_mcp_flow()` is **synchronous**
+
+Inside **`swarms/tools/mcp_integration.py`** do something like:
+
+```python
+# ── swarms/tools/mcp_integration.py ─────────────────────
+import asyncio
+# … other imports …
+
+async def _batch_mcp_flow_async(
+    params: list[MCPServerSseParams],
+    function_call: dict[str, Any],
+) -> str:
+    # your existing async logic that talks to MCP
+    # and returns a JSON‑serialisable string/str
+    ...
+
+def batch_mcp_flow(
+    params: list[MCPServerSseParams],
+    function_call: dict[str, Any],
+) -> str:
+    """Blocking wrapper so callers don't have to await."""
+    return asyncio.run(
+        _batch_mcp_flow_async(params, function_call)
+    )
+```
+
+Now `agent.py` can call `batch_mcp_flow(...)` directly and
+get **the tool’s real answer**, not a coroutine object.
+
+---
+
+### Quick checklist
+
+- [ ] Re‑import `batch_mcp_flow` in `swarms/structs/agent.py`.
+- [ ] Ensure `batch_mcp_flow()` (the public one) **returns a value**, not a coroutine.
+- [ ] Remove or comment out the temporary warning prints you added earlier.
+
+---
+
+### If your wrapper is still async
+
+You can alternatively **await** it inside `mcp_execution_flow`:
+
+```python
+import asyncio
+
+def mcp_execution_flow(self, response: str) -> str:
+    try:
+        resp_dict = json.loads(response)
+        return asyncio.run(
+            batch_mcp_flow(self.mcp_servers, resp_dict)
+        )
+    except Exception as e:
+        logger.error(f"MCP flow failed: {e}")
+        return f"[MCP-error] {e}"
+```
+
+Either approach works; the key is that the call you make inside the agent must not leave a bare coroutine object floating around.
+
+Once those two lines are fixed, run the client again:
+
+```bash
+python examples/mcp_example/mcp_client.py
+```
+
+You should now see a clean answer:
+
+```
+Enter your query (or 'exit' to quit): add 3 and 33
+Math Agent Response: 36
+```
+
+Happy calculating!
