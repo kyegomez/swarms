@@ -842,12 +842,10 @@ class Agent:
                 # Randomly change the temperature attribute of self.llm object
                 self.llm.temperature = random.uniform(0.0, 1.0)
             else:
-                                # Use a default temperature
+                # Use a default temperature
                 self.llm.temperature = 0.5
-                except Exception as error:
-            logger.error(
-                f"Error dynamically changing temperature: {error}"
-            )
+        except Exception as error:
+            logger.error(f"Error dynamically changing temperature: {error}")
 
     def print_dashboard(self):
         """Print dashboard"""
@@ -1873,7 +1871,7 @@ class Agent:
         self.retry_interval = retry_interval
 
     def reset(self):
-        """Reset the agent"""Reset the agent"""
+        """Reset the agent"""
         self.short_memory = None
 
     def ingest_docs(self, docs: List[str], *args, **kwargs):
@@ -2642,45 +2640,98 @@ class Agent:
                 )
 
     def parse_llm_output(self, response: Any) -> str:
-        """Parse and standardize the output from the LLM.
+        """Parse the LLM output to a string."""
+        if isinstance(response, str):
+            return response
+        elif isinstance(response, dict):
+            return json.dumps(response)
+        elif isinstance(response, list):
+            return json.dumps(response)
+        else:
+            return str(response)
 
+    def mcp_execution_flow(self, response: str) -> str:
+        """Forward tool calls to MCP servers with support for various input formats.
+        
         Args:
-            response (Any): The response from the LLM in any format
-
+            response (str): The response from the LLM containing tool calls or natural language.
+            
         Returns:
-            str: Standardized string output
-
-        Raises:
-            ValueError: If the response format is unexpected and cannot be handled
+            str: The result of executing the tool calls with preserved formatting.
         """
         try:
-            # Handle dictionary responses
-            if isinstance(response, dict):
-                if "choices" in response:
-                    return response["choices"][0]["message"][
-                        "content"
-                    ]
-                return json.dumps(
-                    response
-                )  # Convert other dicts to string
-
-            # Handle string responses
-            elif isinstance(response, str):
-                return response
-
-            # Handle list responses (from check_llm_outputs)
-            elif isinstance(response, list):
-                return "\n".join(response)
-
-            # Handle any other type by converting to string
+            # Try to parse as JSON first
+            try:
+                tool_calls = json.loads(response)
+                is_json = True
+            except json.JSONDecodeError:
+                # If not JSON, treat as natural language
+                tool_calls = [response]
+                is_json = False
+                
+            # Execute tool calls against MCP servers
+            results = []
+            errors = []
+            
+            # Handle both single tool call and array of tool calls
+            if isinstance(tool_calls, dict):
+                tool_calls = [tool_calls]
+                
+            for tool_call in tool_calls:
+                try:
+                    # Execute the tool call against all MCP servers
+                    result = batch_mcp_flow(self.mcp_servers, tool_call)
+                    if result:
+                        results.extend(result)
+                        # Add successful result to memory with context
+                        self.short_memory.add(
+                            role="assistant",
+                            content=f"Tool execution result: {result}"
+                        )
+                    else:
+                        error_msg = "No result from tool execution"
+                        errors.append(error_msg)
+                        self.short_memory.add(
+                            role="error",
+                            content=error_msg
+                        )
+                        
+                except Exception as e:
+                    error_msg = f"Error executing tool call: {str(e)}"
+                    errors.append(error_msg)
+                    logger.error(error_msg)
+                    self.short_memory.add(
+                        role="error",
+                        content=error_msg
+                    )
+            
+            # Format the final response
+            if results:
+                if len(results) == 1:
+                    # For single results, return as is to preserve formatting
+                    return results[0]
+                else:
+                    # For multiple results, combine with context
+                    formatted_results = []
+                    for i, result in enumerate(results, 1):
+                        formatted_results.append(f"Result {i}: {result}")
+                    return "\n".join(formatted_results)
+            elif errors:
+                if len(errors) == 1:
+                    return errors[0]
+                else:
+                    return "Multiple errors occurred:\n" + "\n".join(f"- {err}" for err in errors)
             else:
-                return str(response)
-
+                return "No results or errors returned"
+            
         except Exception as e:
-            logger.error(f"Error parsing LLM output: {e}")
-            raise ValueError(
-                f"Failed to parse LLM output: {type(response)}"
+            error_msg = f"Error in MCP execution flow: {str(e)}"
+            logger.error(error_msg)
+            self.short_memory.add(
+                role="error",
+                content=error_msg
             )
+            return error_msg
 
     def sentiment_and_evaluator(self, response: str):
         if self.evaluator:
@@ -2711,16 +2762,3 @@ class Agent:
                 role="Output Cleaner",
                 content=response,
             )
-    def mcp_execution_flow(self, response: str) -> str:
-        """
-        Forward the JSON tool-call coming from the LLM to all MCP servers
-        listed in self.mcp_servers.
-        """
-        try:
-            payload = json.loads(response)  # {"tool_name": ...}
-            results = batch_mcp_flow(self.mcp_servers, payload)
-            # batch_mcp_flow already blocks, so results is a list[str]
-            return any_to_str(results[0] if len(results) == 1 else results)
-        except Exception as err:
-            logger.error(f"MCP flow failed: {err}")
-            return f"[MCP-error] {err}"
