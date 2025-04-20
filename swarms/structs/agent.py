@@ -2778,8 +2778,12 @@ class Agent:
     def mcp_execution_flow(self, payload: dict) -> str | None:
         """Forward the tool-call dict to every MCP server in self.mcp_servers"""
         try:
-            result = batch_mcp_flow(self.mcp_servers, [payload])
-            return any_to_str(result) 
+            # Create a new event loop to run the async function
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            result = loop.run_until_complete(batch_mcp_flow(self.mcp_servers, [payload]))
+            loop.close()
+            return any_to_str(result)
         except Exception as err:
             logger.error(f"MCP flow failed: {err}")
             return f"[MCP-error] {err}"
