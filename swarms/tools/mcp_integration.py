@@ -4,7 +4,8 @@ from typing import Any, Dict, List, Optional
 from typing_extensions import NotRequired, TypedDict
 from contextlib import AbstractAsyncContextManager
 from fastmcp import Client as ClientSession
-from fastmcp.servers import fast_sse_client as sse_client
+from fastmcp.client.sse import sse_client
+from fastmcp.client.stdio import stdio_client, StdioServerParameters
 
 from loguru import logger
 import abc
