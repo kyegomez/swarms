@@ -17,19 +17,22 @@ Remember to use the available MCP tools for calculations rather than doing them 
 def main():
     # Configure MCP server connection
     math_server = MCPServerSseParams(
-        url="http://0.0.0.0:8000/mcp",
+        url="http://0.0.0.0:8000",
         headers={"Content-Type": "application/json"},
         timeout=5.0,
         sse_read_timeout=30.0)
+
+    TOOL_CALL_INSTRUCTION = """When you want to use a math tool, reply with a JSON object only:
+{"tool_name": "<add|multiply|divide>", "a": <int>, "b": <int>}"""
 
     # Initialize math agent
     math_agent = Agent(
         agent_name="Math Agent",
         agent_description="Specialized agent for mathematical computations",
-        system_prompt=MATH_AGENT_PROMPT,
+        system_prompt=MATH_AGENT_PROMPT + "\n" + TOOL_CALL_INSTRUCTION,
         max_loops=1,
         mcp_servers=[math_server],
-        streaming_on=True)
+        streaming_on=False)
 
     print("\nMath Agent System Initialized")
     print("\nAvailable operations:")
