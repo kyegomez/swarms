@@ -1,53 +1,78 @@
+import os
 from swarms import Agent
 from swarms.tools.mcp_integration import MCPServerSseParams
 from swarms.prompts.agent_prompts import MATH_AGENT_PROMPT
+from loguru import logger
 
-# Fallback in case the import fails
-if 'MATH_AGENT_PROMPT' not in locals():
-    MATH_AGENT_PROMPT = """You are a specialized math agent that can perform calculations by calling external math service APIs.
-Key responsibilities:
-1. Understand mathematical queries and break them down into basic operations
-2. Use available math tools (add, multiply, divide) appropriately
-3. Provide clear explanations of calculations
-4. Handle errors gracefully if operations fail
+# Set OpenAI API key
 
-Remember to use the available MCP tools for calculations rather than doing them directly."""
-
-
-def main():
-    # Configure MCP server connection
+def initialize_math_system():
+    """Initialize the math agent with MCP server configuration."""
+    # Configure MCP server connection with SSE transport
     math_server = MCPServerSseParams(
-        url="http://0.0.0.0:8000",
-        headers={"Content-Type": "application/json"},
+        url="http://localhost:8000",
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream"
+        },
         timeout=5.0,
         sse_read_timeout=30.0)
 
-    TOOL_CALL_INSTRUCTION = """When you want to use a math tool, reply with a JSON object only:
-{"tool_name": "<add|multiply|divide>", "a": <int>, "b": <int>}"""
-
-    # Initialize math agent
+    # Initialize math agent with specific model
     math_agent = Agent(
         agent_name="Math Agent",
-        agent_description="Specialized agent for mathematical computations",
-        system_prompt=MATH_AGENT_PROMPT + "\n" + TOOL_CALL_INSTRUCTION,
+        agent_description="Basic math calculator",
+        system_prompt=MATH_AGENT_PROMPT,
         max_loops=1,
         mcp_servers=[math_server],
-        streaming_on=False)
+        streaming_on=False,
+        model_name="gpt-4o-mini",
+        temperature=0.1)
 
-    print("\nMath Agent System Initialized")
-    print("\nAvailable operations:")
-    print("Math Agent: add, multiply, divide")
+    return math_agent
 
+def process_query(math_agent, query):
+    """Process a single math query."""
+    try:
+        result = math_agent.run(query)
+        # Clean up the result to show only the number or error message
+        if isinstance(result, (int, float)):
+            return result
+        elif "error" in result.lower():
+            return result
+        else:
+            # Try to extract just the number from the result
+            try:
+                return float(result)
+            except:
+                return "Error: Invalid result format"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+def main():
+    # Initialize the math system
+    math_agent = initialize_math_system()
+    print("\nMath Calculator Ready!")
+    print("Available operations: add, multiply, divide")
+    print("Example: 'add 5 and 3' or 'multiply 4 by 6'")
+    print("Type 'exit' to quit\n")
+    
     while True:
-        query = input("\nEnter your query (or 'exit' to quit): ")
+        try:
+            query = input("Enter math operation: ").strip()
+            if not query:
+                continue
+            if query.lower() == 'exit':
+                break
 
-        if query.lower() == 'exit':
+            result = process_query(math_agent, query)
+            print(f"Result: {result}")
+
+        except KeyboardInterrupt:
+            print("\nExiting...")
             break
-
-        # Process with math agent
-        math_result = math_agent.run(query)
-        print("\nMath Agent Response:", math_result)
-
+        except Exception as e:
+            print(f"Error: {e}")
 
 if __name__ == "__main__":
     main()
