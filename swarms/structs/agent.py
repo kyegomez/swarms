@@ -1932,7 +1932,7 @@ class Agent:
             raise error
 
     def add_tool(self, tool: Callable):
-        """Add a single tool to the agent's tools list.
+        """Add a single tool to the agents tools list.
 
         Args:
             tool (Callable): The tool function to add
@@ -1943,7 +1943,7 @@ class Agent:
         return self.tools.append(tool)
 
     def add_tools(self, tools: List[Callable]):
-        """Add multiple tools to the agent's tools list.
+        """Add multiple tools to the agents tools list.
 
         Args:
             tools (List[Callable]): List of tool functions to add
@@ -1955,7 +1955,7 @@ class Agent:
         return self.tools.extend(tools)
 
     def remove_tool(self, tool: Callable):
-        """Remove a single tool from the agent's tools list.
+        """Remove a single tool from the agents tools list.
 
         Args:
             tool (Callable): The tool function to remove
@@ -1967,7 +1967,7 @@ class Agent:
         return self.tools.remove(tool)
 
     def remove_tools(self, tools: List[Callable]):
-        """Remove multiple tools from the agent's tools list.
+        """Remove multiple tools from the agents tools list.
 
         Args:
             tools (List[Callable]): List of tool functions to remove
@@ -2441,9 +2441,9 @@ class Agent:
         **kwargs,
     ) -> Any:
         """
-        Executes the agent's run method on a specified device, with optional scheduling.
+        Executes the agents run method on a specified device, with optional scheduling.
 
-        This method attempts to execute the agent's run method on a specified device, either CPU or GPU. It logs the device selection and the number of cores or GPU ID used. If the device is set to CPU, it can use all available cores or a specific core specified by `device_id`. If the device is set to GPU, it uses the GPU specified by `device_id`.
+        This method attempts to execute the agents run method on a specified device, either CPU or GPU. It logs the device selection and the number of cores or GPU ID used. If the device is set to CPU, it can use all available cores or a specific core specified by `device_id`. If the device is set to GPU, it uses the GPU specified by `device_id`.
 
         If a `scheduled_date` is provided, the method will wait until that date and time before executing the task.
 
@@ -2651,7 +2651,7 @@ class Agent:
             str: Standardized string output
 
         Raises:
-            ValueError: If the response format is unexpected and can't be handled
+            ValueError: If the response format is unexpected and cannot be handled
         """
         try:
             # Handle dictionary responses
