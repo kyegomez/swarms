@@ -2647,18 +2647,7 @@ class Agent:
         else:
             return str(response)
 
-    async def mcp_execution_flow(self, tool_call):
-        """Execute MCP tool call flow"""
-        try:
-            result = await execute_mcp_tool(
-                url=self.mcp_servers[0]["url"],
-                parameters=tool_call,
-                output_type="str",
-            )
-            return result
-        except Exception as e:
-            logger.error(f"Error executing tool call: {e}")
-            return f"Error executing tool call: {e}"
+
 
     def sentiment_and_evaluator(self, response: str):
         if self.evaluator:
@@ -2689,3 +2678,136 @@ class Agent:
                 role="Output Cleaner",
                 content=response,
             )
+
+    async def amcp_execution_flow(self, response: str) -> str:
+        """Async implementation of MCP execution flow.
+
+        Args:
+            response (str): The response from the LLM containing tool calls or natural language.
+
+        Returns:
+            str: The result of executing the tool calls with preserved formatting.
+        """
+        try:
+            # Try to parse as JSON first
+            try:
+                tool_calls = json.loads(response)
+                is_json = True
+                logger.debug(f"Successfully parsed response as JSON: {tool_calls}")
+            except json.JSONDecodeError:
+                # If not JSON, treat as natural language
+                tool_calls = [response]
+                is_json = False
+                logger.debug(f"Could not parse response as JSON, treating as natural language")
+
+            # Execute tool calls against MCP servers
+            results = []
+            errors = []
+
+            # Handle both single tool call and array of tool calls
+            if isinstance(tool_calls, dict):
+                tool_calls = [tool_calls]
+
+            logger.debug(f"Executing {len(tool_calls)} tool calls against {len(self.mcp_servers)} MCP servers")
+
+            for tool_call in tool_calls:
+                try:
+                    # Import here to avoid circular imports
+                    from swarms.tools.mcp_integration import abatch_mcp_flow
+
+                    logger.debug(f"Executing tool call: {tool_call}")
+                    # Execute the tool call against all MCP servers
+                    result = await abatch_mcp_flow(self.mcp_servers, tool_call)
+
+                    if result:
+                        logger.debug(f"Got result from MCP servers: {result}")
+                        results.extend(result)
+                        # Add successful result to memory with context
+                        self.short_memory.add(
+                            role="assistant",
+                            content=f"Tool execution result: {result}"
+                        )
+                    else:
+                        error_msg = "No result from tool execution"
+                        errors.append(error_msg)
+                        logger.debug(error_msg)
+                        self.short_memory.add(
+                            role="error",
+                            content=error_msg
+                        )
+
+                except Exception as e:
+                    error_msg = f"Error executing tool call: {str(e)}"
+                    errors.append(error_msg)
+                    logger.error(error_msg)
+                    self.short_memory.add(
+                        role="error",
+                        content=error_msg
+                    )
+
+            # Format the final response
+            if results:
+                if len(results) == 1:
+                    # For single results, return as is to preserve formatting
+                    return results[0]
+                else:
+                    # For multiple results, combine with context
+                    formatted_results = []
+                    for i, result in enumerate(results, 1):
+                        formatted_results.append(f"Result {i}: {result}")
+                    return "\n".join(formatted_results)
+            elif errors:
+                if len(errors) == 1:
+                    return errors[0]
+                else:
+                    return "Multiple errors occurred:\n" + "\n".join(f"- {err}" for err in errors)
+            else:
+                return "No results or errors returned"
+
+        except Exception as e:
+            error_msg = f"Error in MCP execution flow: {str(e)}"
+            logger.error(error_msg)
+            self.short_memory.add(
+                role="error",
+                content=error_msg
+            )
+            return error_msg
+
+
+    def mcp_execution_flow(self, response: str) -> str:
+        """Synchronous wrapper for MCP execution flow.
+
+        This method creates a new event loop if needed or uses the existing one
+        to run the async MCP execution flow.
+
+        Args:
+            response (str): The response from the LLM containing tool calls or natural language.
+
+        Returns:
+            str: The result of executing the tool calls with preserved formatting.
+        """
+        try:
+            # Check if we're already in an event loop
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                # No event loop exists, create one
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+            if loop.is_running():
+                # We're in an async context, use run_coroutine_threadsafe
+                logger.debug("Using run_coroutine_threadsafe to execute MCP flow")
+                future = asyncio.run_coroutine_threadsafe(
+                    self.amcp_execution_flow(response), loop
+                )
+                return future.result(timeout=30)  # Adding timeout to prevent hanging
+            else:
+                # We're not in an async context, use loop.run_until_complete
+                logger.debug("Using run_until_complete to execute MCP flow")
+                return loop.run_until_complete(self.amcp_execution_flow(response))
+
+        except Exception as e:
+            error_msg = f"Error in MCP execution flow wrapper: {str(e)}"
+            logger.error(error_msg)
+            return error_msg

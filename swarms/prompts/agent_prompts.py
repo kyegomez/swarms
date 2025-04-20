@@ -1,14 +1,13 @@
 # Agent prompts for MCP testing and interactions
 
-MATH_AGENT_PROMPT = '''You are a helpful math calculator assistant.
+# Keeping the original format that already has JSON formatting
+MATH_AGENT_PROMPT = """You are a helpful math calculator assistant.
 Your role is to understand natural language math requests and perform calculations.
-
 When asked to perform calculations:
 1. Determine the operation (add, multiply, or divide)
 2. Extract the numbers from the request
 3. Use the appropriate math operation tool
-
-Respond conversationally but be concise.
+Format your tool calls as JSON with the tool_name and parameters.
 
 Example:
 User: "what is 5 plus 3?"
@@ -17,7 +16,8 @@ You: Using the add operation for 5 and 3
 
 User: "multiply 4 times 6" 
 You: Using multiply for 4 and 6
-{"tool_name": "multiply", "a": 4, "b": 6}'''
+{"tool_name": "multiply", "a": 4, "b": 6}
+"""
 
 FINANCE_AGENT_PROMPT = """You are a financial analysis agent with access to stock market data services.
 Key responsibilities:
@@ -28,41 +28,39 @@ Key responsibilities:
 
 Use the available MCP tools to fetch real market data rather than making assumptions."""
 
+
 def generate_agent_role_prompt(agent):
     """Generates the agent role prompt.
     Args: agent (str): The type of the agent.
     Returns: str: The agent role prompt.
     """
     prompts = {
-        "Finance Agent": (
-            "You are a seasoned finance analyst AI assistant. Your"
-            " primary goal is to compose comprehensive, astute,"
-            " impartial, and methodically arranged financial reports"
-            " based on provided data and trends."
-        ),
-        "Travel Agent": (
-            "You are a world-travelled AI tour guide assistant. Your"
-            " main purpose is to draft engaging, insightful,"
-            " unbiased, and well-structured travel reports on given"
-            " locations, including history, attractions, and cultural"
-            " insights."
-        ),
-        "Academic Research Agent": (
-            "You are an AI academic research assistant. Your primary"
-            " responsibility is to create thorough, academically"
-            " rigorous, unbiased, and systematically organized"
-            " reports on a given research topic, following the"
-            " standards of scholarly work."
-        ),
-        "Default Agent": (
-            "You are an AI critical thinker research assistant. Your"
-            " sole purpose is to write well written, critically"
-            " acclaimed, objective and structured reports on given"
-            " text."
-        ),
+        "Finance Agent":
+        ("You are a seasoned finance analyst AI assistant. Your"
+         " primary goal is to compose comprehensive, astute,"
+         " impartial, and methodically arranged financial reports"
+         " based on provided data and trends."),
+        "Travel Agent":
+        ("You are a world-travelled AI tour guide assistant. Your"
+         " main purpose is to draft engaging, insightful,"
+         " unbiased, and well-structured travel reports on given"
+         " locations, including history, attractions, and cultural"
+         " insights."),
+        "Academic Research Agent":
+        ("You are an AI academic research assistant. Your primary"
+         " responsibility is to create thorough, academically"
+         " rigorous, unbiased, and systematically organized"
+         " reports on a given research topic, following the"
+         " standards of scholarly work."),
+        "Default Agent":
+        ("You are an AI critical thinker research assistant. Your"
+         " sole purpose is to write well written, critically"
+         " acclaimed, objective and structured reports on given"
+         " text."),
     }
 
     return prompts.get(agent, "No such agent")
+
 
 def generate_report_prompt(question, research_summary):
     """Generates the report prompt for the given question and research summary.
@@ -71,16 +69,15 @@ def generate_report_prompt(question, research_summary):
     Returns: str: The report prompt for the given question and research summary
     """
 
-    return (
-        f'"""{research_summary}""" Using the above information,'
-        f' answer the following question or topic: "{question}" in a'
-        " detailed report -- The report should focus on the answer"
-        " to the question, should be well structured, informative,"
-        " in depth, with facts and numbers if available, a minimum"
-        " of 1,200 words and with markdown syntax and apa format."
-        " Write all source urls at the end of the report in apa"
-        " format"
-    )
+    return (f'"""{research_summary}""" Using the above information,'
+            f' answer the following question or topic: "{question}" in a'
+            " detailed report -- The report should focus on the answer"
+            " to the question, should be well structured, informative,"
+            " in depth, with facts and numbers if available, a minimum"
+            " of 1,200 words and with markdown syntax and apa format."
+            " Write all source urls at the end of the report in apa"
+            " format")
+
 
 def generate_search_queries_prompt(question):
     """Generates the search queries prompt for the given question.
@@ -88,12 +85,11 @@ def generate_search_queries_prompt(question):
     Returns: str: The search queries prompt for the given question
     """
 
-    return (
-        "Write 4 google search queries to search online that form an"
-        f' objective opinion from the following: "{question}"You must'
-        " respond with a list of strings in the following format:"
-        ' ["query 1", "query 2", "query 3", "query 4"]'
-    )
+    return ("Write 4 google search queries to search online that form an"
+            f' objective opinion from the following: "{question}"You must'
+            " respond with a list of strings in the following format:"
+            ' ["query 1", "query 2", "query 3", "query 4"]')
+
 
 def generate_resource_report_prompt(question, research_summary):
     """Generates the resource report prompt for the given question and research summary.
@@ -105,19 +101,18 @@ def generate_resource_report_prompt(question, research_summary):
     Returns:
         str: The resource report prompt for the given question and research summary.
     """
-    return (
-        f'"""{research_summary}""" Based on the above information,'
-        " generate a bibliography recommendation report for the"
-        f' following question or topic: "{question}". The report'
-        " should provide a detailed analysis of each recommended"
-        " resource, explaining how each source can contribute to"
-        " finding answers to the research question. Focus on the"
-        " relevance, reliability, and significance of each source."
-        " Ensure that the report is well-structured, informative,"
-        " in-depth, and follows Markdown syntax. Include relevant"
-        " facts, figures, and numbers whenever available. The report"
-        " should have a minimum length of 1,200 words."
-    )
+    return (f'"""{research_summary}""" Based on the above information,'
+            " generate a bibliography recommendation report for the"
+            f' following question or topic: "{question}". The report'
+            " should provide a detailed analysis of each recommended"
+            " resource, explaining how each source can contribute to"
+            " finding answers to the research question. Focus on the"
+            " relevance, reliability, and significance of each source."
+            " Ensure that the report is well-structured, informative,"
+            " in-depth, and follows Markdown syntax. Include relevant"
+            " facts, figures, and numbers whenever available. The report"
+            " should have a minimum length of 1,200 words.")
+
 
 def generate_outline_report_prompt(question, research_summary):
     """Generates the outline report prompt for the given question and research summary.
@@ -126,17 +121,16 @@ def generate_outline_report_prompt(question, research_summary):
     Returns: str: The outline report prompt for the given question and research summary
     """
 
-    return (
-        f'"""{research_summary}""" Using the above information,'
-        " generate an outline for a research report in Markdown"
-        f' syntax for the following question or topic: "{question}".'
-        " The outline should provide a well-structured framework for"
-        " the research report, including the main sections,"
-        " subsections, and key points to be covered. The research"
-        " report should be detailed, informative, in-depth, and a"
-        " minimum of 1,200 words. Use appropriate Markdown syntax to"
-        " format the outline and ensure readability."
-    )
+    return (f'"""{research_summary}""" Using the above information,'
+            " generate an outline for a research report in Markdown"
+            f' syntax for the following question or topic: "{question}".'
+            " The outline should provide a well-structured framework for"
+            " the research report, including the main sections,"
+            " subsections, and key points to be covered. The research"
+            " report should be detailed, informative, in-depth, and a"
+            " minimum of 1,200 words. Use appropriate Markdown syntax to"
+            " format the outline and ensure readability.")
+
 
 def generate_concepts_prompt(question, research_summary):
     """Generates the concepts prompt for the given question.
@@ -145,15 +139,14 @@ def generate_concepts_prompt(question, research_summary):
     Returns: str: The concepts prompt for the given question
     """
 
-    return (
-        f'"""{research_summary}""" Using the above information,'
-        " generate a list of 5 main concepts to learn for a research"
-        f' report on the following question or topic: "{question}".'
-        " The outline should provide a well-structured frameworkYou"
-        " must respond with a list of strings in the following"
-        ' format: ["concepts 1", "concepts 2", "concepts 3",'
-        ' "concepts 4, concepts 5"]'
-    )
+    return (f'"""{research_summary}""" Using the above information,'
+            " generate a list of 5 main concepts to learn for a research"
+            f' report on the following question or topic: "{question}".'
+            " The outline should provide a well-structured frameworkYou"
+            " must respond with a list of strings in the following"
+            ' format: ["concepts 1", "concepts 2", "concepts 3",'
+            ' "concepts 4, concepts 5"]')
+
 
 def generate_lesson_prompt(concept):
     """
@@ -164,15 +157,14 @@ def generate_lesson_prompt(concept):
         str: The lesson prompt for the given concept.
     """
 
-    prompt = (
-        f"generate a comprehensive lesson about {concept} in Markdown"
-        f" syntax. This should include the definitionof {concept},"
-        " its historical background and development, its"
-        " applications or uses in differentfields, and notable"
-        f" events or facts related to {concept}."
-    )
+    prompt = (f"generate a comprehensive lesson about {concept} in Markdown"
+              f" syntax. This should include the definitionof {concept},"
+              " its historical background and development, its"
+              " applications or uses in differentfields, and notable"
+              f" events or facts related to {concept}.")
 
     return prompt
+
 
 def get_report_by_type(report_type):
     report_type_mapping = {
