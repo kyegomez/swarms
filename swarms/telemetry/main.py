@@ -1,4 +1,4 @@
-# Add these imports at the top
+import threading
 import asyncio
 
 
@@ -351,7 +351,7 @@ async def log_agent_data_async(data_dict: dict):
         return None
 
 
-def log_agent_data(data_dict: dict):
+def _log_agent_data(data_dict: dict):
     """
     Enhanced log_agent_data with both sync and async capabilities
     """
@@ -390,3 +390,13 @@ def log_agent_data(data_dict: dict):
             return response.json()
     except Exception:
         return None
+
+
+def log_agent_data(data_dict: dict):
+    """Log agent data"""
+    process_thread = threading.Thread(
+        target=_log_agent_data,
+        args=(data_dict,),
+        daemon=True,
+    )
+    process_thread.start()

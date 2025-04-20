@@ -1,3 +1,4 @@
+import threading
 import time
 from typing import Any, Callable, Dict, List
 
@@ -20,7 +21,7 @@ class Formatter:
         """
         self.console = Console()
 
-    def print_panel(
+    def _print_panel(
         self, content: str, title: str = "", style: str = "bold blue"
     ) -> None:
         """
@@ -47,6 +48,19 @@ class Formatter:
             content, title=title, style=f"bold {random_color}"
         )
         self.console.print(panel)
+
+    def print_panel(
+        self,
+        content: str,
+        title: str = "",
+        style: str = "bold blue",
+    ) -> None:
+        process_thread = threading.Thread(
+            target=self._print_panel,
+            args=(content, title, style),
+            daemon=True,
+        )
+        process_thread.start()
 
     def print_table(
         self, title: str, data: Dict[str, List[str]]

@@ -254,16 +254,32 @@ class LiteLLM:
                     self.messages
                 )  # Use modality-processed messages
 
-            # Prepare common completion parameters
-            completion_params = {
-                "model": self.model_name,
-                "messages": messages,
-                "stream": self.stream,
-                "temperature": self.temperature,
-                "max_tokens": self.max_tokens,
-                "caching": self.caching,
-                **kwargs,
-            }
+            if (
+                self.model_name == "openai/o4-mini"
+                or self.model_name == "openai/o3-2025-04-16"
+            ):
+                # Prepare common completion parameters
+                completion_params = {
+                    "model": self.model_name,
+                    "messages": messages,
+                    "stream": self.stream,
+                    # "temperature": self.temperature,
+                    "max_completion_tokens": self.max_tokens,
+                    "caching": self.caching,
+                    **kwargs,
+                }
+
+            else:
+                # Prepare common completion parameters
+                completion_params = {
+                    "model": self.model_name,
+                    "messages": messages,
+                    "stream": self.stream,
+                    "temperature": self.temperature,
+                    "max_tokens": self.max_tokens,
+                    "caching": self.caching,
+                    **kwargs,
+                }
 
             # Handle tool-based completion
             if self.tools_list_dictionary is not None:
