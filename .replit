@@ -23,11 +23,11 @@ args = "python -m unittest tests/tools/test_mcp_integration.py -v"
 [[workflows.workflow]]
 name = "Run MCP Demo"
 author = 13983571
-mode = "sequential"
+mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python examples/mcp_example/mock_math_server.py & "
+args = "python examples/mcp_example/mock_math_server.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
