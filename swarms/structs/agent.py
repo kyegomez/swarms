@@ -832,7 +832,7 @@ class Agent:
             # If no components available, fall back to task
             if not components and task:
                 logger.warning(
-                    "No agent details found. Usingtask as fallback for prompt generation."
+                    "No agent details found. Usingtask as fallback for promptgeneration."
                 )
                 self.system_prompt = auto_generate_prompt(
                     task, self.llm
@@ -1861,14 +1861,25 @@ class Agent:
         return previous_state, f"Restored to {previous_state}"
 
     # Response Filtering
-    def add_response_filter(self, filter_word: str) -> None:        """
+    def add_response_filter(self, filter_word: str) -> None:
+        """
+        Add a response filter.
+
+        Args:
+            filter_word (str): The word to filter
+        """
         logger.info(f"Adding response filter: {filter_word}")
-        self.reponse_filters.append(filter_word)
+        self.response_filters.append(filter_word)
 
     def apply_reponse_filters(self, response: str) -> str:
         """
-        Apply the response filters to the response
+        Apply the response filters to the response.
 
+        Args:
+            response (str): The response to filter
+
+        Returns:
+            str: The filtered response
         """
         logger.info(
             f"Applying response filters to response: {response}"
