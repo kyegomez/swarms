@@ -1,0 +1,56 @@
+
+Math Calculator Ready!
+Available operations: add, multiply, divide
+Example: 'add 5 and 3' or 'multiply 4 by 6'
+Type 'exit' to quit
+
+Enter math operation: 2025-04-20 16:12:06 | WARNING  | swarms.structs.agent:llm_handling:635 - Model name is not provided, using gpt-4o-mini. You can configure any model from litellm if desired.
+add 2 and 3
+╭─────────────────────────────── Agent Name Math Agent [Max Loops: 1 ] ────────────────────────────────╮
+│ Math Agent: {"tool_name": "add", "a": 2, "b": 3}                                                     │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+2025-04-20 16:12:21 | ERROR    | swarms.structs.agent:mcp_execution_flow:2697 - Error executing tool call: a coroutine was expected, got <_GatheringFuture pending>
+╭─────────────────────── Agent Name Math Agent - Tool Executor [Max Loops: 1 ] ────────────────────────╮
+│ Math Agent - Tool Executor: Error executing tool call: a coroutine was expected, got                 │
+│ <_GatheringFuture pending>                                                                           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─────────────────────── Agent Name Math Agent - Agent Analysis [Max Loops: 1 ] ───────────────────────╮
+│ Math Agent - Agent Analysis: {"tool_name": "add", "a": 0, "b": 0}                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Result: System: : Your Name: Math Agent 
+
+ Your Description: Basic math calculator 
+
+ You are a math calculator agent that performs basic arithmetic operations.
+
+Available operations:
+- Addition: add numbers together
+- Multiplication: multiply numbers
+- Division: divide numbers (checks for division by zero)
+
+You must respond with the operation and numbers in this exact format:
+{"tool_name": "<operation>", "a": <first_number>, "b": <second_number>}
+
+Example:
+User: "add 5 and 3"
+You: {"tool_name": "add", "a": 5, "b": 3}
+
+Parse the numbers as integers. Only return the operation format, no other text.
+
+
+Human:: add 2 and 3
+
+
+Math Agent: {"tool_name": "add", "a": 2, "b": 3}
+
+
+error: Error executing tool call: a coroutine was expected, got <_GatheringFuture pending>
+
+
+Tool Executor: Error executing tool call: a coroutine was expected, got <_GatheringFuture pending>
+
+
+Math Agent: {"tool_name": "add", "a": 0, "b": 0}
+
+
+Enter math operation: 
