@@ -1,7 +1,6 @@
 from swarms.structs.agent import Agent
 from swarms.structs.agent_builder import AgentsBuilder
 from swarms.structs.agents_available import showcase_available_agents
-from swarms.structs.async_workflow import AsyncWorkflow
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.base_workflow import BaseWorkflow
@@ -48,7 +47,7 @@ from swarms.structs.multi_agent_exec import (
     get_agents_info,
     get_swarms_info,
 )
-from swarms.structs.multi_agent_orchestrator import MultiAgentRouter
+from swarms.structs.multi_agent_router import MultiAgentRouter
 from swarms.structs.queue_swarm import TaskQueueSwarm
 from swarms.structs.rearrange import AgentRearrange, rearrange
 from swarms.structs.round_robin import RoundRobinSwarm
@@ -83,7 +82,6 @@ from swarms.structs.swarming_architectures import (
 
 __all__ = [
     "Agent",
-    "AsyncWorkflow",
     "BaseStructure",
     "BaseSwarm",
     "BaseWorkflow",
@@ -136,7 +134,6 @@ __all__ = [
     "run_agent_with_timeout",
     "run_agents_with_resource_monitoring",
     "swarm_router",
-    "AsyncWorkflow",
     "run_agents_with_tasks_concurrently",
     "showcase_available_agents",
     "GroupChat",

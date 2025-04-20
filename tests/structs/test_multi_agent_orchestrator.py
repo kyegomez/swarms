@@ -1,6 +1,6 @@
 import os
 from swarms.structs.agent import Agent
-from swarms.structs.multi_agent_orchestrator import MultiAgentRouter
+from swarms.structs.multi_agent_router import MultiAgentRouter
 
 
 def create_test_agent(name: str) -> Agent:

@@ -8,10 +8,10 @@ agent = Agent(
     agent_name="Financial-Analysis-Agent",
     agent_description="Personal finance advisor agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-    max_loops="auto",
-    model_name="openai/o4-mini",
+    max_loops=2,
+    model_name="gpt-4o-mini",
     dynamic_temperature_enabled=True,
-    interactive=True,
+    interactive=False,
 )
 
 agent.run("Conduct an analysis of the best real undervalued ETFs")
