@@ -1861,16 +1861,14 @@ class Agent:
         return previous_state, f"Restored to {previous_state}"
 
     # Response Filtering
-    def add_response_filter(self, filter_word: str) -> None:"""
-        Add a response filter.
-
-        Args:
-            filter_word (str): The word to filter
+    def add_response_filter(self, filter_word: str) -> None:
+        """
+        Add a response filter to filter out certain words from the response.
         """
         logger.info(f"Adding response filter: {filter_word}")
         self.response_filters.append(filter_word)
 
-    def apply_reponse_filters(self, response: str) -> str:
+    def apply_response_filters(self, response: str) -> str:
         """
         Apply the response filters to the response.
 
