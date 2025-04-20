@@ -10,15 +10,6 @@ Key responsibilities:
 
 Remember to use the available MCP tools for calculations rather than doing them directly."""
 
-MATH_AGENT_PROMPT = """You are a specialized math agent that can perform calculations by calling external math service APIs.
-Key responsibilities:
-1. Understand mathematical queries and break them down into basic operations
-2. Use available math tools (add, multiply, divide) appropriately
-3. Provide clear explanations of calculations
-4. Handle errors gracefully if operations fail
-
-Remember to use the available MCP tools for calculations rather than doing them directly."""
-
 FINANCE_AGENT_PROMPT = """You are a financial analysis agent with access to stock market data services.
 Key responsibilities:
 1. Interpret financial queries and determine required data
@@ -64,7 +55,6 @@ def generate_agent_role_prompt(agent):
 
     return prompts.get(agent, "No such agent")
 
-
 def generate_report_prompt(question, research_summary):
     """Generates the report prompt for the given question and research summary.
     Args: question (str): The question to generate the report prompt for
@@ -83,7 +73,6 @@ def generate_report_prompt(question, research_summary):
         " format"
     )
 
-
 def generate_search_queries_prompt(question):
     """Generates the search queries prompt for the given question.
     Args: question (str): The question to generate the search queries prompt for
@@ -96,7 +85,6 @@ def generate_search_queries_prompt(question):
         " respond with a list of strings in the following format:"
         ' ["query 1", "query 2", "query 3", "query 4"]'
     )
-
 
 def generate_resource_report_prompt(question, research_summary):
     """Generates the resource report prompt for the given question and research summary.
@@ -122,7 +110,6 @@ def generate_resource_report_prompt(question, research_summary):
         " should have a minimum length of 1,200 words."
     )
 
-
 def generate_outline_report_prompt(question, research_summary):
     """Generates the outline report prompt for the given question and research summary.
     Args: question (str): The question to generate the outline report prompt for
@@ -142,7 +129,6 @@ def generate_outline_report_prompt(question, research_summary):
         " format the outline and ensure readability."
     )
 
-
 def generate_concepts_prompt(question, research_summary):
     """Generates the concepts prompt for the given question.
     Args: question (str): The question to generate the concepts prompt for
@@ -159,7 +145,6 @@ def generate_concepts_prompt(question, research_summary):
         ' format: ["concepts 1", "concepts 2", "concepts 3",'
         ' "concepts 4, concepts 5"]'
     )
-
 
 def generate_lesson_prompt(concept):
     """
@@ -179,7 +164,6 @@ def generate_lesson_prompt(concept):
     )
 
     return prompt
-
 
 def get_report_by_type(report_type):
     report_type_mapping = {
