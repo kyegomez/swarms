@@ -1,0 +1,105 @@
+### What “Fast‑MCP” is today – and why your code keeps breaking  
+
+| What you tried to import | Why it fails | What to do instead |
+|---|---|---|
+| `from fastmcp.servers …` / `fastmcp.client.sse` | **The layout you remember was removed.**<br/>As of *FastMCP ≥ 1.0* the project focuses **only on helping you *write servers***.  All *client‑side* helpers (SSE transport, `FastClientSession`, etc.) were merged into the **official `mcp` Python SDK** and deleted from FastMCP. citeturn14view0 | • Keep using the **`mcp` SDK** for talking to servers (list tools, call tools).<br/>• Use **FastMCP only to *build* servers you want to expose to Claude/Swarms**. |
+| `NotRequired` from `typing` on Python ≤ 3.10 | `typing.NotRequired` is available only in 3.11+. | Import it from `typing_extensions`: <br/>```python<br/>from typing_extensions import NotRequired, TypedDict<br/>``` |
+
+---
+
+## 1 · Update your Swarms integration (client side)
+
+```diff
+- from fastmcp.client.sse import sse_client
+- from fastmcp import FastClientSession as ClientSession
++ from mcp import ClientSession                  # unchanged from old codebase
++ from mcp.client.sse import sse_client          # still lives in `mcp`
+```
+
+Nothing else in your `MCPServer*` helper classes has to change – the wire protocol is the same.
+
+### Add the missing `mcp_servers` field to `Agent`
+
+```diff
+class Agent:
+     def __init__(self, 
+                  ...
+-                 tools_list_dictionary: Optional[List[Dict[str, Any]]] = None,
++                 tools_list_dictionary: Optional[List[Dict[str, Any]]] = None,
++                 mcp_servers: Optional[list[MCPServerSseParams]] = None,
+                  *args, **kwargs):
+         ...
+         self.mcp_servers = mcp_servers or []
+```
+
+and inside `handle_tool_init` gate tool execution with `if self.mcp_servers:` instead of accessing an attribute that did not exist.
+
+---
+
+## 2 · Build (or re‑use) servers with FastMCP
+
+FastMCP is perfect for *authoring* a server – e.g. a tiny calculator you can smoke‑test against Swarms:
+
+```python
+# calc_server.py
+from fastmcp import FastMCP
+
+mcp = FastMCP("Calc")           # the object name *must* be `mcp`, `app`, or `server`
+
+@mcp.tool()
+def add(a: int, b: int) -> int:
+    """Add two numbers"""
+    return a + b
+```
+
+Run it locally:
+
+```bash
+pip install fastmcp mcp           # FastMCP 2.2.0 pulls the right deps
+fastmcp dev calc_server.py        # opens the GUI inspector
+```
+
+or keep it running for Swarms with
+
+```bash
+fastmcp run calc_server.py
+```
+
+---
+
+## 3 · Connect from Swarms (smoke‑test)
+
+```python
+from swarms import Agent
+from swarms.tools.mcp_integration import MCPServerSseParams
+
+server_local = MCPServerSseParams(
+    url="http://127.0.0.1:6274",          # the URL printed by `fastmcp run`
+    headers={"Content-Type": "application/json"},
+)
+
+agent = Agent(
+    agent_name      = "Math‑Smoke‑Tester",
+    system_prompt   = "You call external MCP tools to do the math.",
+    mcp_servers     = [server_local],     # <-- now it exists
+    max_loops       = 1,
+)
+
+print(agent.run("Use the add tool to add 2 and 2"))
+```
+
+If the calculator server is reachable, Swarms will:
+
+1. Receive the LLM’s function‑call JSON,
+2. Pass it to `batch_mcp_flow`,
+3. The MCP client will POST to `http://127.0.0.1:6274`,
+4. Tool returns `4`, which your `Agent` prints.
+
+---
+
+## 4 · Where to read the current docs
+
+* **FastMCP PyPI** – installation & quick‑start citeturn14view0  
+* **Official MCP SDK** (client utilities) – <https://github.com/modelcontextprotocol/python-sdk>  
+
+Stick to this split and you can forget about missing modules or mismatched versions.
