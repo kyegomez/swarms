@@ -1,108 +1,53 @@
-# $swarms Tokenomics
 
-::: info
-**Empowering the Agentic Revolution**  
-Token Contract Address: `74SBV4zDXxTRgv1pEMoECskKBkZHc2yGPnc7GYVepump`
-:::
+# 🤝 Support the Swarms DAO
 
-<p align="center">
-  <strong>$swarms is available on:</strong><br>
-  <a href="https://pump.fun">Pump.fun</a> · <a href="https://kraken.com">Kraken</a> · <a href="https://bitget.com">Bitget</a> · <a href="https://binance.com">Binance</a> · <a href="https://okx.com">OKX</a> · and more
-</p>
+## 🌱 Invest in the Future of Agentic AI
 
----
+To build a thriving decentralized ecosystem for agentic AI, we need your support. Your contributions help us:
 
-## 📦 Overview
-
-- **Token Name:** Swarms Coin  
-- **Ticker:** `$swarms`  
-- **Blockchain:** Solana  
-- **Utility:**  
-  - Powering decentralized AI agents  
-  - Incentive mechanism for developers and contributors  
-  - Backbone of the Swarms ecosystem  
+- Expand the **Swarms Core Team** 🧠  
+- Accelerate development of **open-source tools** ⚙️  
+- Fund **community-led agent projects** 🤖  
+- Grow the **DAO’s reach and governance capacity** 🌍
 
 ---
 
-## 📊 Token Distribution
+## 💸 Contribute to the DAO
 
-| Allocation      | Percentage | Purpose                                       |
-|-----------------|------------|-----------------------------------------------|
-| 🧠 **Team**      | `3%`       | Operational resources, development, long-term sustainability |
-| 🌍 **Public Sale** | `97%`       | Community-owned, distributed through DEXs and CEXs |
+You can support Swarms DAO directly by sending **$swarms** or **SOL** to our treasury wallet:
 
-> 🧾 Originally, the team received only **2%**, one of the lowest allocations in DAO history.
+```plaintext
+🪙 DAO Treasury Wallet:
+7MaX4muAn8ZQREJxnupm8sgokwFHujgrGfH9Qn81BuEV
+```
 
----
-
-## 📣 A Message from the Team
-
-!!! quote
-    When we launched $swarms, we believed in radical decentralization.  
-    Our team took only **2%** of the total supply — one of the smallest team allocations ever.  
-    But this came at a cost.
-
-We underestimated how extreme decentralization can open doors for:
-- **Market manipulation**
-- **Exchange dominance**
-- **Unsustainable development funding**
+You may contribute via most wallets and platforms that support Solana-based tokens.
 
 ---
 
-## ⚖️ Our Proposed Solution
-
-We believe in the community — and in **responsible decentralization**. Through **DAO governance**, we propose the following:
-
-=== "Governance Proposals"
-- 📈 **Increase team allocation to 10%**  
-  To ensure sustainable growth, development, and community engagement.
-- 🌱 **Launch a Grants Program**  
-  Fuel innovation through Swarms-based agentic projects.
-- 🛡 **Fight Market Manipulation**  
-  Leverage community voting + on-chain tools to create defense mechanisms.
-- 🤝 **Strengthen Community Dev Initiatives**  
-  Enable contributors through better tools and incentives.
+!!! success "Every token matters"
+    Whether you're contributing 1 $swarms or 1,000 SOL, you're helping shape the future of agentic, decentralized intelligence.
 
 ---
 
-## 🚀 Ecosystem Growth Plans
+## 🔗 Join the DAO & Get Involved
 
-- **Developer Bounties** via DAO  
-- **Agent SDKs** and AI node infrastructure  
-- **Liquidity Incentives** to support token utility  
-- **Cross-chain compatibility** in future phases
+- 🗳 Participate in governance proposals  
+- 💡 Help design token utility & agent features  
+- 📢 Amplify the mission across Web3  
+- 🧠 Collaborate with researchers and developers
 
----
-
-## 📬 Call to Action
-
-[![DAO Governance](https://img.shields.io/badge/DAO%20Portal-Join%20Now-blue?logo=ethereum&style=for-the-badge)](https://dao.swarms.world)
-[![Investor Page](https://img.shields.io/badge/Investor%20Info-Explore-green?style=for-the-badge)](https://investors.swarms.world)
-
-> Secure the future of Swarms DAO with your voice.
+[![Join the DAO](https://img.shields.io/badge/Join%20the%20DAO-Click%20Here-blueviolet?style=for-the-badge&logo=solana)](https://dao.swarms.world)
 
 ---
 
-## 📘 Summary
+### 📢 Spread the word
 
-| Key Metric              | Value        |
-|------------------------|--------------|
-| New Proposed Team Allocation | **10%**      |
-| Public & Ecosystem     | **90%**      |
-| Governance             | Community-led |
-| Blockchain             | Solana       |
-| Project Focus          | Agentic AI, Decentralized Infrastructure |
+If you believe in the mission of building **AI powered by the people**, help us grow:
 
----
+- Share Swarms with your network  
+- Create agents using the Swarms SDK  
+- Contribute ideas and improvements in governance  
 
-## 🌐 Links
-
-- [DAO Governance Portal][dao]
-- [Investor Information][investors]
-- [Official Website][site]
-- [Discord Community][discord]
-
-[dao]: https://dao.swarms.world/
-[investors]: https://investors.swarms.world/
-[site]: https://swarms.world/
-[discord]: https://discord.gg/swarms
+> The revolution won’t be centralized.  
+It will be **agentic. autonomous. swarm-powered.**
