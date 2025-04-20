@@ -1,38 +1,63 @@
 # 🔗 Links & Resources
 
-Welcome to the Swarms ecosystem. Below is a curated list of our essential links, organized by category so you can dive in faster.
+Welcome to the Swarms ecosystem. Click any tile below to explore our products, community, documentation, and social platforms.
 
 ---
 
-## 🛠️ Products & Platforms
+<style>
+.resource-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
 
-- [**Swarms Chat**](https://swarms.world/platform/chat) — Conversational agent interface  
-- [**Swarms Marketplace**](https://swarms.world) — Explore and deploy agents  
-- [**Swarms API Docs**](https://docs.swarms.world/en/latest/swarms_cloud/swarms_api/) — Full developer documentation  
-- [**Swarms Startup Program**](https://www.swarms.xyz/programs/startups) — Launch your agentic company 🚀  
-  !!! tip "Apply Now"
-      Ready to build the future with Swarms?  
-      👉 [Apply to the Startup Program](https://www.swarms.xyz/programs/startups)
+.resource-card {
+  display: block;
+  padding: 1.2rem;
+  border-radius: 12px;
+  background: #1e1e2f;
+  color: white;
+  text-decoration: none;
+  text-align: center;
+  font-weight: 600;
+  transition: transform 0.2s ease, background 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.resource-card:hover {
+  transform: translateY(-4px);
+  background: #2a2a3d;
+}
+</style>
+
+<div class="resource-grid">
+
+<a class="resource-card" href="https://swarms.world/platform/chat" target="_blank">🗣️ Swarms Chat</a>
+
+<a class="resource-card" href="https://swarms.world" target="_blank">🛍️ Swarms Marketplace</a>
+
+<a class="resource-card" href="https://docs.swarms.world/en/latest/swarms_cloud/swarms_api/" target="_blank">📚 Swarms API Docs</a>
+
+<a class="resource-card" href="https://www.swarms.xyz/programs/startups" target="_blank">🚀 Swarms Startup Program</a>
+
+<a class="resource-card" href="https://github.com/kyegomez/swarms" target="_blank">💻 GitHub: Swarms (Python)</a>
+
+<a class="resource-card" href="https://github.com/The-Swarm-Corporation/swarms-rs" target="_blank">🦀 GitHub: Swarms (Rust)</a>
+
+<a class="resource-card" href="https://discord.gg/jM3Z6M9uMq" target="_blank">💬 Join Our Discord</a>
+
+<a class="resource-card" href="https://t.me/swarmsgroupchat" target="_blank">📱 Telegram Group</a>
+
+<a class="resource-card" href="https://x.com/swarms_corp" target="_blank">🐦 Twitter / X</a>
+
+<a class="resource-card" href="https://medium.com/@kyeg" target="_blank">✍️ Swarms Blog on Medium</a>
+
+</div>
 
 ---
 
-## 👩‍💻 Development
-
-- [**Swarms Core GitHub**](https://github.com/kyegomez/swarms) — Main Python-based repo  
-- [**Swarms Rust Repo**](https://github.com/The-Swarm-Corporation/swarms-rs) — High-performance core infrastructure  
-
----
-
-## 📣 Community & Socials
-
-- [**Discord Community**](https://discord.gg/jM3Z6M9uMq) — Developer chats, DAO discussions, support  
-- [**Telegram Group**](https://t.me/swarmsgroupchat) — Real-time updates and community vibes  
-- [**Twitter / X**](https://x.com/swarms_corp) — Project updates, news, and announcements  
-- [**Medium Blog**](https://medium.com/@kyeg) — Long-form posts and research from the team
-
----
-
-## 🧠 Resources Overview
+## 💡 Quick Summary
 
 | Category     | Link                                                                 |
 |--------------|----------------------------------------------------------------------|
@@ -49,13 +74,4 @@ Welcome to the Swarms ecosystem. Below is a curated list of our essential links,
 
 ---
 
-## 💡 Quick Access Buttons
-
-[![Join Discord](https://img.shields.io/badge/Join%20Discord-Click%20Here-blueviolet?style=for-the-badge&logo=discord)](https://discord.gg/jM3Z6M9uMq)
-[![Telegram Group](https://img.shields.io/badge/Telegram-Join%20Chat-29a?style=for-the-badge&logo=telegram)](https://t.me/swarmsgroupchat)
-[![Apply for Startups](https://img.shields.io/badge/Apply%20to%20Startup%20Program-Now-green?style=for-the-badge&logo=rocket)](https://www.swarms.xyz/programs/startups)
-
----
-
-> ✨ The Swarms ecosystem is growing fast — stay plugged in and help shape the agentic AI revolution.
-
+> 🐝 Swarms is building the agentic internet. Join the movement and build the future with us.
