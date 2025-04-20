@@ -1,3 +1,4 @@
+
 from fastmcp import FastMCP
 from loguru import logger
 
@@ -5,26 +6,28 @@ mcp = FastMCP(
     host="0.0.0.0",
     port=8000,
     transport="sse",
-    require_session_id=False,
-    timeout=30.0
+    require_session_id=False
 )
 
 @mcp.tool()
-def add(a: int, b: int) -> int:
+def add(a: int, b: int) -> str:
     """Add two numbers."""
-    return a + b
+    result = a + b
+    return f"The sum of {a} and {b} is {result}"
 
 @mcp.tool() 
-def multiply(a: int, b: int) -> int:
+def multiply(a: int, b: int) -> str:
     """Multiply two numbers."""
-    return a * b
+    result = a * b
+    return f"The product of {a} and {b} is {result}"
 
 @mcp.tool()
-def divide(a: int, b: int) -> float:
+def divide(a: int, b: int) -> str:
     """Divide two numbers."""
     if b == 0:
-        raise ValueError("Cannot divide by zero")
-    return a / b
+        return "Cannot divide by zero"
+    result = a / b
+    return f"{a} divided by {b} is {result}"
 
 if __name__ == "__main__":
     try:

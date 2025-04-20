@@ -1,3 +1,4 @@
+
 from swarms import Agent
 from swarms.tools.mcp_integration import MCPServerSseParams
 from swarms.prompts.agent_prompts import MATH_AGENT_PROMPT
@@ -13,11 +14,12 @@ def initialize_math_system():
     )
 
     math_agent = Agent(
-        agent_name="Math Agent",
-        agent_description="Basic math calculator", 
+        agent_name="Math Assistant",
+        agent_description="Friendly math calculator",
         system_prompt=MATH_AGENT_PROMPT,
         max_loops=1,
-        mcp_servers=[math_server]
+        mcp_servers=[math_server],
+        model_name="gpt-3.5-turbo"
     )
 
     return math_agent
@@ -26,23 +28,23 @@ def main():
     math_agent = initialize_math_system()
 
     print("\nMath Calculator Ready!")
-    print("Available operations: add, multiply, divide")
-    print("Example: 'add 5 and 3' or 'multiply 4 by 6'")
+    print("Ask me any math question!")
+    print("Examples: 'what is 5 plus 3?' or 'can you multiply 4 and 6?'")
     print("Type 'exit' to quit\n")
 
     while True:
         try:
-            query = input("Enter math operation: ").strip()
+            query = input("What would you like to calculate? ").strip()
             if not query:
                 continue
             if query.lower() == 'exit':
                 break
 
             result = math_agent.run(query)
-            print(f"Result: {result}")
+            print(f"\nResult: {result}\n")
 
         except KeyboardInterrupt:
-            print("\nExiting...")
+            print("\nGoodbye!")
             break
         except Exception as e:
             logger.error(f"Error: {e}")
