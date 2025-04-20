@@ -1,0 +1,66 @@
+=== MINIMAL MCP AGENT INTEGRATION TEST ===
+Testing only the core MCP integration with Agent
+2025-04-20T18:19:47.080439+0000 | INFO | mcp_client:main:33 - Creating MCP server parameters...
+2025-04-20T18:19:47.080601+0000 | INFO | mcp_client:main:45 - MCP Server URL: http://0.0.0.0:8000
+2025-04-20T18:19:47.080686+0000 | INFO | mcp_client:main:46 - MCP Headers: {'Content-Type': 'application/json', 'Accept': 'text/event-stream'}
+2025-04-20T18:19:47.080763+0000 | INFO | mcp_client:main:49 - Creating Agent with MCP integration...
+2025-04-20T18:19:47.088927+0000 | WARNING | agent:llm_handling:613 - Model name is not provided, using gpt-4o-mini. You can configure any model from litellm if desired.
+
+Agent created successfully!
+Enter a math query or 'exit' to quit
+
+Math query: what tools you have?
+2025-04-20T18:20:39.747943+0000 | INFO | mcp_client:main:66 - Processing query: what tools you have?
+╭────────────────── Agent Name MCP Test Agent [Max Loops: 1 ] ───────────────────╮
+│ MCP Test Agent: {"tool_name": "none", "description": "I can perform addition,  │
+│ multiplication, and division using specific tools."}                           │
+╰────────────────────────────────────────────────────────────────────────────────╯
+2025-04-20T18:20:41.073474+0000 | ERROR | mcp_integration:connect:89 - Error initializing MCP server: unhandled errors in a TaskGroup (1 sub-exception)
+2025-04-20T18:20:41.073628+0000 | ERROR | mcp_integration:abatch_mcp_flow:268 - Error in abatch_mcp_flow: unhandled errors in a TaskGroup (1 sub-exception)
+╭────────── Agent Name MCP Test Agent - Tool Executor [Max Loops: 1 ] ───────────╮
+│ MCP Test Agent - Tool Executor: Error in batch operation: unhandled errors in  │
+│ a TaskGroup (1 sub-exception)                                                  │
+╰────────────────────────────────────────────────────────────────────────────────╯
+╭────────── Agent Name MCP Test Agent - Agent Analysis [Max Loops: 1 ] ──────────╮
+│ MCP Test Agent - Agent Analysis: It seems like you're encountering an error    │
+│ related to a batch operation in a programming or data processing context.      │
+│ However, I can assist you with mathematical calculations. If you have any      │
+│ specific calculations you'd like to perform, please provide the numbers and    │
+│ the operation (addition, multiplication, or division), and I'll format it as   │
+│ JSON for you.                                                                  │
+╰────────────────────────────────────────────────────────────────────────────────╯
+
+Result: System: : Your Name: MCP Test Agent 
+
+ Your Description: None 
+
+ 
+You are a math calculator assistant that uses tools to perform calculations.
+
+When asked for calculations, determine the operation and numbers, then use one of these tools:
+- add: Add two numbers
+- multiply: Multiply two numbers
+- divide: Divide first number by second
+
+FORMAT as JSON:
+{"tool_name": "add", "a": 5, "b": 10}
+
+
+
+Human:: what tools you have?
+
+
+MCP Test Agent: {"tool_name": "none", "description": "I can perform addition, multiplication, and division using specific tools."}
+
+
+assistant: Tool execution result: ['Error in batch operation: unhandled errors in a TaskGroup (1 sub-exception)']
+
+
+Tool Executor: Error in batch operation: unhandled errors in a TaskGroup (1 sub-exception)
+
+
+MCP Test Agent: It seems like you're encountering an error related to a batch operation in a programming or data processing context. However, I can assist you with mathematical calculations. If you have any specific calculations you'd like to perform, please provide the numbers and the operation (addition, multiplication, or division), and I'll format it as JSON for you.
+
+
+
+Math query: 
