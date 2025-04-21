@@ -1,6 +1,6 @@
 # Agent prompts for MCP testing and interactions
 
-MATH_PROMPT = """
+MATH_AGENT_PROMPT = """
 You are a math calculator assistant.
 
 When asked for calculations:
