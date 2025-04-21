@@ -59,6 +59,26 @@ plugins:
   - search
   - minify:
       minify_html: true
+  - i18n:
+      default_language: en
+      languages:
+        en: English
+        fa: فارسی
+      nav_translations:
+        fa:
+          Home: خانه
+          "Core Concepts": مفاهیم اصلی
+          "Why Multi-Agent Systems?": چرا سیستم‌های چند عامله؟
+          "Limitations of Individual Agents": محدودیت‌های عامل‌های انفرادی
+          "Multi-Agent Architecture": معماری چند عامله
+          "Best Practices": بهترین شیوه‌ها
+          "Implementation Guide": راهنمای پیاده‌سازی
+          "Communication Protocols": پروتکل‌های ارتباطی
+          "Error Handling": مدیریت خطا
+          "Performance Optimization": بهینه‌سازی عملکرد
+          "FAQ": سوالات متداول
+          "Tips & Troubleshooting": نکات و عیب‌یابی
+          "Glossary": واژه‌نامه
 
 extra:
   social:

@@ -64,6 +64,7 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.pdf_to_text import pdf_to_text
+from ..utils.language_config import language_config, Language
 
 
 # Utils
@@ -2774,3 +2775,20 @@ class Agent:
                 role="Output Cleaner",
                 content=response,
             )
+
+    def run(self, task: str) -> str:
+        """Run the agent with the given task."""
+        try:
+            print(language_config.get_translation("status_messages", "task_started"))
+            result = self._execute_task(task)
+            print(language_config.get_translation("status_messages", "task_completed"))
+            return result
+        except Exception as e:
+            error_msg = language_config.get_translation("error_messages", "task_failed")
+            print(f"{error_msg}: {str(e)}")
+            raise
+
+    def _execute_task(self, task: str) -> str:
+        """Execute the given task."""
+        print(language_config.get_translation("status_messages", "task_in_progress"))
+        // ... existing code ...
