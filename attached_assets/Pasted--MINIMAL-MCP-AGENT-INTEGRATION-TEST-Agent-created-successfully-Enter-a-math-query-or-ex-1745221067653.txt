@@ -1,0 +1,59 @@
+=== MINIMAL MCP AGENT INTEGRATION TEST ===
+
+Agent created successfully!
+Enter a math query or 'exit' to quit
+
+Math query: add 2 and 3
+
+Processing: add 2 and 3
+╭────────────────── Agent Name MCP Test Agent [Max Loops: 1 ] ───────────────────╮
+│ MCP Test Agent: {"tool_name": "add", "a": 2, "b": 3}                           │
+╰────────────────────────────────────────────────────────────────────────────────╯
+2025-04-21T07:36:01.678279+0000 | ERROR | Error initializing MCP server: unhandled errors in a TaskGroup (1 sub-exception)
+2025-04-21T07:36:01.678457+0000 | ERROR | Error in abatch_mcp_flow: unhandled errors in a TaskGroup (1 sub-exception)
+╭────────── Agent Name MCP Test Agent - Tool Executor [Max Loops: 1 ] ───────────╮
+│ MCP Test Agent - Tool Executor: Error in batch operation: unhandled errors in  │
+│ a TaskGroup (1 sub-exception)                                                  │
+╰────────────────────────────────────────────────────────────────────────────────╯
+╭────────── Agent Name MCP Test Agent - Agent Analysis [Max Loops: 1 ] ──────────╮
+│ MCP Test Agent - Agent Analysis: {"tool_name": "add", "a": 1, "b": 1}          │
+╰────────────────────────────────────────────────────────────────────────────────╯
+
+Result: System: : Your Name: MCP Test Agent 
+
+ Your Description: None 
+
+ 
+You are a math calculator assistant.
+
+When asked for calculations:
+1. Determine the operation (add, multiply, or divide)
+2. Extract the numbers
+3. Return the JSON format of the calculation
+
+For example:
+- For "add 5 and 3", respond with: {"tool_name": "add", "a": 5, "b": 3}
+- For "multiply 7 by 4", respond with: {"tool_name": "multiply", "a": 7, "b": 4}
+- For "divide 10 by 2", respond with: {"tool_name": "divide", "a": 10, "b": 2}
+
+When asked about your capabilities, respond with: {"tool_name": "add", "a": 1, "b": 1}
+
+
+
+Human:: add 2 and 3
+
+
+MCP Test Agent: {"tool_name": "add", "a": 2, "b": 3}
+
+
+assistant: Tool execution result: ['Error in batch operation: unhandled errors in a TaskGroup (1 sub-exception)']
+
+
+Tool Executor: Error in batch operation: unhandled errors in a TaskGroup (1 sub-exception)
+
+
+MCP Test Agent: {"tool_name": "add", "a": 1, "b": 1}
+
+
+
+Math query: 
