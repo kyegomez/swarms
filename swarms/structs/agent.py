@@ -1074,7 +1074,8 @@ class Agent:
     def _handle_run_error(self, error: any):
         process_thread = threading.Thread(
             target=self.__handle_run_error,
-            args=(error, ),
+
+            args=(error,),
             daemon=True,
         )
         process_thread.start()
