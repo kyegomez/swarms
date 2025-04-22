@@ -1,19 +1,27 @@
 services:
   swarms-agent-server:
-    image: swarms-agent-node:latest
-    platform: linux/amd64
+    image: python:3.12-slim
     volumes:
-      - /var/run/tappd.sock:/var/run/tappd.sock
       - swarms:/app
     restart: always
-    ports:
-      - 8000:8000
-    command: # Sample MCP Server
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    command: # Run swarms agent example
       - /bin/sh
       - -c
       - |
-        cd /app/mcp_example
-        python mcp_test.py
+        # install dependencies
+        apt update && apt install -y git python3-pip
+        mkdir -p /app && cd /app
+
+        git clone --depth 1 https://github.com/The-Swarm-Corporation/swarms-examples
+        cd swarms-examples/
+        pip install -r requirements.txt && pip install langchain-community langchain-core
+        cd examples/agents/
+        python o1_preview.py
+
+        # keep container running
+        sleep infinity
 
 volumes:
   swarms:
