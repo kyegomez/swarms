@@ -1,4 +1,4 @@
-from swarms import Agent, SequentialWorkflow
+from swarms import Agent, ConcurrentWorkflow
 
 
 # Core Legal Agent Definitions with enhanced system prompts
@@ -27,7 +27,7 @@ ip_agent = Agent(
 )
 
 
-swarm = SequentialWorkflow(
+swarm = ConcurrentWorkflow(
     agents=[litigation_agent, corporate_agent, ip_agent],
     name="litigation-practice",
     description="Handle all aspects of litigation with a focus on thorough legal analysis and effective case management.",

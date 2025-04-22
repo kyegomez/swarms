@@ -177,11 +177,6 @@ class AutoSwarmBuilder:
             swarm_type=swarm_type,
         )
 
-        if not self.api_key:
-            raise ValueError(
-                "OpenAI API key must be provided either through initialization or environment variable"
-            )
-
         logger.info(
             "Initialized AutoSwarmBuilder",
             extra={

@@ -244,9 +244,9 @@ nav:
         - Auto Agent Builder: "swarms/structs/auto_agent_builder.md"
         - Various Execution Methods: "swarms/structs/various_execution_methods.md"
         - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
+        - Deep Research Swarm: "swarms/structs/deep_research_swarm.md"
         - Workflows:
             - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
-            - AsyncWorkflow: "swarms/structs/async_workflow.md"
             - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
         - Structs:
           - Conversation: "swarms/structs/conversation.md"
@@ -268,14 +268,20 @@ nav:
         - Pinecone: "swarms_memory/pinecone.md"
         - Faiss: "swarms_memory/faiss.md"
 
+    - Deployment Solutions:
+      - Deploying Swarms on Google Cloud Run: "swarms_cloud/cloud_run.md"
+      - Phala Deployment: "swarms_cloud/phala_deploy.md"
+
     - About Us:
       - Swarms Vision: "swarms/concept/vision.md"
       - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
       - Swarms Products: "swarms/products.md"
 
-    - Developers and Contributors:
+    - Contributors:
       - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
       - Bounty Program: "corporate/bounty_program.md"
+      - Contributing to Documentation: "contributors/docs.md"
+      - Contributing Tools/Custom Plugins for Swarms: "contributors/tools.md"
       - Contributing: 
         - Contributing: "swarms/contributing.md"
         - Tests: "swarms/framework/test.md"
@@ -350,16 +356,23 @@ nav:
     - Swarm Types: "swarms_cloud/swarm_types.md"
     - Swarms Cloud Subscription Tiers: "swarms_cloud/subscription_tiers.md"
     - Swarms API Best Practices: "swarms_cloud/best_practices.md"
+    - Swarms API as MCP: "swarms_cloud/mcp.md"
     - Swarm Ecosystem APIs:
       - MCS API: "swarms_cloud/mcs_api.md"
       # - CreateNow API: "swarms_cloud/create_api.md"
-    - Self Hosted Swarms:
-      - Deploying Swarms on Google Cloud Run: "swarms_cloud/cloud_run.md"
   - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"
     # - Agent Marketplace: "swarms_platform/share_discover.md"
     - Swarm Platform API Keys: "swarms_platform/apikeys.md"
     - Account Management: "swarms_platform/account_management.md"
+
+  - Swarms Rust:
+    - Overview: "swarms_rs/overview.md"
+    - Agents: "swarms_rs/agents.md"
+
+  - Governance:
+    - Resources: "governance/main.md"
+    - Tokenomics: "web3/token.md"
 
     
     # - Prompts API: 

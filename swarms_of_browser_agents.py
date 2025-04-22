@@ -26,18 +26,11 @@ class BrowserAgent:
 
 
 swarm = ConcurrentWorkflow(
-    agents=[BrowserAgent() for _ in range(3)],
+    agents=[BrowserAgent() for _ in range(10)],
 )
 
 swarm.run(
     """
-    Go to pump.fun.
-    
-    2. Make an account: use email: "test@test.com" and password: "test1234"
-    
-    3. Make a coin called and give it a cool description and etc. Fill in the form
-    
-    4. Sit back and watch the coin grow in value.
-    
+    Go to coinpost.jp and find the latest news about the crypto market.
     """
 )

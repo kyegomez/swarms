@@ -1,3 +1,4 @@
+import concurrent.futures
 import asyncio
 import json
 import logging
@@ -13,7 +14,6 @@ from typing import (
     Callable,
     Dict,
     List,
-    Literal,
     Optional,
     Tuple,
     Union,
@@ -46,11 +46,12 @@ from swarms.structs.safe_loading import (
 )
 from swarms.telemetry.main import log_agent_data
 from swarms.tools.base_tool import BaseTool
-from swarms.tools.mcp_integration import (
-    MCPServerSseParams,
-    batch_mcp_flow,
-    mcp_flow_get_tool_schema,
-)
+
+# from swarms.tools.mcp_integration import (
+#     MCPServerSseParams,
+#     batch_mcp_flow,
+#     mcp_flow_get_tool_schema,
+# )
 from swarms.tools.tool_parse_exec import parse_and_execute_json
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.data_to_text import data_to_text
@@ -58,11 +59,11 @@ from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
+    HistoryOutputType,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.pdf_to_text import pdf_to_text
-from swarms.utils.str_to_dict import str_to_dict
 
 
 # Utils
@@ -89,18 +90,6 @@ def exists(val):
 
 
 # Agent output types
-# agent_output_type = Union[BaseModel, dict, str]
-agent_output_type = Literal[
-    "string",
-    "str",
-    "list",
-    "json",
-    "dict",
-    "yaml",
-    "json_schema",
-    "memory-list",
-    "memory-dict",
-]
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
 
@@ -346,7 +335,7 @@ class Agent:
         # [Tools]
         custom_tools_prompt: Optional[Callable] = None,
         tool_schema: ToolUsageType = None,
-        output_type: agent_output_type = "str",
+        output_type: HistoryOutputType = "str",
         function_calling_type: str = "json",
         output_cleaner: Optional[Callable] = None,
         function_calling_format_type: Optional[str] = "OpenAI",
@@ -403,7 +392,7 @@ class Agent:
         role: agent_roles = "worker",
         no_print: bool = False,
         tools_list_dictionary: Optional[List[Dict[str, Any]]] = None,
-        mcp_servers: List[MCPServerSseParams] = [],
+        # mcp_servers: List[MCPServerSseParams] = [],
         *args,
         **kwargs,
     ):
@@ -523,7 +512,8 @@ class Agent:
         self.role = role
         self.no_print = no_print
         self.tools_list_dictionary = tools_list_dictionary
-        self.mcp_servers = mcp_servers
+        # self.mcp_servers = mcp_servers
+
         self._cached_llm = (
             None  # Add this line to cache the LLM instance
         )
@@ -558,72 +548,76 @@ class Agent:
             max_workers=executor_workers
         )
 
-        # Initialize the tool struct
-        if (
-            exists(tools)
-            or exists(list_base_models)
-            or exists(tool_schema)
-        ):
+        self.init_handling()
 
-            self.tool_struct = BaseTool(
-                tools=tools,
-                base_models=list_base_models,
-                tool_system_prompt=tool_system_prompt,
-            )
+    def init_handling(self):
+        # Define tasks as pairs of (function, condition)
+        # Each task will only run if its condition is True
+        tasks = [
+            (self.setup_config, True),  # Always run setup_config
+            (
+                self.get_docs_from_doc_folders,
+                exists(self.docs_folder),
+            ),
+            (self.handle_tool_init, True),  # Always run tool init
+            (
+                self.handle_tool_schema_ops,
+                exists(self.tool_schema)
+                or exists(self.list_base_models),
+            ),
+            (
+                self.handle_sop_ops,
+                exists(self.sop) or exists(self.sop_list),
+            ),
+        ]
 
-        # Some common configuration settings
-        threading.Thread(
-            target=self.setup_config, daemon=True
-        ).start()
+        # Filter out tasks whose conditions are False
+        filtered_tasks = [
+            task for task, condition in tasks if condition
+        ]
 
-        # If docs folder exists then get the docs from docs folder
-        if exists(self.docs_folder):
-            threading.Thread(
-                target=self.get_docs_from_doc_folders
-            ).start()
-
-        if tools is not None:
-            logger.info(
-                "Tools provided make sure the functions have documentation ++ type hints, otherwise tool execution won't be reliable."
-            )
-            # Add the tool prompt to the memory
-            self.short_memory.add(
-                role="system", content=tool_system_prompt
-            )
-
-            # Log the tools
-            logger.info(
-                f"Tools provided: Accessing {len(tools)} tools"
-            )
-
-            # Transform the tools into an openai schema
-            # self.convert_tool_into_openai_schema()
-
-            # Transform the tools into an openai schema
-            tool_dict = (
-                self.tool_struct.convert_tool_into_openai_schema()
-            )
-            self.short_memory.add(role="system", content=tool_dict)
-
-            # Now create a function calling map for every tools
-            self.function_map = {
-                tool.__name__: tool for tool in tools
+        # Execute all tasks concurrently
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=os.cpu_count() * 4
+        ) as executor:
+            # Map tasks to futures and collect results
+            results = {}
+            future_to_task = {
+                executor.submit(task): task.__name__
+                for task in filtered_tasks
             }
 
-        # If the tool schema exists or a list of base models exists then convert the tool schema into an openai schema
-        if exists(tool_schema) or exists(list_base_models):
-            threading.Thread(
-                target=self.handle_tool_schema_ops()
-            ).start()
+            # Wait for each future to complete and collect results/exceptions
+            for future in concurrent.futures.as_completed(
+                future_to_task
+            ):
+                task_name = future_to_task[future]
+                try:
+                    result = future.result()
+                    results[task_name] = result
+                    logging.info(
+                        f"Task {task_name} completed successfully"
+                    )
+                except Exception as e:
+                    results[task_name] = None
+                    logging.error(
+                        f"Task {task_name} failed with error: {e}"
+                    )
 
-        # If the sop or sop_list exists then handle the sop ops
-        if exists(self.sop) or exists(self.sop_list):
-            threading.Thread(target=self.handle_sop_ops()).start()
+        # Run sequential operations after all concurrent tasks are done
+        self.agent_output = self.agent_output_model()
+        log_agent_data(self.to_dict())
 
+        if self.llm is None:
+            self.llm = self.llm_handling()
+
+    def agent_output_model(self):
         # Many steps
-        self.agent_output = ManySteps(
-            agent_id=agent_id,
-            agent_name=agent_name,
+        id = agent_id()
+
+        return ManySteps(
+            agent_id=id,
+            agent_name=self.agent_name,
             # run_id=run_id,
             task="",
             max_loops=self.max_loops,
@@ -636,18 +630,6 @@ class Agent:
             interactive=self.interactive,
             dynamic_temperature_enabled=self.dynamic_temperature_enabled,
         )
-
-        # Telemetry Processor to log agent data
-        log_agent_data(self.to_dict())
-
-        if self.llm is None:
-            self.llm = self.llm_handling()
-
-        if (
-            self.tools_list_dictionary is None
-            and self.mcp_servers is not None
-        ):
-            self.tools_list_dictionary = self.mcp_tool_handling()
 
     def llm_handling(self):
         # Use cached instance if available
@@ -695,68 +677,110 @@ class Agent:
             )
             return None
 
-    def mcp_execution_flow(self, response: any):
-        """
-        Executes the MCP (Model Context Protocol) flow based on the provided response.
+    def handle_tool_init(self):
+        # Initialize the tool struct
+        if (
+            exists(self.tools)
+            or exists(self.list_base_models)
+            or exists(self.tool_schema)
+        ):
 
-        This method takes a response, converts it from a string to a dictionary format,
-        and checks for the presence of a tool name or a name in the response. If either
-        is found, it retrieves the tool name and proceeds to call the batch_mcp_flow
-        function to execute the corresponding tool actions.
-
-        Args:
-            response (any): The response to be processed, which can be in string format
-            that represents a dictionary.
-
-        Returns:
-            The output from the batch_mcp_flow function, which contains the results of
-            the tool execution. If an error occurs during processing, it logs the error
-            and returns None.
-
-        Raises:
-            Exception: Logs any exceptions that occur during the execution flow.
-        """
-        try:
-            response = str_to_dict(response)
-
-            tool_output = batch_mcp_flow(
-                self.mcp_servers,
-                function_call=response,
+            self.tool_struct = BaseTool(
+                tools=self.tools,
+                base_models=self.list_base_models,
+                tool_system_prompt=self.tool_system_prompt,
             )
 
-            return tool_output
-        except Exception as e:
-            logger.error(f"Error in mcp_execution_flow: {e}")
-            return None
+        if self.tools is not None:
+            logger.info(
+                "Tools provided make sure the functions have documentation ++ type hints, otherwise tool execution won't be reliable."
+            )
+            # Add the tool prompt to the memory
+            self.short_memory.add(
+                role="system", content=self.tool_system_prompt
+            )
 
-    def mcp_tool_handling(self):
-        """
-        Handles the retrieval of tool schemas from the MCP servers.
+            # Log the tools
+            logger.info(
+                f"Tools provided: Accessing {len(self.tools)} tools"
+            )
 
-        This method iterates over the list of MCP servers, retrieves the tool schema
-        for each server using the mcp_flow_get_tool_schema function, and compiles
-        these schemas into a list. The resulting list is stored in the
-        tools_list_dictionary attribute.
+            # Transform the tools into an openai schema
+            # self.convert_tool_into_openai_schema()
 
-        Returns:
-            list: A list of tool schemas retrieved from the MCP servers. If an error
-            occurs during the retrieval process, it logs the error and returns None.
+            # Transform the tools into an openai schema
+            tool_dict = (
+                self.tool_struct.convert_tool_into_openai_schema()
+            )
+            self.short_memory.add(role="system", content=tool_dict)
 
-        Raises:
-            Exception: Logs any exceptions that occur during the tool handling process.
-        """
-        try:
-            self.tools_list_dictionary = []
+            # Now create a function calling map for every tools
+            self.function_map = {
+                tool.__name__: tool for tool in self.tools
+            }
 
-            for mcp_server in self.mcp_servers:
-                tool_schema = mcp_flow_get_tool_schema(mcp_server)
-                self.tools_list_dictionary.append(tool_schema)
+    # def mcp_execution_flow(self, response: any):
+    #     """
+    #     Executes the MCP (Model Context Protocol) flow based on the provided response.
 
-            print(self.tools_list_dictionary)
-            return self.tools_list_dictionary
-        except Exception as e:
-            logger.error(f"Error in mcp_tool_handling: {e}")
-            return None
+    #     This method takes a response, converts it from a string to a dictionary format,
+    #     and checks for the presence of a tool name or a name in the response. If either
+    #     is found, it retrieves the tool name and proceeds to call the batch_mcp_flow
+    #     function to execute the corresponding tool actions.
+
+    #     Args:
+    #         response (any): The response to be processed, which can be in string format
+    #         that represents a dictionary.
+
+    #     Returns:
+    #         The output from the batch_mcp_flow function, which contains the results of
+    #         the tool execution. If an error occurs during processing, it logs the error
+    #         and returns None.
+
+    #     Raises:
+    #         Exception: Logs any exceptions that occur during the execution flow.
+    #     """
+    #     try:
+    #         response = str_to_dict(response)
+
+    #         tool_output = batch_mcp_flow(
+    #             self.mcp_servers,
+    #             function_call=response,
+    #         )
+
+    #         return tool_output
+    #     except Exception as e:
+    #         logger.error(f"Error in mcp_execution_flow: {e}")
+    #         return None
+
+    # def mcp_tool_handling(self):
+    #     """
+    #     Handles the retrieval of tool schemas from the MCP servers.
+
+    #     This method iterates over the list of MCP servers, retrieves the tool schema
+    #     for each server using the mcp_flow_get_tool_schema function, and compiles
+    #     these schemas into a list. The resulting list is stored in the
+    #     tools_list_dictionary attribute.
+
+    #     Returns:
+    #         list: A list of tool schemas retrieved from the MCP servers. If an error
+    #         occurs during the retrieval process, it logs the error and returns None.
+
+    #     Raises:
+    #         Exception: Logs any exceptions that occur during the tool handling process.
+    #     """
+    #     try:
+    #         self.tools_list_dictionary = []
+
+    #         for mcp_server in self.mcp_servers:
+    #             tool_schema = mcp_flow_get_tool_schema(mcp_server)
+    #             self.tools_list_dictionary.append(tool_schema)
+
+    #         print(self.tools_list_dictionary)
+    #         return self.tools_list_dictionary
+    #     except Exception as e:
+    #         logger.error(f"Error in mcp_tool_handling: {e}")
+    #         return None
 
     def setup_config(self):
         # The max_loops will be set dynamically if the dynamic_loop
@@ -955,14 +979,24 @@ class Agent:
             agent(task="What is the capital of France?", img="path/to/image.jpg", is_last=True)
         """
         try:
-            self.check_if_no_prompt_then_autogenerate(task)
+            # 1. Batch process initial setup
+            setup_tasks = [
+                lambda: self.check_if_no_prompt_then_autogenerate(
+                    task
+                ),
+                lambda: self.short_memory.add(
+                    role=self.user_name, content=task
+                ),
+                lambda: (
+                    self.plan(task) if self.plan_enabled else None
+                ),
+            ]
 
-            # Add task to memory
-            self.short_memory.add(role=self.user_name, content=task)
-
-            # Plan
-            if self.plan_enabled is True:
-                self.plan(task)
+            # Execute setup tasks concurrently
+            with ThreadPoolExecutor(
+                max_workers=len(setup_tasks)
+            ) as executor:
+                executor.map(lambda f: f(), setup_tasks)
 
             # Set the loop count
             loop_count = 0
@@ -1035,15 +1069,31 @@ class Agent:
                         # Convert to a str if the response is not a str
                         response = self.parse_llm_output(response)
 
-                        self.short_memory.add(
-                            role=self.agent_name, content=response
-                        )
+                        # self.short_memory.add(
+                        #     role=self.agent_name, content=response
+                        # )
 
-                        # Print
-                        self.pretty_print(response, loop_count)
+                        # # Print
+                        # self.pretty_print(response, loop_count)
 
-                        # Output Cleaner
-                        self.output_cleaner_op(response)
+                        # # Output Cleaner
+                        # self.output_cleaner_op(response)
+
+                        # 9. Batch memory updates and prints
+                        update_tasks = [
+                            lambda: self.short_memory.add(
+                                role=self.agent_name, content=response
+                            ),
+                            lambda: self.pretty_print(
+                                response, loop_count
+                            ),
+                            lambda: self.output_cleaner_op(response),
+                        ]
+
+                        with ThreadPoolExecutor(
+                            max_workers=len(update_tasks)
+                        ) as executor:
+                            executor.map(lambda f: f(), update_tasks)
 
                         # Check and execute tools
                         if self.tools is not None:
@@ -1120,7 +1170,7 @@ class Agent:
                     break
 
                 if self.interactive:
-                    logger.info("Interactive mode enabled.")
+                    # logger.info("Interactive mode enabled.")
                     user_input = input("You: ")
 
                     # User-defined exit command
@@ -1144,13 +1194,23 @@ class Agent:
             if self.autosave is True:
                 log_agent_data(self.to_dict())
 
-                if self.autosave is True:
-                    self.save()
-
-            log_agent_data(self.to_dict())
-
-            if self.autosave is True:
                 self.save()
+
+            # log_agent_data(self.to_dict())
+
+            # if self.autosave is True:
+            #     self.save()
+
+            # 14. Batch final operations
+            final_tasks = [
+                lambda: log_agent_data(self.to_dict()),
+                lambda: self.save() if self.autosave else None,
+            ]
+
+            with ThreadPoolExecutor(
+                max_workers=len(final_tasks)
+            ) as executor:
+                executor.map(lambda f: f(), final_tasks)
 
             return history_output_formatter(
                 self.short_memory, type=self.output_type
@@ -1162,7 +1222,7 @@ class Agent:
         except KeyboardInterrupt as error:
             self._handle_run_error(error)
 
-    def _handle_run_error(self, error: any):
+    def __handle_run_error(self, error: any):
         log_agent_data(self.to_dict())
 
         if self.autosave is True:
@@ -1172,6 +1232,14 @@ class Agent:
             f"Error detected running your agent {self.agent_name} \n Error {error} \n Optimize your input parameters and or add an issue on the swarms github and contact our team on discord for support ;) "
         )
         raise error
+
+    def _handle_run_error(self, error: any):
+        process_thread = threading.Thread(
+            target=self.__handle_run_error,
+            args=(error,),
+            daemon=True,
+        )
+        process_thread.start()
 
     async def arun(
         self,
@@ -1212,12 +1280,6 @@ class Agent:
                 self.run,
                 task=task,
                 img=img,
-                is_last=is_last,
-                device=device,
-                device_id=device_id,
-                all_cores=all_cores,
-                do_not_use_cluster_ops=do_not_use_cluster_ops,
-                all_gpus=all_gpus,
                 *args,
                 **kwargs,
             )
@@ -1253,12 +1315,7 @@ class Agent:
             return self.run(
                 task=task,
                 img=img,
-                is_last=is_last,
-                device=device,
-                device_id=device_id,
-                all_cores=all_cores,
-                do_not_use_cluster_ops=do_not_use_cluster_ops,
-                all_gpus=all_gpus * args,
+                *args,
                 **kwargs,
             )
         except Exception as error:
@@ -2490,10 +2547,12 @@ class Agent:
                 **kwargs,
             )
 
-            if self.tools_list_dictionary is not None:
-                return str_to_dict(output)
-            else:
-                return output
+            return output
+
+            # if self.tools_list_dictionary is not None:
+            #     return str_to_dict(output)
+            # else:
+            #     return output
 
         except ValueError as e:
             self._handle_run_error(e)

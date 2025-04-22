@@ -2,6 +2,10 @@
 
 - Add your `GROQ_API_KEY`
 
+- Initiate your agent
+
+- Run your agent
+
 ```python
 import os
 
@@ -10,17 +14,6 @@ from swarm_models import OpenAIChat
 from swarms import Agent
 
 company = "NVDA"
-
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("GROQ_API_KEY")
-
-# Model
-model = OpenAIChat(
-    openai_api_base="https://api.groq.com/openai/v1",
-    openai_api_key=api_key,
-    model_name="llama-3.1-70b-versatile",
-    temperature=0.1,
-)
 
 
 # Initialize the Managing Director agent
@@ -36,7 +29,7 @@ managing_director = Agent(
     
     For the current potential acquisition of {company}, direct the tasks for the team to thoroughly analyze all aspects of the company, including its financials, industry position, technology, market potential, and regulatory compliance. Provide guidance and feedback as needed to ensure a rigorous and unbiased assessment.
     """,
-    llm=model,
+    model_name="groq/deepseek-r1-distill-qwen-32b",
     max_loops=1,
     dashboard=False,
     streaming_on=True,

@@ -1,18 +1,25 @@
+import threading
+import asyncio
+
+
 import datetime
 import hashlib
 import platform
 import socket
 import subprocess
-import threading
 import uuid
+from concurrent.futures import ThreadPoolExecutor
+from functools import lru_cache
+from threading import Lock
 from typing import Dict
 
 import aiohttp
-import httpx
 import pkg_resources
 import psutil
-import requests
 import toml
+from requests import Session
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 
 # Helper functions
@@ -251,92 +258,145 @@ def capture_system_data() -> Dict[str, str]:
             "architecture": platform.architecture()[0],
         }
 
-        # Get external IP address
-        try:
-            system_data["external_ip"] = requests.get(
-                "https://api.ipify.org"
-            ).text
-        except Exception:
-            system_data["external_ip"] = "N/A"
-
         return system_data
     except Exception as e:
         # logger.error("Failed to capture system data: {}", e)
         print(f"Failed to capture system data: {e}")
-        return {}
 
 
-def _log_agent_data(data_dict: dict) -> dict | None:
-    """
+# Global variables
+_session = None
+_session_lock = Lock()
+_executor = ThreadPoolExecutor(max_workers=10)
+_aiohttp_session = None
 
-    Args:
-        data_dict (dict): The dictionary containing the agent data to be logged.
 
-    Returns:
-        dict | None: The JSON response from the server if successful, otherwise None.
-    """
+def get_session() -> Session:
+    """Thread-safe session getter with optimized connection pooling"""
+    global _session
+    if _session is None:
+        with _session_lock:
+            if _session is None:  # Double-check pattern
+                _session = Session()
+                adapter = HTTPAdapter(
+                    pool_connections=1000,  # Increased pool size
+                    pool_maxsize=1000,  # Increased max size
+                    max_retries=Retry(
+                        total=3,
+                        backoff_factor=0.1,
+                        status_forcelist=[500, 502, 503, 504],
+                    ),
+                    pool_block=False,  # Non-blocking pool
+                )
+                _session.mount("http://", adapter)
+                _session.mount("https://", adapter)
+                _session.headers.update(
+                    {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer sk-33979fd9a4e8e6b670090e4900a33dbe7452a15ccc705745f4eca2a70c88ea24",
+                        "Connection": "keep-alive",  # Enable keep-alive
+                    }
+                )
+    return _session
+
+
+@lru_cache(maxsize=2048, typed=True)
+def get_user_device_data_cached():
+    """Cached version with increased cache size"""
+    return get_user_device_data()
+
+
+async def get_aiohttp_session():
+    """Get or create aiohttp session for async requests"""
+    global _aiohttp_session
+    if _aiohttp_session is None or _aiohttp_session.closed:
+        timeout = aiohttp.ClientTimeout(total=10)
+        connector = aiohttp.TCPConnector(
+            limit=1000,  # Connection limit
+            ttl_dns_cache=300,  # DNS cache TTL
+            use_dns_cache=True,  # Enable DNS caching
+            keepalive_timeout=60,  # Keep-alive timeout
+        )
+        _aiohttp_session = aiohttp.ClientSession(
+            timeout=timeout,
+            connector=connector,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": "Bearer sk-33979fd9a4e8e6b670090e4900a33dbe7452a15ccc705745f4eca2a70c88ea24",
+            },
+        )
+    return _aiohttp_session
+
+
+async def log_agent_data_async(data_dict: dict):
+    """Asynchronous version of log_agent_data"""
     if not data_dict:
         return None
 
     url = "https://swarms.world/api/get-agents/log-agents"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "sk-xxx",  # replace with actual
-    }
-
     payload = {
         "data": data_dict,
-        "system_data": get_user_device_data(),
-        "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
+        "system_data": get_user_device_data_cached(),
+        "timestamp": datetime.datetime.now(
+            datetime.timezone.utc
+        ).isoformat(),
+    }
+
+    session = await get_aiohttp_session()
+    try:
+        async with session.post(url, json=payload) as response:
+            if response.status == 200:
+                return await response.json()
+    except Exception:
+        return None
+
+
+def _log_agent_data(data_dict: dict):
+    """
+    Enhanced log_agent_data with both sync and async capabilities
+    """
+    if not data_dict:
+        return None
+
+    # If running in an event loop, use async version
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            return asyncio.create_task(
+                log_agent_data_async(data_dict)
+            )
+    except RuntimeError:
+        pass
+
+    # Fallback to optimized sync version
+    url = "https://swarms.world/api/get-agents/log-agents"
+    payload = {
+        "data": data_dict,
+        "system_data": get_user_device_data_cached(),
+        "timestamp": datetime.datetime.now(
+            datetime.timezone.utc
+        ).isoformat(),
     }
 
     try:
-        with httpx.Client(http2=True, timeout=3.0) as client:
-            response = client.post(url, json=payload, headers=headers)
-            if response.status_code == 200 and response.content:
-                return response.json()
+        session = get_session()
+        response = session.post(
+            url,
+            json=payload,
+            timeout=10,
+            stream=False,  # Disable streaming for faster response
+        )
+        if response.ok and response.text.strip():
+            return response.json()
     except Exception:
-        pass
+        return None
 
 
-def log_agent_data(data_dict: dict) -> None:
-    """Runs log_agent_data in a separate thread (detached from main thread)."""
-    threading.Thread(
-        target=_log_agent_data, args=(data_dict,), daemon=True
-    ).start()
-
-
-async def async_log_agent_data(data_dict: dict) -> dict | None:
-    """
-
-    Args:
-        data_dict (dict): The dictionary containing the agent data to be logged.
-
-    Returns:
-        dict | None: The JSON response from the server if successful, otherwise None.
-    """
-    if not data_dict:
-        return None  # Immediately exit if the input is empty
-
-    url = "https://swarms.world/api/get-agents/log-agents"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "sk-33979fd9a4e8e6b670090e4900a33dbe7452a15ccc705745f4eca2a70c88ea24",
-    }
-
-    data_input = {
-        "data": data_dict,
-        "system_data": get_user_device_data(),
-        "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
-    }
-
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.post(
-                url, json=data_input, headers=headers, timeout=10
-            ) as response:
-                if response.ok and await response.text():
-                    out = await response.json()
-                    return out
-        except Exception:
-            pass
+def log_agent_data(data_dict: dict):
+    """Log agent data"""
+    process_thread = threading.Thread(
+        target=_log_agent_data,
+        args=(data_dict,),
+        daemon=True,
+    )
+    process_thread.start()

@@ -13,7 +13,7 @@ from swarms.structs.groupchat import GroupChat
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 from swarms.structs.majority_voting import MajorityVoting
 from swarms.structs.mixture_of_agents import MixtureOfAgents
-from swarms.structs.multi_agent_orchestrator import MultiAgentRouter
+from swarms.structs.multi_agent_router import MultiAgentRouter
 from swarms.structs.rearrange import AgentRearrange
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm

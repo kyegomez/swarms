@@ -254,16 +254,32 @@ class LiteLLM:
                     self.messages
                 )  # Use modality-processed messages
 
-            # Prepare common completion parameters
-            completion_params = {
-                "model": self.model_name,
-                "messages": messages,
-                "stream": self.stream,
-                "temperature": self.temperature,
-                "max_tokens": self.max_tokens,
-                "caching": self.caching,
-                **kwargs,
-            }
+            if (
+                self.model_name == "openai/o4-mini"
+                or self.model_name == "openai/o3-2025-04-16"
+            ):
+                # Prepare common completion parameters
+                completion_params = {
+                    "model": self.model_name,
+                    "messages": messages,
+                    "stream": self.stream,
+                    # "temperature": self.temperature,
+                    "max_completion_tokens": self.max_tokens,
+                    "caching": self.caching,
+                    **kwargs,
+                }
+
+            else:
+                # Prepare common completion parameters
+                completion_params = {
+                    "model": self.model_name,
+                    "messages": messages,
+                    "stream": self.stream,
+                    "temperature": self.temperature,
+                    "max_tokens": self.max_tokens,
+                    "caching": self.caching,
+                    **kwargs,
+                }
 
             # Handle tool-based completion
             if self.tools_list_dictionary is not None:
@@ -292,8 +308,11 @@ class LiteLLM:
                 return response.choices[0].message.content
 
             # Standard completion
-            response = completion(**completion_params)
-            return response.choices[0].message.content
+            if self.stream:
+                return completion(**completion_params)
+            else:
+                response = completion(**completion_params)
+                return response.choices[0].message.content
 
         except LiteLLMException as error:
             logger.error(f"Error in LiteLLM run: {str(error)}")
@@ -364,16 +383,18 @@ class LiteLLM:
 
             # Standard completion
             response = await acompletion(**completion_params)
-            return response.choices[0].message.content
+
+            print(response)
+            return response
 
         except Exception as error:
             logger.error(f"Error in LiteLLM arun: {str(error)}")
-            if "rate_limit" in str(error).lower():
-                logger.warning(
-                    "Rate limit hit, retrying with exponential backoff..."
-                )
-                await asyncio.sleep(2)  # Use async sleep
-                return await self.arun(task, *args, **kwargs)
+            # if "rate_limit" in str(error).lower():
+            #     logger.warning(
+            #         "Rate limit hit, retrying with exponential backoff..."
+            #     )
+            #     await asyncio.sleep(2)  # Use async sleep
+            #     return await self.arun(task, *args, **kwargs)
             raise error
 
     async def _process_batch(
