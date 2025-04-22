@@ -2,15 +2,15 @@
 
 Welcome! This guide will walk you through running your Swarms Agent in a Trusted Execution Environment (TEE) using Phala Cloud. This setup ensures your agent runs in a secure, isolated environment.
 
-## Prerequisites
+## 📋 Prerequisites
 
 - A Swarms Agent code repository (or docker image)
 - A Phala Cloud account
 - An OpenAI API key
 
-## Step-by-Step Guide
+## 📝 Step-by-Step Guide
 
-### 1. Configure Your Environment
+### 1. ⚙️ Configure Your Environment
 
 First, prepare your `docker-compose.yaml` file. You can find an example in [docker-compose.yaml](./docker-compose.yaml). Make sure to have your OpenAI API key ready.
 
@@ -44,13 +44,13 @@ volumes:
   swarms:
 ```
 
-### 2. Deploy Your Agent
+### 2. 🚀 Deploy Your Agent
 
 1. Navigate to the [Phala Cloud dashboard](https://cloud.phala.network/dashboard)
 2. Create a new Swarms agent application
    ![Creating a Swarms agent on Phala Cloud](./01_create_agent_on_phala_cloud.png)
 
-### 3. Monitor Your Deployment
+### 3. 📊 Monitor Your Deployment
 
 1. Check the initialization logs of your agent
    ![Agent initialization logs](./02_serial_logs.png)
@@ -62,12 +62,12 @@ volumes:
 3. Monitor your agent's output
    ![Swarms Agent Logs](./05_agent_output.png)
 
-### 4. Verify TEE Attestation
+### 4. ✅ Verify TEE Attestation
 
 Ensure your agent is running in a secure TEE environment by checking the attestation proof on the [TEE Attestation Explorer](https://proof.t16z.com/).
 
 ![TEE Attestation Verification](./06_attestation.png)
 
-## Success!
+## 🎉 Success!
 
 You've successfully deployed your Swarms Agent in a secure TEE environment using Phala Cloud. Your agent is now running in an isolated, trusted execution environment, ensuring enhanced security for your AI operations.
