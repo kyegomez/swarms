@@ -10,6 +10,8 @@ Welcome! This guide will walk you through running your Swarms Agent in a Trusted
 
 ## 📝 Step-by-Step Guide
 
+Firstly, you need to register a [Phala Cloud](https://cloud.phala.network/) account before you can create a new Swarms agent application.
+
 ### 1. ⚙️ Configure Your Environment
 
 First, prepare your `docker-compose.yaml` file. You can find an example in [docker-compose.yaml](./docker-compose.yaml). Make sure to have your OpenAI API key ready.
@@ -47,7 +49,10 @@ volumes:
 ### 2. 🚀 Deploy Your Agent
 
 1. Navigate to the [Phala Cloud dashboard](https://cloud.phala.network/dashboard)
-2. Create a new Swarms agent application
+2. Click `Deploy` button on the Phala Cloud dashboard.
+3. Choose `docker-compose.yaml` and then click `Advanced` tab to paste the content of your docker-compose.yaml file.
+4. Importantly, make sure to add the `OPENAI_API_KEY` in the `Encrypted Secrets` section with your own OpenAI API key.
+5. Click `Create` button to create a new Swarms agent application.
    <p align="center">
    <img src="../docs/swarms_cloud/imgs/01_create_agent_on_phala_cloud.png" alt="Creating a Swarms agent on Phala Cloud" style="width: 700px;">
    </p>
@@ -82,4 +87,4 @@ Ensure your agent is running in a secure TEE environment by checking the attesta
 
 You've successfully deployed your Swarms Agent in a secure TEE environment using Phala Cloud. Your agent is now running in an isolated, trusted execution environment, ensuring enhanced security for your AI operations.
 
-If you have any questions, please reach out to us on [Phala Cloud](https://cloud.phala.network/).
+If you have any questions, please reach out to Phala on [Phala Cloud](https://cloud.phala.network/).

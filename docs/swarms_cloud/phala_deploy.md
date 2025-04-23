@@ -6,7 +6,7 @@ This guide will walk you through deploying your project to Phala's Trusted Execu
 
 - Docker installed on your system
 - A DockerHub account
-- Access to Phala Cloud dashboard
+- Register a [Phala Cloud](https://cloud.phala.network/) account
 
 ## 🛡️ TEE Overview
 
@@ -54,28 +54,30 @@ Choose one of these deployment methods:
 
 - Use [tee-cloud-cli](https://github.com/Phala-Network/tee-cloud-cli) (Recommended)
 - Deploy manually via the [Phala Cloud Dashboard](https://cloud.phala.network/)
-  1. Navigate to the [Phala Cloud dashboard](https://cloud.phala.network/dashboard)
-  2. Create a new Swarms agent application
+  1. Click `Deploy` button on the Phala Cloud dashboard.
+  2. Choose `docker-compose.yaml` and then click `Advanced` tab to paste the content of your docker-compose.yaml file.
+  3. Importantly, make sure to add the `OPENAI_API_KEY` in the `Encrypted Secrets` section with your own OpenAI API key.
+  4. Click `Create` button to create a new Swarms agent application.
       <p align="center">
-      <img src="../docs/swarms_cloud/imgs/01_create_agent_on_phala_cloud.png" alt="Creating a Swarms agent on Phala Cloud" style="width: 700px;">
+      <img src="./imgs/01_create_agent_on_phala_cloud.png" alt="Creating a Swarms agent on Phala Cloud" style="width: 700px;">
       </p>
 
 ### 3. Monitor Your Deployment
 
 1. Check the initialization logs of your agent
    <p align="center">
-   <img src="../docs/swarms_cloud/imgs/02_serial_logs.png" alt="Agent initialization logs" style="width: 700px;">
-   <img src="../docs/swarms_cloud/imgs/03_serial_logs.png" alt="Detailed initialization logs" style="width: 700px;">
+   <img src="./imgs/02_serial_logs.png" alt="Agent initialization logs" style="width: 700px;">
+   <img src="./imgs/03_serial_logs.png" alt="Detailed initialization logs" style="width: 700px;">
    </p>
 
 2. Verify your container is running
    <p align="center">
-   <img src="../docs/swarms_cloud/imgs/04_swarms_agent_containers.png" alt="Swarms Agent Container Status" style="width: 700px;">
+   <img src="./imgs/04_swarms_agent_containers.png" alt="Swarms Agent Container Status" style="width: 700px;">
    </p>
 
 3. Monitor your agent's output
    <p align="center">
-   <img src="../docs/swarms_cloud/imgs/05_agent_output.png" alt="Swarms Agent Logs" style="width: 700px;">
+   <img src="./imgs/05_agent_output.png" alt="Swarms Agent Logs" style="width: 700px;">
    </p>
 
 ### 4. Verify TEE Attestation
@@ -83,7 +85,7 @@ Choose one of these deployment methods:
 Visit the [TEE Attestation Explorer](https://proof.t16z.com/) to check and verify your agent's TEE proof.
 
 <p align="center">
-<img src="../docs/swarms_cloud/imgs/06_attestation.png" alt="TEE Attestation Verification" style="width: 700px;">
+<img src="./imgs/06_attestation.png" alt="TEE Attestation Verification" style="width: 700px;">
 </p>
 
 ## 📚 Additional Resources
