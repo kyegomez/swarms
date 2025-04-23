@@ -48,25 +48,35 @@ volumes:
 
 1. Navigate to the [Phala Cloud dashboard](https://cloud.phala.network/dashboard)
 2. Create a new Swarms agent application
-   ![Creating a Swarms agent on Phala Cloud](../docs/swarms_cloud/imgs/01_create_agent_on_phala_cloud.png)
+   <p align="center">
+   <img src="../docs/swarms_cloud/imgs/01_create_agent_on_phala_cloud.png" alt="Creating a Swarms agent on Phala Cloud" style="width: 700px;">
+   </p>
 
 ### 3. 📊 Monitor Your Deployment
 
 1. Check the initialization logs of your agent
-   ![Agent initialization logs](../docs/swarms_cloud/imgs/02_serial_logs.png)
-   ![Detailed initialization logs](../docs/swarms_cloud/imgs/03_serial_logs.png)
+   <p align="center">
+   <img src="../docs/swarms_cloud/imgs/02_serial_logs.png" alt="Agent initialization logs" style="width: 700px;">
+   <img src="../docs/swarms_cloud/imgs/03_serial_logs.png" alt="Detailed initialization logs" style="width: 700px;">
+   </p>
 
 2. Verify your container is running
-   ![Swarms Agent Container Status](../docs/swarms_cloud/imgs/04_swarms_agent_containers.png)
+   <p align="center">
+   <img src="../docs/swarms_cloud/imgs/04_swarms_agent_containers.png" alt="Swarms Agent Container Status" style="width: 700px;">
+   </p>
 
 3. Monitor your agent's output
-   ![Swarms Agent Logs](../docs/swarms_cloud/imgs/05_agent_output.png)
+   <p align="center">
+   <img src="../docs/swarms_cloud/imgs/05_agent_output.png" alt="Swarms Agent Logs" style="width: 700px;">
+   </p>
 
 ### 4. ✅ Verify TEE Attestation
 
 Ensure your agent is running in a secure TEE environment by checking the attestation proof on the [TEE Attestation Explorer](https://proof.t16z.com/).
 
-![TEE Attestation Verification](../docs/swarms_cloud/imgs/06_attestation.png)
+<p align="center">
+<img src="../docs/swarms_cloud/imgs/06_attestation.png" alt="TEE Attestation Verification" style="width: 700px;">
+</p>
 
 ## 🎉 Success!
 
