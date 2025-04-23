@@ -78,7 +78,6 @@ numpy = "*"
 litellm = "*"
 torch = "*"
 httpx = "*"
-langchain-openai = "^0.3.14"
 fastmcp = {version = ">=2.0", extras = ["sse"]}
 mcp = ">=0.3.0"
 typing-extensions = "^4.13.2"
