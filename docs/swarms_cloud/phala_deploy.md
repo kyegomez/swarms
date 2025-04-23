@@ -14,55 +14,68 @@ For detailed instructions about Trusted Execution Environment setup, please refe
 
 ## 🚀 Deployment Steps
 
-### 1. Build and Publish Docker Image
+### 1. Configure Your Environment
 
-```bash
-# Build the Docker image
-docker compose build -t <your-dockerhub-username>/swarm-agent-node:latest
+First, prepare your `docker-compose.yaml` file. You can find an example in [docker-compose.yaml](./docker-compose.yaml). Make sure to have your OpenAI API key ready.
 
-# Push to DockerHub
-docker push <your-dockerhub-username>/swarm-agent-node:latest
+```yaml
+services:
+  swarms-agent-server:
+    image: python:3.12-slim
+    volumes:
+      - swarms:/app
+    restart: always
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    command: # Run swarms agent example
+      - /bin/sh
+      - -c
+      - |
+        # install dependencies
+        apt update && apt install -y git python3-pip
+        mkdir -p /app && cd /app
+
+        git clone --depth 1 https://github.com/The-Swarm-Corporation/swarms-examples
+        cd swarms-examples/
+        pip install -r requirements.txt && pip install langchain-community langchain-core
+        cd examples/agents/
+        python o1_preview.py
+
+        # keep container running
+        sleep infinity
+
+volumes:
+  swarms:
 ```
 
 ### 2. Deploy to Phala Cloud
 
 Choose one of these deployment methods:
+
 - Use [tee-cloud-cli](https://github.com/Phala-Network/tee-cloud-cli) (Recommended)
 - Deploy manually via the [Phala Cloud Dashboard](https://cloud.phala.network/)
+  1. Navigate to the [Phala Cloud dashboard](https://cloud.phala.network/dashboard)
+  2. Create a new Swarms agent application
+     ![Creating a Swarms agent on Phala Cloud](./imgs/01_create_agent_on_phala_cloud.png)
 
-### 3. Verify TEE Attestation
+### 3. Monitor Your Deployment
+
+1. Check the initialization logs of your agent
+   ![Agent initialization logs](./imgs/02_serial_logs.png)
+   ![Detailed initialization logs](./imgs/03_serial_logs.png)
+
+2. Verify your container is running
+   ![Swarms Agent Container Status](./imgs/04_swarms_agent_containers.png)
+
+3. Monitor your agent's output
+   ![Swarms Agent Logs](./imgs/05_agent_output.png)
+
+### 4. Verify TEE Attestation
 
 Visit the [TEE Attestation Explorer](https://proof.t16z.com/) to check and verify your agent's TEE proof.
 
-## 📝 Docker Configuration
-
-Below is a sample Docker Compose configuration for your Swarms agent:
-
-```yaml
-services:
-  swarms-agent-server:
-    image: swarms-agent-node:latest
-    platform: linux/amd64
-    volumes:
-      - /var/run/tappd.sock:/var/run/tappd.sock
-      - swarms:/app
-    restart: always
-    ports:
-      - 8000:8000
-    command: # Sample MCP Server
-      - /bin/sh
-      - -c
-      - |
-        cd /app/mcp_example
-        python mcp_test.py
-volumes:
-  swarms:
-```
+![TEE Attestation Verification](./imgs/06_attestation.png)
 
 ## 📚 Additional Resources
 
 For more comprehensive documentation and examples, visit our [Official Documentation](https://docs.swarms.world/en/latest/).
-
----
-
-> **Note**: Make sure to replace `<your-dockerhub-username>` with your actual DockerHub username when building and pushing the image.

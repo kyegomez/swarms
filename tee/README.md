@@ -48,26 +48,28 @@ volumes:
 
 1. Navigate to the [Phala Cloud dashboard](https://cloud.phala.network/dashboard)
 2. Create a new Swarms agent application
-   ![Creating a Swarms agent on Phala Cloud](./01_create_agent_on_phala_cloud.png)
+   ![Creating a Swarms agent on Phala Cloud](../docs/swarms_cloud/imgs/01_create_agent_on_phala_cloud.png)
 
 ### 3. 📊 Monitor Your Deployment
 
 1. Check the initialization logs of your agent
-   ![Agent initialization logs](./02_serial_logs.png)
-   ![Detailed initialization logs](./03_serial_logs.png)
+   ![Agent initialization logs](../docs/swarms_cloud/imgs/02_serial_logs.png)
+   ![Detailed initialization logs](../docs/swarms_cloud/imgs/03_serial_logs.png)
 
 2. Verify your container is running
-   ![Swarms Agent Container Status](./04_swarms_agent_containers.png)
+   ![Swarms Agent Container Status](../docs/swarms_cloud/imgs/04_swarms_agent_containers.png)
 
 3. Monitor your agent's output
-   ![Swarms Agent Logs](./05_agent_output.png)
+   ![Swarms Agent Logs](../docs/swarms_cloud/imgs/05_agent_output.png)
 
 ### 4. ✅ Verify TEE Attestation
 
 Ensure your agent is running in a secure TEE environment by checking the attestation proof on the [TEE Attestation Explorer](https://proof.t16z.com/).
 
-![TEE Attestation Verification](./06_attestation.png)
+![TEE Attestation Verification](../docs/swarms_cloud/imgs/06_attestation.png)
 
 ## 🎉 Success!
 
 You've successfully deployed your Swarms Agent in a secure TEE environment using Phala Cloud. Your agent is now running in an isolated, trusted execution environment, ensuring enhanced security for your AI operations.
+
+If you have any questions, please reach out to us on [Phala Cloud](https://cloud.phala.network/).
