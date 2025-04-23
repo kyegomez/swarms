@@ -43,6 +43,8 @@ async def _execute_mcp_tool(
     method: Literal["stdio", "sse"] = "sse",
     parameters: Dict[Any, Any] = None,
     output_type: Literal["str", "dict"] = "str",
+    timeout: float = 30.0,
+
     *args,
     **kwargs,
 ) -> Dict[Any, Any]:
@@ -72,13 +74,15 @@ async def _execute_mcp_tool(
         raise ValueError(f"Invalid output type: {output_type}")
 
 
-def execute_mcp_tool(
+async def execute_mcp_tool(
+
     url: str,
     tool_name: str = None,
     method: Literal["stdio", "sse"] = "sse",
     parameters: Dict[Any, Any] = None,
     output_type: Literal["str", "dict"] = "str",
 ) -> Dict[Any, Any]:
+
     return asyncio.run(
         _execute_mcp_tool(
             url=url,

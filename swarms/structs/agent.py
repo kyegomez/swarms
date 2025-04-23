@@ -29,8 +29,7 @@ from swarms.agents.ape_agent import auto_generate_prompt
 from swarms.artifacts.main_artifact import Artifact
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
-    MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
-)
+    MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1, )
 from swarms.prompts.tools import tool_sop_prompt
 from swarms.schemas.agent_step_schemas import ManySteps, Step
 from swarms.schemas.base_schemas import (
@@ -46,12 +45,7 @@ from swarms.structs.safe_loading import (
 )
 from swarms.telemetry.main import log_agent_data
 from swarms.tools.base_tool import BaseTool
-
-# from swarms.tools.mcp_integration import (
-#     MCPServerSseParams,
-#     batch_mcp_flow,
-#     mcp_flow_get_tool_schema,
-# )
+from swarms.tools.mcp_integration import MCPServerSseParams, batch_mcp_flow, mcp_flow_get_tool_schema
 from swarms.tools.tool_parse_exec import parse_and_execute_json
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.data_to_text import data_to_text
@@ -91,7 +85,6 @@ def exists(val):
 
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
-
 
 # Agent Exceptions
 
@@ -260,7 +253,7 @@ class Agent:
         run_async_concurrent: Run the agent asynchronously and concurrently
         run_async_concurrent: Run the agent asynchronously and concurrently
         construct_dynamic_prompt: Construct the dynamic prompt
-        handle_artifacts: Handle artifacts
+        handle_artifacts
 
 
     Examples:
@@ -327,8 +320,7 @@ class Agent:
         stopping_func: Optional[Callable] = None,
         custom_loop_condition: Optional[Callable] = None,
         sentiment_threshold: Optional[
-            float
-        ] = None,  # Evaluate on output using an external model
+            float] = None,  # Evaluate on output using an external model
         custom_exit_command: Optional[str] = "exit",
         sentiment_analyzer: Optional[Callable] = None,
         limit_tokens_from_string: Optional[Callable] = None,
@@ -367,9 +359,8 @@ class Agent:
         use_cases: Optional[List[Dict[str, str]]] = None,
         step_pool: List[Step] = [],
         print_every_step: Optional[bool] = False,
-        time_created: Optional[str] = time.strftime(
-            "%Y-%m-%d %H:%M:%S", time.localtime()
-        ),
+        time_created: Optional[str] = time.strftime("%Y-%m-%d %H:%M:%S",
+                                                    time.localtime()),
         agent_output: ManySteps = None,
         executor_workers: int = os.cpu_count(),
         data_memory: Optional[Callable] = None,
@@ -392,7 +383,7 @@ class Agent:
         role: agent_roles = "worker",
         no_print: bool = False,
         tools_list_dictionary: Optional[List[Dict[str, Any]]] = None,
-        # mcp_servers: List[MCPServerSseParams] = [],
+        mcp_servers: Optional[list] = None,  # list[MCPServerSseParams]
         *args,
         **kwargs,
     ):
@@ -456,9 +447,7 @@ class Agent:
         self.output_type = output_type
         self.function_calling_type = function_calling_type
         self.output_cleaner = output_cleaner
-        self.function_calling_format_type = (
-            function_calling_format_type
-        )
+        self.function_calling_format_type = (function_calling_format_type)
         self.list_base_models = list_base_models
         self.metadata_output_type = metadata_output_type
         self.state_save_file_type = state_save_file_type
@@ -512,7 +501,8 @@ class Agent:
         self.role = role
         self.no_print = no_print
         self.tools_list_dictionary = tools_list_dictionary
-        # self.mcp_servers = mcp_servers
+        self.mcp_servers = mcp_servers or [
+        ]  # Initialize mcp_servers to an empty list if None
 
         self._cached_llm = (
             None  # Add this line to cache the LLM instance
@@ -521,10 +511,7 @@ class Agent:
             "gpt-4o-mini"  # Move default model name here
         )
 
-        if (
-            self.agent_name is not None
-            or self.agent_description is not None
-        ):
+        if (self.agent_name is not None or self.agent_description is not None):
             prompt = f"Your Name: {self.agent_name} \n\n Your Description: {self.agent_description} \n\n {system_prompt}"
         else:
             prompt = system_prompt
@@ -544,9 +531,7 @@ class Agent:
         self.feedback = []
 
         # Initialize the executor
-        self.executor = ThreadPoolExecutor(
-            max_workers=executor_workers
-        )
+        self.executor = ThreadPoolExecutor(max_workers=executor_workers)
 
         self.init_handling()
 
@@ -562,8 +547,7 @@ class Agent:
             (self.handle_tool_init, True),  # Always run tool init
             (
                 self.handle_tool_schema_ops,
-                exists(self.tool_schema)
-                or exists(self.list_base_models),
+                exists(self.tool_schema) or exists(self.list_base_models),
             ),
             (
                 self.handle_sop_ops,
@@ -572,14 +556,11 @@ class Agent:
         ]
 
         # Filter out tasks whose conditions are False
-        filtered_tasks = [
-            task for task, condition in tasks if condition
-        ]
+        filtered_tasks = [task for task, condition in tasks if condition]
 
         # Execute all tasks concurrently
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=os.cpu_count() * 4
-        ) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() *
+                                                   4) as executor:
             # Map tasks to futures and collect results
             results = {}
             future_to_task = {
@@ -588,21 +569,15 @@ class Agent:
             }
 
             # Wait for each future to complete and collect results/exceptions
-            for future in concurrent.futures.as_completed(
-                future_to_task
-            ):
+            for future in concurrent.futures.as_completed(future_to_task):
                 task_name = future_to_task[future]
                 try:
                     result = future.result()
                     results[task_name] = result
-                    logging.info(
-                        f"Task {task_name} completed successfully"
-                    )
+                    logging.info(f"Task {task_name} completed successfully")
                 except Exception as e:
                     results[task_name] = None
-                    logging.error(
-                        f"Task {task_name} failed with error: {e}"
-                    )
+                    logging.error(f"Task {task_name} failed with error: {e}")
 
         # Run sequential operations after all concurrent tasks are done
         self.agent_output = self.agent_output_model()
@@ -623,9 +598,7 @@ class Agent:
             max_loops=self.max_loops,
             steps=self.short_memory.to_dict(),
             full_history=self.short_memory.get_str(),
-            total_tokens=count_tokens(
-                text=self.short_memory.get_str()
-            ),
+            total_tokens=count_tokens(text=self.short_memory.get_str()),
             stopping_token=self.stopping_token,
             interactive=self.interactive,
             dynamic_temperature_enabled=self.dynamic_temperature_enabled,
@@ -652,23 +625,17 @@ class Agent:
             }
 
             if self.llm_args is not None:
-                self._cached_llm = LiteLLM(
-                    **{**common_args, **self.llm_args}
-                )
+                self._cached_llm = LiteLLM(**{**common_args, **self.llm_args})
             elif self.tools_list_dictionary is not None:
                 self._cached_llm = LiteLLM(
                     **common_args,
                     tools_list_dictionary=self.tools_list_dictionary,
                     tool_choice="auto",
-                    parallel_tool_calls=len(
-                        self.tools_list_dictionary
-                    )
-                    > 1,
+                    parallel_tool_calls=len(self.tools_list_dictionary) > 1,
                 )
             else:
-                self._cached_llm = LiteLLM(
-                    **common_args, stream=self.streaming_on
-                )
+                self._cached_llm = LiteLLM(**common_args,
+                                           stream=self.streaming_on)
 
             return self._cached_llm
         except AgentLLMInitializationError as e:
@@ -679,11 +646,8 @@ class Agent:
 
     def handle_tool_init(self):
         # Initialize the tool struct
-        if (
-            exists(self.tools)
-            or exists(self.list_base_models)
-            or exists(self.tool_schema)
-        ):
+        if (exists(self.tools) or exists(self.list_base_models)
+                or exists(self.tool_schema) or exists(self.mcp_servers)):
 
             self.tool_struct = BaseTool(
                 tools=self.tools,
@@ -696,91 +660,21 @@ class Agent:
                 "Tools provided make sure the functions have documentation ++ type hints, otherwise tool execution won't be reliable."
             )
             # Add the tool prompt to the memory
-            self.short_memory.add(
-                role="system", content=self.tool_system_prompt
-            )
+            self.short_memory.add(role="system",
+                                  content=self.tool_system_prompt)
 
             # Log the tools
-            logger.info(
-                f"Tools provided: Accessing {len(self.tools)} tools"
-            )
+            logger.info(f"Tools provided: Accessing {len(self.tools)} tools")
 
             # Transform the tools into an openai schema
             # self.convert_tool_into_openai_schema()
 
             # Transform the tools into an openai schema
-            tool_dict = (
-                self.tool_struct.convert_tool_into_openai_schema()
-            )
+            tool_dict = (self.tool_struct.convert_tool_into_openai_schema())
             self.short_memory.add(role="system", content=tool_dict)
 
             # Now create a function calling map for every tools
-            self.function_map = {
-                tool.__name__: tool for tool in self.tools
-            }
-
-    # def mcp_execution_flow(self, response: any):
-    #     """
-    #     Executes the MCP (Model Context Protocol) flow based on the provided response.
-
-    #     This method takes a response, converts it from a string to a dictionary format,
-    #     and checks for the presence of a tool name or a name in the response. If either
-    #     is found, it retrieves the tool name and proceeds to call the batch_mcp_flow
-    #     function to execute the corresponding tool actions.
-
-    #     Args:
-    #         response (any): The response to be processed, which can be in string format
-    #         that represents a dictionary.
-
-    #     Returns:
-    #         The output from the batch_mcp_flow function, which contains the results of
-    #         the tool execution. If an error occurs during processing, it logs the error
-    #         and returns None.
-
-    #     Raises:
-    #         Exception: Logs any exceptions that occur during the execution flow.
-    #     """
-    #     try:
-    #         response = str_to_dict(response)
-
-    #         tool_output = batch_mcp_flow(
-    #             self.mcp_servers,
-    #             function_call=response,
-    #         )
-
-    #         return tool_output
-    #     except Exception as e:
-    #         logger.error(f"Error in mcp_execution_flow: {e}")
-    #         return None
-
-    # def mcp_tool_handling(self):
-    #     """
-    #     Handles the retrieval of tool schemas from the MCP servers.
-
-    #     This method iterates over the list of MCP servers, retrieves the tool schema
-    #     for each server using the mcp_flow_get_tool_schema function, and compiles
-    #     these schemas into a list. The resulting list is stored in the
-    #     tools_list_dictionary attribute.
-
-    #     Returns:
-    #         list: A list of tool schemas retrieved from the MCP servers. If an error
-    #         occurs during the retrieval process, it logs the error and returns None.
-
-    #     Raises:
-    #         Exception: Logs any exceptions that occur during the tool handling process.
-    #     """
-    #     try:
-    #         self.tools_list_dictionary = []
-
-    #         for mcp_server in self.mcp_servers:
-    #             tool_schema = mcp_flow_get_tool_schema(mcp_server)
-    #             self.tools_list_dictionary.append(tool_schema)
-
-    #         print(self.tools_list_dictionary)
-    #         return self.tools_list_dictionary
-    #     except Exception as e:
-    #         logger.error(f"Error in mcp_tool_handling: {e}")
-    #         return None
+            self.function_map = {tool.__name__: tool for tool in self.tools}
 
     def setup_config(self):
         # The max_loops will be set dynamically if the dynamic_loop
@@ -825,23 +719,18 @@ class Agent:
             # If no components available, fall back to task
             if not components and task:
                 logger.warning(
-                    "No agent details found. Using task as fallback for prompt generation."
+                    "No agent details found. Usingtask as fallback for promptgeneration."
                 )
-                self.system_prompt = auto_generate_prompt(
-                    task, self.llm
-                )
+                self.system_prompt = auto_generate_prompt(task, self.llm)
             else:
                 # Combine all available components
                 combined_prompt = " ".join(components)
                 logger.info(
-                    f"Auto-generating prompt from: {', '.join(components)}"
-                )
+                    f"Auto-generating prompt from: {', '.join(components)}")
                 self.system_prompt = auto_generate_prompt(
-                    combined_prompt, self.llm
-                )
-                self.short_memory.add(
-                    role="system", content=self.system_prompt
-                )
+                    combined_prompt, self.llm)
+                self.short_memory.add(role="system",
+                                      content=self.system_prompt)
 
             logger.info("Auto-generated prompt successfully.")
 
@@ -856,13 +745,9 @@ class Agent:
 
     def agent_initialization(self):
         try:
-            logger.info(
-                f"Initializing Autonomous Agent {self.agent_name}..."
-            )
+            logger.info(f"Initializing Autonomous Agent {self.agent_name}...")
             self.check_parameters()
-            logger.info(
-                f"{self.agent_name} Initialized Successfully."
-            )
+            logger.info(f"{self.agent_name} Initialized Successfully.")
             logger.info(
                 f"Autonomous Agent {self.agent_name} Activated, all systems operational. Executing task..."
             )
@@ -881,9 +766,7 @@ class Agent:
                 return self.stopping_condition(response)
             return False
         except Exception as error:
-            logger.error(
-                f"Error checking stopping condition: {error}"
-            )
+            logger.error(f"Error checking stopping condition: {error}")
 
     def dynamic_temperature(self):
         """
@@ -900,15 +783,11 @@ class Agent:
                 # Use a default temperature
                 self.llm.temperature = 0.5
         except Exception as error:
-            logger.error(
-                f"Error dynamically changing temperature: {error}"
-            )
+            logger.error(f"Error dynamically changing temperature: {error}")
 
     def print_dashboard(self):
         """Print dashboard"""
-        formatter.print_panel(
-            f"Initializing Agent: {self.agent_name}"
-        )
+        formatter.print_panel(f"Initializing Agent: {self.agent_name}")
 
         data = self.to_dict()
 
@@ -928,8 +807,7 @@ class Agent:
                 Configuration: {data}
 
             ----------------------------------------
-        """,
-        )
+        """, )
 
     # Check parameters
     def check_parameters(self):
@@ -981,21 +859,14 @@ class Agent:
         try:
             # 1. Batch process initial setup
             setup_tasks = [
-                lambda: self.check_if_no_prompt_then_autogenerate(
-                    task
-                ),
-                lambda: self.short_memory.add(
-                    role=self.user_name, content=task
-                ),
-                lambda: (
-                    self.plan(task) if self.plan_enabled else None
-                ),
+                lambda: self.check_if_no_prompt_then_autogenerate(task),
+                lambda: self.short_memory.add(role=self.user_name,
+                                              content=task),
+                lambda: (self.plan(task) if self.plan_enabled else None),
             ]
 
             # Execute setup tasks concurrently
-            with ThreadPoolExecutor(
-                max_workers=len(setup_tasks)
-            ) as executor:
+            with ThreadPoolExecutor(max_workers=len(setup_tasks)) as executor:
                 executor.map(lambda f: f(), setup_tasks)
 
             # Set the loop count
@@ -1020,10 +891,7 @@ class Agent:
                     f"Task Request for {self.agent_name}",
                 )
 
-            while (
-                self.max_loops == "auto"
-                or loop_count < self.max_loops
-            ):
+            while (self.max_loops == "auto" or loop_count < self.max_loops):
                 loop_count += 1
 
                 # self.short_memory.add(
@@ -1036,35 +904,25 @@ class Agent:
                     self.dynamic_temperature()
 
                 # Task prompt
-                task_prompt = (
-                    self.short_memory.return_history_as_string()
-                )
+                task_prompt = (self.short_memory.return_history_as_string())
 
                 # Parameters
                 attempt = 0
                 success = False
                 while attempt < self.retry_attempts and not success:
                     try:
-                        if (
-                            self.long_term_memory is not None
-                            and self.rag_every_loop is True
-                        ):
-                            logger.info(
-                                "Querying RAG database for context..."
-                            )
+                        if (self.long_term_memory is not None
+                                and self.rag_every_loop is True):
+                            logger.info("Querying RAG database for context...")
                             self.memory_query(task_prompt)
 
                         # Generate response using LLM
-                        response_args = (
-                            (task_prompt, *args)
-                            if img is None
-                            else (task_prompt, img, *args)
-                        )
+                        response_args = ((task_prompt,
+                                          *args) if img is None else
+                                         (task_prompt, img, *args))
 
                         # Call the LLM
-                        response = self.call_llm(
-                            *response_args, **kwargs
-                        )
+                        response = self.call_llm(*response_args, **kwargs)
 
                         # Convert to a str if the response is not a str
                         response = self.parse_llm_output(response)
@@ -1081,29 +939,27 @@ class Agent:
 
                         # 9. Batch memory updates and prints
                         update_tasks = [
-                            lambda: self.short_memory.add(
-                                role=self.agent_name, content=response
-                            ),
-                            lambda: self.pretty_print(
-                                response, loop_count
-                            ),
+                            lambda: self.short_memory.add(role=self.agent_name,
+                                                          content=response),
+                            lambda: self.pretty_print(response, loop_count),
                             lambda: self.output_cleaner_op(response),
                         ]
 
                         with ThreadPoolExecutor(
-                            max_workers=len(update_tasks)
-                        ) as executor:
+                                max_workers=len(update_tasks)) as executor:
                             executor.map(lambda f: f(), update_tasks)
 
-                        # Check and execute tools
-                        if self.tools is not None:
-                            out = self.parse_and_execute_tools(
-                                response
-                            )
+                        # Check and execute tools (including MCP)
+                        if self.tools is not None or hasattr(
+                                self, 'mcp_servers'):
+                            if self.tools:
+                                out = self.parse_and_execute_tools(response)
+                            if hasattr(self,
+                                       'mcp_servers') and self.mcp_servers:
+                                out = self.mcp_execution_flow(response)
 
-                            self.short_memory.add(
-                                role="Tool Executor", content=out
-                            )
+                            self.short_memory.add(role="Tool Executor",
+                                                  content=out)
 
                             agent_print(
                                 f"{self.agent_name} - Tool Executor",
@@ -1121,9 +977,8 @@ class Agent:
                                 self.streaming_on,
                             )
 
-                            self.short_memory.add(
-                                role=self.agent_name, content=out
-                            )
+                            self.short_memory.add(role=self.agent_name,
+                                                  content=out)
 
                         self.sentiment_and_evaluator(response)
 
@@ -1136,10 +991,8 @@ class Agent:
                         if self.autosave is True:
                             self.save()
 
-                        logger.error(
-                            f"Attempt {attempt+1}: Error generating"
-                            f" response: {e}"
-                        )
+                        logger.error(f"Attempt {attempt+1}: Error generating"
+                                     f" response: {e}")
                         attempt += 1
 
                 if not success:
@@ -1149,23 +1002,17 @@ class Agent:
                     if self.autosave is True:
                         self.save()
 
-                    logger.error(
-                        "Failed to generate a valid response after"
-                        " retry attempts."
-                    )
+                    logger.error("Failed to generate a valid response after"
+                                 " retry attempts.")
                     break  # Exit the loop if all retry attempts fail
 
                 # Check stopping conditions
-                if (
-                    self.stopping_condition is not None
-                    and self._check_stopping_condition(response)
-                ):
+                if (self.stopping_condition is not None
+                        and self._check_stopping_condition(response)):
                     logger.info("Stopping condition met.")
                     break
-                elif (
-                    self.stopping_func is not None
-                    and self.stopping_func(response)
-                ):
+                elif (self.stopping_func is not None
+                      and self.stopping_func(response)):
                     logger.info("Stopping function met.")
                     break
 
@@ -1174,21 +1021,15 @@ class Agent:
                     user_input = input("You: ")
 
                     # User-defined exit command
-                    if (
-                        user_input.lower()
-                        == self.custom_exit_command.lower()
-                    ):
+                    if (user_input.lower() == self.custom_exit_command.lower()
+                        ):
                         print("Exiting as per user request.")
                         break
 
-                    self.short_memory.add(
-                        role="User", content=user_input
-                    )
+                    self.short_memory.add(role="User", content=user_input)
 
                 if self.loop_interval:
-                    logger.info(
-                        f"Sleeping for {self.loop_interval} seconds"
-                    )
+                    logger.info(f"Sleeping for {self.loop_interval} seconds")
                     time.sleep(self.loop_interval)
 
             if self.autosave is True:
@@ -1207,14 +1048,11 @@ class Agent:
                 lambda: self.save() if self.autosave else None,
             ]
 
-            with ThreadPoolExecutor(
-                max_workers=len(final_tasks)
-            ) as executor:
+            with ThreadPoolExecutor(max_workers=len(final_tasks)) as executor:
                 executor.map(lambda f: f(), final_tasks)
 
-            return history_output_formatter(
-                self.short_memory, type=self.output_type
-            )
+            return history_output_formatter(self.short_memory,
+                                            type=self.output_type)
 
         except Exception as error:
             self._handle_run_error(error)
@@ -1236,6 +1074,7 @@ class Agent:
     def _handle_run_error(self, error: any):
         process_thread = threading.Thread(
             target=self.__handle_run_error,
+
             args=(error,),
             daemon=True,
         )
@@ -1285,8 +1124,7 @@ class Agent:
             )
         except Exception as error:
             await self._handle_run_error(
-                error
-            )  # Ensure this is also async if needed
+                error)  # Ensure this is also async if needed
 
     def __call__(
         self,
@@ -1321,12 +1159,8 @@ class Agent:
         except Exception as error:
             self._handle_run_error(error)
 
-    def receive_message(
-        self, agent_name: str, task: str, *args, **kwargs
-    ):
-        return self.run(
-            task=f"From {agent_name}: {task}", *args, **kwargs
-        )
+    def receive_message(self, agent_name: str, task: str, *args, **kwargs):
+        return self.run(task=f"From {agent_name}: {task}", *args, **kwargs)
 
     def dict_to_csv(self, data: dict) -> str:
         """
@@ -1377,8 +1211,7 @@ class Agent:
             except Exception as error:
                 retries += 1
                 logger.error(
-                    f"Attempt {retries}: Error executing tool: {error}"
-                )
+                    f"Attempt {retries}: Error executing tool: {error}")
                 if retries == max_retries:
                     raise error
                 time.sleep(1)  # Wait for a bit before retrying
@@ -1394,9 +1227,7 @@ class Agent:
         """
         logger.info(f"Adding memory: {message}")
 
-        return self.short_memory.add(
-            role=self.agent_name, content=message
-        )
+        return self.short_memory.add(role=self.agent_name, content=message)
 
     def plan(self, task: str, *args, **kwargs) -> None:
         """
@@ -1413,9 +1244,7 @@ class Agent:
                 logger.info(f"Plan: {plan}")
 
             # Add the plan to the memory
-            self.short_memory.add(
-                role=self.agent_name, content=str(plan)
-            )
+            self.short_memory.add(role=self.agent_name, content=str(plan))
 
             return None
         except Exception as error:
@@ -1431,16 +1260,13 @@ class Agent:
         """
         try:
             logger.info(f"Running concurrent task: {task}")
-            future = self.executor.submit(
-                self.run, task, *args, **kwargs
-            )
+            future = self.executor.submit(self.run, task, *args, **kwargs)
             result = await asyncio.wrap_future(future)
             logger.info(f"Completed task: {result}")
             return result
         except Exception as error:
             logger.error(
-                f"Error running agent: {error} while running concurrently"
-            )
+                f"Error running agent: {error} while running concurrently")
 
     def run_concurrent_tasks(self, tasks: List[str], *args, **kwargs):
         """
@@ -1452,9 +1278,7 @@ class Agent:
         try:
             logger.info(f"Running concurrent tasks: {tasks}")
             futures = [
-                self.executor.submit(
-                    self.run, task=task, *args, **kwargs
-                )
+                self.executor.submit(self.run, task=task, *args, **kwargs)
                 for task in tasks
             ]
             results = [future.result() for future in futures]
@@ -1492,8 +1316,7 @@ class Agent:
         try:
             # Create a list of coroutines for each task
             coroutines = [
-                self.arun(task=task, *args, **kwargs)
-                for task in tasks
+                self.arun(task=task, *args, **kwargs) for task in tasks
             ]
             # Use asyncio.gather to run them concurrently
             results = await asyncio.gather(*coroutines)
@@ -1517,20 +1340,15 @@ class Agent:
         """
         try:
             # Determine the save path
-            resolved_path = (
-                file_path
-                or self.saved_state_path
-                or f"{self.agent_name}_state.json"
-            )
+            resolved_path = (file_path or self.saved_state_path
+                             or f"{self.agent_name}_state.json")
 
             # Ensure path has .json extension
             if not resolved_path.endswith(".json"):
                 resolved_path += ".json"
 
             # Create full path including workspace directory
-            full_path = os.path.join(
-                self.workspace_dir, resolved_path
-            )
+            full_path = os.path.join(self.workspace_dir, resolved_path)
             backup_path = full_path + ".backup"
             temp_path = full_path + ".temp"
 
@@ -1555,25 +1373,19 @@ class Agent:
                 try:
                     os.remove(backup_path)
                 except Exception as e:
-                    logger.warning(
-                        f"Could not remove backup file: {e}"
-                    )
+                    logger.warning(f"Could not remove backup file: {e}")
 
             # Log saved state information if verbose
             if self.verbose:
                 self._log_saved_state_info(full_path)
 
-            logger.info(
-                f"Successfully saved agent state to: {full_path}"
-            )
+            logger.info(f"Successfully saved agent state to: {full_path}")
 
             # Handle additional component saves
             self._save_additional_components(full_path)
 
         except OSError as e:
-            logger.error(
-                f"Filesystem error while saving agent state: {e}"
-            )
+            logger.error(f"Filesystem error while saving agent state: {e}")
             raise
         except Exception as e:
             logger.error(f"Unexpected error saving agent state: {e}")
@@ -1583,40 +1395,25 @@ class Agent:
         """Save additional agent components like memory."""
         try:
             # Save long term memory if it exists
-            if (
-                hasattr(self, "long_term_memory")
-                and self.long_term_memory is not None
-            ):
-                memory_path = (
-                    f"{os.path.splitext(base_path)[0]}_memory.json"
-                )
+            if (hasattr(self, "long_term_memory")
+                    and self.long_term_memory is not None):
+                memory_path = (f"{os.path.splitext(base_path)[0]}_memory.json")
                 try:
                     self.long_term_memory.save(memory_path)
-                    logger.info(
-                        f"Saved long-term memory to: {memory_path}"
-                    )
+                    logger.info(f"Saved long-term memory to: {memory_path}")
                 except Exception as e:
-                    logger.warning(
-                        f"Could not save long-term memory: {e}"
-                    )
+                    logger.warning(f"Could not save long-term memory: {e}")
 
             # Save memory manager if it exists
-            if (
-                hasattr(self, "memory_manager")
-                and self.memory_manager is not None
-            ):
+            if (hasattr(self, "memory_manager")
+                    and self.memory_manager is not None):
                 manager_path = f"{os.path.splitext(base_path)[0]}_memory_manager.json"
                 try:
-                    self.memory_manager.save_memory_snapshot(
-                        manager_path
-                    )
+                    self.memory_manager.save_memory_snapshot(manager_path)
                     logger.info(
-                        f"Saved memory manager state to: {manager_path}"
-                    )
+                        f"Saved memory manager state to: {manager_path}")
                 except Exception as e:
-                    logger.warning(
-                        f"Could not save memory manager: {e}"
-                    )
+                    logger.warning(f"Could not save memory manager: {e}")
 
         except Exception as e:
             logger.warning(f"Error saving additional components: {e}")
@@ -1635,8 +1432,7 @@ class Agent:
                     self.save()
                     if self.verbose:
                         logger.debug(
-                            f"Autosaved agent state (interval: {interval}s)"
-                        )
+                            f"Autosaved agent state (interval: {interval}s)")
                 except Exception as e:
                     logger.error(f"Autosave failed: {e}")
                 time.sleep(interval)
@@ -1663,9 +1459,7 @@ class Agent:
         """Cleanup method to be called on exit. Ensures final state is saved."""
         try:
             if getattr(self, "autosave", False):
-                logger.info(
-                    "Performing final autosave before exit..."
-                )
+                logger.info("Performing final autosave before exit...")
                 self.disable_autosave()
                 self.save()
         except Exception as e:
@@ -1687,22 +1481,11 @@ class Agent:
         try:
             # Resolve load path conditionally with a check for self.load_state_path
             resolved_path = (
-                file_path
-                or self.load_state_path
-                or (
-                    f"{self.saved_state_path}.json"
-                    if self.saved_state_path
-                    else (
-                        f"{self.agent_name}.json"
-                        if self.agent_name
-                        else (
-                            f"{self.workspace_dir}/{self.agent_name}_state.json"
-                            if self.workspace_dir and self.agent_name
-                            else None
-                        )
-                    )
-                )
-            )
+                file_path or self.load_state_path or
+                (f"{self.saved_state_path}.json" if self.saved_state_path else
+                 (f"{self.agent_name}.json" if self.agent_name else
+                  (f"{self.workspace_dir}/{self.agent_name}_state.json"
+                   if self.workspace_dir and self.agent_name else None))))
 
             # Load state using SafeStateManager
             SafeStateManager.load_state(self, resolved_path)
@@ -1727,10 +1510,8 @@ class Agent:
         """
         try:
             # Reinitialize conversation if needed
-            if (
-                not hasattr(self, "short_memory")
-                or self.short_memory is None
-            ):
+            if (not hasattr(self, "short_memory")
+                    or self.short_memory is None):
                 self.short_memory = Conversation(
                     system_prompt=self.system_prompt,
                     time_enabled=False,
@@ -1740,9 +1521,7 @@ class Agent:
 
             # Reinitialize executor if needed
             if not hasattr(self, "executor") or self.executor is None:
-                self.executor = ThreadPoolExecutor(
-                    max_workers=os.cpu_count()
-                )
+                self.executor = ThreadPoolExecutor(max_workers=os.cpu_count())
 
             # # Reinitialize tool structure if needed
             # if hasattr(self, 'tools') and (self.tools or getattr(self, 'list_base_models', None)):
@@ -1763,19 +1542,13 @@ class Agent:
             preserved = SafeLoaderUtils.preserve_instances(self)
 
             logger.info(f"Saved agent state to: {file_path}")
-            logger.debug(
-                f"Saved {len(state_dict)} configuration values"
-            )
-            logger.debug(
-                f"Preserved {len(preserved)} class instances"
-            )
+            logger.debug(f"Saved {len(state_dict)} configuration values")
+            logger.debug(f"Preserved {len(preserved)} class instances")
 
             if self.verbose:
                 logger.debug("Preserved instances:")
                 for name, instance in preserved.items():
-                    logger.debug(
-                        f"  - {name}: {type(instance).__name__}"
-                    )
+                    logger.debug(f"  - {name}: {type(instance).__name__}")
         except Exception as e:
             logger.error(f"Error logging state info: {e}")
 
@@ -1786,19 +1559,13 @@ class Agent:
             preserved = SafeLoaderUtils.preserve_instances(self)
 
             logger.info(f"Loaded agent state from: {file_path}")
-            logger.debug(
-                f"Loaded {len(state_dict)} configuration values"
-            )
-            logger.debug(
-                f"Preserved {len(preserved)} class instances"
-            )
+            logger.debug(f"Loaded {len(state_dict)} configuration values")
+            logger.debug(f"Preserved {len(preserved)} class instances")
 
             if self.verbose:
                 logger.debug("Current class instances:")
                 for name, instance in preserved.items():
-                    logger.debug(
-                        f"  - {name}: {type(instance).__name__}"
-                    )
+                    logger.debug(f"  - {name}: {type(instance).__name__}")
         except Exception as e:
             logger.error(f"Error logging state info: {e}")
 
@@ -1862,25 +1629,22 @@ class Agent:
     # Response Filtering
     def add_response_filter(self, filter_word: str) -> None:
         """
-        Add a response filter to filter out certain words from the response
-
-        Example:
-        agent.add_response_filter("Trump")
-        agent.run("Generate a report on Trump")
-
-
+        Add a response filter to filter out certain words from the response.
         """
         logger.info(f"Adding response filter: {filter_word}")
-        self.reponse_filters.append(filter_word)
+        self.response_filters.append(filter_word)
 
-    def apply_reponse_filters(self, response: str) -> str:
+    def apply_response_filters(self, response: str) -> str:
         """
-        Apply the response filters to the response
+        Apply the response filters to the response.
 
+        Args:
+            response (str): The response to filter
+
+        Returns:
+            str: The filtered response
         """
-        logger.info(
-            f"Applying response filters to response: {response}"
-        )
+        logger.info(f"Applying response filters to response: {response}")
         for word in self.response_filters:
             response = response.replace(word, "[FILTERED]")
         return response
@@ -1951,9 +1715,7 @@ class Agent:
             for doc in docs:
                 data = data_to_text(doc)
 
-            return self.short_memory.add(
-                role=self.user_name, content=data
-            )
+            return self.short_memory.add(role=self.user_name, content=data)
         except Exception as error:
             logger.info(f"Error ingesting docs: {error}", "red")
 
@@ -1966,9 +1728,7 @@ class Agent:
         try:
             logger.info(f"Ingesting pdf: {pdf}")
             text = pdf_to_text(pdf)
-            return self.short_memory.add(
-                role=self.user_name, content=text
-            )
+            return self.short_memory.add(role=self.user_name, content=text)
         except Exception as error:
             logger.info(f"Error ingesting pdf: {error}", "red")
 
@@ -1981,9 +1741,8 @@ class Agent:
             logger.info(f"Error receiving message: {error}")
             raise error
 
-    def send_agent_message(
-        self, agent_name: str, message: str, *args, **kwargs
-    ):
+    def send_agent_message(self, agent_name: str, message: str, *args,
+                           **kwargs):
         """Send a message to the agent"""
         try:
             logger.info(f"Sending agent message: {message}")
@@ -1994,19 +1753,18 @@ class Agent:
             raise error
 
     def add_tool(self, tool: Callable):
-        """Add a single tool to the agent's tools list.
+        """Add a single tool to the agents tools list.
 
         Args:
             tool (Callable): The tool function to add
 
         Returns:
-            The result of appending the tool to the tools list
-        """
+            The result of appending the tool to the tools list"""
         logger.info(f"Adding tool: {tool.__name__}")
         return self.tools.append(tool)
 
     def add_tools(self, tools: List[Callable]):
-        """Add multiple tools to the agent's tools list.
+        """Add multiple tools to the agents tools list.
 
         Args:
             tools (List[Callable]): List of tool functions to add
@@ -2018,7 +1776,7 @@ class Agent:
         return self.tools.extend(tools)
 
     def remove_tool(self, tool: Callable):
-        """Remove a single tool from the agent's tools list.
+        """Remove a single tool from the agents tools list.
 
         Args:
             tool (Callable): The tool function to remove
@@ -2030,7 +1788,7 @@ class Agent:
         return self.tools.remove(tool)
 
     def remove_tools(self, tools: List[Callable]):
-        """Remove multiple tools from the agent's tools list.
+        """Remove multiple tools from the agents tools list.
 
         Args:
             tools (List[Callable]): List of tool functions to remove
@@ -2055,13 +1813,9 @@ class Agent:
                 all_text += f"\nContent from {file}:\n{text}\n"
 
             # Add the combined content to memory
-            return self.short_memory.add(
-                role=self.user_name, content=all_text
-            )
+            return self.short_memory.add(role=self.user_name, content=all_text)
         except Exception as error:
-            logger.error(
-                f"Error getting docs from doc folders: {error}"
-            )
+            logger.error(f"Error getting docs from doc folders: {error}")
             raise error
 
     def memory_query(self, task: str = None, *args, **kwargs) -> None:
@@ -2071,12 +1825,10 @@ class Agent:
                 formatter.print_panel(f"Querying RAG for: {task}")
 
                 memory_retrieval = self.long_term_memory.query(
-                    task, *args, **kwargs
-                )
+                    task, *args, **kwargs)
 
                 memory_retrieval = (
-                    f"Documents Available: {str(memory_retrieval)}"
-                )
+                    f"Documents Available: {str(memory_retrieval)}")
 
                 # # Count the tokens
                 # memory_token_count = count_tokens(
@@ -2115,17 +1867,13 @@ class Agent:
                 print(f"Sentiment: {sentiment}")
 
                 if sentiment > self.sentiment_threshold:
-                    print(
-                        f"Sentiment: {sentiment} is above"
-                        " threshold:"
-                        f" {self.sentiment_threshold}"
-                    )
+                    print(f"Sentiment: {sentiment} is above"
+                          " threshold:"
+                          f" {self.sentiment_threshold}")
                 elif sentiment < self.sentiment_threshold:
-                    print(
-                        f"Sentiment: {sentiment} is below"
-                        " threshold:"
-                        f" {self.sentiment_threshold}"
-                    )
+                    print(f"Sentiment: {sentiment} is below"
+                          " threshold:"
+                          f" {self.sentiment_threshold}")
 
                 self.short_memory.add(
                     role=self.agent_name,
@@ -2134,9 +1882,7 @@ class Agent:
         except Exception as e:
             print(f"Error occurred during sentiment analysis: {e}")
 
-    def stream_response(
-        self, response: str, delay: float = 0.001
-    ) -> None:
+    def stream_response(self, response: str, delay: float = 0.001) -> None:
         """
         Streams the response token by token.
 
@@ -2169,19 +1915,16 @@ class Agent:
         # Log the amount of tokens left in the memory and in the task
         if self.tokenizer is not None:
             tokens_used = count_tokens(
-                self.short_memory.return_history_as_string()
-            )
+                self.short_memory.return_history_as_string())
             logger.info(
-                f"Tokens available: {self.context_length - tokens_used}"
-            )
+                f"Tokens available: {self.context_length - tokens_used}")
 
         return tokens_used
 
     def tokens_checks(self):
         # Check the tokens available
         tokens_used = count_tokens(
-            self.short_memory.return_history_as_string()
-        )
+            self.short_memory.return_history_as_string())
         out = self.check_available_tokens()
 
         logger.info(
@@ -2190,9 +1933,7 @@ class Agent:
 
         return out
 
-    def log_step_metadata(
-        self, loop: int, task: str, response: str
-    ) -> Step:
+    def log_step_metadata(self, loop: int, task: str, response: str) -> Step:
         """Log metadata for each step of agent execution."""
         # Generate unique step ID
         step_id = f"step_{loop}_{uuid.uuid4().hex}"
@@ -2202,7 +1943,7 @@ class Agent:
         # prompt_tokens = count_tokens(full_memory)
         # completion_tokens = count_tokens(response)
         # total_tokens = prompt_tokens + completion_tokens
-        total_tokens = (count_tokens(task) + count_tokens(response),)
+        total_tokens = (count_tokens(task) + count_tokens(response), )
 
         # # Get memory responses
         # memory_responses = {
@@ -2301,18 +2042,14 @@ class Agent:
         """Update tool usage information for a specific step."""
         for step in self.agent_output.steps:
             if step.step_id == step_id:
-                step.response.tool_calls.append(
-                    {
-                        "tool": tool_name,
-                        "arguments": tool_args,
-                        "response": str(tool_response),
-                    }
-                )
+                step.response.tool_calls.append({
+                    "tool": tool_name,
+                    "arguments": tool_args,
+                    "response": str(tool_response),
+                })
                 break
 
-    def _serialize_callable(
-        self, attr_value: Callable
-    ) -> Dict[str, Any]:
+    def _serialize_callable(self, attr_value: Callable) -> Dict[str, Any]:
         """
         Serializes callable attributes by extracting their name and docstring.
 
@@ -2323,9 +2060,8 @@ class Agent:
             Dict[str, Any]: Dictionary with name and docstring of the callable.
         """
         return {
-            "name": getattr(
-                attr_value, "__name__", type(attr_value).__name__
-            ),
+            "name": getattr(attr_value, "__name__",
+                            type(attr_value).__name__),
             "doc": getattr(attr_value, "__doc__", None),
         }
 
@@ -2344,9 +2080,8 @@ class Agent:
             if callable(attr_value):
                 return self._serialize_callable(attr_value)
             elif hasattr(attr_value, "to_dict"):
-                return (
-                    attr_value.to_dict()
-                )  # Recursive serialization for nested objects
+                return (attr_value.to_dict()
+                        )  # Recursive serialization for nested objects
             else:
                 json.dumps(
                     attr_value
@@ -2369,14 +2104,10 @@ class Agent:
         }
 
     def to_json(self, indent: int = 4, *args, **kwargs):
-        return json.dumps(
-            self.to_dict(), indent=indent, *args, **kwargs
-        )
+        return json.dumps(self.to_dict(), indent=indent, *args, **kwargs)
 
     def to_yaml(self, indent: int = 4, *args, **kwargs):
-        return yaml.dump(
-            self.to_dict(), indent=indent, *args, **kwargs
-        )
+        return yaml.dump(self.to_dict(), indent=indent, *args, **kwargs)
 
     def to_toml(self, *args, **kwargs):
         return toml.dumps(self.to_dict(), *args, **kwargs)
@@ -2411,14 +2142,11 @@ class Agent:
         if exists(self.tool_schema):
             logger.info(f"Tool schema provided: {self.tool_schema}")
 
-            output = self.tool_struct.base_model_to_dict(
-                self.tool_schema, output_str=True
-            )
+            output = self.tool_struct.base_model_to_dict(self.tool_schema,
+                                                         output_str=True)
 
             # Add the tool schema to the short memory
-            self.short_memory.add(
-                role=self.agent_name, content=output
-            )
+            self.short_memory.add(role=self.agent_name, content=output)
 
         # If multiple base models, then conver them.
         if exists(self.list_base_models):
@@ -2427,13 +2155,10 @@ class Agent:
             )
 
             schemas = self.tool_struct.multi_base_models_to_dict(
-                output_str=True
-            )
+                output_str=True)
 
             # If the output is a string then add it to the memory
-            self.short_memory.add(
-                role=self.agent_name, content=schemas
-            )
+            self.short_memory.add(role=self.agent_name, content=schemas)
 
         return None
 
@@ -2479,14 +2204,10 @@ class Agent:
         # If the user inputs a list of strings for the sop then join them and set the sop
         if exists(self.sop_list):
             self.sop = "\n".join(self.sop_list)
-            self.short_memory.add(
-                role=self.user_name, content=self.sop
-            )
+            self.short_memory.add(role=self.user_name, content=self.sop)
 
         if exists(self.sop):
-            self.short_memory.add(
-                role=self.user_name, content=self.sop
-            )
+            self.short_memory.add(role=self.user_name, content=self.sop)
 
         logger.info("SOP Uploaded into the memory")
 
@@ -2504,9 +2225,9 @@ class Agent:
         **kwargs,
     ) -> Any:
         """
-        Executes the agent's run method on a specified device, with optional scheduling.
+        Executes the agents run method on a specified device, with optional scheduling.
 
-        This method attempts to execute the agent's run method on a specified device, either CPU or GPU. It logs the device selection and the number of cores or GPU ID used. If the device is set to CPU, it can use all available cores or a specific core specified by `device_id`. If the device is set to GPU, it uses the GPU specified by `device_id`.
+        This method attempts to execute the agents run method on a specified device, either CPU or GPU. It logs the device selection and the number of cores or GPU ID used. If the device is set to CPU, it can use all available cores or a specific core specified by `device_id`. If the device is set to GPU, it uses the GPU specified by `device_id`.
 
         If a `scheduled_date` is provided, the method will wait until that date and time before executing the task.
 
@@ -2534,9 +2255,7 @@ class Agent:
 
         if scheduled_run_date:
             while datetime.now() < scheduled_run_date:
-                time.sleep(
-                    1
-                )  # Sleep for a short period to avoid busy waiting
+                time.sleep(1)  # Sleep for a short period to avoid busy waiting
 
         try:
             # If cluster ops disabled, run directly
@@ -2557,9 +2276,8 @@ class Agent:
         except ValueError as e:
             self._handle_run_error(e)
 
-    def handle_artifacts(
-        self, text: str, file_output_path: str, file_extension: str
-    ) -> None:
+    def handle_artifacts(self, text: str, file_output_path: str,
+                         file_extension: str) -> None:
         """Handle creating and saving artifacts with error handling."""
         try:
             # Ensure file_extension starts with a dot
@@ -2586,26 +2304,18 @@ class Agent:
                 edit_count=0,
             )
 
-            logger.info(
-                f"Saving artifact with extension: {file_extension}"
-            )
+            logger.info(f"Saving artifact with extension: {file_extension}")
             artifact.save_as(file_extension)
-            logger.success(
-                f"Successfully saved artifact to {full_path}"
-            )
+            logger.success(f"Successfully saved artifact to {full_path}")
 
         except ValueError as e:
-            logger.error(
-                f"Invalid input values for artifact: {str(e)}"
-            )
+            logger.error(f"Invalid input values for artifact: {str(e)}")
             raise
         except IOError as e:
             logger.error(f"Error saving artifact to file: {str(e)}")
             raise
         except Exception as e:
-            logger.error(
-                f"Unexpected error handling artifact: {str(e)}"
-            )
+            logger.error(f"Unexpected error handling artifact: {str(e)}")
             raise
 
     def showcase_config(self):
@@ -2615,32 +2325,29 @@ class Agent:
         for key, value in config_dict.items():
             if isinstance(value, list):
                 # Format list as a comma-separated string
-                config_dict[key] = ", ".join(
-                    str(item) for item in value
-                )
+                config_dict[key] = ", ".join(str(item) for item in value)
             elif isinstance(value, dict):
                 # Format dict as key-value pairs in a single string
-                config_dict[key] = ", ".join(
-                    f"{k}: {v}" for k, v in value.items()
-                )
+                config_dict[key] = ", ".join(f"{k}: {v}"
+                                             for k, v in value.items())
             else:
                 # Ensure any non-iterable value is a string
                 config_dict[key] = str(value)
 
-        return formatter.print_table(
-            f"Agent: {self.agent_name} Configuration", config_dict
-        )
+        return formatter.print_table(f"Agent: {self.agent_name} Configuration",
+                                     config_dict)
 
-    def talk_to(
-        self, agent: Any, task: str, img: str = None, *args, **kwargs
-    ) -> Any:
+    def talk_to(self,
+                agent: Any,
+                task: str,
+                img: str = None,
+                *args,
+                **kwargs) -> Any:
         """
         Talk to another agent.
         """
         # return agent.run(f"{agent.agent_name}: {task}", img, *args, **kwargs)
-        output = self.run(
-            f"{self.agent_name}: {task}", img, *args, **kwargs
-        )
+        output = self.run(f"{self.agent_name}: {task}", img, *args, **kwargs)
 
         return agent.run(
             task=f"From {self.agent_name}: Message: {output}",
@@ -2663,9 +2370,7 @@ class Agent:
         with ThreadPoolExecutor() as executor:
             # Create futures for each agent conversation
             futures = [
-                executor.submit(
-                    self.talk_to, agent, task, *args, **kwargs
-                )
+                executor.submit(self.talk_to, agent, task, *args, **kwargs)
                 for agent in agents
             ]
 
@@ -2677,9 +2382,7 @@ class Agent:
                     outputs.append(result)
                 except Exception as e:
                     logger.error(f"Error in agent communication: {e}")
-                    outputs.append(
-                        None
-                    )  # or handle error case as needed
+                    outputs.append(None)  # or handle error case as needed
 
         return outputs
 
@@ -2695,7 +2398,8 @@ class Agent:
                 # self.stream_response(response)
                 formatter.print_panel_token_by_token(
                     f"{self.agent_name}: {response}",
-                    title=f"Agent Name: {self.agent_name} [Max Loops: {loop_count}]",
+                    title=
+                    f"Agent Name: {self.agent_name} [Max Loops: {loop_count}]",
                 )
             else:
                 # logger.info(f"Response: {response}")
@@ -2705,52 +2409,23 @@ class Agent:
                 )
 
     def parse_llm_output(self, response: Any) -> str:
-        """Parse and standardize the output from the LLM.
-
-        Args:
-            response (Any): The response from the LLM in any format
-
-        Returns:
-            str: Standardized string output
-
-        Raises:
-            ValueError: If the response format is unexpected and can't be handled
-        """
-        try:
-            # Handle dictionary responses
-            if isinstance(response, dict):
-                if "choices" in response:
-                    return response["choices"][0]["message"][
-                        "content"
-                    ]
-                return json.dumps(
-                    response
-                )  # Convert other dicts to string
-
-            # Handle string responses
-            elif isinstance(response, str):
-                return response
-
-            # Handle list responses (from check_llm_outputs)
-            elif isinstance(response, list):
-                return "\n".join(response)
-
-            # Handle any other type by converting to string
-            else:
-                return str(response)
-
-        except Exception as e:
-            logger.error(f"Error parsing LLM output: {e}")
-            raise ValueError(
-                f"Failed to parse LLM output: {type(response)}"
-            )
+        """Parse the LLM output to a string."""
+        if isinstance(response, str):
+            return response
+        elif isinstance(response, dict):
+            return json.dumps(response)
+        elif isinstance(response, list):
+            return json.dumps(response)
+        else:
+            return str(response)
 
     def sentiment_and_evaluator(self, response: str):
         if self.evaluator:
             logger.info("Evaluating response...")
 
             evaluated_response = self.evaluator(response)
-            print("Evaluated Response:" f" {evaluated_response}")
+            print("Evaluated Response:"
+                  f" {evaluated_response}")
             self.short_memory.add(
                 role="Evaluator",
                 content=evaluated_response,
@@ -2774,3 +2449,133 @@ class Agent:
                 role="Output Cleaner",
                 content=response,
             )
+
+    async def amcp_execution_flow(self, response: str) -> str:
+        """Async implementation of MCP execution flow.
+
+        Args:
+            response (str): The response from the LLM containing tool calls or natural language.
+
+        Returns:
+            str: The result of executing the tool calls with preserved formatting.
+        """
+        try:
+            # Try to parse as JSON first
+            try:
+                tool_calls = json.loads(response)
+                is_json = True
+                logger.debug(
+                    f"Successfully parsed response as JSON: {tool_calls}")
+            except json.JSONDecodeError:
+                # If not JSON, treat as natural language
+                tool_calls = [response]
+                is_json = False
+                logger.debug(
+                    f"Could not parse response as JSON, treating as natural language"
+                )
+
+            # Execute tool calls against MCP servers
+            results = []
+            errors = []
+
+            # Handle both single tool call and array of tool calls
+            if isinstance(tool_calls, dict):
+                tool_calls = [tool_calls]
+
+            logger.debug(
+                f"Executing {len(tool_calls)} tool calls against {len(self.mcp_servers)} MCP servers"
+            )
+
+            for tool_call in tool_calls:
+                try:
+                    # Import here to avoid circular imports
+                    from swarms.tools.mcp_integration import abatch_mcp_flow
+
+                    logger.debug(f"Executing tool call: {tool_call}")
+                    # Execute the tool call against all MCP servers
+                    result = await abatch_mcp_flow(self.mcp_servers, tool_call)
+
+                    if result:
+                        logger.debug(f"Got result from MCP servers: {result}")
+                        results.extend(result)
+                        # Add successful result to memory with context
+                        self.short_memory.add(
+                            role="assistant",
+                            content=f"Tool execution result: {result}")
+                    else:
+                        error_msg = "No result from tool execution"
+                        errors.append(error_msg)
+                        logger.debug(error_msg)
+                        self.short_memory.add(role="error", content=error_msg)
+
+                except Exception as e:
+                    error_msg = f"Error executing tool call: {str(e)}"
+                    errors.append(error_msg)
+                    logger.error(error_msg)
+                    self.short_memory.add(role="error", content=error_msg)
+
+            # Format the final response
+            if results:
+                if len(results) == 1:
+                    # For single results, return as is to preserve formatting
+                    return results[0]
+                else:
+                    # For multiple results, combine with context
+                    formatted_results = []
+                    for i, result in enumerate(results, 1):
+                        formatted_results.append(f"Result {i}: {result}")
+                    return "\n".join(formatted_results)
+            elif errors:
+                if len(errors) == 1:
+                    return errors[0]
+                else:
+                    return "Multiple errors occurred:\n" + "\n".join(
+                        f"- {err}" for err in errors)
+            else:
+                return "No results or errors returned"
+
+        except Exception as e:
+            error_msg = f"Error in MCP execution flow: {str(e)}"
+            logger.error(error_msg)
+            self.short_memory.add(role="error", content=error_msg)
+            return error_msg
+
+    def mcp_execution_flow(self, response: str) -> str:
+        """Synchronous wrapper for MCP execution flow.
+
+        This method creates a new event loop if needed or uses the existing one
+        to run the async MCP execution flow.
+
+        Args:
+            response (str): The response from the LLM containing tool calls or natural language.
+
+        Returns:
+            str: The result of executing the tool calls with preserved formatting.
+        """
+        try:
+            # Check if we're already in an event loop
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                # No event loop exists, create one
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+            if loop.is_running():
+                # We're in an async context, use run_coroutine_threadsafe
+                logger.debug(
+                    "Using run_coroutine_threadsafe to execute MCP flow")
+                future = asyncio.run_coroutine_threadsafe(
+                    self.amcp_execution_flow(response), loop)
+                return future.result(
+                    timeout=30)  # Adding timeout to prevent hanging
+            else:
+                # We're not in an async context, use loop.run_until_complete
+                logger.debug("Using run_until_complete to execute MCP flow")
+                return loop.run_until_complete(
+                    self.amcp_execution_flow(response))
+
+        except Exception as e:
+            error_msg = f"Error in MCP execution flow wrapper: {str(e)}"
+            logger.error(error_msg)
+            return error_msg
