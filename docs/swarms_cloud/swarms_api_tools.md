@@ -9,6 +9,7 @@ Swarms API allows you to create and manage AI agent swarms with optional tool in
 - Swarms API key
 - Required Python packages:
   - `requests`
+
   - `python-dotenv`
 
 ## Installation & Setup
@@ -121,7 +122,9 @@ No, tools are optional for each agent. You can choose which agents have tools ba
 ### What types of tools can I use?
 Currently, the API supports function-type tools. Each tool must have:
 - A unique name
+
 - A clear description
+
 - Well-defined parameters with types and descriptions
 
 ### Can I mix agents with and without tools?
@@ -129,8 +132,11 @@ Yes, you can create swarms with a mix of tool-enabled and regular agents. This a
 
 ### What's the recommended number of tools per agent?
 While there's no strict limit, it's recommended to:
+
 - Keep tools focused and specific
+
 - Only include tools that the agent needs
+
 - Consider the complexity of tool interactions
 
 ## Example Implementation
@@ -221,7 +227,9 @@ def safe_run_swarm(payload):
 ```
 
 2. **Environment Variables**: Never hardcode API keys
+
 3. **Tool Design**: Keep tools simple and focused
+
 4. **Testing**: Validate swarm configurations before production use
 
 ## Troubleshooting
@@ -230,14 +238,17 @@ Common issues and solutions:
 
 1. **API Key Issues**
    - Verify key is correctly set in `.env`
+
    - Check key permissions
 
 2. **Tool Execution Errors**
    - Validate tool parameters
+
    - Check tool function signatures
 
 3. **Response Timeout**
    - Consider reducing max_tokens
+
    - Simplify tool complexity
 
 
