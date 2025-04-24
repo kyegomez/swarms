@@ -1,6 +1,6 @@
 import datetime
 import json
-from typing import Any, Optional, Union
+from typing import Any, List, Optional, Union
 
 import yaml
 from swarms.structs.base_structure import BaseStructure
@@ -105,7 +105,7 @@ class Conversation(BaseStructure):
         if tokenizer is not None:
             self.truncate_memory_with_tokenizer()
 
-    def _add(
+    def add(
         self,
         role: str,
         content: Union[str, dict, list],
@@ -137,8 +137,19 @@ class Conversation(BaseStructure):
         # Add the message to history immediately without waiting for token count
         self.conversation_history.append(message)
 
+        if self.token_count is True:
+            self._count_tokens(content, message)
+
+    def add_multiple_messages(
+        self, roles: List[str], contents: List[Union[str, dict, list]]
+    ):
+        for role, content in zip(roles, contents):
+            self.add(role, content)
+
+    def _count_tokens(self, content: str, message: dict):
         # If token counting is enabled, do it in a separate thread
         if self.token_count is True:
+
             # Define a function to count tokens and update the message
             def count_tokens_thread():
                 tokens = count_tokens(any_to_str(content))
@@ -157,21 +168,6 @@ class Conversation(BaseStructure):
                 True  # Make thread terminate when main program exits
             )
             token_thread.start()
-
-    def add(self, role: str, content: Union[str, dict, list]):
-        """Add a message to the conversation history.
-
-        Args:
-            role (str): The role of the speaker (e.g., 'User', 'System').
-            content (Union[str, dict, list]): The content of the message to be added.
-        """
-        process_thread = threading.Thread(
-            target=self._add,
-            args=(role, content),
-            daemon=True,
-        )
-        process_thread.start()
-        # process_thread.join()
 
     def delete(self, index: str):
         """Delete a message from the conversation history.

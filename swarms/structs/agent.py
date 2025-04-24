@@ -46,12 +46,7 @@ from swarms.structs.safe_loading import (
 )
 from swarms.telemetry.main import log_agent_data
 from swarms.tools.base_tool import BaseTool
-
-# from swarms.tools.mcp_integration import (
-#     MCPServerSseParams,
-#     batch_mcp_flow,
-#     mcp_flow_get_tool_schema,
-# )
+from swarms.tools.mcp_integration import MCPServerSseParams
 from swarms.tools.tool_parse_exec import parse_and_execute_json
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.data_to_text import data_to_text
@@ -64,6 +59,13 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.pdf_to_text import pdf_to_text
+from swarms.utils.str_to_dict import str_to_dict
+from swarms.tools.mcp_client import (
+    execute_mcp_tool,
+    list_tools_for_multiple_urls,
+    list_all,
+    find_and_execute_tool,
+)
 
 
 # Utils
@@ -392,7 +394,9 @@ class Agent:
         role: agent_roles = "worker",
         no_print: bool = False,
         tools_list_dictionary: Optional[List[Dict[str, Any]]] = None,
-        # mcp_servers: List[MCPServerSseParams] = [],
+        mcp_servers: MCPServerSseParams = None,
+        mcp_url: str = None,
+        mcp_urls: List[str] = None,
         *args,
         **kwargs,
     ):
@@ -512,33 +516,15 @@ class Agent:
         self.role = role
         self.no_print = no_print
         self.tools_list_dictionary = tools_list_dictionary
-        # self.mcp_servers = mcp_servers
+        self.mcp_servers = mcp_servers
+        self.mcp_url = mcp_url
+        self.mcp_urls = mcp_urls
 
         self._cached_llm = (
             None  # Add this line to cache the LLM instance
         )
-        self._default_model = (
-            "gpt-4o-mini"  # Move default model name here
-        )
 
-        if (
-            self.agent_name is not None
-            or self.agent_description is not None
-        ):
-            prompt = f"Your Name: {self.agent_name} \n\n Your Description: {self.agent_description} \n\n {system_prompt}"
-        else:
-            prompt = system_prompt
-
-        # Initialize the short term memory
-        self.short_memory = Conversation(
-            system_prompt=prompt,
-            time_enabled=False,
-            user=user_name,
-            rules=rules,
-            token_count=False,
-            *args,
-            **kwargs,
-        )
+        self.short_memory = self.short_memory_init()
 
         # Initialize the feedback
         self.feedback = []
@@ -550,9 +536,31 @@ class Agent:
 
         self.init_handling()
 
+    def short_memory_init(self):
+        if (
+            self.agent_name is not None
+            or self.agent_description is not None
+        ):
+            prompt = f"Your Name: {self.agent_name} \n\n Your Description: {self.agent_description} \n\n {self.system_prompt}"
+        else:
+            prompt = self.system_prompt
+
+        # Initialize the short term memory
+        self.short_memory = Conversation(
+            system_prompt=prompt,
+            time_enabled=False,
+            user=self.user_name,
+            rules=self.rules,
+            token_count=False,
+        )
+
+        return self.short_memory
+
     def init_handling(self):
         # Define tasks as pairs of (function, condition)
         # Each task will only run if its condition is True
+        self.setup_config()
+
         tasks = [
             (self.setup_config, True),  # Always run setup_config
             (
@@ -565,10 +573,10 @@ class Agent:
                 exists(self.tool_schema)
                 or exists(self.list_base_models),
             ),
-            (
-                self.handle_sop_ops,
-                exists(self.sop) or exists(self.sop_list),
-            ),
+            # (
+            #     self.handle_sop_ops,
+            #     exists(self.sop) or exists(self.sop_list),
+            # ),
         ]
 
         # Filter out tasks whose conditions are False
@@ -577,9 +585,7 @@ class Agent:
         ]
 
         # Execute all tasks concurrently
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=os.cpu_count() * 4
-        ) as executor:
+        with self.executor as executor:
             # Map tasks to futures and collect results
             results = {}
             future_to_task = {
@@ -611,6 +617,9 @@ class Agent:
         if self.llm is None:
             self.llm = self.llm_handling()
 
+        if self.mcp_url or self.mcp_servers is not None:
+            self.add_mcp_tools_to_memory()
+
     def agent_output_model(self):
         # Many steps
         id = agent_id()
@@ -637,10 +646,7 @@ class Agent:
             return self._cached_llm
 
         if self.model_name is None:
-            logger.warning(
-                f"Model name is not provided, using {self._default_model}. You can configure any model from litellm if desired."
-            )
-            self.model_name = self._default_model
+            self.model_name = "gpt-4o-mini"
 
         try:
             # Simplify initialization logic
@@ -719,68 +725,123 @@ class Agent:
                 tool.__name__: tool for tool in self.tools
             }
 
-    # def mcp_execution_flow(self, response: any):
-    #     """
-    #     Executes the MCP (Model Context Protocol) flow based on the provided response.
+    def add_mcp_tools_to_memory(self):
+        """
+        Adds MCP tools to the agent's short-term memory.
 
-    #     This method takes a response, converts it from a string to a dictionary format,
-    #     and checks for the presence of a tool name or a name in the response. If either
-    #     is found, it retrieves the tool name and proceeds to call the batch_mcp_flow
-    #     function to execute the corresponding tool actions.
+        This function checks for either a single MCP URL or multiple MCP URLs and adds the available tools
+        to the agent's memory. The tools are listed in JSON format.
 
-    #     Args:
-    #         response (any): The response to be processed, which can be in string format
-    #         that represents a dictionary.
+        Raises:
+            Exception: If there's an error accessing the MCP tools
+        """
+        try:
+            if self.mcp_url is not None:
+                tools_available = list_all(
+                    self.mcp_url, output_type="json"
+                )
+                self.short_memory.add(
+                    role="Tools Available",
+                    content=f"\n{tools_available}",
+                )
 
-    #     Returns:
-    #         The output from the batch_mcp_flow function, which contains the results of
-    #         the tool execution. If an error occurs during processing, it logs the error
-    #         and returns None.
+            elif (
+                self.mcp_url is None
+                and self.mcp_urls is not None
+                and len(self.mcp_urls) > 1
+            ):
+                tools_available = list_tools_for_multiple_urls(
+                    urls=self.mcp_urls,
+                    output_type="json",
+                )
 
-    #     Raises:
-    #         Exception: Logs any exceptions that occur during the execution flow.
-    #     """
-    #     try:
-    #         response = str_to_dict(response)
+                self.short_memory.add(
+                    role="Tools Available",
+                    content=f"\n{tools_available}",
+                )
+        except Exception as e:
+            logger.error(f"Error adding MCP tools to memory: {e}")
+            raise e
 
-    #         tool_output = batch_mcp_flow(
-    #             self.mcp_servers,
-    #             function_call=response,
-    #         )
+    def _single_mcp_tool_handling(self, response: any):
+        """
+        Handles execution of a single MCP tool.
 
-    #         return tool_output
-    #     except Exception as e:
-    #         logger.error(f"Error in mcp_execution_flow: {e}")
-    #         return None
+        Args:
+            response (str): The tool response to process
 
-    # def mcp_tool_handling(self):
-    #     """
-    #     Handles the retrieval of tool schemas from the MCP servers.
+        Raises:
+            Exception: If there's an error executing the tool
+        """
+        try:
+            if isinstance(response, dict):
+                result = response
+            else:
+                result = str_to_dict(response)
 
-    #     This method iterates over the list of MCP servers, retrieves the tool schema
-    #     for each server using the mcp_flow_get_tool_schema function, and compiles
-    #     these schemas into a list. The resulting list is stored in the
-    #     tools_list_dictionary attribute.
+            output = execute_mcp_tool(
+                url=self.mcp_url,
+                parameters=result,
+            )
 
-    #     Returns:
-    #         list: A list of tool schemas retrieved from the MCP servers. If an error
-    #         occurs during the retrieval process, it logs the error and returns None.
+            print(output)
+            print(type(output))
 
-    #     Raises:
-    #         Exception: Logs any exceptions that occur during the tool handling process.
-    #     """
-    #     try:
-    #         self.tools_list_dictionary = []
+            self.short_memory.add(
+                role="Tool Executor", content=str(output)
+            )
+        except Exception as e:
+            logger.error(f"Error in single MCP tool handling: {e}")
+            raise e
 
-    #         for mcp_server in self.mcp_servers:
-    #             tool_schema = mcp_flow_get_tool_schema(mcp_server)
-    #             self.tools_list_dictionary.append(tool_schema)
+    def _multiple_mcp_tool_handling(self, response: any):
+        """
+        Handles execution of multiple MCP tools.
 
-    #         print(self.tools_list_dictionary)
-    #         return self.tools_list_dictionary
-    #     except Exception as e:
-    #         logger.error(f"Error in mcp_tool_handling: {e}")
-    #         return None
+        Args:
+            response (any): The tool response to process
+
+        Raises:
+            Exception: If there's an error executing the tools
+        """
+        try:
+            if isinstance(response, str):
+                response = str_to_dict(response)
+
+            execution = find_and_execute_tool(
+                self.mcp_urls,
+                response["name"],
+                parameters=response,
+            )
+
+            self.short_memory.add(
+                role="Tool Executor", content=str(execution)
+            )
+        except Exception as e:
+            logger.error(f"Error in multiple MCP tool handling: {e}")
+            raise e
+
+    def mcp_tool_handling(self, response: any):
+        """
+        Main handler for MCP tool execution.
+
+        Args:
+            response (any): The tool response to process
+
+        Raises:
+            ValueError: If no MCP URL or MCP Servers are provided
+            Exception: If there's an error in tool handling
+        """
+        try:
+            if self.mcp_url is not None:
+                self._single_mcp_tool_handling(response)
+            elif self.mcp_url is None and len(self.mcp_servers) > 1:
+                self._multiple_mcp_tool_handling(response)
+            else:
+                raise ValueError("No MCP URL or MCP Servers provided")
+        except Exception as e:
+            logger.error(f"Error in mcp_tool_handling: {e}")
+            raise e
 
     def setup_config(self):
         # The max_loops will be set dynamically if the dynamic_loop
@@ -1124,6 +1185,12 @@ class Agent:
                             self.short_memory.add(
                                 role=self.agent_name, content=out
                             )
+
+                        if (
+                            self.mcp_servers
+                            and self.tools_list_dictionary is not None
+                        ):
+                            self.mcp_tool_handling(response)
 
                         self.sentiment_and_evaluator(response)
 

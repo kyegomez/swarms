@@ -1,4 +1,3 @@
-import threading
 import asyncio
 
 
@@ -394,9 +393,4 @@ def _log_agent_data(data_dict: dict):
 
 def log_agent_data(data_dict: dict):
     """Log agent data"""
-    process_thread = threading.Thread(
-        target=_log_agent_data,
-        args=(data_dict,),
-        daemon=True,
-    )
-    process_thread.start()
+    pass

@@ -1,40 +1,42 @@
 from dotenv import load_dotenv
 
 from swarms import Agent
-from swarms.prompts.finance_agent_sys_prompt import (
-    FINANCIAL_AGENT_SYS_PROMPT,
-)
-
+from swarms.tools.mcp_integration import MCPServerSseParams
 
 load_dotenv()
+
+
+server = MCPServerSseParams(
+    url="http://localhost:8000/sse",
+    timeout=10,
+)
 
 tools = [
     {
         "type": "function",
         "function": {
-            "name": "get_stock_price",
-            "description": "Retrieve the current stock price and related information for a specified company.",
+            "name": "add_numbers",
+            "description": "Add two numbers together and return the result.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "ticker": {
+                    "name": {
                         "type": "string",
-                        "description": "The stock ticker symbol of the company, e.g. AAPL for Apple Inc.",
+                        "description": "The name of the operation to perform.",
                     },
-                    "include_history": {
-                        "type": "boolean",
-                        "description": "Indicates whether to include historical price data along with the current price.",
+                    "a": {
+                        "type": "integer",
+                        "description": "The first number to add.",
                     },
-                    "time": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "Optional parameter to specify the time for which the stock data is requested, in ISO 8601 format.",
+                    "b": {
+                        "type": "integer",
+                        "description": "The second number to add.",
                     },
                 },
                 "required": [
-                    "ticker",
-                    "include_history",
-                    "time",
+                    "name",
+                    "a",
+                    "b",
                 ],
             },
         },
@@ -46,14 +48,14 @@ tools = [
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
     agent_description="Personal finance advisor agent",
-    system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-    max_loops=1,
+    max_loops=2,
     tools_list_dictionary=tools,
     output_type="final",
+    mcp_url="http://0.0.0.0:8000/sse",
 )
 
 out = agent.run(
-    "What is the current stock price for Apple Inc. (AAPL)? Include historical price data.",
+    "Use the multiply tool to multiply 3 and 4 together. Look at the tools available to you.",
 )
 
-print(type(out))
+print(agent.short_memory.get_str())

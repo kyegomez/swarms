@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any
 
 
 from loguru import logger
@@ -24,8 +24,6 @@ from mcp import (
 from mcp.client.sse import sse_client
 from mcp.types import CallToolResult, JSONRPCMessage
 from typing_extensions import NotRequired, TypedDict
-
-from swarms.utils.any_to_str import any_to_str
 
 
 class MCPServer(abc.ABC):
@@ -340,53 +338,3 @@ class MCPServerSse(_MCPServerWithClientSession):
     def name(self) -> str:
         """A readable name for the server."""
         return self._name
-
-
-def mcp_flow_get_tool_schema(
-    params: MCPServerSseParams,
-) -> MCPServer:
-    server = MCPServerSse(params, cache_tools_list=True)
-
-    # Connect the server
-    asyncio.run(server.connect())
-
-    # Return the server
-    output = asyncio.run(server.list_tools())
-
-    # Cleanup the server
-    asyncio.run(server.cleanup())
-
-    return output.model_dump()
-
-
-def mcp_flow(
-    params: MCPServerSseParams,
-    function_call: dict[str, Any],
-) -> MCPServer:
-    server = MCPServerSse(params, cache_tools_list=True)
-
-    # Connect the server
-    asyncio.run(server.connect())
-
-    # Return the server
-    output = asyncio.run(server.call_tool(function_call))
-
-    output = output.model_dump()
-
-    # Cleanup the server
-    asyncio.run(server.cleanup())
-
-    return any_to_str(output)
-
-
-def batch_mcp_flow(
-    params: List[MCPServerSseParams],
-    function_call: List[dict[str, Any]] = [],
-) -> MCPServer:
-    output_list = []
-
-    for param in params:
-        output = mcp_flow(param, function_call)
-        output_list.append(output)
-
-    return output_list

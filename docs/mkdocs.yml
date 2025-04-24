@@ -357,6 +357,7 @@ nav:
     - Swarms Cloud Subscription Tiers: "swarms_cloud/subscription_tiers.md"
     - Swarms API Best Practices: "swarms_cloud/best_practices.md"
     - Swarms API as MCP: "swarms_cloud/mcp.md"
+    - Swarms API Tools: "swarms_cloud/swarms_api_tools.md"
     - Swarm Ecosystem APIs:
       - MCS API: "swarms_cloud/mcs_api.md"
       # - CreateNow API: "swarms_cloud/create_api.md"

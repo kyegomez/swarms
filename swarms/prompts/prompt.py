@@ -11,10 +11,6 @@ from pydantic import (
 )
 from pydantic.v1 import validator
 
-from swarms.telemetry.main import (
-    capture_system_data,
-    log_agent_data,
-)
 from swarms.tools.base_tool import BaseTool
 from swarms.utils.loguru_logger import initialize_logger
 
@@ -141,10 +137,10 @@ class Prompt(BaseModel):
         if self.autosave:
             self._autosave()
 
-    def log_telemetry(self):
-        system_data = capture_system_data()
-        merged_data = {**system_data, **self.model_dump()}
-        log_agent_data(merged_data)
+    # def log_telemetry(self):
+    #     system_data = capture_system_data()
+    #     merged_data = {**system_data, **self.model_dump()}
+    #     log_agent_data(merged_data)
 
     def rollback(self, version: int) -> None:
         """
@@ -174,7 +170,7 @@ class Prompt(BaseModel):
         #     f"Prompt {self.id} rolled back to version {version}. Current content: '{self.content}'"
         # )
 
-        self.log_telemetry()
+        # self.log_telemetry()
 
         if self.autosave:
             self._autosave()
@@ -190,7 +186,7 @@ class Prompt(BaseModel):
             str: The current prompt content.
         """
         # logger.debug(f"Returning prompt {self.id} as a string.")
-        self.log_telemetry()
+        # self.log_telemetry()
 
         return self.content
 

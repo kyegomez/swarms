@@ -27,6 +27,7 @@ class AOP:
         name: Optional[str] = None,
         description: Optional[str] = None,
         url: Optional[str] = "http://localhost:8000/sse",
+        urls: Optional[list[str]] = None,
         *args,
         **kwargs,
     ):
@@ -44,7 +45,7 @@ class AOP:
         self.name = name
         self.description = description
         self.url = url
-
+        self.urls = urls
         self.tools = {}
         self.swarms = {}
 
@@ -526,6 +527,12 @@ class AOP:
             if tool["name"] == name:
                 return tool
         return None
+
+    def list_tools_for_multiple_urls(self):
+        out = []
+        for url in self.urls:
+            out.append(self.list_all(url))
+        return out
 
     def search_if_tool_exists(self, name: str):
         out = self.list_all()
