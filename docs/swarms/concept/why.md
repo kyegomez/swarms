@@ -24,12 +24,12 @@ For enterprises, this limitation poses significant challenges. Business operatio
 
 ```mermaid
 graph LR
-    Subgraph[Context Window Limit]
-    Input[Large Document]
-    Agent[AI Agent]
-    Output[Partial Understanding]
-    Input -- Truncated Data --> Agent
-    Agent -- Generates --> Output
+    subgraph "Context Window Limit"
+        Input[Large Document]
+        Agent[AI Agent]
+        Output[Partial Understanding]
+        Input -- Truncated Data --> Agent
+        Agent -- Generates --> Output
     end
 ```
 
