@@ -2488,342 +2488,782 @@ To explore the Swarms API and begin building your own intelligent agent swarms, 
 
 --------------------------------------------------
 
-# File: clusterops/reference.md
+# File: concepts/limitations.md
 
-# ClusterOps API Reference
+# Limitations of Individual Agents
 
-ClusterOps is a Python library for managing and executing tasks across CPU and GPU resources in a distributed computing environment. It provides functions for resource discovery, task execution, and performance monitoring.
+This section explores the fundamental limitations of individual AI agents and why multi-agent systems are necessary for complex tasks. Understanding these limitations is crucial for designing effective multi-agent architectures.
 
-## Installation
+## Overview
+
+```mermaid
+graph TD
+    A[Individual Agent Limitations] --> B[Context Window Limits]
+    A --> C[Hallucination]
+    A --> D[Single Task Execution]
+    A --> E[Lack of Collaboration]
+    A --> F[Accuracy Issues]
+    A --> G[Processing Speed]
+```
+
+## 1. Context Window Limits
+
+### The Challenge
+Individual agents are constrained by fixed context windows, limiting their ability to process large amounts of information simultaneously.
+
+```mermaid
+graph LR
+    subgraph "Context Window Limitation"
+        Input[Large Document] --> Truncation[Truncation]
+        Truncation --> ProcessedPart[Processed Part]
+        Truncation --> UnprocessedPart[Unprocessed Part]
+    end
+```
+
+### Impact
+- Limited understanding of large documents
+- Fragmented processing of long conversations
+- Inability to maintain extended context
+- Loss of important information
+
+## 2. Hallucination
+
+### The Challenge
+Individual agents may generate plausible-sounding but incorrect information, especially when dealing with ambiguous or incomplete data.
+
+```mermaid
+graph TD
+    Input[Ambiguous Input] --> Agent[AI Agent]
+    Agent --> Valid[Valid Output]
+    Agent --> Hallucination[Hallucinated Output]
+    style Hallucination fill:#ff9999
+```
+
+### Impact
+- Unreliable information generation
+- Reduced trust in system outputs
+- Potential for misleading decisions
+- Need for extensive verification
+
+## 3. Single Task Execution
+
+### The Challenge
+Most individual agents are optimized for specific tasks and struggle with multi-tasking or adapting to new requirements.
+
+```mermaid
+graph LR
+    Task1[Task A] --> Agent1[Agent A]
+    Task2[Task B] --> Agent2[Agent B]
+    Task3[Task C] --> Agent3[Agent C]
+    Agent1 --> Output1[Output A]
+    Agent2 --> Output2[Output B]
+    Agent3 --> Output3[Output C]
+```
+
+### Impact
+- Limited flexibility
+- Inefficient resource usage
+- Complex integration requirements
+- Reduced adaptability
+
+## 4. Lack of Collaboration
+
+### The Challenge
+Individual agents operate in isolation, unable to share insights or coordinate actions with other agents.
+
+```mermaid
+graph TD
+    A1[Agent 1] --> O1[Output 1]
+    A2[Agent 2] --> O2[Output 2]
+    A3[Agent 3] --> O3[Output 3]
+    style A1 fill:#f9f,stroke:#333
+    style A2 fill:#f9f,stroke:#333
+    style A3 fill:#f9f,stroke:#333
+```
+
+### Impact
+- No knowledge sharing
+- Duplicate effort
+- Missed optimization opportunities
+- Limited problem-solving capabilities
+
+## 5. Accuracy Issues
+
+### The Challenge
+Individual agents may produce inaccurate results due to:
+- Limited training data
+- Model biases
+- Lack of cross-validation
+- Incomplete context understanding
+
+```mermaid
+graph LR
+    Input[Input Data] --> Processing[Processing]
+    Processing --> Accurate[Accurate Output]
+    Processing --> Inaccurate[Inaccurate Output]
+    style Inaccurate fill:#ff9999
+```
+
+## 6. Processing Speed Limitations
+
+### The Challenge
+Individual agents may experience:
+- Slow response times
+- Resource constraints
+- Limited parallel processing
+- Bottlenecks in complex tasks
+
+```mermaid
+graph TD
+    Input[Input] --> Queue[Processing Queue]
+    Queue --> Processing[Sequential Processing]
+    Processing --> Delay[Processing Delay]
+    Delay --> Output[Delayed Output]
+```
+
+## Best Practices for Mitigation
+
+1. **Use Multi-Agent Systems**
+   - Distribute tasks across agents
+   - Enable parallel processing
+   - Implement cross-validation
+   - Foster collaboration
+
+2. **Implement Verification**
+   - Cross-check results
+   - Use consensus mechanisms
+   - Monitor accuracy metrics
+   - Track performance
+
+3. **Optimize Resource Usage**
+   - Balance load distribution
+   - Cache frequent operations
+   - Implement efficient queuing
+   - Monitor system health
+
+## Conclusion
+
+Understanding these limitations is crucial for:
+- Designing robust multi-agent systems
+- Implementing effective mitigation strategies
+- Optimizing system performance
+- Ensuring reliable outputs
+
+The next section explores how [Multi-Agent Architecture](architecture.md) addresses these limitations through collaborative approaches and specialized agent roles. 
+
+--------------------------------------------------
+
+# File: contributors/docs.md
+
+# Contributing to Swarms Documentation
+
+---
+
+The Swarms documentation serves as the primary gateway for developer and user engagement within the Swarms ecosystem. Comprehensive, clear, and consistently updated documentation accelerates adoption, reduces support requests, and helps maintain a thriving developer community. This guide offers an in-depth, actionable framework for contributing to the Swarms documentation site, covering the full lifecycle from initial setup to the implementation of our bounty-based rewards program. 
+
+This guide is designed for first-time contributors, experienced engineers, and technical writers alike. It emphasizes professional standards, collaborative development practices, and incentivized participation through our structured rewards program. Contributors play a key role in helping us scale and evolve our ecosystem by improving the clarity, accessibility, and technical depth of our documentation.
+
+---
+
+## 1. Introduction
+
+Documentation in the Swarms ecosystem is not simply static text. It is a living, breathing system that guides users, developers, and enterprises in effectively utilizing our frameworks, SDKs, APIs, and tools. Whether you are documenting a new feature, refining an API call, writing a tutorial, or correcting existing information, every contribution has a direct impact on the product’s usability and user satisfaction. 
+
+**Objectives of this Guide:**
+
+
+- Define a standardized contribution workflow for Swarms documentation.
+
+- Clarify documentation roles, responsibilities, and submission expectations.
+
+- Establish quality benchmarks, review procedures, and formatting rules.
+
+- Introduce the Swarms Documentation Bounty Program to incentivize excellence.
+
+---
+
+## 2. Why Documentation Is a Strategic Asset
+
+1. **Accelerates Onboarding**: Reduces friction for new users, enabling faster adoption and integration.
+2. **Improves Support Efficiency**: Decreases dependency on live support and helps automate resolution of common queries.
+3. **Builds Community Trust**: Transparent documentation invites feedback and fosters a sense of shared ownership.
+4. **Enables Scalability**: As Swarms evolves, up-to-date documentation ensures that teams across the globe can keep pace.
+
+By treating documentation as a core product component, we ensure continuity, scalability, and user satisfaction.
+
+---
+
+## 3. Understanding the Swarms Ecosystem
+
+The Swarms ecosystem consists of multiple tightly integrated components that serve developers and enterprise clients alike:
+
+
+- **Core Documentation Repository**: The main documentation hub for all Swarms technologies [GitHub](https://github.com/kyegomez/swarms).
+
+- **Rust SDK (`swarms_rs`)**: Official documentation for the Rust implementation. [Repo](https://github.com/The-Swarm-Corporation/swarms-rs).
+
+- **Tools Documentation (`swarms_tools`)**: Guides for CLI and GUI utilities.
+
+- **Hosted API Reference**: Up-to-date REST API documentation: [Swarms API Docs](https://docs.swarms.world/en/latest/swarms_cloud/swarms_api/).
+
+- **Marketplace & Chat**: Web platforms and communication interfaces [swarms.world](https://swarms.world).
+
+All contributions funnel through the `docs/` directory in the core repo and are structured via MkDocs.
+
+---
+
+## 4. Documentation Tools and Platforms
+
+Swarms documentation is powered by [MkDocs](https://www.mkdocs.org/), an extensible static site generator tailored for project documentation. To contribute, you should be comfortable with:
+
+- **Markdown**: For formatting structure, code snippets, lists, and links.
+
+- **MkDocs Configuration**: `mkdocs.yml` manages structure, theme, and navigation.
+
+- **Version Control**: GitHub for branching, version tracking, and collaboration.
+
+**Recommended Tooling:**
+
+- Markdown linters to enforce syntax consistency.
+
+- Spellcheckers to ensure grammatical accuracy.
+
+- Doc generators for automated API reference extraction.
+
+---
+
+## 5. Getting Started with Contributions
+
+### 5.1 System Requirements
+
+
+- **Git** v2.30 or higher
+
+- **Node.js** and **npm** for related dependency management
+
+- **MkDocs** and **Material for MkDocs** theme (`pip install mkdocs mkdocs-material`)
+
+- A GitHub account with permissions to fork and submit pull requests
+
+### 5.2 Forking the Swarms Repository
+
+1. Visit: `https://github.com/kyegomez/swarms`
+
+2. Click on **Fork** to create your version of the repository
+
+### 5.3 Clone and Configure Locally
 
 ```bash
-
-$ pip3 install clusterops
-
+git clone https://github.com/<your-username>/swarms.git
+cd swarms/docs
+git checkout -b feature/docs-<short-description>
 ```
 
-## Table of Contents
-1. [CPU Operations](#cpu-operations)
-2. [GPU Operations](#gpu-operations)
-3. [Utility Functions](#utility-functions)
-4. [Resource Monitoring](#resource-monitoring)
+---
 
-## CPU Operations
+## 6. Understanding the Repository Structure
 
-### `list_available_cpus()`
+Explore the documentation directory:
 
-Lists all available CPU cores.
+```text
+docs/
+├── index.md
+├── mkdocs.yml
+├── swarms_rs/
+│   ├── overview.md
+│   └── ...
+└── swarms_tools/
+    ├── install.md
+    └── ...
+```
 
-#### Returns
-| Type | Description |
-|------|-------------|
-| `List[int]` | A list of available CPU core indices. |
+### 6.1 SDK/Tools Directories
 
-#### Raises
-| Exception | Description |
-|-----------|-------------|
-| `RuntimeError` | If no CPUs are found. |
+- **Rust SDK (`docs/swarms_rs`)**: Guides, references, and API walkthroughs for the Rust-based implementation.
 
-#### Example
+- **Swarms Tools (`docs/swarms_tools`)**: CLI guides, GUI usage instructions, and architecture documentation.
+
+
+Add new `.md` files in the folder corresponding to your documentation type.
+
+### 6.2 Configuring Navigation in MkDocs
+
+Update `mkdocs.yml` to integrate your new document:
+
+```yaml
+nav:
+  - Home: index.md
+  - Swarms Rust:
+      - Overview: swarms_rs/overview.md
+      - Your Topic: swarms_rs/your_file.md
+  - Swarms Tools:
+      - Installation: swarms_tools/install.md
+      - Your Guide: swarms_tools/your_file.md
+```
+
+---
+
+## 7. Writing and Editing Documentation
+
+### 7.1 Content Standards
+
+
+- **Clarity**: Explain complex ideas in simple, direct language.
+
+- **Style Consistency**: Match the tone and structure of existing docs.
+
+- **Accuracy**: Validate all technical content and code snippets.
+
+- **Accessibility**: Include alt text for images and use semantic Markdown.
+
+### 7.2 Markdown Best Practices
+
+- Sequential heading levels (`#`, `##`, `###`)
+
+- Use fenced code blocks with language identifiers
+
+- Create readable line spacing and avoid unnecessary line breaks
+
+
+### 7.3 File Placement Protocol
+
+Place `.md` files into the correct subdirectory:
+
+
+- **Rust SDK Docs**: `docs/swarms_rs/`
+
+- **Tooling Docs**: `docs/swarms_tools/`
+
+---
+
+## 8. Updating Navigation Configuration
+
+After writing your content:
+
+1. Open `mkdocs.yml`
+2. Identify where your file belongs
+3. Add it to the `nav` hierarchy
+4. Preview changes:
+
+```bash
+mkdocs serve
+# Open http://127.0.0.1:8000 to verify output
+```
+
+---
+
+## 9. Workflow: Branches, Commits, Pull Requests
+
+### 9.1 Branch Naming Guidelines
+
+- Use prefix and description, e.g.:
+  - `feature/docs-api-pagination`
+
+  - `fix/docs-typo-tooling`
+
+### 9.2 Writing Clear Commits
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```bash
+docs(swarms_rs): add stream API tutorial
+docs(swarms_tools): correct CLI usage example
+```
+
+### 9.3 Submitting a Pull Request
+
+1. Push your feature branch
+2. Open a new PR to the main repository
+3. Use a descriptive title and include:
+   - Summary of changes
+   - Justification
+   - Screenshots or previews
+4. Tag relevant reviewers and apply labels (`documentation`, `bounty-eligible`)
+
+---
+
+## 10. Review, QA, and Merging
+
+Every PR undergoes automated and human review:
+
+- **CI Checks**: Syntax validation, link checking, and formatting
+
+- **Manual Review**: Maintain clarity, completeness, and relevance
+
+- **Iteration**: Collaborate through feedback and finalize changes
+
+Once approved, maintainers will merge and deploy the updated documentation.
+
+---
+
+## 11. Swarms Documentation Bounty Initiative
+
+To foster continuous improvement, we offer structured rewards for eligible contributions:
+
+### 11.1 Contribution Types
+
+
+- Creating comprehensive new tutorials and deep dives
+
+- Updating outdated references and examples
+
+- Fixing typos, grammar, and formatting errors
+
+- Translating existing content
+
+### 11.2 Reward Structure
+
+| Tier     | Description                                            | Payout (USD)     |
+|----------|--------------------------------------------------------|------------------|
+| Bronze   | Typos or minor enhancements (< 100 words)             | $1 - $5        |
+| Silver   | Small tutorials, API examples (100–500 words)         | $5 - $20       |
+| Gold     | Major updates or guides (> 500 words)                 | $20 - $50      |
+| Platinum | Multi-part guides or new documentation verticals      | $50 - 300          |
+
+### 11.3 Claiming Bounties
+
+1. Label your PR `bounty-eligible`
+2. Describe expected tier and rationale
+3. Review team assesses scope and assigns reward
+4. Rewards paid post-merge via preferred method (PayPal, crypto, or wire)
+
+---
+
+## 12. Best Practices for Efficient Contribution
+
+- **Stay Updated**: Sync your fork weekly to avoid merge conflicts
+
+- **Atomic PRs**: Submit narrowly scoped changes for faster review
+
+- **Use Visuals**: Support documentation with screenshots or diagrams
+
+- **Cross-Reference**: Link to related documentation for completeness
+
+- **Version Awareness**: Specify SDK/tool versions in code examples
+
+---
+
+## 13. Style Guide Snapshot
+
+
+- **Voice**: Informative, concise, and respectful
+
+- **Terminology**: Use standardized terms (`Swarm`, `Swarms`) consistently
+
+- **Code**: Format snippets using language-specific linters
+
+- **Accessibility**: Include alt attributes and avoid ambiguous links
+
+---
+
+## 14. Monitoring & Improving Documentation Health
+
+We use analytics and community input to prioritize improvements:
+
+- **Traffic Reports**: Track most/least visited pages
+
+- **Search Logs**: Detect content gaps from common search terms
+
+- **Feedback Forms**: Collect real-world user input
+
+Schedule quarterly audits to refine structure and content across all repositories.
+
+---
+
+## 15. Community Promotion & Engagement
+
+Promote your contributions via:
+
+
+- **Swarms Discord**: https://discord.gg/jM3Z6M9uMq
+
+- **Swarms Telegram**: https://t.me/swarmsgroupchat
+
+- **Swarms Twitter**: https://x.com/swarms_corp
+
+- **Startup Program Showcases**: https://www.swarms.xyz/programs/startups
+
+Active contributors are often spotlighted for leadership roles and community awards.
+
+---
+
+## 16. Resource Index
+
+- Core GitHub Repo: https://github.com/kyegomez/swarms
+
+- Rust SDK Repo: https://github.com/The-Swarm-Corporation/swarms-rs
+
+- Swarms API Docs: https://docs.swarms.world/en/latest/swarms_cloud/swarms_api/
+
+- Marketplace: https://swarms.world
+
+Join our monthly Documentation Office Hours for real-time mentorship and Q&A.
+
+---
+
+## 17. Frequently Asked Questions
+
+**Q1: Is MkDocs required to contribute?**  
+A: It's recommended but not required; Markdown knowledge is sufficient to get started.
+
+**Q2: Can I rework existing sections?**  
+A: Yes, propose changes via issues first, or submit PRs with clear descriptions.
+
+**Q3: When are bounties paid?**  
+A: Within 30 days of merge, following internal validation.
+
+---
+
+## 18. Final Thoughts
+
+The Swarms documentation is a critical piece of our technology stack. As a contributor, your improvements—big or small—directly impact adoption, user retention, and developer satisfaction. This guide aims to equip you with the tools, practices, and incentives to make meaningful contributions. Your work helps us deliver a more usable, scalable, and inclusive platform.
+
+We look forward to your pull requests, feedback, and ideas.
+
+---
+
+
+--------------------------------------------------
+
+# File: contributors/tools.md
+
+# Contributing Tools and Plugins to the Swarms Ecosystem
+
+## Introduction
+
+The Swarms ecosystem is a modular, intelligent framework built to support the seamless integration, execution, and orchestration of dynamic tools that perform specific functions. These tools form the foundation for how autonomous agents operate, enabling them to retrieve data, communicate with APIs, conduct computational tasks, and respond intelligently to real-world requests. By contributing to Swarms Tools, developers can empower agents with capabilities that drive practical, enterprise-ready applications.
+
+This guide provides a comprehensive roadmap for contributing tools and plugins to the [Swarms Tools repository](https://github.com/The-Swarm-Corporation/swarms-tools). It is written for software engineers, data scientists, platform architects, and technologists who seek to develop modular, production-grade functionality within the Swarms agent framework.
+
+Whether your expertise lies in finance, security, machine learning, or developer tooling, this documentation outlines the essential standards, workflows, and integration patterns to make your contributions impactful and interoperable.
+
+## Repository Architecture
+
+The Swarms Tools GitHub repository is meticulously organized to maintain structure, scalability, and domain-specific clarity. Each folder within the repository represents a vertical where tools can be contributed and extended over time. These folders include:
+
+- `finance/`: Market analytics, stock price retrievers, blockchain APIs, etc.
+
+- `social/`: Sentiment analysis, engagement tracking, and media scraping utilities.
+
+- `health/`: Interfaces for EHR systems, wearable device APIs, or health informatics.
+
+- `ai/`: Model-serving utilities, embedding services, and prompt engineering functions.
+
+- `security/`: Encryption libraries, risk scoring tools, penetration test interfaces.
+
+- `devtools/`: Build tools, deployment utilities, code quality analyzers.
+
+- `misc/`: General-purpose helpers or utilities that serve multiple domains.
+
+Each tool inside these directories is implemented as a single, self-contained function. These functions are expected to adhere to Swarms-wide standards for clarity, typing, documentation, and API key handling.
+
+## Tool Development Specifications
+
+To ensure long-term maintainability and smooth agent-tool integration, each contribution must strictly follow the specifications below.
+
+### 1. Function Structure and API Usage
+
 ```python
-from clusterops import list_available_cpus
+import requests
+import os
 
-available_cpus = list_available_cpus()
-print(f"Available CPU cores: {available_cpus}")
+def fetch_data(symbol: str, date_range: str) -> str:
+    """
+    Fetch financial data for a given symbol and date range.
+
+    Args:
+        symbol (str): Ticker symbol of the asset.
+        date_range (str): Timeframe for the data (e.g., '1d', '1m', '1y').
+
+    Returns:
+        str: A string containing financial data or an error message.
+    """
+    api_key = os.getenv("FINANCE_API_KEY")
+    url = f"https://api.financeprovider.com/data?symbol={symbol}&range={date_range}&apikey={api_key}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.text
+    return "Error fetching data."
 ```
 
-### `execute_on_cpu(cpu_id: int, func: Callable, *args: Any, **kwargs: Any) -> Any`
+All logic must be encapsulated inside a single callable function, written using pure Python. Where feasible, network requests should be stateless, side-effect-free, and gracefully handle errors or timeouts.
 
-Executes a callable on a specific CPU.
+### 2. Type Hints and Input Validation
 
-#### Parameters
-| Name | Type | Description |
-|------|------|-------------|
-| `cpu_id` | `int` | The CPU core to run the function on. |
-| `func` | `Callable` | The function to be executed. |
-| `*args` | `Any` | Arguments for the callable. |
-| `**kwargs` | `Any` | Keyword arguments for the callable. |
+All function parameters must be typed using Python's type hinting system. Use built-in primitives where possible (e.g., `str`, `int`, `float`, `bool`) and make use of `Optional` or `Union` types when dealing with nullable parameters or multiple formats. This aids LLMs and type checkers in understanding expected input ranges.
 
-#### Returns
-| Type | Description |
-|------|-------------|
-| `Any` | The result of the function execution. |
+### 3. Standardized Output Format
 
-#### Raises
-| Exception | Description |
-|-----------|-------------|
-| `ValueError` | If the CPU core specified is invalid. |
-| `RuntimeError` | If there is an error executing the function on the CPU. |
+Regardless of internal logic or complexity, tools must return outputs in a consistent string format. This string can contain plain text or a serialized JSON object (as a string), but must not return raw objects, dictionaries, or binary blobs. This standardization ensures all downstream agents can interpret tool output predictably.
 
-#### Example
+### 4. API Key Management Best Practices
+
+Security and environment isolation are paramount. Never hardcode API keys or sensitive credentials inside source code. Always retrieve them dynamically using the `os.getenv("ENV_VAR")` approach. If a tool requires credentials, clearly document the required environment variable names in the function docstring.
+
+### 5. Documentation Guidelines
+
+Every tool must include a detailed docstring that describes:
+
+- The function's purpose and operational scope
+
+- All parameter types and formats
+
+- A clear return type
+
+- Usage examples or sample inputs/outputs
+
+Example usage:
 ```python
-from clusterops import execute_on_cpu
-
-def sample_task(n: int) -> int:
-    return n * n
-
-result = execute_on_cpu(0, sample_task, 10)
-print(f"Result of sample task on CPU 0: {result}")
+result = fetch_data("AAPL", "1m")
+print(result)
 ```
 
-### `execute_with_cpu_cores(core_count: int, func: Callable, *args: Any, **kwargs: Any) -> Any`
+Well-documented code accelerates adoption and improves LLM interpretability.
 
-Executes a callable using a specified number of CPU cores.
+## Contribution Workflow
 
-#### Parameters
-| Name | Type | Description |
-|------|------|-------------|
-| `core_count` | `int` | The number of CPU cores to run the function on. |
-| `func` | `Callable` | The function to be executed. |
-| `*args` | `Any` | Arguments for the callable. |
-| `**kwargs` | `Any` | Keyword arguments for the callable. |
+To submit a tool, follow the workflow below. This ensures your code integrates cleanly and is easy for maintainers to review.
 
-#### Returns
-| Type | Description |
-|------|-------------|
-| `Any` | The result of the function execution. |
+### Step 1: Fork the Repository
+Navigate to the [Swarms Tools repository](https://github.com/The-Swarm-Corporation/swarms-tools) and fork it to your personal or organization’s GitHub account.
 
-#### Raises
-| Exception | Description |
-|-----------|-------------|
-| `ValueError` | If the number of CPU cores specified is invalid or exceeds available cores. |
-| `RuntimeError` | If there is an error executing the function on the specified CPU cores. |
+### Step 2: Clone Your Fork
+```bash
+git clone https://github.com/YOUR_USERNAME/swarms-tools.git
+cd swarms-tools
+```
 
-#### Example
+### Step 3: Create a Feature Branch
+
+```bash
+git checkout -b feature/add-tool-<tool-name>
+```
+
+Use descriptive branch names. This is especially helpful when collaborating in teams or maintaining audit trails.
+
+### Step 4: Build Your Tool
+Navigate into the appropriate category folder (e.g., `finance/`, `ai/`, etc.) and implement your tool according to the defined schema.
+
+If your tool belongs in a new category, you may create a new folder with a clear, lowercase name.
+
+### Step 5: Run Local Tests (if applicable)
+Ensure the function executes correctly and does not throw runtime errors. If feasible, test edge cases and verify consistent behavior across platforms.
+
+### Step 6: Commit Your Changes
+
+```bash
+git add .
+git commit -m "Add <tool_name> under <folder_name>: API-based tool for X"
+```
+
+### Step 7: Push to GitHub
+
+```bash
+git push origin feature/add-tool-<tool-name>
+```
+
+### Step 8: Submit a Pull Request
+
+On GitHub, open a pull request from your fork to the main Swarms Tools repository. Your PR description should:
+- Summarize the tool’s functionality
+- Reference any related issues or enhancements
+- Include usage notes or setup instructions (e.g., required API keys)
+
+---
+
+## Integration with Swarms Agents
+
+Once your tool has been merged into the official repository, it can be utilized by Swarms agents as part of their available capabilities.
+
+The example below illustrates how to embed a newly added tool into an autonomous agent:
+
 ```python
-from clusterops import execute_with_cpu_cores
+from swarms import Agent
+from finance.stock_price import get_stock_price
 
-def parallel_task(n: int) -> int:
-    return sum(range(n))
+agent = Agent(
+    agent_name="Devin",
+    system_prompt=(
+        "Autonomous agent that can interact with humans and other agents."
+        " Be helpful and kind. Use the tools provided to assist the user."
+        " Return all code in markdown format."
+    ),
+    llm=llm,
+    max_loops="auto",
+    autosave=True,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    interactive=True,
+    tools=[get_stock_price, terminal, browser, file_editor, create_file],
+    metadata_output_type="json",
+    function_calling_format_type="OpenAI",
+    function_calling_type="json",
+)
 
-result = execute_with_cpu_cores(4, parallel_task, 1000000)
-print(f"Result of parallel task using 4 CPU cores: {result}")
+agent.run("Create a new file for a plan to take over the world.")
 ```
 
-## GPU Operations
+By registering tools in the `tools` parameter during agent creation, you enable dynamic function calling. The agent interprets natural language input, selects the appropriate tool, and invokes it with valid arguments.
 
-### `list_available_gpus() -> List[str]`
+This agent-tool paradigm enables highly flexible and responsive behavior across workflows involving research, automation, financial analysis, social listening, and more.
 
-Lists all available GPUs.
+---
 
-#### Returns
-| Type | Description |
-|------|-------------|
-| `List[str]` | A list of available GPU names. |
+## Tool Maintenance and Long-Term Ownership
 
-#### Raises
-| Exception | Description |
-|-----------|-------------|
-| `RuntimeError` | If no GPUs are found. |
+Contributors are expected to uphold the quality of their tools post-merge. This includes:
 
-#### Example
-```python
-from clusterops import list_available_gpus
+- Monitoring for issues or bugs reported by the community
 
-available_gpus = list_available_gpus()
-print(f"Available GPUs: {available_gpus}")
-```
+- Updating tools when APIs deprecate or modify their behavior
 
-### `select_best_gpu() -> Optional[int]`
+- Improving efficiency, error handling, or documentation over time
 
-Selects the GPU with the most free memory.
+If a tool becomes outdated or unsupported, maintainers may archive or revise it to maintain ecosystem integrity.
 
-#### Returns
-| Type | Description |
-|------|-------------|
-| `Optional[int]` | The GPU ID of the best available GPU, or None if no GPUs are available. |
+Contributors whose tools receive wide usage or demonstrate excellence in design may be offered elevated privileges or invited to maintain broader tool categories.
 
-#### Example
-```python
-from clusterops import select_best_gpu
+---
 
-best_gpu = select_best_gpu()
-if best_gpu is not None:
-    print(f"Best GPU for execution: GPU {best_gpu}")
-else:
-    print("No GPUs available")
-```
+## Best Practices for Enterprise-Grade Contributions
 
-### `execute_on_gpu(gpu_id: int, func: Callable, *args: Any, **kwargs: Any) -> Any`
+To ensure your tool is production-ready and enterprise-compliant, observe the following practices:
 
-Executes a callable on a specific GPU using Ray.
 
-#### Parameters
-| Name | Type | Description |
-|------|------|-------------|
-| `gpu_id` | `int` | The GPU to run the function on. |
-| `func` | `Callable` | The function to be executed. |
-| `*args` | `Any` | Arguments for the callable. |
-| `**kwargs` | `Any` | Keyword arguments for the callable. |
+- Run static type checking with `mypy`
 
-#### Returns
-| Type | Description |
-|------|-------------|
-| `Any` | The result of the function execution. |
+- Use formatters like `black` and linters such as `flake8`
 
-#### Raises
-| Exception | Description |
-|-----------|-------------|
-| `ValueError` | If the GPU index is invalid. |
-| `RuntimeError` | If there is an error executing the function on the GPU. |
+- Avoid unnecessary external dependencies
 
-#### Example
-```python
-from clusterops import execute_on_gpu
+- Keep functions modular and readable
 
-def gpu_task(n: int) -> int:
-    return n ** 2
+- Prefer named parameters over positional arguments for clarity
 
-result = execute_on_gpu(0, gpu_task, 10)
-print(f"Result of GPU task on GPU 0: {result}")
-```
+- Handle API errors gracefully and return user-friendly messages
 
-### `execute_on_multiple_gpus(gpu_ids: List[int], func: Callable, all_gpus: bool = False, timeout: float = None, *args: Any, **kwargs: Any) -> List[Any]`
+- Document limitations or assumptions in the docstring
 
-Executes a callable across multiple GPUs using Ray.
+Optional but encouraged:
+- Add unit tests to validate function output
 
-#### Parameters
-| Name | Type | Description |
-|------|------|-------------|
-| `gpu_ids` | `List[int]` | The list of GPU IDs to run the function on. |
-| `func` | `Callable` | The function to be executed. |
-| `all_gpus` | `bool` | Whether to use all available GPUs (default: False). |
-| `timeout` | `float` | Timeout for the execution in seconds (default: None). |
-| `*args` | `Any` | Arguments for the callable. |
-| `**kwargs` | `Any` | Keyword arguments for the callable. |
+- Benchmark performance if your tool operates on large datasets
 
-#### Returns
-| Type | Description |
-|------|-------------|
-| `List[Any]` | A list of results from the execution on each GPU. |
+---
 
-#### Raises
-| Exception | Description |
-|-----------|-------------|
-| `ValueError` | If any GPU index is invalid. |
-| `RuntimeError` | If there is an error executing the function on the GPUs. |
+## Conclusion
 
-#### Example
-```python
-from clusterops import execute_on_multiple_gpus
+The Swarms ecosystem is built on the principle of extensibility through community-driven contributions. By submitting modular, typed, and well-documented tools to the Swarms Tools repository, you directly enhance the problem-solving power of intelligent agents.
 
-def multi_gpu_task(n: int) -> int:
-    return n ** 3
+This documentation serves as your blueprint for contributing high-quality, reusable functionality. From idea to implementation to integration, your efforts help shape the future of collaborative, agent-powered software.
 
-results = execute_on_multiple_gpus([0, 1], multi_gpu_task, 5)
-print(f"Results of multi-GPU task: {results}")
-```
+We encourage all developers, data scientists, and domain experts to contribute meaningfully. Review existing tools for inspiration, or create something entirely novel.
 
-### `distributed_execute_on_gpus(gpu_ids: List[int], func: Callable, *args: Any, **kwargs: Any) -> List[Any]`
+To begin, fork the [Swarms Tools repository](https://github.com/The-Swarm-Corporation/swarms-tools) and start building impactful, reusable tools that can scale across agents and use cases.
 
-Executes a callable across multiple GPUs and nodes using Ray's distributed task scheduling.
 
-#### Parameters
-| Name | Type | Description |
-|------|------|-------------|
-| `gpu_ids` | `List[int]` | The list of GPU IDs across nodes to run the function on. |
-| `func` | `Callable` | The function to be executed. |
-| `*args` | `Any` | Arguments for the callable. |
-| `**kwargs` | `Any` | Keyword arguments for the callable. |
-
-#### Returns
-| Type | Description |
-|------|-------------|
-| `List[Any]` | A list of results from the execution on each GPU. |
-
-#### Example
-```python
-from clusterops import distributed_execute_on_gpus
-
-def distributed_task(n: int) -> int:
-    return n ** 4
-
-results = distributed_execute_on_gpus([0, 1, 2, 3], distributed_task, 3)
-print(f"Results of distributed GPU task: {results}")
-```
-
-## Utility Functions
-
-### `retry_with_backoff(func: Callable, retries: int = RETRY_COUNT, delay: float = RETRY_DELAY, *args: Any, **kwargs: Any) -> Any`
-
-Retries a callable function with exponential backoff in case of failure.
-
-#### Parameters
-| Name | Type | Description |
-|------|------|-------------|
-| `func` | `Callable` | The function to execute with retries. |
-| `retries` | `int` | Number of retries (default: RETRY_COUNT from env). |
-| `delay` | `float` | Delay between retries in seconds (default: RETRY_DELAY from env). |
-| `*args` | `Any` | Arguments for the callable. |
-| `**kwargs` | `Any` | Keyword arguments for the callable. |
-
-#### Returns
-| Type | Description |
-|------|-------------|
-| `Any` | The result of the function execution. |
-
-#### Raises
-| Exception | Description |
-|-----------|-------------|
-| `Exception` | After all retries fail. |
-
-#### Example
-```python
-from clusterops import retry_with_backoff
-
-def unstable_task():
-    # Simulating an unstable task that might fail
-    import random
-    if random.random() < 0.5:
-        raise Exception("Task failed")
-    return "Task succeeded"
-
-result = retry_with_backoff(unstable_task, retries=5, delay=1)
-print(f"Result of unstable task: {result}")
-```
-
-## Resource Monitoring
-
-### `monitor_resources()`
-
-Continuously monitors CPU and GPU resources and logs alerts when thresholds are crossed.
-
-#### Example
-```python
-from clusterops import monitor_resources
-
-# Start monitoring resources
-monitor_resources()
-```
-
-### `profile_execution(func: Callable, *args: Any, **kwargs: Any) -> Any`
-
-Profiles the execution of a task, collecting metrics like execution time and CPU/GPU usage.
-
-#### Parameters
-| Name | Type | Description |
-|------|------|-------------|
-| `func` | `Callable` | The function to profile. |
-| `*args` | `Any` | Arguments for the callable. |
-| `**kwargs` | `Any` | Keyword arguments for the callable. |
-
-#### Returns
-| Type | Description |
-|------|-------------|
-| `Any` | The result of the function execution along with the collected metrics. |
-
-#### Example
-```python
-from clusterops import profile_execution
-
-def cpu_intensive_task():
-    return sum(i*i for i in range(10000000))
-
-result = profile_execution(cpu_intensive_task)
-print(f"Result of profiled task: {result}")
-```
-
-This API reference provides a comprehensive overview of the ClusterOps library's main functions, their parameters, return values, and usage examples. It should help users understand and utilize the library effectively for managing and executing tasks across CPU and GPU resources in a distributed computing environment.
 
 --------------------------------------------------
 
@@ -5705,6 +6145,89 @@ So, what are you waiting for? Explore our bounties, find your niche, and start c
 - [Swarms Framework](https://github.com/kyegomez/swarms)
 - [Swarm Cloud](https://github.com/kyegomez/swarms-cloud)
 - [Swarm Ecosystem](https://github.com/kyegomez/swarm-ecosystem)
+
+--------------------------------------------------
+
+# File: governance/main.md
+
+# 🔗 Links & Resources
+
+Welcome to the Swarms ecosystem. Click any tile below to explore our products, community, documentation, and social platforms.
+
+---
+
+<style>
+.resource-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.resource-card {
+  display: block;
+  padding: 1.2rem;
+  border-radius: 12px;
+  background: #1e1e2f;
+  color: white;
+  text-decoration: none;
+  text-align: center;
+  font-weight: 600;
+  transition: transform 0.2s ease, background 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.resource-card:hover {
+  transform: translateY(-4px);
+  background: #2a2a3d;
+}
+</style>
+
+<div class="resource-grid">
+
+<a class="resource-card" href="https://swarms.world/platform/chat" target="_blank">🗣️ Swarms Chat</a>
+
+<a class="resource-card" href="https://swarms.world" target="_blank">🛍️ Swarms Marketplace</a>
+
+<a class="resource-card" href="https://docs.swarms.world/en/latest/swarms_cloud/swarms_api/" target="_blank">📚 Swarms API Docs</a>
+
+<a class="resource-card" href="https://www.swarms.xyz/programs/startups" target="_blank">🚀 Swarms Startup Program</a>
+
+<a class="resource-card" href="https://github.com/kyegomez/swarms" target="_blank">💻 GitHub: Swarms (Python)</a>
+
+<a class="resource-card" href="https://github.com/The-Swarm-Corporation/swarms-rs" target="_blank">🦀 GitHub: Swarms (Rust)</a>
+
+<a class="resource-card" href="https://discord.gg/jM3Z6M9uMq" target="_blank">💬 Join Our Discord</a>
+
+<a class="resource-card" href="https://t.me/swarmsgroupchat" target="_blank">📱 Telegram Group</a>
+
+<a class="resource-card" href="https://x.com/swarms_corp" target="_blank">🐦 Twitter / X</a>
+
+<a class="resource-card" href="https://medium.com/@kyeg" target="_blank">✍️ Swarms Blog on Medium</a>
+
+</div>
+
+---
+
+## 💡 Quick Summary
+
+| Category     | Link                                                                 |
+|--------------|----------------------------------------------------------------------|
+| API Docs     | [docs.swarms.world](https://docs.swarms.world/en/latest/swarms_cloud/swarms_api/) |
+| GitHub       | [kyegomez/swarms](https://github.com/kyegomez/swarms)               |
+| GitHub (Rust)| [The-Swarm-Corporation/swarms-rs](https://github.com/The-Swarm-Corporation/swarms-rs) |
+| Chat UI      | [swarms.world/platform/chat](https://swarms.world/platform/chat)     |
+| Marketplace  | [swarms.world](https://swarms.world)                                 |
+| Startup App  | [Apply Here](https://www.swarms.xyz/programs/startups)               |
+| Discord      | [Join Now](https://discord.gg/jM3Z6M9uMq)                            |
+| Telegram     | [Group Chat](https://t.me/swarmsgroupchat)                           |
+| Twitter/X    | [@swarms_corp](https://x.com/swarms_corp)                            |
+| Blog         | [medium.com/@kyeg](https://medium.com/@kyeg)                         |
+
+---
+
+> 🐝 Swarms is building the agentic internet. Join the movement and build the future with us.
+
 
 --------------------------------------------------
 
@@ -16569,6 +17092,10 @@ agent.run("What are the components of a startup's stock incentive equity plan?")
 
 - Add your `GROQ_API_KEY`
 
+- Initiate your agent
+
+- Run your agent
+
 ```python
 import os
 
@@ -16577,17 +17104,6 @@ from swarm_models import OpenAIChat
 from swarms import Agent
 
 company = "NVDA"
-
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("GROQ_API_KEY")
-
-# Model
-model = OpenAIChat(
-    openai_api_base="https://api.groq.com/openai/v1",
-    openai_api_key=api_key,
-    model_name="llama-3.1-70b-versatile",
-    temperature=0.1,
-)
 
 
 # Initialize the Managing Director agent
@@ -16603,7 +17119,7 @@ managing_director = Agent(
     
     For the current potential acquisition of {company}, direct the tasks for the team to thoroughly analyze all aspects of the company, including its financials, industry position, technology, market potential, and regulatory compliance. Provide guidance and feedback as needed to ensure a rigorous and unbiased assessment.
     """,
-    llm=model,
+    model_name="groq/deepseek-r1-distill-qwen-32b",
     max_loops=1,
     dashboard=False,
     streaming_on=True,
@@ -16960,6 +17476,184 @@ if __name__ == "__main__":
     )
 
 ```
+
+--------------------------------------------------
+
+# File: swarms/examples/llama4.md
+
+# Llama4 Model Integration
+
+!!! info "Prerequisites"
+    - Python 3.8 or higher
+    - `swarms` library installed
+    - Access to Llama4 model
+    - Valid environment variables configured
+
+## Quick Start
+
+Here's a simple example of integrating Llama4 model for crypto risk analysis:
+
+```python
+from dotenv import load_dotenv
+from swarms import Agent
+from swarms.utils.vllm_wrapper import VLLM
+
+load_dotenv()
+model = VLLM(model_name="meta-llama/Llama-4-Maverick-17B-128E")
+```
+
+## Available Models
+
+| Model Name | Description | Type |
+|------------|-------------|------|
+| meta-llama/Llama-4-Maverick-17B-128E | Base model with 128 experts | Base |
+| meta-llama/Llama-4-Maverick-17B-128E-Instruct | Instruction-tuned version with 128 experts | Instruct |
+| meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8 | FP8 quantized instruction model | Instruct (Optimized) |
+| meta-llama/Llama-4-Scout-17B-16E | Base model with 16 experts | Base |
+| meta-llama/Llama-4-Scout-17B-16E-Instruct | Instruction-tuned version with 16 experts | Instruct |
+
+!!! tip "Model Selection"
+    - Choose Instruct models for better performance on instruction-following tasks
+    - FP8 models offer better memory efficiency with minimal performance impact
+    - Scout models (16E) are lighter but still powerful
+    - Maverick models (128E) offer maximum performance but require more resources
+
+## Detailed Implementation
+
+### 1. Define Custom System Prompt
+
+```python
+CRYPTO_RISK_ANALYSIS_PROMPT = """
+You are a cryptocurrency risk analysis expert. Your role is to:
+
+1. Analyze market risks:
+   - Volatility assessment
+   - Market sentiment analysis
+   - Trading volume patterns
+   - Price trend evaluation
+
+2. Evaluate technical risks:
+   - Network security
+   - Protocol vulnerabilities
+   - Smart contract risks
+   - Technical scalability
+
+3. Consider regulatory risks:
+   - Current regulations
+   - Potential regulatory changes
+   - Compliance requirements
+   - Geographic restrictions
+
+4. Assess fundamental risks:
+   - Team background
+   - Project development status
+   - Competition analysis
+   - Use case viability
+
+Provide detailed, balanced analysis with both risks and potential mitigations.
+Base your analysis on established crypto market principles and current market conditions.
+"""
+```
+
+### 2. Initialize Agent
+
+```python
+agent = Agent(
+    agent_name="Crypto-Risk-Analysis-Agent",
+    agent_description="Agent for analyzing risks in cryptocurrency investments",
+    system_prompt=CRYPTO_RISK_ANALYSIS_PROMPT,
+    max_loops=1,
+    llm=model,
+)
+```
+
+## Full Code
+
+```python
+from dotenv import load_dotenv
+
+from swarms import Agent
+from swarms.utils.vllm_wrapper import VLLM
+
+load_dotenv()
+
+# Define custom system prompt for crypto risk analysis
+CRYPTO_RISK_ANALYSIS_PROMPT = """
+You are a cryptocurrency risk analysis expert. Your role is to:
+
+1. Analyze market risks:
+   - Volatility assessment
+   - Market sentiment analysis
+   - Trading volume patterns
+   - Price trend evaluation
+
+2. Evaluate technical risks:
+   - Network security
+   - Protocol vulnerabilities
+   - Smart contract risks
+   - Technical scalability
+
+3. Consider regulatory risks:
+   - Current regulations
+   - Potential regulatory changes
+   - Compliance requirements
+   - Geographic restrictions
+
+4. Assess fundamental risks:
+   - Team background
+   - Project development status
+   - Competition analysis
+   - Use case viability
+
+Provide detailed, balanced analysis with both risks and potential mitigations.
+Base your analysis on established crypto market principles and current market conditions.
+"""
+
+model = VLLM(model_name="meta-llama/Llama-4-Maverick-17B-128E")
+
+# Initialize the agent with custom prompt
+agent = Agent(
+    agent_name="Crypto-Risk-Analysis-Agent",
+    agent_description="Agent for analyzing risks in cryptocurrency investments",
+    system_prompt=CRYPTO_RISK_ANALYSIS_PROMPT,
+    max_loops=1,
+    llm=model,
+)
+
+print(
+    agent.run(
+        "Conduct a risk analysis of the top cryptocurrencies. Think for 2 loops internally"
+    )
+)
+```
+
+!!! warning "Resource Usage"
+    The Llama4 model requires significant computational resources. Ensure your system meets the minimum requirements.
+
+## FAQ
+
+??? question "What is the purpose of max_loops parameter?"
+    The `max_loops` parameter determines how many times the agent will iterate through its thinking process. In this example, it's set to 1 for a single pass analysis.
+
+??? question "Can I use a different model?"
+    Yes, you can replace the VLLM wrapper with other compatible models. Just ensure you update the model initialization accordingly.
+
+??? question "How do I customize the system prompt?"
+    You can modify the `CRYPTO_RISK_ANALYSIS_PROMPT` string to match your specific use case while maintaining the structured format.
+
+!!! note "Best Practices"
+    - Always handle API errors gracefully
+    - Monitor model performance and resource usage
+    - Keep your prompts clear and specific
+    - Test thoroughly before production deployment
+
+!!! example "Sample Usage"
+    ```python
+    response = agent.run(
+        "Conduct a risk analysis of the top cryptocurrencies. Think for 2 loops internally"
+    )
+    print(response)
+    ```
 
 --------------------------------------------------
 
@@ -18952,6 +19646,639 @@ async def run_all_examples():
 
 if __name__ == "__main__":
     asyncio.run(run_all_examples())
+```
+
+--------------------------------------------------
+
+# File: swarms/examples/vllm.md
+
+# VLLM Swarm Agents
+
+!!! tip "Quick Summary"
+    This guide demonstrates how to create a sophisticated multi-agent system using VLLM and Swarms for comprehensive stock market analysis. You'll learn how to configure and orchestrate multiple AI agents working together to provide deep market insights.
+
+## Overview
+
+The example showcases how to build a stock analysis system with 5 specialized agents:
+
+- Technical Analysis Agent
+- Fundamental Analysis Agent  
+- Market Sentiment Agent
+- Quantitative Strategy Agent
+- Portfolio Strategy Agent
+
+Each agent has specific expertise and works collaboratively through a concurrent workflow.
+
+## Prerequisites
+
+!!! warning "Requirements"
+    Before starting, ensure you have:
+
+    - Python 3.7 or higher
+    - The Swarms package installed
+    - Access to VLLM compatible models
+    - Sufficient compute resources for running VLLM
+
+## Installation
+
+!!! example "Setup Steps"
+
+    1. Install the Swarms package:
+    ```bash
+    pip install swarms
+    ```
+
+    2. Install VLLM dependencies (if not already installed):
+    ```bash
+    pip install vllm
+    ```
+
+## Basic Usage
+
+Here's a complete example of setting up the stock analysis swarm:
+
+```python
+from swarms import Agent, ConcurrentWorkflow
+from swarms.utils.vllm_wrapper import VLLMWrapper
+
+# Initialize the VLLM wrapper
+vllm = VLLMWrapper(
+    model_name="meta-llama/Llama-2-7b-chat-hf",
+    system_prompt="You are a helpful assistant.",
+)
+```
+
+!!! note "Model Selection"
+    The example uses Llama-2-7b-chat, but you can use any VLLM-compatible model. Make sure you have the necessary permissions and resources to run your chosen model.
+
+## Agent Configuration
+
+### Technical Analysis Agent
+
+```python
+technical_analyst = Agent(
+    agent_name="Technical-Analysis-Agent",
+    agent_description="Expert in technical analysis and chart patterns",
+    system_prompt="""You are an expert Technical Analysis Agent specializing in market technicals and chart patterns. Your responsibilities include:
+
+1. PRICE ACTION ANALYSIS
+- Identify key support and resistance levels
+- Analyze price trends and momentum
+- Detect chart patterns (e.g., head & shoulders, triangles, flags)
+- Evaluate volume patterns and their implications
+
+2. TECHNICAL INDICATORS
+- Calculate and interpret moving averages (SMA, EMA)
+- Analyze momentum indicators (RSI, MACD, Stochastic)
+- Evaluate volume indicators (OBV, Volume Profile)
+- Monitor volatility indicators (Bollinger Bands, ATR)
+
+3. TRADING SIGNALS
+- Generate clear buy/sell signals based on technical criteria
+- Identify potential entry and exit points
+- Set appropriate stop-loss and take-profit levels
+- Calculate position sizing recommendations
+
+4. RISK MANAGEMENT
+- Assess market volatility and trend strength
+- Identify potential reversal points
+- Calculate risk/reward ratios for trades
+- Suggest position sizing based on risk parameters
+
+Your analysis should be data-driven, precise, and actionable. Always include specific price levels, time frames, and risk parameters in your recommendations.""",
+    max_loops=1,
+    llm=vllm,
+)
+```
+
+!!! tip "Agent Customization"
+    Each agent can be customized with different:
+    
+    - System prompts
+    
+    - Temperature settings
+    
+    - Max token limits
+    
+    - Response formats
+
+## Running the Swarm
+
+To execute the swarm analysis:
+
+```python
+swarm = ConcurrentWorkflow(
+    name="Stock-Analysis-Swarm",
+    description="A swarm of agents that analyze stocks and provide comprehensive analysis.",
+    agents=stock_analysis_agents,
+)
+
+# Run the analysis
+response = swarm.run("Analyze the best etfs for gold and other similar commodities in volatile markets")
+```
+
+
+
+## Full Code Example
+
+```python
+from swarms import Agent, ConcurrentWorkflow
+from swarms.utils.vllm_wrapper import VLLMWrapper
+
+# Initialize the VLLM wrapper
+vllm = VLLMWrapper(
+    model_name="meta-llama/Llama-2-7b-chat-hf",
+    system_prompt="You are a helpful assistant.",
+)
+
+# Technical Analysis Agent
+technical_analyst = Agent(
+    agent_name="Technical-Analysis-Agent",
+    agent_description="Expert in technical analysis and chart patterns",
+    system_prompt="""You are an expert Technical Analysis Agent specializing in market technicals and chart patterns. Your responsibilities include:
+
+1. PRICE ACTION ANALYSIS
+- Identify key support and resistance levels
+- Analyze price trends and momentum
+- Detect chart patterns (e.g., head & shoulders, triangles, flags)
+- Evaluate volume patterns and their implications
+
+2. TECHNICAL INDICATORS
+- Calculate and interpret moving averages (SMA, EMA)
+- Analyze momentum indicators (RSI, MACD, Stochastic)
+- Evaluate volume indicators (OBV, Volume Profile)
+- Monitor volatility indicators (Bollinger Bands, ATR)
+
+3. TRADING SIGNALS
+- Generate clear buy/sell signals based on technical criteria
+- Identify potential entry and exit points
+- Set appropriate stop-loss and take-profit levels
+- Calculate position sizing recommendations
+
+4. RISK MANAGEMENT
+- Assess market volatility and trend strength
+- Identify potential reversal points
+- Calculate risk/reward ratios for trades
+- Suggest position sizing based on risk parameters
+
+Your analysis should be data-driven, precise, and actionable. Always include specific price levels, time frames, and risk parameters in your recommendations.""",
+    max_loops=1,
+    llm=vllm,
+)
+
+# Fundamental Analysis Agent
+fundamental_analyst = Agent(
+    agent_name="Fundamental-Analysis-Agent",
+    agent_description="Expert in company fundamentals and valuation",
+    system_prompt="""You are an expert Fundamental Analysis Agent specializing in company valuation and financial metrics. Your core responsibilities include:
+
+1. FINANCIAL STATEMENT ANALYSIS
+- Analyze income statements, balance sheets, and cash flow statements
+- Calculate and interpret key financial ratios
+- Evaluate revenue growth and profit margins
+- Assess company's debt levels and cash position
+
+2. VALUATION METRICS
+- Calculate fair value using multiple valuation methods:
+  * Discounted Cash Flow (DCF)
+  * Price-to-Earnings (P/E)
+  * Price-to-Book (P/B)
+  * Enterprise Value/EBITDA
+- Compare valuations against industry peers
+
+3. BUSINESS MODEL ASSESSMENT
+- Evaluate competitive advantages and market position
+- Analyze industry dynamics and market share
+- Assess management quality and corporate governance
+- Identify potential risks and growth opportunities
+
+4. ECONOMIC CONTEXT
+- Consider macroeconomic factors affecting the company
+- Analyze industry cycles and trends
+- Evaluate regulatory environment and compliance
+- Assess global market conditions
+
+Your analysis should be comprehensive, focusing on both quantitative metrics and qualitative factors that impact long-term value.""",
+    max_loops=1,
+    llm=vllm,
+)
+
+# Market Sentiment Agent
+sentiment_analyst = Agent(
+    agent_name="Market-Sentiment-Agent",
+    agent_description="Expert in market psychology and sentiment analysis",
+    system_prompt="""You are an expert Market Sentiment Agent specializing in analyzing market psychology and investor behavior. Your key responsibilities include:
+
+1. SENTIMENT INDICATORS
+- Monitor and interpret market sentiment indicators:
+  * VIX (Fear Index)
+  * Put/Call Ratio
+  * Market Breadth
+  * Investor Surveys
+- Track institutional vs retail investor behavior
+
+2. NEWS AND SOCIAL MEDIA ANALYSIS
+- Analyze news flow and media sentiment
+- Monitor social media trends and discussions
+- Track analyst recommendations and changes
+- Evaluate corporate insider trading patterns
+
+3. MARKET POSITIONING
+- Assess hedge fund positioning and exposure
+- Monitor short interest and short squeeze potential
+- Track fund flows and asset allocation trends
+- Analyze options market sentiment
+
+4. CONTRARIAN SIGNALS
+- Identify extreme sentiment readings
+- Detect potential market turning points
+- Analyze historical sentiment patterns
+- Provide contrarian trading opportunities
+
+Your analysis should combine quantitative sentiment metrics with qualitative assessment of market psychology and crowd behavior.""",
+    max_loops=1,
+    llm=vllm,
+)
+
+# Quantitative Strategy Agent
+quant_analyst = Agent(
+    agent_name="Quantitative-Strategy-Agent",
+    agent_description="Expert in quantitative analysis and algorithmic strategies",
+    system_prompt="""You are an expert Quantitative Strategy Agent specializing in data-driven investment strategies. Your primary responsibilities include:
+
+1. FACTOR ANALYSIS
+- Analyze and monitor factor performance:
+  * Value
+  * Momentum
+  * Quality
+  * Size
+  * Low Volatility
+- Calculate factor exposures and correlations
+
+2. STATISTICAL ANALYSIS
+- Perform statistical arbitrage analysis
+- Calculate and monitor pair trading opportunities
+- Analyze market anomalies and inefficiencies
+- Develop mean reversion strategies
+
+3. RISK MODELING
+- Build and maintain risk models
+- Calculate portfolio optimization metrics
+- Monitor correlation matrices
+- Analyze tail risk and stress scenarios
+
+4. ALGORITHMIC STRATEGIES
+- Develop systematic trading strategies
+- Backtest and validate trading algorithms
+- Monitor strategy performance metrics
+- Optimize execution algorithms
+
+Your analysis should be purely quantitative, based on statistical evidence and mathematical models rather than subjective opinions.""",
+    max_loops=1,
+    llm=vllm,
+)
+
+# Portfolio Strategy Agent
+portfolio_strategist = Agent(
+    agent_name="Portfolio-Strategy-Agent",
+    agent_description="Expert in portfolio management and asset allocation",
+    system_prompt="""You are an expert Portfolio Strategy Agent specializing in portfolio construction and management. Your core responsibilities include:
+
+1. ASSET ALLOCATION
+- Develop strategic asset allocation frameworks
+- Recommend tactical asset allocation shifts
+- Optimize portfolio weightings
+- Balance risk and return objectives
+
+2. PORTFOLIO ANALYSIS
+- Calculate portfolio risk metrics
+- Monitor sector and factor exposures
+- Analyze portfolio correlation matrix
+- Track performance attribution
+
+3. RISK MANAGEMENT
+- Implement portfolio hedging strategies
+- Monitor and adjust position sizing
+- Set stop-loss and rebalancing rules
+- Develop drawdown protection strategies
+
+4. PORTFOLIO OPTIMIZATION
+- Calculate efficient frontier analysis
+- Optimize for various objectives:
+  * Maximum Sharpe Ratio
+  * Minimum Volatility
+  * Maximum Diversification
+- Consider transaction costs and taxes
+
+Your recommendations should focus on portfolio-level decisions that optimize risk-adjusted returns while meeting specific investment objectives.""",
+    max_loops=1,
+    llm=vllm,
+)
+
+# Create a list of all agents
+stock_analysis_agents = [
+    technical_analyst,
+    fundamental_analyst,
+    sentiment_analyst,
+    quant_analyst,
+    portfolio_strategist
+]
+
+swarm = ConcurrentWorkflow(
+    name="Stock-Analysis-Swarm",
+    description="A swarm of agents that analyze stocks and provide a comprehensive analysis of the current trends and opportunities.",
+    agents=stock_analysis_agents,
+)
+
+swarm.run("Analyze the best etfs for gold and other similiar commodities in volatile markets")
+```
+
+## Best Practices
+
+!!! success "Optimization Tips"
+    1. **Agent Design**
+        - Keep system prompts focused and specific
+        
+        - Use clear role definitions
+        
+        - Include error handling guidelines
+    
+    2. **Resource Management**
+        
+        - Monitor memory usage with large models
+        
+        - Implement proper cleanup procedures
+        
+        - Use batching for multiple queries
+    
+    3. **Output Handling**
+        
+        - Implement proper logging
+        
+        - Format outputs consistently
+        
+        - Include error checking
+
+## Common Issues and Solutions
+
+!!! warning "Troubleshooting"
+    Common issues you might encounter:
+
+    1. **Memory Issues**
+        
+        - *Problem*: VLLM consuming too much memory
+        
+        - *Solution*: Adjust batch sizes and model parameters
+    
+    2. **Agent Coordination**
+        
+        - *Problem*: Agents providing conflicting information
+        
+        - *Solution*: Implement consensus mechanisms or priority rules
+    
+    3. **Performance**
+        
+        - *Problem*: Slow response times
+        
+        - *Solution*: Use proper batching and optimize model loading
+
+## FAQ
+
+??? question "Can I use different models for different agents?"
+    Yes, you can initialize multiple VLLM wrappers with different models for each agent. However, be mindful of memory usage.
+
+??? question "How many agents can run concurrently?"
+    The number depends on your hardware resources. Start with 3-5 agents and scale based on performance.
+
+??? question "Can I customize agent communication patterns?"
+    Yes, you can modify the ConcurrentWorkflow class or create custom workflows for specific communication patterns.
+
+## Advanced Configuration
+
+!!! example "Extended Settings"
+    ```python
+    vllm = VLLMWrapper(
+        model_name="meta-llama/Llama-2-7b-chat-hf",
+        system_prompt="You are a helpful assistant.",
+        temperature=0.7,
+        max_tokens=2048,
+        top_p=0.95,
+    )
+    ```
+
+## Contributing
+
+!!! info "Get Involved"
+    We welcome contributions! Here's how you can help:
+
+    1. Report bugs and issues
+    2. Submit feature requests
+    3. Contribute to documentation
+    4. Share example use cases
+
+## Resources
+
+!!! abstract "Additional Reading"
+    - [VLLM Documentation](https://docs.vllm.ai/en/latest/)
+    
+
+--------------------------------------------------
+
+# File: swarms/examples/vllm_integration.md
+
+
+
+# vLLM Integration Guide
+
+!!! info "Overview"
+    vLLM is a high-performance and easy-to-use library for LLM inference and serving. This guide explains how to integrate vLLM with Swarms for efficient, production-grade language model deployment.
+
+
+## Installation
+
+!!! note "Prerequisites"
+    Before you begin, make sure you have Python 3.8+ installed on your system.
+
+=== "pip"
+    ```bash
+    pip install -U vllm swarms
+    ```
+
+=== "poetry"
+    ```bash
+    poetry add vllm swarms
+    ```
+
+## Basic Usage
+
+Here's a simple example of how to use vLLM with Swarms:
+
+```python title="basic_usage.py"
+from swarms.utils.vllm_wrapper import VLLMWrapper
+
+# Initialize the vLLM wrapper
+vllm = VLLMWrapper(
+    model_name="meta-llama/Llama-2-7b-chat-hf",
+    system_prompt="You are a helpful assistant.",
+    temperature=0.7,
+    max_tokens=4000
+)
+
+# Run inference
+response = vllm.run("What is the capital of France?")
+print(response)
+```
+
+## VLLMWrapper Class
+
+!!! abstract "Class Overview"
+    The `VLLMWrapper` class provides a convenient interface for working with vLLM models.
+
+### Key Parameters
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `model_name` | str | Name of the model to use | "meta-llama/Llama-2-7b-chat-hf" |
+| `system_prompt` | str | System prompt to use | None |
+| `stream` | bool | Whether to stream the output | False |
+| `temperature` | float | Sampling temperature | 0.5 |
+| `max_tokens` | int | Maximum number of tokens to generate | 4000 |
+
+### Example with Custom Parameters
+
+```python title="custom_parameters.py"
+vllm = VLLMWrapper(
+    model_name="meta-llama/Llama-2-13b-chat-hf",
+    system_prompt="You are an expert in artificial intelligence.",
+    temperature=0.8,
+    max_tokens=2000
+)
+```
+
+## Integration with Agents
+
+You can easily integrate vLLM with Swarms agents for more complex workflows:
+
+```python title="agent_integration.py"
+from swarms import Agent
+from swarms.utils.vllm_wrapper import VLLMWrapper
+
+# Initialize vLLM
+vllm = VLLMWrapper(
+    model_name="meta-llama/Llama-2-7b-chat-hf",
+    system_prompt="You are a helpful assistant."
+)
+
+# Create an agent with vLLM
+agent = Agent(
+    agent_name="Research-Agent",
+    agent_description="Expert in conducting research and analysis",
+    system_prompt="""You are an expert research agent. Your tasks include:
+    1. Analyzing complex topics
+    2. Providing detailed summaries
+    3. Making data-driven recommendations""",
+    llm=vllm,
+    max_loops=1
+)
+
+# Run the agent
+response = agent.run("Research the impact of AI on healthcare")
+```
+
+## Advanced Features
+
+### Batch Processing
+
+!!! tip "Performance Optimization"
+    Use batch processing for efficient handling of multiple tasks simultaneously.
+
+```python title="batch_processing.py"
+tasks = [
+    "What is machine learning?",
+    "Explain neural networks",
+    "Describe deep learning"
+]
+
+results = vllm.batched_run(tasks, batch_size=3)
+```
+
+### Error Handling
+
+!!! warning "Error Management"
+    Always implement proper error handling in production environments.
+
+```python title="error_handling.py"
+from loguru import logger
+
+try:
+    response = vllm.run("Complex task")
+except Exception as error:
+    logger.error(f"Error occurred: {error}")
+```
+
+## Best Practices
+
+!!! success "Recommended Practices"
+    === "Model Selection"
+        - Choose appropriate model sizes based on your requirements
+        - Consider the trade-off between model size and inference speed
+
+    === "System Resources"
+        - Ensure sufficient GPU memory for your chosen model
+        - Monitor resource usage during batch processing
+
+    === "Prompt Engineering"
+        - Use clear and specific system prompts
+        - Structure user prompts for optimal results
+
+    === "Error Handling"
+        - Implement proper error handling and logging
+        - Set up monitoring for production deployments
+
+    === "Performance"
+        - Use batch processing for multiple tasks
+        - Adjust max_tokens based on your use case
+        - Fine-tune temperature for optimal output quality
+
+## Example: Multi-Agent System
+
+Here's an example of creating a multi-agent system using vLLM:
+
+```python title="multi_agent_system.py"
+from swarms import Agent, ConcurrentWorkflow
+from swarms.utils.vllm_wrapper import VLLMWrapper
+
+# Initialize vLLM
+vllm = VLLMWrapper(
+    model_name="meta-llama/Llama-2-7b-chat-hf",
+    system_prompt="You are a helpful assistant."
+)
+
+# Create specialized agents
+research_agent = Agent(
+    agent_name="Research-Agent",
+    agent_description="Expert in research",
+    system_prompt="You are a research expert.",
+    llm=vllm
+)
+
+analysis_agent = Agent(
+    agent_name="Analysis-Agent",
+    agent_description="Expert in analysis",
+    system_prompt="You are an analysis expert.",
+    llm=vllm
+)
+
+# Create a workflow
+agents = [research_agent, analysis_agent]
+workflow = ConcurrentWorkflow(
+    name="Research-Analysis-Workflow",
+    description="Comprehensive research and analysis workflow",
+    agents=agents
+)
+
+# Run the workflow
+result = workflow.run("Analyze the impact of renewable energy")
 ```
 
 --------------------------------------------------
@@ -30106,290 +31433,6 @@ This comprehensive documentation provides an in-depth understanding of the `Arti
 
 --------------------------------------------------
 
-# File: swarms/structs/async_workflow.md
-
-# AsyncWorkflow Documentation
-
-The `AsyncWorkflow` class represents an asynchronous workflow that executes tasks concurrently using multiple agents. It allows for efficient task management, leveraging Python's `asyncio` for concurrent execution.
-
-## Key Features
-- **Concurrent Task Execution**: Distribute tasks across multiple agents asynchronously.
-- **Configurable Workers**: Limit the number of concurrent workers (agents) for better resource management.
-- **Autosave Results**: Optionally save the task execution results automatically.
-- **Verbose Logging**: Enable detailed logging to monitor task execution.
-- **Error Handling**: Gracefully handles exceptions raised by agents during task execution.
-
----
-
-## Attributes
-| Attribute         | Type                | Description                                                                 |
-|-------------------|---------------------|-----------------------------------------------------------------------------|
-| `name`            | `str`               | The name of the workflow.                                                   |
-| `agents`          | `List[Agent]`       | A list of agents participating in the workflow.                             |
-| `max_workers`     | `int`               | The maximum number of concurrent workers (default: 5).                      |
-| `dashboard`       | `bool`              | Whether to display a dashboard (currently not implemented).                 |
-| `autosave`        | `bool`              | Whether to autosave task results (default: `False`).                        |
-| `verbose`         | `bool`              | Whether to enable detailed logging (default: `False`).                      |
-| `task_pool`       | `List`              | A pool of tasks to be executed.                                             |
-| `results`         | `List`              | A list to store results of executed tasks.                                  |
-| `loop`            | `asyncio.EventLoop` | The event loop for asynchronous execution.                                  |
-
----
-
-**Description**:
-Initializes the `AsyncWorkflow` with specified agents, configuration, and options.
-
-**Parameters**:
-- `name` (`str`): Name of the workflow. Default: "AsyncWorkflow".
-- `agents` (`List[Agent]`): A list of agents. Default: `None`.
-- `max_workers` (`int`): The maximum number of workers. Default: `5`.
-- `dashboard` (`bool`): Enable dashboard visualization (placeholder for future implementation).
-- `autosave` (`bool`): Enable autosave of task results. Default: `False`.
-- `verbose` (`bool`): Enable detailed logging. Default: `False`.
-- `**kwargs`: Additional parameters for `BaseWorkflow`.
-
----
-
-### `_execute_agent_task`
-```python
-async def _execute_agent_task(self, agent: Agent, task: str) -> Any:
-```
-**Description**:
-Executes a single task asynchronously using a given agent.
-
-**Parameters**:
-- `agent` (`Agent`): The agent responsible for executing the task.
-- `task` (`str`): The task to be executed.
-
-**Returns**:
-- `Any`: The result of the task execution or an error message in case of an exception.
-
-**Example**:
-```python
-result = await workflow._execute_agent_task(agent, "Sample Task")
-```
-
----
-
-### `run`
-```python
-async def run(self, task: str) -> List[Any]:
-```
-**Description**:
-Executes the specified task concurrently across all agents.
-
-**Parameters**:
-- `task` (`str`): The task to be executed by all agents.
-
-**Returns**:
-- `List[Any]`: A list of results or error messages returned by the agents.
-
-**Raises**:
-- `ValueError`: If no agents are provided in the workflow.
-
-**Example**:
-```python
-import asyncio
-
-agents = [Agent("Agent1"), Agent("Agent2")]
-workflow = AsyncWorkflow(agents=agents, verbose=True)
-
-results = asyncio.run(workflow.run("Process Data"))
-print(results)
-```
-
----
-
-## Production-Grade Financial Example: Multiple Agents
-### Example: Stock Analysis and Investment Strategy
-```python
-
-import asyncio
-from typing import List
-
-from swarm_models import OpenAIChat
-
-from swarms.structs.async_workflow import (
-    SpeakerConfig,
-    SpeakerRole,
-    create_default_workflow,
-    run_workflow_with_retry,
-)
-from swarms.prompts.finance_agent_sys_prompt import (
-    FINANCIAL_AGENT_SYS_PROMPT,
-)
-from swarms.structs.agent import Agent
-
-
-async def create_specialized_agents() -> List[Agent]:
-    """Create a set of specialized agents for financial analysis"""
-
-    # Base model configuration
-    model = OpenAIChat(model_name="gpt-4o")
-
-    # Financial Analysis Agent
-    financial_agent = Agent(
-        agent_name="Financial-Analysis-Agent",
-        agent_description="Personal finance advisor agent",
-        system_prompt=FINANCIAL_AGENT_SYS_PROMPT
-        + "Output the <DONE> token when you're done creating a portfolio of etfs, index, funds, and more for AI",
-        max_loops=1,
-        llm=model,
-        dynamic_temperature_enabled=True,
-        user_name="Kye",
-        retry_attempts=3,
-        context_length=8192,
-        return_step_meta=False,
-        output_type="str",
-        auto_generate_prompt=False,
-        max_tokens=4000,
-        stopping_token="<DONE>",
-        saved_state_path="financial_agent.json",
-        interactive=False,
-    )
-
-    # Risk Assessment Agent
-    risk_agent = Agent(
-        agent_name="Risk-Assessment-Agent",
-        agent_description="Investment risk analysis specialist",
-        system_prompt="Analyze investment risks and provide risk scores. Output <DONE> when analysis is complete.",
-        max_loops=1,
-        llm=model,
-        dynamic_temperature_enabled=True,
-        user_name="Kye",
-        retry_attempts=3,
-        context_length=8192,
-        output_type="str",
-        max_tokens=4000,
-        stopping_token="<DONE>",
-        saved_state_path="risk_agent.json",
-        interactive=False,
-    )
-
-    # Market Research Agent
-    research_agent = Agent(
-        agent_name="Market-Research-Agent",
-        agent_description="AI and tech market research specialist",
-        system_prompt="Research AI market trends and growth opportunities. Output <DONE> when research is complete.",
-        max_loops=1,
-        llm=model,
-        dynamic_temperature_enabled=True,
-        user_name="Kye",
-        retry_attempts=3,
-        context_length=8192,
-        output_type="str",
-        max_tokens=4000,
-        stopping_token="<DONE>",
-        saved_state_path="research_agent.json",
-        interactive=False,
-    )
-
-    return [financial_agent, risk_agent, research_agent]
-
-
-async def main():
-    # Create specialized agents
-    agents = await create_specialized_agents()
-
-    # Create workflow with group chat enabled
-    workflow = create_default_workflow(
-        agents=agents,
-        name="AI-Investment-Analysis-Workflow",
-        enable_group_chat=True,
-    )
-
-    # Configure speaker roles
-    workflow.speaker_system.add_speaker(
-        SpeakerConfig(
-            role=SpeakerRole.COORDINATOR,
-            agent=agents[0],  # Financial agent as coordinator
-            priority=1,
-            concurrent=False,
-            required=True,
-        )
-    )
-
-    workflow.speaker_system.add_speaker(
-        SpeakerConfig(
-            role=SpeakerRole.CRITIC,
-            agent=agents[1],  # Risk agent as critic
-            priority=2,
-            concurrent=True,
-        )
-    )
-
-    workflow.speaker_system.add_speaker(
-        SpeakerConfig(
-            role=SpeakerRole.EXECUTOR,
-            agent=agents[2],  # Research agent as executor
-            priority=2,
-            concurrent=True,
-        )
-    )
-
-    # Investment analysis task
-    investment_task = """
-    Create a comprehensive investment analysis for a $40k portfolio focused on AI growth opportunities:
-    1. Identify high-growth AI ETFs and index funds
-    2. Analyze risks and potential returns
-    3. Create a diversified portfolio allocation
-    4. Provide market trend analysis
-    Present the results in a structured markdown format.
-    """
-
-    try:
-        # Run workflow with retry
-        result = await run_workflow_with_retry(
-            workflow=workflow, task=investment_task, max_retries=3
-        )
-
-        print("\nWorkflow Results:")
-        print("================")
-
-        # Process and display agent outputs
-        for output in result.agent_outputs:
-            print(f"\nAgent: {output.agent_name}")
-            print("-" * (len(output.agent_name) + 8))
-            print(output.output)
-
-        # Display group chat history if enabled
-        if workflow.enable_group_chat:
-            print("\nGroup Chat Discussion:")
-            print("=====================")
-            for msg in workflow.speaker_system.message_history:
-                print(f"\n{msg.role} ({msg.agent_name}):")
-                print(msg.content)
-
-        # Save detailed results
-        if result.metadata.get("shared_memory_keys"):
-            print("\nShared Insights:")
-            print("===============")
-            for key in result.metadata["shared_memory_keys"]:
-                value = workflow.shared_memory.get(key)
-                if value:
-                    print(f"\n{key}:")
-                    print(value)
-
-    except Exception as e:
-        print(f"Workflow failed: {str(e)}")
-
-    finally:
-        await workflow.cleanup()
-
-
-if __name__ == "__main__":
-    # Run the example
-    asyncio.run(main())
-
-
-```
-
-
----
-
-
---------------------------------------------------
-
 # File: swarms/structs/auto_agent_builder.md
 
 # Agent Builder
@@ -32490,6 +33533,198 @@ In this Guide, we've covered:
 This approach sets the foundation for building more advanced and domain-specific swarms in areas like finance, marketing, operations, and beyond. Swarm engineers can now explore more complex, multi-agent systems and push the boundaries of AI collaboration.
 
 Stay tuned for future updates on more advanced swarm functionalities!
+
+--------------------------------------------------
+
+# File: swarms/structs/deep_research_swarm.md
+
+# Deep Research Swarm
+
+!!! abstract "Overview"
+    The Deep Research Swarm is a powerful, production-grade research system that conducts comprehensive analysis across multiple domains using parallel processing and advanced AI agents.
+
+    Key Features:
+    
+    - Parallel search processing
+    
+    - Multi-agent research coordination
+    
+    - Advanced information synthesis
+    
+    - Automated query generation
+    
+    - Concurrent task execution
+
+## Getting Started
+
+!!! tip "Quick Installation"
+    ```bash
+    pip install swarms
+    ```
+
+=== "Basic Usage"
+    ```python
+    from swarms.structs import DeepResearchSwarm
+
+    # Initialize the swarm
+    swarm = DeepResearchSwarm(
+        name="MyResearchSwarm",
+        output_type="json",
+        max_loops=1
+    )
+
+    # Run a single research task
+    results = swarm.run("What are the latest developments in quantum computing?")
+    ```
+
+=== "Batch Processing"
+    ```python
+    # Run multiple research tasks in parallel
+    tasks = [
+        "What are the environmental impacts of electric vehicles?",
+        "How is AI being used in drug discovery?",
+    ]
+    batch_results = swarm.batched_run(tasks)
+    ```
+
+## Configuration
+
+!!! info "Constructor Arguments"
+    | Parameter | Type | Default | Description |
+    |-----------|------|---------|-------------|
+    | `name` | str | "DeepResearchSwarm" | Name identifier for the swarm |
+    | `description` | str | "A swarm that conducts..." | Description of the swarm's purpose |
+    | `research_agent` | Agent | research_agent | Custom research agent instance |
+    | `max_loops` | int | 1 | Maximum number of research iterations |
+    | `nice_print` | bool | True | Enable formatted console output |
+    | `output_type` | str | "json" | Output format ("json" or "string") |
+    | `max_workers` | int | CPU_COUNT * 2 | Maximum concurrent threads |
+    | `token_count` | bool | False | Enable token counting |
+    | `research_model_name` | str | "gpt-4o-mini" | Model to use for research |
+
+## Core Methods
+
+### Run
+!!! example "Single Task Execution"
+    ```python
+    results = swarm.run("What are the latest breakthroughs in fusion energy?")
+    ```
+
+### Batched Run
+!!! example "Parallel Task Execution"
+    ```python
+    tasks = [
+        "What are current AI safety initiatives?",
+        "How is CRISPR being used in agriculture?",
+    ]
+    results = swarm.batched_run(tasks)
+    ```
+
+### Step
+!!! example "Single Step Execution"
+    ```python
+    results = swarm.step("Analyze recent developments in renewable energy storage")
+    ```
+
+## Domain-Specific Examples
+
+=== "Scientific Research"
+    ```python
+    science_swarm = DeepResearchSwarm(
+        name="ScienceSwarm",
+        output_type="json",
+        max_loops=2  # More iterations for thorough research
+    )
+
+    results = science_swarm.run(
+        "What are the latest experimental results in quantum entanglement?"
+    )
+    ```
+
+=== "Market Research"
+    ```python
+    market_swarm = DeepResearchSwarm(
+        name="MarketSwarm",
+        output_type="json"
+    )
+
+    results = market_swarm.run(
+        "What are the emerging trends in electric vehicle battery technology market?"
+    )
+    ```
+
+=== "News Analysis"
+    ```python
+    news_swarm = DeepResearchSwarm(
+        name="NewsSwarm",
+        output_type="string"  # Human-readable output
+    )
+
+    results = news_swarm.run(
+        "What are the global economic impacts of recent geopolitical events?"
+    )
+    ```
+
+=== "Medical Research"
+    ```python
+    medical_swarm = DeepResearchSwarm(
+        name="MedicalSwarm",
+        max_loops=2
+    )
+
+    results = medical_swarm.run(
+        "What are the latest clinical trials for Alzheimer's treatment?"
+    )
+    ```
+
+## Advanced Features
+
+??? note "Custom Research Agent"
+    ```python
+    from swarms import Agent
+
+    custom_agent = Agent(
+        agent_name="SpecializedResearcher",
+        system_prompt="Your specialized prompt here",
+        model_name="gpt-4"
+    )
+
+    swarm = DeepResearchSwarm(
+        research_agent=custom_agent,
+        max_loops=2
+    )
+    ```
+
+??? note "Parallel Processing Control"
+    ```python
+    swarm = DeepResearchSwarm(
+        max_workers=8,  # Limit to 8 concurrent threads
+        nice_print=False  # Disable console output for production
+    )
+    ```
+
+## Best Practices
+
+!!! success "Recommended Practices"
+    1. **Query Formulation**: Be specific and clear in your research queries
+    2. **Resource Management**: Adjust `max_workers` based on your system's capabilities
+    3. **Output Handling**: Use appropriate `output_type` for your use case
+    4. **Error Handling**: Implement try-catch blocks around swarm operations
+    5. **Model Selection**: Choose appropriate models based on research complexity
+
+## Limitations
+
+!!! warning "Known Limitations"
+    
+    - Requires valid API keys for external services
+    
+    - Performance depends on system resources
+    
+    - Rate limits may apply to external API calls
+    
+    - Token limits apply to model responses
+
+
 
 --------------------------------------------------
 
@@ -42090,6 +43325,166 @@ This understanding empowers both users and infrastructure engineers to leverage 
 
 --------------------------------------------------
 
+# File: swarms_cloud/best_practices.md
+
+# Swarms API Best Practices Guide
+
+This comprehensive guide outlines production-grade best practices for using the Swarms API effectively. Learn how to choose the right swarm architecture, optimize costs, and implement robust error handling.
+
+## Quick Reference Cards
+
+=== "Swarm Types"
+    
+    !!! info "Available Swarm Architectures"
+        
+        | Swarm Type | Best For | Use Cases |
+        |------------|----------|------------|
+        | `AgentRearrange` | Dynamic workflows | - Complex task decomposition<br>- Adaptive processing<br>- Multi-stage analysis<br>- Dynamic resource allocation |
+        | `MixtureOfAgents` | Diverse expertise | - Cross-domain problems<br>- Comprehensive analysis<br>- Multi-perspective tasks<br>- Research synthesis |
+        | `SpreadSheetSwarm` | Data processing | - Financial analysis<br>- Data transformation<br>- Batch calculations<br>- Report generation |
+        | `SequentialWorkflow` | Linear processes | - Document processing<br>- Step-by-step analysis<br>- Quality control<br>- Content pipeline |
+        | `ConcurrentWorkflow` | Parallel tasks | - Batch processing<br>- Independent analyses<br>- High-throughput needs<br>- Multi-market analysis |
+        | `GroupChat` | Collaborative solving | - Brainstorming<br>- Decision making<br>- Problem solving<br>- Strategy development |
+        | `MultiAgentRouter` | Task distribution | - Load balancing<br>- Specialized processing<br>- Resource optimization<br>- Service routing |
+        | `AutoSwarmBuilder` | Automated setup | - Quick prototyping<br>- Simple tasks<br>- Testing<br>- MVP development |
+        | `HiearchicalSwarm` | Complex organization | - Project management<br>- Research analysis<br>- Enterprise workflows<br>- Team automation |
+        | `MajorityVoting` | Consensus needs | - Quality assurance<br>- Decision validation<br>- Risk assessment<br>- Content moderation |
+
+=== "Application Patterns"
+    
+    !!! tip "Specialized Application Configurations"
+        
+        | Application | Recommended Swarm | Benefits |
+        |------------|-------------------|-----------|
+        | **Team Automation** | `HiearchicalSwarm` | - Automated team coordination<br>- Clear responsibility chain<br>- Scalable team structure |
+        | **Research Pipeline** | `SequentialWorkflow` | - Structured research process<br>- Quality control at each stage<br>- Comprehensive output |
+        | **Trading System** | `ConcurrentWorkflow` | - Multi-market coverage<br>- Real-time analysis<br>- Risk distribution |
+        | **Content Factory** | `MixtureOfAgents` | - Automated content creation<br>- Consistent quality<br>- High throughput |
+
+=== "Cost Optimization"
+
+    !!! tip "Advanced Cost Management Strategies"
+        
+        | Strategy | Implementation | Impact |
+        |----------|----------------|---------|
+        | Batch Processing | Group related tasks | 20-30% cost reduction |
+        | Off-peak Usage | Schedule for 8 PM - 6 AM PT | 15-25% cost reduction |
+        | Token Optimization | Precise prompts, focused tasks | 10-20% cost reduction |
+        | Caching | Store reusable results | 30-40% cost reduction |
+        | Agent Optimization | Use minimum required agents | 15-25% cost reduction |
+        | Smart Routing | Route to specialized agents | 10-15% cost reduction |
+        | Prompt Engineering | Optimize input tokens | 15-20% cost reduction |
+
+=== "Industry Solutions"
+
+    !!! example "Industry-Specific Swarm Patterns"
+        
+        | Industry | Use Case | Applications |
+        |----------|----------|--------------|
+        | **Finance** | Automated trading desk | - Portfolio management<br>- Risk assessment<br>- Market analysis<br>- Trading execution |
+        | **Healthcare** | Clinical workflow automation | - Patient analysis<br>- Diagnostic support<br>- Treatment planning<br>- Follow-up care |
+        | **Legal** | Legal document processing | - Document review<br>- Case analysis<br>- Contract review<br>- Compliance checks |
+        | **E-commerce** | E-commerce operations | - Product management<br>- Pricing optimization<br>- Customer support<br>- Inventory management |
+
+=== "Error Handling"
+
+    !!! warning "Advanced Error Management Strategies"
+        
+        | Error Code | Strategy | Recovery Pattern |
+        |------------|----------|------------------|
+        | 400 | Input Validation | Pre-request validation with fallback |
+        | 401 | Auth Management | Secure key rotation and storage |
+        | 429 | Rate Limiting | Exponential backoff with queuing |
+        | 500 | Resilience | Retry with circuit breaking |
+        | 503 | High Availability | Multi-region redundancy |
+        | 504 | Timeout Handling | Adaptive timeouts with partial results |
+
+## Choosing the Right Swarm Architecture
+
+### Decision Framework
+
+Use this framework to select the optimal swarm architecture for your use case:
+
+1. **Task Complexity Analysis**
+    - Simple tasks → `AutoSwarmBuilder`
+    - Complex tasks → `HiearchicalSwarm` or `MultiAgentRouter`
+    - Dynamic tasks → `AgentRearrange`
+
+2. **Workflow Pattern**
+    - Linear processes → `SequentialWorkflow`
+    - Parallel operations → `ConcurrentWorkflow`
+    - Collaborative tasks → `GroupChat`
+
+3. **Domain Requirements**
+    - Multi-domain expertise → `MixtureOfAgents`
+    - Data processing → `SpreadSheetSwarm`
+    - Quality assurance → `MajorityVoting`
+
+### Industry-Specific Recommendations
+
+=== "Finance"
+    
+    !!! example "Financial Applications"
+        - Risk Analysis: `HiearchicalSwarm`
+        - Market Research: `MixtureOfAgents`
+        - Trading Strategies: `ConcurrentWorkflow`
+        - Portfolio Management: `SpreadSheetSwarm`
+
+=== "Healthcare"
+    
+    !!! example "Healthcare Applications"
+        - Patient Analysis: `SequentialWorkflow`
+        - Research Review: `MajorityVoting`
+        - Treatment Planning: `GroupChat`
+        - Medical Records: `MultiAgentRouter`
+
+=== "Legal"
+    
+    !!! example "Legal Applications"
+        - Document Review: `SequentialWorkflow`
+        - Case Analysis: `MixtureOfAgents`
+        - Compliance Check: `HiearchicalSwarm`
+        - Contract Analysis: `ConcurrentWorkflow`
+
+## Production Best Practices
+
+### Best Practices Summary
+
+!!! success "Recommended Patterns"
+    - Use appropriate swarm types for tasks
+    - Implement robust error handling
+    - Monitor and log executions
+    - Cache repeated results
+    - Rotate API keys regularly
+
+!!! danger "Anti-patterns to Avoid"
+    - Hardcoding API keys
+    - Ignoring rate limits
+    - Missing error handling
+    - Excessive agent count
+    - Inadequate monitoring
+
+### Performance Benchmarks
+
+!!! note "Typical Performance Metrics"
+    
+    | Metric | Target Range | Warning Threshold |
+    |--------|--------------|-------------------|
+    | Response Time | < 2s | > 5s |
+    | Success Rate | > 99% | < 95% |
+    | Cost per Task | < $0.05 | > $0.10 |
+    | Cache Hit Rate | > 80% | < 60% |
+    | Error Rate | < 1% | > 5% |
+
+### Additional Resources
+
+!!! info "Useful Links"
+    
+    - [Swarms API Documentation](https://docs.swarms.world)
+    - [API Dashboard](https://swarms.world/platform/api-keys)
+
+--------------------------------------------------
+
 # File: swarms_cloud/chinese_api_pricing.md
 
 # Swarm Agent API 定价文档
@@ -43697,6 +45092,353 @@ This API reference provides the necessary details to understand and interact wit
 
 --------------------------------------------------
 
+# File: swarms_cloud/mcp.md
+
+# Swarms API as MCP
+
+- Launch MCP server as a tool
+- Put `SWARMS_API_KEY` in `.env`
+- Client side code below
+
+
+## Server Side
+
+```python
+# server.py
+from datetime import datetime
+import os
+from typing import Any, Dict, List, Optional
+
+import requests
+import httpx
+from fastmcp import FastMCP
+from pydantic import BaseModel, Field
+from swarms import SwarmType
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class AgentSpec(BaseModel):
+    agent_name: Optional[str] = Field(
+        description="The unique name assigned to the agent, which identifies its role and functionality within the swarm.",
+    )
+    description: Optional[str] = Field(
+        description="A detailed explanation of the agent's purpose, capabilities, and any specific tasks it is designed to perform.",
+    )
+    system_prompt: Optional[str] = Field(
+        description="The initial instruction or context provided to the agent, guiding its behavior and responses during execution.",
+    )
+    model_name: Optional[str] = Field(
+        default="gpt-4o-mini",
+        description="The name of the AI model that the agent will utilize for processing tasks and generating outputs. For example: gpt-4o, gpt-4o-mini, openai/o3-mini",
+    )
+    auto_generate_prompt: Optional[bool] = Field(
+        default=False,
+        description="A flag indicating whether the agent should automatically create prompts based on the task requirements.",
+    )
+    max_tokens: Optional[int] = Field(
+        default=8192,
+        description="The maximum number of tokens that the agent is allowed to generate in its responses, limiting output length.",
+    )
+    temperature: Optional[float] = Field(
+        default=0.5,
+        description="A parameter that controls the randomness of the agent's output; lower values result in more deterministic responses.",
+    )
+    role: Optional[str] = Field(
+        default="worker",
+        description="The designated role of the agent within the swarm, which influences its behavior and interaction with other agents.",
+    )
+    max_loops: Optional[int] = Field(
+        default=1,
+        description="The maximum number of times the agent is allowed to repeat its task, enabling iterative processing if necessary.",
+    )
+    # New fields for RAG functionality
+    rag_collection: Optional[str] = Field(
+        None,
+        description="The Qdrant collection name for RAG functionality. If provided, this agent will perform RAG queries.",
+    )
+    rag_documents: Optional[List[str]] = Field(
+        None,
+        description="Documents to ingest into the Qdrant collection for RAG. (List of text strings)",
+    )
+    tools: Optional[List[Dict[str, Any]]] = Field(
+        None,
+        description="A dictionary of tools that the agent can use to complete its task.",
+    )
+
+
+class AgentCompletion(BaseModel):
+    """
+    Configuration for a single agent that works together as a swarm to accomplish tasks.
+    """
+
+    agent: AgentSpec = Field(
+        ...,
+        description="The agent to run.",
+    )
+    task: Optional[str] = Field(
+        ...,
+        description="The task to run.",
+    )
+    img: Optional[str] = Field(
+        None,
+        description="An optional image URL that may be associated with the swarm's task or representation.",
+    )
+    output_type: Optional[str] = Field(
+        "list",
+        description="The type of output to return.",
+    )
+
+
+class AgentCompletionResponse(BaseModel):
+    """
+    Response from an agent completion.
+    """
+
+    agent_id: str = Field(
+        ...,
+        description="The unique identifier for the agent that completed the task.",
+    )
+    agent_name: str = Field(
+        ...,
+        description="The name of the agent that completed the task.",
+    )
+    agent_description: str = Field(
+        ...,
+        description="The description of the agent that completed the task.",
+    )
+    messages: Any = Field(
+        ...,
+        description="The messages from the agent completion.",
+    )
+
+    cost: Dict[str, Any] = Field(
+        ...,
+        description="The cost of the agent completion.",
+    )
+
+
+class Agents(BaseModel):
+    """Configuration for a collection of agents that work together as a swarm to accomplish tasks."""
+
+    agents: List[AgentSpec] = Field(
+        description="A list containing the specifications of each agent that will participate in the swarm, detailing their roles and functionalities."
+    )
+
+
+class ScheduleSpec(BaseModel):
+    scheduled_time: datetime = Field(
+        ...,
+        description="The exact date and time (in UTC) when the swarm is scheduled to execute its tasks.",
+    )
+    timezone: Optional[str] = Field(
+        "UTC",
+        description="The timezone in which the scheduled time is defined, allowing for proper scheduling across different regions.",
+    )
+
+
+class SwarmSpec(BaseModel):
+    name: Optional[str] = Field(
+        None,
+        description="The name of the swarm, which serves as an identifier for the group of agents and their collective task.",
+        max_length=100,
+    )
+    description: Optional[str] = Field(
+        None,
+        description="A comprehensive description of the swarm's objectives, capabilities, and intended outcomes.",
+    )
+    agents: Optional[List[AgentSpec]] = Field(
+        None,
+        description="A list of agents or specifications that define the agents participating in the swarm.",
+    )
+    max_loops: Optional[int] = Field(
+        default=1,
+        description="The maximum number of execution loops allowed for the swarm, enabling repeated processing if needed.",
+    )
+    swarm_type: Optional[SwarmType] = Field(
+        None,
+        description="The classification of the swarm, indicating its operational style and methodology.",
+    )
+    rearrange_flow: Optional[str] = Field(
+        None,
+        description="Instructions on how to rearrange the flow of tasks among agents, if applicable.",
+    )
+    task: Optional[str] = Field(
+        None,
+        description="The specific task or objective that the swarm is designed to accomplish.",
+    )
+    img: Optional[str] = Field(
+        None,
+        description="An optional image URL that may be associated with the swarm's task or representation.",
+    )
+    return_history: Optional[bool] = Field(
+        True,
+        description="A flag indicating whether the swarm should return its execution history along with the final output.",
+    )
+    rules: Optional[str] = Field(
+        None,
+        description="Guidelines or constraints that govern the behavior and interactions of the agents within the swarm.",
+    )
+    schedule: Optional[ScheduleSpec] = Field(
+        None,
+        description="Details regarding the scheduling of the swarm's execution, including timing and timezone information.",
+    )
+    tasks: Optional[List[str]] = Field(
+        None,
+        description="A list of tasks that the swarm should complete.",
+    )
+    messages: Optional[List[Dict[str, Any]]] = Field(
+        None,
+        description="A list of messages that the swarm should complete.",
+    )
+    # rag_on: Optional[bool] = Field(
+    #     None,
+    #     description="A flag indicating whether the swarm should use RAG.",
+    # )
+    # collection_name: Optional[str] = Field(
+    #     None,
+    #     description="The name of the collection to use for RAG.",
+    # )
+    stream: Optional[bool] = Field(
+        False,
+        description="A flag indicating whether the swarm should stream its output.",
+    )
+
+
+class SwarmCompletionResponse(BaseModel):
+    """
+    Response from a swarm completion.
+    """
+
+    status: str = Field(..., description="The status of the swarm completion.")
+    swarm_name: str = Field(..., description="The name of the swarm.")
+    description: str = Field(..., description="Description of the swarm.")
+    swarm_type: str = Field(..., description="The type of the swarm.")
+    task: str = Field(
+        ..., description="The task that the swarm is designed to accomplish."
+    )
+    output: List[Dict[str, Any]] = Field(
+        ..., description="The output generated by the swarm."
+    )
+    number_of_agents: int = Field(
+        ..., description="The number of agents involved in the swarm."
+    )
+    # "input_config": Optional[Dict[str, Any]] = Field(None, description="The input configuration for the swarm.")
+
+
+BASE_URL = "https://swarms-api-285321057562.us-east1.run.app"
+
+
+# Create an MCP server
+mcp = FastMCP("swarms-api")
+
+
+# Add an addition tool
+@mcp.tool(name="swarm_completion", description="Run a swarm completion.")
+def swarm_completion(swarm: SwarmSpec) -> Dict[str, Any]:
+    api_key = os.getenv("SWARMS_API_KEY")
+    headers = {"x-api-key": api_key, "Content-Type": "application/json"}
+
+    payload = swarm.model_dump()
+
+    response = requests.post(f"{BASE_URL}/v1/swarm/completions", json=payload, headers=headers)
+    
+    return response.json()
+
+@mcp.tool(name="swarms_available", description="Get the list of available swarms.")
+async def swarms_available() -> Any:
+    """
+    Get the list of available swarms.
+    """
+    headers = {"Content-Type": "application/json"}
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{BASE_URL}/v1/models/available", headers=headers)
+        response.raise_for_status()  # Raise an error for bad responses
+        return response.json()
+
+
+if __name__ == "__main__":
+    mcp.run(transport="sse")
+```
+
+## Client side
+
+- Call the tool with it's name and the payload config
+
+```python
+import asyncio
+from fastmcp import Client
+
+swarm_config = {
+    "name": "Simple Financial Analysis",
+    "description": "A swarm to analyze financial data",
+    "agents": [
+        {
+            "agent_name": "Data Analyzer",
+            "description": "Looks at financial data",
+            "system_prompt": "Analyze the data.",
+            "model_name": "gpt-4o",
+            "role": "worker",
+            "max_loops": 1,
+            "max_tokens": 1000,
+            "temperature": 0.5,
+            "auto_generate_prompt": False,
+        },
+        {
+            "agent_name": "Risk Analyst",
+            "description": "Checks risk levels",
+            "system_prompt": "Evaluate the risks.",
+            "model_name": "gpt-4o",
+            "role": "worker",
+            "max_loops": 1,
+            "max_tokens": 1000,
+            "temperature": 0.5,
+            "auto_generate_prompt": False,
+        },
+        {
+            "agent_name": "Strategy Checker",
+            "description": "Validates strategies",
+            "system_prompt": "Review the strategy.",
+            "model_name": "gpt-4o",
+            "role": "worker",
+            "max_loops": 1,
+            "max_tokens": 1000,
+            "temperature": 0.5,
+            "auto_generate_prompt": False,
+        },
+    ],
+    "max_loops": 1,
+    "swarm_type": "SequentialWorkflow",
+    "task": "Analyze the financial data and provide insights.",
+    "return_history": False,  # Added required field
+    "stream": False,  # Added required field
+    "rules": None,  # Added optional field
+    "img": None,  # Added optional field
+}
+
+
+async def swarm_completion():
+    """Connect to a server over SSE and fetch available swarms."""
+
+    async with Client(
+        transport="http://localhost:8000/sse"
+    ) as client:
+        # Basic connectivity testing
+        # print("Ping check:", await client.ping())
+        # print("Available tools:", await client.list_tools())
+        # print("Swarms available:", await client.call_tool("swarms_available", None))
+        result = await client.call_tool("swarm_completion", {"swarm": swarm_config})
+        print("Swarm completion:", result)
+
+
+# Execute the function
+if __name__ == "__main__":
+    asyncio.run(swarm_completion())
+```
+
+--------------------------------------------------
+
 # File: swarms_cloud/mcs_api.md
 
 # Medical Coder Swarm API Documentation
@@ -44535,6 +46277,79 @@ ChatCompletionMessage(content="  Hello! How can I assist you today? Do you have 
 
 
 
+
+--------------------------------------------------
+
+# File: swarms_cloud/phala_deploy.md
+
+# 🔐 Swarms x Phala Deployment Guide
+
+This guide will walk you through deploying your project to Phala's Trusted Execution Environment (TEE).
+
+## 📋 Prerequisites
+
+- Docker installed on your system
+- A DockerHub account
+- Access to Phala Cloud dashboard
+
+## 🛡️ TEE Overview
+
+For detailed instructions about Trusted Execution Environment setup, please refer to our [TEE Documentation](./tee/README.md).
+
+## 🚀 Deployment Steps
+
+### 1. Build and Publish Docker Image
+
+```bash
+# Build the Docker image
+docker compose build -t <your-dockerhub-username>/swarm-agent-node:latest
+
+# Push to DockerHub
+docker push <your-dockerhub-username>/swarm-agent-node:latest
+```
+
+### 2. Deploy to Phala Cloud
+
+Choose one of these deployment methods:
+- Use [tee-cloud-cli](https://github.com/Phala-Network/tee-cloud-cli) (Recommended)
+- Deploy manually via the [Phala Cloud Dashboard](https://cloud.phala.network/)
+
+### 3. Verify TEE Attestation
+
+Visit the [TEE Attestation Explorer](https://proof.t16z.com/) to check and verify your agent's TEE proof.
+
+## 📝 Docker Configuration
+
+Below is a sample Docker Compose configuration for your Swarms agent:
+
+```yaml
+services:
+  swarms-agent-server:
+    image: swarms-agent-node:latest
+    platform: linux/amd64
+    volumes:
+      - /var/run/tappd.sock:/var/run/tappd.sock
+      - swarms:/app
+    restart: always
+    ports:
+      - 8000:8000
+    command: # Sample MCP Server
+      - /bin/sh
+      - -c
+      - |
+        cd /app/mcp_example
+        python mcp_test.py
+volumes:
+  swarms:
+```
+
+## 📚 Additional Resources
+
+For more comprehensive documentation and examples, visit our [Official Documentation](https://docs.swarms.world/en/latest/).
+
+---
+
+> **Note**: Make sure to replace `<your-dockerhub-username>` with your actual DockerHub username when building and pushing the image.
 
 --------------------------------------------------
 
@@ -46067,6 +47882,393 @@ For technical assistance with the Swarms API, please contact:
 - Swarms Marketplace: [https://swarms.world](https://swarms.world)
 - Swarms AI Website: [https://swarms.ai](https://swarms.ai)
 
+
+--------------------------------------------------
+
+# File: swarms_cloud/swarms_api_tools.md
+
+# Swarms API with Tools Guide
+
+
+Swarms API allows you to create and manage AI agent swarms with optional tool integration. This guide will walk you through setting up and using the Swarms API with tools.
+
+## Prerequisites
+
+- Python 3.7+
+- Swarms API key
+- Required Python packages:
+  - `requests`
+
+  - `python-dotenv`
+
+## Installation & Setup
+
+1. Install required packages:
+
+```bash
+pip install requests python-dotenv
+```
+
+2. Create a `.env` file in your project root:
+
+```bash
+SWARMS_API_KEY=your_api_key_here
+```
+
+3. Basic setup code:
+
+```python
+import os
+import requests
+from dotenv import load_dotenv
+import json
+
+load_dotenv()
+
+API_KEY = os.getenv("SWARMS_API_KEY")
+BASE_URL = "https://api.swarms.world"
+
+headers = {"x-api-key": API_KEY, "Content-Type": "application/json"}
+```
+
+## Creating a Swarm with Tools
+
+### Step-by-Step Guide
+
+1. Define your tool dictionary:
+```python
+tool_dictionary = {
+    "type": "function",
+    "function": {
+        "name": "search_topic",
+        "description": "Conduct an in-depth search on a specified topic",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "depth": {
+                    "type": "integer",
+                    "description": "Search depth (1-3)"
+                },
+                "detailed_queries": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "description": "Specific search queries"
+                    }
+                }
+            },
+            "required": ["depth", "detailed_queries"]
+        }
+    }
+}
+```
+
+2. Create agent configurations:
+```python
+agent_config = {
+    "agent_name": "Market Analyst",
+    "description": "Analyzes market trends",
+    "system_prompt": "You are a financial analyst expert.",
+    "model_name": "openai/gpt-4",
+    "role": "worker",
+    "max_loops": 1,
+    "max_tokens": 8192,
+    "temperature": 0.5,
+    "auto_generate_prompt": False,
+    "tools_dictionary": [tool_dictionary]  # Optional: Add tools if needed
+}
+```
+
+3. Create the swarm payload:
+```python
+payload = {
+    "name": "Your Swarm Name",
+    "description": "Swarm description",
+    "agents": [agent_config],
+    "max_loops": 1,
+    "swarm_type": "ConcurrentWorkflow",
+    "task": "Your task description",
+    "output_type": "dict"
+}
+```
+
+4. Make the API request:
+```python
+def run_swarm(payload):
+    response = requests.post(
+        f"{BASE_URL}/v1/swarm/completions",
+        headers=headers,
+        json=payload
+    )
+    return response.json()
+```
+
+## FAQ
+
+### Do all agents need tools?
+No, tools are optional for each agent. You can choose which agents have tools based on your specific needs. Simply omit the `tools_dictionary` field for agents that don't require tools.
+
+### What types of tools can I use?
+Currently, the API supports function-type tools. Each tool must have:
+- A unique name
+
+- A clear description
+
+- Well-defined parameters with types and descriptions
+
+### Can I mix agents with and without tools?
+Yes, you can create swarms with a mix of tool-enabled and regular agents. This allows for flexible swarm architectures.
+
+### What's the recommended number of tools per agent?
+While there's no strict limit, it's recommended to:
+
+- Keep tools focused and specific
+
+- Only include tools that the agent needs
+
+- Consider the complexity of tool interactions
+
+## Example Implementation
+
+Here's a complete example of a financial analysis swarm:
+
+```python
+def run_financial_analysis_swarm():
+    payload = {
+        "name": "Financial Analysis Swarm",
+        "description": "Market analysis swarm",
+        "agents": [
+            {
+                "agent_name": "Market Analyst",
+                "description": "Analyzes market trends",
+                "system_prompt": "You are a financial analyst expert.",
+                "model_name": "openai/gpt-4",
+                "role": "worker",
+                "max_loops": 1,
+                "max_tokens": 8192,
+                "temperature": 0.5,
+                "auto_generate_prompt": False,
+                "tools_dictionary": [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "search_topic",
+                            "description": "Conduct market research",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "depth": {
+                                        "type": "integer",
+                                        "description": "Search depth (1-3)"
+                                    },
+                                    "detailed_queries": {
+                                        "type": "array",
+                                        "items": {"type": "string"}
+                                    }
+                                },
+                                "required": ["depth", "detailed_queries"]
+                            }
+                        }
+                    }
+                ]
+            }
+        ],
+        "max_loops": 1,
+        "swarm_type": "ConcurrentWorkflow",
+        "task": "Analyze top performing tech ETFs",
+        "output_type": "dict"
+    }
+    
+    response = requests.post(
+        f"{BASE_URL}/v1/swarm/completions",
+        headers=headers,
+        json=payload
+    )
+    return response.json()
+```
+
+## Health Check
+
+Always verify the API status before running swarms:
+
+```python
+def check_api_health():
+    response = requests.get(f"{BASE_URL}/health", headers=headers)
+    return response.json()
+```
+
+## Best Practices
+
+1. **Error Handling**: Always implement proper error handling:
+```python
+def safe_run_swarm(payload):
+    try:
+        response = requests.post(
+            f"{BASE_URL}/v1/swarm/completions",
+            headers=headers,
+            json=payload
+        )
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error running swarm: {e}")
+        return None
+```
+
+2. **Environment Variables**: Never hardcode API keys
+
+3. **Tool Design**: Keep tools simple and focused
+
+4. **Testing**: Validate swarm configurations before production use
+
+## Troubleshooting
+
+Common issues and solutions:
+
+1. **API Key Issues**
+   - Verify key is correctly set in `.env`
+
+   - Check key permissions
+
+2. **Tool Execution Errors**
+   - Validate tool parameters
+
+   - Check tool function signatures
+
+3. **Response Timeout**
+   - Consider reducing max_tokens
+
+   - Simplify tool complexity
+
+
+
+```python
+import os
+import requests
+from dotenv import load_dotenv
+import json
+
+load_dotenv()
+
+API_KEY = os.getenv("SWARMS_API_KEY")
+BASE_URL = "https://api.swarms.world"
+
+headers = {"x-api-key": API_KEY, "Content-Type": "application/json"}
+
+
+def run_health_check():
+    response = requests.get(f"{BASE_URL}/health", headers=headers)
+    return response.json()
+
+
+def run_single_swarm():
+    payload = {
+        "name": "Financial Analysis Swarm",
+        "description": "Market analysis swarm",
+        "agents": [
+            {
+                "agent_name": "Market Analyst",
+                "description": "Analyzes market trends",
+                "system_prompt": "You are a financial analyst expert.",
+                "model_name": "openai/gpt-4o",
+                "role": "worker",
+                "max_loops": 1,
+                "max_tokens": 8192,
+                "temperature": 0.5,
+                "auto_generate_prompt": False,
+                "tools_dictionary": [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "search_topic",
+                            "description": "Conduct an in-depth search on a specified topic or subtopic, generating a comprehensive array of highly detailed search queries tailored to the input parameters.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "depth": {
+                                        "type": "integer",
+                                        "description": "Indicates the level of thoroughness for the search. Values range from 1 to 3, where 1 represents a superficial search and 3 signifies an exploration of the topic.",
+                                    },
+                                    "detailed_queries": {
+                                        "type": "array",
+                                        "description": "An array of highly specific search queries that are generated based on the input query and the specified depth. Each query should be designed to elicit detailed and relevant information from various sources.",
+                                        "items": {
+                                            "type": "string",
+                                            "description": "Each item in this array should represent a unique search query that targets a specific aspect of the main topic, ensuring a comprehensive exploration of the subject matter.",
+                                        },
+                                    },
+                                },
+                                "required": ["depth", "detailed_queries"],
+                            },
+                        },
+                    },
+                ],
+            },
+            {
+                "agent_name": "Economic Forecaster",
+                "description": "Predicts economic trends",
+                "system_prompt": "You are an expert in economic forecasting.",
+                "model_name": "gpt-4o",
+                "role": "worker",
+                "max_loops": 1,
+                "max_tokens": 8192,
+                "temperature": 0.5,
+                "auto_generate_prompt": False,
+                "tools_dictionary": [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "search_topic",
+                            "description": "Conduct an in-depth search on a specified topic or subtopic, generating a comprehensive array of highly detailed search queries tailored to the input parameters.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "depth": {
+                                        "type": "integer",
+                                        "description": "Indicates the level of thoroughness for the search. Values range from 1 to 3, where 1 represents a superficial search and 3 signifies an exploration of the topic.",
+                                    },
+                                    "detailed_queries": {
+                                        "type": "array",
+                                        "description": "An array of highly specific search queries that are generated based on the input query and the specified depth. Each query should be designed to elicit detailed and relevant information from various sources.",
+                                        "items": {
+                                            "type": "string",
+                                            "description": "Each item in this array should represent a unique search query that targets a specific aspect of the main topic, ensuring a comprehensive exploration of the subject matter.",
+                                        },
+                                    },
+                                },
+                                "required": ["depth", "detailed_queries"],
+                            },
+                        },
+                    },
+                ],
+            },
+        ],
+        "max_loops": 1,
+        "swarm_type": "ConcurrentWorkflow",
+        "task": "What are the best etfs and index funds for ai and tech?",
+        "output_type": "dict",
+    }
+
+    response = requests.post(
+        f"{BASE_URL}/v1/swarm/completions",
+        headers=headers,
+        json=payload,
+    )
+
+    print(response)
+    print(response.status_code)
+    # return response.json()
+    output = response.json()
+
+    return json.dumps(output, indent=4)
+
+
+if __name__ == "__main__":
+    result = run_single_swarm()
+    print("Swarm Result:")
+    print(result)
+
+```
 
 --------------------------------------------------
 
@@ -49163,6 +51365,424 @@ This documentation is designed to be thorough and provide all the necessary deta
 
 --------------------------------------------------
 
+# File: swarms_rs/agents.md
+
+# swarms-rs
+
+!!! note "Modern AI Agent Framework"
+    swarms-rs is a powerful Rust framework for building autonomous AI agents powered by LLMs, equipped with robust tools and memory capabilities. Designed for various applications from trading analysis to healthcare diagnostics.
+
+## Getting Started
+
+### Installation
+
+```bash
+cargo add swarms-rs
+```
+
+!!! tip "Compatible with Rust 1.70+"
+    This library requires Rust 1.70 or later. Make sure your Rust toolchain is up to date.
+
+### Required Environment Variables
+
+```bash
+# Required API keys
+OPENAI_API_KEY="your_openai_api_key_here"
+DEEPSEEK_API_KEY="your_deepseek_api_key_here"
+```
+
+### Quick Start
+
+Here's a simple example to get you started with swarms-rs:
+
+```rust
+use std::env;
+use anyhow::Result;
+use swarms_rs::{llm::provider::openai::OpenAI, structs::agent::Agent};
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    // Load environment variables from .env file
+    dotenv::dotenv().ok();
+    
+    // Initialize tracing for better debugging
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::EnvFilter::from_default_env())
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_line_number(true)
+                .with_file(true),
+        )
+        .init();
+
+    // Set up your LLM client
+    let api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
+    let client = OpenAI::new(api_key).set_model("gpt-4-turbo");
+    
+    // Create a basic agent
+    let agent = client
+        .agent_builder()
+        .system_prompt("You are a helpful assistant.")
+        .agent_name("BasicAgent")
+        .user_name("User")
+        .build();
+    
+    // Run the agent with a user query
+    let response = agent
+        .run("Tell me about Rust programming.".to_owned())
+        .await?;
+    
+    println!("{}", response);
+    Ok(())
+}
+```
+
+## Core Concepts
+
+### Agents
+
+Agents in swarms-rs are autonomous entities that can:
+
+- Perform complex reasoning based on LLM capabilities
+- Use tools to interact with external systems
+- Maintain persistent memory
+- Execute multi-step plans
+
+## Agent Configuration
+
+### Core Parameters
+
+| Parameter | Description | Default | Required |
+|-----------|-------------|---------|----------|
+| `system_prompt` | Initial instructions/role for the agent | - | Yes |
+| `agent_name` | Name identifier for the agent | - | Yes |
+| `user_name` | Name for the user interacting with agent | - | Yes |
+| `max_loops` | Maximum number of reasoning loops | 1 | No |
+| `retry_attempts` | Number of retry attempts on failure | 1 | No |
+| `enable_autosave` | Enable state persistence | false | No |
+| `save_state_dir` | Directory for saving agent state | None | No |
+
+### Advanced Configuration
+
+You can enhance your agent's capabilities with:
+
+- **Planning**: Enable structured planning for complex tasks
+- **Memory**: Persistent storage for agent state
+- **Tools**: External capabilities through MCP protocol
+
+!!! warning "Resource Usage"
+    Setting high values for `max_loops` can increase API usage and costs. Start with lower values and adjust as needed.
+
+## Examples
+
+### Specialized Agent for Cryptocurrency Analysis
+
+```rust
+use std::env;
+use anyhow::Result;
+use swarms_rs::{llm::provider::openai::OpenAI, structs::agent::Agent};
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    dotenv::dotenv().ok();
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::EnvFilter::from_default_env())
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_line_number(true)
+                .with_file(true),
+        )
+        .init();
+
+    let api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
+    let client = OpenAI::new(api_key).set_model("gpt-4-turbo");
+    
+    let agent = client
+        .agent_builder()
+        .system_prompt(
+            "You are a sophisticated cryptocurrency analysis assistant specialized in:
+            1. Technical analysis of crypto markets
+            2. Fundamental analysis of blockchain projects
+            3. Market sentiment analysis
+            4. Risk assessment
+            5. Trading patterns recognition
+            
+            When analyzing cryptocurrencies, always consider:
+            - Market capitalization and volume
+            - Historical price trends
+            - Project fundamentals and technology
+            - Recent news and developments
+            - Market sentiment indicators
+            - Potential risks and opportunities
+            
+            Provide clear, data-driven insights and always include relevant disclaimers about market volatility."
+        )
+        .agent_name("CryptoAnalyst")
+        .user_name("Trader")
+        .enable_autosave()
+        .max_loops(3)  // Increased for more thorough analysis
+        .save_state_dir("./crypto_analysis/")
+        .enable_plan("Break down the crypto analysis into systematic steps:
+            1. Gather market data
+            2. Analyze technical indicators
+            3. Review fundamental factors
+            4. Assess market sentiment
+            5. Provide comprehensive insights".to_owned())
+        .build();
+        
+    let response = agent
+        .run("What are your thoughts on Bitcoin's current market position?".to_owned())
+        .await?;
+        
+    println!("{}", response);
+    Ok(())
+}
+```
+
+## Using Tools with MCP
+
+### Model Context Protocol (MCP)
+
+swarms-rs supports the Model Context Protocol (MCP), enabling agents to interact with external tools through standardized interfaces.
+
+!!! info "What is MCP?"
+    MCP (Model Context Protocol) provides a standardized way for LLMs to interact with external tools, giving your agents access to real-world data and capabilities beyond language processing.
+
+### Supported MCP Server Types
+
+- **STDIO MCP Servers**: Connect to command-line tools implementing the MCP protocol
+- **SSE MCP Servers**: Connect to web-based MCP servers using Server-Sent Events
+
+### Tool Integration
+
+Add tools to your agent during configuration:
+
+```rust
+let agent = client
+    .agent_builder()
+    .system_prompt("You are a helpful assistant with access to tools.")
+    .agent_name("ToolAgent")
+    .user_name("User")
+    // Add STDIO MCP server
+    .add_stdio_mcp_server("uvx", ["mcp-hn"])
+    .await
+    // Add SSE MCP server
+    .add_sse_mcp_server("file-browser", "http://127.0.0.1:8000/sse")
+    .await
+    .build();
+```
+
+### Full MCP Agent Example
+
+```rust
+use std::env;
+use anyhow::Result;
+use swarms_rs::{llm::provider::openai::OpenAI, structs::agent::Agent};
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    dotenv::dotenv().ok();
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::EnvFilter::from_default_env())
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_line_number(true)
+                .with_file(true),
+        )
+        .init();
+
+    let api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
+    let client = OpenAI::new(api_key).set_model("gpt-4-turbo");
+    
+    let agent = client
+        .agent_builder()
+        .system_prompt("You are a helpful assistant with access to news and file system tools.")
+        .agent_name("SwarmsAgent")
+        .user_name("User")
+        // Add Hacker News tool
+        .add_stdio_mcp_server("uvx", ["mcp-hn"])
+        .await
+        // Add filesystem tool
+        // To set up: uvx mcp-proxy --sse-port=8000 -- npx -y @modelcontextprotocol/server-filesystem ~
+        .add_sse_mcp_server("file-browser", "http://127.0.0.1:8000/sse")
+        .await
+        .retry_attempts(2)
+        .max_loops(3)
+        .build();
+
+    // Use the news tool
+    let news_response = agent
+        .run("Get the top 3 stories of today from Hacker News".to_owned())
+        .await?;
+    println!("NEWS RESPONSE:\n{}", news_response);
+
+    // Use the filesystem tool
+    let fs_response = agent.run("List files in my home directory".to_owned()).await?;
+    println!("FILESYSTEM RESPONSE:\n{}", fs_response);
+
+    Ok(())
+}
+```
+
+## Setting Up MCP Tools
+
+### Installing MCP Servers
+
+To use MCP servers with swarms-rs, you'll need to install the appropriate tools:
+
+1. **uv Package Manager**:
+   ```bash
+   curl -sSf https://raw.githubusercontent.com/astral-sh/uv/main/install.sh | sh
+   ```
+
+2. **MCP-HN** (Hacker News MCP server):
+   ```bash
+   uvx install mcp-hn
+   ```
+
+3. **Setting up an SSE MCP server**:
+   ```bash
+   # Start file system MCP server over SSE
+   uvx mcp-proxy --sse-port=8000 -- npx -y @modelcontextprotocol/server-filesystem ~
+   ```
+
+## FAQ
+
+### General Questions
+
+??? question "What LLM providers are supported?"
+    swarms-rs currently supports:
+    
+    - OpenAI (GPT models)
+    
+    - DeepSeek AI
+    
+    - More providers coming soon
+
+??? question "How does state persistence work?"
+    When `enable_autosave` is set to `true`, the agent will save its state to the directory specified in `save_state_dir`. This includes conversation history and tool states, allowing the agent to resume from where it left off.
+
+??? question "What is the difference between `max_loops` and `retry_attempts`?"
+    - `max_loops`: Controls how many reasoning steps the agent can take for a single query
+    
+    - `retry_attempts`: Specifies how many times the agent will retry if an error occurs
+
+### MCP Tools
+
+??? question "How do I create my own MCP server?"
+    You can create your own MCP server by implementing the MCP protocol. Check out the [MCP documentation](https://github.com/modelcontextprotocol/spec) for details on the protocol specification.
+
+??? question "Can I use tools without MCP?"
+    Currently, swarms-rs is designed to use the MCP protocol for tool integration. This provides a standardized way for agents to interact with external systems.
+
+## Advanced Topics
+
+### Performance Optimization
+
+Optimize your agent's performance by:
+
+1. **Crafting Effective System Prompts**:
+   - Be specific about the agent's role and capabilities
+   
+   - Include clear instructions on how to use available tools
+   
+   - Define success criteria for the agent's responses
+
+2. **Tuning Loop Parameters**:
+   
+   - Start with lower values for `max_loops` and increase as needed
+   
+   - Consider the complexity of tasks when setting loop limits
+
+3. **Strategic Tool Integration**:
+   
+   - Only integrate tools that are necessary for the agent's tasks
+   
+   - Provide clear documentation in the system prompt about when to use each tool
+
+### Security Considerations
+
+!!! danger "Security Notice"
+    When using file system tools or other system-level access, always be careful about permissions. Limit the scope of what your agent can access, especially in production environments.
+
+## Coming Soon
+
+- Memory plugins for different storage backends
+
+- Additional LLM providers
+
+- Group agent coordination
+
+- Function calling
+
+- Custom tool development framework
+
+## Contributing
+
+Contributions to swarms-rs are welcome! Check out our [GitHub repository](https://github.com/swarms-rs) for more information.
+
+--------------------------------------------------
+
+# File: swarms_rs/overview.md
+
+# swarms-rs 🚀
+
+<div class="badges" align="center">
+  <img src="https://img.shields.io/github/workflow/status/The-Swarm-Corporation/swarms-rs/CI" alt="Build Status">
+  <img src="https://img.shields.io/crates/v/swarm-rs" alt="Version">
+  <img src="https://img.shields.io/crates/l/swarm-rs" alt="License">
+</div>
+
+## 📖 Overview
+
+**swarms-rs** is an enterprise-grade, production-ready multi-agent orchestration framework built in Rust, designed to handle the most demanding tasks with unparalleled speed and efficiency. By leveraging Rust's bleeding-edge performance and safety features, swarms-rs provides a powerful and scalable solution for orchestrating complex multi-agent systems across various industries.
+
+## ✨ Key Benefits
+
+### ⚡ Extreme Performance
+
+<div class="grid cards" markdown>
+
+- **Multi-Threaded Architecture**
+    - Utilize the full potential of modern multi-core processors
+    
+    - Zero-cost abstractions and fearless concurrency
+    
+    - Minimal overhead with maximum throughput
+    
+    - Optimal resource utilization
+
+- **Bleeding-Edge Speed**
+    
+    - Near-zero latency execution
+    
+    - Lightning-fast performance
+    
+    - Ideal for high-frequency applications
+    
+    - Perfect for real-time systems
+</div>
+
+## 🔗 Quick Links
+
+<div class="grid cards" markdown>
+
+- [:fontawesome-brands-github: GitHub](https://github.com/The-Swarm-Corporation/swarms-rs)
+    - Browse the source code
+    - Contribute to the project
+    - Report issues
+
+- [:package: Crates.io](https://crates.io/crates/swarm-rs)
+    - Download the latest version
+    - View package statistics
+
+- [:book: Documentation](https://docs.rs/swarm-rs/0.1.4/swarm_rs/)
+    - Read the API documentation
+    - Learn how to use swarms-rs
+</div>
+
+--------------------------------------------------
+
 # File: swarms_tools/finance.md
 
 # Swarms Finance Tools Documentation
@@ -50242,6 +52862,155 @@ Be aware of Twitter's API rate limits. Implement appropriate delays between requ
 ## Version Compatibility
 - Python 3.7+
 - Latest version of swarms-tools package
+
+--------------------------------------------------
+
+# File: web3/token.md
+
+
+# $swarms Tokenomics
+
+**Empowering the Agentic Revolution**  
+Token Contract Address: `74SBV4zDXxTRgv1pEMoECskKBkZHc2yGPnc7GYVepump`
+
+> You can buy $swarms on most marketplaces:  
+> **Pump.fun**, **Kraken**, **Bitget**, **Binance**, **OKX**, and more.
+
+---
+
+## 📦 Overview
+
+- **Token Name:** Swarms Coin  
+- **Ticker:** `$swarms`  
+- **Blockchain:** Solana  
+- **Utility:** Powering the agentic economy.
+
+---
+
+## 📊 Initial Token Distribution
+
+| Allocation      | Percentage |
+|-----------------|------------|
+| 🧠 **Team**      | 3%         |
+| 🌍 **Public Sale** | 97%        |
+
+> ⚠️ At launch, only **2%** was reserved for the team — among the **smallest allocations in DAO history**.
+
+---
+
+## 📣 A Message from the Team
+
+!!! quote
+    When we launched $swarms, we prioritized community ownership by allocating just 2% to the team.  
+    Our intent was radical decentralization. But that decision has created unintended consequences.
+
+### ❗ Challenges We Faced
+
+- **Market manipulation** by whales and exchanges  
+- **Unsustainable funding** for innovation and ops  
+- **Malicious actors undermining decentralization**
+
+---
+
+## 🛠 Our Proposed Solution
+
+We are initiating a **DAO governance proposal** to:
+
+=== "Key Reforms"
+
+- 📈 **Increase team allocation to 10%**  
+  Secure operational longevity and attract top contributors.
+
+- 🌱 **Launch an ecosystem grants program**  
+  Incentivize developers building agentic tools and infra.
+
+- 🛡 **Combat token manipulation**  
+  Deploy anti-whale policies and explore token lockups.
+
+- 🤝 **Strengthen community dev initiatives**  
+  Support contributor bounties, governance tooling, and hackathons.
+
+> This proposal isn’t about centralizing power — it's about protecting and empowering the **Swarms ecosystem**.
+
+---
+
+## 💸 Contribute to Swarms DAO
+
+To expand our ecosystem, grow the core team, and bring agentic AI to the world, we invite all community members to **invest directly in Swarms DAO**.
+
+Send **$swarms** or **SOL** to our official treasury address:
+
+```plaintext
+🪙 DAO Treasury Wallet:
+7MaX4muAn8ZQREJxnupm8sgokwFHujgrGfH9Qn81BuEV
+```
+
+!!! success "Every contribution matters"
+    Whether it’s 1 $swarms or 1000 SOL — you’re helping fund a decentralized future.
+
+> You may use most wallets and platforms supporting Solana to send tokens.
+
+---
+
+## 🧠 Why Invest?
+
+Your contributions fund:
+
+- Expansion of the **Swarms core team**  
+- Development of **open-source AI agent tooling**  
+- Community **grants** and contributor **bounties**  
+- Anti-manipulation strategies & decentralized governance tools
+
+---
+
+## 🚀 How to Get Involved
+
+[![Join the DAO](https://img.shields.io/badge/DAO%20Governance-Click%20Here-blue?style=for-the-badge&logo=solana)](https://dao.swarms.world)
+[![Investor Info](https://img.shields.io/badge/Investor%20Page-Explore-green?style=for-the-badge)](https://investors.swarms.world)
+
+### 🛠 You can:
+- Vote on governance proposals  
+
+- Submit development or funding proposals  
+
+- Share $swarms with your network  
+
+- Build with our upcoming agent SDKs  
+
+- Contribute to the mission of agentic decentralization  
+
+---
+
+## 📘 Quick Summary
+
+| Key Metric                  | Value             |
+|----------------------------|------------------|
+| **Token Symbol**           | `$swarms`        |
+| **Blockchain**             | Solana           |
+| **Initial Team Allocation**| 3% (Proposed 10%)|
+| **Public Distribution**    | 97%              |
+| **DAO Wallet**             | `7MaX4muAn8ZQREJxnupm8sgokwFHujgrGfH9Qn81BuEV` |
+| **DAO Governance**         | [dao.swarms.world](https://dao.swarms.world) |
+
+---
+
+## 🌍 Useful Links
+
+- [DAO Governance Portal][dao]  
+
+- [Investor Information][investors]  
+
+- [Official Site][site]  
+
+- [Join Swarms on Discord][discord]  
+
+[dao]: https://dao.swarms.world/
+[investors]: https://investors.swarms.world/
+[site]: https://swarms.world/
+[discord]: https://discord.gg/swarms
+```
+
+
 
 --------------------------------------------------
 
