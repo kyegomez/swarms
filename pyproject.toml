@@ -77,6 +77,8 @@ numpy = "*"
 litellm = "*"
 torch = "*"
 httpx = "*"
+mcp = "*"
+fastmcp = "*"
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"
