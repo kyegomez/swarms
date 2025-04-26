@@ -1248,30 +1248,12 @@ results = wf_graph.run()
 print("Execution results:", results)
 ```
 
+-----
+
+
 ## `MixtureOfAgents`
-This is an implementation based on the paper: "Mixture-of-Agents Enhances Large Language Model Capabilities" by together.ai, available at [https://arxiv.org/abs/2406.04692](https://arxiv.org/abs/2406.04692). It achieves state-of-the-art (SOTA) results on AlpacaEval 2.0, MT-Bench, and FLASK, surpassing GPT-4 Omni. This architecture is particularly suitable for tasks that require parallelization followed by sequential processing in another loop.
 
-
-
-### Methods
-
-| Method | Description | Parameters | Return Value |
-|--------|-------------|------------|--------------|
-| `__init__` | Initialize the MixtureOfAgents | `name`: Name of the swarm<br>`agents`: List of Agent objects<br>`layers`: Number of processing layers<br>`final_agent`: Agent for final processing | None |
-| `run` | Execute the swarm | `task`: Input task for the swarm | Final output after all agents have processed |
-
-### Inputs
-
-| Input | Type | Description |
-|-------|------|-------------|
-| `name` | str | Name of the swarm |
-| `agents` | List[Agent] | List of Agent objects to be used in the swarm |
-| `layers` | int | Number of processing layers in the swarm |
-| `final_agent` | Agent | Agent responsible for final processing |
-
-### Output
-
-The `run` method returns the final output after all agents have processed the input according to the specified layers and final agent.
+The MixtureOfAgents architecture, inspired by together.ai’s paper (arXiv:2406.04692), achieves SOTA performance on AlpacaEval 2.0, MT-Bench, and FLASK, surpassing GPT-4 Omni. It processes tasks via parallel agent collaboration and sequential layering, with documentation [HERE](https://docs.swarms.world/en/latest/swarms/structs/moa/)
 
 
 ```python
@@ -1700,25 +1682,11 @@ print(output)
 
 
 
+------------
 
 ## `SwarmRouter`
-The `SwarmRouter` class is a flexible routing system designed to manage different types of swarms for task execution. It provides a unified interface to interact with various swarm types, including `AgentRearrange`, `MixtureOfAgents`, `SpreadSheetSwarm`, `SequentialWorkflow`, and `ConcurrentWorkflow`. We will be continuously adding more and more swarm architectures here as we progress with new architectures.
 
-#### Attributes:
-- `name` (str): Name of the SwarmRouter instance.
-- `description` (str): Description of the SwarmRouter instance.
-- `max_loops` (int): Maximum number of loops to perform.
-- `agents` (List[Agent]): List of Agent objects to be used in the swarm.
-- `swarm_type` (SwarmType): Type of swarm to be used.
-- `swarm` (Union[AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow]): Instantiated swarm object.
-- `logs` (List[SwarmLog]): List of log entries captured during operations.
-
-#### Methods:
-- `__init__(self, name: str, description: str, max_loops: int, agents: List[Agent], swarm_type: SwarmType, *args, **kwargs)`: Initialize the SwarmRouter.
-- `_create_swarm(self, *args, **kwargs)`: Create and return the specified swarm type.
-- `_log(self, level: str, message: str, task: str, metadata: Dict[str, Any])`: Create a log entry and add it to the logs list.
-- `run(self, task: str, *args, **kwargs)`: Run the specified task on the selected swarm.
-- `get_logs(self)`: Retrieve all logged entries.
+The `SwarmRouter` class is a flexible routing system designed to manage different types of swarms for task execution. It provides a unified interface to interact with various swarm types, including `AgentRearrange`, `MixtureOfAgents`, `SpreadSheetSwarm`, `SequentialWorkflow`, and `ConcurrentWorkflow`. We will be continuously adding more and more swarm architectures here as we progress with new architectures. [Learn More](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)
 
 
 ```python
@@ -2134,6 +2102,7 @@ Swarms is an open-source project, and contributions are VERY welcome. If you wan
 
 
 ## Accelerate Backlog
+
 Accelerate Bugs, Features, and Demos to implement by supporting us here:
 
 <a href="https://polar.sh/kyegomez"><img src="https://polar.sh/embed/fund-our-backlog.svg?org=kyegomez" /></a>
