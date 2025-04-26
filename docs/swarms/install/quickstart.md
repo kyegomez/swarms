@@ -20,35 +20,27 @@ $ pip install -U swarms
 
 ### **Usage Example: Single Agent**
 
-Here’s a simple example of creating a financial analysis agent powered by OpenAI’s GPT-4 model. This agent will analyze financial queries like how to set up a ROTH IRA.
+Here's a simple example of creating a financial analysis agent powered by OpenAI's GPT-4o-mini model. This agent will analyze financial queries like how to set up a ROTH IRA.
 
 ```python
-import os
-from swarms import Agent
-from swarm_models import OpenAIChat
-from dotenv import load_dotenv
+from swarms.structs.agent import Agent
 
-load_dotenv()
-
-# Initialize OpenAI model
-model = OpenAIChat(
-    openai_api_key=os.getenv("OPENAI_API_KEY"), model_name="gpt-4o-mini", temperature=0.1
-)
-
-# Initialize the agent
+# Initialize the agent with GPT-4o-mini model
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
     system_prompt="Analyze financial situations and provide advice...",
-    llm=model,
     max_loops=1,
     autosave=True,
     dashboard=False,
     verbose=True,
-    saved_state_path="finance_agent.json"
+    saved_state_path="finance_agent.json",
+    model_name="gpt-4o-mini",
 )
 
-# Run the agent on a financial query
-out = agent.run("How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria?")
+# Run your query
+out = agent.run(
+    "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria?"
+)
 print(out)
 ```
 
@@ -57,13 +49,13 @@ print(out)
 - **Attributes:**
   - `agent_name`: Name of the agent.
   - `system_prompt`: System-level instruction guiding the agent's behavior.
-  - `llm`: Language model used by the agent (e.g., GPT, Anthropic).
+  - `model_name`: Name of the model to use (e.g., "gpt-4o-mini").
   - `max_loops`: Max iterations for a task.
   - `autosave`: Auto-saves the state after each iteration.
   
 - **Methods:**
-  - `run(task: str)`: Executes the agent’s task.
-  - `ingest_docs(doc_path: str)`: Ingests documents into the agent’s knowledge base.
+  - `run(task: str)`: Executes the agent's task.
+  - `ingest_docs(doc_path: str)`: Ingests documents into the agent's knowledge base.
   - `filtered_run(task: str)`: Runs agent with a filtered system prompt.
 
 -----
@@ -121,7 +113,7 @@ agents:
 ### Key Configuration Fields:
 - **agent_name**: Name of the agent.
 - **model**: Defines the language model settings (e.g., API key, model name, temperature, and max tokens).
-- **system_prompt**: The system prompt used to guide the agent’s behavior.
+- **system_prompt**: The system prompt used to guide the agent's behavior.
 - **task**: (Optional) Task for the agent to execute once created.
 
 ---
@@ -248,7 +240,7 @@ Steps:
 
 For example, here's an example on how to create an agent from griptape.
 
-Here’s how you can create a custom **Griptape** agent that integrates with the **Swarms** framework by inheriting from the `Agent` class in **Swarms** and overriding the `run(task: str) -> str` method.
+Here's how you can create a custom **Griptape** agent that integrates with the **Swarms** framework by inheriting from the `Agent` class in **Swarms** and overriding the `run(task: str) -> str` method.
 
 
 ```python
@@ -420,7 +412,7 @@ print(output)
 
 ### 5. **Spreadsheet Swarm**
 
-**Overview**: `SpreadSheetSwarm` enables the management of thousands of agents simultaneously, where each agent operates on its own thread. It’s ideal for overseeing large-scale agent outputs.
+**Overview**: `SpreadSheetSwarm` enables the management of thousands of agents simultaneously, where each agent operates on its own thread. It's ideal for overseeing large-scale agent outputs.
 
 #### Mermaid Graph:
 
@@ -466,7 +458,7 @@ These are the key swarm architectures available in the **Swarms Framework**. Eac
 #### **Workflow Classes**
 
 - **SequentialWorkflow:**
-  - Chains agents, where one agent's output becomes the next agent’s input.
+  - Chains agents, where one agent's output becomes the next agent's input.
   
 - **AgentRearrange:**
   - Dynamically rearranges agent tasks either in parallel or sequentially based on defined flow.
