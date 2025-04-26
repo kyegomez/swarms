@@ -2,19 +2,17 @@ from swarms import Agent
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
-from swarm_models import OpenAIChat
 
-model = OpenAIChat(model_name="gpt-4o")
-
-
-# Initialize the agent
+# Initialize the agent (no swarm_models import needed)
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
     agent_description="Personal finance advisor agent",
-    system_prompt=FINANCIAL_AGENT_SYS_PROMPT
-    + "Output the <DONE> token when you're done creating a portfolio of etfs, index, funds, and more for AI",
+    system_prompt=(
+        FINANCIAL_AGENT_SYS_PROMPT
+        + " Output the <DONE> token when you're done creating a portfolio"
+    ),
     max_loops=1,
-    llm=model,
+    model_name="gpt-4o",
     dynamic_temperature_enabled=True,
     user_name="Kye",
     retry_attempts=3,
@@ -33,7 +31,8 @@ agent = Agent(
 
 async def run_agent():
     await agent.arun(
-        "Create a table of super high growth opportunities for AI. I have $40k to invest in ETFs, index funds, and more. Please create a table in markdown.",
+        "Create a table of super high-growth AI investment opportunities "
+        "with $40k in ETFs, index funds, etc., and output it in Markdown.",
         all_cores=True,
     )
 

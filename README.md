@@ -1271,24 +1271,28 @@ The `run` method returns a dictionary containing the execution results of all no
 
 
 ```python
-import os
-
-from dotenv import load_dotenv
-
-
 from swarms import Agent, Edge, GraphWorkflow, Node, NodeType
 
-from swarm_models import OpenAIChat
-
-load_dotenv()
-
-api_key = os.environ.get("OPENAI_API_KEY")
-
-llm = OpenAIChat(
-    temperature=0.5, openai_api_key=api_key, max_tokens=4000
+# Initialize agents with model_name parameter
+agent1 = Agent(
+    agent_name="Agent1",
+    model_name="openai/gpt-4o-mini",  # Using provider prefix
+    temperature=0.5,
+    max_tokens=4000,
+    max_loops=1,
+    autosave=True,
+    dashboard=True,
 )
-agent1 = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
-agent2 = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
+
+agent2 = Agent(
+    agent_name="Agent2",
+    model_name="openai/gpt-4o-mini",  # Using provider prefix
+    temperature=0.5,
+    max_tokens=4000,
+    max_loops=1,
+    autosave=True,
+    dashboard=True,
+)
 
 def sample_task():
     print("Running sample task")
@@ -1297,9 +1301,8 @@ def sample_task():
 wf_graph = GraphWorkflow()
 wf_graph.add_node(Node(id="agent1", type=NodeType.AGENT, agent=agent1))
 wf_graph.add_node(Node(id="agent2", type=NodeType.AGENT, agent=agent2))
-wf_graph.add_node(
-    Node(id="task1", type=NodeType.TASK, callable=sample_task)
-)
+wf_graph.add_node(Node(id="task1", type=NodeType.TASK, callable=sample_task))
+
 wf_graph.add_edge(Edge(source="agent1", target="task1"))
 wf_graph.add_edge(Edge(source="agent2", target="task1"))
 
@@ -1308,10 +1311,8 @@ wf_graph.set_end_points(["task1"])
 
 print(wf_graph.visualize())
 
-# Run the workflow
 results = wf_graph.run()
 print("Execution results:", results)
-
 ```
 
 ## `MixtureOfAgents`
@@ -2216,21 +2217,20 @@ Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
 -----
 
 ## Folder Structure
-The swarms package has been meticlously crafted for extreme use-ability and understanding, the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The 3 most important are `structs`, `models`, and `agents`.
+The swarms package has been meticulously crafted for extreme usability and understanding,the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The package is split into various modules, with the most important being `structs`, `tools`, and `agents`.
 
 ```sh
 ├── __init__.py
-├── agents
-├── artifacts
-├── memory
-├── schemas
-├── models -> swarm_models
-├── prompts
-├── structs
-├── telemetry
-├── tools
-├── utils
-└── workers
+├── agents/
+├── artifacts/
+├── client/
+├── cli/
+├── prompts/
+├── schemas/
+├── structs/
+├── telemetry/
+├── tools/
+└── utils/
 ```
 
 ----
