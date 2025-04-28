@@ -322,11 +322,20 @@ graph TD;
 
 ```python
 from swarms import Agent, SequentialWorkflow
-from swarm_models import Anthropic
 
-# Initialize agents
-agent1 = Agent(agent_name="Blog generator", system_prompt="Generate a blog post", llm=Anthropic(), max_loops=1)
-agent2 = Agent(agent_name="Summarizer", system_prompt="Summarize the blog post", llm=Anthropic(), max_loops=1)
+# Initialize agents without importing a specific LLM class
+agent1 = Agent(
+    agent_name="Blog generator",
+    system_prompt="Generate a blog post",
+    model_name="claude-3-sonnet-20240229",
+    max_loops=1
+)
+agent2 = Agent(
+    agent_name="Summarizer",
+    system_prompt="Summarize the blog post",
+    model_name="claude-3-sonnet-20240229",
+    max_loops=1
+)
 
 # Create Sequential workflow
 workflow = SequentialWorkflow(agents=[agent1, agent2], max_loops=1)
@@ -356,23 +365,37 @@ graph TD;
 
 ```python
 from swarms import Agent, AgentRearrange
-from swarm_models import Anthropic
 
-# Initialize agents
-director = Agent(agent_name="Director", system_prompt="Directs tasks", llm=Anthropic(), max_loops=1)
-worker1 = Agent(agent_name="Worker1", system_prompt="Generate a transcript", llm=Anthropic(), max_loops=1)
-worker2 = Agent(agent_name="Worker2", system_prompt="Summarize the transcript", llm=Anthropic(), max_loops=1)
+# Initialize agents using model_name (no explicit LLM import)
+director = Agent(
+    agent_name="Director",
+    system_prompt="Directs tasks",
+    model_name="claude-3-sonnet-20240229",
+    max_loops=1
+)
+worker1 = Agent(
+    agent_name="Worker1",
+    system_prompt="Generate a transcript",
+    model_name="claude-3-sonnet-20240229",
+    max_loops=1
+)
+worker2 = Agent(
+    agent_name="Worker2",
+    system_prompt="Summarize the transcript",
+    model_name="claude-3-sonnet-20240229",
+    max_loops=1
+)
 
-# Define agent relationships and workflow
+# Define the flow and create the rearranged system
 flow = "Director -> Worker1 -> Worker2"
 agent_system = AgentRearrange(agents=[director, worker1, worker2], flow=flow)
 
-# Run agent system
+# Run it
 output = agent_system.run("Create a YouTube transcript and summary")
 print(output)
 ```
 
----
+
 
 ---
 
@@ -429,21 +452,49 @@ graph TD;
 
 ```python
 from swarms import Agent
-from swarm_models import OpenAIChat
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
-import os
 
-# Initialize agents for different marketing platforms
+# Initialize agents for different marketing platforms using model_name
 agents = [
-    Agent(agent_name="Twitter Agent", system_prompt="Create a tweet", llm=OpenAIChat(openai_api_key=os.getenv("OPENAI_API_KEY")), max_loops=1),
-    Agent(agent_name="Instagram Agent", system_prompt="Create an Instagram post", llm=OpenAIChat(openai_api_key=os.getenv("OPENAI_API_KEY")), max_loops=1),
-    Agent(agent_name="Facebook Agent", system_prompt="Create a Facebook post", llm=OpenAIChat(openai_api_key=os.getenv("OPENAI_API_KEY")), max_loops=1),
-    Agent(agent_name="LinkedIn Agent", system_prompt="Create a LinkedIn post", llm=OpenAIChat(openai_api_key=os.getenv("OPENAI_API_KEY")), max_loops=1),
-    Agent(agent_name="Email Agent", system_prompt="Write a marketing email", llm=OpenAIChat(openai_api_key=os.getenv("OPENAI_API_KEY")), max_loops=1),
+    Agent(
+        agent_name="Twitter Agent",
+        system_prompt="Create a tweet",
+        model_name="gpt-4o-mini",
+        max_loops=1
+    ),
+    Agent(
+        agent_name="Instagram Agent",
+        system_prompt="Create an Instagram post",
+        model_name="gpt-4o-mini",
+        max_loops=1
+    ),
+    Agent(
+        agent_name="Facebook Agent",
+        system_prompt="Create a Facebook post",
+        model_name="gpt-4o-mini",
+        max_loops=1
+    ),
+    Agent(
+        agent_name="LinkedIn Agent",
+        system_prompt="Create a LinkedIn post",
+        model_name="gpt-4o-mini",
+        max_loops=1
+    ),
+    Agent(
+        agent_name="Email Agent",
+        system_prompt="Write a marketing email",
+        model_name="gpt-4o-mini",
+        max_loops=1
+    ),
 ]
 
 # Create the Spreadsheet Swarm
-swarm = SpreadSheetSwarm(agents=agents, save_file_path="real_estate_marketing_spreadsheet.csv", run_all_agents=False, max_loops=2)
+swarm = SpreadSheetSwarm(
+    agents=agents,
+    save_file_path="real_estate_marketing_spreadsheet.csv",
+    run_all_agents=False,
+    max_loops=2
+)
 
 # Run the swarm
 swarm.run("Create posts to promote luxury properties in North Texas.")
