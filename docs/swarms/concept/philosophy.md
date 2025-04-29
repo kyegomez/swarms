@@ -238,13 +238,13 @@ sequenceDiagram
 ### 4.4 Simplified Collaboration Workflow
 
 ```mermaid
-graph TD
-    UserRequest[User Request] --> Agent1[Agent 1]
-    Agent1 -->|run(task)| Agent2[Agent 2]
-    Agent2 -->|arun(task)| Agent3[Agent 3]
-    Agent3 -->|result| Agent2
-    Agent2 -->|result| Agent1
-    Agent1 -->|result| UserResponse[User Response]
+flowchart TD
+    UserRequest["User Request"] --> Agent1["Agent 1"]
+    Agent1 -->|"run(task)"| Agent2["Agent 2"]
+    Agent2 -->|"arun(task)"| Agent3["Agent 3"]
+    Agent3 -->|"result"| Agent2
+    Agent2 -->|"result"| Agent1
+    Agent1 -->|"result"| UserResponse["User Response"]
 ```
 
 *Workflow demonstrating how agents process a task collaboratively.*
