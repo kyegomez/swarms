@@ -122,7 +122,7 @@ swarm_architecture:
 
 Now, create the main Python script that will use the `create_agents_from_yaml` function.
 
-### `example.py`:
+### `main.py`:
 ```python
 from swarms.agents.create_agents_from_yaml import create_agents_from_yaml
 
@@ -138,7 +138,7 @@ print(task_results)
 ### Example Run:
 
 ```bash
-python example.py
+python main.py
 ```
 
 This will:
