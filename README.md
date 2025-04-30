@@ -117,7 +117,6 @@
 - `$ pip install -U swarms` And, don't forget to install swarms!
 - `.env` file with API keys from your providers like `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`
 -  Set an `.env` Variable with your desired workspace dir: `WORKSPACE_DIR="agent_workspace"` or do it in your terminal with `export WORKSPACE_DIR="agent_workspace"`
--  Finally, `swarms onboarding` to get you started.
 
 ## Guides and Walkthroughs
 Refer to our documentation for production grade implementation details.
