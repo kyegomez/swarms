@@ -82,6 +82,8 @@ agents:
     context_length: 200000
     return_step_meta: false
     output_type: "str"
+    temperature: 0.1
+    max_tokens: 2000
     task: "Analyze tech stocks for 2024 investment strategy. Provide detailed analysis and recommendations."
 
   - agent_name: "Risk-Analysis-Agent"
@@ -97,6 +99,8 @@ agents:
     context_length: 150000
     return_step_meta: false
     output_type: "str"
+    temperature: 0.1
+    max_tokens: 2000
     task: "Conduct a comprehensive risk analysis of the top 5 tech companies in 2024. Include risk factors and mitigation strategies."
 
 swarm_architecture:
