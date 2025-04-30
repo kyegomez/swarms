@@ -70,51 +70,51 @@ The `create_agents_from_yaml` function works by reading agent configurations fro
 ```yaml
 agents:
   - agent_name: "Financial-Analysis-Agent"
-    model:
-      openai_api_key: "your_openai_api_key"
-      model_name: "gpt-4o-mini"
-      temperature: 0.1
-      max_tokens: 2000
-    system_prompt: "financial_agent_sys_prompt"
+    system_prompt: "You are a financial analysis expert. Analyze market trends and provide investment recommendations."
+    model_name: "claude-3-opus-20240229"
     max_loops: 1
-    autosave: true
+    autosave: false
     dashboard: false
-    verbose: true
-    dynamic_temperature_enabled: true
-    saved_state_path: "finance_agent.json"
+    verbose: false
+    dynamic_temperature_enabled: false
     user_name: "swarms_corp"
     retry_attempts: 1
     context_length: 200000
     return_step_meta: false
     output_type: "str"
-    task: "How can I establish a ROTH IRA to buy stocks and get a tax break?"
+    task: "Analyze tech stocks for 2024 investment strategy. Provide detailed analysis and recommendations."
 
-  - agent_name: "Stock-Analysis-Agent"
-    model:
-      openai_api_key: "your_openai_api_key"
-      model_name: "gpt-4o-mini"
-      temperature: 0.2
-      max_tokens: 1500
-    system_prompt: "stock_agent_sys_prompt"
-    max_loops: 2
-    autosave: true
+  - agent_name: "Risk-Analysis-Agent"
+    system_prompt: "You are a risk analysis expert. Evaluate investment risks and provide mitigation strategies."
+    model_name: "claude-3-opus-20240229"
+    max_loops: 1
+    autosave: false
     dashboard: false
-    verbose: true
+    verbose: false
     dynamic_temperature_enabled: false
-    saved_state_path: "stock_agent.json"
-    user_name: "stock_user"
-    retry_attempts: 3
+    user_name: "swarms_corp"
+    retry_attempts: 1
     context_length: 150000
-    return_step_meta: true
-    output_type: "json"
-    task: "What is the best strategy for long-term stock investment?"
+    return_step_meta: false
+    output_type: "str"
+    task: "Conduct a comprehensive risk analysis of the top 5 tech companies in 2024. Include risk factors and mitigation strategies."
+
+swarm_architecture:
+  name: "Financial Analysis Swarm"
+  description: "A swarm for comprehensive financial and risk analysis"
+  max_loops: 1
+  swarm_type: "SequentialWorkflow"
+  task: "Analyze tech stocks and their associated risks for 2024 investment strategy"
+  autosave: false
+  return_json: true
 ```
 
 ### Key Configuration Fields:
 - **agent_name**: Name of the agent.
-- **model**: Defines the language model settings (e.g., API key, model name, temperature, and max tokens).
 - **system_prompt**: The system prompt used to guide the agent's behavior.
-- **task**: (Optional) Task for the agent to execute once created.
+- **model_name**: The language model to use (e.g., claude-3-opus-20240229).
+- **task**: Task for the agent to execute.
+- **swarm_architecture**: (Optional) Configuration for swarm behavior.
 
 ---
 
@@ -122,49 +122,23 @@ agents:
 
 Now, create the main Python script that will use the `create_agents_from_yaml` function.
 
-### `main.py`:
+### `example.py`:
 ```python
-import os
+from swarms.agents.create_agents_from_yaml import create_agents_from_yaml
 
-from dotenv import load_dotenv
-from loguru import logger
-from swarm_models import OpenAIChat
-
-from swarms.agents.create_agents_from_yaml import (
-    create_agents_from_yaml,
+# Create agents and get task results
+task_results = create_agents_from_yaml(
+    yaml_file="agents_config.yaml",
+    return_type="run_swarm"
 )
 
-# Load environment variables
-load_dotenv()
-
-# Path to your YAML file
-yaml_file = "agents.yaml"
-
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Create an instance of the OpenAIChat class
-model = OpenAIChat(
-    openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
-)
-
-
-try:
-    # Create agents and run tasks (using 'both' to return agents and task results)
-    task_results = create_agents_from_yaml(
-        model=model, yaml_file=yaml_file, return_type="tasks"
-    )
-
-    logger.info(f"Results from agents: {task_results}")
-except Exception as e:
-    logger.error(f"An error occurred: {e}")
-
+print(task_results)
 ```
 
 ### Example Run:
 
 ```bash
-python main.py
+python example.py
 ```
 
 This will:
