@@ -234,24 +234,14 @@ pip3 install -U swarms
 Then, you can initialize and use the agent as follows:
 
 ```python
-import os
-from swarms import Agent
-from swarm_models import OpenAIChat
+from swarms.structs.agent import Agent
 from swarms.prompts.finance_agent_sys_prompt import FINANCIAL_AGENT_SYS_PROMPT
 
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Create an instance of the OpenAIChat class
-model = OpenAIChat(
-    api_key=api_key, model_name="gpt-4-0613", temperature=0.1
-)
-
-# Initialize the agent
+# Initialize the Financial Analysis Agent with GPT-4o-mini model
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-    llm=model,
+    model_name="gpt-4o-mini",
     max_loops=1,
     autosave=True,
     dashboard=False,
@@ -270,6 +260,7 @@ response = agent.run(
     "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria?"
 )
 print(response)
+
 ```
 
 ## Advanced Usage
