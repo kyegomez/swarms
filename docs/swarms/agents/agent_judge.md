@@ -205,11 +205,10 @@ results = judge.run(tasks)
    2. Optimize batch size
    3. Consider model selection
 
-## Additional Resources
 
 ## References
 
-## "Agent-as-a-Judge: Evaluate Agents with Agents" - [Paper Link](https://arxiv.org/abs/2410.10934)
+### "Agent-as-a-Judge: Evaluate Agents with Agents" - [Paper Link](https://arxiv.org/abs/2410.10934)
 
 ```bibtex
 @misc{zhuge2024agentasajudgeevaluateagentsagents,
