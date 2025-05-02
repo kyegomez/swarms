@@ -209,7 +209,7 @@ results = judge.run(tasks)
 
 ## References
 
-1. "Agent-as-a-Judge: Evaluate Agents with Agents" - [Paper Link](https://arxiv.org/abs/2410.10934)
+## "Agent-as-a-Judge: Evaluate Agents with Agents" - [Paper Link](https://arxiv.org/abs/2410.10934)
 
 ```bibtex
 @misc{zhuge2024agentasajudgeevaluateagentsagents,
@@ -221,3 +221,4 @@ results = judge.run(tasks)
    primaryClass={cs.AI},
    url={https://arxiv.org/abs/2410.10934}, 
 }
+```
