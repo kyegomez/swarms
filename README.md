@@ -37,7 +37,7 @@
     <a href="https://www.linkedin.com/in/kye-g-38759a207/">
         <img src="https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn">
     </a>
-    <a href="https://x.com/kyegomezb">
+    <a href="https://x.com/swarms_corp">
         <img src="https://img.shields.io/badge/X.com-Follow-1DA1F2?style=for-the-badge&logo=x&logoColor=white" alt="X.com">
     </a>
 </p>
