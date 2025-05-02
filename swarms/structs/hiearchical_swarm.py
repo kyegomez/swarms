@@ -1,4 +1,3 @@
-from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 from typing import Any, List, Optional, Union, Dict
@@ -9,10 +8,15 @@ from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.conversation import Conversation
 from swarms.structs.output_types import OutputType
+from swarms.utils.any_to_str import any_to_str
 from swarms.utils.formatter import formatter
 
 from swarms.utils.function_caller_model import OpenAIFunctionCaller
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.history_output_formatter import (
+    history_output_formatter,
+)
+from swarms.structs.ma_utils import list_all_agents
 
 logger = initialize_logger(log_folder="hierarchical_swarm")
 
@@ -48,9 +52,6 @@ class SwarmSpec(BaseModel):
 
 
 HIEARCHICAL_SWARM_SYSTEM_PROMPT = """
-Below is a comprehensive production-grade hierarchical agent director prompt that is designed to break down orders, distribute tasks, and select the best worker agents to achieve the overall objectives. This prompt follows the schematic provided by the HierarchicalOrder and SwarmSpec classes and is composed of nearly 2,000 words. You can use this as your system prompt for the director agent in a multi-agent swarm system.
-
----
 
 **SYSTEM PROMPT: HIERARCHICAL AGENT DIRECTOR**
 
@@ -211,6 +212,27 @@ Remember: the success of the swarm depends on your ability to manage complexity,
 """
 
 
+class TeamUnit(BaseModel):
+    """Represents a team within a department."""
+
+    name: Optional[str] = Field(
+        None, description="The name of the team."
+    )
+    description: Optional[str] = Field(
+        None, description="A brief description of the team's purpose."
+    )
+    agents: Optional[List[Union[Agent, Any]]] = Field(
+        None,
+        description="A list of agents that are part of the team.",
+    )
+    team_leader: Optional[Union[Agent, Any]] = Field(
+        None, description="The team leader of the team."
+    )
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
 class HierarchicalSwarm(BaseSwarm):
     """
     _Representer a hierarchical swarm of agents, with a director that orchestrates tasks among the agents.
@@ -230,8 +252,9 @@ class HierarchicalSwarm(BaseSwarm):
         agents: List[Union[Agent, Any]] = None,
         max_loops: int = 1,
         output_type: OutputType = "dict",
-        return_all_history: bool = False,
         director_model_name: str = "gpt-4o",
+        teams: Optional[List[TeamUnit]] = None,
+        inter_agent_loops: int = 1,
         *args,
         **kwargs,
     ):
@@ -244,7 +267,6 @@ class HierarchicalSwarm(BaseSwarm):
         :param agents: A list of agents within the swarm.
         :param max_loops: The maximum number of feedback loops between the director and agents.
         :param output_type: The format in which to return the output (dict, str, or list).
-        :param return_all_history: A flag indicating whether to return all conversation history.
         """
         super().__init__(
             name=name,
@@ -254,17 +276,45 @@ class HierarchicalSwarm(BaseSwarm):
         self.director = director
         self.agents = agents
         self.max_loops = max_loops
-        self.return_all_history = return_all_history
         self.output_type = output_type
         self.director_model_name = director_model_name
+        self.teams = teams
+        self.inter_agent_loops = inter_agent_loops
+
         self.conversation = Conversation(time_enabled=False)
         self.current_loop = 0
         self.agent_outputs = {}  # Store agent outputs for each loop
 
         self.add_name_and_description()
-        self.check_agents()
-        self.list_all_agents()
+
+        # Reliability checks
+        self.reliability_checks()
+
+        # Handle teams
+        self.handle_teams()
+
+        # List all agents
+        list_all_agents(self.agents, self.conversation, self.name)
+
         self.director = self.setup_director()
+
+    def handle_teams(self):
+        if not self.teams:
+            return
+
+        # Use list comprehension for faster team processing
+        team_list = [team.model_dump() for team in self.teams]
+
+        # Use extend() instead of append() in a loop for better performance
+        self.agents.extend(
+            agent for team in team_list for agent in team["agents"]
+        )
+
+        # Add conversation message
+        self.conversation.add(
+            role="System",
+            content=f"Teams Available: {any_to_str(team_list)}",
+        )
 
     def setup_director(self):
         director = OpenAIFunctionCaller(
@@ -278,12 +328,15 @@ class HierarchicalSwarm(BaseSwarm):
 
         return director
 
-    def check_agents(self):
+    def reliability_checks(self):
         """
         Checks if there are any agents and a director set for the swarm.
         Raises ValueError if either condition is not met.
         """
-        if not self.agents:
+
+        logger.info(f"🔍 CHECKING RELIABILITY OF SWARM: {self.name}")
+
+        if len(self.agents) == 0:
             raise ValueError(
                 "No agents found in the swarm. At least one agent must be provided to create a hierarchical swarm."
             )
@@ -301,9 +354,7 @@ class HierarchicalSwarm(BaseSwarm):
                 "Director not set for the swarm. A director agent is required to coordinate and orchestrate tasks among the agents."
             )
 
-        logger.info(
-            "Reliability checks have passed. Swarm is ready to execute."
-        )
+        logger.info(f"🔍 RELIABILITY CHECKS PASSED: {self.name}")
 
     def run_director(
         self, task: str, loop_context: str = "", img: str = None
@@ -326,12 +377,6 @@ class HierarchicalSwarm(BaseSwarm):
 
         # Run the director with the context
         function_call = self.director.run(task=director_context)
-
-        print(function_call)
-
-        # function_call = self.check_director_agent_output(
-        #     function_call
-        # )
 
         formatter.print_panel(
             f"Director Output (Loop {self.current_loop}/{self.max_loops}):\n{function_call}",
@@ -374,10 +419,6 @@ class HierarchicalSwarm(BaseSwarm):
             logger.info(
                 f"Starting loop {self.current_loop}/{self.max_loops}"
             )
-            formatter.print_panel(
-                f"⚡ EXECUTING LOOP {self.current_loop}/{self.max_loops}",
-                title="SWARM EXECUTION CYCLE",
-            )
 
             # Get director's orders
             swarm_spec = self.run_director(
@@ -416,7 +457,9 @@ class HierarchicalSwarm(BaseSwarm):
                 break
 
         # Return the results in the specified format
-        return self.format_output()
+        return history_output_formatter(
+            self.conversation, self.output_type
+        )
 
     def compile_loop_context(self, loop_number: int) -> str:
         """
@@ -437,62 +480,14 @@ class HierarchicalSwarm(BaseSwarm):
 
         return context
 
-    def format_output(self) -> Union[str, Dict, List]:
-        """
-        Formats the output according to the specified output_type.
-
-        :return: The formatted output.
-        """
-        if self.output_type == "str" or self.return_all_history:
-            return self.conversation.get_str()
-        elif self.output_type == "dict":
-            return self.conversation.return_messages_as_dictionary()
-        elif self.output_type == "list":
-            return self.conversation.return_messages_as_list()
-        else:
-            return self.conversation.get_str()
-
     def add_name_and_description(self):
         """
         Adds the swarm's name and description to the conversation.
         """
         self.conversation.add(
             role="System",
-            content=f"Swarm Name: {self.name}\nSwarm Description: {self.description}",
+            content=f"\n\nSwarm Name: {self.name}\n\nSwarm Description: {self.description}",
         )
-
-        formatter.print_panel(
-            f"⚡ INITIALIZING HIERARCHICAL SWARM UNIT: {self.name}\n"
-            f"🔒 CLASSIFIED DIRECTIVE: {self.description}\n"
-            f"📡 STATUS: ACTIVATING SWARM PROTOCOLS\n"
-            f"🌐 ESTABLISHING SECURE AGENT MESH NETWORK\n"
-            f"⚠️ CYBERSECURITY MEASURES ENGAGED\n",
-            title="SWARM CORPORATION - HIERARCHICAL SWARMS ACTIVATING...",
-        )
-
-    def list_all_agents(self) -> str:
-        """
-        Lists all agents available in the swarm.
-
-        :return: A string representation of all agents in the swarm.
-        """
-        # Compile information about all agents
-        all_agents = "\n".join(
-            f"Agent: {agent.agent_name} || Description: {agent.description or agent.system_prompt}"
-            for agent in self.agents
-        )
-
-        # Add the agent information to the conversation
-        self.conversation.add(
-            role="System",
-            content=f"All Agents Available in the Swarm {self.name}:\n{all_agents}",
-        )
-
-        formatter.print_panel(
-            all_agents, title="All Agents Available in the Swarm"
-        )
-
-        return all_agents
 
     def find_agent(self, name: str) -> Optional[Agent]:
         """
@@ -500,11 +495,26 @@ class HierarchicalSwarm(BaseSwarm):
 
         :param name: The name of the agent to find.
         :return: The agent if found, otherwise None.
+        :raises: ValueError if agent is not found
         """
-        for agent in self.agents:
-            if agent.agent_name == name:
-                return agent
-        return None
+        try:
+            # Fast path: use list comprehension for quick lookup
+            matching_agents = [
+                agent
+                for agent in self.agents
+                if agent.agent_name == name
+            ]
+
+            if not matching_agents:
+                error_msg = f"Agent '{name}' not found in the swarm '{self.name}'"
+                logger.error(error_msg)
+                return None
+
+            return matching_agents[0]
+
+        except Exception as e:
+            logger.error(f"Error finding agent '{name}': {str(e)}")
+            return None
 
     def run_agent(
         self, agent_name: str, task: str, img: str = None
@@ -520,14 +530,6 @@ class HierarchicalSwarm(BaseSwarm):
         try:
             agent = self.find_agent(agent_name)
 
-            if not agent:
-                error_msg = f"Agent '{agent_name}' not found in the swarm '{self.name}'"
-                logger.error(error_msg)
-                self.conversation.add(
-                    role="System", content=f"Error: {error_msg}"
-                )
-                return error_msg
-
             # Prepare context for the agent
             agent_context = (
                 f"Loop: {self.current_loop}/{self.max_loops}\n"
@@ -541,7 +543,7 @@ class HierarchicalSwarm(BaseSwarm):
                 title=f"Agent Task - Loop {self.current_loop}/{self.max_loops}",
             )
 
-            out = agent.run(task=agent_context, img=img)
+            out = agent.run(task=agent_context)
 
             # Add the agent's output to the conversation
             self.conversation.add(
@@ -560,9 +562,6 @@ class HierarchicalSwarm(BaseSwarm):
                 f"Error running agent '{agent_name}': {str(e)}"
             )
             logger.error(error_msg)
-            self.conversation.add(
-                role="System", content=f"Error: {error_msg}"
-            )
             return error_msg
 
     def parse_orders(self, swarm_spec: SwarmSpec) -> List[Any]:
@@ -590,9 +589,6 @@ class HierarchicalSwarm(BaseSwarm):
                 f"Error parsing and executing orders: {str(e)}"
             )
             logger.error(error_msg)
-            self.conversation.add(
-                role="System", content=f"Error: {error_msg}"
-            )
             return [error_msg]
 
     def parse_swarm_spec(
@@ -668,19 +664,14 @@ class HierarchicalSwarm(BaseSwarm):
         :param swarm_spec: The SwarmSpec containing the goals, plan, and rules.
         """
         try:
-            goals = swarm_spec.goals
-            plan = swarm_spec.plan
-            rules = swarm_spec.rules
-
+            # Directly access and format attributes in one line
             self.conversation.add(
                 role="Director",
-                content=f"Goals: {goals}\nPlan: {plan}\nRules: {rules}",
+                content=f"Goals:\n{swarm_spec.goals}\n\nPlan:\n{swarm_spec.plan}\n\nRules:\n{swarm_spec.rules}",
             )
         except Exception as e:
-            error_msg = f"Error adding goals and plan to conversation: {str(e)}"
-            logger.error(error_msg)
-            self.conversation.add(
-                role="System", content=f"Error: {error_msg}"
+            logger.error(
+                f"Error adding goals and plan to conversation: {str(e)}"
             )
 
     def batch_run(
@@ -714,23 +705,3 @@ class HierarchicalSwarm(BaseSwarm):
                 "Output is neither a dictionary nor a string."
             )
             return {}
-
-    def concurrent_run(
-        self, tasks: List[str], img: str = None
-    ) -> List[Union[str, Dict, List]]:
-        """
-        Runs multiple tasks concurrently through the swarm.
-
-        :param tasks: The list of tasks to be executed.
-        :param img: Optional image to be used with the tasks.
-        :return: A list of outputs from each task execution.
-        """
-        with ThreadPoolExecutor(max_workers=len(tasks)) as executor:
-            # Create a list of partial functions with the img parameter
-            task_functions = [(task, img) for task in tasks]
-            # Use starmap to unpack the arguments
-            return list(
-                executor.map(
-                    lambda args: self.run(*args), task_functions
-                )
-            )

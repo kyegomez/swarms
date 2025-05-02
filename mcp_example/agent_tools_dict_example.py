@@ -1,15 +1,4 @@
-from dotenv import load_dotenv
-
 from swarms import Agent
-from swarms.tools.mcp_integration import MCPServerSseParams
-
-load_dotenv()
-
-
-server = MCPServerSseParams(
-    url="http://localhost:8000/sse",
-    timeout=10,
-)
 
 tools = [
     {

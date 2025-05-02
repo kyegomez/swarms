@@ -337,7 +337,7 @@ class Agent:
         # [Tools]
         custom_tools_prompt: Optional[Callable] = None,
         tool_schema: ToolUsageType = None,
-        output_type: HistoryOutputType = "str",
+        output_type: HistoryOutputType = "str-all-except-first",
         function_calling_type: str = "json",
         output_cleaner: Optional[Callable] = None,
         function_calling_format_type: Optional[str] = "OpenAI",
@@ -541,7 +541,7 @@ class Agent:
             self.agent_name is not None
             or self.agent_description is not None
         ):
-            prompt = f"Your Name: {self.agent_name} \n\n Your Description: {self.agent_description} \n\n {self.system_prompt}"
+            prompt = f"\n Your Name: {self.agent_name} \n\n Your Description: {self.agent_description} \n\n {self.system_prompt}"
         else:
             prompt = self.system_prompt
 
@@ -776,16 +776,15 @@ class Agent:
         try:
             if isinstance(response, dict):
                 result = response
+                print(type(result))
             else:
                 result = str_to_dict(response)
+                print(type(result))
 
             output = execute_mcp_tool(
                 url=self.mcp_url,
                 parameters=result,
             )
-
-            print(output)
-            print(type(output))
 
             self.short_memory.add(
                 role="Tool Executor", content=str(output)
@@ -833,12 +832,12 @@ class Agent:
             Exception: If there's an error in tool handling
         """
         try:
-            if self.mcp_url is not None:
-                self._single_mcp_tool_handling(response)
-            elif self.mcp_url is None and len(self.mcp_servers) > 1:
-                self._multiple_mcp_tool_handling(response)
-            else:
-                raise ValueError("No MCP URL or MCP Servers provided")
+            # if self.mcp_url is not None:
+            self._single_mcp_tool_handling(response)
+            # elif self.mcp_url is None and len(self.mcp_servers) > 1:
+            #     self._multiple_mcp_tool_handling(response)
+            # else:
+            #     raise ValueError("No MCP URL or MCP Servers provided")
         except Exception as e:
             logger.error(f"Error in mcp_tool_handling: {e}")
             raise e
@@ -1156,6 +1155,15 @@ class Agent:
                         ) as executor:
                             executor.map(lambda f: f(), update_tasks)
 
+                        ####### MCP TOOL HANDLING #######
+                        if (
+                            self.mcp_servers
+                            and self.tools_list_dictionary is not None
+                        ):
+                            self.mcp_tool_handling(response)
+
+                        ####### MCP TOOL HANDLING #######
+
                         # Check and execute tools
                         if self.tools is not None:
                             out = self.parse_and_execute_tools(
@@ -1185,12 +1193,6 @@ class Agent:
                             self.short_memory.add(
                                 role=self.agent_name, content=out
                             )
-
-                        if (
-                            self.mcp_servers
-                            and self.tools_list_dictionary is not None
-                        ):
-                            self.mcp_tool_handling(response)
 
                         self.sentiment_and_evaluator(response)
 
@@ -2561,12 +2563,7 @@ class Agent:
         self,
         task: Optional[Union[str, Any]] = None,
         img: Optional[str] = None,
-        device: Optional[str] = "cpu",  # gpu
-        device_id: Optional[int] = 0,
-        all_cores: Optional[bool] = True,
         scheduled_run_date: Optional[datetime] = None,
-        do_not_use_cluster_ops: Optional[bool] = True,
-        all_gpus: Optional[bool] = False,
         *args,
         **kwargs,
     ) -> Any:
@@ -2606,7 +2603,6 @@ class Agent:
                 )  # Sleep for a short period to avoid busy waiting
 
         try:
-            # If cluster ops disabled, run directly
             output = self._run(
                 task=task,
                 img=img,
@@ -2615,11 +2611,6 @@ class Agent:
             )
 
             return output
-
-            # if self.tools_list_dictionary is not None:
-            #     return str_to_dict(output)
-            # else:
-            #     return output
 
         except ValueError as e:
             self._handle_run_error(e)

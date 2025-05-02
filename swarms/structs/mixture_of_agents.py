@@ -1,58 +1,19 @@
 import asyncio
 import os
-import time
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
-from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
-from swarms.telemetry.main import log_agent_data
-from swarms.schemas.agent_step_schemas import ManySteps
-from swarms.prompts.ag_prompt import aggregator_system_prompt
+from swarms.prompts.ag_prompt import aggregator_system_prompt_main
 from swarms.utils.loguru_logger import initialize_logger
 import concurrent.futures
 from swarms.structs.output_types import OutputType
 from swarms.structs.conversation import Conversation
+from swarms.utils.history_output_formatter import (
+    history_output_formatter,
+)
 
 logger = initialize_logger(log_folder="mixture_of_agents")
-
-time_stamp = time.strftime("%Y-%m-%d %H:%M:%S")
-
-
-class MixtureOfAgentsInput(BaseModel):
-    name: str = "MixtureOfAgents"
-    description: str = (
-        "A class to run a mixture of agents and aggregate their responses."
-    )
-    agents: List[Dict[str, Any]]
-    aggregator_agent: Any = Field(
-        ...,
-        description="An aggregator agent to be used in the mixture.",
-    )
-    aggregator_system_prompt: str = Field(
-        default=aggregator_system_prompt.get_prompt(),
-        description=aggregator_system_prompt.description,
-    )
-    layers: int = 3
-    time_created: str = Field(
-        time_stamp,
-        description="The time the mixture of agents was created.",
-    )
-
-
-class MixtureOfAgentsOutput(BaseModel):
-    id: str = Field(
-        ..., description="The ID of the mixture of agents."
-    )
-    task: str = Field(..., description="None")
-    InputConfig: MixtureOfAgentsInput
-    # output: List[ManySteps]
-    normal_agent_outputs: List[ManySteps]
-    aggregator_agent_summary: str
-    time_completed: str = Field(
-        time_stamp,
-        description="The time the mixture of agents was completed.",
-    )
 
 
 class MixtureOfAgents:
@@ -66,7 +27,7 @@ class MixtureOfAgents:
         description: str = "A class to run a mixture of agents and aggregate their responses.",
         agents: List[Agent] = [],
         aggregator_agent: Agent = None,
-        aggregator_system_prompt: str = "",
+        aggregator_system_prompt: str = aggregator_system_prompt_main,
         layers: int = 3,
         max_loops: int = 1,
         return_str_on: bool = False,
@@ -85,31 +46,13 @@ class MixtureOfAgents:
         """
         self.name = name
         self.description = description
-        self.agents: List[Agent] = agents
-        self.aggregator_agent: Agent = aggregator_agent
-        self.aggregator_system_prompt: str = aggregator_system_prompt
-        self.layers: int = layers
-        self.max_loops: int = max_loops
-        self.return_str_on: bool = return_str_on
-        self.output_type: OutputType = output_type
-
-        self.input_schema = MixtureOfAgentsInput(
-            name=name,
-            description=description,
-            agents=[agent.to_dict() for agent in self.agents],
-            aggregator_agent=aggregator_agent.to_dict(),
-            aggregator_system_prompt=self.aggregator_system_prompt,
-            layers=self.layers,
-            time_created=time_stamp,
-        )
-
-        self.output_schema = MixtureOfAgentsOutput(
-            id="MixtureOfAgents",
-            InputConfig=self.input_schema.model_dump(),
-            normal_agent_outputs=[],
-            aggregator_agent_summary="",
-            task="",
-        )
+        self.agents = agents
+        self.aggregator_agent = aggregator_agent
+        self.aggregator_system_prompt = aggregator_system_prompt_main
+        self.layers = layers
+        self.max_loops = max_loops
+        self.return_str_on = return_str_on
+        self.output_type = output_type
 
         self.reliability_check()
 
@@ -182,9 +125,6 @@ class MixtureOfAgents:
         Returns:
             str: The response from the agent.
         """
-        # Update the task in the output schema
-        self.output_schema.task = task
-
         # If there are previous responses, update the agent's system prompt
         if prev_responses:
             system_prompt_with_responses = (
@@ -197,9 +137,7 @@ class MixtureOfAgents:
         # Run the agent asynchronously
         response = await asyncio.to_thread(agent.run, task)
 
-        self.output_schema.normal_agent_outputs.append(
-            agent.agent_output
-        )
+        self.conversation.add(agent.agent_name, response)
 
         # Log the agent's response
         print(f"Agent {agent.agent_name} response: {response}")
@@ -235,7 +173,6 @@ class MixtureOfAgents:
         final_result = await self._run_agent_async(
             self.aggregator_agent, task, prev_responses=results
         )
-        self.output_schema.aggregator_agent_summary = final_result
 
         print(f"Final Aggregated Response: {final_result}")
 
@@ -248,38 +185,18 @@ class MixtureOfAgents:
         """
         try:
             self.conversation.add("user", task)
-            prev_context = None
 
             for _ in range(self.max_loops):
                 # Add previous context to task if available
-                current_task = (
-                    f"{task}\n\nPrevious context:\n{prev_context}"
-                    if prev_context
-                    else task
-                )
+                prompt = f"History: {self.conversation.get_str()}\n\nTask: {task}"
 
                 # Run async process
-                asyncio.run(self._run_async(current_task))
+                asyncio.run(self._run_async(prompt))
 
-                # Store current results as context for next loop
-                prev_context = (
-                    self.output_schema.aggregator_agent_summary
-                )
-
-            self.output_schema.task = task
-
-            log_agent_data(self.output_schema.model_dump())
-
-            if self.return_str_on or self.output_type == "str":
-                return self.conversation.get_str()
-            elif self.output_type == "dict":
-                return (
-                    self.conversation.return_messages_as_dictionary()
-                )
-            elif self.output_type == "list":
-                return self.conversation.return_messages_as_list()
-            else:
-                return self.output_schema.model_dump_json(indent=4)
+            return history_output_formatter(
+                conversation=self.conversation,
+                type=self.output_type,
+            )
 
         except Exception as e:
             logger.error(f"Error running mixture of agents: {str(e)}")

@@ -1,19 +1,6 @@
-from typing import Literal
-
-# Literal of output types
-OutputType = Literal[
-    "all",
-    "final",
-    "list",
-    "dict",
-    ".json",
-    ".md",
-    ".txt",
-    ".yaml",
-    ".toml",
-    "string",
-    "str",
-]
+from swarms.utils.history_output_formatter import (
+    HistoryOutputType as OutputType,
+)
 
 # Use the OutputType for type annotations
 output_type: OutputType

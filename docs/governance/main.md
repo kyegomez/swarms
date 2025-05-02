@@ -16,8 +16,8 @@ Welcome to the Swarms ecosystem. Click any tile below to explore our products, c
   display: block;
   padding: 1.2rem;
   border-radius: 12px;
-  background: #1e1e2f;
-  color: white;
+  background: #000000;
+  color: #ff0000;
   text-decoration: none;
   text-align: center;
   font-weight: 600;
@@ -27,7 +27,7 @@ Welcome to the Swarms ecosystem. Click any tile below to explore our products, c
 
 .resource-card:hover {
   transform: translateY(-4px);
-  background: #2a2a3d;
+  background: #1a0000;
 }
 </style>
 

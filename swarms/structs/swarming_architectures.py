@@ -1,65 +1,41 @@
 import math
-from typing import List, Union
+from typing import List, Union, Dict, Any
 
-from pydantic import BaseModel
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentListType
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.structs.conversation import Conversation
+from swarms.utils.history_output_formatter import (
+    history_output_formatter,
+)
+from swarms.structs.output_types import OutputType
 
 logger = initialize_logger(log_folder="swarming_architectures")
-
-
-# Define Pydantic schema for logging agent responses
-class AgentLog(BaseModel):
-    agent_name: str
-    task: str
-    response: str
-
-
-class Conversation(BaseModel):
-    logs: List[AgentLog] = []
-
-    def add_log(
-        self, agent_name: str, task: str, response: str
-    ) -> None:
-        log_entry = AgentLog(
-            agent_name=agent_name, task=task, response=response
-        )
-        self.logs.append(log_entry)
-        logger.info(
-            f"Agent: {agent_name} | Task: {task} | Response: {response}"
-        )
-
-    def return_history(self) -> dict:
-        return {
-            "history": [
-                {
-                    "agent_name": log.agent_name,
-                    "task": log.task,
-                    "response": log.response,
-                }
-                for log in self.logs
-            ]
-        }
 
 
 def circular_swarm(
     agents: AgentListType,
     tasks: List[str],
-    return_full_history: bool = True,
-) -> Union[dict, List[str]]:
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
     """
     Implements a circular swarm where agents pass tasks in a circular manner.
 
     Args:
-    - agents (AgentListType): A list of Agent objects to participate in the swarm.
-    - tasks (List[str]): A list of tasks to be processed by the agents.
-    - return_full_history (bool, optional): If True, returns the full conversation history. Defaults to True.
+        agents (AgentListType): A list of Agent objects to participate in the swarm.
+        tasks (List[str]): A list of tasks to be processed by the agents.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
 
     Returns:
-    - Union[dict, List[str]]: If return_full_history is True, returns a dictionary containing the conversation history. Otherwise, returns a list of responses.
+        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+
+    Raises:
+        ValueError: If agents or tasks lists are empty.
     """
+
     # Ensure agents is a flat list of Agent objects
     flat_agents = (
         [agent for sublist in agents for agent in sublist]
@@ -71,25 +47,50 @@ def circular_swarm(
         raise ValueError("Agents and tasks lists cannot be empty.")
 
     conversation = Conversation()
-    responses = []
 
     for task in tasks:
         for agent in flat_agents:
-            response = agent.run(task)
-            conversation.add_log(
-                agent_name=agent.agent_name,
-                task=task,
-                response=response,
+            conversation.add(
+                role="User",
+                message=task,
             )
-            responses.append(response)
+            response = agent.run(conversation.get_str())
+            conversation.add(
+                role=agent.agent_name,
+                message=response,
+            )
 
-    if return_full_history:
-        return conversation.return_history()
-    else:
-        return responses
+    return history_output_formatter(conversation, output_type)
 
 
-def grid_swarm(agents: AgentListType, tasks: List[str]):
+def grid_swarm(
+    agents: AgentListType,
+    tasks: List[str],
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements a grid swarm where agents are arranged in a square grid pattern.
+
+    Args:
+        agents (AgentListType): A list of Agent objects to participate in the swarm.
+        tasks (List[str]): A list of tasks to be processed by the agents.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+
+    Raises:
+        ValueError: If agents or tasks lists are empty.
+    """
+    conversation = Conversation()
+
+    conversation.add(
+        role="User",
+        message=tasks,
+    )
+
     grid_size = int(
         len(agents) ** 0.5
     )  # Assuming agents can form a perfect square grid
@@ -97,122 +98,180 @@ def grid_swarm(agents: AgentListType, tasks: List[str]):
         for j in range(grid_size):
             if tasks:
                 task = tasks.pop(0)
-                agents[i * grid_size + j].run(task)
+                response = agents[i * grid_size + j].run(task)
+                conversation.add(
+                    role=agents[i * grid_size + j].agent_name,
+                    message=response,
+                )
+
+    return history_output_formatter(conversation, output_type)
 
 
 # Linear Swarm: Agents process tasks in a sequential linear manner
 def linear_swarm(
     agents: AgentListType,
     tasks: List[str],
-    return_full_history: bool = True,
-) -> Union[str, List[str]]:
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements a linear swarm where agents process tasks in a sequential manner.
+
+    Args:
+        agents (AgentListType): A list of Agent objects to participate in the swarm.
+        tasks (List[str]): A list of tasks to be processed by the agents.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+
+    Raises:
+        ValueError: If agents or tasks lists are empty.
+    """
     if not agents or not tasks:
         raise ValueError("Agents and tasks lists cannot be empty.")
 
     conversation = Conversation()
-    responses = []
 
     for agent in agents:
         if tasks:
             task = tasks.pop(0)
-            response = agent.run(task)
-            conversation.add_log(
-                agent_name=agent.agent_name,
-                task=task,
-                response=response,
+            conversation.add(
+                role="User",
+                message=task,
             )
-            responses.append(response)
+            response = agent.run(conversation.get_str())
+            conversation.add(
+                role=agent.agent_name,
+                message=response,
+            )
 
-    return (
-        conversation.return_history()
-        if return_full_history
-        else responses
-    )
+    return history_output_formatter(conversation, output_type)
 
 
 # Star Swarm: A central agent first processes all tasks, followed by others
 def star_swarm(
     agents: AgentListType,
     tasks: List[str],
-    return_full_history: bool = True,
-) -> Union[str, List[str]]:
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements a star swarm where a central agent processes tasks first, followed by others.
+
+    Args:
+        agents (AgentListType): A list of Agent objects to participate in the swarm.
+        tasks (List[str]): A list of tasks to be processed by the agents.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+
+    Raises:
+        ValueError: If agents or tasks lists are empty.
+    """
     if not agents or not tasks:
         raise ValueError("Agents and tasks lists cannot be empty.")
 
     conversation = Conversation()
     center_agent = agents[0]  # The central agent
-    responses = []
 
     for task in tasks:
         # Central agent processes the task
-        center_response = center_agent.run(task)
-        conversation.add_log(
-            agent_name=center_agent.agent_name,
-            task=task,
-            response=center_response,
+        conversation.add(
+            role="User",
+            message=task,
         )
-        responses.append(center_response)
+        center_response = center_agent.run(conversation.get_str())
+        conversation.add(
+            role=center_agent.agent_name,
+            message=center_response,
+        )
 
         # Other agents process the same task
         for agent in agents[1:]:
             response = agent.run(task)
-            conversation.add_log(
-                agent_name=agent.agent_name,
-                task=task,
-                response=response,
+            conversation.add(
+                role=agent.agent_name,
+                message=response,
             )
-            responses.append(response)
 
-    return (
-        conversation.return_history()
-        if return_full_history
-        else responses
-    )
+    return history_output_formatter(conversation, output_type)
 
 
 # Mesh Swarm: Agents work on tasks randomly from a task queue until all tasks are processed
 def mesh_swarm(
     agents: AgentListType,
     tasks: List[str],
-    return_full_history: bool = True,
-) -> Union[str, List[str]]:
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements a mesh swarm where agents work on tasks randomly from a task queue.
+
+    Args:
+        agents (AgentListType): A list of Agent objects to participate in the swarm.
+        tasks (List[str]): A list of tasks to be processed by the agents.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+
+    Raises:
+        ValueError: If agents or tasks lists are empty.
+    """
     if not agents or not tasks:
         raise ValueError("Agents and tasks lists cannot be empty.")
 
     conversation = Conversation()
+    conversation.add(
+        role="User",
+        message=tasks,
+    )
     task_queue = tasks.copy()
-    responses = []
 
     while task_queue:
         for agent in agents:
             if task_queue:
                 task = task_queue.pop(0)
                 response = agent.run(task)
-                conversation.add_log(
-                    agent_name=agent.agent_name,
-                    task=task,
-                    response=response,
+                conversation.add(
+                    role=agent.agent_name,
+                    message=response,
                 )
-                responses.append(response)
 
-    return (
-        conversation.return_history()
-        if return_full_history
-        else responses
-    )
+    return history_output_formatter(conversation, output_type)
 
 
 # Pyramid Swarm: Agents are arranged in a pyramid structure
 def pyramid_swarm(
     agents: AgentListType,
     tasks: List[str],
-    return_full_history: bool = True,
-) -> Union[str, List[str]]:
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements a pyramid swarm where agents are arranged in a pyramid structure.
+
+    Args:
+        agents (AgentListType): A list of Agent objects to participate in the swarm.
+        tasks (List[str]): A list of tasks to be processed by the agents.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+
+    Raises:
+        ValueError: If agents or tasks lists are empty.
+    """
     if not agents or not tasks:
         raise ValueError("Agents and tasks lists cannot be empty.")
 
     conversation = Conversation()
-    responses = []
 
     levels = int(
         (-1 + (1 + 8 * len(agents)) ** 0.5) / 2
@@ -224,21 +283,37 @@ def pyramid_swarm(
                 task = tasks.pop(0)
                 agent_index = int(i * (i + 1) / 2 + j)
                 response = agents[agent_index].run(task)
-                conversation.add_log(
-                    agent_name=agents[agent_index].agent_name,
-                    task=task,
-                    response=response,
+                conversation.add(
+                    role=agents[agent_index].agent_name,
+                    message=response,
                 )
-                responses.append(response)
 
-    return (
-        conversation.return_history()
-        if return_full_history
-        else responses
+    return history_output_formatter(conversation, output_type)
+
+
+def fibonacci_swarm(
+    agents: AgentListType,
+    tasks: List[str],
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements a fibonacci swarm where agents are selected based on the fibonacci sequence.
+
+    Args:
+        agents (AgentListType): A list of Agent objects to participate in the swarm.
+        tasks (List[str]): A list of tasks to be processed by the agents.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+    """
+    conversation = Conversation()
+    conversation.add(
+        role="User",
+        message=tasks,
     )
-
-
-def fibonacci_swarm(agents: AgentListType, tasks: List[str]):
     fib = [1, 1]
     while len(fib) < len(agents):
         fib.append(fib[-1] + fib[-2])
@@ -246,10 +321,38 @@ def fibonacci_swarm(agents: AgentListType, tasks: List[str]):
         for j in range(fib[i]):
             if tasks:
                 task = tasks.pop(0)
-                agents[int(sum(fib[:i]) + j)].run(task)
+                response = agents[int(sum(fib[:i]) + j)].run(task)
+                conversation.add(
+                    role=agents[int(sum(fib[:i]) + j)].agent_name,
+                    message=response,
+                )
+
+    return history_output_formatter(conversation, output_type)
 
 
-def prime_swarm(agents: AgentListType, tasks: List[str]):
+def prime_swarm(
+    agents: AgentListType,
+    tasks: List[str],
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements a prime swarm where agents are selected based on prime numbers.
+
+    Args:
+        agents (AgentListType): A list of Agent objects to participate in the swarm.
+        tasks (List[str]): A list of tasks to be processed by the agents.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+    """
+    conversation = Conversation()
+    conversation.add(
+        role="User",
+        message=tasks,
+    )
     primes = [
         2,
         3,
@@ -280,114 +383,358 @@ def prime_swarm(agents: AgentListType, tasks: List[str]):
     for prime in primes:
         if prime < len(agents) and tasks:
             task = tasks.pop(0)
-            agents[prime].run(task)
+            output = agents[prime].run(task)
+            conversation.add(
+                role=agents[prime].agent_name,
+                message=output,
+            )
+    return history_output_formatter(conversation, output_type)
 
 
-def power_swarm(agents: List[str], tasks: List[str]):
+def power_swarm(
+    agents: AgentListType,
+    tasks: List[str],
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements a power swarm where agents are selected based on powers of 2.
+
+    Args:
+        agents (AgentListType): A list of Agent objects to participate in the swarm.
+        tasks (List[str]): A list of tasks to be processed by the agents.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+    """
+    conversation = Conversation()
+    conversation.add(
+        role="User",
+        message=tasks,
+    )
     powers = [2**i for i in range(int(len(agents) ** 0.5))]
     for power in powers:
         if power < len(agents) and tasks:
             task = tasks.pop(0)
-            agents[power].run(task)
+            output = agents[power].run(task)
+            conversation.add(
+                role=agents[power].agent_name,
+                message=output,
+            )
+    return history_output_formatter(conversation, output_type)
 
 
-def log_swarm(agents: AgentListType, tasks: List[str]):
+def log_swarm(
+    agents: AgentListType,
+    tasks: List[str],
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements a logarithmic swarm where agents are selected based on logarithmic progression.
+
+    Args:
+        agents (AgentListType): A list of Agent objects to participate in the swarm.
+        tasks (List[str]): A list of tasks to be processed by the agents.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+    """
+    conversation = Conversation()
+    conversation.add(
+        role="User",
+        message=tasks,
+    )
     for i in range(len(agents)):
         if 2**i < len(agents) and tasks:
             task = tasks.pop(0)
-            agents[2**i].run(task)
+            output = agents[2**i].run(task)
+            conversation.add(
+                role=agents[2**i].agent_name,
+                message=output,
+            )
+    return history_output_formatter(conversation, output_type)
 
 
-def exponential_swarm(agents: AgentListType, tasks: List[str]):
+def exponential_swarm(
+    agents: AgentListType,
+    tasks: List[str],
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements an exponential swarm where agents are selected based on exponential progression.
+
+    Args:
+        agents (AgentListType): A list of Agent objects to participate in the swarm.
+        tasks (List[str]): A list of tasks to be processed by the agents.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+    """
+    conversation = Conversation()
+    conversation.add(
+        role="User",
+        message=tasks,
+    )
+
     for i in range(len(agents)):
         index = min(int(2**i), len(agents) - 1)
         if tasks:
             task = tasks.pop(0)
-            agents[index].run(task)
+        output = agents[index].run(task)
+
+        conversation.add(
+            role=agents[index].agent_name,
+            message=output,
+        )
+
+    return history_output_formatter(conversation, output_type)
 
 
-def geometric_swarm(agents, tasks):
+def geometric_swarm(
+    agents: AgentListType,
+    tasks: List[str],
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements a geometric swarm where agents are selected based on geometric progression.
+    Each agent processes tasks in a pattern that follows a geometric sequence.
+
+    Args:
+        agents (AgentListType): A list of Agent objects to participate in the swarm.
+        tasks (List[str]): A list of tasks to be processed by the agents.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+    """
     ratio = 2
-    for i in range(range(len(agents))):
+    conversation = Conversation()
+    conversation.add(
+        role="User",
+        message=tasks,
+    )
+
+    for i in range(len(agents)):
         index = min(int(ratio**2), len(agents) - 1)
         if tasks:
             task = tasks.pop(0)
-            agents[index].run(task)
+            response = agents[index].run(task)
+            conversation.add(
+                role=agents[index].agent_name,
+                message=response,
+            )
+
+    return history_output_formatter(conversation, output_type)
 
 
-def harmonic_swarm(agents: AgentListType, tasks: List[str]):
+def harmonic_swarm(
+    agents: AgentListType,
+    tasks: List[str],
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements a harmonic swarm where agents are selected based on harmonic progression.
+
+    Args:
+        agents (AgentListType): A list of Agent objects to participate in the swarm.
+        tasks (List[str]): A list of tasks to be processed by the agents.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+    """
+    conversation = Conversation()
+    conversation.add(
+        role="User",
+        message=tasks,
+    )
+
     for i in range(1, len(agents) + 1):
         index = min(int(len(agents) / i), len(agents) - 1)
         if tasks:
             task = tasks.pop(0)
-            agents[index].run(task)
+            response = agents[index].run(task)
+            conversation.add(
+                role=agents[index].agent_name,
+                message=response,
+            )
+
+    return history_output_formatter(conversation, output_type)
 
 
-def staircase_swarm(agents: AgentListType, task: str):
+def staircase_swarm(
+    agents: AgentListType,
+    tasks: List[str],
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements a staircase swarm where agents are selected in a step-like pattern.
+
+    Args:
+        agents (AgentListType): A list of Agent objects to participate in the swarm.
+        tasks (List[str]): A list of tasks to be processed by the agents.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+    """
+    conversation = Conversation()
+    conversation.add(
+        role="User",
+        message=tasks,
+    )
+
     step = len(agents) // 5
     for i in range(len(agents)):
         index = (i // step) * step
-        agents[index].run(task)
+        if tasks:
+            task = tasks.pop(0)
+            response = agents[index].run(task)
+            conversation.add(
+                role=agents[index].agent_name,
+                message=response,
+            )
+
+    return history_output_formatter(conversation, output_type)
 
 
-def sigmoid_swarm(agents: AgentListType, task: str):
+def sigmoid_swarm(
+    agents: AgentListType,
+    tasks: List[str],
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements a sigmoid swarm where agents are selected based on sigmoid function.
+
+    Args:
+        agents (AgentListType): A list of Agent objects to participate in the swarm.
+        tasks (List[str]): A list of tasks to be processed by the agents.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+    """
+    conversation = Conversation()
+    conversation.add(
+        role="User",
+        message=tasks,
+    )
+
     for i in range(len(agents)):
         index = int(len(agents) / (1 + math.exp(-i)))
-        agents[index].run(task)
+        if tasks:
+            task = tasks.pop(0)
+            response = agents[index].run(task)
+            conversation.add(
+                role=agents[index].agent_name,
+                message=response,
+            )
+
+    return history_output_formatter(conversation, output_type)
 
 
-def sinusoidal_swarm(agents: AgentListType, task: str):
+def sinusoidal_swarm(
+    agents: AgentListType,
+    tasks: List[str],
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements a sinusoidal swarm where agents are selected based on sine function.
+
+    Args:
+        agents (AgentListType): A list of Agent objects to participate in the swarm.
+        tasks (List[str]): A list of tasks to be processed by the agents.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+    """
+    conversation = Conversation()
+    conversation.add(
+        role="User",
+        message=tasks,
+    )
+
     for i in range(len(agents)):
         index = int((math.sin(i) + 1) / 2 * len(agents))
-        agents[index].run(task)
+        if tasks:
+            task = tasks.pop(0)
+            response = agents[index].run(task)
+            conversation.add(
+                role=agents[index].agent_name,
+                message=response,
+            )
 
-
-"""
-This module contains functions for facilitating communication between agents in a swarm. It includes methods for one-to-one communication, broadcasting, and other swarm architectures.
-"""
+    return history_output_formatter(conversation, output_type)
 
 
 # One-to-One Communication between two agents
 def one_to_one(
-    sender: Agent, receiver: Agent, task: str, max_loops: int = 1
-) -> str:
+    sender: Agent,
+    receiver: Agent,
+    task: str,
+    max_loops: int = 1,
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
     """
-    Facilitates one-to-one communication between two agents. The sender and receiver agents exchange messages for a specified number of loops.
+    Implements one-to-one communication between two agents.
 
     Args:
         sender (Agent): The agent sending the message.
         receiver (Agent): The agent receiving the message.
-        task (str): The message to be sent.
-        max_loops (int, optional): The number of times the sender and receiver exchange messages. Defaults to 1.
+        task (str): The task to be processed.
+        max_loops (int, optional): Maximum number of communication loops. Defaults to 1.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
 
     Returns:
-        str: The conversation history between the sender and receiver.
+        Union[Dict[str, Any], List[str]]: The formatted output of the communication.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
 
     Raises:
-        Exception: If there is an error during the communication process.
+        ValueError: If sender, receiver, or task is empty.
     """
     conversation = Conversation()
-    responses = []
+    conversation.add(
+        role="User",
+        message=task,
+    )
 
     try:
         for _ in range(max_loops):
             # Sender processes the task
             sender_response = sender.run(task)
-            conversation.add_log(
-                agent_name=sender.agent_name,
-                task=task,
-                response=sender_response,
+            conversation.add(
+                role=sender.agent_name,
+                message=sender_response,
             )
-            responses.append(sender_response)
 
             # Receiver processes the result of the sender
             receiver_response = receiver.run(sender_response)
-            conversation.add_log(
-                agent_name=receiver.agent_name,
-                task=task,
-                response=receiver_response,
+            conversation.add(
+                role=receiver.agent_name,
+                message=receiver_response,
             )
-            responses.append(receiver_response)
+
+        return history_output_formatter(conversation, output_type)
 
     except Exception as error:
         logger.error(
@@ -395,36 +742,57 @@ def one_to_one(
         )
         raise error
 
-    return conversation.return_history()
-
 
 async def broadcast(
-    sender: Agent, agents: AgentListType, task: str
-) -> None:
+    sender: Agent,
+    agents: AgentListType,
+    task: str,
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements a broadcast communication pattern where one agent sends to many.
+
+    Args:
+        sender (Agent): The agent broadcasting the message.
+        agents (AgentListType): List of agents receiving the broadcast.
+        task (str): The task to be broadcast.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the broadcast.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+
+    Raises:
+        ValueError: If sender, agents, or task is empty.
+    """
     conversation = Conversation()
+    conversation.add(
+        role="User",
+        message=task,
+    )
 
     if not sender or not agents or not task:
         raise ValueError("Sender, agents, and task cannot be empty.")
 
     try:
         # First get the sender's broadcast message
-        broadcast_message = sender.run(task)
-        conversation.add_log(
-            agent_name=sender.agent_name,
-            task=task,
-            response=broadcast_message,
+        broadcast_message = sender.run(conversation.get_str())
+
+        conversation.add(
+            role=sender.agent_name,
+            message=broadcast_message,
         )
 
         # Then have all agents process it
         for agent in agents:
-            response = agent.run(broadcast_message)
-            conversation.add_log(
-                agent_name=agent.agent_name,
-                task=broadcast_message,
-                response=response,
+            response = agent.run(conversation.get_str())
+            conversation.add(
+                role=agent.agent_name,
+                message=response,
             )
 
-        return conversation.return_history()
+        return history_output_formatter(conversation, output_type)
 
     except Exception as error:
         logger.error(f"Error during broadcast: {error}")
@@ -432,8 +800,28 @@ async def broadcast(
 
 
 async def one_to_three(
-    sender: Agent, agents: AgentListType, task: str
-):
+    sender: Agent,
+    agents: AgentListType,
+    task: str,
+    output_type: OutputType = "dict",
+) -> Union[Dict[str, Any], List[str]]:
+    """
+    Implements one-to-three communication pattern where one agent sends to three others.
+
+    Args:
+        sender (Agent): The agent sending the message.
+        agents (AgentListType): List of three agents receiving the message.
+        task (str): The task to be processed.
+        output_type (OutputType, optional): The format of the output. Defaults to "dict".
+
+    Returns:
+        Union[Dict[str, Any], List[str]]: The formatted output of the communication.
+            If output_type is "dict", returns a dictionary containing the conversation history.
+            If output_type is "list", returns a list of responses.
+
+    Raises:
+        ValueError: If sender, agents, or task is empty, or if agents list doesn't contain exactly 3 agents.
+    """
     if len(agents) != 3:
         raise ValueError("The number of agents must be exactly 3.")
 
@@ -442,25 +830,28 @@ async def one_to_three(
 
     conversation = Conversation()
 
+    conversation.add(
+        role="User",
+        message=task,
+    )
+
     try:
         # Get sender's message
-        sender_message = sender.run(task)
-        conversation.add_log(
-            agent_name=sender.agent_name,
-            task=task,
-            response=sender_message,
+        sender_message = sender.run(conversation.get_str())
+        conversation.add(
+            role=sender.agent_name,
+            message=sender_message,
         )
 
         # Have each receiver process the message
         for agent in agents:
-            response = agent.run(sender_message)
-            conversation.add_log(
-                agent_name=agent.agent_name,
-                task=sender_message,
-                response=response,
+            response = agent.run(conversation.get_str())
+            conversation.add(
+                role=agent.agent_name,
+                message=response,
             )
 
-        return conversation.return_history()
+        return history_output_formatter(conversation, output_type)
 
     except Exception as error:
         logger.error(f"Error in one_to_three: {error}")

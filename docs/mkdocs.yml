@@ -245,6 +245,7 @@ nav:
         - Various Execution Methods: "swarms/structs/various_execution_methods.md"
         - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
         - Deep Research Swarm: "swarms/structs/deep_research_swarm.md"
+        - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
         - Workflows:
             - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
             - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
@@ -258,7 +259,6 @@ nav:
         - Finance: "swarms_tools/finance.md"
         - Search: "swarms_tools/search.md"
         - Social Media:
-          - Overview: "swarms_tools/social_media.md"
           - Twitter: "swarms_tools/twitter.md"
 
     - Swarms Memory:

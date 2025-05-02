@@ -3,6 +3,7 @@ import json
 from typing import List, Literal, Dict, Any, Union
 from fastmcp import Client
 from swarms.utils.str_to_dict import str_to_dict
+from loguru import logger
 
 
 def parse_agent_output(
@@ -186,13 +187,21 @@ def execute_mcp_tool(
         ValueError: If tool execution fails.
     """
     try:
-        return asyncio.run(
+        logger.info(f"Executing MCP tool with URL: {url}")
+        logger.debug(f"Tool parameters: {parameters}")
+
+        result = asyncio.run(
             _execute_mcp_tool(
                 url=url,
                 parameters=parameters,
             )
         )
+
+        logger.info("MCP tool execution completed successfully")
+        logger.debug(f"Tool execution result: {result}")
+        return result
     except Exception as e:
+        logger.error(f"Error in execute_mcp_tool: {str(e)}")
         raise ValueError(f"Error in execute_mcp_tool: {str(e)}")
 
 

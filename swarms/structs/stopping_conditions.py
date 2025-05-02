@@ -36,3 +36,33 @@ def check_exit(s):
 
 def check_end(s):
     return "end" in s
+
+
+def check_stopping_conditions(input: str) -> str:
+    """
+    Checks a string against all stopping conditions and returns an appropriate message.
+
+    Args:
+        s (str): The input string to check
+
+    Returns:
+        str: A message indicating which stopping condition was met, or None if no condition was met
+    """
+    conditions = [
+        (check_done, "Task is done"),
+        (check_finished, "Task is finished"),
+        (check_complete, "Task is complete"),
+        (check_success, "Task succeeded"),
+        (check_failure, "Task failed"),
+        (check_error, "Task encountered an error"),
+        (check_stopped, "Task was stopped"),
+        (check_cancelled, "Task was cancelled"),
+        (check_exit, "Task exited"),
+        (check_end, "Task ended"),
+    ]
+
+    for check_func, message in conditions:
+        if check_func(input):
+            return message
+
+    return None

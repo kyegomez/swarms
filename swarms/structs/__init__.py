@@ -1,6 +1,5 @@
 from swarms.structs.agent import Agent
 from swarms.structs.agent_builder import AgentsBuilder
-from swarms.structs.agents_available import showcase_available_agents
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.base_workflow import BaseWorkflow
@@ -79,6 +78,7 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
+from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 
 __all__ = [
     "Agent",
@@ -135,7 +135,6 @@ __all__ = [
     "run_agents_with_resource_monitoring",
     "swarm_router",
     "run_agents_with_tasks_concurrently",
-    "showcase_available_agents",
     "GroupChat",
     "expertise_based",
     "MultiAgentRouter",
@@ -148,4 +147,5 @@ __all__ = [
     "HybridHierarchicalClusterSwarm",
     "get_agents_info",
     "get_swarms_info",
+    "AutoSwarmBuilder",
 ]

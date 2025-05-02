@@ -12,6 +12,9 @@ agent = Agent(
     model_name="gpt-4o-mini",
     dynamic_temperature_enabled=True,
     interactive=False,
+    output_type="dict",
 )
 
-agent.run("Conduct an analysis of the best real undervalued ETFs")
+print(
+    agent.run("Conduct an analysis of the best real undervalued ETFs")
+)

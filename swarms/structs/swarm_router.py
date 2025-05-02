@@ -5,7 +5,9 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from swarms.prompts.ag_prompt import aggregator_system_prompt
+from swarms.prompts.multi_agent_collab_prompt import (
+    MULTI_AGENT_COLLAB_PROMPT_TWO,
+)
 from swarms.structs.agent import Agent
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.csv_to_agent import AgentLoader
@@ -64,6 +66,38 @@ class SwarmLog(BaseModel):
     task: Optional[str] = ""
     metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
     documents: List[Document] = []
+
+
+class SwarmRouterConfig(BaseModel):
+    """Configuration model for SwarmRouter."""
+
+    name: str = Field(
+        description="Name identifier for the SwarmRouter instance",
+    )
+    description: str = Field(
+        description="Description of the SwarmRouter's purpose",
+    )
+    # max_loops: int = Field(
+    #     description="Maximum number of execution loops"
+    # )
+    swarm_type: SwarmType = Field(
+        description="Type of swarm to use",
+    )
+    rearrange_flow: Optional[str] = Field(
+        description="Flow configuration string"
+    )
+    rules: Optional[str] = Field(
+        description="Rules to inject into every agent"
+    )
+    multi_agent_collab_prompt: bool = Field(
+        description="Whether to enable multi-agent collaboration prompts",
+    )
+    task: str = Field(
+        description="The task to be executed by the swarm",
+    )
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class SwarmRouter:
@@ -157,6 +191,7 @@ class SwarmRouter:
         load_agents_from_csv: bool = False,
         csv_file_path: str = None,
         return_entire_history: bool = True,
+        multi_agent_collab_prompt: bool = True,
         *args,
         **kwargs,
     ):
@@ -179,14 +214,18 @@ class SwarmRouter:
         self.load_agents_from_csv = load_agents_from_csv
         self.csv_file_path = csv_file_path
         self.return_entire_history = return_entire_history
+        self.multi_agent_collab_prompt = multi_agent_collab_prompt
 
+        # Reliability check
+        self.reliability_check()
+
+        # Load agents from CSV
         if self.load_agents_from_csv:
             self.agents = AgentLoader(
                 csv_path=self.csv_file_path
             ).load_agents()
 
-        self.reliability_check()
-
+        # Log initialization
         self._log(
             "info",
             f"SwarmRouter initialized with swarm type: {swarm_type}",
@@ -345,7 +384,6 @@ class SwarmRouter:
                 name=self.name,
                 description=self.description,
                 agents=self.agents,
-                aggregator_system_prompt=aggregator_system_prompt.get_prompt(),
                 aggregator_agent=self.agents[-1],
                 layers=self.max_loops,
                 output_type=self.output_type,
@@ -421,6 +459,17 @@ class SwarmRouter:
                 f"Invalid swarm type: {self.swarm_type} try again with a valid swarm type such as 'SequentialWorkflow' or 'ConcurrentWorkflow' or 'auto' or 'AgentRearrange' or 'MixtureOfAgents' or 'SpreadSheetSwarm'"
             )
 
+    def update_system_prompt_for_agent_in_swarm(self):
+        # Use list comprehension for faster iteration
+        [
+            setattr(
+                agent,
+                "system_prompt",
+                agent.system_prompt + MULTI_AGENT_COLLAB_PROMPT_TWO,
+            )
+            for agent in self.agents
+        ]
+
     def _log(
         self,
         level: str,
@@ -463,6 +512,9 @@ class SwarmRouter:
             Exception: If an error occurs during task execution.
         """
         self.swarm = self._create_swarm(task, *args, **kwargs)
+
+        if self.multi_agent_collab_prompt is True:
+            self.update_system_prompt_for_agent_in_swarm()
 
         try:
             logger.info(

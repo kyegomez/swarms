@@ -9,8 +9,6 @@ Todo:
 """
 
 import os
-import uuid
-from datetime import datetime
 from typing import List, Optional
 
 from loguru import logger
@@ -20,6 +18,10 @@ from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.output_types import OutputType
 from swarms.utils.any_to_str import any_to_str
+from swarms.utils.history_output_formatter import (
+    history_output_formatter,
+)
+from swarms.utils.formatter import formatter
 
 
 class AgentResponse(BaseModel):
@@ -62,7 +64,7 @@ class MultiAgentRouter:
         temperature: float = 0.1,
         shared_memory_system: callable = None,
         output_type: OutputType = "dict",
-        execute_task: bool = True,
+        if_print: bool = True,
     ):
         """
         Initializes the MultiAgentRouter with a list of agents and configuration options.
@@ -80,15 +82,15 @@ class MultiAgentRouter:
         self.description = description
         self.shared_memory_system = shared_memory_system
         self.output_type = output_type
-        self.execute_task = execute_task
         self.model = model
         self.temperature = temperature
-
+        self.if_print = if_print
         # Initialize Agents
         self.agents = {agent.name: agent for agent in agents}
         self.conversation = Conversation()
 
         self.api_key = os.getenv("OPENAI_API_KEY")
+
         if not self.api_key:
             raise ValueError("OpenAI API key must be provided")
 
@@ -99,6 +101,7 @@ class MultiAgentRouter:
             system_prompt=self.boss_system_prompt,
             api_key=self.api_key,
             temperature=temperature,
+            base_model=AgentResponse,
         )
 
     def __repr__(self):
@@ -140,21 +143,6 @@ class MultiAgentRouter:
         Always select exactly one agent that best matches the task requirements.
         """
 
-    def find_agent_in_list(self, agent_name: str) -> Optional[Agent]:
-        """
-        Find an agent by name in a list of agents.
-
-        Args:
-            agent_name (str): The name of the agent to find.
-
-        Returns:
-            Optional[Agent]: The agent object if found, otherwise None.
-        """
-        for agent in self.agent_list:
-            if agent.name == agent_name:
-                return agent
-        return None
-
     def route_task(self, task: str) -> dict:
         """
         Routes a task to the appropriate agent and returns their response.
@@ -167,15 +155,21 @@ class MultiAgentRouter:
         """
         try:
             self.conversation.add(role="user", content=task)
-            start_time = datetime.now()
 
             # Get boss decision using function calling
-            boss_response = self.function_caller.get_completion(task)
-
+            boss_response = self.function_caller.run(task)
             boss_response_str = any_to_str(boss_response)
 
+            if self.if_print:
+                formatter.print_panel(
+                    boss_response_str,
+                    title="Multi-Agent Router Decision",
+                )
+            else:
+                pass
+
             self.conversation.add(
-                role="assistant", content=boss_response_str
+                role="Agent Router", content=boss_response_str
             )
 
             # Validate that the selected agent exists
@@ -190,60 +184,16 @@ class MultiAgentRouter:
             # Use the modified task if provided, otherwise use original task
             final_task = boss_response.modified_task or task
 
-            # Execute the task with the selected agent if enabled
-            execution_start = datetime.now()
-            agent_response = None
-            execution_time = 0
+            # Use the agent's run method directly
+            agent_response = selected_agent.run(final_task)
 
-            if self.execute_task:
-                # Use the agent's run method directly
-                agent_response = selected_agent.run(final_task)
-                self.conversation.add(
-                    role=selected_agent.name, content=agent_response
-                )
-                execution_time = (
-                    datetime.now() - execution_start
-                ).total_seconds()
-            else:
-                logger.info(
-                    "Task execution skipped (execute_task=False)"
-                )
-
-            total_time = (datetime.now() - start_time).total_seconds()
-
-            result = {
-                "id": str(uuid.uuid4()),
-                "timestamp": datetime.now().isoformat(),
-                "task": {
-                    "original": task,
-                    "modified": (
-                        final_task
-                        if boss_response.modified_task
-                        else None
-                    ),
-                },
-                "boss_decision": {
-                    "selected_agent": boss_response.selected_agent,
-                    "reasoning": boss_response.reasoning,
-                },
-                "execution": {
-                    "agent_name": selected_agent.name,
-                    "agent_id": selected_agent.id,
-                    "was_executed": self.execute_task,
-                    "response": (
-                        agent_response if self.execute_task else None
-                    ),
-                    "execution_time": (
-                        execution_time if self.execute_task else None
-                    ),
-                },
-                "total_time": total_time,
-            }
-
-            logger.info(
-                f"Successfully routed task to {selected_agent.name}"
+            self.conversation.add(
+                role=selected_agent.name, content=agent_response
             )
-            return result
+
+            return history_output_formatter(
+                conversation=self.conversation, type=self.output_type
+            )
 
         except Exception as e:
             logger.error(f"Error routing task: {str(e)}")
@@ -312,31 +262,18 @@ class MultiAgentRouter:
 #         ),
 #     ]
 
-#     # Initialize routers with different configurations
-#     router_execute = MultiAgentRouter(agents=agents, execute_task=True)
-#     # router_no_execute = MultiAgentRouter(agents=agents, execute_task=False)
+#     # Initialize router
+#     router = MultiAgentRouter(agents=agents)
 
 #     # Example task
 #     task = "Write a Python function to calculate fibonacci numbers"
 
 #     try:
-#         # Process the task with execution
-#         print("\nWith task execution:")
-#         result_execute = router_execute.route_task(task)
-#         print(
-#             f"Selected Agent: {result_execute['boss_decision']['selected_agent']}"
-#         )
-#         print(
-#             f"Reasoning: {result_execute['boss_decision']['reasoning']}"
-#         )
-#         if result_execute["execution"]["response"]:
-#             print(
-#                 f"Response Preview: {result_execute['execution']['response'][:200]}..."
-#             )
-#             print(
-#                 f"Execution Time: {result_execute['execution']['execution_time']:.2f}s"
-#             )
-#         print(f"Total Time: {result_execute['total_time']:.2f}s")
+#         # Process the task
+#         result = router.route_task(task)
+#         print(f"Selected Agent: {result['boss_decision']['selected_agent']}")
+#         print(f"Reasoning: {result['boss_decision']['reasoning']}")
+#         print(f"Total Time: {result['total_time']:.2f}s")
 
 #     except Exception as e:
 #         print(f"Error occurred: {str(e)}")

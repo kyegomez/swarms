@@ -25,7 +25,6 @@ The `Conversation` class is a powerful tool for managing and structuring convers
    - `save_as_json(self, filename: str)`
    - `load_from_json(self, filename: str)`
    - `search_keyword_in_conversation(self, keyword: str)`
-   - `pretty_print_conversation(self, messages)`
 
 ---
 
@@ -129,12 +128,6 @@ The `Conversation` class is designed to manage conversations by keeping track of
 - **Parameters**:
   - `keyword (str)`: The keyword to search for.
 - **Returns**: A list of messages containing the keyword.
-
-#### `pretty_print_conversation(self, messages)`
-
-- **Description**: Pretty prints a list of messages with colored role indicators.
-- **Parameters**:
-  - `messages (list)`: A list of messages to print.
 
 ## Examples
 
@@ -248,13 +241,7 @@ You can search for messages containing a specific keyword within the conversatio
 results = conv.search_keyword_in_conversation("Hello")
 ```
 
-### Pretty Printing
 
-The `pretty_print_conversation` method provides a visually appealing way to display messages with colored role indicators:
-
-```python
-conv.pretty_print_conversation(conv.conversation_history)
-```
 
 These examples demonstrate the versatility of the `Conversation` class in managing and interacting with conversation data. Whether you're building a chatbot, conducting analysis, or simply organizing dialogues, this class offers a robust set of tools to help you accomplish your goals.
 

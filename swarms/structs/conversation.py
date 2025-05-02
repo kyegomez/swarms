@@ -93,7 +93,7 @@ class Conversation(BaseStructure):
 
         # If system prompt is not None, add it to the conversation history
         if self.system_prompt is not None:
-            self.add("System: ", self.system_prompt)
+            self.add("System", self.system_prompt)
 
         if self.rules is not None:
             self.add("User", rules)
@@ -320,53 +320,6 @@ class Conversation(BaseStructure):
             if keyword in msg["content"]
         ]
 
-    def pretty_print_conversation(self, messages):
-        """Pretty print the conversation history.
-
-        Args:
-            messages (list): List of messages to print.
-        """
-        role_to_color = {
-            "system": "red",
-            "user": "green",
-            "assistant": "blue",
-            "tool": "magenta",
-        }
-
-        for message in messages:
-            if message["role"] == "system":
-                formatter.print_panel(
-                    f"system: {message['content']}\n",
-                    role_to_color[message["role"]],
-                )
-            elif message["role"] == "user":
-                formatter.print_panel(
-                    f"user: {message['content']}\n",
-                    role_to_color[message["role"]],
-                )
-            elif message["role"] == "assistant" and message.get(
-                "function_call"
-            ):
-                formatter.print_panel(
-                    f"assistant: {message['function_call']}\n",
-                    role_to_color[message["role"]],
-                )
-            elif message["role"] == "assistant" and not message.get(
-                "function_call"
-            ):
-                formatter.print_panel(
-                    f"assistant: {message['content']}\n",
-                    role_to_color[message["role"]],
-                )
-            elif message["role"] == "tool":
-                formatter.print_panel(
-                    (
-                        f"function ({message['name']}):"
-                        f" {message['content']}\n"
-                    ),
-                    role_to_color[message["role"]],
-                )
-
     def truncate_memory_with_tokenizer(self):
         """
         Truncates the conversation history based on the total number of tokens using a tokenizer.
@@ -550,6 +503,14 @@ class Conversation(BaseStructure):
                 for msg in self.conversation_history[2:]
             ]
         )
+
+    def batch_add(self, messages: List[dict]):
+        """Batch add messages to the conversation history.
+
+        Args:
+            messages (List[dict]): List of messages to add.
+        """
+        self.conversation_history.extend(messages)
 
 
 # # Example usage

@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://swarms.world">
-    <img src="https://github.com/kyegomez/swarms/blob/master/images/swarmslogobanner.png" style="margin: 15px; max-width: 300px" width="50%" alt="Logo">
+    <img src="https://github.com/kyegomez/swarms/blob/master/images/swarmslogobanner.png" style="margin: 15px; max-width: 500px" width="50%" alt="Logo">
   </a>
 </div>
 <p align="center">
@@ -139,28 +139,41 @@ Refer to our documentation for production grade implementation details.
 
 
 ## Install 💻
-Install the following packages with copy and paste
 
+### Using pip
 ```bash
-$ pip3 install -U swarms swarms-memory
+$ pip3 install -U swarms
 ```
 
-
-## [Optional] Onboarding
-
-Now that you have downloaded swarms with `pip3 install -U swarms`, we get access to the `CLI`. Get Onboarded with CLI Now with:
+### Using uv (Recommended)
+[uv](https://github.com/astral-sh/uv) is a fast Python package installer and resolver, written in Rust.
 
 ```bash
-swarms onboarding
+# Install uv
+$ curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install swarms using uv
+$ uv pip install swarms
 ```
 
-You can also run this command for help:
-
+### Using poetry
 ```bash
-swarms help
+# Install poetry if you haven't already
+$ curl -sSL https://install.python-poetry.org | python3 -
+
+# Add swarms to your project
+$ poetry add swarms
 ```
 
-For more documentation on the CLI [CLICK HERE](https://docs.swarms.world/en/latest/swarms/cli/main/)
+### From source
+```bash
+# Clone the repository
+$ git clone https://github.com/kyegomez/swarms.git
+$ cd swarms
+
+# Install with pip
+$ pip install -e .
+```
 
 ---
 
@@ -178,7 +191,8 @@ Here are some example scripts to get you started. For more comprehensive documen
 ---
 
 ## `Agent` Class
-The `Agent` class is a fundamental component of the Swarms framework, designed to execute tasks autonomously. It fuses llms, tools and long-term memory capabilities to create a full stack agent. The `Agent` class is highly customizable, allowing for fine-grained control over its behavior and interactions.
+The `Agent` class is a customizable autonomous component of the Swarms framework that integrates LLMs, tools, and long-term memory. Its `run` method processes text tasks and optionally handles image inputs through vision-language models.
+
 
 ```mermaid
 graph TD
@@ -191,8 +205,6 @@ graph TD
     G --> C
 ```
 
-### `run` Method
-The `run` method is the primary entry point for executing tasks with an `Agent` instance. It accepts a task string as the main input task and processes it according to the agent's configuration. And, it can also accept an `img` parameter such as `img="image_filepath.png` to process images if you have a VLM attached such as `GPT4VisionAPI`
 
 
 
@@ -214,6 +226,7 @@ agent.run("What is the current market trend for tech stocks?")
 ```
 
 ### Settings and Customization
+
 The `Agent` class offers a range of settings to tailor its behavior to specific needs. Some key settings include:
 
 | Setting | Description | Default Value |
@@ -269,6 +282,7 @@ agent.run(
 -----
 
 ### Integrating RAG with Swarms for Enhanced Long-Term Memory
+
 `Agent` equipped with quasi-infinite long term memory using RAG (Relational Agent Graph) for advanced document understanding, analysis, and retrieval capabilities.
 
 **Mermaid Diagram for RAG Integration**
@@ -1254,7 +1268,7 @@ print("Execution results:", results)
 
 ## `MixtureOfAgents`
 
-The MixtureOfAgents architecture, inspired by together.ai’s paper (arXiv:2406.04692), achieves SOTA performance on AlpacaEval 2.0, MT-Bench, and FLASK, surpassing GPT-4 Omni. It processes tasks via parallel agent collaboration and sequential layering, with documentation [HERE](https://docs.swarms.world/en/latest/swarms/structs/moa/)
+The MixtureOfAgents architecture, inspired by together.ai's paper (arXiv:2406.04692), achieves SOTA performance on AlpacaEval 2.0, MT-Bench, and FLASK, surpassing GPT-4 Omni. It processes tasks via parallel agent collaboration and sequential layering, with documentation [HERE](https://docs.swarms.world/en/latest/swarms/structs/moa/)
 
 
 ```python
