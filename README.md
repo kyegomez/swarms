@@ -112,14 +112,6 @@
 | 🎯 Use Case Support | • Task-Specific Agents<br>• Custom Workflows<br>• Industry Solutions<br>• Extensible Framework | • Quick deployment<br>• Flexible solutions<br>• Industry readiness<br>• Easy customization |
 
 
-----
-
-## Requirements
-- `python3.10` or above!
-- `$ pip install -U swarms` And, don't forget to install swarms!
-- `.env` file with API keys from your providers like `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`
--  Set an `.env` Variable with your desired workspace dir: `WORKSPACE_DIR="agent_workspace"` or do it in your terminal with `export WORKSPACE_DIR="agent_workspace"`
-
 ## Guides and Walkthroughs
 Refer to our documentation for production grade implementation details.
 
@@ -177,16 +169,16 @@ $ pip install -e .
 
 ---
 
-# Usage Examples 🤖
-Here are some example scripts to get you started. For more comprehensive documentation, visit our [docs](https://docs.swarms.world/en/latest/).
+## Environment Configuration
 
-| Example Name | Description | Type of Examples | Link |
-| --- | --- | --- | --- |
-| Swarms Examples | A collection of simple examples to demonstrate Swarms capabilities. | Basic Usage | [https://github.com/The-Swarm-Corporation/swarms-examples?tab=readme-ov-file](https://github.com/The-Swarm-Corporation/swarms-examples?tab=readme-ov-file) |
-| Cookbook | A comprehensive guide with recipes for various use cases and scenarios. | Advanced Usage | [https://github.com/The-Swarm-Corporation/Cookbook](https://github.com/The-Swarm-Corporation/Cookbook) |
+```
+OPENAI_API_KEY=""
+WORKSPACE_DIR="agent_workspace"
+ANTHROPIC_API_KEY=""
+GROQ_API_KEY=""
+```
 
-
-
+- [Learn more about the environment configuration here](https://docs.swarms.world/en/latest/swarms/install/env/)
 
 ---
 
