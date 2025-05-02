@@ -17,30 +17,28 @@ ChromaDB is a simple, high-performance vector store for use with embeddings. Her
 
 ```python
 from swarms_memory import ChromaDB
-from swarms import Agent
-from swarm_models import Anthropic
-import os
+from swarms.structs.agent import Agent
 
-# Initialize the ChromaDB client
+# Initialize ChromaDB memory
 chromadb_memory = ChromaDB(
     metric="cosine",
     output_dir="finance_agent_rag",
 )
 
-# Model
-model = Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"))
-
-# Initialize the agent with ChromaDB memory
+# Initialize the Financial Analysis Agent with GPT-4o-mini model
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
     system_prompt="Agent system prompt here",
     agent_description="Agent performs financial analysis.",
-    llm=model,
+    model_name="gpt-4o-mini",
     long_term_memory=chromadb_memory,
 )
 
 # Run a query
-agent.run("What are the components of a startup's stock incentive equity plan?")
+response = agent.run(
+    "What are the components of a startup's stock incentive equity plan?"
+)
+print(response)
 ```
 
 ### Integrating Faiss with the Agent Class
