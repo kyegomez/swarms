@@ -47,7 +47,6 @@ from swarms.structs.multi_agent_exec import (
     get_swarms_info,
 )
 from swarms.structs.multi_agent_router import MultiAgentRouter
-from swarms.structs.queue_swarm import TaskQueueSwarm
 from swarms.structs.rearrange import AgentRearrange, rearrange
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
@@ -120,7 +119,6 @@ __all__ = [
     "sigmoid_swarm",
     "staircase_swarm",
     "star_swarm",
-    "TaskQueueSwarm",
     "SpreadSheetSwarm",
     "SwarmRouter",
     "SwarmType",

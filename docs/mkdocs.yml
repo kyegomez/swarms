@@ -246,6 +246,7 @@ nav:
         - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
         - Deep Research Swarm: "swarms/structs/deep_research_swarm.md"
         - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
+        - Swarm Matcher: "swarms/structs/swarm_matcher.md"
         - Workflows:
             - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
             - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
