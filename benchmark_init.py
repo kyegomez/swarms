@@ -164,4 +164,4 @@ def benchmark_multiple_agents(num_agents=100):
 
 
 if __name__ == "__main__":
-    benchmark_multiple_agents(100)
+    benchmark_multiple_agents(1000)

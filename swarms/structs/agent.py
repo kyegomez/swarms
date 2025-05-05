@@ -1,4 +1,3 @@
-import concurrent.futures
 import asyncio
 import json
 import logging
@@ -54,11 +53,11 @@ from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
-    HistoryOutputType,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.pdf_to_text import pdf_to_text
+from swarms.structs.output_types import OutputType
 from swarms.utils.str_to_dict import str_to_dict
 from swarms.tools.mcp_client import (
     execute_mcp_tool,
@@ -337,7 +336,7 @@ class Agent:
         # [Tools]
         custom_tools_prompt: Optional[Callable] = None,
         tool_schema: ToolUsageType = None,
-        output_type: HistoryOutputType = "str-all-except-first",
+        output_type: OutputType = "str-all-except-first",
         function_calling_type: str = "json",
         output_cleaner: Optional[Callable] = None,
         function_calling_format_type: Optional[str] = "OpenAI",
@@ -529,12 +528,32 @@ class Agent:
         # Initialize the feedback
         self.feedback = []
 
-        # Initialize the executor
-        self.executor = ThreadPoolExecutor(
-            max_workers=executor_workers
-        )
+        # self.init_handling()
+        # Define tasks as pairs of (function, condition)
+        # Each task will only run if its condition is True
+        self.setup_config()
 
-        self.init_handling()
+        if exists(self.docs_folder):
+            self.get_docs_from_doc_folders()
+
+        if exists(self.tools):
+            self.handle_tool_init()
+
+        if exists(self.tool_schema) or exists(self.list_base_models):
+            self.handle_tool_schema_ops()
+
+        if exists(self.sop) or exists(self.sop_list):
+            self.handle_sop_ops()
+
+        # Run sequential operations after all concurrent tasks are done
+        # self.agent_output = self.agent_output_model()
+        log_agent_data(self.to_dict())
+
+        if self.llm is None:
+            self.llm = self.llm_handling()
+
+        if self.mcp_url or self.mcp_servers is not None:
+            self.add_mcp_tools_to_memory()
 
     def short_memory_init(self):
         if (
@@ -561,57 +580,20 @@ class Agent:
         # Each task will only run if its condition is True
         self.setup_config()
 
-        tasks = [
-            (self.setup_config, True),  # Always run setup_config
-            (
-                self.get_docs_from_doc_folders,
-                exists(self.docs_folder),
-            ),
-            (self.handle_tool_init, True),  # Always run tool init
-            (
-                self.handle_tool_schema_ops,
-                exists(self.tool_schema)
-                or exists(self.list_base_models),
-            ),
-            # (
-            #     self.handle_sop_ops,
-            #     exists(self.sop) or exists(self.sop_list),
-            # ),
-        ]
+        if exists(self.docs_folder):
+            self.get_docs_from_doc_folders()
 
-        # Filter out tasks whose conditions are False
-        filtered_tasks = [
-            task for task, condition in tasks if condition
-        ]
+        if exists(self.tools):
+            self.handle_tool_init()
 
-        # Execute all tasks concurrently
-        with self.executor as executor:
-            # Map tasks to futures and collect results
-            results = {}
-            future_to_task = {
-                executor.submit(task): task.__name__
-                for task in filtered_tasks
-            }
+        if exists(self.tool_schema) or exists(self.list_base_models):
+            self.handle_tool_schema_ops()
 
-            # Wait for each future to complete and collect results/exceptions
-            for future in concurrent.futures.as_completed(
-                future_to_task
-            ):
-                task_name = future_to_task[future]
-                try:
-                    result = future.result()
-                    results[task_name] = result
-                    logging.info(
-                        f"Task {task_name} completed successfully"
-                    )
-                except Exception as e:
-                    results[task_name] = None
-                    logging.error(
-                        f"Task {task_name} failed with error: {e}"
-                    )
+        if exists(self.sop) or exists(self.sop_list):
+            self.handle_sop_ops()
 
         # Run sequential operations after all concurrent tasks are done
-        self.agent_output = self.agent_output_model()
+        # self.agent_output = self.agent_output_model()
         log_agent_data(self.to_dict())
 
         if self.llm is None:
@@ -1808,10 +1790,11 @@ class Agent:
                 )
 
             # Reinitialize executor if needed
-            if not hasattr(self, "executor") or self.executor is None:
-                self.executor = ThreadPoolExecutor(
-                    max_workers=os.cpu_count()
-                )
+            # if not hasattr(self, "executor") or self.executor is None:
+            with ThreadPoolExecutor(
+                max_workers=os.cpu_count()
+            ) as executor:
+                self.executor = executor
 
             # # Reinitialize tool structure if needed
             # if hasattr(self, 'tools') and (self.tools or getattr(self, 'list_base_models', None)):

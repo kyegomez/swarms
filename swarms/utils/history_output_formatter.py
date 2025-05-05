@@ -19,6 +19,8 @@ HistoryOutputType = Literal[
     "str-all-except-first",
 ]
 
+output_type: HistoryOutputType
+
 
 def history_output_formatter(
     conversation: Conversation, type: HistoryOutputType = "list"
