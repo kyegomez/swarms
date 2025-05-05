@@ -6,6 +6,27 @@ SwarmMatcher is a tool for automatically matching tasks to the most appropriate 
 
 The SwarmMatcher utilizes transformer-based embeddings to determine the best swarm architecture for a given task. By analyzing the semantic meaning of task descriptions and comparing them to known swarm types, it can intelligently select the optimal swarm configuration for any task.
 
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Task Description] --> B[Generate Task Embedding]
+    C[Swarm Type Descriptions] --> D[Generate Swarm Type Embeddings]
+    B --> E[Calculate Similarity Scores]
+    D --> E
+    E --> F[Select Best Matching Swarm Type]
+    F --> G[Return Selected Swarm Type]
+    
+    subgraph Initialization
+        H[Define Swarm Types] --> I[Load Transformer Model]
+        I --> J[Pre-compute Swarm Type Embeddings]
+    end
+    
+    subgraph Matching Process
+        A --> B --> E --> F --> G
+    end
+```
+
 ## Installation
 
 SwarmMatcher is included in the Swarms package. To use it, simply import it from the library:
@@ -77,12 +98,6 @@ SwarmMatcher comes with several pre-defined swarm types:
 
 A class representing a type of swarm with its name and description.
 
-```python
-class SwarmType(BaseModel):
-    name: str
-    description: str
-    embedding: Optional[List[float]] = Field(default=None, exclude=True)
-```
 
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
@@ -94,11 +109,6 @@ class SwarmType(BaseModel):
 
 Configuration settings for the SwarmMatcher.
 
-```python
-class SwarmMatcherConfig(BaseModel):
-    model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
-    embedding_dim: int = 512
-```
 
 | Parameter | Type | Default | Description |
 | --------- | ---- | ------- | ----------- |
@@ -109,17 +119,6 @@ class SwarmMatcherConfig(BaseModel):
 
 The main class for matching tasks to swarm types.
 
-```python
-class SwarmMatcher:
-    def __init__(self, config: SwarmMatcherConfig)
-    def get_embedding(self, text: str) -> np.ndarray
-    def add_swarm_type(self, swarm_type: SwarmType)
-    def find_best_match(self, task: str) -> Tuple[str, float]
-    def auto_select_swarm(self, task: str) -> str
-    def run_multiple(self, tasks: List[str]) -> List[str]
-    def save_swarm_types(self, filename: str)
-    def load_swarm_types(self, filename: str)
-```
 
 #### Methods
 
@@ -249,6 +248,27 @@ print(f"Selected swarm type: {best_match}")
 ## How It Works
 
 SwarmMatcher uses a transformer-based model to generate embeddings (vector representations) of both the task descriptions and the swarm type descriptions. It then calculates the similarity between these embeddings to determine which swarm type is most semantically similar to the given task.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant SwarmMatcher
+    participant TransformerModel
+    
+    User->>SwarmMatcher: task = "Analyze this dataset"
+    Note over SwarmMatcher: Initialization already complete
+    
+    SwarmMatcher->>TransformerModel: get_embedding(task)
+    TransformerModel-->>SwarmMatcher: task_embedding
+    
+    loop For each swarm type
+        SwarmMatcher->>SwarmMatcher: Calculate similarity score
+        Note over SwarmMatcher: score = dot_product(task_embedding, swarm_type.embedding)
+    end
+    
+    SwarmMatcher->>SwarmMatcher: Find best score
+    SwarmMatcher-->>User: "SpreadSheetSwarm"
+```
 
 The matching process follows these steps:
 
