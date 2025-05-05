@@ -1178,35 +1178,10 @@ Coming soon...
 
 -----------------
 
-## `GraphSwarm`
+## `GraphWorkflow`
 
 
-GraphSwarm is a workflow management system using a directed acyclic graph (DAG) to orchestrate complex tasks. Nodes (agents or tasks) and edges define dependencies, with agents executing tasks concurrently. It features entry/end points, visualization for debugging, and scalability for dynamic task assignment. Benefits include concurrency, flexibility, scalability, and clear workflow visualization. [Learn more:](https://docs.swarms.world/en/latest/swarms/structs/graph_swarm/)
-
-
-### Methods
-
-| Method | Description | Parameters | Return Value |
-|--------|-------------|------------|--------------|
-| `add_node` | Add a node to the graph | `node`: Node object | None |
-| `add_edge` | Add an edge to the graph | `edge`: Edge object | None |
-| `set_entry_points` | Set the entry points of the graph | `entry_points`: List of node IDs | None |
-| `set_end_points` | Set the end points of the graph | `end_points`: List of node IDs | None |
-| `visualize` | Generate a visual representation of the graph | None | String representation of the graph |
-| `run` | Execute the workflow | None | Dictionary of execution results |
-
-### Inputs
-
-| Input | Type | Description |
-|-------|------|-------------|
-| `Node` | Object | Represents a node in the graph (agent or task) |
-| `Edge` | Object | Represents an edge connecting two nodes |
-| `entry_points` | List[str] | List of node IDs where the workflow starts |
-| `end_points` | List[str] | List of node IDs where the workflow ends |
-
-### Output
-
-The `run` method returns a dictionary containing the execution results of all nodes in the graph.
+GraphWorkflow is a workflow management system using a directed acyclic graph (DAG) to orchestrate complex tasks. Nodes (agents or tasks) and edges define dependencies, with agents executing tasks concurrently. It features entry/end points, visualization for debugging, and scalability for dynamic task assignment. Benefits include concurrency, flexibility, scalability, and clear workflow visualization. [Learn more:](https://docs.swarms.world/en/latest/swarms/structs/graph_swarm/) The `run` method returns a dictionary containing the execution results of all nodes in the graph.
 
 
 
