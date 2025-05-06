@@ -251,7 +251,7 @@ class HierarchicalSwarm(BaseSwarm):
         director: Optional[Union[Agent, Any]] = None,
         agents: List[Union[Agent, Any]] = None,
         max_loops: int = 1,
-        output_type: OutputType = "dict",
+        output_type: OutputType = "dict-all-except-first",
         director_model_name: str = "gpt-4o",
         teams: Optional[List[TeamUnit]] = None,
         inter_agent_loops: int = 1,
