@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Literal
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import get_swarms_info
@@ -9,6 +9,23 @@ from swarms.utils.history_output_formatter import (
 )
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Union, Callable
+
+
+HistoryOutputType = Literal[
+    "list",
+    "dict",
+    "dictionary",
+    "string",
+    "str",
+    "final",
+    "last",
+    "json",
+    "all",
+    "yaml",
+    # "dict-final",
+    "dict-all-except-first",
+    "str-all-except-first",
+]
 
 tools = [
     {
@@ -105,7 +122,7 @@ class HybridHierarchicalClusterSwarm:
         description: str = "A swarm that uses a hybrid hierarchical-peer model to solve complex tasks.",
         swarms: List[Union[SwarmRouter, Callable]] = [],
         max_loops: int = 1,
-        output_type: str = "list",
+        output_type: HistoryOutputType = "list",
         router_agent_model_name: str = "gpt-4o-mini",
         *args,
         **kwargs,

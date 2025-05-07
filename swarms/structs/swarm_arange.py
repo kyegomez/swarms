@@ -6,7 +6,7 @@ from swarms.utils.any_to_str import any_to_str
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
-    output_type,
+    HistoryOutputType,
 )
 
 logger = initialize_logger(log_folder="swarm_arange")
@@ -58,7 +58,7 @@ class SwarmRearrange:
             Callable[[str], str]
         ] = None,
         return_json: bool = False,
-        output_type: output_type = "dict-all-except-first",
+        output_type: HistoryOutputType = "dict-all-except-first",
         *args,
         **kwargs,
     ):
