@@ -158,18 +158,18 @@ def sample_task():
 wf = GraphWorkflow()
 wf.add_node(Node(id="agent1", type=NodeType.AGENT, agent=agent1))
 wf.add_node(Node(id="agent2", type=NodeType.AGENT, agent=agent2))
-wf.add_node(Node(id="task1",  type=NodeType.TASK, callable=sample_task))  # Task node :contentReference[oaicite:5]{index=5}
+wf.add_node(Node(id="task1",  type=NodeType.TASK, callable=sample_task))  
 
 # Connect agents to the task
 wf.add_edge(Edge(source="agent1", target="task1"))
-wf.add_edge(Edge(source="agent2", target="task1"))  # Defines DAG edges :contentReference[oaicite:6]{index=6}
+wf.add_edge(Edge(source="agent2", target="task1"))  
 
 wf.set_entry_points(["agent1", "agent2"])
-wf.set_end_points(["task1"])  # Entry/end configuration :contentReference[oaicite:7]{index=7}
+wf.set_end_points(["task1"])  
 
 # Visualize and run
-print(wf.visualize())  # Mermaid diagram output :contentReference[oaicite:8]{index=8}
-results = wf.run()     # Executes via internal topological sort :contentReference[oaicite:9]{index=9}
+print(wf.visualize())  
+results = wf.run()    
 print("Execution results:", results)
 
 ```
