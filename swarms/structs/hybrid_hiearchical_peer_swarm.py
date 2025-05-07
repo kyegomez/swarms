@@ -121,7 +121,7 @@ class HybridHierarchicalClusterSwarm:
         self.router_agent = Agent(
             agent_name="Router Agent",
             agent_description="A router agent that routes tasks to the appropriate swarms.",
-            system_prompt=f"{router_system_prompt}\n\n{get_swarms_info()}",
+            system_prompt=f"{router_system_prompt}\n\n{get_swarms_info(swarms=self.swarms)}",
             tools_list_dictionary=tools,
             model_name=router_agent_model_name,
             max_loops=1,

@@ -1,30 +1,19 @@
 import threading
-import time
 import uuid
 from typing import Any, Callable, Dict, List, Optional
 
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.structs.conversation import Conversation
+from swarms.utils.history_output_formatter import (
+    output_type,
+)
 
 logger = initialize_logger(log_folder="swarm_arange")
 
 
 def swarm_id():
     return uuid.uuid4().hex
-
-
-class SwarmArrangeInput:
-    id: str = uuid.uuid4().hex
-    time_stamp: str = time.strftime("%Y-%m-%d %H:%M:%S")
-    name: str
-    description: str
-    swarms: List[Callable] = []
-    output_type: str
-    flow: str = ""
-
-
-class SwarmArrangeOutput:
-    input_config: SwarmArrangeInput = None
 
 
 class SwarmRearrange:
@@ -69,6 +58,7 @@ class SwarmRearrange:
             Callable[[str], str]
         ] = None,
         return_json: bool = False,
+        output_type: output_type = "dict-all-except-first",
         *args,
         **kwargs,
     ):
@@ -96,13 +86,18 @@ class SwarmRearrange:
         self.verbose = verbose
         self.human_in_the_loop = human_in_the_loop
         self.custom_human_in_the_loop = custom_human_in_the_loop
+        self.output_type = output_type
         self.return_json = return_json
+
         self.swarm_history = {swarm.name: [] for swarm in swarms}
         self.lock = threading.Lock()
         self.id = uuid.uuid4().hex if id is None else id
 
         # Run the reliability checks
         self.reliability_checks()
+
+        # Conversation
+        self.conversation = Conversation()
 
     def reliability_checks(self):
         logger.info("Running reliability checks.")
@@ -283,6 +278,10 @@ class SwarmRearrange:
                                     current_task, img, *args, **kwargs
                                 )
                                 result = any_to_str(result)
+                                self.conversation.add(
+                                    role=swarm.name, content=result
+                                )
+
                                 logger.info(
                                     f"Swarm {swarm_name} returned result of type: {type(result)}"
                                 )
@@ -325,6 +324,10 @@ class SwarmRearrange:
                                 current_task, img, *args, **kwargs
                             )
                             result = any_to_str(result)
+
+                            self.conversation.add(
+                                role=swarm.name, content=result
+                            )
                             logger.info(
                                 f"Swarm {swarm_name} returned result of type: {type(result)}"
                             )

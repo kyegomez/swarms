@@ -1404,44 +1404,44 @@ class HuggingFaceModelWrapper(ModelWithCustomRunMethod):
             raise ValueError(f"Unsupported task: {task}")
 
 
-# Example usage
-if __name__ == "__main__":
-    # Initialize model manager
-    manager = ModelGrid(
-        allocation_strategy=GPUAllocationStrategy.MEMORY_OPTIMIZED,
-        memory_buffer=0.5,
-        max_cpu_models=1,
-        use_multiprocessing=True,
-        log_level="INFO",
-    )
+# # Example usage
+# if __name__ == "__main__":
+#     # Initialize model manager
+#     manager = ModelGrid(
+#         allocation_strategy=GPUAllocationStrategy.MEMORY_OPTIMIZED,
+#         memory_buffer=0.5,
+#         max_cpu_models=1,
+#         use_multiprocessing=True,
+#         log_level="INFO",
+#     )
 
-    # # Add models
-    model1 = torch.nn.Sequential(
-        torch.nn.Linear(10, 10),
-        torch.nn.ReLU(),
-        torch.nn.Linear(10, 2),
-    )
-    manager.add_model("small_model", model1, ModelType.PYTORCH)
+#     # # Add models
+#     model1 = torch.nn.Sequential(
+#         torch.nn.Linear(10, 10),
+#         torch.nn.ReLU(),
+#         torch.nn.Linear(10, 2),
+#     )
+#     manager.add_model("small_model", model1, ModelType.PYTORCH)
 
-    # Add more models if available
-    if TRANSFORMERS_AVAILABLE:
-        manager.add_model(
-            "bert_model", "bert-base-uncased", ModelType.HUGGINGFACE
-        )
+#     # Add more models if available
+#     if TRANSFORMERS_AVAILABLE:
+#         manager.add_model(
+#             "bert_model", "bert-base-uncased", ModelType.HUGGINGFACE
+#         )
 
-    # Allocate and load models
-    manager.load_all_models()
+#     # Allocate and load models
+#     manager.load_all_models()
 
-    # Print GPU status
-    print("GPU Status:")
-    for gpu in manager.get_gpu_status():
-        print(
-            f"GPU {gpu['id']}: {gpu['available_memory']:.2f} GB / {gpu['total_memory']:.2f} GB"
-        )
-        print(f"  Models: {', '.join(gpu['models'])}")
+#     # Print GPU status
+#     print("GPU Status:")
+#     for gpu in manager.get_gpu_status():
+#         print(
+#             f"GPU {gpu['id']}: {gpu['available_memory']:.2f} GB / {gpu['total_memory']:.2f} GB"
+#         )
+#         print(f"  Models: {', '.join(gpu['models'])}")
 
-    # Run a task on all models
-    results = manager.run("forward", input_data=torch.randn(1, 10))
+#     # Run a task on all models
+#     results = manager.run("forward", input_data=torch.randn(1, 10))
 
-    # Unload all models
-    manager.unload_all_models()
+#     # Unload all models
+#     manager.unload_all_models()
