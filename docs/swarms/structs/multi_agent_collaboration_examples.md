@@ -123,45 +123,53 @@ Coming soon...
 ## `GraphSwarm`
 
 ```python
-import os
+from swarms.structs.agent import Agent              
+from swarms import Edge, GraphWorkflow, Node, NodeType  
 
-from dotenv import load_dotenv
 
+# Initialize two agents with GPT-4o-mini
+agent1 = Agent(
+    agent_name="agent1",
+    system_prompt="You are an autonomous agent executing workflow tasks.",
+    max_loops=1,
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    saved_state_path="agent1_state.json",
+    model_name="gpt-4o-mini",
+)  
 
-from swarms import Agent, Edge, GraphWorkflow, Node, NodeType
-
-from swarm_models import OpenAIChat
-
-load_dotenv()
-
-api_key = os.environ.get("OPENAI_API_KEY")
-
-llm = OpenAIChat(
-    temperature=0.5, openai_api_key=api_key, max_tokens=4000
-)
-agent1 = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
-agent2 = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
+agent2 = Agent(
+    agent_name="agent2",
+    system_prompt="You are an autonomous agent executing workflow tasks.",
+    max_loops=1,
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    saved_state_path="agent2_state.json",
+    model_name="gpt-4o-mini",
+) 
 
 def sample_task():
     print("Running sample task")
     return "Task completed"
 
-wf_graph = GraphWorkflow()
-wf_graph.add_node(Node(id="agent1", type=NodeType.AGENT, agent=agent1))
-wf_graph.add_node(Node(id="agent2", type=NodeType.AGENT, agent=agent2))
-wf_graph.add_node(
-    Node(id="task1", type=NodeType.TASK, callable=sample_task)
-)
-wf_graph.add_edge(Edge(source="agent1", target="task1"))
-wf_graph.add_edge(Edge(source="agent2", target="task1"))
+# Build the DAG
+wf = GraphWorkflow()
+wf.add_node(Node(id="agent1", type=NodeType.AGENT, agent=agent1))
+wf.add_node(Node(id="agent2", type=NodeType.AGENT, agent=agent2))
+wf.add_node(Node(id="task1",  type=NodeType.TASK, callable=sample_task))  
 
-wf_graph.set_entry_points(["agent1", "agent2"])
-wf_graph.set_end_points(["task1"])
+# Connect agents to the task
+wf.add_edge(Edge(source="agent1", target="task1"))
+wf.add_edge(Edge(source="agent2", target="task1"))  
 
-print(wf_graph.visualize())
+wf.set_entry_points(["agent1", "agent2"])
+wf.set_end_points(["task1"])  
 
-# Run the workflow
-results = wf_graph.run()
+# Visualize and run
+print(wf.visualize())  
+results = wf.run()    
 print("Execution results:", results)
 
 ```
