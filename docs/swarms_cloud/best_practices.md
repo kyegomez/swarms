@@ -45,6 +45,16 @@ This comprehensive guide outlines production-grade best practices for using the 
         | Agent Optimization | Use minimum required agents | 15-25% cost reduction |
         | Smart Routing | Route to specialized agents | 10-15% cost reduction |
         | Prompt Engineering | Optimize input tokens | 15-20% cost reduction |
+        | Flex Processing | Use flex tier for non-urgent tasks | 75% cost reduction |
+
+=== "Service Tiers"
+
+    !!! tip "Choosing the Right Service Tier"
+        
+        | Tier | Best For | Benefits | Considerations |
+        |------|----------|----------|----------------|
+        | Standard | - Real-time processing<br>- Time-sensitive tasks<br>- Critical workflows | - Immediate execution<br>- Higher priority<br>- Predictable timing | - Higher cost<br>- 5-min timeout |
+        | Flex | - Batch processing<br>- Non-urgent tasks<br>- Cost-sensitive workloads | - 75% cost reduction<br>- Longer timeouts<br>- Auto-retries | - Variable timing<br>- Resource contention |
 
 === "Industry Solutions"
 
@@ -127,6 +137,8 @@ Use this framework to select the optimal swarm architecture for your use case:
     - Monitor and log executions
     - Cache repeated results
     - Rotate API keys regularly
+    - Choose appropriate service tier based on task urgency
+    - Use flex processing for batch and non-urgent tasks
 
 !!! danger "Anti-patterns to Avoid"
     - Hardcoding API keys
@@ -134,6 +146,8 @@ Use this framework to select the optimal swarm architecture for your use case:
     - Missing error handling
     - Excessive agent count
     - Inadequate monitoring
+    - Using standard tier for non-urgent tasks
+    - Not implementing retry logic for flex tier
 
 ### Performance Benchmarks
 
@@ -141,11 +155,12 @@ Use this framework to select the optimal swarm architecture for your use case:
     
     | Metric | Target Range | Warning Threshold |
     |--------|--------------|-------------------|
-    | Response Time | < 2s | > 5s |
+    | Response Time | < 2s (standard)<br>< 15s (flex) | > 5s (standard)<br>> 30s (flex) |
     | Success Rate | > 99% | < 95% |
-    | Cost per Task | < $0.05 | > $0.10 |
+    | Cost per Task | < $0.05 (standard)<br>< $0.0125 (flex) | > $0.10 (standard)<br>> $0.025 (flex) |
     | Cache Hit Rate | > 80% | < 60% |
     | Error Rate | < 1% | > 5% |
+    | Retry Rate (flex) | < 10% | > 30% |
 
 ### Additional Resources
 

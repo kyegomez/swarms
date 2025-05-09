@@ -1,6 +1,8 @@
 import datetime
 import json
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Union, Dict
+import threading
+import hashlib
 
 import yaml
 from swarms.structs.base_structure import BaseStructure
@@ -8,7 +10,6 @@ from typing import TYPE_CHECKING
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.formatter import formatter
 from swarms.utils.litellm_tokenizer import count_tokens
-import threading
 
 if TYPE_CHECKING:
     from swarms.structs.agent import (
@@ -37,6 +38,9 @@ class Conversation(BaseStructure):
         save_as_json_bool (bool): Flag to save conversation history as JSON.
         token_count (bool): Flag to enable token counting for messages.
         conversation_history (list): List to store the history of messages.
+        cache_enabled (bool): Flag to enable prompt caching.
+        cache_stats (dict): Statistics about cache usage.
+        cache_lock (threading.Lock): Lock for thread-safe cache operations.
     """
 
     def __init__(
@@ -54,6 +58,7 @@ class Conversation(BaseStructure):
         save_as_yaml: bool = True,
         save_as_json_bool: bool = False,
         token_count: bool = True,
+        cache_enabled: bool = True,
         *args,
         **kwargs,
     ):
@@ -74,6 +79,7 @@ class Conversation(BaseStructure):
             save_as_yaml (bool): Flag to save conversation history as YAML.
             save_as_json_bool (bool): Flag to save conversation history as JSON.
             token_count (bool): Flag to enable token counting for messages.
+            cache_enabled (bool): Flag to enable prompt caching.
         """
         super().__init__()
         self.system_prompt = system_prompt
@@ -90,6 +96,14 @@ class Conversation(BaseStructure):
         self.save_as_yaml = save_as_yaml
         self.save_as_json_bool = save_as_json_bool
         self.token_count = token_count
+        self.cache_enabled = cache_enabled
+        self.cache_stats = {
+            "hits": 0,
+            "misses": 0,
+            "cached_tokens": 0,
+            "total_tokens": 0,
+        }
+        self.cache_lock = threading.Lock()
 
         # If system prompt is not None, add it to the conversation history
         if self.system_prompt is not None:
@@ -105,6 +119,61 @@ class Conversation(BaseStructure):
         if tokenizer is not None:
             self.truncate_memory_with_tokenizer()
 
+    def _generate_cache_key(
+        self, content: Union[str, dict, list]
+    ) -> str:
+        """Generate a cache key for the given content.
+
+        Args:
+            content (Union[str, dict, list]): The content to generate a cache key for.
+
+        Returns:
+            str: The cache key.
+        """
+        if isinstance(content, (dict, list)):
+            content = json.dumps(content, sort_keys=True)
+        return hashlib.md5(content.encode()).hexdigest()
+
+    def _get_cached_tokens(
+        self, content: Union[str, dict, list]
+    ) -> Optional[int]:
+        """Get the number of cached tokens for the given content.
+
+        Args:
+            content (Union[str, dict, list]): The content to check.
+
+        Returns:
+            Optional[int]: The number of cached tokens, or None if not cached.
+        """
+        if not self.cache_enabled:
+            return None
+
+        with self.cache_lock:
+            cache_key = self._generate_cache_key(content)
+            if cache_key in self.cache_stats:
+                self.cache_stats["hits"] += 1
+                return self.cache_stats[cache_key]
+            self.cache_stats["misses"] += 1
+            return None
+
+    def _update_cache_stats(
+        self, content: Union[str, dict, list], token_count: int
+    ):
+        """Update cache statistics for the given content.
+
+        Args:
+            content (Union[str, dict, list]): The content to update stats for.
+            token_count (int): The number of tokens in the content.
+        """
+        if not self.cache_enabled:
+            return
+
+        with self.cache_lock:
+            cache_key = self._generate_cache_key(content)
+            self.cache_stats[cache_key] = token_count
+            self.cache_stats["cached_tokens"] += token_count
+            self.cache_stats["total_tokens"] += token_count
+
     def add(
         self,
         role: str,
@@ -118,7 +187,6 @@ class Conversation(BaseStructure):
             role (str): The role of the speaker (e.g., 'User', 'System').
             content (Union[str, dict, list]): The content of the message to be added.
         """
-
         # Base message with role
         message = {
             "role": role,
@@ -134,10 +202,20 @@ class Conversation(BaseStructure):
         else:
             message["content"] = content
 
+        # Check cache for token count
+        cached_tokens = self._get_cached_tokens(content)
+        if cached_tokens is not None:
+            message["token_count"] = cached_tokens
+            message["cached"] = True
+        else:
+            message["cached"] = False
+
         # Add the message to history immediately without waiting for token count
         self.conversation_history.append(message)
 
-        if self.token_count is True:
+        if self.token_count is True and not message.get(
+            "cached", False
+        ):
             self._count_tokens(content, message)
 
     def add_multiple_messages(
@@ -155,6 +233,8 @@ class Conversation(BaseStructure):
                 tokens = count_tokens(any_to_str(content))
                 # Update the message that's already in the conversation history
                 message["token_count"] = int(tokens)
+                # Update cache stats
+                self._update_cache_stats(content, int(tokens))
 
                 # If autosave is enabled, save after token count is updated
                 if self.autosave:
@@ -277,13 +357,23 @@ class Conversation(BaseStructure):
             ]
         )
 
-    def get_str(self):
+    def get_str(self) -> str:
         """Get the conversation history as a string.
 
         Returns:
             str: The conversation history.
         """
-        return self.return_history_as_string()
+        messages = []
+        for message in self.conversation_history:
+            content = message["content"]
+            if isinstance(content, (dict, list)):
+                content = json.dumps(content)
+            messages.append(f"{message['role']}: {content}")
+            if "token_count" in message:
+                messages[-1] += f" (tokens: {message['token_count']})"
+            if message.get("cached", False):
+                messages[-1] += " [cached]"
+        return "\n".join(messages)
 
     def save_as_json(self, filename: str = None):
         """Save the conversation history as a JSON file.
@@ -511,6 +601,33 @@ class Conversation(BaseStructure):
             messages (List[dict]): List of messages to add.
         """
         self.conversation_history.extend(messages)
+
+    def get_cache_stats(self) -> Dict[str, int]:
+        """Get statistics about cache usage.
+
+        Returns:
+            Dict[str, int]: Statistics about cache usage.
+        """
+        with self.cache_lock:
+            return {
+                "hits": self.cache_stats["hits"],
+                "misses": self.cache_stats["misses"],
+                "cached_tokens": self.cache_stats["cached_tokens"],
+                "total_tokens": self.cache_stats["total_tokens"],
+                "hit_rate": (
+                    self.cache_stats["hits"]
+                    / (
+                        self.cache_stats["hits"]
+                        + self.cache_stats["misses"]
+                    )
+                    if (
+                        self.cache_stats["hits"]
+                        + self.cache_stats["misses"]
+                    )
+                    > 0
+                    else 0
+                ),
+            }
 
 
 # # Example usage

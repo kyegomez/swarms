@@ -46,6 +46,7 @@ API keys can be obtained and managed at [https://swarms.world/platform/api-keys]
 | `/v1/swarm/logs` | GET | Retrieve API request logs |
 | `/v1/swarms/available` | GET | Get all available swarms as a list of strings |
 | `/v1/models/available` | GET | Get all available models as a list of strings |
+| `/v1/agent/completions` | POST | Run a single agent with specified configuration |
 
 
 
@@ -88,6 +89,7 @@ The `SwarmSpec` model defines the configuration of a swarm.
 | return_history | boolean | Whether to return execution history | No |
 | rules | string | Guidelines for swarm behavior | No |
 | schedule | ScheduleSpec | Scheduling information | No |
+| service_tier | string | Service tier for processing ("standard" or "flex") | No |
 
 ### AgentSpec
 
@@ -341,11 +343,16 @@ curl -X POST "https://api.swarms.world/v1/swarm/batch/completions" \
 ]
 ```
 
-#### Schedule Swarm
+-------
 
-Schedule a swarm to run at a specific time.
 
-**Endpoint**: `/v1/swarm/schedule`  
+
+
+### Run Single Agent
+
+Run a single agent with the specified configuration.
+
+**Endpoint**: `/v1/agent/completions`  
 **Method**: POST  
 **Rate Limit**: 100 requests per 60 seconds
 
@@ -353,104 +360,46 @@ Schedule a swarm to run at a specific time.
 
 | Field | Type | Description | Required |
 |-------|------|-------------|----------|
-| name | string | Identifier for the swarm | No |
-| description | string | Description of the swarm's purpose | No |
-| agents | Array<AgentSpec> | List of agent specifications | No |
-| max_loops | integer | Maximum number of execution loops | No |
-| swarm_type | SwarmType | Architecture of the swarm | No |
-| task | string | The main task for the swarm to accomplish | Yes |
-| schedule | ScheduleSpec | Scheduling information | Yes |
+| agent_config | AgentSpec | Configuration for the agent | Yes |
+| task | string | The task to be completed by the agent | Yes |
 
 **Example Request**:
 ```bash
-curl -X POST "https://api.swarms.world/v1/swarm/schedule" \
+curl -X POST "https://api.swarms.world/v1/agent/completions" \
      -H "x-api-key: your_api_key_here" \
      -H "Content-Type: application/json" \
      -d '{
-       "name": "daily-market-analysis",
-       "description": "Daily analysis of market conditions",
-       "task": "Analyze today's market movements and prepare a summary report",
-       "schedule": {
-         "scheduled_time": "2025-03-05T17:00:00Z",
-         "timezone": "UTC"
-       }
+       "agent_config": {
+         "agent_name": "Research Assistant",
+         "description": "Helps with research tasks",
+         "system_prompt": "You are a research assistant expert.",
+         "model_name": "gpt-4o",
+         "max_loops": 1,
+         "max_tokens": 8192,
+         "temperature": 0.5
+       },
+       "task": "Research the latest developments in quantum computing."
      }'
 ```
 
 **Example Response**:
 ```json
 {
-  "status": "success",
-  "message": "Swarm scheduled successfully",
-  "job_id": "swarm_daily-market-analysis_1709563245",
-  "scheduled_time": "2025-03-05T17:00:00Z",
-  "timezone": "UTC"
+  "id": "agent-abc123",
+  "success": true,
+  "name": "Research Assistant",
+  "description": "Helps with research tasks",
+  "temperature": 0.5,
+  "outputs": {},
+  "usage": {
+    "input_tokens": 150,
+    "output_tokens": 450,
+    "total_tokens": 600
+  },
+  "timestamp": "2024-03-05T12:34:56.789Z"
 }
 ```
 
-#### Get Scheduled Jobs
-
-Retrieve all scheduled swarm jobs.
-
-**Endpoint**: `/v1/swarm/schedule`  
-**Method**: GET  
-**Rate Limit**: 100 requests per 60 seconds
-
-**Example Request**:
-```bash
-curl -X GET "https://api.swarms.world/v1/swarm/schedule" \
-     -H "x-api-key: your_api_key_here"
-```
-
-**Example Response**:
-```json
-{
-  "status": "success",
-  "scheduled_jobs": [
-    {
-      "job_id": "swarm_daily-market-analysis_1709563245",
-      "swarm_name": "daily-market-analysis",
-      "scheduled_time": "2025-03-05T17:00:00Z",
-      "timezone": "UTC"
-    },
-    {
-      "job_id": "swarm_weekly-report_1709563348",
-      "swarm_name": "weekly-report",
-      "scheduled_time": "2025-03-09T12:00:00Z",
-      "timezone": "UTC"
-    }
-  ]
-}
-```
-
-#### Cancel Scheduled Job
-
-Cancel a previously scheduled swarm job.
-
-**Endpoint**: `/v1/swarm/schedule/{job_id}`  
-**Method**: DELETE  
-**Rate Limit**: 100 requests per 60 seconds
-
-**Path Parameters**:
-
-| Parameter | Description |
-|-----------|-------------|
-| job_id | ID of the scheduled job to cancel |
-
-**Example Request**:
-```bash
-curl -X DELETE "https://api.swarms.world/v1/swarm/schedule/swarm_daily-market-analysis_1709563245" \
-     -H "x-api-key: your_api_key_here"
-```
-
-**Example Response**:
-```json
-{
-  "status": "success",
-  "message": "Scheduled job cancelled successfully",
-  "job_id": "swarm_daily-market-analysis_1709563245"
-}
-```
 
 
 ### Get Models
@@ -1004,3 +953,35 @@ For technical assistance with the Swarms API, please contact:
 - Community Discord: [https://discord.gg/swarms](https://discord.gg/swarms)
 - Swarms Marketplace: [https://swarms.world](https://swarms.world)
 - Swarms AI Website: [https://swarms.ai](https://swarms.ai)
+
+## Service Tiers
+
+The API offers two service tiers to accommodate different processing needs:
+
+### Standard Tier
+
+- Default processing tier
+
+- Immediate execution
+
+- Higher priority processing
+
+- Standard pricing
+
+- 5-minute timeout limit
+
+### Flex Tier
+
+- Lower cost processing
+
+- Automatic retries (up to 3 attempts)
+
+- Longer timeout (15 minutes)
+
+- 75% discount on token costs
+
+- Best for non-urgent tasks
+
+- Exponential backoff on resource contention
+
+To use the flex tier, set `service_tier: "flex"` in your SwarmSpec configuration.
