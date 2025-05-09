@@ -2803,3 +2803,153 @@ class Agent:
                 role="Output Cleaner",
                 content=response,
             )
+
+    def _serialize_logger_handler(self) -> dict:
+        """Serialize logger handler configuration."""
+        if not hasattr(self, 'logger_handler') or self.logger_handler is None:
+            return None
+        
+        handler_config = {
+            'type': 'TextIOWrapper',
+            'mode': self.logger_handler.mode,
+            'name': self.logger_handler.name if hasattr(self.logger_handler, 'name') else None,
+            'encoding': self.logger_handler.encoding if hasattr(self.logger_handler, 'encoding') else None
+        }
+        return handler_config
+
+    def _deserialize_logger_handler(self, config: dict) -> None:
+        """Recreate logger handler from configuration."""
+        if not config:
+            self.logger_handler = None
+            return
+        
+        try:
+            if config['type'] == 'TextIOWrapper':
+                if config['name']:
+                    self.logger_handler = open(
+                        config['name'],
+                        mode=config.get('mode', 'a'),
+                        encoding=config.get('encoding', 'utf-8')
+                    )
+        except Exception as e:
+            logger.warning(f"Failed to recreate logger handler: {e}")
+            self.logger_handler = None
+
+    def _serialize_short_memory(self) -> dict:
+        """Serialize short memory into a dictionary format."""
+        if hasattr(self, 'short_memory') and self.short_memory is not None:
+            return {
+                'type': 'Conversation',
+                'messages': self.short_memory.messages if hasattr(self.short_memory, 'messages') else [],
+                'system_prompt': self.short_memory.system_prompt if hasattr(self.short_memory, 'system_prompt') else None,
+                'time_enabled': self.short_memory.time_enabled if hasattr(self.short_memory, 'time_enabled') else False,
+                'user': self.short_memory.user if hasattr(self.short_memory, 'user') else "Human:",
+                'rules': self.short_memory.rules if hasattr(self.short_memory, 'rules') else None
+            }
+        return None
+
+    def _deserialize_short_memory(self, config: dict) -> None:
+        """Recreate short memory from configuration."""
+        if not config:
+            self.short_memory = self.short_memory_init()
+            return
+        
+        try:
+            if config['type'] == 'Conversation':
+                from swarms.structs.conversation import Conversation
+                self.short_memory = Conversation(
+                    system_prompt=config.get('system_prompt'),
+                    time_enabled=config.get('time_enabled', False),
+                    user=config.get('user', "Human:"),
+                    rules=config.get('rules')
+                )
+                # Restore messages
+                if 'messages' in config:
+                    self.short_memory.messages = config['messages']
+        except Exception as e:
+            logger.warning(f"Failed to recreate short memory: {e}")
+            self.short_memory = self.short_memory_init()
+
+    def save(self, file_path: str = None) -> None:
+        """Save agent state to file."""
+        try:
+            # Get the full path for saving
+            full_path = file_path or self.saved_state_path
+            if not full_path:
+                raise ValueError("No file path provided for saving state")
+
+            # Create temporary file for atomic save
+            temp_path = f"{full_path}.tmp"
+            backup_path = f"{full_path}.bak"
+
+            # Prepare state dictionary
+            state_dict = self.__dict__.copy()
+            
+            # Handle special serialization for non-serializable objects
+            state_dict['logger_handler'] = self._serialize_logger_handler()
+            state_dict['short_memory'] = self._serialize_short_memory()
+            
+            # Remove other non-serializable objects
+            non_serializable = ['llm', 'tokenizer', 'long_term_memory', 'agent_output', 'executor']
+            for key in non_serializable:
+                if key in state_dict:
+                    if state_dict[key] is not None:
+                        state_dict[key] = f"<Non-serializable: {state_dict[key].__class__.__name__}>"
+                    else:
+                        state_dict[key] = None
+            
+            # Save to temporary file
+            with open(temp_path, 'w') as f:
+                json.dump(state_dict, f, indent=2, default=str)
+
+            # If current file exists, create backup
+            if os.path.exists(full_path):
+                os.replace(full_path, backup_path)
+
+            # Move temporary file to final location
+            os.replace(temp_path, full_path)
+
+            # Clean up old backup if everything succeeded
+            if os.path.exists(backup_path):
+                try:
+                    os.remove(backup_path)
+                except Exception as e:
+                    logger.warning(f"Could not remove backup file: {e}")
+
+            logger.info(f"Successfully saved agent state to: {full_path}")
+
+        except Exception as e:
+            logger.error(f"Error saving agent state: {e}")
+            raise
+
+    def load(self, file_path: str = None) -> None:
+        """Load agent state from file."""
+        try:
+            # Get the full path for loading
+            full_path = file_path or self.saved_state_path
+            if not full_path:
+                raise ValueError("No file path provided for loading state")
+
+            # Load state from file
+            with open(full_path, 'r') as f:
+                state_dict = json.load(f)
+
+            # Handle special deserialization first
+            logger_config = state_dict.pop('logger_handler', None)
+            short_memory_config = state_dict.pop('short_memory', None)
+            
+            self._deserialize_logger_handler(logger_config)
+            self._deserialize_short_memory(short_memory_config)
+
+            # Update remaining agent attributes
+            for key, value in state_dict.items():
+                # Skip non-serializable objects that were saved as strings
+                if isinstance(value, str) and value.startswith('<Non-serializable:'):
+                    continue
+                setattr(self, key, value)
+
+            logger.info(f"Successfully loaded agent state from: {full_path}")
+
+        except Exception as e:
+            logger.error(f"Error loading agent state: {e}")
+            raise
