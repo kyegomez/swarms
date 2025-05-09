@@ -1111,31 +1111,15 @@ class Agent:
                         # Convert to a str if the response is not a str
                         response = self.parse_llm_output(response)
 
-                        # self.short_memory.add(
-                        #     role=self.agent_name, content=response
-                        # )
+                        self.short_memory.add(
+                            role=self.agent_name, content=response
+                        )
 
-                        # # Print
-                        # self.pretty_print(response, loop_count)
+                        # Print
+                        self.pretty_print(response, loop_count)
 
-                        # # Output Cleaner
-                        # self.output_cleaner_op(response)
-
-                        # 9. Batch memory updates and prints
-                        update_tasks = [
-                            lambda: self.short_memory.add(
-                                role=self.agent_name, content=response
-                            ),
-                            lambda: self.pretty_print(
-                                response, loop_count
-                            ),
-                            lambda: self.output_cleaner_op(response),
-                        ]
-
-                        with ThreadPoolExecutor(
-                            max_workers=len(update_tasks)
-                        ) as executor:
-                            executor.map(lambda f: f(), update_tasks)
+                        # Output Cleaner
+                        self.output_cleaner_op(response)
 
                         ####### MCP TOOL HANDLING #######
                         if (
@@ -1156,21 +1140,23 @@ class Agent:
                                 role="Tool Executor", content=out
                             )
 
-                            agent_print(
-                                f"{self.agent_name} - Tool Executor",
-                                out,
-                                loop_count,
-                                self.streaming_on,
-                            )
+                            if self.no_print is False:
+                                agent_print(
+                                    f"{self.agent_name} - Tool Executor",
+                                    out,
+                                    loop_count,
+                                    self.streaming_on,
+                                )
 
                             out = self.llm.run(out)
 
-                            agent_print(
-                                f"{self.agent_name} - Agent Analysis",
-                                out,
-                                loop_count,
-                                self.streaming_on,
-                            )
+                            if self.no_print is False:
+                                agent_print(
+                                    f"{self.agent_name} - Agent Analysis",
+                                    out,
+                                    loop_count,
+                                    self.streaming_on,
+                                )
 
                             self.short_memory.add(
                                 role=self.agent_name, content=out
@@ -2738,6 +2724,8 @@ class Agent:
                     f"{self.agent_name}: {response}",
                     title=f"Agent Name: {self.agent_name} [Max Loops: {loop_count}]",
                 )
+            elif self.no_print is True:
+                pass
             else:
                 # logger.info(f"Response: {response}")
                 formatter.print_panel(

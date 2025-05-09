@@ -6,16 +6,17 @@ The `ConcurrentWorkflow` class is designed to facilitate the concurrent executio
 
 ### Key Features
 
-- **Concurrent Execution**: Runs multiple agents simultaneously using Python's `asyncio` and `ThreadPoolExecutor`.
-- **Metadata Collection**: Gathers detailed metadata about each agent's execution, including start and end times, duration, and output.
-- **Customizable Output**: Allows the user to save metadata to a file or return it as a string or dictionary.
-- **Error Handling**: Implements retry logic for improved reliability.
-- **Batch Processing**: Supports running tasks in batches and parallel execution.
-- **Asynchronous Execution**: Provides asynchronous run options for improved performance.
+- **Concurrent Execution**: Runs multiple agents simultaneously using Python's `ThreadPoolExecutor`
+- **Interactive Mode**: Supports interactive task modification and execution
+- **Caching System**: Implements LRU caching for repeated prompts
+- **Progress Tracking**: Optional progress bar for task execution
+- **Enhanced Error Handling**: Implements retry mechanism with exponential backoff
+- **Input Validation**: Validates task inputs before execution
+- **Batch Processing**: Supports running tasks in batches
+- **Metadata Collection**: Gathers detailed metadata about each agent's execution
+- **Customizable Output**: Allows saving metadata to file or returning as string/dictionary
 
-## Class Definitions
-
-The `ConcurrentWorkflow` class is the core class that manages the concurrent execution of agents. It inherits from `BaseSwarm` and includes several key attributes and methods to facilitate this process.
+## Class Definition
 
 ### Attributes
 
@@ -26,15 +27,18 @@ The `ConcurrentWorkflow` class is the core class that manages the concurrent exe
 | `agents`               | `List[Agent]`           | A list of agents to be executed concurrently.             |
 | `metadata_output_path` | `str`                   | Path to save the metadata output. Defaults to `"agent_metadata.json"`. |
 | `auto_save`            | `bool`                  | Flag indicating whether to automatically save the metadata. |
-| `output_schema`        | `BaseModel`             | The output schema for the metadata, defaults to `MetadataSchema`. |
-| `max_loops`            | `int`                   | Maximum number of loops for the workflow, defaults to `1`. |
+| `output_type`          | `str`                   | The type of output format. Defaults to `"dict"`.          |
+| `max_loops`            | `int`                   | Maximum number of loops for each agent. Defaults to `1`.  |
 | `return_str_on`        | `bool`                  | Flag to return output as string. Defaults to `False`.     |
-| `agent_responses`      | `List[str]`             | List of agent responses as strings.                       |
 | `auto_generate_prompts`| `bool`                  | Flag indicating whether to auto-generate prompts for agents. |
-| `output_type`          | `OutputType`            | Type of output format to return. Defaults to `"dict"`.    |
 | `return_entire_history`| `bool`                  | Flag to return entire conversation history. Defaults to `False`. |
-| `conversation`         | `Conversation`          | Conversation object to track agent interactions.          |
-| `max_workers`          | `int`                   | Maximum number of worker threads. Defaults to CPU count.  |
+| `interactive`          | `bool`                  | Flag indicating whether to enable interactive mode. Defaults to `False`. |
+| `cache_size`           | `int`                   | The size of the cache. Defaults to `100`.                 |
+| `max_retries`          | `int`                   | The maximum number of retry attempts. Defaults to `3`.    |
+| `retry_delay`          | `float`                 | The delay between retry attempts in seconds. Defaults to `1.0`. |
+| `show_progress`        | `bool`                  | Flag indicating whether to show progress. Defaults to `False`. |
+| `_cache`               | `dict`                  | The cache for storing agent outputs.                      |
+| `_progress_bar`        | `tqdm`                  | The progress bar for tracking execution.                  |
 
 ## Methods
 
@@ -51,53 +55,72 @@ Initializes the `ConcurrentWorkflow` class with the provided parameters.
 | `agents`              | `List[Agent]`  | `[]`                                   | A list of agents to be executed concurrently.             |
 | `metadata_output_path`| `str`          | `"agent_metadata.json"`                | Path to save the metadata output.                         |
 | `auto_save`           | `bool`         | `True`                                 | Flag indicating whether to automatically save the metadata. |
-| `output_schema`       | `BaseModel`    | `MetadataSchema`                       | The output schema for the metadata.                       |
-| `max_loops`           | `int`          | `1`                                    | Maximum number of loops for the workflow.                 |
+| `output_type`         | `str`          | `"dict"`                               | The type of output format.                                |
+| `max_loops`           | `int`          | `1`                                    | Maximum number of loops for each agent.                   |
 | `return_str_on`       | `bool`         | `False`                                | Flag to return output as string.                          |
-| `agent_responses`     | `List[str]`    | `[]`                                   | List of agent responses as strings.                       |
 | `auto_generate_prompts`| `bool`        | `False`                                | Flag indicating whether to auto-generate prompts for agents. |
-| `output_type`         | `OutputType`   | `"dict"`                               | Type of output format to return.                          |
 | `return_entire_history`| `bool`        | `False`                                | Flag to return entire conversation history.               |
+| `interactive`         | `bool`         | `False`                                | Flag indicating whether to enable interactive mode.        |
+| `cache_size`          | `int`          | `100`                                  | The size of the cache.                                    |
+| `max_retries`         | `int`          | `3`                                    | The maximum number of retry attempts.                     |
+| `retry_delay`         | `float`        | `1.0`                                  | The delay between retry attempts in seconds.              |
+| `show_progress`       | `bool`         | `False`                                | Flag indicating whether to show progress.                 |
 
 #### Raises
 
 - `ValueError`: If the list of agents is empty or if the description is empty.
 
+### ConcurrentWorkflow.disable_agent_prints
+
+Disables print statements for all agents in the workflow.
+
+```python
+workflow.disable_agent_prints()
+```
+
 ### ConcurrentWorkflow.activate_auto_prompt_engineering
 
 Activates the auto-generate prompts feature for all agents in the workflow.
 
-#### Example
-
 ```python
-workflow = ConcurrentWorkflow(agents=[Agent()])
 workflow.activate_auto_prompt_engineering()
-# All agents in the workflow will now auto-generate prompts.
 ```
 
-### ConcurrentWorkflow.transform_metadata_schema_to_str
+### ConcurrentWorkflow.enable_progress_bar
 
-Transforms the metadata schema into a string format.
+Enables the progress bar display for task execution.
 
-#### Parameters
+```python
+workflow.enable_progress_bar()
+```
 
-| Parameter   | Type                | Description                                               |
-|-------------|---------------------|-----------------------------------------------------------|
-| `schema`    | `MetadataSchema`    | The metadata schema to transform.                         |
+### ConcurrentWorkflow.disable_progress_bar
+
+Disables the progress bar display.
+
+```python
+workflow.disable_progress_bar()
+```
+
+### ConcurrentWorkflow.clear_cache
+
+Clears the task cache.
+
+```python
+workflow.clear_cache()
+```
+
+### ConcurrentWorkflow.get_cache_stats
+
+Gets cache statistics.
 
 #### Returns
 
-- `str`: The metadata schema as a formatted string.
-
-### ConcurrentWorkflow.save_metadata
-
-Saves the metadata to a JSON file based on the `auto_save` flag.
-
-#### Example
+- `Dict[str, int]`: A dictionary containing cache statistics.
 
 ```python
-workflow.save_metadata()
-# Metadata will be saved to the specified path if auto_save is True.
+stats = workflow.get_cache_stats()
+print(stats)  # {'cache_size': 5, 'max_cache_size': 100}
 ```
 
 ### ConcurrentWorkflow.run
@@ -134,136 +157,71 @@ Runs the workflow for a batch of tasks.
 
 #### Returns
 
-- `List[Union[Dict[str, Any], str]]`: A list of final metadata for each task.
-
-#### Example
-
-```python
-tasks = ["Task 1", "Task 2"]
-results = workflow.run_batched(tasks)
-print(results)
-```
-
-
+- `List[Any]`: A list of results for each task.
 
 ## Usage Examples
 
-### Example 1: Basic Usage
+### Example 1: Basic Usage with Interactive Mode
 
 ```python
-import os
+from swarms import Agent, ConcurrentWorkflow
 
-from swarms import Agent, ConcurrentWorkflow, OpenAIChat
-# Define custom system prompts for each social media platform
-TWITTER_AGENT_SYS_PROMPT = """
-You are a Twitter marketing expert specializing in real estate. Your task is to create engaging, concise tweets to promote properties, analyze trends to maximize engagement, and use appropriate hashtags and timing to reach potential buyers.
-"""
-
-INSTAGRAM_AGENT_SYS_PROMPT = """
-You are an Instagram marketing expert focusing on real estate. Your task is to create visually appealing posts with engaging captions and hashtags to showcase properties, targeting specific demographics interested in real estate.
-"""
-
-FACEBOOK_AGENT_SYS_PROMPT = """
-You are a Facebook marketing expert for real estate. Your task is to craft posts optimized for engagement and reach on Facebook, including using images, links, and targeted messaging to attract potential property buyers.
-"""
-
-LINKEDIN_AGENT_SYS_PROMPT = """
-You are a LinkedIn marketing expert for the real estate industry. Your task is to create professional and informative posts, highlighting property features, market trends, and investment opportunities, tailored to professionals and investors.
-"""
-
-EMAIL_AGENT_SYS_PROMPT = """
-You are an Email marketing expert specializing in real estate. Your task is to write compelling email campaigns to promote properties, focusing on personalization, subject lines, and effective call-to-action strategies to drive conversions.
-"""
-
-# Initialize your agents for different social media platforms
+# Initialize agents
 agents = [
     Agent(
-        agent_name="Twitter-RealEstate-Agent",
-        system_prompt=TWITTER_AGENT_SYS_PROMPT,
-        model_name="gpt-4o",
+        agent_name=f"Agent-{i}",
+        system_prompt="You are a helpful assistant.",
+        model_name="gpt-4",
         max_loops=1,
-        dynamic_temperature_enabled=True,
-        saved_state_path="twitter_realestate_agent.json",
-        user_name="swarm_corp",
-        retry_attempts=1,
-    ),
-    Agent(
-        agent_name="Instagram-RealEstate-Agent",
-        system_prompt=INSTAGRAM_AGENT_SYS_PROMPT,
-        model_name="gpt-4o",
-        max_loops=1,
-        dynamic_temperature_enabled=True,
-        saved_state_path="instagram_realestate_agent.json",
-        user_name="swarm_corp",
-        retry_attempts=1,
-    ),
-    Agent(
-        agent_name="Facebook-RealEstate-Agent",
-        system_prompt=FACEBOOK_AGENT_SYS_PROMPT,
-        model_name="gpt-4o",
-        max_loops=1,
-        dynamic_temperature_enabled=True,
-        saved_state_path="facebook_realestate_agent.json",
-        user_name="swarm_corp",
-        retry_attempts=1,
-    ),
-    Agent(
-        agent_name="LinkedIn-RealEstate-Agent",
-        system_prompt=LINKEDIN_AGENT_SYS_PROMPT,
-        model_name="gpt-4o",
-        max_loops=1,
-        dynamic_temperature_enabled=True,
-        saved_state_path="linkedin_realestate_agent.json",
-        user_name="swarm_corp",
-        retry_attempts=1,
-    ),
-    Agent(
-        agent_name="Email-RealEstate-Agent",
-        system_prompt=EMAIL_AGENT_SYS_PROMPT,
-        model_name="gpt-4o",
-        max_loops=1,
-        dynamic_temperature_enabled=True,
-        saved_state_path="email_realestate_agent.json",
-        user_name="swarm_corp",
-        retry_attempts=1,
-    ),
+    )
+    for i in range(3)
 ]
 
-# Initialize workflow
+# Initialize workflow with interactive mode
 workflow = ConcurrentWorkflow(
-    name="Real Estate Marketing Swarm",
+    name="Interactive Workflow",
     agents=agents,
-    metadata_output_path="metadata.json",
-    description="Concurrent swarm of content generators for real estate!",
-    auto_save=True,
+    interactive=True,
+    show_progress=True,
+    cache_size=100,
+    max_retries=3,
+    retry_delay=1.0
 )
 
 # Run workflow
-task = "Create a marketing campaign for a luxury beachfront property in Miami, focusing on its stunning ocean views, private beach access, and state-of-the-art amenities."
-metadata = workflow.run(task)
-print(metadata)
+task = "What are the benefits of using Python for data analysis?"
+result = workflow.run(task)
+print(result)
 ```
 
-### Example 2: Custom Output Handling
+### Example 2: Batch Processing with Progress Bar
 
 ```python
-# Initialize workflow with string output
+# Initialize workflow
 workflow = ConcurrentWorkflow(
-    name="Real Estate Marketing Swarm",
+    name="Batch Processing Workflow",
     agents=agents,
-    metadata_output_path="metadata.json",
-    description="Concurrent swarm of content generators for real estate!",
-    auto_save=True,
-    return_str_on=True
+    show_progress=True,
+    auto_save=True
 )
 
-# Run workflow
-task = "Develop a marketing strategy for a newly renovated historic townhouse in Boston, emphasizing its blend of classic architecture and modern amenities."
-metadata_str = workflow.run(task)
-print(metadata_str)
+# Define tasks
+tasks = [
+    "Analyze the impact of climate change on agriculture",
+    "Evaluate renewable energy solutions",
+    "Assess water conservation strategies"
+]
+
+# Run batch processing
+results = workflow.run_batched(tasks)
+
+# Process results
+for task, result in zip(tasks, results):
+    print(f"Task: {task}")
+    print(f"Result: {result}\n")
 ```
 
-### Example 3: Error Handling and Debugging
+### Example 3: Error Handling and Retries
 
 ```python
 import logging
@@ -271,71 +229,38 @@ import logging
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 
-# Initialize workflow
+# Initialize workflow with retry settings
 workflow = ConcurrentWorkflow(
-    name="Real Estate Marketing Swarm",
+    name="Reliable Workflow",
     agents=agents,
-    metadata_output_path="metadata.json",
-    description="Concurrent swarm of content generators for real estate!",
-    auto_save=True
+    max_retries=3,
+    retry_delay=1.0,
+    show_progress=True
 )
 
 # Run workflow with error handling
 try:
-    task = "Create a marketing campaign for a eco-friendly tiny house community in Portland, Oregon."
-    metadata = workflow.run(task)
-    print(metadata)
+    task = "Generate a comprehensive market analysis report"
+    result = workflow.run(task)
+    print(result)
 except Exception as e:
-    logging.error(f"An error occurred during workflow execution: {str(e)}")
-    # Additional error handling or debugging steps can be added here
+    logging.error(f"An error occurred: {str(e)}")
 ```
-
-### Example 4: Batch Processing
-
-```python
-# Initialize workflow
-workflow = ConcurrentWorkflow(
-    name="Real Estate Marketing Swarm",
-    agents=agents,
-    metadata_output_path="metadata_batch.json",
-    description="Concurrent swarm of content generators for real estate!",
-    auto_save=True
-)
-
-# Define a list of tasks
-tasks = [
-    "Market a family-friendly suburban home with a large backyard and excellent schools nearby.",
-    "Promote a high-rise luxury apartment in New York City with panoramic skyline views.",
-    "Advertise a ski-in/ski-out chalet in Aspen, Colorado, perfect for winter sports enthusiasts."
-]
-
-# Run workflow in batch mode
-results = workflow.run_batched(tasks)
-
-# Process and print results
-for task, result in zip(tasks, results):
-    print(f"Task: {task}")
-    print(f"Result: {result}\n")
-```
-
-
 
 ## Tips and Best Practices
 
-- **Agent Initialization**: Ensure that all agents are correctly initialized with their required configurations before passing them to `ConcurrentWorkflow`.
-- **Metadata Management**: Use the `auto_save` flag to automatically save metadata if you plan to run multiple workflows in succession.
-- **Concurrency Limits**: Adjust the number of agents based on your system's capabilities to avoid overloading resources.
-- **Error Handling**: Implement try-except blocks when running workflows to catch and handle exceptions gracefully.
-- **Batch Processing**: For large numbers of tasks, consider using `run_batched` or `run_parallel` methods to improve overall throughput.
-- **Asynchronous Operations**: Utilize asynchronous methods (`run_async`, `run_batched_async`, `run_parallel_async`) when dealing with I/O-bound tasks or when you need to maintain responsiveness in your application.
-- **Logging**: Implement detailed logging to track the progress of your workflows and troubleshoot any issues that may arise.
-- **Resource Management**: Be mindful of API rate limits and resource consumption, especially when running large batches or parallel executions.
-- **Testing**: Thoroughly test your workflows with various inputs and edge cases to ensure robust performance in production environments.
+- **Agent Initialization**: Ensure all agents are correctly initialized with required configurations.
+- **Interactive Mode**: Use interactive mode for tasks requiring user input or modification.
+- **Caching**: Utilize the caching system for repeated tasks to improve performance.
+- **Progress Tracking**: Enable progress bar for long-running tasks to monitor execution.
+- **Error Handling**: Implement proper error handling and use retry mechanism for reliability.
+- **Resource Management**: Monitor cache size and clear when necessary.
+- **Batch Processing**: Use batch processing for multiple related tasks.
+- **Logging**: Implement detailed logging for debugging and monitoring.
 
 ## References and Resources
 
-- [Python's `asyncio` Documentation](https://docs.python.org/3/library/asyncio.html)
-- [Pydantic Documentation](https://pydantic-docs.helpmanual.io/)
-- [ThreadPoolExecutor in Python](https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor)
+- [Python's ThreadPoolExecutor Documentation](https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor)
+- [tqdm Progress Bar Documentation](https://tqdm.github.io/)
+- [Python's functools.lru_cache Documentation](https://docs.python.org/3/library/functools.html#functools.lru_cache)
 - [Loguru for Logging in Python](https://loguru.readthedocs.io/en/stable/)
-- [Tenacity: Retry library for Python](https://tenacity.readthedocs.io/en/latest/)

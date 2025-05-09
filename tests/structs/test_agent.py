@@ -156,7 +156,7 @@ def test_stopping_token(mocked_sleep, basic_flow):
 
 
 # Test interactive mode
-def test_interactive_mode(basic_flow):
+def test_interactive(basic_flow):
     basic_flow.interactive = True
     assert basic_flow.interactive
 
@@ -309,7 +309,7 @@ def test_flow_run(flow_instance):
     assert len(response) > 0
 
 
-def test_flow_interactive_mode(flow_instance):
+def test_flow_interactive(flow_instance):
     # Test the interactive mode of the Agent class
     flow_instance.interactive = True
     response = flow_instance.run("Test task")

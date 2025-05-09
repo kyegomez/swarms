@@ -46,6 +46,7 @@ class Message:
 
 class DateTimeEncoder(json.JSONEncoder):
     """Custom JSON encoder for handling datetime objects."""
+
     def default(self, obj):
         if isinstance(obj, datetime.datetime):
             return obj.isoformat()
@@ -540,7 +541,10 @@ class DuckDBConversation:
                 except json.JSONDecodeError:
                     pass
 
-                message = {"role": row[0], "content": content}  # role column
+                message = {
+                    "role": row[0],
+                    "content": content,
+                }  # role column
 
                 if row[2]:  # timestamp column
                     message["timestamp"] = row[2]
@@ -562,7 +566,9 @@ class DuckDBConversation:
         Returns:
             str: JSON string representation of the conversation
         """
-        return json.dumps(self.to_dict(), indent=2, cls=DateTimeEncoder)
+        return json.dumps(
+            self.to_dict(), indent=2, cls=DateTimeEncoder
+        )
 
     def to_yaml(self) -> str:
         """
@@ -585,7 +591,9 @@ class DuckDBConversation:
         """
         try:
             with open(filename, "w") as f:
-                json.dump(self.to_dict(), f, indent=2, cls=DateTimeEncoder)
+                json.dump(
+                    self.to_dict(), f, indent=2, cls=DateTimeEncoder
+                )
             return True
         except Exception as e:
             if self.enable_logging:
@@ -614,12 +622,13 @@ class DuckDBConversation:
             # Add all messages
             for message in messages:
                 # Convert timestamp string back to datetime if it exists
-                timestamp = None
                 if "timestamp" in message:
                     try:
-                        timestamp = datetime.datetime.fromisoformat(message["timestamp"])
+                        datetime.datetime.fromisoformat(
+                            message["timestamp"]
+                        )
                     except (ValueError, TypeError):
-                        timestamp = message["timestamp"]
+                        message["timestamp"]
 
                 self.add(
                     role=message["role"],

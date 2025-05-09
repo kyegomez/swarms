@@ -1168,7 +1168,6 @@ class ModelGrid:
             try:
                 # This would need to be implemented based on the specific model types
                 # and tasks supported. Here's a simple placeholder:
-                model = model_metadata.model
 
                 if model_metadata.model_type == ModelType.PYTORCH:
                     # Run PyTorch model

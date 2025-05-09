@@ -98,8 +98,8 @@ def test_basic_conversation() -> bool:
 
     # Test adding messages
     console.print("\n[bold]Adding messages...[/bold]")
-    msg_id1 = conversation.add("user", "Hello")
-    msg_id2 = conversation.add("assistant", "Hi there!")
+    conversation.add("user", "Hello")
+    conversation.add("assistant", "Hi there!")
 
     # Test getting messages
     console.print("\n[bold]Retrieved messages:[/bold]")
