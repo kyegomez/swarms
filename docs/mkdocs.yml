@@ -352,17 +352,21 @@ nav:
       - GPT4VisionAPI: "swarms/models/gpt4v.md"
   - Swarms Cloud API:
     - Overview: "swarms_cloud/swarms_api.md"
-    - Swarms API Pricing: "swarms_cloud/api_pricing.md"
-    - Swarms API Pricing in Chinese: "swarms_cloud/chinese_api_pricing.md"
-    - Swarm Types: "swarms_cloud/swarm_types.md"
-    - Swarms Cloud Subscription Tiers: "swarms_cloud/subscription_tiers.md"
-    - Swarms API Best Practices: "swarms_cloud/best_practices.md"
     - Swarms API as MCP: "swarms_cloud/mcp.md"
     - Swarms API Tools: "swarms_cloud/swarms_api_tools.md"
     - Individual Agent Completions: "swarms_cloud/agent_api.md"
+
+    - Pricing:
+      - Swarms API Pricing: "swarms_cloud/api_pricing.md"
+      - Swarms API Pricing in Chinese: "swarms_cloud/chinese_api_pricing.md"
+      - Swarms Cloud Subscription Tiers: "swarms_cloud/subscription_tiers.md"
     - Swarm Ecosystem APIs:
       - MCS API: "swarms_cloud/mcs_api.md"
       # - CreateNow API: "swarms_cloud/create_api.md"
+    - Guides:
+      - Swarms API Best Practices: "swarms_cloud/best_practices.md"
+      - Swarm Architectures Available: "swarms_cloud/swarm_types.md"
+
   - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"
     # - Agent Marketplace: "swarms_platform/share_discover.md"
