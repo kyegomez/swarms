@@ -1,10 +1,8 @@
 import concurrent.futures
 import random
-from datetime import datetime
 from typing import Callable, List
 
 from loguru import logger
-from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -15,16 +13,6 @@ from swarms.utils.history_output_formatter import (
 from swarms.prompts.multi_agent_collab_prompt import (
     MULTI_AGENT_COLLAB_PROMPT_TWO,
 )
-
-
-class AgentResponse(BaseModel):
-    agent_name: str
-    role: str
-    message: str
-    timestamp: datetime = Field(default_factory=datetime.now)
-    turn_number: int
-    preceding_context: List[str] = Field(default_factory=list)
-
 
 SpeakerFunction = Callable[[List[str], "Agent"], bool]
 
