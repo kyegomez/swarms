@@ -65,6 +65,8 @@ from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.str_to_dict import str_to_dict
+from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
+from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
 
 
 # Utils
@@ -302,7 +304,7 @@ class Agent:
         saved_state_path: Optional[str] = None,
         autosave: Optional[bool] = False,
         context_length: Optional[int] = 8192,
-        user_name: Optional[str] = "Human:",
+        user_name: Optional[str] = "Human",
         self_healing_enabled: Optional[bool] = False,
         code_interpreter: Optional[bool] = False,
         multi_modal: Optional[bool] = None,
@@ -396,6 +398,7 @@ class Agent:
         mcp_servers: MCPServerSseParams = None,
         mcp_url: str = None,
         mcp_urls: List[str] = None,
+        react_on: bool = False,
         *args,
         **kwargs,
     ):
@@ -518,12 +521,13 @@ class Agent:
         self.mcp_servers = mcp_servers
         self.mcp_url = mcp_url
         self.mcp_urls = mcp_urls
+        self.react_on = react_on
 
         self._cached_llm = (
             None  # Add this line to cache the LLM instance
         )
 
-        self.short_memory = self.short_memory_init()
+        # self.short_memory = self.short_memory_init()
 
         # Initialize the feedback
         self.feedback = []
@@ -555,6 +559,16 @@ class Agent:
         if self.mcp_url or self.mcp_servers is not None:
             self.add_mcp_tools_to_memory()
 
+        if self.react_on is True:
+            self.system_prompt += REACT_SYS_PROMPT
+
+        if len(self.max_loops) > 1:
+            self.system_prompt += generate_reasoning_prompt(
+                self.max_loops
+            )
+
+        self.short_memory = self.short_memory_init()
+
     def short_memory_init(self):
         if (
             self.agent_name is not None
@@ -574,33 +588,6 @@ class Agent:
         )
 
         return self.short_memory
-
-    def init_handling(self):
-        # Define tasks as pairs of (function, condition)
-        # Each task will only run if its condition is True
-        self.setup_config()
-
-        if exists(self.docs_folder):
-            self.get_docs_from_doc_folders()
-
-        if exists(self.tools):
-            self.handle_tool_init()
-
-        if exists(self.tool_schema) or exists(self.list_base_models):
-            self.handle_tool_schema_ops()
-
-        if exists(self.sop) or exists(self.sop_list):
-            self.handle_sop_ops()
-
-        # Run sequential operations after all concurrent tasks are done
-        # self.agent_output = self.agent_output_model()
-        log_agent_data(self.to_dict())
-
-        if self.llm is None:
-            self.llm = self.llm_handling()
-
-        if self.mcp_url or self.mcp_servers is not None:
-            self.add_mcp_tools_to_memory()
 
     def agent_output_model(self):
         # Many steps
@@ -1021,24 +1008,13 @@ class Agent:
             agent(task="What is the capital of France?", img="path/to/image.jpg", is_last=True)
         """
         try:
-            # 1. Batch process initial setup
-            setup_tasks = [
-                lambda: self.check_if_no_prompt_then_autogenerate(
-                    task
-                ),
-                lambda: self.short_memory.add(
-                    role=self.user_name, content=task
-                ),
-                lambda: (
-                    self.plan(task) if self.plan_enabled else None
-                ),
-            ]
 
-            # Execute setup tasks concurrently
-            with ThreadPoolExecutor(
-                max_workers=len(setup_tasks)
-            ) as executor:
-                executor.map(lambda f: f(), setup_tasks)
+            self.check_if_no_prompt_then_autogenerate(task)
+
+            self.short_memory.add(role=self.user_name, content=task)
+
+            if self.plan_enabled:
+                self.plan(task)
 
             # Set the loop count
             loop_count = 0
@@ -1068,10 +1044,18 @@ class Agent:
             ):
                 loop_count += 1
 
-                # self.short_memory.add(
-                #     role=f"{self.agent_name}",
-                #     content=f"Internal Reasoning Loop: {loop_count} of {self.max_loops}",
-                # )
+                if len(self.max_loops) > 1:
+                    self.short_memory.add(
+                        role=self.agent_name,
+                        content=f"Current Internal Reasoning Loop: {loop_count}/{self.max_loops}",
+                    )
+
+                # If it is the final loop, then add the final loop message
+                if loop_count == self.max_loops:
+                    self.short_memory.add(
+                        role=self.agent_name,
+                        content=f"🎉 Final Internal Reasoning Loop: {loop_count}/{self.max_loops} Prepare your comprehensive response.",
+                    )
 
                 # Dynamic temperature
                 if self.dynamic_temperature_enabled is True:
@@ -1148,7 +1132,11 @@ class Agent:
                                     self.streaming_on,
                                 )
 
-                            out = self.llm.run(out)
+                            out = self.call_llm(task=out)
+
+                            self.short_memory.add(
+                                role=self.agent_name, content=out
+                            )
 
                             if self.no_print is False:
                                 agent_print(
@@ -1157,10 +1145,6 @@ class Agent:
                                     loop_count,
                                     self.streaming_on,
                                 )
-
-                            self.short_memory.add(
-                                role=self.agent_name, content=out
-                            )
 
                         self.sentiment_and_evaluator(response)
 
@@ -1219,7 +1203,7 @@ class Agent:
                         break
 
                     self.short_memory.add(
-                        role="User", content=user_input
+                        role=self.user_name, content=user_input
                     )
 
                 if self.loop_interval:
@@ -1233,21 +1217,10 @@ class Agent:
 
                 self.save()
 
-            # log_agent_data(self.to_dict())
+            log_agent_data(self.to_dict())
 
-            # if self.autosave is True:
-            #     self.save()
-
-            # 14. Batch final operations
-            final_tasks = [
-                lambda: log_agent_data(self.to_dict()),
-                lambda: self.save() if self.autosave else None,
-            ]
-
-            with ThreadPoolExecutor(
-                max_workers=len(final_tasks)
-            ) as executor:
-                executor.map(lambda f: f(), final_tasks)
+            if self.autosave:
+                self.save()
 
             return history_output_formatter(
                 self.short_memory, type=self.output_type
