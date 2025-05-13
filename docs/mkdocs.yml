@@ -193,6 +193,7 @@ nav:
       - Documentation:
         - Agent Class Documentation: "swarms/structs/agent.md"
         - Create and Run Agents from YAML: "swarms/agents/create_agents_yaml.md"
+        - Integrating Various Models into Your Agents: "swarms/models/agent_and_models.md"
         - Tools:
           - Structured Outputs: "swarms/agents/structured_outputs.md"
           - Overview: "swarms/tools/main.md"

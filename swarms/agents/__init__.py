@@ -25,7 +25,6 @@ from swarms.structs.stopping_conditions import (
 )
 
 __all__ = [
-    # "ToolAgent",
     "check_done",
     "check_finished",
     "check_complete",
