@@ -16,5 +16,13 @@ def count_tokens(text: str, model: str = "gpt-4o") -> int:
     return len(encode(model=model, text=text))
 
 
+class LiteLLMTokenizer:
+    def __init__(self, model_name="gpt-4o"):
+        self.model_name = model_name
+
+    def count(self, text):
+        return count_tokens(text, model=self.model_name)
+
+
 # if __name__ == "__main__":
 #     print(count_tokens("Hello, how are you?"))
