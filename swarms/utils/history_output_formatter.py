@@ -14,6 +14,7 @@ HistoryOutputType = Literal[
     "json",
     "all",
     "yaml",
+    "xml",  # Added XML as a valid output type
     # "dict-final",
     "dict-all-except-first",
     "str-all-except-first",
@@ -39,6 +40,9 @@ def history_output_formatter(
         return conversation.get_str()
     elif type == "yaml":
         return yaml.safe_dump(conversation.to_dict(), sort_keys=False)
+    elif type == "xml":
+        from swarms.utils.xml_utils import to_xml_string
+        return to_xml_string(conversation.to_dict(), root_tag="conversation")
     # elif type == "dict-final":
     #     return conversation.to_dict()
     elif type == "dict-all-except-first":

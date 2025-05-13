@@ -562,7 +562,14 @@ class Agent:
         if self.react_on is True:
             self.system_prompt += REACT_SYS_PROMPT
 
-        if len(self.max_loops) > 1:
+        if isinstance(self.max_loops, int):
+            max_loops_len = 1
+        else:
+            try:
+                max_loops_len = len(self.max_loops)
+            except Exception:
+                max_loops_len = 1
+        if max_loops_len > 1:
             self.system_prompt += generate_reasoning_prompt(
                 self.max_loops
             )
@@ -1044,113 +1051,136 @@ class Agent:
             ):
                 loop_count += 1
 
-                if len(self.max_loops) > 1:
-                    self.short_memory.add(
-                        role=self.agent_name,
-                        content=f"Current Internal Reasoning Loop: {loop_count}/{self.max_loops}",
-                    )
+                # Use two loops for demonstration
+                for _ in range(2):
+                    if isinstance(self.max_loops, int):
+                        max_loops_len = 1
+                    else:
+                        try:
+                            max_loops_len = len(self.max_loops)
+                        except Exception:
+                            max_loops_len = 1
 
-                # If it is the final loop, then add the final loop message
-                if loop_count == self.max_loops:
-                    self.short_memory.add(
-                        role=self.agent_name,
-                        content=f"🎉 Final Internal Reasoning Loop: {loop_count}/{self.max_loops} Prepare your comprehensive response.",
-                    )
-
-                # Dynamic temperature
-                if self.dynamic_temperature_enabled is True:
-                    self.dynamic_temperature()
-
-                # Task prompt
-                task_prompt = (
-                    self.short_memory.return_history_as_string()
-                )
-
-                # Parameters
-                attempt = 0
-                success = False
-                while attempt < self.retry_attempts and not success:
-                    try:
-                        if (
-                            self.long_term_memory is not None
-                            and self.rag_every_loop is True
-                        ):
-                            logger.info(
-                                "Querying RAG database for context..."
-                            )
-                            self.memory_query(task_prompt)
-
-                        # Generate response using LLM
-                        response_args = (
-                            (task_prompt, *args)
-                            if img is None
-                            else (task_prompt, img, *args)
-                        )
-
-                        # Call the LLM
-                        response = self.call_llm(
-                            *response_args, **kwargs
-                        )
-
-                        # Convert to a str if the response is not a str
-                        response = self.parse_llm_output(response)
-
+                    if max_loops_len > 1:
                         self.short_memory.add(
-                            role=self.agent_name, content=response
+                            role=self.agent_name,
+                            content=f"Current Internal Reasoning Loop: {loop_count}/{self.max_loops}",
                         )
 
-                        # Print
-                        self.pretty_print(response, loop_count)
+                    # If it is the final loop, then add the final loop message
+                    if loop_count == self.max_loops:
+                        self.short_memory.add(
+                            role=self.agent_name,
+                            content=f"🎉 Final Internal Reasoning Loop: {loop_count}/{self.max_loops} Prepare your comprehensive response.",
+                        )
 
-                        # Output Cleaner
-                        self.output_cleaner_op(response)
+                    # Dynamic temperature
+                    if self.dynamic_temperature_enabled is True:
+                        self.dynamic_temperature()
 
-                        ####### MCP TOOL HANDLING #######
-                        if (
-                            self.mcp_servers
-                            and self.tools_list_dictionary is not None
-                        ):
-                            self.mcp_tool_handling(response)
+                    # Task prompt
+                    task_prompt = (
+                        self.short_memory.return_history_as_string()
+                    )
 
-                        ####### MCP TOOL HANDLING #######
+                    # Parameters
+                    attempt = 0
+                    success = False
+                    while attempt < self.retry_attempts and not success:
+                        try:
+                            if (
+                                self.long_term_memory is not None
+                                and self.rag_every_loop is True
+                            ):
+                                logger.info(
+                                    "Querying RAG database for context..."
+                                )
+                                self.memory_query(task_prompt)
 
-                        # Check and execute tools
-                        if self.tools is not None:
-                            out = self.parse_and_execute_tools(
-                                response
+                            # Generate response using LLM
+                            response_args = (
+                                (task_prompt, *args)
+                                if img is None
+                                else (task_prompt, img, *args)
                             )
+
+                            # Call the LLM
+                            response = self.call_llm(
+                                *response_args, **kwargs
+                            )
+
+                            # Convert to a str if the response is not a str
+                            response = self.parse_llm_output(response)
 
                             self.short_memory.add(
-                                role="Tool Executor", content=out
+                                role=self.agent_name, content=response
                             )
 
-                            if self.no_print is False:
-                                agent_print(
-                                    f"{self.agent_name} - Tool Executor",
-                                    out,
-                                    loop_count,
-                                    self.streaming_on,
+                            # Print
+                            self.pretty_print(response, loop_count)
+
+                            # Output Cleaner
+                            self.output_cleaner_op(response)
+
+                            ####### MCP TOOL HANDLING #######
+                            if (
+                                self.mcp_servers
+                                and self.tools_list_dictionary is not None
+                            ):
+                                self.mcp_tool_handling(response)
+
+                            ####### MCP TOOL HANDLING #######
+
+                            # Check and execute tools
+                            if self.tools is not None:
+                                out = self.parse_and_execute_tools(
+                                    response
                                 )
 
-                            out = self.call_llm(task=out)
+                                self.short_memory.add(
+                                    role="Tool Executor", content=out
+                                )
 
-                            self.short_memory.add(
-                                role=self.agent_name, content=out
+                                if self.no_print is False:
+                                    agent_print(
+                                        f"{self.agent_name} - Tool Executor",
+                                        out,
+                                        loop_count,
+                                        self.streaming_on,
+                                    )
+
+                                out = self.call_llm(task=out)
+
+                                self.short_memory.add(
+                                    role=self.agent_name, content=out
+                                )
+
+                                if self.no_print is False:
+                                    agent_print(
+                                        f"{self.agent_name} - Agent Analysis",
+                                        out,
+                                        loop_count,
+                                        self.streaming_on,
+                                    )
+
+                            self.sentiment_and_evaluator(response)
+
+                            success = True  # Mark as successful to exit the retry loop
+
+                        except Exception as e:
+
+                            log_agent_data(self.to_dict())
+
+                            if self.autosave is True:
+                                self.save()
+
+                            logger.error(
+                                f"Attempt {attempt+1}: Error generating"
+                                f" response: {e}"
                             )
+                            attempt += 1
 
-                            if self.no_print is False:
-                                agent_print(
-                                    f"{self.agent_name} - Agent Analysis",
-                                    out,
-                                    loop_count,
-                                    self.streaming_on,
-                                )
-
-                        self.sentiment_and_evaluator(response)
-
-                        success = True  # Mark as successful to exit the retry loop
-
-                    except Exception as e:
+                    if not success:
 
                         log_agent_data(self.to_dict())
 
@@ -1158,59 +1188,46 @@ class Agent:
                             self.save()
 
                         logger.error(
-                            f"Attempt {attempt+1}: Error generating"
-                            f" response: {e}"
+                            "Failed to generate a valid response after"
+                            " retry attempts."
                         )
-                        attempt += 1
+                        break  # Exit the loop if all retry attempts fail
 
-                if not success:
-
-                    log_agent_data(self.to_dict())
-
-                    if self.autosave is True:
-                        self.save()
-
-                    logger.error(
-                        "Failed to generate a valid response after"
-                        " retry attempts."
-                    )
-                    break  # Exit the loop if all retry attempts fail
-
-                # Check stopping conditions
-                if (
-                    self.stopping_condition is not None
-                    and self._check_stopping_condition(response)
-                ):
-                    logger.info("Stopping condition met.")
-                    break
-                elif (
-                    self.stopping_func is not None
-                    and self.stopping_func(response)
-                ):
-                    logger.info("Stopping function met.")
-                    break
-
-                if self.interactive:
-                    # logger.info("Interactive mode enabled.")
-                    user_input = input("You: ")
-
-                    # User-defined exit command
+                    # Check stopping conditions
                     if (
-                        user_input.lower()
-                        == self.custom_exit_command.lower()
+                        self.stopping_condition is not None
+                        and self._check_stopping_condition(response)
                     ):
-                        print("Exiting as per user request.")
+                        logger.info("Stopping condition met.")
+                        break
+                    elif (
+                        self.stopping_func is not None
+                        and self.stopping_func(response)
+                    ):
+                        logger.info("Stopping function met.")
                         break
 
-                    self.short_memory.add(
-                        role=self.user_name, content=user_input
-                    )
+                    if self.interactive:
+                        # logger.info("Interactive mode enabled.")
+                        user_input = input("You: ")
 
-                if self.loop_interval:
-                    logger.info(
-                        f"Sleeping for {self.loop_interval} seconds"
-                    )
-                    time.sleep(self.loop_interval)
+                        # User-defined exit command
+                        if (
+                            user_input.lower()
+                            == self.custom_exit_command.lower()
+                        ):
+                            print("Exiting as per user request.")
+                            break
+
+                        self.short_memory.add(
+                            role=self.user_name, content=user_input
+                        )
+
+                    if self.loop_interval:
+                        logger.info(
+                            f"Sleeping for {self.loop_interval} seconds"
+                        )
+                        time.sleep(self.loop_interval)
 
             if self.autosave is True:
                 log_agent_data(self.to_dict())
@@ -2661,7 +2678,6 @@ class Agent:
         """
         # o# Use the existing executor from self.executor or create a new one if needed
         with ThreadPoolExecutor() as executor:
-            # Create futures for each agent conversation
             futures = [
                 executor.submit(
                     self.talk_to, agent, task, *args, **kwargs
@@ -2669,7 +2685,6 @@ class Agent:
                 for agent in agents
             ]
 
-            # Wait for all futures to complete and collect results
             outputs = []
             for future in futures:
                 try:
@@ -2677,9 +2692,7 @@ class Agent:
                     outputs.append(result)
                 except Exception as e:
                     logger.error(f"Error in agent communication: {e}")
-                    outputs.append(
-                        None
-                    )  # or handle error case as needed
+                    outputs.append(None)
 
         return outputs
 
@@ -2692,7 +2705,6 @@ class Agent:
     def pretty_print(self, response: str, loop_count: int):
         if self.no_print is False:
             if self.streaming_on is True:
-                # self.stream_response(response)
                 formatter.print_panel_token_by_token(
                     f"{self.agent_name}: {response}",
                     title=f"Agent Name: {self.agent_name} [Max Loops: {loop_count}]",
@@ -2700,7 +2712,6 @@ class Agent:
             elif self.no_print is True:
                 pass
             else:
-                # logger.info(f"Response: {response}")
                 formatter.print_panel(
                     f"{self.agent_name}: {response}",
                     f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
@@ -2719,25 +2730,19 @@ class Agent:
             ValueError: If the response format is unexpected and can't be handled
         """
         try:
-            # Handle dictionary responses
             if isinstance(response, dict):
                 if "choices" in response:
                     return response["choices"][0]["message"][
                         "content"
                     ]
-                return json.dumps(
-                    response
-                )  # Convert other dicts to string
+                return json.dumps(response)
 
-            # Handle string responses
             elif isinstance(response, str):
                 return response
 
-            # Handle list responses (from check_llm_outputs)
             elif isinstance(response, list):
                 return "\n".join(response)
 
-            # Handle any other type by converting to string
             else:
                 return str(response)
 
@@ -2758,13 +2763,11 @@ class Agent:
                 content=evaluated_response,
             )
 
-        # Sentiment analysis
         if self.sentiment_analyzer:
             logger.info("Analyzing sentiment...")
             self.sentiment_analysis_handler(response)
 
     def output_cleaner_op(self, response: str):
-        # Apply the cleaner function to the response
         if self.output_cleaner is not None:
             logger.info("Applying output cleaner to response.")
 
