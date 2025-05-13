@@ -562,7 +562,7 @@ class Agent:
         if self.react_on is True:
             self.system_prompt += REACT_SYS_PROMPT
 
-        if len(self.max_loops) > 1:
+        if self.max_loops > 1:
             self.system_prompt += generate_reasoning_prompt(
                 self.max_loops
             )
@@ -1044,7 +1044,7 @@ class Agent:
             ):
                 loop_count += 1
 
-                if len(self.max_loops) > 1:
+                if self.max_loops > 1:
                     self.short_memory.add(
                         role=self.agent_name,
                         content=f"Current Internal Reasoning Loop: {loop_count}/{self.max_loops}",
