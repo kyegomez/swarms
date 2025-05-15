@@ -18,11 +18,8 @@ if __name__ == "__main__":
     # Initialize the workflow with the list of agents
     workflow = ConcurrentWorkflow(
         agents=agents,
-        metadata_output_path="agent_metadata_4.json",
         output_type="list",
-        show_progress=False,
-        max_loops=3,
-        interactive=True,
+        max_loops=1,
     )
 
     # Define the task for all agents

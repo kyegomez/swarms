@@ -570,6 +570,7 @@ class Agent:
             except Exception:
                 max_loops_len = 1
         if max_loops_len > 1:
+
             self.system_prompt += generate_reasoning_prompt(
                 self.max_loops
             )
@@ -1081,6 +1082,7 @@ class Agent:
                     # Task prompt
                     task_prompt = (
                         self.short_memory.return_history_as_string()
+
                     )
 
                     # Parameters

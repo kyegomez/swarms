@@ -4,8 +4,6 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from tqdm import tqdm
-
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.conversation import Conversation
@@ -22,9 +20,7 @@ class ConcurrentWorkflow(BaseSwarm):
     """
     Represents a concurrent workflow that executes multiple agents concurrently in a production-grade manner.
     Features include:
-    - Interactive model support
     - Caching for repeated prompts
-    - Optional progress tracking
     - Enhanced error handling and retries
     - Input validation
 
@@ -39,11 +35,9 @@ class ConcurrentWorkflow(BaseSwarm):
         return_str_on (bool): Flag indicating whether to return the output as a string. Defaults to False.
         auto_generate_prompts (bool): Flag indicating whether to auto-generate prompts for agents. Defaults to False.
         return_entire_history (bool): Flag indicating whether to return the entire conversation history. Defaults to False.
-        interactive (bool): Flag indicating whether to enable interactive mode. Defaults to False.
         cache_size (int): The size of the cache. Defaults to 100.
         max_retries (int): The maximum number of retry attempts. Defaults to 3.
         retry_delay (float): The delay between retry attempts in seconds. Defaults to 1.0.
-        show_progress (bool): Flag indicating whether to show progress. Defaults to False.
 
     Raises:
         ValueError: If the list of agents is empty or if the description is empty.
@@ -59,13 +53,10 @@ class ConcurrentWorkflow(BaseSwarm):
         return_str_on (bool): Flag indicating whether to return the output as a string.
         auto_generate_prompts (bool): Flag indicating whether to auto-generate prompts for agents.
         return_entire_history (bool): Flag indicating whether to return the entire conversation history.
-        interactive (bool): Flag indicating whether to enable interactive mode.
         cache_size (int): The size of the cache.
         max_retries (int): The maximum number of retry attempts.
         retry_delay (float): The delay between retry attempts in seconds.
-        show_progress (bool): Flag indicating whether to show progress.
         _cache (dict): The cache for storing agent outputs.
-        _progress_bar (tqdm): The progress bar for tracking execution.
     """
 
     def __init__(
@@ -80,11 +71,9 @@ class ConcurrentWorkflow(BaseSwarm):
         return_str_on: bool = False,
         auto_generate_prompts: bool = False,
         return_entire_history: bool = False,
-        interactive: bool = False,
         cache_size: int = 100,
         max_retries: int = 3,
         retry_delay: float = 1.0,
-        show_progress: bool = False,
         *args,
         **kwargs,
     ):
@@ -107,20 +96,13 @@ class ConcurrentWorkflow(BaseSwarm):
         self.output_type = output_type
         self.return_entire_history = return_entire_history
         self.tasks = []  # Initialize tasks list
-        self.interactive = interactive
         self.cache_size = cache_size
         self.max_retries = max_retries
         self.retry_delay = retry_delay
-        self.show_progress = show_progress
         self._cache = {}
-        self._progress_bar = None
 
         self.reliability_check()
         self.conversation = Conversation()
-
-    def disable_agent_prints(self):
-        for agent in self.agents:
-            agent.no_print = False
 
     def reliability_check(self):
         try:
@@ -186,44 +168,6 @@ class ConcurrentWorkflow(BaseSwarm):
         """Cached version of agent execution to avoid redundant computations"""
         return self.agents[agent_id].run(task=task)
 
-    def enable_progress_bar(self):
-        """Enable progress bar display"""
-        self.show_progress = True
-
-    def disable_progress_bar(self):
-        """Disable progress bar display"""
-        if self._progress_bar:
-            self._progress_bar.close()
-            self._progress_bar = None
-        self.show_progress = False
-
-    def _create_progress_bar(self, total: int):
-        """Create a progress bar for tracking execution"""
-        if self.show_progress:
-            try:
-                self._progress_bar = tqdm(
-                    total=total,
-                    desc="Processing tasks",
-                    unit="task",
-                    disable=not self.show_progress,
-                    ncols=100,
-                    bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
-                )
-            except Exception as e:
-                logger.warning(f"Failed to create progress bar: {e}")
-                self.show_progress = False
-                self._progress_bar = None
-        return self._progress_bar
-
-    def _update_progress(self, increment: int = 1):
-        """Update the progress bar"""
-        if self._progress_bar and self.show_progress:
-            try:
-                self._progress_bar.update(increment)
-            except Exception as e:
-                logger.warning(f"Failed to update progress bar: {e}")
-                self.disable_progress_bar()
-
     def _validate_input(self, task: str) -> bool:
         """Validate input task"""
         if not isinstance(task, str):
@@ -231,38 +175,6 @@ class ConcurrentWorkflow(BaseSwarm):
         if not task.strip():
             raise ValueError("Task cannot be empty")
         return True
-
-    def _handle_interactive(self, task: str) -> str:
-        """Handle interactive mode for task input"""
-        if self.interactive:
-            from swarms.utils.formatter import formatter
-
-            # Display current task in a panel
-            formatter.print_panel(
-                content=f"Current task: {task}",
-                title="Task Status",
-                style="bold blue",
-            )
-
-            # Get user input with formatted prompt
-            formatter.print_panel(
-                content="Do you want to modify this task? (y/n/q to quit): ",
-                title="User Input",
-                style="bold green",
-            )
-            response = input().lower()
-
-            if response == "q":
-                return None
-            elif response == "y":
-                formatter.print_panel(
-                    content="Enter new task: ",
-                    title="New Task Input",
-                    style="bold yellow",
-                )
-                new_task = input()
-                return new_task
-        return task
 
     def _run_with_retry(
         self, agent: Agent, task: str, img: str = None
@@ -286,68 +198,69 @@ class ConcurrentWorkflow(BaseSwarm):
                     self.retry_delay * (attempt + 1)
                 )  # Exponential backoff
 
+    def _process_agent(
+        self, agent: Agent, task: str, img: str = None
+    ) -> Any:
+        """
+        Process a single agent with caching and error handling.
+
+        Args:
+            agent: The agent to process
+            task: Task to execute
+            img: Optional image input
+
+        Returns:
+            The agent's output
+        """
+        try:
+            # Fast path - check cache first
+            cache_key = f"{task}_{agent.agent_name}"
+            if cache_key in self._cache:
+                output = self._cache[cache_key]
+            else:
+                # Slow path - run agent and update cache
+                output = self._run_with_retry(agent, task, img)
+
+                if len(self._cache) >= self.cache_size:
+                    self._cache.pop(next(iter(self._cache)))
+
+                self._cache[cache_key] = output
+
+            return output
+        except Exception as e:
+            logger.error(
+                f"Error running agent {agent.agent_name}: {e}"
+            )
+            raise
+
     def _run(
         self, task: str, img: str = None, *args, **kwargs
     ) -> Union[Dict[str, Any], str]:
         """
-        Enhanced run method with caching, progress tracking, and better error handling
+        Enhanced run method with parallel execution.
         """
-
-        # Validate and potentially modify task
+        # Fast validation
         self._validate_input(task)
-        task = self._handle_interactive(task)
-
-        # Add task to conversation
         self.conversation.add("User", task)
 
-        # Create progress bar if enabled
-        if self.show_progress:
-            self._create_progress_bar(len(self.agents))
-
-        def run_agent(
-            agent: Agent, task: str, img: str = None
-        ) -> Any:
-            try:
-                # Check cache first
-                cache_key = f"{task}_{agent.agent_name}"
-                if cache_key in self._cache:
-                    output = self._cache[cache_key]
-                else:
-                    output = self._run_with_retry(agent, task, img)
-                    # Update cache
-                    if len(self._cache) >= self.cache_size:
-                        self._cache.pop(next(iter(self._cache)))
-                    self._cache[cache_key] = output
-
-                self._update_progress()
-                return output
-            except Exception as e:
-                logger.error(
-                    f"Error running agent {agent.agent_name}: {e}"
-                )
-                self._update_progress()
-                raise
-
         try:
+            # Parallel execution with optimized thread pool
             with ThreadPoolExecutor(
                 max_workers=self.max_workers
             ) as executor:
-                list(
-                    executor.map(
-                        lambda agent: run_agent(agent, task),
-                        self.agents,
+                futures = [
+                    executor.submit(
+                        self._process_agent, agent, task, img
                     )
-                )
-        finally:
-            if self._progress_bar and self.show_progress:
-                try:
-                    self._progress_bar.close()
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to close progress bar: {e}"
-                    )
-                finally:
-                    self._progress_bar = None
+                    for agent in self.agents
+                ]
+                # Wait for all futures to complete
+                for future in futures:
+                    future.result()
+
+        except Exception as e:
+            logger.error(f"An error occurred during execution: {e}")
+            raise e
 
         return history_output_formatter(
             self.conversation,
@@ -362,20 +275,11 @@ class ConcurrentWorkflow(BaseSwarm):
         **kwargs,
     ) -> Any:
         """
-        Executes the agent's run method on a specified device with optional interactive mode.
-
-        This method attempts to execute the agent's run method on a specified device, either CPU or GPU.
-        It supports both standard execution and interactive mode where users can modify tasks and continue
-        the workflow interactively.
+        Executes the agent's run method with parallel execution.
 
         Args:
             task (Optional[str], optional): The task to be executed. Defaults to None.
             img (Optional[str], optional): The image to be processed. Defaults to None.
-            is_last (bool, optional): Indicates if this is the last task. Defaults to False.
-            device (str, optional): The device to use for execution. Defaults to "cpu".
-            device_id (int, optional): The ID of the GPU to use if device is set to "gpu". Defaults to 0.
-            all_cores (bool, optional): If True, uses all available CPU cores. Defaults to True.
-            all_gpus (bool, optional): If True, uses all available GPUS. Defaults to True.
             *args: Additional positional arguments to be passed to the execution method.
             **kwargs: Additional keyword arguments to be passed to the execution method.
 
@@ -383,117 +287,27 @@ class ConcurrentWorkflow(BaseSwarm):
             Any: The result of the execution.
 
         Raises:
-            ValueError: If an invalid device is specified.
+            ValueError: If task validation fails.
             Exception: If any other error occurs during execution.
         """
         if task is not None:
             self.tasks.append(task)
 
         try:
-            # Handle interactive mode
-            if self.interactive:
-                current_task = task
-                loop_count = 0
-
-                while loop_count < self.max_loops:
-                    if (
-                        self.max_loops is not None
-                        and loop_count >= self.max_loops
-                    ):
-                        formatter.print_panel(
-                            content=f"Maximum number of loops ({self.max_loops}) reached.",
-                            title="Session Complete",
-                            style="bold red",
-                        )
-                        break
-
-                    if current_task is None:
-                        formatter.print_panel(
-                            content="Enter your task (or 'q' to quit): ",
-                            title="Task Input",
-                            style="bold blue",
-                        )
-                        current_task = input()
-                        if current_task.lower() == "q":
-                            break
-
-                    # Run the workflow with the current task
-                    try:
-                        outputs = self._run(
-                            current_task, img, *args, **kwargs
-                        )
-                        formatter.print_panel(
-                            content=str(outputs),
-                            title="Workflow Result",
-                            style="bold green",
-                        )
-                    except Exception as e:
-                        formatter.print_panel(
-                            content=f"Error: {str(e)}",
-                            title="Error",
-                            style="bold red",
-                        )
-
-                    # Ask if user wants to continue
-                    formatter.print_panel(
-                        content="Do you want to continue with a new task? (y/n): ",
-                        title="Continue Session",
-                        style="bold yellow",
-                    )
-                    if input().lower() != "y":
-                        break
-
-                    current_task = None
-                    loop_count += 1
-
-                formatter.print_panel(
-                    content="Interactive session ended.",
-                    title="Session Complete",
-                    style="bold blue",
-                )
-                return outputs
-            else:
-                # Standard non-interactive execution
-                outputs = self._run(task, img, *args, **kwargs)
-                return outputs
-
-        except ValueError as e:
-            logger.error(f"Invalid device specified: {e}")
-            raise e
+            outputs = self._run(task, img, *args, **kwargs)
+            return outputs
         except Exception as e:
             logger.error(f"An error occurred during execution: {e}")
             raise e
 
     def run_batched(self, tasks: List[str]) -> Any:
         """
-        Enhanced batched execution with progress tracking
+        Enhanced batched execution
         """
         if not tasks:
             raise ValueError("Tasks list cannot be empty")
 
-        results = []
-
-        # Create progress bar if enabled
-        if self.show_progress:
-            self._create_progress_bar(len(tasks))
-
-        try:
-            for task in tasks:
-                result = self.run(task)
-                results.append(result)
-                self._update_progress()
-        finally:
-            if self._progress_bar and self.show_progress:
-                try:
-                    self._progress_bar.close()
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to close progress bar: {e}"
-                    )
-                finally:
-                    self._progress_bar = None
-
-        return results
+        return [self.run(task) for task in tasks]
 
     def clear_cache(self):
         """Clear the task cache"""
