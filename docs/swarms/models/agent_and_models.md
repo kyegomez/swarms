@@ -6,13 +6,13 @@
 ## Important Note on Model Names
 
 !!! warning "Required Format"
-    When specifying a model in Swarms, you must use the format `provider/model_name`. For example:
+    When specifying a model in an agent, you must use the format `provider/model_name`. For example:
     ```python
     "openai/gpt-4"
     "anthropic/claude-3-opus-latest"
     "cohere/command-r-plus"
     ```
-    This format ensures Swarms knows which provider to use for the specified model.
+    This format ensures the agent knows which provider to use for the specified model.
 
 ## Available Model Providers
 
@@ -79,12 +79,12 @@
         - `mistral-small`
         - `mistral-medium`
 
-## Using Different Models with Swarms
+## Using Different Models In Your Agents
 
 To use a different model with your Swarms agent, specify the model name in the `model_name` parameter when initializing the Agent, using the provider/model_name format:
 
 ```python
-from swarms.structs.agent import Agent
+from swarms import Agent
 
 # Using OpenAI's GPT-4
 agent = Agent(
