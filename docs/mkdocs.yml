@@ -347,6 +347,7 @@ nav:
       - OpenAIChat: "swarms/models/openai.md"
       - OpenAIFunctionCaller: "swarms/models/openai_function_caller.md"
       - Groq: "swarms/models/groq.md"
+      - Cerebras: "swarms/models/cerebas_example.md"
     - MultiModal Models:
       - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
       - Multi Modal Models Available: "swarms/models/multimodal_models.md"
