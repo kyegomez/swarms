@@ -1,7 +1,7 @@
 import yaml
 from swarms.structs.conversation import Conversation
-
 from typing import Literal, Union, List, Dict, Any
+from swarms.utils.xml_utils import to_xml_string
 
 HistoryOutputType = Literal[
     "list",
@@ -14,13 +14,11 @@ HistoryOutputType = Literal[
     "json",
     "all",
     "yaml",
+    "xml",
     # "dict-final",
     "dict-all-except-first",
     "str-all-except-first",
 ]
-
-output_type: HistoryOutputType
-
 
 def history_output_formatter(
     conversation: Conversation, type: HistoryOutputType = "list"
@@ -39,11 +37,12 @@ def history_output_formatter(
         return conversation.get_str()
     elif type == "yaml":
         return yaml.safe_dump(conversation.to_dict(), sort_keys=False)
-    # elif type == "dict-final":
-    #     return conversation.to_dict()
     elif type == "dict-all-except-first":
         return conversation.return_all_except_first()
     elif type == "str-all-except-first":
         return conversation.return_all_except_first_string()
+    elif type == "xml":
+        data = conversation.to_dict()
+        return to_xml_string(data, root_tag="conversation")
     else:
         raise ValueError(f"Invalid type: {type}")
