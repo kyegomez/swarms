@@ -201,7 +201,7 @@ class Agent:
         limit_tokens_from_string (Callable): The function to limit tokens from a string
         custom_tools_prompt (Callable): The custom tools prompt
         tool_schema (ToolUsageType): The tool schema
-        output_type (agent_output_type): The output type
+        output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml', 'xml'.
         function_calling_type (str): The function calling type
         output_cleaner (Callable): The output cleaner function
         function_calling_format_type (str): The function calling format type
@@ -998,7 +998,7 @@ class Agent:
 
         Returns:
             Any: The output of the agent.
-            (string, list, json, dict, yaml)
+            (string, list, json, dict, yaml, xml)
 
         Examples:
             agent(task="What is the capital of France?")
@@ -1220,6 +1220,7 @@ class Agent:
             if self.autosave:
                 self.save()
 
+            # Output formatting based on output_type
             return history_output_formatter(
                 self.short_memory, type=self.output_type
             )
