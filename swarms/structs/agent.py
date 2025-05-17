@@ -279,7 +279,6 @@ class Agent:
 
     def __init__(
         self,
-        agent_id: Optional[str] = agent_id(),
         id: Optional[str] = agent_id(),
         llm: Optional[Any] = None,
         template: Optional[str] = None,
@@ -403,7 +402,6 @@ class Agent:
         **kwargs,
     ):
         # super().__init__(*args, **kwargs)
-        self.agent_id = agent_id
         self.id = id
         self.llm = llm
         self.template = template
@@ -2270,7 +2268,7 @@ class Agent:
             time=time.time(),
             tokens=total_tokens,
             response=AgentChatCompletionResponse(
-                id=self.agent_id,
+                id=self.id,
                 agent_name=self.agent_name,
                 object="chat.completion",
                 choices=ChatCompletionResponseChoice(
