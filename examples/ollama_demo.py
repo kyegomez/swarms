@@ -24,9 +24,6 @@ from datetime import datetime
 
 from swarms import Agent, AgentRearrange, create_file_in_folder
 
-from swarm_models import OllamaModel
-
-model = OllamaModel(model_name="llama3.2")
 
 chief_medical_officer = Agent(
     agent_name="Chief Medical Officer",
@@ -49,7 +46,7 @@ chief_medical_officer = Agent(
     
     
     """,
-    llm=model,
+    model_name="ollama/llama3.2",
     max_loops=1,
 )
 
@@ -73,7 +70,7 @@ virologist = Agent(
         * Secondary condition codes
     
     Document all findings using proper medical coding standards and include rationale for code selection.""",
-    llm=model,
+    model_name="ollama/llama3.2",
     max_loops=1,
 )
 
@@ -98,7 +95,7 @@ internist = Agent(
     - Include hierarchical condition category (HCC) codes where applicable
     
     Document supporting evidence for each code selected.""",
-    llm=model,
+    model_name="ollama/llama3.2",
     max_loops=1,
 )
 
@@ -129,7 +126,7 @@ medical_coder = Agent(
     3. Symptom Codes
     4. Complication Codes
     5. Coding Notes""",
-    llm=model,
+    model_name="ollama/llama3.2",
     max_loops=1,
 )
 
@@ -157,7 +154,7 @@ synthesizer = Agent(
         - Documentation improvements needed
     
     Include confidence levels and evidence quality for all diagnoses and codes.""",
-    llm=model,
+    model_name="ollama/llama3.2",
     max_loops=1,
 )
 
