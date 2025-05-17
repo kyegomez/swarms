@@ -5,7 +5,10 @@ This guide demonstrates how to create and use an AI agent powered by the Cerebra
 ## Prerequisites
 
 - Python 3.7+
+
 - Swarms library installed (`pip install swarms`)
+
+- Set your ENV key `CEREBRAS_API_KEY`
 
 ## Step-by-Step Guide
 
