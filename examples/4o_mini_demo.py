@@ -46,7 +46,7 @@ chief_medical_officer = Agent(
     
     
     """,
-    model_name="gpt-4o-mini", 
+    model_name="gpt-4o-mini",
     max_loops=1,
 )
 
@@ -70,7 +70,7 @@ virologist = Agent(
         * Secondary condition codes
     
     Document all findings using proper medical coding standards and include rationale for code selection.""",
-    model_name="gpt-4o-mini", 
+    model_name="gpt-4o-mini",
     max_loops=1,
 )
 
@@ -95,7 +95,7 @@ internist = Agent(
     - Include hierarchical condition category (HCC) codes where applicable
     
     Document supporting evidence for each code selected.""",
-    model_name="gpt-4o-mini", 
+    model_name="gpt-4o-mini",
     max_loops=1,
 )
 
@@ -126,7 +126,7 @@ medical_coder = Agent(
     3. Symptom Codes
     4. Complication Codes
     5. Coding Notes""",
-    model_name="gpt-4o-mini", 
+    model_name="gpt-4o-mini",
     max_loops=1,
 )
 
@@ -154,7 +154,7 @@ synthesizer = Agent(
         - Documentation improvements needed
     
     Include confidence levels and evidence quality for all diagnoses and codes.""",
-    model_name="gpt-4o-mini", 
+    model_name="gpt-4o-mini",
     max_loops=1,
 )
 
