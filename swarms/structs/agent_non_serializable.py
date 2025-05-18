@@ -9,7 +9,6 @@ Usage:
     restore_non_serializable_properties(agent)
 """
 
-from transformers import AutoTokenizer
 from concurrent.futures import ThreadPoolExecutor
 import logging
 
@@ -34,12 +33,15 @@ def restore_non_serializable_properties(agent):
     This should be called after loading agent state from disk.
     """
     # Restore tokenizer if model_name is available
-    if getattr(agent, "model_name", None):
-        try:
-            agent.tokenizer = AutoTokenizer.from_pretrained(agent.model_name)
-        except Exception:
-            agent.tokenizer = None
-    else:
+    agent.tokenizer = None
+    try:
+        if getattr(agent, "model_name", None):
+            try:
+                from transformers import AutoTokenizer
+                agent.tokenizer = AutoTokenizer.from_pretrained(agent.model_name)
+            except Exception:
+                agent.tokenizer = None
+    except ImportError:
         agent.tokenizer = None
 
     # Restore long_term_memory (dummy for demo, replace with real backend as needed)
