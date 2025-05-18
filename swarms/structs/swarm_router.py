@@ -121,7 +121,7 @@ class SwarmRouter:
         shared_memory_system (Any, optional): Shared memory system for agents. Defaults to None.
         rules (str, optional): Rules to inject into every agent. Defaults to None.
         documents (List[str], optional): List of document file paths to use. Defaults to empty list.
-        output_type (str, optional): Output format type. Defaults to "string".
+        output_type (str, optional): Output format type. Defaults to "string". Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml', 'xml'.
 
     Attributes:
         name (str): Name identifier for the SwarmRouter instance
@@ -136,7 +136,7 @@ class SwarmRouter:
         shared_memory_system (Any): Shared memory system for agents
         rules (str): Rules injected into every agent
         documents (List[str]): List of document file paths
-        output_type (str): Output format type
+        output_type (str): Output format type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml', 'xml'.
         logs (List[SwarmLog]): List of execution logs
         swarm: The instantiated swarm object
 
