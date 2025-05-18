@@ -32,16 +32,12 @@ def restore_non_serializable_properties(agent):
     Restore non-serializable properties for the Agent instance after loading.
     This should be called after loading agent state from disk.
     """
-    # Restore tokenizer if model_name is available
+    # Restore tokenizer using LiteLLM if available
     agent.tokenizer = None
     try:
-        if getattr(agent, "model_name", None):
-            try:
-                from transformers import AutoTokenizer
-                agent.tokenizer = AutoTokenizer.from_pretrained(agent.model_name)
-            except Exception:
-                agent.tokenizer = None
-    except ImportError:
+        from swarms.utils.litellm_tokenizer import count_tokens
+        agent.tokenizer = count_tokens  # Assign the function as a tokenizer interface
+    except Exception:
         agent.tokenizer = None
 
     # Restore long_term_memory (dummy for demo, replace with real backend as needed)
