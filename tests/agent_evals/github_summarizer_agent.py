@@ -48,7 +48,7 @@ def fetch_latest_commits(
 
 # Step 2: Format commits and fetch current time
 def format_commits_with_time(
-    commits: List[Dict[str, str]]
+    commits: List[Dict[str, str]],
 ) -> Tuple[str, str]:
     """
     Format commit data into a readable string and return current time.

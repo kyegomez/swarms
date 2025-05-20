@@ -7,7 +7,7 @@ from loguru import logger
 
 
 def parse_agent_output(
-    dictionary: Union[str, Dict[Any, Any]]
+    dictionary: Union[str, Dict[Any, Any]],
 ) -> tuple[str, Dict[Any, Any]]:
     """
     Parse agent output into tool name and parameters.

@@ -1,15 +1,20 @@
-import duckdb
-import json
 import datetime
-from typing import List, Optional, Union, Dict
-from pathlib import Path
-import threading
-from contextlib import contextmanager
+import json
 import logging
-from dataclasses import dataclass
-from enum import Enum
+import threading
 import uuid
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Union
+
+import duckdb
 import yaml
+
+from swarms.communication.base_communication import (
+    BaseCommunication,
+    Message,
+    MessageType,
+)
 
 try:
     from loguru import logger
@@ -17,31 +22,6 @@ try:
     LOGURU_AVAILABLE = True
 except ImportError:
     LOGURU_AVAILABLE = False
-
-
-class MessageType(Enum):
-    """Enum for different types of messages in the conversation."""
-
-    SYSTEM = "system"
-    USER = "user"
-    ASSISTANT = "assistant"
-    FUNCTION = "function"
-    TOOL = "tool"
-
-
-@dataclass
-class Message:
-    """Data class representing a message in the conversation."""
-
-    role: str
-    content: Union[str, dict, list]
-    timestamp: Optional[str] = None
-    message_type: Optional[MessageType] = None
-    metadata: Optional[Dict] = None
-    token_count: Optional[int] = None
-
-    class Config:
-        arbitrary_types_allowed = True
 
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -53,7 +33,7 @@ class DateTimeEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-class DuckDBConversation:
+class DuckDBConversation(BaseCommunication):
     """
     A production-grade DuckDB wrapper class for managing conversation history.
     This class provides persistent storage for conversations with various features
@@ -72,15 +52,55 @@ class DuckDBConversation:
 
     def __init__(
         self,
-        db_path: Union[str, Path] = "conversations.duckdb",
+        system_prompt: Optional[str] = None,
+        time_enabled: bool = False,
+        autosave: bool = False,
+        save_filepath: str = None,
+        tokenizer: Any = None,
+        context_length: int = 8192,
+        rules: str = None,
+        custom_rules_prompt: str = None,
+        user: str = "User:",
+        auto_save: bool = True,
+        save_as_yaml: bool = True,
+        save_as_json_bool: bool = False,
+        token_count: bool = True,
+        cache_enabled: bool = True,
+        db_path: Union[str, Path] = None,
         table_name: str = "conversations",
         enable_timestamps: bool = True,
         enable_logging: bool = True,
         use_loguru: bool = True,
         max_retries: int = 3,
         connection_timeout: float = 5.0,
+        *args,
+        **kwargs,
     ):
+        super().__init__(
+            system_prompt=system_prompt,
+            time_enabled=time_enabled,
+            autosave=autosave,
+            save_filepath=save_filepath,
+            tokenizer=tokenizer,
+            context_length=context_length,
+            rules=rules,
+            custom_rules_prompt=custom_rules_prompt,
+            user=user,
+            auto_save=auto_save,
+            save_as_yaml=save_as_yaml,
+            save_as_json_bool=save_as_json_bool,
+            token_count=token_count,
+            cache_enabled=cache_enabled,
+        )
+
+        # Calculate default db_path if not provided
+        if db_path is None:
+            db_path = self.get_default_db_path("conversations.duckdb")
         self.db_path = Path(db_path)
+
+        # Ensure parent directory exists
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+
         self.table_name = table_name
         self.enable_timestamps = enable_timestamps
         self.enable_logging = enable_logging
@@ -89,6 +109,7 @@ class DuckDBConversation:
         self.connection_timeout = connection_timeout
         self.current_conversation_id = None
         self._lock = threading.Lock()
+        self.tokenizer = tokenizer
 
         # Setup logging
         if self.enable_logging:
@@ -809,12 +830,7 @@ class DuckDBConversation:
             }
 
     def get_conversation_as_dict(self) -> Dict:
-        """
-        Get the entire conversation as a dictionary with messages and metadata.
-
-        Returns:
-            Dict: Dictionary containing conversation ID, messages, and metadata
-        """
+        """Get the entire conversation as a dictionary with messages and metadata."""
         messages = self.get_messages()
         stats = self.get_statistics()
 
@@ -832,12 +848,7 @@ class DuckDBConversation:
         }
 
     def get_conversation_by_role_dict(self) -> Dict[str, List[Dict]]:
-        """
-        Get the conversation organized by roles.
-
-        Returns:
-            Dict[str, List[Dict]]: Dictionary with roles as keys and lists of messages as values
-        """
+        """Get the conversation organized by roles."""
         with self._get_connection() as conn:
             result = conn.execute(
                 f"""
@@ -926,12 +937,7 @@ class DuckDBConversation:
             return timeline_dict
 
     def get_conversation_metadata_dict(self) -> Dict:
-        """
-        Get detailed metadata about the conversation.
-
-        Returns:
-            Dict: Dictionary containing detailed conversation metadata
-        """
+        """Get detailed metadata about the conversation."""
         with self._get_connection() as conn:
             # Get basic statistics
             stats = self.get_statistics()
@@ -975,7 +981,7 @@ class DuckDBConversation:
                 "conversation_id": self.current_conversation_id,
                 "basic_stats": stats,
                 "message_type_distribution": {
-                    row[0]: row[1] for row in type_dist
+                    row[0]: row[1] for row in type_dist if row[0]
                 },
                 "average_tokens_per_message": (
                     avg_tokens[0] if avg_tokens[0] is not None else 0
@@ -987,15 +993,7 @@ class DuckDBConversation:
             }
 
     def save_as_yaml(self, filename: str) -> bool:
-        """
-        Save the current conversation to a YAML file.
-
-        Args:
-            filename (str): Path to save the YAML file
-
-        Returns:
-            bool: True if save was successful
-        """
+        """Save the current conversation to a YAML file."""
         try:
             with open(filename, "w") as f:
                 yaml.dump(self.to_dict(), f)
@@ -1008,15 +1006,7 @@ class DuckDBConversation:
             return False
 
     def load_from_yaml(self, filename: str) -> bool:
-        """
-        Load a conversation from a YAML file.
-
-        Args:
-            filename (str): Path to the YAML file
-
-        Returns:
-            bool: True if load was successful
-        """
+        """Load a conversation from a YAML file."""
         try:
             with open(filename, "r") as f:
                 messages = yaml.safe_load(f)
@@ -1044,3 +1034,310 @@ class DuckDBConversation:
                     f"Failed to load conversation from YAML: {e}"
                 )
             return False
+
+    def delete(self, index: str):
+        """Delete a message from the conversation history."""
+        with self._get_connection() as conn:
+            conn.execute(
+                f"DELETE FROM {self.table_name} WHERE id = ? AND conversation_id = ?",
+                (index, self.current_conversation_id),
+            )
+
+    def update(
+        self, index: str, role: str, content: Union[str, dict]
+    ):
+        """Update a message in the conversation history."""
+        if isinstance(content, (dict, list)):
+            content = json.dumps(content)
+
+        with self._get_connection() as conn:
+            conn.execute(
+                f"""
+                UPDATE {self.table_name}
+                SET role = ?, content = ?
+                WHERE id = ? AND conversation_id = ?
+                """,
+                (role, content, index, self.current_conversation_id),
+            )
+
+    def query(self, index: str) -> Dict:
+        """Query a message in the conversation history."""
+        with self._get_connection() as conn:
+            result = conn.execute(
+                f"""
+                SELECT * FROM {self.table_name}
+                WHERE id = ? AND conversation_id = ?
+                """,
+                (index, self.current_conversation_id),
+            ).fetchone()
+
+            if not result:
+                return {}
+
+            content = result[2]
+            try:
+                content = json.loads(content)
+            except json.JSONDecodeError:
+                pass
+
+            return {
+                "role": result[1],
+                "content": content,
+                "timestamp": result[3],
+                "message_type": result[4],
+                "metadata": (
+                    json.loads(result[5]) if result[5] else None
+                ),
+                "token_count": result[6],
+            }
+
+    def search(self, keyword: str) -> List[Dict]:
+        """Search for messages containing a keyword."""
+        return self.search_messages(keyword)
+
+    def display_conversation(self, detailed: bool = False):
+        """Display the conversation history."""
+        print(self.get_str())
+
+    def export_conversation(self, filename: str):
+        """Export the conversation history to a file."""
+        self.save_as_json(filename)
+
+    def import_conversation(self, filename: str):
+        """Import a conversation history from a file."""
+        self.load_from_json(filename)
+
+    def return_history_as_string(self) -> str:
+        """Return the conversation history as a string."""
+        return self.get_str()
+
+    def clear(self):
+        """Clear the conversation history."""
+        with self._get_connection() as conn:
+            conn.execute(
+                f"DELETE FROM {self.table_name} WHERE conversation_id = ?",
+                (self.current_conversation_id,),
+            )
+
+    def truncate_memory_with_tokenizer(self):
+        """Truncate the conversation history based on token count."""
+        if not self.tokenizer:
+            return
+
+        with self._get_connection() as conn:
+            result = conn.execute(
+                f"""
+                SELECT id, content, token_count
+                FROM {self.table_name}
+                WHERE conversation_id = ?
+                ORDER BY id ASC
+                """,
+                (self.current_conversation_id,),
+            ).fetchall()
+
+            total_tokens = 0
+            ids_to_keep = []
+
+            for row in result:
+                token_count = row[2] or self.tokenizer.count_tokens(
+                    row[1]
+                )
+                if total_tokens + token_count <= self.context_length:
+                    total_tokens += token_count
+                    ids_to_keep.append(row[0])
+                else:
+                    break
+
+            if ids_to_keep:
+                ids_str = ",".join(map(str, ids_to_keep))
+                conn.execute(
+                    f"""
+                    DELETE FROM {self.table_name}
+                    WHERE conversation_id = ?
+                    AND id NOT IN ({ids_str})
+                    """,
+                    (self.current_conversation_id,),
+                )
+
+    def get_visible_messages(
+        self, agent: Callable, turn: int
+    ) -> List[Dict]:
+        """
+        Get the visible messages for a given agent and turn.
+
+        Args:
+            agent (Agent): The agent.
+            turn (int): The turn number.
+
+        Returns:
+            List[Dict]: The list of visible messages.
+        """
+        with self._get_connection() as conn:
+            result = conn.execute(
+                f"""
+                SELECT * FROM {self.table_name}
+                WHERE conversation_id = ?
+                AND CAST(json_extract(metadata, '$.turn') AS INTEGER) < ?
+                ORDER BY id ASC
+                """,
+                (self.current_conversation_id, turn),
+            ).fetchall()
+
+            visible_messages = []
+            for row in result:
+                metadata = json.loads(row[5]) if row[5] else {}
+                visible_to = metadata.get("visible_to", "all")
+
+                if visible_to == "all" or (
+                    agent and agent.agent_name in visible_to
+                ):
+                    content = row[2]  # content column
+                    try:
+                        content = json.loads(content)
+                    except json.JSONDecodeError:
+                        pass
+
+                    message = {
+                        "role": row[1],
+                        "content": content,
+                        "visible_to": visible_to,
+                        "turn": metadata.get("turn"),
+                    }
+                    visible_messages.append(message)
+
+            return visible_messages
+
+    def return_messages_as_list(self) -> List[str]:
+        """Return the conversation messages as a list of formatted strings.
+
+        Returns:
+            list: List of messages formatted as 'role: content'.
+        """
+        with self._get_connection() as conn:
+            result = conn.execute(
+                f"""
+                SELECT role, content FROM {self.table_name}
+                WHERE conversation_id = ?
+                ORDER BY id ASC
+                """,
+                (self.current_conversation_id,),
+            ).fetchall()
+
+            return [
+                f"{row[0]}: {json.loads(row[1]) if isinstance(row[1], str) and row[1].startswith('{') else row[1]}"
+                for row in result
+            ]
+
+    def return_messages_as_dictionary(self) -> List[Dict]:
+        """Return the conversation messages as a list of dictionaries.
+
+        Returns:
+            list: List of dictionaries containing role and content of each message.
+        """
+        with self._get_connection() as conn:
+            result = conn.execute(
+                f"""
+                SELECT role, content FROM {self.table_name}
+                WHERE conversation_id = ?
+                ORDER BY id ASC
+                """,
+                (self.current_conversation_id,),
+            ).fetchall()
+
+            messages = []
+            for row in result:
+                content = row[1]
+                try:
+                    content = json.loads(content)
+                except json.JSONDecodeError:
+                    pass
+
+                messages.append(
+                    {
+                        "role": row[0],
+                        "content": content,
+                    }
+                )
+            return messages
+
+    def add_tool_output_to_agent(self, role: str, tool_output: dict):
+        """Add a tool output to the conversation history.
+
+        Args:
+            role (str): The role of the tool.
+            tool_output (dict): The output from the tool to be added.
+        """
+        self.add(role, tool_output, message_type=MessageType.TOOL)
+
+    def get_final_message(self) -> str:
+        """Return the final message from the conversation history.
+
+        Returns:
+            str: The final message formatted as 'role: content'.
+        """
+        last_message = self.get_last_message()
+        if not last_message:
+            return ""
+        return f"{last_message['role']}: {last_message['content']}"
+
+    def get_final_message_content(self) -> Union[str, dict]:
+        """Return the content of the final message from the conversation history.
+
+        Returns:
+            Union[str, dict]: The content of the final message.
+        """
+        last_message = self.get_last_message()
+        if not last_message:
+            return ""
+        return last_message["content"]
+
+    def return_all_except_first(self) -> List[Dict]:
+        """Return all messages except the first one.
+
+        Returns:
+            list: List of messages except the first one.
+        """
+        with self._get_connection() as conn:
+            result = conn.execute(
+                f"""
+                SELECT role, content, timestamp, message_type, metadata, token_count
+                FROM {self.table_name}
+                WHERE conversation_id = ?
+                ORDER BY id ASC
+                LIMIT -1 OFFSET 2
+                """,
+                (self.current_conversation_id,),
+            ).fetchall()
+
+            messages = []
+            for row in result:
+                content = row[1]
+                try:
+                    content = json.loads(content)
+                except json.JSONDecodeError:
+                    pass
+
+                message = {
+                    "role": row[0],
+                    "content": content,
+                }
+                if row[2]:  # timestamp
+                    message["timestamp"] = row[2]
+                if row[3]:  # message_type
+                    message["message_type"] = row[3]
+                if row[4]:  # metadata
+                    message["metadata"] = json.loads(row[4])
+                if row[5]:  # token_count
+                    message["token_count"] = row[5]
+
+                messages.append(message)
+            return messages
+
+    def return_all_except_first_string(self) -> str:
+        """Return all messages except the first one as a string.
+
+        Returns:
+            str: All messages except the first one as a string.
+        """
+        messages = self.return_all_except_first()
+        return "\n".join(f"{msg['content']}" for msg in messages)

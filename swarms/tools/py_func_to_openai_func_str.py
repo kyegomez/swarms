@@ -165,7 +165,7 @@ def get_typed_annotation(
 
 
 def get_typed_signature(
-    call: Callable[..., Any]
+    call: Callable[..., Any],
 ) -> inspect.Signature:
     """Get the signature of a function with type annotations.
 
@@ -497,7 +497,7 @@ def get_load_param_if_needed_function(
 
 
 def load_basemodels_if_needed(
-    func: Callable[..., Any]
+    func: Callable[..., Any],
 ) -> Callable[..., Any]:
     """A decorator to load the parameters of a function if they are Pydantic models
 
