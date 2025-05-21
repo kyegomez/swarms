@@ -357,7 +357,10 @@ nav:
     - Swarms API as MCP: "swarms_cloud/mcp.md"
     - Swarms API Tools: "swarms_cloud/swarms_api_tools.md"
     - Individual Agent Completions: "swarms_cloud/agent_api.md"
-    - Swarms API Python Client: "swarms_cloud/python_client.md"
+
+
+    - Clients:
+      - Swarms API Python Client: "swarms_cloud/python_client.md"
 
     - Pricing:
       - Swarms API Pricing: "swarms_cloud/api_pricing.md"
