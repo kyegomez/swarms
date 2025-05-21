@@ -226,7 +226,7 @@ nav:
         - Introduction to Hiearchical Swarm Architectures: "swarms/structs/multi_swarm_orchestration.md"
 
       - Swarm Architectures Documentation:
-        - Overview: "swarms/structs/index.md"
+        - Overview: "swarms/structs/overview.md"
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - AgentRearrange: "swarms/structs/agent_rearrange.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
