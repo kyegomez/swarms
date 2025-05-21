@@ -225,12 +225,12 @@ nav:
         - How to Create New Swarm Architectures: "swarms/structs/create_new_swarm.md"
         - Introduction to Hiearchical Swarm Architectures: "swarms/structs/multi_swarm_orchestration.md"
 
-      - Swarm Architecture Documentation:
+      - Swarm Architectures Documentation:
+        - Overview: "swarms/structs/index.md"
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - AgentRearrange: "swarms/structs/agent_rearrange.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
         - Mixture of Agents: "swarms/structs/moa.md"
-        - GraphWorkflow: "swarms/structs/graph_workflow.md"
         - GroupChat: "swarms/structs/group_chat.md"
         - AgentRegistry: "swarms/structs/agent_registry.md"
         - SpreadSheetSwarm: "swarms/structs/spreadsheet_swarm.md"
@@ -242,17 +242,21 @@ nav:
         - MatrixSwarm: "swarms/structs/matrix_swarm.md"
         - ModelRouter: "swarms/structs/model_router.md"
         - MALT: "swarms/structs/malt.md"
-        - Auto Agent Builder: "swarms/structs/auto_agent_builder.md"
         - Various Execution Methods: "swarms/structs/various_execution_methods.md"
-        - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
         - Deep Research Swarm: "swarms/structs/deep_research_swarm.md"
-        - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
         - Swarm Matcher: "swarms/structs/swarm_matcher.md"
+
+        - Hiearchical Architectures:
+          - Auto Agent Builder: "swarms/structs/auto_agent_builder.md"
+          - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
+          - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
+        
+        
         - Workflows:
-            - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
-            - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
-        - Structs:
-          - Conversation: "swarms/structs/conversation.md"
+          - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
+          - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
+          - GraphWorkflow: "swarms/structs/graph_workflow.md"
+        - Communication Structure: "swarms/structs/conversation.md"
     
     - Swarms Tools:
       - Overview: "swarms_tools/overview.md"

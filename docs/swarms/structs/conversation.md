@@ -2,349 +2,596 @@
 
 ## Introduction
 
-The `Conversation` class is a powerful tool for managing and structuring conversation data in a Python program. It enables you to create, manipulate, and analyze conversations easily. This documentation will provide you with a comprehensive understanding of the `Conversation` class, its attributes, methods, and how to effectively use it.
+The `Conversation` class is a powerful tool for managing and structuring conversation data in a Python program. It enables you to create, manipulate, and analyze conversations easily. This documentation provides a comprehensive understanding of the `Conversation` class, its attributes, methods, and how to effectively use it.
 
 ## Table of Contents
 
-1. **Class Definition**
+1. [Class Definition](#1-class-definition)
+2. [Initialization Parameters](#2-initialization-parameters)
+3. [Methods](#3-methods)
+4. [Examples](#4-examples)
 
-  - Overview
-  
-  - Attributes
-  
-  - Initialization Parameters
+## 1. Class Definition
 
-2. **Core Methods**
-
-  - Message Management
-  
-  - History Operations
-  
-  - Export/Import
-  
-  - Search and Query
-  
-  - Cache Management
-  
-  - Memory Management
-
-3. **Advanced Features**
-  
-  - Token Counting
-  
-  - Memory Providers
-  
-  - Caching System
-  
-  - Batch Operations
-
----
-
-### 1. Class Definition
-
-#### Overview
+### Overview
 
 The `Conversation` class is designed to manage conversations by keeping track of messages and their attributes. It offers methods for adding, deleting, updating, querying, and displaying messages within the conversation. Additionally, it supports exporting and importing conversations, searching for specific keywords, and more.
 
-#### Attributes
+### Attributes
 
-- `id (str)`: Unique identifier for the conversation
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| id | str | Unique identifier for the conversation |
+| name | str | Name of the conversation |
+| system_prompt | Optional[str] | System prompt for the conversation |
+| time_enabled | bool | Flag to enable time tracking for messages |
+| autosave | bool | Flag to enable automatic saving |
+| save_filepath | str | File path for saving conversation history |
+| conversation_history | list | List storing conversation messages |
+| tokenizer | Any | Tokenizer for counting tokens |
+| context_length | int | Maximum tokens allowed in conversation |
+| rules | str | Rules for the conversation |
+| custom_rules_prompt | str | Custom prompt for rules |
+| user | str | User identifier for messages |
+| auto_save | bool | Flag to enable auto-saving |
+| save_as_yaml | bool | Flag to save as YAML |
+| save_as_json_bool | bool | Flag to save as JSON |
+| token_count | bool | Flag to enable token counting |
+| cache_enabled | bool | Flag to enable prompt caching |
+| cache_stats | dict | Statistics about cache usage |
+| cache_lock | threading.Lock | Lock for thread-safe cache operations |
+| conversations_dir | str | Directory to store cached conversations |
 
-- `name (str)`: Name of the conversation
+## 2. Initialization Parameters
 
-- `system_prompt (Optional[str])`: System prompt for the conversation
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| id | str | generated | Unique conversation ID |
+| name | str | None | Name of the conversation |
+| system_prompt | Optional[str] | None | System prompt for the conversation |
+| time_enabled | bool | False | Enable time tracking |
+| autosave | bool | False | Enable automatic saving |
+| save_filepath | str | None | File path for saving |
+| tokenizer | Any | None | Tokenizer for counting tokens |
+| context_length | int | 8192 | Maximum tokens allowed |
+| rules | str | None | Conversation rules |
+| custom_rules_prompt | str | None | Custom rules prompt |
+| user | str | "User:" | User identifier |
+| auto_save | bool | True | Enable auto-saving |
+| save_as_yaml | bool | True | Save as YAML |
+| save_as_json_bool | bool | False | Save as JSON |
+| token_count | bool | True | Enable token counting |
+| cache_enabled | bool | True | Enable prompt caching |
+| conversations_dir | Optional[str] | None | Directory for cached conversations |
+| provider | Literal["mem0", "in-memory"] | "in-memory" | Storage provider |
 
-- `time_enabled (bool)`: Flag to enable time tracking for messages
+## 3. Methods
 
-- `autosave (bool)`: Flag to enable automatic saving
-
-- `save_filepath (str)`: File path for saving conversation history
-
-- `conversation_history (list)`: List storing conversation messages
-
-- `tokenizer (Any)`: Tokenizer for counting tokens
-
-- `context_length (int)`: Maximum number of tokens allowed
-
-- `rules (str)`: Rules for the conversation
-
-- `custom_rules_prompt (str)`: Custom prompt for rules
-
-- `user (str)`: User identifier for messages
-
-- `auto_save (bool)`: Flag for auto-saving
-
-- `save_as_yaml (bool)`: Flag to save as YAML
-
-
-- `save_as_json_bool (bool)`: Flag to save as JSON
-
-- `token_count (bool)`: Flag to enable token counting
-
-- `cache_enabled (bool)`: Flag to enable prompt caching
-
-- `cache_stats (dict)`: Statistics about cache usage
-
-- `provider (Literal["mem0", "in-memory"])`: Memory provider type
-
-#### Initialization Parameters
-
-```python
-conversation = Conversation(
-    id="unique_id",                    # Optional: Unique identifier
-    name="conversation_name",          # Optional: Name of conversation
-    system_prompt="System message",    # Optional: Initial system prompt
-    time_enabled=True,                 # Optional: Enable timestamps
-    autosave=True,                     # Optional: Enable auto-saving
-    save_filepath="path/to/save.json", # Optional: Save location
-    tokenizer=your_tokenizer,          # Optional: Token counter
-    context_length=8192,               # Optional: Max tokens
-    rules="conversation rules",        # Optional: Rules
-    custom_rules_prompt="custom",      # Optional: Custom rules
-    user="User:",                      # Optional: User identifier
-    auto_save=True,                    # Optional: Auto-save
-    save_as_yaml=True,                 # Optional: Save as YAML
-    save_as_json_bool=False,           # Optional: Save as JSON
-    token_count=True,                  # Optional: Count tokens
-    cache_enabled=True,                # Optional: Enable caching
-    conversations_dir="path/to/dir",   # Optional: Cache directory
-    provider="in-memory"               # Optional: Memory provider
-)
-```
-
-### 2. Core Methods
-
-#### Message Management
-
-##### `add(role: str, content: Union[str, dict, list], metadata: Optional[dict] = None)`
+### `add(role: str, content: Union[str, dict, list], metadata: Optional[dict] = None)`
 
 Adds a message to the conversation history.
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| role | str | Role of the speaker |
+| content | Union[str, dict, list] | Message content |
+| metadata | Optional[dict] | Additional metadata |
+
+Example:
 ```python
-# Add a simple text message
+conversation = Conversation()
 conversation.add("user", "Hello, how are you?")
-
-# Add a structured message
-conversation.add("assistant", {
-    "type": "response",
-    "content": "I'm doing well!"
-})
-
-# Add with metadata
-conversation.add("user", "Hello", metadata={"timestamp": "2024-03-20"})
+conversation.add("assistant", "I'm doing well, thank you!")
 ```
 
-##### `add_multiple_messages(roles: List[str], contents: List[Union[str, dict, list]])`
+### `add_multiple_messages(roles: List[str], contents: List[Union[str, dict, list]])`
 
-Adds multiple messages at once.
+Adds multiple messages to the conversation history.
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| roles | List[str] | List of speaker roles |
+| contents | List[Union[str, dict, list]] | List of message contents |
+
+Example:
 ```python
+conversation = Conversation()
 conversation.add_multiple_messages(
-    roles=["user", "assistant"],
-    contents=["Hello!", "Hi there!"]
+    ["user", "assistant"],
+    ["Hello!", "Hi there!"]
 )
 ```
 
-##### `add_tool_output_to_agent(role: str, tool_output: dict)`
+### `delete(index: str)`
 
-Adds a tool output to the conversation.
+Deletes a message from the conversation history.
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| index | str | Index of message to delete |
+
+Example:
 ```python
-conversation.add_tool_output_to_agent(
-    "tool",
-    {"name": "calculator", "result": "42"}
-)
+conversation = Conversation()
+conversation.add("user", "Hello")
+conversation.delete(0)  # Deletes the first message
 ```
 
-#### History Operations
+### `update(index: str, role: str, content: Union[str, dict])`
 
-##### `get_last_message_as_string() -> str`
+Updates a message in the conversation history.
 
-Returns the last message as a string.
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| index | str | Index of message to update |
+| role | str | New role of speaker |
+| content | Union[str, dict] | New message content |
 
+Example:
 ```python
-last_message = conversation.get_last_message_as_string()
-# Returns: "assistant: Hello there!"
+conversation = Conversation()
+conversation.add("user", "Hello")
+conversation.update(0, "user", "Hi there!")
 ```
 
-##### `get_final_message() -> str`
+### `query(index: str)`
 
-Returns the final message from the conversation.
+Retrieves a message from the conversation history.
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| index | str | Index of message to query |
+
+Example:
 ```python
-final_message = conversation.get_final_message()
-# Returns: "assistant: Goodbye!"
+conversation = Conversation()
+conversation.add("user", "Hello")
+message = conversation.query(0)
 ```
 
-##### `get_final_message_content() -> str`
+### `search(keyword: str)`
 
-Returns just the content of the final message.
+Searches for messages containing a keyword.
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| keyword | str | Keyword to search for |
+
+Example:
 ```python
-final_content = conversation.get_final_message_content()
-# Returns: "Goodbye!"
+conversation = Conversation()
+conversation.add("user", "Hello world")
+results = conversation.search("world")
 ```
 
-##### `return_all_except_first() -> list`
+### `display_conversation(detailed: bool = False)`
 
-Returns all messages except the first one.
+Displays the conversation history.
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| detailed | bool | Show detailed information |
+
+Example:
 ```python
-messages = conversation.return_all_except_first()
+conversation = Conversation()
+conversation.add("user", "Hello")
+conversation.display_conversation(detailed=True)
 ```
 
-##### `return_all_except_first_string() -> str`
+### `export_conversation(filename: str)`
 
-Returns all messages except the first one as a string.
+Exports conversation history to a file.
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| filename | str | Output file path |
+
+Example:
 ```python
-messages_str = conversation.return_all_except_first_string()
+conversation = Conversation()
+conversation.add("user", "Hello")
+conversation.export_conversation("chat.txt")
 ```
 
-#### Export/Import
+### `import_conversation(filename: str)`
 
-##### `to_json() -> str`
+Imports conversation history from a file.
 
-Converts conversation to JSON string.
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| filename | str | Input file path |
 
+Example:
 ```python
-json_str = conversation.to_json()
+conversation = Conversation()
+conversation.import_conversation("chat.txt")
 ```
 
-##### `to_dict() -> list`
+### `count_messages_by_role()`
 
-Converts conversation to dictionary.
+Counts messages by role.
 
+Returns: Dict[str, int]
+
+Example:
 ```python
-dict_data = conversation.to_dict()
+conversation = Conversation()
+conversation.add("user", "Hello")
+conversation.add("assistant", "Hi")
+counts = conversation.count_messages_by_role()
 ```
 
-##### `to_yaml() -> str`
+### `return_history_as_string()`
 
-Converts conversation to YAML string.
+Returns conversation history as a string.
 
+Returns: str
+
+Example:
 ```python
-yaml_str = conversation.to_yaml()
+conversation = Conversation()
+conversation.add("user", "Hello")
+history = conversation.return_history_as_string()
 ```
 
-##### `return_json() -> str`
+### `save_as_json(filename: str)`
 
-Returns conversation as formatted JSON string.
+Saves conversation history as JSON.
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| filename | str | Output JSON file path |
+
+Example:
 ```python
-json_str = conversation.return_json()
+conversation = Conversation()
+conversation.add("user", "Hello")
+conversation.save_as_json("chat.json")
 ```
 
-#### Search and Query
+### `load_from_json(filename: str)`
 
-##### `get_visible_messages(agent: "Agent", turn: int) -> List[Dict]`
+Loads conversation history from JSON.
 
-Gets visible messages for a specific agent and turn.
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| filename | str | Input JSON file path |
 
+Example:
 ```python
-visible_msgs = conversation.get_visible_messages(agent, turn=1)
+conversation = Conversation()
+conversation.load_from_json("chat.json")
 ```
 
-#### Cache Management
+### `truncate_memory_with_tokenizer()`
 
-##### `get_cache_stats() -> Dict[str, int]`
+Truncates conversation history based on token limit.
 
-Gets statistics about cache usage.
-
+Example:
 ```python
-stats = conversation.get_cache_stats()
-# Returns: {
-#     "hits": 10,
-#     "misses": 5,
-#     "cached_tokens": 1000,
-#     "total_tokens": 2000,
-#     "hit_rate": 0.67
-# }
+conversation = Conversation(tokenizer=some_tokenizer)
+conversation.truncate_memory_with_tokenizer()
 ```
 
-#### Memory Management
-
-##### `clear_memory()`
-
-Clears the conversation memory.
-
-```python
-conversation.clear_memory()
-```
-
-##### `clear()`
+### `clear()`
 
 Clears the conversation history.
 
+Example:
 ```python
+conversation = Conversation()
+conversation.add("user", "Hello")
 conversation.clear()
 ```
 
-### 3. Advanced Features
+### `to_json()`
 
-#### Token Counting
+Converts conversation history to JSON string.
 
-The class supports automatic token counting when enabled:
+Returns: str
 
+Example:
 ```python
-conversation = Conversation(token_count=True)
-conversation.add("user", "Hello world")
-# Token count will be automatically calculated and stored
+conversation = Conversation()
+conversation.add("user", "Hello")
+json_str = conversation.to_json()
 ```
 
-#### Memory Providers
+### `to_dict()`
 
-The class supports different memory providers:
+Converts conversation history to dictionary.
 
+Returns: list
+
+Example:
 ```python
-# In-memory provider (default)
-conversation = Conversation(provider="in-memory")
-
-# Mem0 provider
-conversation = Conversation(provider="mem0")
+conversation = Conversation()
+conversation.add("user", "Hello")
+dict_data = conversation.to_dict()
 ```
 
-#### Caching System
+### `to_yaml()`
 
-The caching system can be enabled to improve performance:
+Converts conversation history to YAML string.
 
+Returns: str
+
+Example:
 ```python
-conversation = Conversation(cache_enabled=True)
-# Messages will be cached for faster retrieval
+conversation = Conversation()
+conversation.add("user", "Hello")
+yaml_str = conversation.to_yaml()
 ```
 
-#### Batch Operations
+### `get_visible_messages(agent: "Agent", turn: int)`
 
-The class supports batch operations for efficiency:
+Gets visible messages for an agent at a specific turn.
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| agent | Agent | The agent |
+| turn | int | Turn number |
+
+Returns: List[Dict]
+
+Example:
 ```python
-# Batch add messages
+conversation = Conversation()
+visible_msgs = conversation.get_visible_messages(agent, 1)
+```
+
+### `get_last_message_as_string()`
+
+Gets the last message as a string.
+
+Returns: str
+
+Example:
+```python
+conversation = Conversation()
+conversation.add("user", "Hello")
+last_msg = conversation.get_last_message_as_string()
+```
+
+### `return_messages_as_list()`
+
+Returns messages as a list of strings.
+
+Returns: List[str]
+
+Example:
+```python
+conversation = Conversation()
+conversation.add("user", "Hello")
+messages = conversation.return_messages_as_list()
+```
+
+### `return_messages_as_dictionary()`
+
+Returns messages as a list of dictionaries.
+
+Returns: List[Dict]
+
+Example:
+```python
+conversation = Conversation()
+conversation.add("user", "Hello")
+messages = conversation.return_messages_as_dictionary()
+```
+
+### `add_tool_output_to_agent(role: str, tool_output: dict)`
+
+Adds tool output to conversation.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| role | str | Role of the tool |
+| tool_output | dict | Tool output to add |
+
+Example:
+```python
+conversation = Conversation()
+conversation.add_tool_output_to_agent("tool", {"result": "success"})
+```
+
+### `return_json()`
+
+Returns conversation as JSON string.
+
+Returns: str
+
+Example:
+```python
+conversation = Conversation()
+conversation.add("user", "Hello")
+json_str = conversation.return_json()
+```
+
+### `get_final_message()`
+
+Gets the final message.
+
+Returns: str
+
+Example:
+```python
+conversation = Conversation()
+conversation.add("user", "Hello")
+final_msg = conversation.get_final_message()
+```
+
+### `get_final_message_content()`
+
+Gets content of final message.
+
+Returns: str
+
+Example:
+```python
+conversation = Conversation()
+conversation.add("user", "Hello")
+content = conversation.get_final_message_content()
+```
+
+### `return_all_except_first()`
+
+Returns all messages except first.
+
+Returns: List[Dict]
+
+Example:
+```python
+conversation = Conversation()
+conversation.add("system", "Start")
+conversation.add("user", "Hello")
+messages = conversation.return_all_except_first()
+```
+
+### `return_all_except_first_string()`
+
+Returns all messages except first as string.
+
+Returns: str
+
+Example:
+```python
+conversation = Conversation()
+conversation.add("system", "Start")
+conversation.add("user", "Hello")
+messages = conversation.return_all_except_first_string()
+```
+
+### `batch_add(messages: List[dict])`
+
+Adds multiple messages in batch.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| messages | List[dict] | List of messages to add |
+
+Example:
+```python
+conversation = Conversation()
 conversation.batch_add([
     {"role": "user", "content": "Hello"},
     {"role": "assistant", "content": "Hi"}
 ])
 ```
 
-### Class Methods
+### `get_cache_stats()`
 
-#### `load_conversation(name: str, conversations_dir: Optional[str] = None) -> "Conversation"`
+Gets cache usage statistics.
+
+Returns: Dict[str, int]
+
+Example:
+```python
+conversation = Conversation()
+stats = conversation.get_cache_stats()
+```
+
+### `load_conversation(name: str, conversations_dir: Optional[str] = None)`
 
 Loads a conversation from cache.
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| name | str | Name of conversation |
+| conversations_dir | Optional[str] | Directory containing conversations |
+
+Returns: Conversation
+
+Example:
 ```python
-conversation = Conversation.load_conversation("my_conversation")
+conversation = Conversation.load_conversation("my_chat")
 ```
 
-#### `list_cached_conversations(conversations_dir: Optional[str] = None) -> List[str]`
+### `list_cached_conversations(conversations_dir: Optional[str] = None)`
 
 Lists all cached conversations.
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| conversations_dir | Optional[str] | Directory containing conversations |
+
+Returns: List[str]
+
+Example:
 ```python
 conversations = Conversation.list_cached_conversations()
 ```
 
+### `clear_memory()`
+
+Clears the conversation memory.
+
+Example:
+```python
+conversation = Conversation()
+conversation.add("user", "Hello")
+conversation.clear_memory()
+```
+
+## 4. Examples
+
+### Basic Usage
+
+```python
+from swarms.structs import Conversation
+
+# Create a new conversation
+conversation = Conversation(
+    name="my_chat",
+    system_prompt="You are a helpful assistant",
+    time_enabled=True
+)
+
+# Add messages
+conversation.add("user", "Hello!")
+conversation.add("assistant", "Hi there!")
+
+# Display conversation
+conversation.display_conversation()
+
+# Save conversation
+conversation.save_as_json("my_chat.json")
+```
+
+### Advanced Usage with Token Counting
+
+```python
+from swarms.structs import Conversation
+from some_tokenizer import Tokenizer
+
+# Create conversation with token counting
+conversation = Conversation(
+    tokenizer=Tokenizer(),
+    context_length=4096,
+    token_count=True
+)
+
+# Add messages
+conversation.add("user", "Hello, how are you?")
+conversation.add("assistant", "I'm doing well, thank you!")
+
+# Get token statistics
+stats = conversation.get_cache_stats()
+print(f"Total tokens: {stats['total_tokens']}")
+```
+
+### Using Different Storage Providers
+
+```python
+# In-memory storage
+conversation = Conversation(provider="in-memory")
+conversation.add("user", "Hello")
+
+# Mem0 storage
+conversation = Conversation(provider="mem0")
+conversation.add("user", "Hello")
+```
+
 ## Conclusion
 
-The `Conversation` class provides a comprehensive set of tools for managing conversations in Python applications. With support for multiple memory providers, caching, token counting, and various export formats, it's suitable for a wide range of use cases from simple chat applications to complex AI systems.
-
-For more information or specific use cases, please refer to the examples above or consult the source code.
+The `Conversation` class provides a comprehensive set of tools for managing conversations in Python applications. It supports various storage backends, token counting, caching, and multiple export/import formats. The class is designed to be flexible and extensible, making it suitable for a wide range of use cases from simple chat applications to complex conversational AI systems.
