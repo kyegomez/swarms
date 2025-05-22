@@ -115,13 +115,16 @@ class Conversation(BaseStructure):
         }
         self.cache_lock = threading.Lock()
         self.conversations_dir = conversations_dir
-        
+
         self.setup()
 
     def setup(self):
         # Set up conversations directory
-        self.conversations_dir = self.conversations_dir or os.path.join(
-            os.path.expanduser("~"), ".swarms", "conversations"
+        self.conversations_dir = (
+            self.conversations_dir
+            or os.path.join(
+                os.path.expanduser("~"), ".swarms", "conversations"
+            )
         )
         os.makedirs(self.conversations_dir, exist_ok=True)
 
@@ -150,7 +153,9 @@ class Conversation(BaseStructure):
                 self.add(self.user or "User", self.rules)
 
             if self.custom_rules_prompt is not None:
-                self.add(self.user or "User", self.custom_rules_prompt)
+                self.add(
+                    self.user or "User", self.custom_rules_prompt
+                )
 
             # If tokenizer then truncate
             if self.tokenizer is not None:
