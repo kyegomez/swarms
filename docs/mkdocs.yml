@@ -245,6 +245,7 @@ nav:
         - Various Execution Methods: "swarms/structs/various_execution_methods.md"
         - Deep Research Swarm: "swarms/structs/deep_research_swarm.md"
         - Swarm Matcher: "swarms/structs/swarm_matcher.md"
+        - Council of Judges: "swarms/structs/council_of_judges.md"
 
         - Hiearchical Architectures:
           - Auto Agent Builder: "swarms/structs/auto_agent_builder.md"
