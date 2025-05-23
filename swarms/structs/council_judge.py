@@ -1,11 +1,13 @@
-from typing import Dict, Tuple
-from functools import lru_cache
 import multiprocessing
+import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import lru_cache
+from typing import Dict, Tuple
+
+from loguru import logger
+
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from loguru import logger
-import uuid
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.utils.history_output_formatter import (
     history_output_formatter,

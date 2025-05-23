@@ -9,7 +9,7 @@ if __name__ == "__main__":
     base_agent = Agent(
         agent_name="Financial-Analysis-Agent",
         system_prompt="You are a financial expert helping users understand and establish ROTH IRAs.",
-        model_name="gpt-4o-mini",
+        model_name="claude-opus-4-20250514",
         max_loops=1,
     )
 
