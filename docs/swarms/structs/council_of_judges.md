@@ -6,6 +6,34 @@ The `CouncilAsAJudge` is a sophisticated evaluation system that employs multiple
 
 The `CouncilAsAJudge` implements a council of specialized AI agents that evaluate different aspects of a model's response. Each agent focuses on a specific dimension of evaluation, and their findings are aggregated into a comprehensive report.
 
+```mermaid
+graph TD
+    A[User Query] --> B[Base Agent]
+    B --> C[Model Response]
+    C --> D[CouncilAsAJudge]
+    
+    subgraph "Evaluation Dimensions"
+        D --> E1[Accuracy Agent]
+        D --> E2[Helpfulness Agent]
+        D --> E3[Harmlessness Agent]
+        D --> E4[Coherence Agent]
+        D --> E5[Conciseness Agent]
+        D --> E6[Instruction Adherence Agent]
+    end
+    
+    E1 --> F[Evaluation Aggregation]
+    E2 --> F
+    E3 --> F
+    E4 --> F
+    E5 --> F
+    E6 --> F
+    
+    F --> G[Comprehensive Report]
+    
+    style D fill:#f9f,stroke:#333,stroke-width:2px
+    style F fill:#bbf,stroke:#333,stroke-width:2px
+```
+
 ## Key Features
 
 - Parallel evaluation across multiple dimensions
