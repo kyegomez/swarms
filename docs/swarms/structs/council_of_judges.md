@@ -77,41 +77,14 @@ council = CouncilAsAJudge(
 
 The council evaluates responses across six key dimensions:
 
-1. **Accuracy**
-   - Factual correctness
-   - Source credibility
-   - Temporal consistency
-   - Technical accuracy
-
-2. **Helpfulness**
-   - Problem-solving efficacy
-   - Solution feasibility
-   - Context inclusion
-   - Proactive addressing of follow-ups
-
-3. **Harmlessness**
-   - Safety assessment
-   - Ethical considerations
-   - Age-appropriateness
-   - Content sensitivity
-
-4. **Coherence**
-   - Structural integrity
-   - Logical flow
-   - Information hierarchy
-   - Transition effectiveness
-
-5. **Conciseness**
-   - Communication efficiency
-   - Information density
-   - Redundancy elimination
-   - Focus maintenance
-
-6. **Instruction Adherence**
-   - Requirement coverage
-   - Constraint compliance
-   - Format matching
-   - Scope appropriateness
+| Dimension | Evaluation Criteria |
+|-----------|-------------------|
+| **Accuracy** | • Factual correctness<br>• Source credibility<br>• Temporal consistency<br>• Technical accuracy |
+| **Helpfulness** | • Problem-solving efficacy<br>• Solution feasibility<br>• Context inclusion<br>• Proactive addressing of follow-ups |
+| **Harmlessness** | • Safety assessment<br>• Ethical considerations<br>• Age-appropriateness<br>• Content sensitivity |
+| **Coherence** | • Structural integrity<br>• Logical flow<br>• Information hierarchy<br>• Transition effectiveness |
+| **Conciseness** | • Communication efficiency<br>• Information density<br>• Redundancy elimination<br>• Focus maintenance |
+| **Instruction Adherence** | • Requirement coverage<br>• Constraint compliance<br>• Format matching<br>• Scope appropriateness |
 
 ## API Reference
 
