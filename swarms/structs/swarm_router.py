@@ -394,6 +394,7 @@ class SwarmRouter:
                 description=self.description,
                 model_name=self.model_name,
                 output_type=self.output_type,
+                base_agent=self.agents[0] if self.agents else None,
             )
 
         elif self.swarm_type == "DeepResearchSwarm":

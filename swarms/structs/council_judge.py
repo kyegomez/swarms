@@ -2,7 +2,7 @@ import multiprocessing
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 from loguru import logger
 
@@ -140,29 +140,31 @@ def build_judge_prompt(
         )
 
     evaluation_focus = EVAL_DIMENSIONS[dimension_name]
-    return f"""## Evaluation Dimension: {dimension_name.upper()}
+    return f"""
+    ## Evaluation Dimension: {dimension_name.upper()}
 
-{evaluation_focus}
+    {evaluation_focus}
 
-Your task is to provide a detailed, technical analysis of the model response focusing exclusively on the {dimension_name} dimension.
+    Your task is to provide a detailed, technical analysis of the model response focusing exclusively on the {dimension_name} dimension.
 
-Guidelines:
-1. Be specific and reference exact parts of the response
-2. Explain the reasoning behind your observations
-3. Provide concrete examples of both strengths and weaknesses
-4. Suggest specific improvements where applicable
-5. Maintain a technical, analytical tone
+    Guidelines:
+    1. Be specific and reference exact parts of the response
+    2. Explain the reasoning behind your observations
+    3. Provide concrete examples of both strengths and weaknesses
+    4. Suggest specific improvements where applicable
+    5. Maintain a technical, analytical tone
 
---- BEGIN USER PROMPT ---
-{user_prompt}
---- END USER PROMPT ---
+    --- BEGIN USER PROMPT ---
+    {user_prompt}
+    --- END USER PROMPT ---
 
---- BEGIN MODEL RESPONSE ---
-{model_response}
---- END MODEL RESPONSE ---
+    --- BEGIN MODEL RESPONSE ---
+    {model_response}
+    --- END MODEL RESPONSE ---
 
-### Technical Analysis ({dimension_name.upper()} Dimension):
-Provide a comprehensive analysis that would be valuable for model improvement."""
+    ### Technical Analysis ({dimension_name.upper()} Dimension):
+    Provide a comprehensive analysis that would be valuable for model improvement.
+    """
 
 
 @lru_cache(maxsize=128)
@@ -250,7 +252,10 @@ class CouncilAsAJudge:
         output_type: str = "all",
         cache_size: int = 128,
         max_workers: int = None,
+        base_agent: Optional[Agent] = None,
         random_model_name: bool = True,
+        max_loops: int = 1,
+        aggregation_model_name: str = "gpt-4o-mini",
     ):
         """
         Initialize the CouncilAsAJudge.
@@ -270,7 +275,10 @@ class CouncilAsAJudge:
         self.output_type = output_type
         self.cache_size = cache_size
         self.max_workers = max_workers
+        self.base_agent = base_agent
         self.random_model_name = random_model_name
+        self.max_loops = max_loops
+        self.aggregation_model_name = aggregation_model_name
 
         self.reliability_check()
 
@@ -371,7 +379,7 @@ class CouncilAsAJudge:
             return Agent(
                 agent_name="aggregator_agent",
                 system_prompt=aggregator_system_prompt(),
-                model_name="anthropic/claude-3-sonnet-20240229",
+                model_name=self.aggregation_model_name,
                 max_loops=1,
                 dynamic_temperature_enabled=True,
                 output_type="final",
@@ -407,7 +415,9 @@ class CouncilAsAJudge:
             prompt = build_judge_prompt(
                 dim, user_prompt, model_response
             )
-            result = agent.run(prompt)
+            result = agent.run(
+                f"{prompt} \n\n Evaluate the following agent {self.base_agent.agent_name} response for the {dim} dimension: {model_response}."
+            )
 
             self.conversation.add(
                 role=agent.agent_name,
@@ -420,7 +430,9 @@ class CouncilAsAJudge:
                 f"Failed to evaluate dimension {dim}: {str(e)}"
             )
 
-    def run(self, task: str, model_response: str) -> None:
+    def run(
+        self, task: str, model_response: Optional[str] = None
+    ) -> None:
         """
         Run the evaluation process using ThreadPoolExecutor.
 
@@ -433,6 +445,16 @@ class CouncilAsAJudge:
         """
 
         try:
+
+            # Run the base agent
+            if self.base_agent and model_response is None:
+                model_response = self.base_agent.run(task=task)
+
+            self.conversation.add(
+                role="User",
+                content=task,
+            )
+
             # Create tasks for all dimensions
             tasks = [
                 (dim, agent, task, model_response)
@@ -480,6 +502,32 @@ class CouncilAsAJudge:
 
             self.conversation.add(
                 role=self.aggregator_agent.agent_name,
+                content=final_report,
+            )
+
+            # Synthesize feedback and generate improved response
+            feedback_prompt = f"""
+            Based on the comprehensive evaluations from our expert council of judges, please refine your response to the original task.
+
+            Original Task:
+            {task}
+
+            Council Feedback:
+            {aggregation_prompt}
+
+            Please:
+            1. Carefully consider all feedback points
+            2. Address any identified weaknesses
+            3. Maintain or enhance existing strengths
+            4. Provide a refined, improved response that incorporates the council's insights
+
+            Your refined response:
+            """
+
+            final_report = self.base_agent.run(task=feedback_prompt)
+
+            self.conversation.add(
+                role=self.base_agent.agent_name,
                 content=final_report,
             )
 
