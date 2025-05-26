@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 from typing import Any
 
+
 def dict_to_xml(tag: str, d: dict) -> ET.Element:
     """Convert a dictionary to an XML Element."""
     elem = ET.Element(tag)
@@ -20,6 +21,7 @@ def dict_to_xml(tag: str, d: dict) -> ET.Element:
             child.text = str(val)
         elem.append(child)
     return elem
+
 
 def to_xml_string(data: Any, root_tag: str = "root") -> str:
     """Convert a dict or list to an XML string."""

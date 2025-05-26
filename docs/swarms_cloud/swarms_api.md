@@ -2,7 +2,7 @@
 
 *Enterprise-grade Agent Swarm Management API*
 
-**Base URL**: `https://api.swarms.world`  
+**Base URL**: `https://api.swarms.world` or `https://swarms-api-285321057562.us-east1.run.app`
 **API Key Management**: [https://swarms.world/platform/api-keys](https://swarms.world/platform/api-keys)  
 
 ## Overview

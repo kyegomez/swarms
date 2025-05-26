@@ -78,6 +78,7 @@ from swarms.structs.swarming_architectures import (
     star_swarm,
 )
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
+from swarms.structs.council_judge import CouncilAsAJudge
 
 __all__ = [
     "Agent",
@@ -146,4 +147,5 @@ __all__ = [
     "get_agents_info",
     "get_swarms_info",
     "AutoSwarmBuilder",
+    "CouncilAsAJudge",
 ]

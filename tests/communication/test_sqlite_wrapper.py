@@ -282,7 +282,7 @@ def test_conversation_management() -> bool:
 
 
 def generate_test_report(
-    test_results: List[Dict[str, Any]]
+    test_results: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
     """
     Generate a test report in JSON format.

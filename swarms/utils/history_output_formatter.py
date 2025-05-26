@@ -20,6 +20,7 @@ HistoryOutputType = Literal[
     "str-all-except-first",
 ]
 
+
 def history_output_formatter(
     conversation: Conversation, type: HistoryOutputType = "list"
 ) -> Union[List[Dict[str, Any]], Dict[str, Any], str]:

@@ -15,4 +15,3 @@ from swarms.structs import *  # noqa: E402, F403
 from swarms.telemetry import *  # noqa: E402, F403
 from swarms.tools import *  # noqa: E402, F403
 from swarms.utils import *  # noqa: E402, F403
-from swarms.client import *  # noqa: E402, F403
