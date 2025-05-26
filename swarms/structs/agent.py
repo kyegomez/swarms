@@ -68,6 +68,8 @@ from swarms.utils.str_to_dict import str_to_dict
 from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
 from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
 from swarms.structs.agent_non_serializable import restore_non_serializable_properties
+from swarms.prompts.safety_prompt import SAFETY_PROMPT
+
 
 
 # Utils
@@ -399,6 +401,7 @@ class Agent:
         mcp_url: str = None,
         mcp_urls: List[str] = None,
         react_on: bool = False,
+        safety_prompt_on: bool = False,
         *args,
         **kwargs,
     ):
@@ -521,6 +524,7 @@ class Agent:
         self.mcp_url = mcp_url
         self.mcp_urls = mcp_urls
         self.react_on = react_on
+        self.safety_prompt_on = safety_prompt_on
 
         self._cached_llm = (
             None  # Add this line to cache the LLM instance
@@ -576,6 +580,9 @@ class Agent:
             prompt = f"\n Your Name: {self.agent_name} \n\n Your Description: {self.agent_description} \n\n {self.system_prompt}"
         else:
             prompt = self.system_prompt
+
+        if self.safety_prompt_on is True:
+            prompt += SAFETY_PROMPT
 
         # Initialize the short term memory
         self.short_memory = Conversation(

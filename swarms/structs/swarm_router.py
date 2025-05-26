@@ -24,6 +24,7 @@ from swarms.structs.output_types import OutputType
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.malt import MALT
 from swarms.structs.deep_research_swarm import DeepResearchSwarm
+from swarms.structs.council_judge import CouncilAsAJudge
 
 logger = initialize_logger(log_folder="swarm_router")
 
@@ -41,6 +42,7 @@ SwarmType = Literal[
     "MajorityVoting",
     "MALT",
     "DeepResearchSwarm",
+    "CouncilAsAJudge",
 ]
 
 
@@ -225,13 +227,7 @@ class SwarmRouter:
                 csv_path=self.csv_file_path
             ).load_agents()
 
-        # Log initialization
-        self._log(
-            "info",
-            f"SwarmRouter initialized with swarm type: {swarm_type}",
-        )
-
-        # Handle Automated Prompt Engineering
+    def setup(self):
         if self.auto_generate_prompts is True:
             self.activate_ape()
 
@@ -289,18 +285,52 @@ class SwarmRouter:
             raise RuntimeError(error_msg) from e
 
     def reliability_check(self):
-        logger.info("Initializing reliability checks")
+        """Perform reliability checks on swarm configuration.
 
-        if not self.agents:
-            raise ValueError("No agents provided for the swarm.")
+        Validates essential swarm parameters and configuration before execution.
+        Handles special case for CouncilAsAJudge which may not require agents.
+        """
+        logger.info(
+            "🔍 [SYSTEM] Initializing advanced swarm reliability diagnostics..."
+        )
+        logger.info(
+            "⚡ [SYSTEM] Running pre-flight checks and system validation..."
+        )
+
+        # Check swarm type first since it affects other validations
         if self.swarm_type is None:
+            logger.error(
+                "❌ [CRITICAL] Swarm type validation failed - type cannot be 'none'"
+            )
             raise ValueError("Swarm type cannot be 'none'.")
+
+        # Special handling for CouncilAsAJudge
+        if self.swarm_type == "CouncilAsAJudge":
+            if self.agents is not None:
+                logger.warning(
+                    "⚠️ [ADVISORY] CouncilAsAJudge detected with agents - this is atypical"
+                )
+        elif not self.agents:
+            logger.error(
+                "❌ [CRITICAL] Agent validation failed - no agents detected in swarm"
+            )
+            raise ValueError("No agents provided for the swarm.")
+
+        # Validate max_loops
         if self.max_loops == 0:
+            logger.error(
+                "❌ [CRITICAL] Loop validation failed - max_loops cannot be 0"
+            )
             raise ValueError("max_loops cannot be 0.")
 
+        # Setup other functionality
+        logger.info("🔄 [SYSTEM] Initializing swarm subsystems...")
+        self.setup()
+
         logger.info(
-            "Reliability checks completed your swarm is ready."
+            "✅ [SYSTEM] All reliability checks passed successfully"
         )
+        logger.info("🚀 [SYSTEM] Swarm is ready for deployment")
 
     def _create_swarm(
         self, task: str = None, *args, **kwargs
@@ -356,6 +386,15 @@ class SwarmRouter:
                 max_loops=self.max_loops,
                 return_dict=True,
                 preset_agents=True,
+            )
+
+        elif self.swarm_type == "CouncilAsAJudge":
+            return CouncilAsAJudge(
+                name=self.name,
+                description=self.description,
+                model_name=self.model_name,
+                output_type=self.output_type,
+                base_agent=self.agents[0] if self.agents else None,
             )
 
         elif self.swarm_type == "DeepResearchSwarm":
@@ -496,7 +535,14 @@ class SwarmRouter:
         self.logs.append(log_entry)
         logger.log(level.upper(), message)
 
-    def _run(self, task: str, img: str, *args, **kwargs) -> Any:
+    def _run(
+        self,
+        task: str,
+        img: str,
+        model_response: str,
+        *args,
+        **kwargs,
+    ) -> Any:
         """
         Dynamically run the specified task on the selected or matched swarm type.
 
@@ -520,7 +566,16 @@ class SwarmRouter:
             logger.info(
                 f"Running task on {self.swarm_type} swarm with task: {task}"
             )
-            result = self.swarm.run(task=task, *args, **kwargs)
+
+            if self.swarm_type == "CouncilAsAJudge":
+                result = self.swarm.run(
+                    task=task,
+                    model_response=model_response,
+                    *args,
+                    **kwargs,
+                )
+            else:
+                result = self.swarm.run(task=task, *args, **kwargs)
 
             logger.info("Swarm completed successfully")
             return result
