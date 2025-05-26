@@ -67,7 +67,9 @@ from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.str_to_dict import str_to_dict
 from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
 from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
+from swarms.structs.agent_non_serializable import restore_non_serializable_properties
 from swarms.prompts.safety_prompt import SAFETY_PROMPT
+
 
 
 # Utils
@@ -1725,6 +1727,9 @@ class Agent:
             # Reinitialize any necessary runtime components
             self._reinitialize_after_load()
 
+            # Restore non-serializable properties (tokenizer, long_term_memory, logger_handler, agent_output, executor)
+            self.restore_non_serializable_properties()
+
             if self.verbose:
                 self._log_loaded_state_info(resolved_path)
 
@@ -2781,3 +2786,25 @@ class Agent:
                 role="Output Cleaner",
                 content=response,
             )
+
+    def restore_non_serializable_properties(self):
+        """
+        Restore non-serializable properties for the Agent instance after loading.
+        This should be called after loading agent state from disk.
+        """
+        restore_non_serializable_properties(self)
+
+    # Custom serialization for non-serializable properties
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Remove non-serializable properties
+        for prop in ["tokenizer", "long_term_memory", "logger_handler", "agent_output", "executor"]:
+            if prop in state:
+                state[prop] = None  # Or a serializable placeholder if needed
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        # Restore non-serializable properties after loading
+        if hasattr(self, 'restore_non_serializable_properties'):
+            self.restore_non_serializable_properties()
