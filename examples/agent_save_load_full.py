@@ -61,8 +61,11 @@ print("\nConversation history BEFORE SAVE:", get_conversation_history(agent))
 state_path = os.path.join(agent.workspace_dir, "test_state.json")
 agent.save(state_path)
 
-# --- 5. Check that the conversation JSON file exists and print its contents ---
+# --- 5. Ensure the conversation JSON file is saved and print its path and contents ---
 json_path = os.path.join(agent.workspace_dir, "test_conversation_history.json")
+if hasattr(agent, "short_memory") and hasattr(agent.short_memory, "save_as_json"):
+    agent.short_memory.save_as_json(json_path)
+
 if os.path.exists(json_path):
     print(f"\n[CHECK] Conversation JSON file found: {json_path}")
     with open(json_path, "r") as f:
@@ -89,10 +92,7 @@ else:
     print(f"[WARN] Conversation JSON file not found for loading: {json_path}")
 
 # --- 9. Assign loaded conversation to agent2 and check ---
-if hasattr(agent2, "conversation"):
-    agent2.conversation = conversation_loaded
-elif hasattr(agent2, "short_memory"):
-    agent2.short_memory = conversation_loaded
+agent2.short_memory = conversation_loaded
 print("\n[CHECK] Agent2 conversation history after assigning loaded conversation:", get_conversation_history(agent2))
 
 # --- 10. Inspect after loading ---
@@ -104,8 +104,18 @@ result = agent2.run(task="What is 2+2?")
 print("\nAgent2 run result:", result)
 
 # --- 12. Cleanup test files ---
-for path in (state_path, json_path):
-    try:
-        os.remove(path)
-    except OSError:
-        pass
+print(f"\n[INFO] Test complete. Conversation JSON and agent state files are available for inspection:")
+print(f"  Conversation JSON: {json_path}")
+print(f"  Agent state: {state_path}")
+print("You can open and inspect these files to verify the agent's memory persistence.")
+# Do NOT delete files automatically
+# for path in (state_path, json_path):
+#     try:
+#         os.remove(path)
+#     except OSError:
+#         pass
+
+# --- 13. Test if agent2 remembers the previous conversation ---
+print("\n[TEST] Checking if agent2 remembers the previous conversation after reload...")
+probe = agent2.run(task="What did I ask you to do earlier?")
+print("\nAgent2 memory probe result:", probe)
