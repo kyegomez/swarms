@@ -159,22 +159,10 @@ This is an example of how to use the TwitterTool in a production environment usi
 import os
 from time import time
 
-from swarm_models import OpenAIChat
 from swarms import Agent
 from dotenv import load_dotenv
 
 from swarms_tools.social_media.twitter_tool import TwitterTool
-
-load_dotenv()
-
-model_name = "gpt-4o"
-
-model = OpenAIChat(
-    model_name=model_name,
-    max_tokens=3000,
-    openai_api_key=os.getenv("OPENAI_API_KEY"),
-)
-
 
 medical_coder = Agent(
     agent_name="Medical Coder",
@@ -224,7 +212,8 @@ medical_coder = Agent(
     - For ambiguous cases, provide a brief note with reasoning and flag for clarification.
     - Ensure the output format is clean, consistent, and ready for professional use.
     """,
-    llm=model,
+    model_name="gpt-4o-mini",
+    max_tokens=3000,
     max_loops=1,
     dynamic_temperature_enabled=True,
 )
