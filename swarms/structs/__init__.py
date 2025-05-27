@@ -79,6 +79,7 @@ from swarms.structs.swarming_architectures import (
 )
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.council_judge import CouncilAsAJudge
+from swarms.structs.batch_agent_execution import batch_agent_execution
 
 __all__ = [
     "Agent",
@@ -148,4 +149,5 @@ __all__ = [
     "get_swarms_info",
     "AutoSwarmBuilder",
     "CouncilAsAJudge",
+    "batch_agent_execution",
 ]

@@ -366,6 +366,7 @@ nav:
 
     - Clients:
       - Swarms API Python Client: "swarms_cloud/python_client.md"
+      - Swarms API Rust Client: "swarms_cloud/rust_client.md"
 
     - Pricing:
       - Swarms API Pricing: "swarms_cloud/api_pricing.md"

@@ -68,6 +68,7 @@ from swarms.utils.str_to_dict import str_to_dict
 from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
 from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
 from swarms.prompts.safety_prompt import SAFETY_PROMPT
+from swarms.structs.ma_utils import set_random_models_for_agents
 
 
 # Utils
@@ -400,6 +401,7 @@ class Agent:
         mcp_urls: List[str] = None,
         react_on: bool = False,
         safety_prompt_on: bool = False,
+        random_models_on: bool = False,
         *args,
         **kwargs,
     ):
@@ -523,6 +525,7 @@ class Agent:
         self.mcp_urls = mcp_urls
         self.react_on = react_on
         self.safety_prompt_on = safety_prompt_on
+        self.random_models_on = random_models_on
 
         self._cached_llm = (
             None  # Add this line to cache the LLM instance
@@ -569,6 +572,9 @@ class Agent:
             )
 
         self.short_memory = self.short_memory_init()
+
+        if self.random_models_on is True:
+            self.model_name = set_random_models_for_agents()
 
     def short_memory_init(self):
         if (

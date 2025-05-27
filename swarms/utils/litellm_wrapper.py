@@ -123,6 +123,9 @@ class LiteLLM:
             retries  # Add retries for better reliability
         )
 
+    def output_for_tools(self, response: any):
+        return response["choices"][0]["message"]["tool_calls"][0]
+
     def _prepare_messages(self, task: str) -> list:
         """
         Prepare the messages for the given task.
@@ -309,10 +312,16 @@ class LiteLLM:
 
             # Standard completion
             if self.stream:
-                return completion(**completion_params)
+                output = completion(**completion_params)
             else:
                 response = completion(**completion_params)
-                return response.choices[0].message.content
+
+                if self.tools_list_dictionary is not None:
+                    return self.output_for_tools(response)
+                else:
+                    return response.choices[0].message.content
+
+            return output
 
         except LiteLLMException as error:
             logger.error(f"Error in LiteLLM run: {str(error)}")

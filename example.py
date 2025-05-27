@@ -1,4 +1,4 @@
-from swarms.structs.agent import Agent
+from swarms import Agent
 
 # Initialize the agent
 agent = Agent(

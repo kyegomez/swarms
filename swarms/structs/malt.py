@@ -198,7 +198,7 @@ class MALT:
             system_prompt=proof_verifier_prompt,
         )
 
-        majority_voting_agent = Agent(
+        Agent(
             agent_name="Majority-Voting-Agent",
             model_name="gpt-4o-mini",
             max_loops=1,
