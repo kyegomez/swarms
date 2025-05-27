@@ -1386,10 +1386,7 @@ SpreadSheetSwarm manages thousands of agents concurrently for efficient task pro
 [Learn more:](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)
 
 ```python
-import os
 from swarms import Agent, SpreadSheetSwarm
-from swarm_models import OpenAIChat
-
 # Define custom system prompts for each social media platform
 TWITTER_AGENT_SYS_PROMPT = """
 You are a Twitter marketing expert specializing in real estate. Your task is to create engaging, concise tweets to promote properties, analyze trends to maximize engagement, and use appropriate hashtags and timing to reach potential buyers.
@@ -1416,7 +1413,7 @@ agents = [
     Agent(
         agent_name="Twitter-RealEstate-Agent",
         system_prompt=TWITTER_AGENT_SYS_PROMPT,
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="twitter_realestate_agent.json",
@@ -1426,7 +1423,7 @@ agents = [
     Agent(
         agent_name="Instagram-RealEstate-Agent",
         system_prompt=INSTAGRAM_AGENT_SYS_PROMPT,
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="instagram_realestate_agent.json",
@@ -1436,7 +1433,7 @@ agents = [
     Agent(
         agent_name="Facebook-RealEstate-Agent",
         system_prompt=FACEBOOK_AGENT_SYS_PROMPT,
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="facebook_realestate_agent.json",
@@ -1446,7 +1443,7 @@ agents = [
     Agent(
         agent_name="LinkedIn-RealEstate-Agent",
         system_prompt=LINKEDIN_AGENT_SYS_PROMPT,
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="linkedin_realestate_agent.json",
@@ -1456,7 +1453,7 @@ agents = [
     Agent(
         agent_name="Email-RealEstate-Agent",
         system_prompt=EMAIL_AGENT_SYS_PROMPT,
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="email_realestate_agent.json",
@@ -1920,32 +1917,18 @@ A production-grade multi-agent system enabling sophisticated group conversations
 
 
 ```python
-
-import os
-from dotenv import load_dotenv
-from swarm_models import OpenAIChat
 from swarms import Agent, GroupChat, expertise_based
 
 
 if __name__ == "__main__":
 
-    load_dotenv()
-
-    # Get the OpenAI API key from the environment variable
-    api_key = os.getenv("OPENAI_API_KEY")
-
-    # Create an instance of the OpenAIChat class
-    model = OpenAIChat(
-        openai_api_key=api_key,
-        model_name="gpt-4o-mini",
-        temperature=0.1,
-    )
 
     # Example agents
     agent1 = Agent(
         agent_name="Financial-Analysis-Agent",
         system_prompt="You are a financial analyst specializing in investment strategies.",
-        llm=model,
+        model_name="gpt-4o-mini",
+        temperature=0.1,        
         max_loops=1,
         autosave=False,
         dashboard=False,
@@ -1961,7 +1944,8 @@ if __name__ == "__main__":
     agent2 = Agent(
         agent_name="Tax-Adviser-Agent",
         system_prompt="You are a tax adviser who provides clear and concise guidance on tax-related queries.",
-        llm=model,
+        model_name="gpt-4o-mini",
+        temperature=0.1,           
         max_loops=1,
         autosave=False,
         dashboard=False,
@@ -1986,7 +1970,8 @@ if __name__ == "__main__":
     history = chat.run(
         "How to optimize tax strategy for investments?"
     )
-    print(history.model_dump_json(indent=2))
+    print(history)
+
 
 ```
 
