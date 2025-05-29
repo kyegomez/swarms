@@ -127,7 +127,7 @@ The **Model Context Protocol (MCP)** integration enables Swarms agents to dynami
 
 ---
 
-## :material-workflow: Integration Flow
+## Integration Flow
 
 The following diagram illustrates the complete MCP integration workflow:
 
@@ -143,10 +143,6 @@ graph TD
     H --> I[🔄 Process & Validate]
     I --> J[📊 Summarize Results]
     J --> K[✅ Return Final Output]
-    
-    classDef startEnd fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef process fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
-    classDef communication fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
     
     class A,K startEnd
     class D,I,J process
