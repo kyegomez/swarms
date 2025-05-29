@@ -1,8 +1,9 @@
 from mcp.server.fastmcp import FastMCP
 import requests
 
-mcp = FastMCP("okx_crypto_server", str)
+mcp = FastMCP("OKXCryptoPrice")
 
+mcp.settings.port = 8001
 
 @mcp.tool(
     name="get_okx_crypto_price",
@@ -114,4 +115,5 @@ def get_okx_crypto_volume(symbol: str) -> str:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="sse")
+    # Run the server on port 8000 (you can change this to any available port)
+    mcp.run(transport="sse") 
