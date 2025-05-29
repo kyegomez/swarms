@@ -154,22 +154,33 @@ graph TD
 !!! abstract "Process Steps"
 
     === "1-3: Initialization"
+        
         **Task Initiation** - Agent receives user query
+        
         **Server Connection** - Establish MCP server link
+        
         **Tool Discovery** - Fetch available tool schemas
 
     === "4-6: Execution"
+        
         **Task Analysis** - Determine required tools
+        
         **Request Generation** - Create structured API calls
+        
         **Server Communication** - Send requests via SSE
 
     === "7-9: Processing"
+        
         **Server Processing** - MCP server executes tools
+        
         **Response Handling** - Receive and validate data
+        
         **Result Processing** - Parse and structure output
 
     === "10-11: Completion"
+        
         **Summarization** - Generate user-friendly summary
+        
         **Final Output** - Return complete response
 
 ---
