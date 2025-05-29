@@ -31,6 +31,10 @@ from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
 from swarms.prompts.tools import tool_sop_prompt
+from swarms.schemas.agent_mcp_errors import (
+    AgentMCPConnectionError,
+    AgentMCPToolError,
+)
 from swarms.schemas.agent_step_schemas import ManySteps, Step
 from swarms.schemas.base_schemas import (
     AgentChatCompletionResponse,
@@ -46,13 +50,6 @@ from swarms.structs.safe_loading import (
 )
 from swarms.telemetry.main import log_agent_data
 from swarms.tools.base_tool import BaseTool
-from swarms.tools.mcp_client import (
-    execute_mcp_tool,
-    find_and_execute_tool,
-    list_all,
-    list_tools_for_multiple_urls,
-)
-from swarms.tools.mcp_integration import MCPServerSseParams
 from swarms.tools.tool_parse_exec import parse_and_execute_json
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.data_to_text import data_to_text
@@ -64,11 +61,18 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.pdf_to_text import pdf_to_text
-from swarms.utils.str_to_dict import str_to_dict
 from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
 from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
 from swarms.prompts.safety_prompt import SAFETY_PROMPT
 from swarms.structs.ma_utils import set_random_models_for_agents
+from swarms.tools.mcp_client_call import (
+    execute_tool_call_simple,
+    get_mcp_tools_sync,
+)
+from swarms.schemas.mcp_schemas import (
+    MCPConnection,
+)
+from swarms.utils.index import exists
 
 
 # Utils
@@ -88,10 +92,6 @@ def parse_done_token(response: str) -> bool:
 def agent_id():
     """Generate an agent id"""
     return uuid.uuid4().hex
-
-
-def exists(val):
-    return val is not None
 
 
 # Agent output types
@@ -396,12 +396,12 @@ class Agent:
         role: agent_roles = "worker",
         no_print: bool = False,
         tools_list_dictionary: Optional[List[Dict[str, Any]]] = None,
-        mcp_servers: MCPServerSseParams = None,
-        mcp_url: str = None,
+        mcp_url: Optional[Union[str, MCPConnection]] = None,
         mcp_urls: List[str] = None,
         react_on: bool = False,
         safety_prompt_on: bool = False,
         random_models_on: bool = False,
+        mcp_config: Optional[MCPConnection] = None,
         *args,
         **kwargs,
     ):
@@ -418,6 +418,7 @@ class Agent:
         self.stopping_token = stopping_token
         self.interactive = interactive
         self.dashboard = dashboard
+        self.saved_state_path = saved_state_path
         self.return_history = return_history
         self.dynamic_temperature_enabled = dynamic_temperature_enabled
         self.dynamic_loops = dynamic_loops
@@ -520,12 +521,12 @@ class Agent:
         self.role = role
         self.no_print = no_print
         self.tools_list_dictionary = tools_list_dictionary
-        self.mcp_servers = mcp_servers
         self.mcp_url = mcp_url
         self.mcp_urls = mcp_urls
         self.react_on = react_on
         self.safety_prompt_on = safety_prompt_on
         self.random_models_on = random_models_on
+        self.mcp_config = mcp_config
 
         self._cached_llm = (
             None  # Add this line to cache the LLM instance
@@ -560,9 +561,6 @@ class Agent:
         if self.llm is None:
             self.llm = self.llm_handling()
 
-        if self.mcp_url or self.mcp_servers is not None:
-            self.add_mcp_tools_to_memory()
-
         if self.react_on is True:
             self.system_prompt += REACT_SYS_PROMPT
 
@@ -589,7 +587,7 @@ class Agent:
             prompt += SAFETY_PROMPT
 
         # Initialize the short term memory
-        self.short_memory = Conversation(
+        memory = Conversation(
             system_prompt=prompt,
             time_enabled=False,
             user=self.user_name,
@@ -597,7 +595,7 @@ class Agent:
             token_count=False,
         )
 
-        return self.short_memory
+        return memory
 
     def agent_output_model(self):
         # Many steps
@@ -645,10 +643,16 @@ class Agent:
                     **common_args,
                     tools_list_dictionary=self.tools_list_dictionary,
                     tool_choice="auto",
-                    parallel_tool_calls=len(
-                        self.tools_list_dictionary
-                    )
-                    > 1,
+                    parallel_tool_calls=True,
+                )
+
+            elif self.mcp_url is not None:
+                self._cached_llm = LiteLLM(
+                    **common_args,
+                    tools_list_dictionary=self.add_mcp_tools_to_memory(),
+                    tool_choice="auto",
+                    parallel_tool_calls=True,
+                    mcp_call=True,
                 )
             else:
                 self._cached_llm = LiteLLM(
@@ -715,110 +719,23 @@ class Agent:
             Exception: If there's an error accessing the MCP tools
         """
         try:
-            if self.mcp_url is not None:
-                tools_available = list_all(
-                    self.mcp_url, output_type="json"
-                )
-                self.short_memory.add(
-                    role="Tools Available",
-                    content=f"\n{tools_available}",
-                )
-
-            elif (
-                self.mcp_url is None
-                and self.mcp_urls is not None
-                and len(self.mcp_urls) > 1
-            ):
-                tools_available = list_tools_for_multiple_urls(
-                    urls=self.mcp_urls,
-                    output_type="json",
-                )
-
-                self.short_memory.add(
-                    role="Tools Available",
-                    content=f"\n{tools_available}",
-                )
-        except Exception as e:
-            logger.error(f"Error adding MCP tools to memory: {e}")
-            raise e
-
-    def _single_mcp_tool_handling(self, response: any):
-        """
-        Handles execution of a single MCP tool.
-
-        Args:
-            response (str): The tool response to process
-
-        Raises:
-            Exception: If there's an error executing the tool
-        """
-        try:
-            if isinstance(response, dict):
-                result = response
-                print(type(result))
+            if exists(self.mcp_url):
+                tools = get_mcp_tools_sync(server_path=self.mcp_url)
+            elif exists(self.mcp_config):
+                tools = get_mcp_tools_sync(connection=self.mcp_config)
+                logger.info(f"Tools: {tools}")
             else:
-                result = str_to_dict(response)
-                print(type(result))
-
-            output = execute_mcp_tool(
-                url=self.mcp_url,
-                parameters=result,
+                raise AgentMCPConnectionError(
+                    "mcp_url must be either a string URL or MCPConnection object"
+                )
+            self.pretty_print(
+                f"✨ [SYSTEM] Successfully integrated {len(tools)} MCP tools into agent: {self.agent_name} | Status: ONLINE | Time: {time.strftime('%H:%M:%S')} ✨",
+                loop_count=0,
             )
 
-            self.short_memory.add(
-                role="Tool Executor", content=str(output)
-            )
-        except Exception as e:
-            logger.error(f"Error in single MCP tool handling: {e}")
-            raise e
-
-    def _multiple_mcp_tool_handling(self, response: any):
-        """
-        Handles execution of multiple MCP tools.
-
-        Args:
-            response (any): The tool response to process
-
-        Raises:
-            Exception: If there's an error executing the tools
-        """
-        try:
-            if isinstance(response, str):
-                response = str_to_dict(response)
-
-            execution = find_and_execute_tool(
-                self.mcp_urls,
-                response["name"],
-                parameters=response,
-            )
-
-            self.short_memory.add(
-                role="Tool Executor", content=str(execution)
-            )
-        except Exception as e:
-            logger.error(f"Error in multiple MCP tool handling: {e}")
-            raise e
-
-    def mcp_tool_handling(self, response: any):
-        """
-        Main handler for MCP tool execution.
-
-        Args:
-            response (any): The tool response to process
-
-        Raises:
-            ValueError: If no MCP URL or MCP Servers are provided
-            Exception: If there's an error in tool handling
-        """
-        try:
-            # if self.mcp_url is not None:
-            self._single_mcp_tool_handling(response)
-            # elif self.mcp_url is None and len(self.mcp_servers) > 1:
-            #     self._multiple_mcp_tool_handling(response)
-            # else:
-            #     raise ValueError("No MCP URL or MCP Servers provided")
-        except Exception as e:
-            logger.error(f"Error in mcp_tool_handling: {e}")
+            return tools
+        except AgentMCPConnectionError as e:
+            logger.error(f"Error in MCP connection: {e}")
             raise e
 
     def setup_config(self):
@@ -1102,8 +1019,9 @@ class Agent:
                             *response_args, **kwargs
                         )
 
-                        # Convert to a str if the response is not a str
-                        response = self.parse_llm_output(response)
+                        # # Convert to a str if the response is not a str
+                        if self.mcp_url is None:
+                            response = self.parse_llm_output(response)
 
                         self.short_memory.add(
                             role=self.agent_name, content=response
@@ -1112,17 +1030,8 @@ class Agent:
                         # Print
                         self.pretty_print(response, loop_count)
 
-                        # Output Cleaner
-                        self.output_cleaner_op(response)
-
-                        ####### MCP TOOL HANDLING #######
-                        if (
-                            self.mcp_servers
-                            and self.tools_list_dictionary is not None
-                        ):
-                            self.mcp_tool_handling(response)
-
-                        ####### MCP TOOL HANDLING #######
+                        # # Output Cleaner
+                        # self.output_cleaner_op(response)
 
                         # Check and execute tools
                         if self.tools is not None:
@@ -1155,6 +1064,11 @@ class Agent:
                                     loop_count,
                                     self.streaming_on,
                                 )
+
+                        if self.mcp_url is not None:
+                            self.mcp_tool_handling(
+                                response, loop_count
+                            )
 
                         self.sentiment_and_evaluator(response)
 
@@ -2787,3 +2701,57 @@ class Agent:
                 role="Output Cleaner",
                 content=response,
             )
+
+    def mcp_tool_handling(
+        self, response: any, current_loop: Optional[int] = 0
+    ):
+        try:
+
+            if exists(self.mcp_url):
+                # Execute the tool call
+                tool_response = asyncio.run(
+                    execute_tool_call_simple(
+                        response=response,
+                        server_path=self.mcp_url,
+                    )
+                )
+            elif exists(self.mcp_config):
+                # Execute the tool call
+                tool_response = asyncio.run(
+                    execute_tool_call_simple(
+                        response=response,
+                        connection=self.mcp_config,
+                    )
+                )
+            else:
+                raise AgentMCPConnectionError(
+                    "mcp_url must be either a string URL or MCPConnection object"
+                )
+
+            # Get the text content from the tool response
+            text_content = (
+                tool_response.content[0].text
+                if tool_response.content
+                else str(tool_response)
+            )
+
+            # Add to the memory
+            self.short_memory.add(
+                role="Tool Executor",
+                content=text_content,
+            )
+
+            # Clear the tools list dictionary
+            self._cached_llm.tools_list_dictionary = None
+            # Now Call the LLM again with the tool response
+            summary = self.call_llm(task=self.short_memory.get_str())
+
+            self.pretty_print(summary, loop_count=current_loop)
+
+            # Add to the memory
+            self.short_memory.add(
+                role=self.agent_name, content=summary
+            )
+        except AgentMCPToolError as e:
+            logger.error(f"Error in MCP tool: {e}")
+            raise e

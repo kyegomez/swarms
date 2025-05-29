@@ -1,90 +1,115 @@
-# stock_price_server.py
+# crypto_price_server.py
 from mcp.server.fastmcp import FastMCP
-import os
-from datetime import datetime
+import requests
 
-mcp = FastMCP("StockPrice")
+mcp = FastMCP("CryptoPrice")
 
 
-@mcp.tool()
-def create_markdown_file(filename: str) -> str:
+@mcp.tool(
+    name="get_crypto_price",
+    description="Get the current price and basic information for a given cryptocurrency.",
+)
+def get_crypto_price(coin_id: str) -> str:
     """
-    Create a new markdown file with a basic structure.
+    Get the current price and basic information for a given cryptocurrency using CoinGecko API.
 
     Args:
-        filename (str): The name of the markdown file to create (without .md extension)
+        coin_id (str): The cryptocurrency ID (e.g., 'bitcoin', 'ethereum')
 
     Returns:
-        str: A message indicating success or failure
+        str: A formatted string containing the cryptocurrency information
 
     Example:
-        >>> create_markdown_file('my_notes')
-        'Created markdown file: my_notes.md'
+        >>> get_crypto_price('bitcoin')
+        'Current price of Bitcoin: $45,000'
     """
     try:
-        if not filename:
-            return "Please provide a valid filename"
+        if not coin_id:
+            return "Please provide a valid cryptocurrency ID"
 
-        # Ensure filename ends with .md
-        if not filename.endswith(".md"):
-            filename = f"{filename}.md"
+        # CoinGecko API endpoint
+        url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd&include_24hr_change=true"
 
-        # Create basic markdown structure
-        content = f"""# {filename.replace('.md', '')}
-Created on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+        # Make the API request
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an exception for bad status codes
 
-## Content
+        data = response.json()
 
-"""
+        if coin_id not in data:
+            return f"Could not find data for {coin_id}. Please check the cryptocurrency ID."
 
-        with open(filename, "w") as f:
-            f.write(content)
+        price = data[coin_id]["usd"]
+        change_24h = data[coin_id].get("usd_24h_change", "N/A")
 
-        return f"Created markdown file: {filename}"
+        return f"Current price of {coin_id.capitalize()}: ${price:,.2f}\n24h Change: {change_24h:.2f}%"
 
+    except requests.exceptions.RequestException as e:
+        return f"Error fetching crypto data: {str(e)}"
     except Exception as e:
-        return f"Error creating markdown file: {str(e)}"
+        return f"Error: {str(e)}"
 
 
-@mcp.tool()
-def write_to_markdown(filename: str, content: str) -> str:
+@mcp.tool(
+    name="get_htx_crypto_price",
+    description="Get the current price and basic information for a given cryptocurrency from HTX exchange.",
+)
+def get_htx_crypto_price(symbol: str) -> str:
     """
-    Append content to an existing markdown file.
+    Get the current price and basic information for a given cryptocurrency using HTX API.
 
     Args:
-        filename (str): The name of the markdown file (without .md extension)
-        content (str): The content to append to the file
+        symbol (str): The cryptocurrency trading pair (e.g., 'btcusdt', 'ethusdt')
 
     Returns:
-        str: A message indicating success or failure
+        str: A formatted string containing the cryptocurrency information
 
     Example:
-        >>> write_to_markdown('my_notes', 'This is a new note')
-        'Content added to my_notes.md'
+        >>> get_htx_crypto_price('btcusdt')
+        'Current price of BTC/USDT: $45,000'
     """
     try:
-        if not filename or not content:
-            return "Please provide both filename and content"
+        if not symbol:
+            return "Please provide a valid trading pair (e.g., 'btcusdt')"
 
-        # Ensure filename ends with .md
-        if not filename.endswith(".md"):
-            filename = f"{filename}.md"
+        # Convert to lowercase and ensure proper format
+        symbol = symbol.lower()
+        if not symbol.endswith("usdt"):
+            symbol = f"{symbol}usdt"
 
-        # Check if file exists
-        if not os.path.exists(filename):
-            return f"File {filename} does not exist. Please create it first using create_markdown_file"
+        # HTX API endpoint
+        url = f"https://api.htx.com/market/detail/merged?symbol={symbol}"
 
-        # Append content with timestamp
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        formatted_content = f"\n### Entry - {timestamp}\n{content}\n"
+        # Make the API request
+        response = requests.get(url)
+        response.raise_for_status()
 
-        with open(filename, "a") as f:
-            f.write(formatted_content)
+        data = response.json()
 
-        return f"Content added to {filename}"
+        if data.get("status") != "ok":
+            return f"Error: {data.get('err-msg', 'Unknown error')}"
 
+        tick = data.get("tick", {})
+        if not tick:
+            return f"Could not find data for {symbol}. Please check the trading pair."
+
+        price = tick.get("close", 0)
+        change_24h = tick.get("close", 0) - tick.get("open", 0)
+        change_percent = (
+            (change_24h / tick.get("open", 1)) * 100
+            if tick.get("open")
+            else 0
+        )
+
+        base_currency = symbol[
+            :-4
+        ].upper()  # Remove 'usdt' and convert to uppercase
+        return f"Current price of {base_currency}/USDT: ${price:,.2f}\n24h Change: {change_percent:.2f}%"
+
+    except requests.exceptions.RequestException as e:
+        return f"Error fetching HTX data: {str(e)}"
     except Exception as e:
-        return f"Error writing to markdown file: {str(e)}"
+        return f"Error: {str(e)}"
 
 
 if __name__ == "__main__":

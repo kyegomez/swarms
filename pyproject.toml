@@ -78,7 +78,6 @@ litellm = "*"
 torch = "*"
 httpx = "*"
 mcp = "*"
-fastmcp = "*"
 aiohttp = "*"
 
 [tool.poetry.scripts]

@@ -46,6 +46,9 @@ agent = Agent(
     tools_list_dictionary=tools,
 )
 
-agent.run(
+out = agent.run(
     "What is the current stock price for Apple Inc. (AAPL)? Include historical price data.",
 )
+
+print(out)
+print(type(out))

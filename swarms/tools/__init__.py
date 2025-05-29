@@ -27,6 +27,13 @@ from swarms.tools.cohere_func_call_schema import (
 )
 from swarms.tools.tool_registry import ToolStorage, tool_registry
 from swarms.tools.json_utils import base_model_to_json
+from swarms.tools.mcp_client_call import (
+    execute_tool_call_simple,
+    _execute_tool_call_simple,
+    get_tools_for_multiple_mcp_servers,
+    get_mcp_tools_sync,
+    aget_mcp_tools,
+)
 
 
 __all__ = [
@@ -50,4 +57,9 @@ __all__ = [
     "ToolStorage",
     "tool_registry",
     "base_model_to_json",
+    "execute_tool_call_simple",
+    "_execute_tool_call_simple",
+    "get_tools_for_multiple_mcp_servers",
+    "get_mcp_tools_sync",
+    "aget_mcp_tools",
 ]

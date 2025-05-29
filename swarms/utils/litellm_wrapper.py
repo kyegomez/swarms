@@ -1,3 +1,4 @@
+from typing import Optional
 import base64
 import requests
 
@@ -7,24 +8,10 @@ from typing import List
 from loguru import logger
 import litellm
 
-try:
-    from litellm import completion, acompletion
-except ImportError:
-    import subprocess
-    import sys
-    import litellm
+from litellm import completion, acompletion
 
-    print("Installing litellm")
-
-    subprocess.check_call(
-        [sys.executable, "-m", "pip", "install", "-U", "litellm"]
-    )
-    print("litellm installed")
-
-    from litellm import completion
-
-    litellm.set_verbose = True
-    litellm.ssl_verify = False
+litellm.set_verbose = True
+litellm.ssl_verify = False
 
 
 class LiteLLMException(Exception):
@@ -81,11 +68,13 @@ class LiteLLM:
         max_completion_tokens: int = 4000,
         tools_list_dictionary: List[dict] = None,
         tool_choice: str = "auto",
-        parallel_tool_calls: bool = False,
+        parallel_tool_calls: bool = True,
         audio: str = None,
         retries: int = 3,
         verbose: bool = False,
         caching: bool = False,
+        mcp_call: bool = False,
+        top_p: float = 1.0,
         *args,
         **kwargs,
     ):
@@ -110,6 +99,8 @@ class LiteLLM:
         self.tool_choice = tool_choice
         self.parallel_tool_calls = parallel_tool_calls
         self.caching = caching
+        self.mcp_call = mcp_call
+        self.top_p = top_p
         self.modalities = []
         self._cached_messages = {}  # Cache for prepared messages
         self.messages = []  # Initialize messages list
@@ -124,7 +115,29 @@ class LiteLLM:
         )
 
     def output_for_tools(self, response: any):
-        return response["choices"][0]["message"]["tool_calls"][0]
+        if self.mcp_call is True:
+            out = response.choices[0].message.tool_calls[0].function
+            output = {
+                "function": {
+                    "name": out.name,
+                    "arguments": out.arguments,
+                }
+            }
+            return output
+        elif self.parallel_tool_calls is True:
+            output = []
+            for tool_call in response.choices[0].message.tool_calls:
+                output.append(
+                    {
+                        "function": {
+                            "name": tool_call.function.name,
+                            "arguments": tool_call.function.arguments,
+                        }
+                    }
+                )
+        else:
+            out = response.choices[0].message.tool_calls[0]
+            return out
 
     def _prepare_messages(self, task: str) -> list:
         """
@@ -225,8 +238,8 @@ class LiteLLM:
     def run(
         self,
         task: str,
-        audio: str = None,
-        img: str = None,
+        audio: Optional[str] = None,
+        img: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -253,38 +266,28 @@ class LiteLLM:
                 self.handle_modalities(
                     task=task, audio=audio, img=img
                 )
-                messages = (
-                    self.messages
-                )  # Use modality-processed messages
+                messages = self.messages
 
-            if (
-                self.model_name == "openai/o4-mini"
-                or self.model_name == "openai/o3-2025-04-16"
-            ):
-                # Prepare common completion parameters
-                completion_params = {
-                    "model": self.model_name,
-                    "messages": messages,
-                    "stream": self.stream,
-                    # "temperature": self.temperature,
-                    "max_completion_tokens": self.max_tokens,
-                    "caching": self.caching,
-                    **kwargs,
-                }
+            # Base completion parameters
+            completion_params = {
+                "model": self.model_name,
+                "messages": messages,
+                "stream": self.stream,
+                "max_tokens": self.max_tokens,
+                "caching": self.caching,
+                "temperature": self.temperature,
+                "top_p": self.top_p,
+                **kwargs,
+            }
 
-            else:
-                # Prepare common completion parameters
-                completion_params = {
-                    "model": self.model_name,
-                    "messages": messages,
-                    "stream": self.stream,
-                    "temperature": self.temperature,
-                    "max_tokens": self.max_tokens,
-                    "caching": self.caching,
-                    **kwargs,
-                }
+            # Add temperature for non-o4/o3 models
+            if self.model_name not in [
+                "openai/o4-mini",
+                "openai/o3-2025-04-16",
+            ]:
+                completion_params["temperature"] = self.temperature
 
-            # Handle tool-based completion
+            # Add tools if specified
             if self.tools_list_dictionary is not None:
                 completion_params.update(
                     {
@@ -293,35 +296,20 @@ class LiteLLM:
                         "parallel_tool_calls": self.parallel_tool_calls,
                     }
                 )
-                response = completion(**completion_params)
-                return (
-                    response.choices[0]
-                    .message.tool_calls[0]
-                    .function.arguments
-                )
 
-            # Handle modality-based completion
-            if (
-                self.modalities and len(self.modalities) > 1
-            ):  # More than just text
-                completion_params.update(
-                    {"modalities": self.modalities}
-                )
-                response = completion(**completion_params)
-                return response.choices[0].message.content
+            # Add modalities if needed
+            if self.modalities and len(self.modalities) > 1:
+                completion_params["modalities"] = self.modalities
 
-            # Standard completion
-            if self.stream:
-                output = completion(**completion_params)
+            # Make the completion call
+            response = completion(**completion_params)
+
+            # Handle tool-based response
+            if self.tools_list_dictionary is not None:
+                return self.output_for_tools(response)
             else:
-                response = completion(**completion_params)
-
-                if self.tools_list_dictionary is not None:
-                    return self.output_for_tools(response)
-                else:
-                    return response.choices[0].message.content
-
-            return output
+                # Return standard response content
+                return response.choices[0].message.content
 
         except LiteLLMException as error:
             logger.error(f"Error in LiteLLM run: {str(error)}")
@@ -331,7 +319,7 @@ class LiteLLM:
                 )
                 import time
 
-                time.sleep(2)  # Add a small delay before retry
+                time.sleep(2)
                 return self.run(task, audio, img, *args, **kwargs)
             raise error
 

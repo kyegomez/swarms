@@ -2,12 +2,7 @@ from swarms import Agent
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
-from swarms.tools.mcp_integration import MCPServerSseParams
 
-server_one = MCPServerSseParams(
-    url="http://127.0.0.1:6274",
-    headers={"Content-Type": "application/json"},
-)
 
 # Initialize the agent
 agent = Agent(
@@ -15,10 +10,13 @@ agent = Agent(
     agent_description="Personal finance advisor agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     max_loops=1,
-    mcp_servers=[server_one],
-    output_type="final",
+    mcp_url="http://0.0.0.0:8000/sse",
 )
 
-out = agent.run("Use the add tool to add 2 and 2")
+# Create a markdown file with initial content
+out = agent.run(
+    "Use any of the tools available to you",
+)
 
+print(out)
 print(type(out))
