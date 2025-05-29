@@ -6501,7 +6501,7 @@ Before we dive into the code, let's briefly introduce the Swarms framework. Swar
 For more information and to contribute to the project, visit the [Swarms GitHub repository](https://github.com/kyegomez/swarms). We highly recommend exploring the documentation for a deeper understanding of Swarms' capabilities.
 
 Additional resources:
-- [Swarms Discord](https://discord.gg/swarms) for community discussions
+- [Swarms Discord](https://discord.gg/jM3Z6M9uMq) for community discussions
 - [Swarms Twitter](https://x.com/swarms_corp) for updates
 - [Swarms Spotify](https://open.spotify.com/show/2HLiswhmUaMdjHC8AUHcCF?si=c831ef10c5ef4994) for podcasts
 - [Swarms Blog](https://medium.com/@kyeg) for in-depth articles
@@ -6954,7 +6954,7 @@ This system provides a powerful foundation for financial analysis, but there's a
 
 Remember, the Swarms framework is a powerful and flexible tool that can be adapted to a wide range of complex tasks beyond just financial analysis. We encourage you to explore the [Swarms GitHub repository](https://github.com/kyegomez/swarms) for more examples and inspiration.
 
-For more in-depth discussions and community support, consider joining the [Swarms Discord](https://discord.gg/swarms). You can also stay updated with the latest developments by following [Swarms on Twitter](https://x.com/swarms_corp).
+For more in-depth discussions and community support, consider joining the [Swarms Discord](https://discord.gg/jM3Z6M9uMq). You can also stay updated with the latest developments by following [Swarms on Twitter](https://x.com/swarms_corp).
 
 If you're interested in learning more about AI and its applications in various fields, check out the [Swarms Spotify podcast](https://open.spotify.com/show/2HLiswhmUaMdjHC8AUHcCF?si=c831ef10c5ef4994) and the [Swarms Blog](https://medium.com/@kyeg) for insightful articles and discussions.
 
@@ -6968,7 +6968,7 @@ By leveraging the power of multi-agent AI systems, you're well-equipped to navig
 
 
 * [Swarms Github](https://github.com/kyegomez/swarms)
-* [Swarms Discord](https://discord.gg/swarms)
+* [Swarms Discord](https://discord.gg/jM3Z6M9uMq)
 * [Swarms Twitter](https://x.com/swarms_corp)
 * [Swarms Spotify](https://open.spotify.com/show/2HLiswhmUaMdjHC8AUHcCF?si=c831ef10c5ef4994)
 * [Swarms Blog](https://medium.com/@kyeg)
@@ -7997,7 +7997,7 @@ The table below summarizes the estimated savings for each use case:
 
 - [book a call](https://cal.com/swarms) 
 
-- Swarms Discord: https://discord.gg/swarms
+- Swarms Discord: https://discord.gg/jM3Z6M9uMq
 
 - Swarms Twitter: https://x.com/swarms_corp
 
@@ -8946,7 +8946,7 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 ## Community
 | Section              | Links                                                                                      |
 |----------------------|--------------------------------------------------------------------------------------------|
-| Community            | [Discord](https://discord.gg/swarms)                            |
+| Community            | [Discord](https://discord.gg/jM3Z6M9uMq)                            |
 | Blog                 | [Blog](https://medium.com/@kyeg)                                                           |
 | Event Calendar       | [LUMA](https://lu.ma/swarms_calendar)                                                       |
 | Twitter     | [Twitter](https://x.com/swarms_corp)                                                       |
@@ -28554,7 +28554,7 @@ Stay tuned for updates on the Swarm Exchange launch.
 
 - **Documentation:** [Swarms Documentation](https://docs.swarms.world)
 
-- **Support:** Contact us via our [Discord Community](https://discord.gg/swarms).
+- **Support:** Contact us via our [Discord Community](https://discord.gg/jM3Z6M9uMq).
 
 ---
 
@@ -47878,7 +47878,7 @@ For technical assistance with the Swarms API, please contact:
 
 - Documentation: [https://docs.swarms.world](https://docs.swarms.world)
 - Email: kye@swarms.world
-- Community Discord: [https://discord.gg/swarms](https://discord.gg/swarms)
+- Community Discord: [https://discord.gg/jM3Z6M9uMq](https://discord.gg/jM3Z6M9uMq)
 - Swarms Marketplace: [https://swarms.world](https://swarms.world)
 - Swarms AI Website: [https://swarms.ai](https://swarms.ai)
 
@@ -50414,9 +50414,9 @@ To further enhance your understanding and usage of the Swarms Platform, explore 
 ### Links
 
 - [API Documentation](https://docs.swarms.world)
-- [Community Forums](https://discord.gg/swarms)
+- [Community Forums](https://discord.gg/jM3Z6M9uMq)
 - [Tutorials and Guides](https://docs.swarms.world))
-- [Support](https://discord.gg/swarms)
+- [Support](https://discord.gg/jM3Z6M9uMq)
 
 ## Conclusion
 
@@ -53007,7 +53007,7 @@ Your contributions fund:
 [dao]: https://dao.swarms.world/
 [investors]: https://investors.swarms.world/
 [site]: https://swarms.world/
-[discord]: https://discord.gg/swarms
+[discord]: https://discord.gg/jM3Z6M9uMq
 ```
 
 

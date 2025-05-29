@@ -113,9 +113,9 @@ To further enhance your understanding and usage of the Swarms Platform, explore 
 ### Links
 
 - [API Documentation](https://docs.swarms.world)
-- [Community Forums](https://discord.gg/swarms)
+- [Community Forums](https://discord.gg/jM3Z6M9uMq)
 - [Tutorials and Guides](https://docs.swarms.world))
-- [Support](https://discord.gg/swarms)
+- [Support](https://discord.gg/jM3Z6M9uMq)
 
 ## Conclusion
 

@@ -603,4 +603,4 @@ agent_config = {
 [:material-file-document: Swarms.ai Documentation](https://docs.swarms.world){ .md-button }
 [:material-application: Swarms.ai Platform](https://swarms.world/platform){ .md-button }
 [:material-key: API Key Management](https://swarms.world/platform/api-keys){ .md-button }
-[:material-forum: Swarms.ai Community](https://discord.gg/swarms){ .md-button }
+[:material-forum: Swarms.ai Community](https://discord.gg/jM3Z6M9uMq){ .md-button }

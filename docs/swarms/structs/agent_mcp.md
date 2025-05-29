@@ -192,45 +192,6 @@ graph TD
     | `temperature` | `float` | Response creativity | `0.1` | `0.1-1.0` |
     | `verbose` | `bool` | Debug logging | `False` | `True` |
 
-### Output Type Comparison
-
-=== "all"
-    **Complete execution trace with metadata**
-    ```json
-    {
-        "response": "Bitcoin price: $45,230",
-        "tools_used": ["get_crypto_price"],
-        "execution_time": "2.3s",
-        "loops_completed": 1
-    }
-    ```
-
-=== "str"
-    **Simple string response**
-    ```
-    "Current Bitcoin price is $45,230 USD"
-    ```
-
-=== "json"
-    **Structured JSON output**
-    ```json
-    {
-        "bitcoin_price": 45230,
-        "currency": "USD",
-        "timestamp": "2024-01-15T10:30:00Z"
-    }
-    ```
-
-=== "dict"
-    **Python dictionary format**
-    ```python
-    {
-        'price': 45230,
-        'symbol': 'BTC',
-        'change_24h': '+2.5%'
-    }
-    ```
-
 ---
 
 ## :material-code-tags: Example Implementations
@@ -388,7 +349,7 @@ graph TD
         }
 
     if __name__ == "__main__":
-        mcp.run(transport="sse", host="0.0.0.0", port=8000)
+        mcp.run(transport="sse")
     ```
 
 ### Server Best Practices
@@ -713,19 +674,19 @@ graph TD
 
 !!! rocket "Development Timeline"
 
-    === "Q1 2024"
+    === "1 Week"
         - **MCPConnection Model** - Enhanced configuration
         - **Authentication Support** - Built-in auth mechanisms
         - **Error Recovery** - Automatic retry logic
         - **Connection Pooling** - Improved performance
 
-    === "Q2 2024"
+    === "2 Week"
         - **Multiple Server Support** - Connect to multiple MCPs
         - **Parallel Execution** - Concurrent tool calling
         - **Load Balancing** - Distribute requests across servers
         - **Advanced Monitoring** - Real-time metrics
 
-    === "Q3 2024"
+    === "3 Week"
         - **Auto-discovery** - Automatic server detection
         - **Workflow Engine** - Complex task orchestration
         - **Plugin System** - Custom MCP extensions
@@ -752,13 +713,11 @@ graph TD
 
     === "📚 Documentation"
         - [Official Docs](https://docs.swarms.world)
-        - [API Reference](https://docs.swarms.world/api)
         - [Tutorials](https://docs.swarms.world/tutorials)
 
     === "💬 Community"
-        - [Discord Server](https://discord.gg/swarms)
+        - [Discord Server](https://discord.gg/jM3Z6M9uMq)
         - [GitHub Discussions](https://github.com/kyegomez/swarms/discussions)
-        - [Stack Overflow](https://stackoverflow.com/questions/tagged/swarms)
 
     === "🔧 Development"
         - [GitHub Repository](https://github.com/kyegomez/swarms)
@@ -801,7 +760,7 @@ The MCP integration brings powerful external tool connectivity to Swarms agents,
 
 !!! tip "Stay Updated"
     
-    Join our [Discord community](https://discord.gg/swarms) to stay informed about new MCP features and connect with other developers building amazing agent applications.
+    Join our [Discord community](https://discord.gg/jM3Z6M9uMq) to stay informed about new MCP features and connect with other developers building amazing agent applications.
 
 ---
 
