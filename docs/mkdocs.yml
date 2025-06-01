@@ -262,6 +262,7 @@ nav:
     
     - Swarms Tools:
       - Overview: "swarms_tools/overview.md"
+      - BaseTool Reference: "swarms/tools/base_tool.md"
       - MCP Client Utils: "swarms/tools/mcp_client_call.md"
 
       - Vertical Tools:
