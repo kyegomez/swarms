@@ -39,7 +39,6 @@ def check_pydantic_name(pydantic_type: type[BaseModel]) -> str:
 
 def base_model_to_openai_function(
     pydantic_type: type[BaseModel],
-    output_str: bool = False,
 ) -> dict[str, Any]:
     """
     Convert a Pydantic model to a dictionary representation of functions.
@@ -86,34 +85,18 @@ def base_model_to_openai_function(
     _remove_a_key(parameters, "title")
     _remove_a_key(parameters, "additionalProperties")
 
-    if output_str:
-        out = {
-            "function_call": {
+    return {
+        "function_call": {
+            "name": name,
+        },
+        "functions": [
+            {
                 "name": name,
+                "description": schema["description"],
+                "parameters": parameters,
             },
-            "functions": [
-                {
-                    "name": name,
-                    "description": schema["description"],
-                    "parameters": parameters,
-                },
-            ],
-        }
-        return str(out)
-
-    else:
-        return {
-            "function_call": {
-                "name": name,
-            },
-            "functions": [
-                {
-                    "name": name,
-                    "description": schema["description"],
-                    "parameters": parameters,
-                },
-            ],
-        }
+        ],
+    }
 
 
 def multi_base_model_to_openai_function(

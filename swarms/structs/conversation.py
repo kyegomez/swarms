@@ -1,3 +1,4 @@
+import concurrent.futures
 import datetime
 import hashlib
 import json
@@ -355,8 +356,7 @@ class Conversation(BaseStructure):
     def add_multiple_messages(
         self, roles: List[str], contents: List[Union[str, dict, list]]
     ):
-        for role, content in zip(roles, contents):
-            self.add(role, content)
+        return self.add_multiple(roles, contents)
 
     def _count_tokens(self, content: str, message: dict):
         # If token counting is enabled, do it in a separate thread
@@ -382,6 +382,29 @@ class Conversation(BaseStructure):
                 True  # Make thread terminate when main program exits
             )
             token_thread.start()
+
+    def add_multiple(
+        self,
+        roles: List[str],
+        contents: List[Union[str, dict, list, any]],
+    ):
+        """Add multiple messages to the conversation history."""
+        if len(roles) != len(contents):
+            raise ValueError(
+                "Number of roles and contents must match."
+            )
+
+        # Now create a formula to get 25% of available cpus
+        max_workers = int(os.cpu_count() * 0.25)
+
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
+            futures = [
+                executor.submit(self.add, role, content)
+                for role, content in zip(roles, contents)
+            ]
+            concurrent.futures.wait(futures)
 
     def delete(self, index: str):
         """Delete a message from the conversation history.
@@ -486,12 +509,13 @@ class Conversation(BaseStructure):
         Returns:
             str: The conversation history formatted as a string.
         """
-        return "\n".join(
-            [
-                f"{message['role']}: {message['content']}\n\n"
-                for message in self.conversation_history
-            ]
-        )
+        formatted_messages = []
+        for message in self.conversation_history:
+            formatted_messages.append(
+                f"{message['role']}: {message['content']}"
+            )
+
+        return "\n\n".join(formatted_messages)
 
     def get_str(self) -> str:
         """Get the conversation history as a string.
@@ -499,17 +523,7 @@ class Conversation(BaseStructure):
         Returns:
             str: The conversation history.
         """
-        messages = []
-        for message in self.conversation_history:
-            content = message["content"]
-            if isinstance(content, (dict, list)):
-                content = json.dumps(content)
-            messages.append(f"{message['role']}: {content}")
-            if "token_count" in message:
-                messages[-1] += f" (tokens: {message['token_count']})"
-            if message.get("cached", False):
-                messages[-1] += " [cached]"
-        return "\n".join(messages)
+        return self.return_history_as_string()
 
     def save_as_json(self, filename: str = None):
         """Save the conversation history as a JSON file.
