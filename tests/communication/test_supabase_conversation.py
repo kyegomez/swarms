@@ -478,20 +478,21 @@ def test_update_and_delete() -> bool:
         # Add a message to update/delete
         msg_id = conversation.add("user", "Original message")
         
-        # Test update method
+        # Test update method (BaseCommunication signature)
         conversation.update(
             index=str(msg_id),
             role="user",
             content="Updated message"
         )
         
-        updated_msg = conversation.query(str(msg_id))
+        updated_msg = conversation.query_optional(str(msg_id))
+        assert updated_msg is not None, "Message should exist after update"
         assert updated_msg["content"] == "Updated message", "Message should be updated"
         
         # Test delete
         conversation.delete(str(msg_id))
         
-        deleted_msg = conversation.query(str(msg_id))
+        deleted_msg = conversation.query_optional(str(msg_id))
         assert deleted_msg is None, "Message should be deleted"
         
         print("✓ Update and delete test passed")
@@ -893,15 +894,20 @@ def test_enhanced_error_handling() -> bool:
     # Test with valid conversation
     conversation = setup_test_conversation()
     try:
-        # Test querying non-existent message
+        # Test querying non-existent message with query (should return empty dict)
         non_existent = conversation.query("999999")
-        assert non_existent is None, "Non-existent message should return None"
+        assert non_existent == {}, "Non-existent message should return empty dict"
+        
+        # Test querying non-existent message with query_optional (should return None)
+        non_existent_opt = conversation.query_optional("999999")
+        assert non_existent_opt is None, "Non-existent message should return None with query_optional"
         
         # Test deleting non-existent message (should not raise exception)
         conversation.delete("999999")  # Should handle gracefully
         
-        # Test updating non-existent message (should not raise exception)
-        conversation.update("999999", "user", "content")  # Should handle gracefully
+        # Test updating non-existent message (should return False)
+        update_result = conversation._update_flexible("999999", "user", "content")
+        assert update_result == False, "_update_flexible should return False for invalid ID"
         
         # Test update_message with invalid ID
         result = conversation.update_message(999999, "invalid content")
@@ -911,24 +917,16 @@ def test_enhanced_error_handling() -> bool:
         empty_results = conversation.search("")
         assert isinstance(empty_results, list), "Empty search should return list"
         
-        # Test invalid message ID formats
-        try:
-            conversation.query("not_a_number")
-            assert False, "Should raise ValueError for non-numeric ID"
-        except ValueError:
-            pass  # Expected
+        # Test invalid message ID formats (should return empty dict now)
+        invalid_query = conversation.query("not_a_number")
+        assert invalid_query == {}, "Invalid ID should return empty dict"
         
-        try:
-            conversation.update("not_a_number", "user", "content") 
-            assert False, "Should raise ValueError for non-numeric ID"
-        except ValueError:
-            pass  # Expected
+        invalid_query_opt = conversation.query_optional("not_a_number")
+        assert invalid_query_opt is None, "Invalid ID should return None with query_optional"
         
-        try:
-            conversation.delete("not_a_number")
-            assert False, "Should raise ValueError for non-numeric ID"
-        except ValueError:
-            pass  # Expected
+        # Test update with invalid ID (should return False)
+        invalid_update = conversation._update_flexible("not_a_number", "user", "content")
+        assert invalid_update == False, "Invalid ID should return False for update"
         
         print("✓ Enhanced error handling test passed")
         return True

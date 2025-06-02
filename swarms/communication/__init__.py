@@ -6,6 +6,7 @@ from swarms.communication.base_communication import (
 from swarms.communication.sqlite_wrap import SQLiteConversation
 from swarms.communication.duckdb_wrap import DuckDBConversation
 
+# Optional dependencies with graceful fallbacks
 try:
     from swarms.communication.supabase_wrap import (
         SupabaseConversation,
@@ -13,7 +14,6 @@ try:
         SupabaseOperationError,
     )
 except ImportError:
-    # Supabase dependencies might not be installed
     SupabaseConversation = None
     SupabaseConnectionError = None
     SupabaseOperationError = None
@@ -35,7 +35,7 @@ __all__ = [
     "SQLiteConversation",
     "DuckDBConversation",
     "SupabaseConversation",
-    "SupabaseConnectionError", 
+    "SupabaseConnectionError",
     "SupabaseOperationError",
     "RedisConversation",
     "PulsarConversation",

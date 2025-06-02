@@ -1,0 +1,142 @@
+{
+  "summary": {
+    "total_tests": 21,
+    "passed_tests": 21,
+    "failed_tests": 0,
+    "success_rate": 100.0,
+    "total_execution_time": 0.009189000000000001,
+    "average_execution_time": 0.0004375714285714286,
+    "timestamp": "2025-06-02T22:26:15.591748",
+    "supabase_available": false,
+    "environment_configured": true
+  },
+  "test_results": [
+    {
+      "test_name": "Import Availability",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.0
+    },
+    {
+      "test_name": "Fallback Functionality",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.001339
+    },
+    {
+      "test_name": "Initialization",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.000999
+    },
+    {
+      "test_name": "Logging Configuration",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.001114
+    },
+    {
+      "test_name": "Add Message",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.001002
+    },
+    {
+      "test_name": "Add Complex Message",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.0
+    },
+    {
+      "test_name": "Batch Add",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.00048
+    },
+    {
+      "test_name": "Get String",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.0
+    },
+    {
+      "test_name": "Get Messages",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.0
+    },
+    {
+      "test_name": "Search Messages",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.0
+    },
+    {
+      "test_name": "Update and Delete",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.003416
+    },
+    {
+      "test_name": "Update Message Method",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.0
+    },
+    {
+      "test_name": "Conversation Statistics",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.00036
+    },
+    {
+      "test_name": "JSON Operations",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.0
+    },
+    {
+      "test_name": "YAML Operations",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.0
+    },
+    {
+      "test_name": "Message Types",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.000479
+    },
+    {
+      "test_name": "Conversation Management",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.0
+    },
+    {
+      "test_name": "Get Messages by Role",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.0
+    },
+    {
+      "test_name": "Timeline and Organization",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.0
+    },
+    {
+      "test_name": "Concurrent Operations",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.0
+    },
+    {
+      "test_name": "Enhanced Error Handling",
+      "success": true,
+      "message": "True",
+      "execution_time": 0.0
+    }
+  ],
+  "failed_tests": []
+}

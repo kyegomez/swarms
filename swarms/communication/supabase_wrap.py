@@ -79,14 +79,13 @@ class SupabaseConversation(BaseCommunication):
         supabase_key: str,
         system_prompt: Optional[str] = None,
         time_enabled: bool = False,
-        autosave: bool = False,  # Less relevant for DB-backed, but kept for interface
+        autosave: bool = False,  # Standardized parameter name - less relevant for DB-backed, but kept for interface
         save_filepath: str = None, # Used for export/import
         tokenizer: Any = None,
         context_length: int = 8192,
         rules: str = None,
         custom_rules_prompt: str = None,
         user: str = "User:",
-        auto_save: bool = True, # Less relevant
         save_as_yaml: bool = True, # Default export format
         save_as_json_bool: bool = False, # Alternative export format
         token_count: bool = True,
@@ -114,7 +113,6 @@ class SupabaseConversation(BaseCommunication):
         self.rules = rules
         self.custom_rules_prompt = custom_rules_prompt
         self.user = user
-        self.auto_save = auto_save # Actual auto-saving to file is less relevant
         self.save_as_yaml_on_export = save_as_yaml
         self.save_as_json_on_export = save_as_json_bool
         self.calculate_token_count = token_count
@@ -346,30 +344,38 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
         return str(content)
 
     def _deserialize_content(self, content_str: str) -> Union[str, dict, list]:
-        """Deserializes content from JSON string if it looks like JSON."""
+        """Deserializes content from JSON string if it looks like JSON. More robust approach."""
+        if not content_str:
+            return content_str
+        
+        # Always try to parse as JSON first, fall back to string
         try:
-            # Try to parse if it looks like a JSON object or array
-            if content_str.strip().startswith(("{", "[")):
-                return json.loads(content_str)
-        except json.JSONDecodeError:
-            pass # Not a valid JSON, return as string
-        return content_str
+            return json.loads(content_str)
+        except (json.JSONDecodeError, TypeError):
+            # Not valid JSON, return as string
+            return content_str
 
     def _serialize_metadata(self, metadata: Optional[Dict]) -> Optional[str]:
-        """Serializes metadata dict to JSON string."""
+        """Serializes metadata dict to JSON string using simplified encoder."""
         if metadata is None:
             return None
-        return json.dumps(metadata, cls=DateTimeEncoder)
+        try:
+            return json.dumps(metadata, default=str, ensure_ascii=False)
+        except (TypeError, ValueError) as e:
+            if self.enable_logging:
+                self.logger.warning(f"Failed to serialize metadata: {e}")
+            return None
 
     def _deserialize_metadata(self, metadata_str: Optional[str]) -> Optional[Dict]:
-        """Deserializes metadata from JSON string."""
+        """Deserializes metadata from JSON string with better error handling."""
         if metadata_str is None:
             return None
         try:
             return json.loads(metadata_str)
-        except json.JSONDecodeError:
-            self.logger.warning(f"Failed to deserialize metadata: {metadata_str}")
-            return None # Or return the string itself if preferred
+        except (json.JSONDecodeError, TypeError) as e:
+            if self.enable_logging:
+                self.logger.warning(f"Failed to deserialize metadata: {metadata_str[:50]}... Error: {e}")
+            return None
 
     def _generate_conversation_id(self) -> str:
         """Generate a unique conversation ID using UUID and timestamp."""
@@ -572,14 +578,19 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
                 self.logger.error(f"Error deleting message ID {index} from Supabase: {e}")
             raise SupabaseOperationError(f"Error deleting message ID {index}: {e}")
 
-    def update(
+    def update(self, index: str, role: str, content: Union[str, dict]):
+        """Update a message in the conversation history. Matches BaseCommunication signature exactly."""
+        # Use the flexible internal method
+        return self._update_flexible(index=index, role=role, content=content)
+
+    def _update_flexible(
         self, 
         index: Union[str, int], 
         role: Optional[str] = None, 
         content: Optional[Union[str, dict]] = None,
         metadata: Optional[Dict] = None
     ) -> bool:
-        """Update a message in the conversation history. Returns True if successful, False otherwise."""
+        """Internal flexible update method. Returns True if successful, False otherwise."""
         if self.current_conversation_id is None:
             if self.enable_logging:
                 self.logger.warning("Cannot update message: No current conversation.")
@@ -638,10 +649,10 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
                 self.logger.error(f"Error updating message ID {message_id} in Supabase: {e}")
             return False
 
-    def query(self, index: str) -> Optional[Dict]:
-        """Query a message in the conversation history by its primary key 'id'."""
+    def query(self, index: str) -> Dict:
+        """Query a message in the conversation history by its primary key 'id'. Returns empty dict if not found to match BaseCommunication signature."""
         if self.current_conversation_id is None:
-            return None
+            return {}
         try:
             # Handle both string and int message IDs
             try:
@@ -649,7 +660,7 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
             except ValueError:
                 if self.enable_logging:
                     self.logger.warning(f"Invalid message ID for query: {index}. Must be an integer.")
-                return None
+                return {}
 
             response = self.client.table(self.table_name).select("*") \
                 .eq("id", message_id) \
@@ -660,11 +671,16 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
             data = self._handle_api_response(response, f"query_message (id: {message_id})")
             if data:
                 return self._format_row_to_dict(data)
-            return None
+            return {}
         except Exception as e:
             if self.enable_logging:
                 self.logger.error(f"Error querying message ID {index} from Supabase: {e}")
-            return None
+            return {}
+
+    def query_optional(self, index: str) -> Optional[Dict]:
+        """Query a message and return None if not found. More precise return type."""
+        result = self.query(index)
+        return result if result else None
 
     def search(self, keyword: str) -> List[Dict]:
         """Search for messages containing a keyword in their content."""
@@ -1011,53 +1027,77 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
         }
 
     def truncate_memory_with_tokenizer(self):
-        """Truncate the conversation history based on token count if a tokenizer is provided."""
+        """Truncate the conversation history based on token count if a tokenizer is provided. Optimized for better performance."""
         if not self.tokenizer or self.current_conversation_id is None:
-            self.logger.info("Tokenizer not available or no current conversation, skipping truncation.")
+            if self.enable_logging:
+                self.logger.info("Tokenizer not available or no current conversation, skipping truncation.")
             return
 
         try:
-            messages = self.get_messages() # Fetches ordered by timestamp ASC
+            # Fetch messages with only necessary fields for efficiency
+            response = self.client.table(self.table_name).select("id, content, token_count") \
+                .eq("conversation_id", self.current_conversation_id) \
+                .order("timestamp", desc=False) \
+                .execute()
             
-            # Calculate cumulative tokens from newest to oldest to decide cutoff
-            # Or, from oldest to newest to keep newest messages within context_length
-            
-            # Let's keep newest messages: iterate backwards, then delete earlier ones.
-            # This is complex with current `delete` by ID.
-            # A simpler approach: calculate total tokens, if > context_length, delete oldest ones.
+            messages = self._handle_api_response(response, "fetch_messages_for_truncation")
+            if not messages:
+                return
 
-            current_total_tokens = sum(
-                m.get("token_count", 0) if m.get("token_count") is not None
-                else (self.tokenizer.count_tokens(self._serialize_content(m["content"])) if self.calculate_token_count else 0)
-                for m in messages
-            )
-
-            tokens_to_remove = current_total_tokens - self.context_length
+            # Calculate tokens and determine which messages to delete
+            total_tokens = 0
+            message_tokens = []
             
+            for msg in messages:
+                token_count = msg.get("token_count")
+                if token_count is None and self.calculate_token_count:
+                    # Recalculate if missing
+                    content = self._deserialize_content(msg.get("content", ""))
+                    token_count = self.tokenizer.count_tokens(str(content))
+                    
+                message_tokens.append({
+                    "id": msg["id"],
+                    "tokens": token_count or 0
+                })
+                total_tokens += token_count or 0
+
+            tokens_to_remove = total_tokens - self.context_length
             if tokens_to_remove <= 0:
-                return # No truncation needed
+                return  # No truncation needed
 
-            deleted_count = 0
-            for msg in messages: # Oldest messages first
+            # Collect IDs to delete (oldest first)
+            ids_to_delete = []
+            for msg_info in message_tokens:
                 if tokens_to_remove <= 0:
                     break
-                
-                msg_id = msg.get("id")
-                if not msg_id:
-                    continue
+                ids_to_delete.append(msg_info["id"])
+                tokens_to_remove -= msg_info["tokens"]
 
-                msg_tokens = msg.get("token_count", 0)
-                if msg_tokens == 0 and self.calculate_token_count: # Recalculate if zero and enabled
-                    msg_tokens = self.tokenizer.count_tokens(self._serialize_content(msg["content"]))
-                
-                self.delete(msg_id) # Delete by primary key
-                tokens_to_remove -= msg_tokens
-                deleted_count +=1
+            if not ids_to_delete:
+                return
+
+            # Batch delete for better performance
+            if len(ids_to_delete) == 1:
+                # Single delete
+                response = self.client.table(self.table_name).delete() \
+                    .eq("id", ids_to_delete[0]) \
+                    .eq("conversation_id", self.current_conversation_id) \
+                    .execute()
+            else:
+                # Batch delete using 'in' operator
+                response = self.client.table(self.table_name).delete() \
+                    .in_("id", ids_to_delete) \
+                    .eq("conversation_id", self.current_conversation_id) \
+                    .execute()
             
-            self.logger.info(f"Truncated conversation {self.current_conversation_id}, removed {deleted_count} oldest messages.")
+            self._handle_api_response(response, "truncate_conversation_batch_delete")
+            
+            if self.enable_logging:
+                self.logger.info(f"Truncated conversation {self.current_conversation_id}, removed {len(ids_to_delete)} oldest messages.")
 
         except Exception as e:
-            self.logger.error(f"Error during memory truncation for conversation {self.current_conversation_id}: {e}")
+            if self.enable_logging:
+                self.logger.error(f"Error during memory truncation for conversation {self.current_conversation_id}: {e}")
             # Don't re-raise, truncation is best-effort
 
     # Methods from duckdb_wrap.py that seem generally useful and can be adapted
@@ -1178,6 +1218,6 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
         content: Union[str, dict, list],
         metadata: Optional[Dict] = None,
     ) -> bool:
-        """Update an existing message."""
-        # Use the unified update method which now returns a boolean
-        return self.update(index=message_id, content=content, metadata=metadata)
+        """Update an existing message. Matches BaseCommunication.update_message signature exactly."""
+        # Use the flexible internal method
+        return self._update_flexible(index=message_id, content=content, metadata=metadata)

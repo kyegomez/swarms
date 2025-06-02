@@ -1,13 +1,7 @@
 import os
-import sys
 from pathlib import Path
 import tempfile
 import threading
-
-# Add the project root to Python path to allow imports
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
-
 from swarms.communication.duckdb_wrap import (
     DuckDBConversation,
     Message,
