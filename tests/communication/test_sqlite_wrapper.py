@@ -1,7 +1,14 @@
 import json
 import datetime
 import os
+import sys
+from pathlib import Path
 from typing import Dict, List, Any, Tuple
+
+# Add the project root to Python path to allow imports
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
 from loguru import logger
 from swarms.communication.sqlite_wrap import (
     SQLiteConversation,
@@ -12,8 +19,8 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
+# Initialize logger
 console = Console()
-
 
 def print_test_header(test_name: str) -> None:
     """Print a formatted test header."""
