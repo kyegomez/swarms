@@ -1,5 +1,4 @@
 import os
-import concurrent.futures
 import asyncio
 import contextlib
 import json
@@ -266,7 +265,12 @@ async def aget_mcp_tools(
             connection
         )
     else:
-        headers, timeout, transport, url = None, 5, None, server_path
+        headers, timeout, _transport, _url = (
+            None,
+            5,
+            None,
+            server_path,
+        )
 
     logger.info(f"Fetching MCP tools from server: {server_path}")
 
@@ -336,7 +340,11 @@ def get_mcp_tools_sync(
             )
 
 
-def _fetch_tools_for_server(url: str, connection: Optional[MCPConnection] = None, format: str = "openai") -> List[Dict[str, Any]]:
+def _fetch_tools_for_server(
+    url: str,
+    connection: Optional[MCPConnection] = None,
+    format: str = "openai",
+) -> List[Dict[str, Any]]:
     """Helper function to fetch tools for a single server."""
     return get_mcp_tools_sync(
         server_path=url,
@@ -353,33 +361,41 @@ def get_tools_for_multiple_mcp_servers(
     max_workers: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
     """Get tools for multiple MCP servers concurrently using ThreadPoolExecutor.
-    
+
     Args:
         urls: List of server URLs to fetch tools from
         connections: Optional list of MCPConnection objects corresponding to each URL
         format: Format to return tools in (default: "openai")
         output_type: Type of output format (default: "str")
         max_workers: Maximum number of worker threads (default: None, uses min(32, os.cpu_count() + 4))
-    
+
     Returns:
         List[Dict[str, Any]]: Combined list of tools from all servers
     """
     tools = []
-    threads = min(32, os.cpu_count() + 4) if max_workers is None else max_workers
+    (
+        min(32, os.cpu_count() + 4)
+        if max_workers is None
+        else max_workers
+    )
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         if exists(connections):
             # Create future tasks for each URL-connection pair
             future_to_url = {
-                executor.submit(_fetch_tools_for_server, url, connection, format): url
+                executor.submit(
+                    _fetch_tools_for_server, url, connection, format
+                ): url
                 for url, connection in zip(urls, connections)
             }
         else:
             # Create future tasks for each URL without connections
             future_to_url = {
-                executor.submit(_fetch_tools_for_server, url, None, format): url
+                executor.submit(
+                    _fetch_tools_for_server, url, None, format
+                ): url
                 for url in urls
             }
-        
+
         # Process completed futures as they come in
         for future in as_completed(future_to_url):
             url = future_to_url[future]
@@ -387,9 +403,13 @@ def get_tools_for_multiple_mcp_servers(
                 server_tools = future.result()
                 tools.extend(server_tools)
             except Exception as e:
-                logger.error(f"Error fetching tools from {url}: {str(e)}")
-                raise MCPExecutionError(f"Failed to fetch tools from {url}: {str(e)}")
-    
+                logger.error(
+                    f"Error fetching tools from {url}: {str(e)}"
+                )
+                raise MCPExecutionError(
+                    f"Failed to fetch tools from {url}: {str(e)}"
+                )
+
     return tools
 
 
@@ -407,7 +427,12 @@ async def _execute_tool_call_simple(
             connection
         )
     else:
-        headers, timeout, transport, url = None, 5, "sse", server_path
+        headers, timeout, _transport, url = (
+            None,
+            5,
+            "sse",
+            server_path,
+        )
 
     try:
         async with sse_client(
@@ -477,6 +502,3 @@ async def execute_tool_call_simple(
         *args,
         **kwargs,
     )
-
-
-

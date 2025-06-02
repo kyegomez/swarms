@@ -5,6 +5,7 @@ mcp = FastMCP("OKXCryptoPrice")
 
 mcp.settings.port = 8001
 
+
 @mcp.tool(
     name="get_okx_crypto_price",
     description="Get the current price and basic information for a given cryptocurrency from OKX exchange.",
@@ -49,7 +50,7 @@ def get_okx_crypto_price(symbol: str) -> str:
             return f"Could not find data for {symbol}. Please check the trading pair."
 
         price = float(ticker_data.get("last", 0))
-        change_24h = float(ticker_data.get("last24h", 0))
+        float(ticker_data.get("last24h", 0))
         change_percent = float(ticker_data.get("change24h", 0))
 
         base_currency = symbol.split("-")[0]
@@ -116,4 +117,4 @@ def get_okx_crypto_volume(symbol: str) -> str:
 
 if __name__ == "__main__":
     # Run the server on port 8000 (you can change this to any available port)
-    mcp.run(transport="sse") 
+    mcp.run(transport="sse")

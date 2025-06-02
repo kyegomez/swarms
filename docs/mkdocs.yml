@@ -199,8 +199,7 @@ nav:
           - What are tools?: "swarms/tools/build_tool.md"
           - Structured Outputs: "swarms/agents/structured_outputs.md"
           - Agent MCP Integration: "swarms/structs/agent_mcp.md"
-          - ToolAgent: "swarms/agents/tool_agent.md"
-          - Tool Storage: "swarms/tools/tool_storage.md"
+          - Comprehensive Tool Guide with MCP, Callables, and more: "swarms/tools/tools_examples.md"
         - RAG || Long Term Memory:
           - Integrating RAG with Agents: "swarms/memory/diy_memory.md"
         - Third-Party Agent Integrations:
@@ -262,6 +261,7 @@ nav:
     
     - Swarms Tools:
       - Overview: "swarms_tools/overview.md"
+      - BaseTool Reference: "swarms/tools/base_tool.md"
       - MCP Client Utils: "swarms/tools/mcp_client_call.md"
 
       - Vertical Tools:
@@ -278,8 +278,8 @@ nav:
         - Faiss: "swarms_memory/faiss.md"
 
     - Deployment Solutions:
-      - Deploying Swarms on Google Cloud Run: "swarms_cloud/cloud_run.md"
-      - Phala Deployment: "swarms_cloud/phala_deploy.md"
+      - Deploy your Swarms on Google Cloud Run: "swarms_cloud/cloud_run.md"
+      - Deploy your Swarms on Phala: "swarms_cloud/phala_deploy.md"
 
     - About Us:
       - Swarms Vision: "swarms/concept/vision.md"
@@ -302,11 +302,6 @@ nav:
         - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
     
   - Examples:
-    - Overview: "swarms/examples/unique_swarms.md"
-    - Swarms API Examples:
-      - Medical Swarm: "swarms/examples/swarms_api_medical.md"
-      - Finance Swarm: "swarms/examples/swarms_api_finance.md"
-      - ML Model Code Generation Swarm: "swarms/examples/swarms_api_ml_model.md"
     - Individal LLM Examples:
       - OpenAI: "swarms/examples/openai_example.md"
       - Anthropic: "swarms/examples/claude.md"
@@ -318,17 +313,17 @@ nav:
       - XAI: "swarms/examples/xai.md"
       - VLLM: "swarms/examples/vllm_integration.md"
       - Llama4: "swarms/examples/llama4.md"
-    - Swarms Tools: 
-      - Agent with Yahoo Finance: "swarms/examples/yahoo_finance.md"
-      - Twitter Agents: "swarms_tools/twitter.md"
-      - Blockchain Agents:
-        - Agent with HTX + CoinGecko: "swarms/examples/swarms_tools_htx.md"
-        - Agent with HTX + CoinGecko Function Calling: "swarms/examples/swarms_tools_htx_gecko.md"
-        - Lumo: "swarms/examples/lumo.md"
-        - Quant Crypto Agent: "swarms/examples/quant_crypto_agent.md"
-    - Meme Agents:
-      - Bob The Builder: "swarms/examples/bob_the_builder.md"
+
+      - Swarms Tools: 
+        - Agent with Yahoo Finance: "swarms/examples/yahoo_finance.md"
+        - Twitter Agents: "swarms_tools/twitter.md"
+        - Blockchain Agents:
+          - Agent with HTX + CoinGecko: "swarms/examples/swarms_tools_htx.md"
+          - Agent with HTX + CoinGecko Function Calling: "swarms/examples/swarms_tools_htx_gecko.md"
+          - Lumo: "swarms/examples/lumo.md"
+          - Quant Crypto Agent: "swarms/examples/quant_crypto_agent.md"
     - Multi-Agent Collaboration:
+      - Unique Swarms: "swarms/examples/unique_swarms.md"
       - Swarms DAO: "swarms/examples/swarms_dao.md"
       - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
       - Group Chat Example: "swarms/examples/groupchat_example.md"
@@ -337,6 +332,11 @@ nav:
       - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
       - External Agents:
         - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
+    
+    - Swarms API Examples:
+      - Medical Swarm: "swarms/examples/swarms_api_medical.md"
+      - Finance Swarm: "swarms/examples/swarms_api_finance.md"
+      - ML Model Code Generation Swarm: "swarms/examples/swarms_api_ml_model.md"
     - Swarms UI:
       - Overview: "swarms/ui/main.md"
 

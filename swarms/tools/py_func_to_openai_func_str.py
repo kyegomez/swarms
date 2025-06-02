@@ -1,3 +1,5 @@
+import os
+import concurrent.futures
 import functools
 import inspect
 import json
@@ -240,10 +242,10 @@ class Parameters(BaseModel):
 class Function(BaseModel):
     """A function as defined by the OpenAI API"""
 
+    name: Annotated[str, Field(description="Name of the function")]
     description: Annotated[
         str, Field(description="Description of the function")
     ]
-    name: Annotated[str, Field(description="Name of the function")]
     parameters: Annotated[
         Parameters, Field(description="Parameters of the function")
     ]
@@ -386,7 +388,7 @@ def get_openai_function_schema_from_func(
     function: Callable[..., Any],
     *,
     name: Optional[str] = None,
-    description: str = None,
+    description: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Get a JSON schema for a function as defined by the OpenAI API
 
@@ -429,6 +431,21 @@ def get_openai_function_schema_from_func(
         typed_signature, required
     )
 
+    name = name if name else function.__name__
+    description = description if description else function.__doc__
+
+    if name is None:
+        raise ValueError(
+            "Function name is required but was not provided. Please provide a name for the function "
+            "either through the name parameter or ensure the function has a valid __name__ attribute."
+        )
+
+    if description is None:
+        raise ValueError(
+            "Function description is required but was not provided. Please provide a description "
+            "either through the description parameter or add a docstring to the function."
+        )
+
     if return_annotation is None:
         logger.warning(
             f"The return type of the function '{function.__name__}' is not annotated. Although annotating it is "
@@ -451,21 +468,42 @@ def get_openai_function_schema_from_func(
             + f"The annotations are missing for the following parameters: {', '.join(missing_s)}"
         )
 
-    fname = name if name else function.__name__
-
     parameters = get_parameters(
         required, param_annotations, default_values=default_values
     )
 
     function = ToolFunction(
         function=Function(
+            name=name,
             description=description,
-            name=fname,
             parameters=parameters,
         )
     )
 
     return model_dump(function)
+
+
+def convert_multiple_functions_to_openai_function_schema(
+    functions: List[Callable[..., Any]],
+) -> List[Dict[str, Any]]:
+    """Convert a list of functions to a list of OpenAI function schemas"""
+    # return [
+    #     get_openai_function_schema_from_func(function) for function in functions
+    # ]
+    # Use 40% of cpu cores
+    max_workers = int(os.cpu_count() * 0.8)
+    print(f"max_workers: {max_workers}")
+
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=max_workers
+    ) as executor:
+        futures = [
+            executor.submit(
+                get_openai_function_schema_from_func, function
+            )
+            for function in functions
+        ]
+        return [future.result() for future in futures]
 
 
 #

@@ -7,11 +7,13 @@ from typing import List
 
 from loguru import logger
 import litellm
+from pydantic import BaseModel
 
 from litellm import completion, acompletion
 
 litellm.set_verbose = True
 litellm.ssl_verify = False
+# litellm._turn_on_debug()
 
 
 class LiteLLMException(Exception):
@@ -68,13 +70,14 @@ class LiteLLM:
         max_completion_tokens: int = 4000,
         tools_list_dictionary: List[dict] = None,
         tool_choice: str = "auto",
-        parallel_tool_calls: bool = True,
+        parallel_tool_calls: bool = False,
         audio: str = None,
         retries: int = 3,
         verbose: bool = False,
         caching: bool = False,
         mcp_call: bool = False,
         top_p: float = 1.0,
+        functions: List[dict] = None,
         *args,
         **kwargs,
     ):
@@ -101,6 +104,7 @@ class LiteLLM:
         self.caching = caching
         self.mcp_call = mcp_call
         self.top_p = top_p
+        self.functions = functions
         self.modalities = []
         self._cached_messages = {}  # Cache for prepared messages
         self.messages = []  # Initialize messages list
@@ -124,19 +128,11 @@ class LiteLLM:
                 }
             }
             return output
-        elif self.parallel_tool_calls is True:
-            output = []
-            for tool_call in response.choices[0].message.tool_calls:
-                output.append(
-                    {
-                        "function": {
-                            "name": tool_call.function.name,
-                            "arguments": tool_call.function.arguments,
-                        }
-                    }
-                )
         else:
-            out = response.choices[0].message.tool_calls[0]
+            out = response.choices[0].message.tool_calls
+
+            if isinstance(out, BaseModel):
+                out = out.model_dump()
             return out
 
     def _prepare_messages(self, task: str) -> list:
@@ -297,8 +293,13 @@ class LiteLLM:
                     }
                 )
 
+            if self.functions is not None:
+                completion_params.update(
+                    {"functions": self.functions}
+                )
+
             # Add modalities if needed
-            if self.modalities and len(self.modalities) > 1:
+            if self.modalities and len(self.modalities) >= 2:
                 completion_params["modalities"] = self.modalities
 
             # Make the completion call
