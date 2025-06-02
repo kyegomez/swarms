@@ -538,8 +538,8 @@ class SwarmRouter:
     def _run(
         self,
         task: str,
-        img: str,
-        model_response: str,
+        img: Optional[str] = None,
+        model_response: Optional[str] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -591,7 +591,8 @@ class SwarmRouter:
     def run(
         self,
         task: str,
-        img: str = None,
+        img: Optional[str] = None,
+        model_response: Optional[str] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -613,7 +614,13 @@ class SwarmRouter:
             Exception: If an error occurs during task execution.
         """
         try:
-            return self._run(task=task, img=img, *args, **kwargs)
+            return self._run(
+                task=task,
+                img=img,
+                model_response=model_response,
+                *args,
+                **kwargs,
+            )
         except Exception as e:
             logger.error(f"Error executing task on swarm: {str(e)}")
             raise
