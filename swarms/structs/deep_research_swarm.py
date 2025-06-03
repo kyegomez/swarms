@@ -271,28 +271,11 @@ OUTPUT REQUIREMENTS:
 Remember: Your goal is to make complex information accessible while maintaining accuracy and depth. Prioritize clarity without sacrificing important nuance or detail."""
 
 
-# Initialize the research agent
-research_agent = Agent(
-    agent_name="Deep-Research-Agent",
-    agent_description="Specialized agent for conducting comprehensive research across multiple domains",
-    system_prompt=RESEARCH_AGENT_PROMPT,
-    max_loops=1,  # Allow multiple iterations for thorough research
-    tools_list_dictionary=tools,
-    model_name="gpt-4o-mini",
-)
-
-
-reasoning_duo = ReasoningDuo(
-    system_prompt=SUMMARIZATION_AGENT_PROMPT, output_type="string"
-)
-
-
 class DeepResearchSwarm:
     def __init__(
         self,
         name: str = "DeepResearchSwarm",
         description: str = "A swarm that conducts comprehensive research across multiple domains",
-        research_agent: Agent = research_agent,
         max_loops: int = 1,
         nice_print: bool = True,
         output_type: str = "json",
@@ -303,7 +286,6 @@ class DeepResearchSwarm:
     ):
         self.name = name
         self.description = description
-        self.research_agent = research_agent
         self.max_loops = max_loops
         self.nice_print = nice_print
         self.output_type = output_type
@@ -317,6 +299,21 @@ class DeepResearchSwarm:
         # This eliminates thread creation overhead on each query
         self.executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=self.max_workers
+        )
+
+        # Initialize the research agent
+        self.research_agent = Agent(
+            agent_name="Deep-Research-Agent",
+            agent_description="Specialized agent for conducting comprehensive research across multiple domains",
+            system_prompt=RESEARCH_AGENT_PROMPT,
+            max_loops=1,  # Allow multiple iterations for thorough research
+            tools_list_dictionary=tools,
+            model_name="gpt-4o-mini",
+        )
+
+        self.reasoning_duo = ReasoningDuo(
+            system_prompt=SUMMARIZATION_AGENT_PROMPT,
+            output_type="string",
         )
 
     def __del__(self):
@@ -388,7 +385,7 @@ class DeepResearchSwarm:
         results = exa_search(query)
 
         # Run the reasoning on the search results
-        reasoning_output = reasoning_duo.run(results)
+        reasoning_output = self.reasoning_duo.run(results)
 
         return (results, reasoning_output)
 
@@ -426,7 +423,7 @@ class DeepResearchSwarm:
 
                 # Add reasoning output to conversation
                 self.conversation.add(
-                    role=reasoning_duo.agent_name,
+                    role=self.reasoning_duo.agent_name,
                     content=reasoning_output,
                 )
             except Exception as e:
@@ -438,12 +435,12 @@ class DeepResearchSwarm:
 
         # Once all query processing is complete, generate the final summary
         # This step runs after all queries to ensure it summarizes all results
-        final_summary = reasoning_duo.run(
+        final_summary = self.reasoning_duo.run(
             f"Generate an extensive report of the following content: {self.conversation.get_str()}"
         )
 
         self.conversation.add(
-            role=reasoning_duo.agent_name,
+            role=self.reasoning_duo.agent_name,
             content=final_summary,
         )
 

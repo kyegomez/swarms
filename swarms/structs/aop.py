@@ -4,7 +4,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import wraps
 from typing import Any, Callable, Literal, Optional
 
-from fastmcp import FastMCP, Client
+from mcp.server.fastmcp import FastMCP
+from mcp.client import Client
+
 from loguru import logger
 from swarms.utils.any_to_str import any_to_str
 

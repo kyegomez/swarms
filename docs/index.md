@@ -57,7 +57,7 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 ## Community
 | Section              | Links                                                                                      |
 |----------------------|--------------------------------------------------------------------------------------------|
-| Community            | [Discord](https://discord.gg/swarms)                            |
+| Community            | [Discord](https://discord.gg/jM3Z6M9uMq)                            |
 | Blog                 | [Blog](https://medium.com/@kyeg)                                                           |
 | Event Calendar       | [LUMA](https://lu.ma/swarms_calendar)                                                       |
 | Twitter     | [Twitter](https://x.com/swarms_corp)                                                       |

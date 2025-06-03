@@ -1,8 +1,9 @@
 # Swarms API Documentation
 
-*Enterprise-grade Agent Swarm Management API*
+*Enterprise-Grade Agent Swarm Management API*
 
-**Base URL**: `https://api.swarms.world`  
+**Base URL**: `https://api.swarms.world` or `https://swarms-api-285321057562.us-east1.run.app`
+
 **API Key Management**: [https://swarms.world/platform/api-keys](https://swarms.world/platform/api-keys)  
 
 ## Overview
@@ -950,7 +951,7 @@ For technical assistance with the Swarms API, please contact:
 
 - Documentation: [https://docs.swarms.world](https://docs.swarms.world)
 - Email: kye@swarms.world
-- Community Discord: [https://discord.gg/swarms](https://discord.gg/swarms)
+- Community Discord: [https://discord.gg/jM3Z6M9uMq](https://discord.gg/jM3Z6M9uMq)
 - Swarms Marketplace: [https://swarms.world](https://swarms.world)
 - Swarms AI Website: [https://swarms.ai](https://swarms.ai)
 

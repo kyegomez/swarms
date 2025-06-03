@@ -261,7 +261,7 @@ The table below summarizes the estimated savings for each use case:
 
 - [book a call](https://cal.com/swarms) 
 
-- Swarms Discord: https://discord.gg/swarms
+- Swarms Discord: https://discord.gg/jM3Z6M9uMq
 
 - Swarms Twitter: https://x.com/swarms_corp
 

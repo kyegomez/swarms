@@ -152,7 +152,7 @@ Stay tuned for updates on the Swarm Exchange launch.
 
 - **Documentation:** [Swarms Documentation](https://docs.swarms.world)
 
-- **Support:** Contact us via our [Discord Community](https://discord.gg/swarms).
+- **Support:** Contact us via our [Discord Community](https://discord.gg/jM3Z6M9uMq).
 
 ---
 

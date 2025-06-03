@@ -138,6 +138,6 @@ Your contributions fund:
 [dao]: https://dao.swarms.world/
 [investors]: https://investors.swarms.world/
 [site]: https://swarms.world/
-[discord]: https://discord.gg/swarms
+[discord]: https://discord.gg/jM3Z6M9uMq
 ```
 

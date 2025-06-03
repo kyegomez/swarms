@@ -1,10 +1,9 @@
-from swarms.structs.agent import Agent
-from typing import List, Any, Optional, Union
+from typing import List, Any, Optional, Union, Callable
 import random
 
 
 def list_all_agents(
-    agents: List[Union[Agent, Any]],
+    agents: List[Union[Callable, Any]],
     conversation: Optional[Any] = None,
     name: str = "",
     add_to_conversation: bool = False,
@@ -74,17 +73,21 @@ models = [
 
 
 def set_random_models_for_agents(
-    agents: Union[List[Agent], Agent], model_names: List[str] = models
-) -> Union[List[Agent], Agent]:
-    """Sets random models for agents in the swarm.
+    agents: Optional[Union[List[Callable], Callable]] = None,
+    model_names: List[str] = models,
+) -> Union[List[Callable], Callable, str]:
+    """Sets random models for agents in the swarm or returns a random model name.
 
     Args:
-        agents (Union[List[Agent], Agent]): Either a single agent or a list of agents
+        agents (Optional[Union[List[Agent], Agent]]): Either a single agent, list of agents, or None
         model_names (List[str], optional): List of model names to choose from. Defaults to models.
 
     Returns:
-        Union[List[Agent], Agent]: The agent(s) with randomly assigned models
+        Union[List[Agent], Agent, str]: The agent(s) with randomly assigned models or a random model name
     """
+    if agents is None:
+        return random.choice(model_names)
+
     if isinstance(agents, list):
         return [
             setattr(agent, "model_name", random.choice(model_names))

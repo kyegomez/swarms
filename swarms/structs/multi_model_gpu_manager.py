@@ -147,7 +147,7 @@ class ModelMemoryCalculator:
 
     @staticmethod
     def get_huggingface_model_size(
-        model_or_path: Union[str, Any]
+        model_or_path: Union[str, Any],
     ) -> float:
         """
         Calculate the memory size of a Hugging Face model in GB.

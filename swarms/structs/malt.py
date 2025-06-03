@@ -58,12 +58,6 @@ You are a world-renowned mathematician with an extensive background in multiple 
 Your response should be as comprehensive as possible, leaving no room for ambiguity, and it should reflect your mastery in constructing original mathematical arguments.
 """
 
-proof_creator_agent = Agent(
-    agent_name="Proof-Creator-Agent",
-    model_name="gpt-4o-mini",
-    max_loops=1,
-    system_prompt=proof_creator_prompt,
-)
 
 # Agent 2: Proof Verifier Agent
 proof_verifier_prompt = """
@@ -92,12 +86,6 @@ You are an esteemed mathematician and veteran academic known for your precise an
 Your review must be exhaustive, ensuring that even the most subtle aspects of the proof are scrutinized in depth.
 """
 
-proof_verifier_agent = Agent(
-    agent_name="Proof-Verifier-Agent",
-    model_name="gpt-4o-mini",
-    max_loops=1,
-    system_prompt=proof_verifier_prompt,
-)
 
 # Agent 3: Proof Refiner Agent
 proof_refiner_prompt = """
@@ -126,13 +114,6 @@ You are an expert in mathematical exposition and refinement with decades of expe
 Your refined proof should be a masterpiece of mathematical writing, addressing all the feedback with detailed revisions and explanations.
 """
 
-proof_refiner_agent = Agent(
-    agent_name="Proof-Refiner-Agent",
-    model_name="gpt-4o-mini",
-    max_loops=1,
-    system_prompt=proof_refiner_prompt,
-)
-
 
 majority_voting_prompt = """
 Engage in a comprehensive and exhaustive majority voting analysis of the following conversation, ensuring a deep and thoughtful examination of the responses provided by each agent. This analysis should not only summarize the responses but also critically engage with the content, context, and implications of each agent's input.
@@ -159,13 +140,6 @@ Please adhere to the following detailed guidelines:
 
 Throughout your analysis, focus on uncovering clear patterns while being attentive to the subtleties and complexities inherent in the responses. Pay particular attention to the nuances of mathematical contexts where algorithmic thinking may be required, ensuring that your examination is both rigorous and accessible to a diverse audience.
 """
-
-majority_voting_agent = Agent(
-    agent_name="Majority-Voting-Agent",
-    model_name="gpt-4o-mini",
-    max_loops=1,
-    system_prompt=majority_voting_prompt,
-)
 
 
 class MALT:
@@ -209,6 +183,34 @@ class MALT:
 
         self.conversation = Conversation()
         logger.debug("Conversation initialized.")
+
+        proof_refiner_agent = Agent(
+            agent_name="Proof-Refiner-Agent",
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            system_prompt=proof_refiner_prompt,
+        )
+
+        proof_verifier_agent = Agent(
+            agent_name="Proof-Verifier-Agent",
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            system_prompt=proof_verifier_prompt,
+        )
+
+        Agent(
+            agent_name="Majority-Voting-Agent",
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            system_prompt=majority_voting_prompt,
+        )
+
+        proof_creator_agent = Agent(
+            agent_name="Proof-Creator-Agent",
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            system_prompt=proof_creator_prompt,
+        )
 
         if preset_agents:
             self.main_agent = proof_creator_agent
@@ -304,12 +306,12 @@ class MALT:
         ######################### MAJORITY VOTING #########################
 
         # Majority Voting on the verified outputs
-        majority_voting_verified = majority_voting_agent.run(
+        majority_voting_verified = self.majority_voting_agent.run(
             task=any_to_str(verified_outputs),
         )
 
         self.conversation.add(
-            role=majority_voting_agent.agent_name,
+            role=self.majority_voting_agent.agent_name,
             content=majority_voting_verified,
         )
 

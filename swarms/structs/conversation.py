@@ -1,20 +1,40 @@
+import concurrent.futures
 import datetime
-import json
-from typing import Any, List, Optional, Union, Dict
-import threading
 import hashlib
+import json
+import os
+import threading
+import uuid
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Union,
+    Literal,
+)
 
 import yaml
+
 from swarms.structs.base_structure import BaseStructure
-from typing import TYPE_CHECKING
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.formatter import formatter
 from swarms.utils.litellm_tokenizer import count_tokens
 
 if TYPE_CHECKING:
-    from swarms.structs.agent import (
-        Agent,
-    )  # Only imported during type checking
+    from swarms.structs.agent import Agent
+
+from loguru import logger
+
+
+def generate_conversation_id():
+    """Generate a unique conversation ID."""
+    return str(uuid.uuid4())
+
+
+# Define available providers
+providers = Literal["mem0", "in-memory"]
 
 
 class Conversation(BaseStructure):
@@ -41,10 +61,13 @@ class Conversation(BaseStructure):
         cache_enabled (bool): Flag to enable prompt caching.
         cache_stats (dict): Statistics about cache usage.
         cache_lock (threading.Lock): Lock for thread-safe cache operations.
+        conversations_dir (str): Directory to store cached conversations.
     """
 
     def __init__(
         self,
+        id: str = generate_conversation_id(),
+        name: str = None,
         system_prompt: Optional[str] = None,
         time_enabled: bool = False,
         autosave: bool = False,
@@ -59,29 +82,16 @@ class Conversation(BaseStructure):
         save_as_json_bool: bool = False,
         token_count: bool = True,
         cache_enabled: bool = True,
+        conversations_dir: Optional[str] = None,
+        provider: providers = "in-memory",
         *args,
         **kwargs,
     ):
-        """
-        Initializes the Conversation object with the provided parameters.
-
-        Args:
-            system_prompt (Optional[str]): The system prompt for the conversation.
-            time_enabled (bool): Flag to enable time tracking for messages.
-            autosave (bool): Flag to enable automatic saving of conversation history.
-            save_filepath (str): File path for saving the conversation history.
-            tokenizer (Any): Tokenizer for counting tokens in messages.
-            context_length (int): Maximum number of tokens allowed in the conversation history.
-            rules (str): Rules for the conversation.
-            custom_rules_prompt (str): Custom prompt for rules.
-            user (str): The user identifier for messages.
-            auto_save (bool): Flag to enable auto-saving of conversation history.
-            save_as_yaml (bool): Flag to save conversation history as YAML.
-            save_as_json_bool (bool): Flag to save conversation history as JSON.
-            token_count (bool): Flag to enable token counting for messages.
-            cache_enabled (bool): Flag to enable prompt caching.
-        """
         super().__init__()
+
+        # Initialize all attributes first
+        self.id = id
+        self.name = name or id
         self.system_prompt = system_prompt
         self.time_enabled = time_enabled
         self.autosave = autosave
@@ -97,6 +107,7 @@ class Conversation(BaseStructure):
         self.save_as_json_bool = save_as_json_bool
         self.token_count = token_count
         self.cache_enabled = cache_enabled
+        self.provider = provider
         self.cache_stats = {
             "hits": 0,
             "misses": 0,
@@ -104,20 +115,70 @@ class Conversation(BaseStructure):
             "total_tokens": 0,
         }
         self.cache_lock = threading.Lock()
+        self.conversations_dir = conversations_dir
 
-        # If system prompt is not None, add it to the conversation history
-        if self.system_prompt is not None:
-            self.add("System", self.system_prompt)
+        self.setup()
 
-        if self.rules is not None:
-            self.add("User", rules)
+    def setup(self):
+        # Set up conversations directory
+        self.conversations_dir = (
+            self.conversations_dir
+            or os.path.join(
+                os.path.expanduser("~"), ".swarms", "conversations"
+            )
+        )
+        os.makedirs(self.conversations_dir, exist_ok=True)
 
-        if custom_rules_prompt is not None:
-            self.add(user or "User", custom_rules_prompt)
+        # Try to load existing conversation if it exists
+        conversation_file = os.path.join(
+            self.conversations_dir, f"{self.name}.json"
+        )
+        if os.path.exists(conversation_file):
+            with open(conversation_file, "r") as f:
+                saved_data = json.load(f)
+                # Update attributes from saved data
+                for key, value in saved_data.get(
+                    "metadata", {}
+                ).items():
+                    if hasattr(self, key):
+                        setattr(self, key, value)
+                self.conversation_history = saved_data.get(
+                    "history", []
+                )
+        else:
+            # If system prompt is not None, add it to the conversation history
+            if self.system_prompt is not None:
+                self.add("System", self.system_prompt)
 
-        # If tokenizer then truncate
-        if tokenizer is not None:
-            self.truncate_memory_with_tokenizer()
+            if self.rules is not None:
+                self.add(self.user or "User", self.rules)
+
+            if self.custom_rules_prompt is not None:
+                self.add(
+                    self.user or "User", self.custom_rules_prompt
+                )
+
+            # If tokenizer then truncate
+            if self.tokenizer is not None:
+                self.truncate_memory_with_tokenizer()
+
+    def mem0_provider(self):
+        try:
+            from mem0 import AsyncMemory
+        except ImportError:
+            logger.warning(
+                "mem0ai is not installed. Please install it to use the Conversation class."
+            )
+            return None
+
+        try:
+            memory = AsyncMemory()
+            return memory
+        except Exception as e:
+            logger.error(
+                f"Failed to initialize AsyncMemory: {str(e)}"
+            )
+            return None
 
     def _generate_cache_key(
         self, content: Union[str, dict, list]
@@ -174,7 +235,46 @@ class Conversation(BaseStructure):
             self.cache_stats["cached_tokens"] += token_count
             self.cache_stats["total_tokens"] += token_count
 
-    def add(
+    def _save_to_cache(self):
+        """Save the current conversation state to the cache directory."""
+        if not self.conversations_dir:
+            return
+
+        conversation_file = os.path.join(
+            self.conversations_dir, f"{self.name}.json"
+        )
+
+        # Prepare metadata
+        metadata = {
+            "id": self.id,
+            "name": self.name,
+            "system_prompt": self.system_prompt,
+            "time_enabled": self.time_enabled,
+            "autosave": self.autosave,
+            "save_filepath": self.save_filepath,
+            "context_length": self.context_length,
+            "rules": self.rules,
+            "custom_rules_prompt": self.custom_rules_prompt,
+            "user": self.user,
+            "auto_save": self.auto_save,
+            "save_as_yaml": self.save_as_yaml,
+            "save_as_json_bool": self.save_as_json_bool,
+            "token_count": self.token_count,
+            "cache_enabled": self.cache_enabled,
+        }
+
+        # Prepare data to save
+        save_data = {
+            "metadata": metadata,
+            "history": self.conversation_history,
+            "cache_stats": self.cache_stats,
+        }
+
+        # Save to file
+        with open(conversation_file, "w") as f:
+            json.dump(save_data, f, indent=4)
+
+    def add_in_memory(
         self,
         role: str,
         content: Union[str, dict, list],
@@ -210,7 +310,7 @@ class Conversation(BaseStructure):
         else:
             message["cached"] = False
 
-        # Add the message to history immediately without waiting for token count
+        # Add message to appropriate backend
         self.conversation_history.append(message)
 
         if self.token_count is True and not message.get(
@@ -218,11 +318,45 @@ class Conversation(BaseStructure):
         ):
             self._count_tokens(content, message)
 
+        # Save to cache after adding message
+        self._save_to_cache()
+
+    def add_mem0(
+        self,
+        role: str,
+        content: Union[str, dict, list],
+        metadata: Optional[dict] = None,
+    ):
+        """Add a message to the conversation history using the Mem0 provider."""
+        if self.provider == "mem0":
+            memory = self.mem0_provider()
+            memory.add(
+                messages=content,
+                agent_id=role,
+                run_id=self.id,
+                metadata=metadata,
+            )
+
+    def add(
+        self,
+        role: str,
+        content: Union[str, dict, list],
+        metadata: Optional[dict] = None,
+    ):
+        """Add a message to the conversation history."""
+        if self.provider == "in-memory":
+            self.add_in_memory(role, content)
+        elif self.provider == "mem0":
+            self.add_mem0(
+                role=role, content=content, metadata=metadata
+            )
+        else:
+            raise ValueError(f"Invalid provider: {self.provider}")
+
     def add_multiple_messages(
         self, roles: List[str], contents: List[Union[str, dict, list]]
     ):
-        for role, content in zip(roles, contents):
-            self.add(role, content)
+        return self.add_multiple(roles, contents)
 
     def _count_tokens(self, content: str, message: dict):
         # If token counting is enabled, do it in a separate thread
@@ -249,6 +383,29 @@ class Conversation(BaseStructure):
             )
             token_thread.start()
 
+    def add_multiple(
+        self,
+        roles: List[str],
+        contents: List[Union[str, dict, list, any]],
+    ):
+        """Add multiple messages to the conversation history."""
+        if len(roles) != len(contents):
+            raise ValueError(
+                "Number of roles and contents must match."
+            )
+
+        # Now create a formula to get 25% of available cpus
+        max_workers = int(os.cpu_count() * 0.25)
+
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
+            futures = [
+                executor.submit(self.add, role, content)
+                for role, content in zip(roles, contents)
+            ]
+            concurrent.futures.wait(futures)
+
     def delete(self, index: str):
         """Delete a message from the conversation history.
 
@@ -256,6 +413,7 @@ class Conversation(BaseStructure):
             index (str): Index of the message to delete.
         """
         self.conversation_history.pop(index)
+        self._save_to_cache()
 
     def update(self, index: str, role, content):
         """Update a message in the conversation history.
@@ -269,6 +427,7 @@ class Conversation(BaseStructure):
             "role": role,
             "content": content,
         }
+        self._save_to_cache()
 
     def query(self, index: str):
         """Query a message in the conversation history.
@@ -350,12 +509,13 @@ class Conversation(BaseStructure):
         Returns:
             str: The conversation history formatted as a string.
         """
-        return "\n".join(
-            [
-                f"{message['role']}: {message['content']}\n\n"
-                for message in self.conversation_history
-            ]
-        )
+        formatted_messages = []
+        for message in self.conversation_history:
+            formatted_messages.append(
+                f"{message['role']}: {message['content']}"
+            )
+
+        return "\n\n".join(formatted_messages)
 
     def get_str(self) -> str:
         """Get the conversation history as a string.
@@ -363,17 +523,7 @@ class Conversation(BaseStructure):
         Returns:
             str: The conversation history.
         """
-        messages = []
-        for message in self.conversation_history:
-            content = message["content"]
-            if isinstance(content, (dict, list)):
-                content = json.dumps(content)
-            messages.append(f"{message['role']}: {content}")
-            if "token_count" in message:
-                messages[-1] += f" (tokens: {message['token_count']})"
-            if message.get("cached", False):
-                messages[-1] += " [cached]"
-        return "\n".join(messages)
+        return self.return_history_as_string()
 
     def save_as_json(self, filename: str = None):
         """Save the conversation history as a JSON file.
@@ -450,6 +600,7 @@ class Conversation(BaseStructure):
     def clear(self):
         """Clear the conversation history."""
         self.conversation_history = []
+        self._save_to_cache()
 
     def to_json(self):
         """Convert the conversation history to a JSON string.
@@ -508,7 +659,13 @@ class Conversation(BaseStructure):
         Returns:
             str: The last message formatted as 'role: content'.
         """
-        return f"{self.conversation_history[-1]['role']}: {self.conversation_history[-1]['content']}"
+        if self.provider == "mem0":
+            memory = self.mem0_provider()
+            return memory.get_all(run_id=self.id)
+        elif self.provider == "in-memory":
+            return f"{self.conversation_history[-1]['role']}: {self.conversation_history[-1]['content']}"
+        else:
+            raise ValueError(f"Invalid provider: {self.provider}")
 
     def return_messages_as_list(self):
         """Return the conversation messages as a list of formatted strings.
@@ -628,6 +785,53 @@ class Conversation(BaseStructure):
                     else 0
                 ),
             }
+
+    @classmethod
+    def load_conversation(
+        cls, name: str, conversations_dir: Optional[str] = None
+    ) -> "Conversation":
+        """Load a conversation from the cache by name.
+
+        Args:
+            name (str): Name of the conversation to load
+            conversations_dir (Optional[str]): Directory containing cached conversations
+
+        Returns:
+            Conversation: The loaded conversation object
+        """
+        return cls(name=name, conversations_dir=conversations_dir)
+
+    @classmethod
+    def list_cached_conversations(
+        cls, conversations_dir: Optional[str] = None
+    ) -> List[str]:
+        """List all cached conversations.
+
+        Args:
+            conversations_dir (Optional[str]): Directory containing cached conversations
+
+        Returns:
+            List[str]: List of conversation names (without .json extension)
+        """
+        if conversations_dir is None:
+            conversations_dir = os.path.join(
+                os.path.expanduser("~"), ".swarms", "conversations"
+            )
+
+        if not os.path.exists(conversations_dir):
+            return []
+
+        conversations = []
+        for file in os.listdir(conversations_dir):
+            if file.endswith(".json"):
+                conversations.append(
+                    file[:-5]
+                )  # Remove .json extension
+        return conversations
+
+    def clear_memory(self):
+        """Clear the memory of the conversation."""
+        self.conversation_history = []
 
 
 # # Example usage
