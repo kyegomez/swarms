@@ -25,4 +25,3 @@ httpx
 # vllm>=0.2.0
 aiohttp
 mcp
-numpydoc
