@@ -2,7 +2,6 @@ import json
 from typing import Any, Callable, Dict, List, Optional, Union
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# from litellm.utils import function_to_dict
 from pydantic import BaseModel, Field
 
 from swarms.tools.func_to_str import function_to_str, functions_to_str

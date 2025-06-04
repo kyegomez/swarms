@@ -1,7 +1,6 @@
 import json
 from typing import List, Optional, Tuple
 
-import numpy as np
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -80,7 +79,7 @@ class SwarmMatcher:
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=10),
     )
-    def get_embedding(self, text: str) -> np.ndarray:
+    def get_embedding(self, text: str):
         """
         Generates an embedding for a given text using the configured model.
 
@@ -90,6 +89,7 @@ class SwarmMatcher:
         Returns:
             np.ndarray: The embedding vector for the text.
         """
+        import numpy as np
         logger.debug(f"Getting embedding for text: {text[:50]}...")
         try:
             inputs = self.tokenizer(
@@ -141,6 +141,7 @@ class SwarmMatcher:
         Returns:
             Tuple[str, float]: A tuple containing the name of the best matching swarm type and the score.
         """
+        import numpy as np
         logger.debug(f"Finding best match for task: {task[:50]}...")
         try:
             task_embedding = self.get_embedding(task)

@@ -296,9 +296,13 @@ print(response)
 ## Method 2: MCP (Model Context Protocol) Servers
 
 MCP servers provide a standardized way to create distributed tool functionality. They're ideal for:
+
 - **Reusable tools** across multiple agents
+
 - **Complex tool logic** that needs isolation
+
 - **Third-party tool integration**
+
 - **Scalable architectures**
 
 ### Step 1: Create Your MCP Server
