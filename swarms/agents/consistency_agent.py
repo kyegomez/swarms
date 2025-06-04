@@ -7,7 +7,7 @@ from loguru import logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.malt import majority_voting_prompt
-from swarms.structs.output_types import OutputType
+from swarms.utils.output_types import OutputType
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.history_output_formatter import (
     history_output_formatter,

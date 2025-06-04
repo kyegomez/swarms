@@ -1,27 +1,17 @@
-from typing import Any
+from typing import Callable
 
-from tenacity import retry, stop_after_attempt, wait_exponential
 
-from swarms.prompts.prompt_generator import (
-    prompt_generator_sys_prompt as second_sys_prompt,
-)
 from swarms.prompts.prompt_generator_optimizer import (
-    prompt_generator_sys_prompt,
+    OPENAI_PROMPT_GENERATOR_SYS_PROMPT,
 )
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="ape_agent")
 
 
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=4, max=10),
-)
 def auto_generate_prompt(
     task: str = None,
-    model: Any = None,
-    max_tokens: int = 4000,
-    use_second_sys_prompt: bool = True,
+    model: Callable = None,
     *args,
     **kwargs,
 ):
@@ -38,16 +28,9 @@ def auto_generate_prompt(
     str: The generated prompt.
     """
     try:
-        system_prompt = (
-            second_sys_prompt.get_prompt()
-            if use_second_sys_prompt
-            else prompt_generator_sys_prompt.get_prompt()
+        return model.run(
+            task=f"{OPENAI_PROMPT_GENERATOR_SYS_PROMPT} \n\n Task: {task}"
         )
-        output = model.run(
-            system_prompt + task, max_tokens=max_tokens
-        )
-        print(output)
-        return output
     except Exception as e:
         logger.error(f"Error generating prompt: {str(e)}")
         raise

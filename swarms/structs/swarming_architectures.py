@@ -9,7 +9,7 @@ from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
-from swarms.structs.output_types import OutputType
+from swarms.utils.output_types import OutputType
 
 logger = initialize_logger(log_folder="swarming_architectures")
 

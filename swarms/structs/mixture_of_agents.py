@@ -7,7 +7,7 @@ from swarms.structs.agent import Agent
 from swarms.prompts.ag_prompt import aggregator_system_prompt_main
 from swarms.utils.loguru_logger import initialize_logger
 import concurrent.futures
-from swarms.structs.output_types import OutputType
+from swarms.utils.output_types import OutputType
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,

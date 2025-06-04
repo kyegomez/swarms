@@ -22,7 +22,7 @@ from typing import List, Tuple
 from loguru import logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from swarms.structs.output_types import OutputType
+from swarms.utils.output_types import OutputType
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )

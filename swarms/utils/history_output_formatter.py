@@ -1,28 +1,11 @@
 import yaml
-from swarms.structs.conversation import Conversation
-from typing import Literal, Union, List, Dict, Any
+from typing import Union, List, Dict, Any
 from swarms.utils.xml_utils import to_xml_string
-
-HistoryOutputType = Literal[
-    "list",
-    "dict",
-    "dictionary",
-    "string",
-    "str",
-    "final",
-    "last",
-    "json",
-    "all",
-    "yaml",
-    "xml",
-    # "dict-final",
-    "dict-all-except-first",
-    "str-all-except-first",
-]
+from swarms.utils.output_types import HistoryOutputType
 
 
 def history_output_formatter(
-    conversation: Conversation, type: HistoryOutputType = "list"
+    conversation: callable, type: HistoryOutputType = "list"
 ) -> Union[List[Dict[str, Any]], Dict[str, Any], str]:
     if type == "list":
         return conversation.return_messages_as_list()

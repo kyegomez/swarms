@@ -1,4 +1,6 @@
+import time
 from swarms import Agent
+from swarms.schemas.conversation_schema import ConversationSchema
 
 # Initialize the agent
 agent = Agent(
@@ -33,11 +35,18 @@ agent = Agent(
     - Performance attribution
     
     You communicate in precise, technical terms while maintaining clarity for stakeholders.""",
-    max_loops=3,
+    max_loops=1,
     model_name="gpt-4o-mini",
     dynamic_temperature_enabled=True,
-    output_type="all",
+    output_type="json",
     safety_prompt_on=True,
+    conversation_schema=ConversationSchema(
+        time_enabled=True,
+        message_id_on=True,
+    ),
 )
 
-print(agent.run("What are the best top 3 etfs for gold coverage?"))
+out = agent.run("What are the best top 3 etfs for gold coverage?")
+
+time.sleep(10)
+print(out)

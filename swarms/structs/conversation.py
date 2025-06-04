@@ -1,18 +1,18 @@
 import concurrent.futures
 import datetime
-import hashlib
 import json
 import os
 import threading
 import uuid
 from typing import (
     TYPE_CHECKING,
-    Any,
+    Callable,
     Dict,
     List,
     Optional,
     Union,
     Literal,
+    Any,
 )
 
 import yaml
@@ -31,6 +31,25 @@ from loguru import logger
 def generate_conversation_id():
     """Generate a unique conversation ID."""
     return str(uuid.uuid4())
+
+
+def get_conversation_dir():
+    """Get the directory for storing conversation logs."""
+    # Get the current working directory
+    conversation_dir = os.path.join(os.getcwd(), "conversations")
+    try:
+        os.makedirs(conversation_dir, mode=0o755, exist_ok=True)
+    except Exception as e:
+        logger.error(
+            f"Failed to create conversations directory: {str(e)}"
+        )
+        # Fallback to the same directory as the script
+        conversation_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "conversations",
+        )
+        os.makedirs(conversation_dir, mode=0o755, exist_ok=True)
+    return conversation_dir
 
 
 # Define available providers
@@ -58,10 +77,6 @@ class Conversation(BaseStructure):
         save_as_json_bool (bool): Flag to save conversation history as JSON.
         token_count (bool): Flag to enable token counting for messages.
         conversation_history (list): List to store the history of messages.
-        cache_enabled (bool): Flag to enable prompt caching.
-        cache_stats (dict): Statistics about cache usage.
-        cache_lock (threading.Lock): Lock for thread-safe cache operations.
-        conversations_dir (str): Directory to store cached conversations.
     """
 
     def __init__(
@@ -70,20 +85,21 @@ class Conversation(BaseStructure):
         name: str = None,
         system_prompt: Optional[str] = None,
         time_enabled: bool = False,
-        autosave: bool = False,
+        autosave: bool = False,  # Changed default to False
+        save_enabled: bool = False,  # New parameter to control if saving is enabled
         save_filepath: str = None,
-        tokenizer: Any = None,
+        load_filepath: str = None,  # New parameter to specify which file to load from
+        tokenizer: Callable = None,
         context_length: int = 8192,
         rules: str = None,
         custom_rules_prompt: str = None,
         user: str = "User:",
-        auto_save: bool = True,
-        save_as_yaml: bool = True,
+        save_as_yaml: bool = False,
         save_as_json_bool: bool = False,
         token_count: bool = True,
-        cache_enabled: bool = True,
-        conversations_dir: Optional[str] = None,
         provider: providers = "in-memory",
+        conversations_dir: Optional[str] = None,
+        message_id_on: bool = False,
         *args,
         **kwargs,
     ):
@@ -95,72 +111,87 @@ class Conversation(BaseStructure):
         self.system_prompt = system_prompt
         self.time_enabled = time_enabled
         self.autosave = autosave
-        self.save_filepath = save_filepath
+        self.save_enabled = save_enabled
+        self.conversations_dir = conversations_dir
+        self.message_id_on = message_id_on
+
+        # Handle save filepath
+        if save_enabled and save_filepath:
+            self.save_filepath = save_filepath
+        elif save_enabled and conversations_dir:
+            self.save_filepath = os.path.join(
+                conversations_dir, f"{self.id}.json"
+            )
+        else:
+            self.save_filepath = None
+
+        self.load_filepath = load_filepath
         self.conversation_history = []
         self.tokenizer = tokenizer
         self.context_length = context_length
         self.rules = rules
         self.custom_rules_prompt = custom_rules_prompt
         self.user = user
-        self.auto_save = auto_save
         self.save_as_yaml = save_as_yaml
         self.save_as_json_bool = save_as_json_bool
         self.token_count = token_count
-        self.cache_enabled = cache_enabled
         self.provider = provider
-        self.cache_stats = {
-            "hits": 0,
-            "misses": 0,
-            "cached_tokens": 0,
-            "total_tokens": 0,
-        }
-        self.cache_lock = threading.Lock()
-        self.conversations_dir = conversations_dir
 
+        # Create conversation directory if saving is enabled
+        if self.save_enabled and self.conversations_dir:
+            os.makedirs(self.conversations_dir, exist_ok=True)
+
+        # Try to load existing conversation or initialize new one
         self.setup()
 
     def setup(self):
-        # Set up conversations directory
-        self.conversations_dir = (
-            self.conversations_dir
-            or os.path.join(
-                os.path.expanduser("~"), ".swarms", "conversations"
-            )
-        )
-        os.makedirs(self.conversations_dir, exist_ok=True)
-
-        # Try to load existing conversation if it exists
-        conversation_file = os.path.join(
-            self.conversations_dir, f"{self.name}.json"
-        )
-        if os.path.exists(conversation_file):
-            with open(conversation_file, "r") as f:
-                saved_data = json.load(f)
-                # Update attributes from saved data
-                for key, value in saved_data.get(
-                    "metadata", {}
-                ).items():
-                    if hasattr(self, key):
-                        setattr(self, key, value)
-                self.conversation_history = saved_data.get(
-                    "history", []
+        """Set up the conversation by either loading existing data or initializing new."""
+        if self.load_filepath and os.path.exists(self.load_filepath):
+            try:
+                self.load_from_json(self.load_filepath)
+                logger.info(
+                    f"Loaded existing conversation from {self.load_filepath}"
                 )
+            except Exception as e:
+                logger.error(f"Failed to load conversation: {str(e)}")
+                self._initialize_new_conversation()
+        elif self.save_filepath and os.path.exists(
+            self.save_filepath
+        ):
+            try:
+                self.load_from_json(self.save_filepath)
+                logger.info(
+                    f"Loaded existing conversation from {self.save_filepath}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to load conversation: {str(e)}")
+                self._initialize_new_conversation()
         else:
-            # If system prompt is not None, add it to the conversation history
-            if self.system_prompt is not None:
-                self.add("System", self.system_prompt)
+            self._initialize_new_conversation()
 
-            if self.rules is not None:
-                self.add(self.user or "User", self.rules)
+    def _initialize_new_conversation(self):
+        """Initialize a new conversation with system prompt and rules."""
+        if self.system_prompt is not None:
+            self.add("System", self.system_prompt)
 
-            if self.custom_rules_prompt is not None:
-                self.add(
-                    self.user or "User", self.custom_rules_prompt
+        if self.rules is not None:
+            self.add(self.user or "User", self.rules)
+
+        if self.custom_rules_prompt is not None:
+            self.add(self.user or "User", self.custom_rules_prompt)
+
+        if self.tokenizer is not None:
+            self.truncate_memory_with_tokenizer()
+
+    def _autosave(self):
+        """Automatically save the conversation if autosave is enabled."""
+        if self.autosave and self.save_filepath:
+            try:
+                self.save_as_json(self.save_filepath)
+            except Exception as e:
+                logger.error(
+                    f"Failed to autosave conversation: {str(e)}"
                 )
-
-            # If tokenizer then truncate
-            if self.tokenizer is not None:
-                self.truncate_memory_with_tokenizer()
 
     def mem0_provider(self):
         try:
@@ -180,104 +211,10 @@ class Conversation(BaseStructure):
             )
             return None
 
-    def _generate_cache_key(
-        self, content: Union[str, dict, list]
-    ) -> str:
-        """Generate a cache key for the given content.
-
-        Args:
-            content (Union[str, dict, list]): The content to generate a cache key for.
-
-        Returns:
-            str: The cache key.
-        """
-        if isinstance(content, (dict, list)):
-            content = json.dumps(content, sort_keys=True)
-        return hashlib.md5(content.encode()).hexdigest()
-
-    def _get_cached_tokens(
-        self, content: Union[str, dict, list]
-    ) -> Optional[int]:
-        """Get the number of cached tokens for the given content.
-
-        Args:
-            content (Union[str, dict, list]): The content to check.
-
-        Returns:
-            Optional[int]: The number of cached tokens, or None if not cached.
-        """
-        if not self.cache_enabled:
-            return None
-
-        with self.cache_lock:
-            cache_key = self._generate_cache_key(content)
-            if cache_key in self.cache_stats:
-                self.cache_stats["hits"] += 1
-                return self.cache_stats[cache_key]
-            self.cache_stats["misses"] += 1
-            return None
-
-    def _update_cache_stats(
-        self, content: Union[str, dict, list], token_count: int
-    ):
-        """Update cache statistics for the given content.
-
-        Args:
-            content (Union[str, dict, list]): The content to update stats for.
-            token_count (int): The number of tokens in the content.
-        """
-        if not self.cache_enabled:
-            return
-
-        with self.cache_lock:
-            cache_key = self._generate_cache_key(content)
-            self.cache_stats[cache_key] = token_count
-            self.cache_stats["cached_tokens"] += token_count
-            self.cache_stats["total_tokens"] += token_count
-
-    def _save_to_cache(self):
-        """Save the current conversation state to the cache directory."""
-        if not self.conversations_dir:
-            return
-
-        conversation_file = os.path.join(
-            self.conversations_dir, f"{self.name}.json"
-        )
-
-        # Prepare metadata
-        metadata = {
-            "id": self.id,
-            "name": self.name,
-            "system_prompt": self.system_prompt,
-            "time_enabled": self.time_enabled,
-            "autosave": self.autosave,
-            "save_filepath": self.save_filepath,
-            "context_length": self.context_length,
-            "rules": self.rules,
-            "custom_rules_prompt": self.custom_rules_prompt,
-            "user": self.user,
-            "auto_save": self.auto_save,
-            "save_as_yaml": self.save_as_yaml,
-            "save_as_json_bool": self.save_as_json_bool,
-            "token_count": self.token_count,
-            "cache_enabled": self.cache_enabled,
-        }
-
-        # Prepare data to save
-        save_data = {
-            "metadata": metadata,
-            "history": self.conversation_history,
-            "cache_stats": self.cache_stats,
-        }
-
-        # Save to file
-        with open(conversation_file, "w") as f:
-            json.dump(save_data, f, indent=4)
-
     def add_in_memory(
         self,
         role: str,
-        content: Union[str, dict, list],
+        content: Union[str, dict, list, Any],
         *args,
         **kwargs,
     ):
@@ -287,39 +224,32 @@ class Conversation(BaseStructure):
             role (str): The role of the speaker (e.g., 'User', 'System').
             content (Union[str, dict, list]): The content of the message to be added.
         """
-        # Base message with role
+        # Base message with role and timestamp
         message = {
             "role": role,
+            "content": content,
         }
 
-        # Handle different content types
-        if isinstance(content, dict) or isinstance(content, list):
-            message["content"] = content
-        elif self.time_enabled:
-            message["content"] = (
-                f"Time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} \n {content}"
-            )
-        else:
-            message["content"] = content
+        if self.time_enabled:
+            message["timestamp"] = datetime.datetime.now().isoformat()
 
-        # Check cache for token count
-        cached_tokens = self._get_cached_tokens(content)
-        if cached_tokens is not None:
-            message["token_count"] = cached_tokens
-            message["cached"] = True
-        else:
-            message["cached"] = False
+        if self.message_id_on:
+            message["message_id"] = str(uuid.uuid4())
 
-        # Add message to appropriate backend
+        # Add message to conversation history
         self.conversation_history.append(message)
 
-        if self.token_count is True and not message.get(
-            "cached", False
-        ):
+        if self.token_count is True:
             self._count_tokens(content, message)
 
-        # Save to cache after adding message
-        self._save_to_cache()
+        # Autosave after adding message, but only if saving is enabled
+        if self.autosave and self.save_enabled and self.save_filepath:
+            try:
+                self.save_as_json(self.save_filepath)
+            except Exception as e:
+                logger.error(
+                    f"Failed to autosave conversation: {str(e)}"
+                )
 
     def add_mem0(
         self,
@@ -367,8 +297,6 @@ class Conversation(BaseStructure):
                 tokens = count_tokens(any_to_str(content))
                 # Update the message that's already in the conversation history
                 message["token_count"] = int(tokens)
-                # Update cache stats
-                self._update_cache_stats(content, int(tokens))
 
                 # If autosave is enabled, save after token count is updated
                 if self.autosave:
@@ -413,7 +341,6 @@ class Conversation(BaseStructure):
             index (str): Index of the message to delete.
         """
         self.conversation_history.pop(index)
-        self._save_to_cache()
 
     def update(self, index: str, role, content):
         """Update a message in the conversation history.
@@ -427,7 +354,6 @@ class Conversation(BaseStructure):
             "role": role,
             "content": content,
         }
-        self._save_to_cache()
 
     def query(self, index: str):
         """Query a message in the conversation history.
@@ -462,9 +388,26 @@ class Conversation(BaseStructure):
             detailed (bool, optional): Flag to display detailed information. Defaults to False.
         """
         for message in self.conversation_history:
-            formatter.print_panel(
-                f"{message['role']}: {message['content']}\n\n"
-            )
+            content = message["content"]
+            role = message["role"]
+
+            # Format the message content
+            if isinstance(content, (dict, list)):
+                content = json.dumps(content, indent=2)
+
+            # Create the display string
+            display_str = f"{role}: {content}"
+
+            # Add details if requested
+            if detailed:
+                display_str += f"\nTimestamp: {message.get('timestamp', 'Unknown')}"
+                display_str += f"\nMessage ID: {message.get('message_id', 'Unknown')}"
+                if "token_count" in message:
+                    display_str += (
+                        f"\nTokens: {message['token_count']}"
+                    )
+
+            formatter.print_panel(display_str)
 
     def export_conversation(self, filename: str, *args, **kwargs):
         """Export the conversation history to a file.
@@ -531,9 +474,47 @@ class Conversation(BaseStructure):
         Args:
             filename (str): Filename to save the conversation history.
         """
-        if filename is not None:
-            with open(filename, "w") as f:
-                json.dump(self.conversation_history, f)
+        # Don't save if saving is disabled
+        if not self.save_enabled:
+            return
+
+        save_path = filename or self.save_filepath
+        if save_path is not None:
+            try:
+                # Prepare metadata
+                metadata = {
+                    "id": self.id,
+                    "name": self.name,
+                    "created_at": datetime.datetime.now().isoformat(),
+                    "system_prompt": self.system_prompt,
+                    "rules": self.rules,
+                    "custom_rules_prompt": self.custom_rules_prompt,
+                }
+
+                # Prepare save data
+                save_data = {
+                    "metadata": metadata,
+                    "history": self.conversation_history,
+                }
+
+                # Create directory if it doesn't exist
+                os.makedirs(
+                    os.path.dirname(save_path),
+                    mode=0o755,
+                    exist_ok=True,
+                )
+
+                # Write directly to file
+                with open(save_path, "w") as f:
+                    json.dump(save_data, f, indent=2)
+
+                # Only log explicit saves, not autosaves
+                if not self.autosave:
+                    logger.info(
+                        f"Successfully saved conversation to {save_path}"
+                    )
+            except Exception as e:
+                logger.error(f"Failed to save conversation: {str(e)}")
 
     def load_from_json(self, filename: str):
         """Load the conversation history from a JSON file.
@@ -541,9 +522,32 @@ class Conversation(BaseStructure):
         Args:
             filename (str): Filename to load from.
         """
-        if filename is not None:
-            with open(filename) as f:
-                self.conversation_history = json.load(f)
+        if filename is not None and os.path.exists(filename):
+            try:
+                with open(filename) as f:
+                    data = json.load(f)
+
+                # Load metadata
+                metadata = data.get("metadata", {})
+                self.id = metadata.get("id", self.id)
+                self.name = metadata.get("name", self.name)
+                self.system_prompt = metadata.get(
+                    "system_prompt", self.system_prompt
+                )
+                self.rules = metadata.get("rules", self.rules)
+                self.custom_rules_prompt = metadata.get(
+                    "custom_rules_prompt", self.custom_rules_prompt
+                )
+
+                # Load conversation history
+                self.conversation_history = data.get("history", [])
+
+                logger.info(
+                    f"Successfully loaded conversation from {filename}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to load conversation: {str(e)}")
+                raise
 
     def search_keyword_in_conversation(self, keyword: str):
         """Search for a keyword in the conversation history.
@@ -600,7 +604,6 @@ class Conversation(BaseStructure):
     def clear(self):
         """Clear the conversation history."""
         self.conversation_history = []
-        self._save_to_cache()
 
     def to_json(self):
         """Convert the conversation history to a JSON string.
@@ -608,7 +611,7 @@ class Conversation(BaseStructure):
         Returns:
             str: The conversation history as a JSON string.
         """
-        return json.dumps(self.conversation_history)
+        return json.dumps(self.conversation_history, indent=4)
 
     def to_dict(self):
         """Convert the conversation history to a dictionary.
@@ -759,79 +762,121 @@ class Conversation(BaseStructure):
         """
         self.conversation_history.extend(messages)
 
-    def get_cache_stats(self) -> Dict[str, int]:
-        """Get statistics about cache usage.
-
-        Returns:
-            Dict[str, int]: Statistics about cache usage.
-        """
-        with self.cache_lock:
-            return {
-                "hits": self.cache_stats["hits"],
-                "misses": self.cache_stats["misses"],
-                "cached_tokens": self.cache_stats["cached_tokens"],
-                "total_tokens": self.cache_stats["total_tokens"],
-                "hit_rate": (
-                    self.cache_stats["hits"]
-                    / (
-                        self.cache_stats["hits"]
-                        + self.cache_stats["misses"]
-                    )
-                    if (
-                        self.cache_stats["hits"]
-                        + self.cache_stats["misses"]
-                    )
-                    > 0
-                    else 0
-                ),
-            }
+    def clear_memory(self):
+        """Clear the memory of the conversation."""
+        self.conversation_history = []
 
     @classmethod
     def load_conversation(
-        cls, name: str, conversations_dir: Optional[str] = None
+        cls,
+        name: str,
+        conversations_dir: Optional[str] = None,
+        load_filepath: Optional[str] = None,
     ) -> "Conversation":
-        """Load a conversation from the cache by name.
+        """Load a conversation from saved file by name or specific file.
 
         Args:
             name (str): Name of the conversation to load
-            conversations_dir (Optional[str]): Directory containing cached conversations
+            conversations_dir (Optional[str]): Directory containing conversations
+            load_filepath (Optional[str]): Specific file to load from
 
         Returns:
             Conversation: The loaded conversation object
         """
-        return cls(name=name, conversations_dir=conversations_dir)
-
-    @classmethod
-    def list_cached_conversations(
-        cls, conversations_dir: Optional[str] = None
-    ) -> List[str]:
-        """List all cached conversations.
-
-        Args:
-            conversations_dir (Optional[str]): Directory containing cached conversations
-
-        Returns:
-            List[str]: List of conversation names (without .json extension)
-        """
-        if conversations_dir is None:
-            conversations_dir = os.path.join(
-                os.path.expanduser("~"), ".swarms", "conversations"
+        if load_filepath:
+            return cls(
+                name=name,
+                load_filepath=load_filepath,
+                save_enabled=False,  # Don't enable saving when loading specific file
             )
 
-        if not os.path.exists(conversations_dir):
+        conv_dir = conversations_dir or get_conversation_dir()
+        # Try loading by name first
+        filepath = os.path.join(conv_dir, f"{name}.json")
+
+        # If not found by name, try loading by ID
+        if not os.path.exists(filepath):
+            filepath = os.path.join(conv_dir, f"{name}")
+            if not os.path.exists(filepath):
+                logger.warning(
+                    f"No conversation found with name or ID: {name}"
+                )
+                return cls(
+                    name=name,
+                    conversations_dir=conv_dir,
+                    save_enabled=True,
+                )
+
+        return cls(
+            name=name,
+            conversations_dir=conv_dir,
+            load_filepath=filepath,
+            save_enabled=True,
+        )
+
+    @classmethod
+    def list_conversations(
+        cls, conversations_dir: Optional[str] = None
+    ) -> List[Dict[str, str]]:
+        """List all saved conversations.
+
+        Args:
+            conversations_dir (Optional[str]): Directory containing conversations
+
+        Returns:
+            List[Dict[str, str]]: List of conversation metadata
+        """
+        conv_dir = conversations_dir or get_conversation_dir()
+        if not os.path.exists(conv_dir):
             return []
 
         conversations = []
-        for file in os.listdir(conversations_dir):
-            if file.endswith(".json"):
-                conversations.append(
-                    file[:-5]
-                )  # Remove .json extension
-        return conversations
+        seen_ids = (
+            set()
+        )  # Track seen conversation IDs to avoid duplicates
 
-    def clear_memory(self):
-        """Clear the memory of the conversation."""
-        self.conversation_history = []
+        for filename in os.listdir(conv_dir):
+            if filename.endswith(".json"):
+                try:
+                    filepath = os.path.join(conv_dir, filename)
+                    with open(filepath) as f:
+                        data = json.load(f)
+                        metadata = data.get("metadata", {})
+                        conv_id = metadata.get("id")
+                        name = metadata.get("name")
+                        created_at = metadata.get("created_at")
+
+                        # Skip if we've already seen this ID or if required fields are missing
+                        if (
+                            not all([conv_id, name, created_at])
+                            or conv_id in seen_ids
+                        ):
+                            continue
+
+                        seen_ids.add(conv_id)
+                        conversations.append(
+                            {
+                                "id": conv_id,
+                                "name": name,
+                                "created_at": created_at,
+                                "filepath": filepath,
+                            }
+                        )
+                except json.JSONDecodeError:
+                    logger.warning(
+                        f"Skipping corrupted conversation file: {filename}"
+                    )
+                    continue
+                except Exception as e:
+                    logger.error(
+                        f"Failed to read conversation {filename}: {str(e)}"
+                    )
+                    continue
+
+        # Sort by creation date, newest first
+        return sorted(
+            conversations, key=lambda x: x["created_at"], reverse=True
+        )
 
 
 # # Example usage

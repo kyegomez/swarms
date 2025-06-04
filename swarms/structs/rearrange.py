@@ -15,7 +15,7 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.telemetry.main import log_agent_data
 from swarms.structs.conversation import Conversation
-from swarms.structs.output_types import OutputType
+from swarms.utils.output_types import OutputType
 from swarms.structs.multi_agent_exec import get_agents_info
 
 logger = initialize_logger(log_folder="rearrange")

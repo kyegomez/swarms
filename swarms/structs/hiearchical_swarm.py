@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.conversation import Conversation
-from swarms.structs.output_types import OutputType
+from swarms.utils.output_types import OutputType
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.formatter import formatter
 

@@ -13,11 +13,14 @@ target/
 Cargo.lock
 .pytest_cache
 static/generated
+conversations/
 runs
 Financial-Analysis-Agent_state.json
+conversations/
 experimental
 ffn_alternatives
 artifacts_five
+experimental/
 encryption
 errors
 chroma

@@ -42,7 +42,6 @@ from swarms.schemas.base_schemas import (
 )
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.conversation import Conversation
-from swarms.structs.output_types import OutputType
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
@@ -78,10 +77,10 @@ from swarms.utils.index import (
     format_data_structure,
     format_dict_to_string,
 )
+from swarms.schemas.conversation_schema import ConversationSchema
+from swarms.utils.output_types import OutputType
 
 
-# Utils
-# Custom stopping condition
 def stop_when_repeats(response: str) -> bool:
     # Stop if the word stop appears in the response
     return "stop" in response.lower()
@@ -406,7 +405,8 @@ class Agent:
         safety_prompt_on: bool = False,
         random_models_on: bool = False,
         mcp_config: Optional[MCPConnection] = None,
-        top_p: float = 0.90,
+        top_p: Optional[float] = 0.90,
+        conversation_schema: Optional[ConversationSchema] = None,
         *args,
         **kwargs,
     ):
@@ -533,6 +533,7 @@ class Agent:
         self.random_models_on = random_models_on
         self.mcp_config = mcp_config
         self.top_p = top_p
+        self.conversation_schema = conversation_schema
 
         self._cached_llm = (
             None  # Add this line to cache the LLM instance
@@ -612,10 +613,28 @@ class Agent:
         # Initialize the short term memory
         memory = Conversation(
             system_prompt=prompt,
-            time_enabled=False,
             user=self.user_name,
             rules=self.rules,
-            token_count=False,
+            token_count=(
+                self.conversation_schema.count_tokens
+                if self.conversation_schema
+                else False
+            ),
+            message_id_on=(
+                self.conversation_schema.message_id_on
+                if self.conversation_schema
+                else False
+            ),
+            autosave=(
+                self.conversation_schema.autosave
+                if self.conversation_schema
+                else False
+            ),
+            time_enabled=(
+                self.conversation_schema.time_enabled
+                if self.conversation_schema
+                else False
+            ),
         )
 
         return memory
@@ -770,7 +789,7 @@ class Agent:
                     "No agent details found. Using task as fallback for prompt generation."
                 )
                 self.system_prompt = auto_generate_prompt(
-                    task, self.llm
+                    task=task, model=self._cached_llm
                 )
             else:
                 # Combine all available components
@@ -2824,3 +2843,6 @@ class Agent:
             f"{tool_response}",
             loop_count,
         )
+
+    def list_output_types(self):
+        return OutputType

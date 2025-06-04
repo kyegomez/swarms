@@ -13,11 +13,17 @@ The Swarms API provides a robust, scalable infrastructure for deploying and mana
 Key capabilities include:
 
 - **Intelligent Swarm Management**: Create and execute swarms of specialized AI agents that collaborate to solve complex tasks
+
 - **Automatic Agent Generation**: Dynamically create optimized agents based on task requirements
+
 - **Multiple Swarm Architectures**: Choose from various swarm patterns to match your specific workflow needs
+
 - **Scheduled Execution**: Set up automated, scheduled swarm executions
+
 - **Comprehensive Logging**: Track and analyze all API interactions
+
 - **Cost Management**: Predictable, transparent pricing with optimized resource utilization
+
 - **Enterprise Security**: Full API key authentication and management
 
 Swarms API is designed for production use cases requiring sophisticated AI orchestration, with applications in finance, healthcare, legal, research, and other domains where complex reasoning and multi-agent collaboration are needed.
@@ -48,6 +54,7 @@ API keys can be obtained and managed at [https://swarms.world/platform/api-keys]
 | `/v1/swarms/available` | GET | Get all available swarms as a list of strings |
 | `/v1/models/available` | GET | Get all available models as a list of strings |
 | `/v1/agent/completions` | POST | Run a single agent with specified configuration |
+| `/v1/agent/batch/completions` | POST | Run a batch of individual agent completions|
 
 
 
@@ -481,6 +488,181 @@ curl -X GET "https://api.swarms.world/v1/swarm/logs" \
 }
 ```
 
+
+
+## Individual Agent Endpoints
+
+### Run Single Agent
+
+### AgentCompletion Model
+
+The `AgentCompletion` model defines the configuration for running a single agent task.
+
+| Field | Type | Description | Required |
+|-------|------|-------------|----------|
+| `agent_config` | AgentSpec | The configuration of the agent to be completed | Yes |
+| `task` | string | The task to be completed by the agent | Yes |
+| `history` | Dict[str, Any] | The history of the agent's previous tasks and responses | No |
+
+
+### AgentSpec Model
+
+The `AgentSpec` model defines the configuration for an individual agent.
+
+| Field | Type | Default | Description | Required |
+|-------|------|---------|-------------|----------|
+| `agent_name` | string | None | The unique name assigned to the agent | Yes |
+| `description` | string | None | Detailed explanation of the agent's purpose | No |
+| `system_prompt` | string | None | Initial instruction provided to the agent | No |
+| `model_name` | string | "gpt-4o-mini" | Name of the AI model to use | No |
+| `auto_generate_prompt` | boolean | false | Whether to auto-generate prompts | No |
+| `max_tokens` | integer | 8192 | Maximum tokens in response | No |
+| `temperature` | float | 0.5 | Controls randomness (0-1) | No |
+| `role` | string | "worker" | Role of the agent | No |
+| `max_loops` | integer | 1 | Maximum iterations | No |
+| `tools_list_dictionary` | List[Dict] | None | Available tools for the agent | No |
+| `mcp_url` | string | None | URL for Model Control Protocol | No |
+
+
+Execute a task using a single agent with specified configuration.
+
+**Endpoint**: `/v1/agent/completions`  
+**Method**: POST  
+**Rate Limit**: 100 requests per 60 seconds
+
+**Request Body**:
+```json
+{
+  "agent_config": {
+    "agent_name": "Research Assistant",
+    "description": "Specialized in research and analysis",
+    "system_prompt": "You are an expert research assistant.",
+    "model_name": "gpt-4o",
+    "auto_generate_prompt": false,
+    "max_tokens": 8192,
+    "temperature": 0.5,
+    "role": "worker",
+    "max_loops": 1,
+    "tools_list_dictionary": [
+      {
+        "name": "search",
+        "description": "Search the web for information",
+        "parameters": {
+          "query": "string"
+        }
+      }
+    ],
+    "mcp_url": "https://example-mcp.com"
+  },
+  "task": "Research the latest developments in quantum computing and summarize key findings",
+  "history": {
+    "previous_research": "Earlier findings on quantum computing basics...",
+    "user_preferences": "Focus on practical applications..."
+  }
+}
+```
+
+**Response**:
+```json
+{
+  "id": "agent-abc123xyz",
+  "success": true,
+  "name": "Research Assistant",
+  "description": "Specialized in research and analysis",
+  "temperature": 0.5,
+  "outputs": {
+    "research_summary": "...",
+    "key_findings": [
+      "..."
+    ]
+  },
+  "usage": {
+    "input_tokens": 450,
+    "output_tokens": 850,
+    "total_tokens": 1300,
+    "mcp_url": 0.1
+  },
+  "timestamp": "2024-03-05T12:34:56.789Z"
+}
+```
+
+#### Run Batch Agents
+
+Execute multiple agent tasks in parallel.
+
+**Endpoint**: `/v1/agent/batch/completions`  
+**Method**: POST  
+**Rate Limit**: 100 requests per 60 seconds  
+**Maximum Batch Size**: 10 requests
+**Input** A list of `AgentCompeletion` inputs
+
+**Request Body**:
+```json
+[
+  {
+    "agent_config": {
+      "agent_name": "Market Analyst",
+      "description": "Expert in market analysis",
+      "system_prompt": "You are a financial market analyst.",
+      "model_name": "gpt-4o",
+      "temperature": 0.3
+    },
+    "task": "Analyze the current market trends in AI technology sector"
+  },
+  {
+    "agent_config": {
+      "agent_name": "Technical Writer",
+      "description": "Specialized in technical documentation",
+      "system_prompt": "You are a technical documentation expert.",
+      "model_name": "gpt-4o",
+      "temperature": 0.7
+    },
+    "task": "Create a technical guide for implementing OAuth2 authentication"
+  }
+]
+```
+
+**Response**:
+```json
+{
+  "batch_id": "agent-batch-xyz789",
+  "total_requests": 2,
+  "execution_time": 15.5,
+  "timestamp": "2024-03-05T12:34:56.789Z",
+  "results": [
+    {
+      "id": "agent-abc123",
+      "success": true,
+      "name": "Market Analyst",
+      "outputs": {
+        "market_analysis": "..."
+      },
+      "usage": {
+        "input_tokens": 300,
+        "output_tokens": 600,
+        "total_tokens": 900
+      }
+    },
+    {
+      "id": "agent-def456",
+      "success": true,
+      "name": "Technical Writer",
+      "outputs": {
+        "technical_guide": "..."
+      },
+      "usage": {
+        "input_tokens": 400,
+        "output_tokens": 800,
+        "total_tokens": 1200
+      }
+    }
+  ]
+}
+```
+
+
+-----
+
 ## Production Examples
 
 ### Python Examples
@@ -889,100 +1071,88 @@ Error responses include a detailed message explaining the issue:
 
 ## Rate Limiting
 
-The API enforces a rate limit of 100 requests per 60-second window. When exceeded, a 429 status code is returned. Implement appropriate retry logic with exponential backoff in production applications.
+| Description | Details |
+|-------------|---------|
+| Rate Limit | 100 requests per 60-second window |
+| Exceed Consequence | 429 status code returned |
+| Recommended Action | Implement retry logic with exponential backoff |
 
 ## Billing & Cost Management
 
-The API uses a credit-based billing system with costs calculated based on:
-
-1. **Agent Count**: Base cost per agent
-
-
-2. **Input Tokens**: Cost based on the size of input data and prompts
-
-3. **Output Tokens**: Cost based on the length of generated responses
-
-4. **Time of Day**: Reduced rates during nighttime hours (8 PM to 6 AM PT)
-
-Cost information is included in each response's metadata for transparency and forecasting.
+| Cost Factor | Description |
+|-------------|-------------|
+| Agent Count | Base cost per agent |
+| Input Tokens | Cost based on size of input data and prompts |
+| Output Tokens | Cost based on length of generated responses |
+| Time of Day | Reduced rates during nighttime hours (8 PM to 6 AM PT) |
+| Cost Information | Included in each response's metadata |
 
 ## Best Practices
 
-1. **Task Description**
+### Task Description
 
-   - Provide detailed, specific task descriptions
+| Practice | Description |
+|----------|-------------|
+| Detail | Provide detailed, specific task descriptions |
+| Context | Include all necessary context and constraints |
+| Structure | Structure complex inputs for easier processing |
 
-   - Include all necessary context and constraints
-   
-   - Structure complex inputs for easier processing
+### Agent Configuration
 
-2. **Agent Configuration**
-   
-   - For simple tasks, use `AutoSwarmBuilder` to automatically generate optimal agents
-   
-   - For complex or specialized tasks, manually define agents with specific expertise
-   
-   - Use appropriate `swarm_type` for your workflow pattern
+| Practice | Description |
+|----------|-------------|
+| Simple Tasks | Use `AutoSwarmBuilder` for automatic agent generation |
+| Complex Tasks | Manually define agents with specific expertise |
+| Workflow | Use appropriate `swarm_type` for your workflow pattern |
 
-3. **Production Implementation**
+### Production Implementation
 
-  - Implement robust error handling and retries
-  
-  - Log API responses for debugging and auditing
-  
-  - Monitor costs closely during development and testing
-  
-  - Use scheduled jobs for recurring tasks instead of continuous polling
+| Practice | Description |
+|----------|-------------|
+| Error Handling | Implement robust error handling and retries |
+| Logging | Log API responses for debugging and auditing |
+| Cost Monitoring | Monitor costs closely during development and testing |
+| Scheduling | Use scheduled jobs for recurring tasks instead of polling |
 
-4. **Cost Optimization**
+### Cost Optimization
 
-  - Batch related tasks when possible
-
-  - Schedule non-urgent tasks during discount hours
-
-  - Carefully scope task descriptions to reduce token usage
-
-  - Cache results when appropriate
-
+| Practice | Description |
+|----------|-------------|
+| Batching | Batch related tasks when possible |
+| Scheduling | Schedule non-urgent tasks during discount hours |
+| Scoping | Carefully scope task descriptions to reduce token usage |
+| Caching | Cache results when appropriate |
 
 ## Support
 
-For technical assistance with the Swarms API, please contact:
-
-- Documentation: [https://docs.swarms.world](https://docs.swarms.world)
-- Email: kye@swarms.world
-- Community Discord: [https://discord.gg/jM3Z6M9uMq](https://discord.gg/jM3Z6M9uMq)
-- Swarms Marketplace: [https://swarms.world](https://swarms.world)
-- Swarms AI Website: [https://swarms.ai](https://swarms.ai)
+| Support Type | Contact Information |
+|--------------|---------------------|
+| Documentation | [https://docs.swarms.world](https://docs.swarms.world) |
+| Email | kye@swarms.world |
+| Community | [https://discord.gg/jM3Z6M9uMq](https://discord.gg/jM3Z6M9uMq) |
+| Marketplace | [https://swarms.world](https://swarms.world) |
+| Website | [https://swarms.ai](https://swarms.ai) |
 
 ## Service Tiers
 
-The API offers two service tiers to accommodate different processing needs:
-
 ### Standard Tier
 
-- Default processing tier
-
-- Immediate execution
-
-- Higher priority processing
-
-- Standard pricing
-
-- 5-minute timeout limit
+| Feature | Description |
+|---------|-------------|
+| Processing | Default processing tier |
+| Execution | Immediate execution |
+| Priority | Higher priority processing |
+| Pricing | Standard pricing |
+| Timeout | 5-minute timeout limit |
 
 ### Flex Tier
 
-- Lower cost processing
-
-- Automatic retries (up to 3 attempts)
-
-- Longer timeout (15 minutes)
-
-- 75% discount on token costs
-
-- Best for non-urgent tasks
-
-- Exponential backoff on resource contention
-
-To use the flex tier, set `service_tier: "flex"` in your SwarmSpec configuration.
+| Feature | Description |
+|---------|-------------|
+| Cost | Lower cost processing |
+| Retries | Automatic retries (up to 3 attempts) |
+| Timeout | 15-minute timeout |
+| Discount | 75% discount on token costs |
+| Suitability | Best for non-urgent tasks |
+| Backoff | Exponential backoff on resource contention |
+| Configuration | Set `service_tier: "flex"` in SwarmSpec |

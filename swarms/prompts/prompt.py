@@ -99,9 +99,6 @@ class Prompt(BaseModel):
         if self.autosave:
             self._autosave()
 
-        if self.auto_generate_prompt and self.llm:
-            self.auto_generate_prompt()
-
     def edit_prompt(self, new_content: str) -> None:
         """
         Edits the prompt content and updates the version control.

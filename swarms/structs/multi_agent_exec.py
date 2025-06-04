@@ -1,3 +1,4 @@
+import concurrent.futures
 import asyncio
 import os
 import threading
@@ -5,7 +6,7 @@ from concurrent.futures import (
     ThreadPoolExecutor,
 )
 from dataclasses import dataclass
-from typing import Any, Callable, List, Union
+from typing import Any, Callable, List, Optional, Union
 
 import psutil
 
@@ -68,44 +69,42 @@ async def run_agents_concurrently_async(
 def run_agents_concurrently(
     agents: List[AgentType],
     task: str,
-    batch_size: int = None,
-    max_workers: int = None,
+    max_workers: Optional[int] = None,
 ) -> List[Any]:
     """
-    Optimized concurrent agent runner using both uvloop and ThreadPoolExecutor.
+    Optimized concurrent agent runner using ThreadPoolExecutor.
 
     Args:
         agents: List of Agent instances to run concurrently
         task: Task string to execute
-        batch_size: Number of agents to run in parallel in each batch (defaults to CPU count)
-        max_workers: Maximum number of threads in the executor (defaults to CPU count * 2)
+        max_workers: Maximum number of threads in the executor (defaults to 95% of CPU cores)
 
     Returns:
         List of outputs from each agent
     """
-    # Optimize defaults based on system resources
-    cpu_cores = os.cpu_count()
-    batch_size = batch_size or cpu_cores
-    max_workers = max_workers or cpu_cores * 2
+    if max_workers is None:
+        # 95% of the available CPU cores
+        num_cores = os.cpu_count()
+        max_workers = int(num_cores * 0.95) if num_cores else 1
 
     results = []
 
-    # Get or create event loop
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=max_workers
+    ) as executor:
+        # Submit all tasks and get futures
+        futures = [
+            executor.submit(agent.run, task) for agent in agents
+        ]
 
-    # Create a shared thread pool executor with optimal worker count
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # Process agents in batches
-        for i in range(0, len(agents), batch_size):
-            batch = agents[i : i + batch_size]
-            batch_results = loop.run_until_complete(
-                run_agents_concurrently_async(batch, task, executor)
-            )
-            results.extend(batch_results)
+        # Wait for all futures to complete and get results
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                result = future.result()
+                results.append(result)
+            except Exception as e:
+                # Append the error if an agent fails
+                results.append(e)
 
     return results
 

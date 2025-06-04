@@ -1,6 +1,5 @@
 import secrets
 import string
-import re
 
 
 def generate_api_key(prefix: str = "sk-", length: int = 32) -> str:
@@ -36,29 +35,3 @@ def generate_api_key(prefix: str = "sk-", length: int = 32) -> str:
     api_key = f"{prefix}{random_part}"
 
     return api_key
-
-
-def validate_api_key(api_key: str, prefix: str = "sk-") -> bool:
-    """
-    Validate if an API key matches the expected format.
-
-    Args:
-        api_key (str): The API key to validate
-        prefix (str): The expected prefix (default: "sk-")
-
-    Returns:
-        bool: True if the API key is valid, False otherwise
-    """
-    if not isinstance(api_key, str):
-        return False
-
-    # Check if key starts with prefix
-    if not api_key.startswith(prefix):
-        return False
-
-    # Check if the rest of the key contains only alphanumeric characters
-    random_part = api_key[len(prefix) :]
-    if not re.match(r"^[a-zA-Z0-9]+$", random_part):
-        return False
-
-    return True

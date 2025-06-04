@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional
 
 from swarms.structs.agent import Agent
-from swarms.structs.output_types import OutputType
+from swarms.utils.output_types import OutputType
 from swarms.structs.rearrange import AgentRearrange
 from swarms.utils.loguru_logger import initialize_logger
 

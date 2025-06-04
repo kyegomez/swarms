@@ -89,7 +89,7 @@ class SwarmMatcher:
         Returns:
             np.ndarray: The embedding vector for the text.
         """
-        import numpy as np
+
         logger.debug(f"Getting embedding for text: {text[:50]}...")
         try:
             inputs = self.tokenizer(
@@ -142,6 +142,7 @@ class SwarmMatcher:
             Tuple[str, float]: A tuple containing the name of the best matching swarm type and the score.
         """
         import numpy as np
+
         logger.debug(f"Finding best match for task: {task[:50]}...")
         try:
             task_embedding = self.get_embedding(task)

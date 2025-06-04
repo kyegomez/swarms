@@ -4,7 +4,7 @@ from loguru import logger
 
 from swarms.prompts.reasoning_prompt import REASONING_PROMPT
 from swarms.structs.agent import Agent
-from swarms.structs.output_types import OutputType
+from swarms.utils.output_types import OutputType
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,

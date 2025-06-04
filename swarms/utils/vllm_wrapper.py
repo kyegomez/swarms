@@ -1,3 +1,5 @@
+import os
+import concurrent.futures
 from typing import List, Optional, Dict, Any
 from loguru import logger
 
@@ -131,16 +133,16 @@ class VLLMWrapper:
         Returns:
             List[str]: List of model responses.
         """
-        logger.info(
-            f"Running tasks in batches of size {batch_size}. Total tasks: {len(tasks)}"
-        )
-        results = []
-
-        for i in range(0, len(tasks), batch_size):
-            batch = tasks[i : i + batch_size]
-            for task in batch:
-                logger.info(f"Running task: {task}")
-                results.append(self.run(task))
-
-        logger.info("Completed all tasks.")
-        return results
+        # Fetch 95% of the available CPU cores
+        num_cores = os.cpu_count()
+        num_workers = int(num_cores * 0.95)
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=num_workers
+        ) as executor:
+            futures = [
+                executor.submit(self.run, task) for task in tasks
+            ]
+            return [
+                future.result()
+                for future in concurrent.futures.as_completed(futures)
+            ]
