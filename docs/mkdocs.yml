@@ -320,14 +320,14 @@ nav:
       # - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
 
 
-      - Swarms Tools: 
-        - Agent with Yahoo Finance: "swarms/examples/yahoo_finance.md"
-        - Twitter Agents: "swarms_tools/twitter.md"
-        - Blockchain Agents:
-          - Agent with HTX + CoinGecko: "swarms/examples/swarms_tools_htx.md"
-          - Agent with HTX + CoinGecko Function Calling: "swarms/examples/swarms_tools_htx_gecko.md"
-          - Lumo: "swarms/examples/lumo.md"
-          - Quant Crypto Agent: "swarms/examples/quant_crypto_agent.md"
+      # - Swarms Tools: 
+      #   - Agent with Yahoo Finance: "swarms/examples/yahoo_finance.md"
+      #   - Twitter Agents: "swarms_tools/twitter.md"
+      #   - Blockchain Agents:
+      #     - Agent with HTX + CoinGecko: "swarms/examples/swarms_tools_htx.md"
+      #     - Agent with HTX + CoinGecko Function Calling: "swarms/examples/swarms_tools_htx_gecko.md"
+      #     - Lumo: "swarms/examples/lumo.md"
+      #     - Quant Crypto Agent: "swarms/examples/quant_crypto_agent.md"
 
     - Multi-Agent Collaboration:
       - Unique Swarms: "swarms/examples/unique_swarms.md"
