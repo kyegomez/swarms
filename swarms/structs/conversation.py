@@ -137,12 +137,24 @@ class Conversation(BaseStructure):
         self.token_count = token_count
         self.provider = provider
 
+        # Cache for history string to avoid repeated joins
+        self._history_cache = ""
+        self._cache_index = 0
+
         # Create conversation directory if saving is enabled
         if self.save_enabled and self.conversations_dir:
             os.makedirs(self.conversations_dir, exist_ok=True)
 
         # Try to load existing conversation or initialize new one
         self.setup()
+
+    def _refresh_cache(self):
+        """Refresh cached history string."""
+        self._history_cache = "\n\n".join(
+            f"{m['role']}: {m['content']}"
+            for m in self.conversation_history
+        )
+        self._cache_index = len(self.conversation_history)
 
     def setup(self):
         """Set up the conversation by either loading existing data or initializing new."""
@@ -238,6 +250,14 @@ class Conversation(BaseStructure):
 
         # Add message to conversation history
         self.conversation_history.append(message)
+
+        # Incrementally update history cache
+        formatted = f"{role}: {content}"
+        if self._history_cache:
+            self._history_cache += "\n\n" + formatted
+        else:
+            self._history_cache = formatted
+        self._cache_index = len(self.conversation_history)
 
         if self.token_count is True:
             self._count_tokens(content, message)
@@ -452,13 +472,14 @@ class Conversation(BaseStructure):
         Returns:
             str: The conversation history formatted as a string.
         """
-        formatted_messages = []
-        for message in self.conversation_history:
-            formatted_messages.append(
-                f"{message['role']}: {message['content']}"
+        # If new messages were added outside the add method, rebuild cache
+        if self._cache_index < len(self.conversation_history):
+            self._history_cache = "\n\n".join(
+                f"{m['role']}: {m['content']}"
+                for m in self.conversation_history
             )
-
-        return "\n\n".join(formatted_messages)
+            self._cache_index = len(self.conversation_history)
+        return self._history_cache
 
     def get_str(self) -> str:
         """Get the conversation history as a string.
@@ -542,6 +563,9 @@ class Conversation(BaseStructure):
                 # Load conversation history
                 self.conversation_history = data.get("history", [])
 
+                # Rebuild cache from loaded history
+                self._refresh_cache()
+
                 logger.info(
                     f"Successfully loaded conversation from {filename}"
                 )
@@ -604,6 +628,8 @@ class Conversation(BaseStructure):
     def clear(self):
         """Clear the conversation history."""
         self.conversation_history = []
+        self._history_cache = ""
+        self._cache_index = 0
 
     def to_json(self):
         """Convert the conversation history to a JSON string.
