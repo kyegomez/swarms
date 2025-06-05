@@ -314,6 +314,12 @@ nav:
       - VLLM: "swarms/examples/vllm_integration.md"
       - Llama4: "swarms/examples/llama4.md"
 
+    - Agent Examples:
+      - Basic Agent: "swarms/examples/basic_agent.md"
+      - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
+      # - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
+
+
       - Swarms Tools: 
         - Agent with Yahoo Finance: "swarms/examples/yahoo_finance.md"
         - Twitter Agents: "swarms_tools/twitter.md"
@@ -322,12 +328,12 @@ nav:
           - Agent with HTX + CoinGecko Function Calling: "swarms/examples/swarms_tools_htx_gecko.md"
           - Lumo: "swarms/examples/lumo.md"
           - Quant Crypto Agent: "swarms/examples/quant_crypto_agent.md"
+
     - Multi-Agent Collaboration:
       - Unique Swarms: "swarms/examples/unique_swarms.md"
       - Swarms DAO: "swarms/examples/swarms_dao.md"
       - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
       - Group Chat Example: "swarms/examples/groupchat_example.md"
-      - Meme Agent Builder: "swarms/examples/meme_agents.md"
       - Sequential Workflow Example: "swarms/examples/sequential_example.md"
       - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
       - External Agents:
