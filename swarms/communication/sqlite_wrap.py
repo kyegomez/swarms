@@ -1,4 +1,3 @@
-import sqlite3
 import json
 import datetime
 from typing import List, Optional, Union, Dict, Any
@@ -65,6 +64,16 @@ class SQLiteConversation(BaseCommunication):
         connection_timeout: float = 5.0,
         **kwargs,
     ):
+        # Lazy load sqlite3
+        try:
+            import sqlite3
+            self.sqlite3 = sqlite3
+            self.sqlite3_available = True
+        except ImportError as e:
+            raise ImportError(
+                f"SQLite3 is not available: {e}"
+            )
+
         super().__init__(
             system_prompt=system_prompt,
             time_enabled=time_enabled,
@@ -162,13 +171,13 @@ class SQLiteConversation(BaseCommunication):
         conn = None
         for attempt in range(self.max_retries):
             try:
-                conn = sqlite3.connect(
+                conn = self.sqlite3.connect(
                     str(self.db_path), timeout=self.connection_timeout
                 )
-                conn.row_factory = sqlite3.Row
+                conn.row_factory = self.sqlite3.Row
                 yield conn
                 break
-            except sqlite3.Error as e:
+            except self.sqlite3.Error as e:
                 if attempt == self.max_retries - 1:
                     raise
                 if self.enable_logging:

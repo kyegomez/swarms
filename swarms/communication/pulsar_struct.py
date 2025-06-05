@@ -12,20 +12,6 @@ from swarms.communication.base_communication import (
 )
 
 
-# Check if Pulsar is available
-try:
-    import pulsar
-
-    PULSAR_AVAILABLE = True
-    logger.info("Apache Pulsar client library is available")
-except ImportError as e:
-    PULSAR_AVAILABLE = False
-    logger.error(
-        f"Apache Pulsar client library is not installed: {e}"
-    )
-    logger.error("Please install it using: pip install pulsar-client")
-
-
 class PulsarConnectionError(Exception):
     """Exception raised for Pulsar connection errors."""
 
@@ -77,11 +63,38 @@ class PulsarConversation(BaseCommunication):
         **kwargs,
     ):
         """Initialize the Pulsar conversation interface."""
-        if not PULSAR_AVAILABLE:
-            raise ImportError(
-                "Apache Pulsar client library is not installed. "
-                "Please install it using: pip install pulsar-client"
-            )
+        # Lazy load Pulsar with auto-installation
+        try:
+            import pulsar
+            self.pulsar = pulsar
+            self.pulsar_available = True
+        except ImportError:
+            # Auto-install pulsar-client if not available
+            print("📦 Pulsar client not found. Installing automatically...")
+            try:
+                import subprocess
+                import sys
+                
+                # Install pulsar-client
+                subprocess.check_call([
+                    sys.executable, "-m", "pip", "install", "pulsar-client"
+                ])
+                print("✅ Pulsar client installed successfully!")
+                
+                # Try importing again
+                import pulsar
+                self.pulsar = pulsar
+                self.pulsar_available = True
+                print("✅ Pulsar loaded successfully!")
+                
+            except Exception as e:
+                self.pulsar_available = False
+                logger.error(
+                    f"Failed to auto-install Pulsar client. Please install manually with 'pip install pulsar-client': {e}"
+                )
+                raise ImportError(
+                    f"Failed to auto-install Pulsar client. Please install manually with 'pip install pulsar-client': {e}"
+                )
 
         logger.info(
             f"Initializing PulsarConversation with host: {pulsar_host}"
@@ -96,7 +109,7 @@ class PulsarConversation(BaseCommunication):
             logger.debug(
                 f"Connecting to Pulsar broker at {pulsar_host}"
             )
-            self.client = pulsar.Client(pulsar_host)
+            self.client = self.pulsar.Client(pulsar_host)
 
             logger.debug(f"Creating producer for topic: {self.topic}")
             self.producer = self.client.create_producer(self.topic)
@@ -109,7 +122,7 @@ class PulsarConversation(BaseCommunication):
             )
             logger.info("Successfully connected to Pulsar broker")
 
-        except pulsar.ConnectError as e:
+        except self.pulsar.ConnectError as e:
             error_msg = f"Failed to connect to Pulsar broker at {pulsar_host}: {str(e)}"
             logger.error(error_msg)
             raise PulsarConnectionError(error_msg)
@@ -198,7 +211,7 @@ class PulsarConversation(BaseCommunication):
             )
             return message["id"]
 
-        except pulsar.ConnectError as e:
+        except self.pulsar.ConnectError as e:
             error_msg = f"Failed to send message to Pulsar: Connection error: {str(e)}"
             logger.error(error_msg)
             raise PulsarConnectionError(error_msg)
@@ -235,7 +248,7 @@ class PulsarConversation(BaseCommunication):
                     msg = self.consumer.receive(timeout_millis=1000)
                     messages.append(json.loads(msg.data()))
                     self.consumer.acknowledge(msg)
-                except pulsar.Timeout:
+                except self.pulsar.Timeout:
                     break  # No more messages available
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to decode message: {e}")
@@ -250,7 +263,7 @@ class PulsarConversation(BaseCommunication):
 
             return messages
 
-        except pulsar.ConnectError as e:
+        except self.pulsar.ConnectError as e:
             error_msg = f"Failed to receive messages from Pulsar: Connection error: {str(e)}"
             logger.error(error_msg)
             raise PulsarConnectionError(error_msg)
@@ -387,7 +400,7 @@ class PulsarConversation(BaseCommunication):
                 f"Successfully cleared conversation. New ID: {self.conversation_id}"
             )
 
-        except pulsar.ConnectError as e:
+        except self.pulsar.ConnectError as e:
             error_msg = f"Failed to clear conversation: Connection error: {str(e)}"
             logger.error(error_msg)
             raise PulsarConnectionError(error_msg)
@@ -631,7 +644,10 @@ class PulsarConversation(BaseCommunication):
         Returns:
             bool: True if Pulsar is available and accessible, False otherwise
         """
-        if not PULSAR_AVAILABLE:
+        try:
+            import pulsar
+            pulsar_available = True
+        except ImportError:
             logger.error("Pulsar client library is not installed")
             return False
 
@@ -680,7 +696,7 @@ class PulsarConversation(BaseCommunication):
                     msg = self.consumer.receive(timeout_millis=1000)
                     self.consumer.acknowledge(msg)
                     health["consumer_active"] = True
-                except pulsar.Timeout:
+                except self.pulsar.Timeout:
                     pass
 
             logger.info(f"Health check results: {health}")
