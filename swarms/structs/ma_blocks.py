@@ -111,10 +111,10 @@ def run_agent(
     """
     if agent is None:
         raise ValueError("Agent cannot be None")
-    
+
     if task is None:
         raise ValueError("Task cannot be None")
-        
+
     if not isinstance(agent, Agent):
         raise TypeError("Agent must be an instance of Agent")
 
@@ -122,10 +122,11 @@ def run_agent(
         return agent.run(task=task, *args, **kwargs)
     except Exception as e:
         raise RuntimeError(f"Error running agent: {str(e)}")
-    
-    
-    
-def find_agent_by_name(agents: List[Union[Agent, Callable]], agent_name: str) -> Agent:
+
+
+def find_agent_by_name(
+    agents: List[Union[Agent, Callable]], agent_name: str
+) -> Agent:
     """
     Find an agent by its name in a list of agents.
 
@@ -142,18 +143,17 @@ def find_agent_by_name(agents: List[Union[Agent, Callable]], agent_name: str) ->
     """
     if not agents:
         raise ValueError("Agents list cannot be empty")
-        
+
     if not isinstance(agent_name, str):
         raise TypeError("Agent name must be a string")
-        
+
     if not agent_name.strip():
         raise ValueError("Agent name cannot be empty or whitespace")
 
     try:
         for agent in agents:
-            if hasattr(agent, 'name') and agent.name == agent_name:
+            if hasattr(agent, "name") and agent.name == agent_name:
                 return agent
         raise ValueError(f"Agent with name '{agent_name}' not found")
     except Exception as e:
         raise RuntimeError(f"Error finding agent: {str(e)}")
-

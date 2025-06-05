@@ -100,7 +100,9 @@ class DynamicConversationalSwarm:
             ValueError: If agent is not found
             RuntimeError: If there's an error running the agent
         """
-        agent = find_agent_by_name(agents=self.agents, agent_name=agent_name)
+        agent = find_agent_by_name(
+            agents=self.agents, agent_name=agent_name
+        )
         return agent.run(task)
 
     def fetch_random_agent_name(self) -> str:

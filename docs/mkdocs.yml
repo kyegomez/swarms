@@ -343,8 +343,6 @@ nav:
       - Medical Swarm: "swarms/examples/swarms_api_medical.md"
       - Finance Swarm: "swarms/examples/swarms_api_finance.md"
       - ML Model Code Generation Swarm: "swarms/examples/swarms_api_ml_model.md"
-    - Swarms UI:
-      - Overview: "swarms/ui/main.md"
 
   - Swarm Models:
     - Overview: "swarms/models/index.md"
@@ -389,9 +387,9 @@ nav:
 
   - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"
-    # - Agent Marketplace: "swarms_platform/share_discover.md"
     - Swarm Platform API Keys: "swarms_platform/apikeys.md"
     - Account Management: "swarms_platform/account_management.md"
+    - Swarms Chat Tutorial: "swarms/ui/main.md"
 
   - Swarms Rust:
     - Overview: "swarms_rs/overview.md"
