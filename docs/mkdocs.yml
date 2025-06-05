@@ -307,6 +307,7 @@ nav:
       - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
       # - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
       - Agent Output Types: "swarms/examples/agent_output_types.md"
+      - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
       - Various Model Providers:
         - OpenAI: "swarms/examples/openai_example.md"
         - Anthropic: "swarms/examples/claude.md"
@@ -331,14 +332,18 @@ nav:
       #     - Quant Crypto Agent: "swarms/examples/quant_crypto_agent.md"
 
     - Multi-Agent Collaboration:
-      - Unique Swarms: "swarms/examples/unique_swarms.md"
-      - Swarms DAO: "swarms/examples/swarms_dao.md"
       - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
       - Group Chat Example: "swarms/examples/groupchat_example.md"
       - Sequential Workflow Example: "swarms/examples/sequential_example.md"
-      - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
-      - External Agents:
+      - SwarmRouter Example: "swarms/examples/swarm_router.md"
+      - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
+      - MixtureOfAgents Example: "swarms/examples/mixture_of_agents.md"
+      - Unique Swarms: "swarms/examples/unique_swarms.md"
+      - Applications:
+        - Swarms DAO: "swarms/examples/swarms_dao.md"
         - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
+        - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
+
     
     - Swarms API Examples:
       - Medical Swarm: "swarms/examples/swarms_api_medical.md"
@@ -413,9 +418,9 @@ nav:
     #   - PUT: "swarms_platform/telemetry/index.md"
     # - Swarms Wallet API:
     #   - Overview: "swarms/wallet/api.md"
-    # - Tools API:
-    #   - Overview: "swarms_platform/tools_api.md"
-    #   - Add Tools: "swarms_platform/fetch_tools.md"
+    #   - Tools API:
+    #     - Overview: "swarms_platform/tools_api.md"
+    #     - Add Tools: "swarms_platform/fetch_tools.md"
   # - Corporate:
   #   - Culture: "corporate/culture.md"
   #   - Hiring: "corporate/hiring.md"
