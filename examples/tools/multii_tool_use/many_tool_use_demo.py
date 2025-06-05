@@ -442,7 +442,5 @@ agent = Agent(
 )
 
 # agent.run("Use defi stats to find the best defi project to invest in")
-agent.run(
-    "Get the price of bitcoin on both functions get_htx_crypto_price and get_crypto_price and also get the market sentiment for bitcoin"
-)
+agent.run("Get the market sentiment for bitcoin")
 # Automatically executes any number and combination of tools you have uploaded to the tools parameter!

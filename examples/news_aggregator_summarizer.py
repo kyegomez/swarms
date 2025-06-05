@@ -16,7 +16,8 @@ def fetch_hackernews_headlines(limit: int = 5):
     """Fetch top headlines from Hacker News using its public API."""
     try:
         ids = httpx.get(
-            "https://hacker-news.firebaseio.com/v0/topstories.json", timeout=10
+            "https://hacker-news.firebaseio.com/v0/topstories.json",
+            timeout=10,
         ).json()
     except Exception:
         return []
@@ -29,7 +30,12 @@ def fetch_hackernews_headlines(limit: int = 5):
             ).json()
         except Exception:
             continue
-        headlines.append({"title": item.get("title", "No title"), "url": item.get("url", "")})
+        headlines.append(
+            {
+                "title": item.get("title", "No title"),
+                "url": item.get("url", ""),
+            }
+        )
     return headlines
 
 
@@ -96,7 +102,9 @@ if __name__ == "__main__":
     for article in headlines:
         content = fetch_article_content(article["url"])
         summary = summarize_article(content)
-        summaries.append({"title": article["title"], "summary": summary})
+        summaries.append(
+            {"title": article["title"], "summary": summary}
+        )
 
     print("\nArticle Summaries:\n")
     for s in summaries:

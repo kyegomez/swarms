@@ -55,7 +55,6 @@ from swarms.structs.swarm_arange import SwarmRearrange
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmType,
-    swarm_router,
 )
 from swarms.structs.swarming_architectures import (
     broadcast,
@@ -135,7 +134,6 @@ __all__ = [
     "run_agents_with_different_tasks",
     "run_agent_with_timeout",
     "run_agents_with_resource_monitoring",
-    "swarm_router",
     "run_agents_with_tasks_concurrently",
     "GroupChat",
     "expertise_based",

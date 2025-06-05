@@ -3,8 +3,6 @@ import json
 import logging
 import threading
 import uuid
-from contextlib import contextmanager
-from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
 import yaml
@@ -12,6 +10,7 @@ import yaml
 try:
     from supabase import Client, create_client
     from postgrest import APIResponse, APIError as PostgrestAPIError
+
     SUPABASE_AVAILABLE = True
 except ImportError:
     SUPABASE_AVAILABLE = False
@@ -29,26 +28,34 @@ from swarms.communication.base_communication import (
 # Try to import loguru logger, fallback to standard logging
 try:
     from loguru import logger
+
     LOGURU_AVAILABLE = True
 except ImportError:
     LOGURU_AVAILABLE = False
     logger = None
 
+
 # Custom Exceptions for Supabase Communication
 class SupabaseConnectionError(Exception):
     """Custom exception for Supabase connection errors."""
+
     pass
+
 
 class SupabaseOperationError(Exception):
     """Custom exception for Supabase operation errors."""
+
     pass
+
 
 class DateTimeEncoder(json.JSONEncoder):
     """Custom JSON encoder for handling datetime objects."""
+
     def default(self, obj):
         if isinstance(obj, datetime.datetime):
             return obj.isoformat()
         return super().default(obj)
+
 
 class SupabaseConversation(BaseCommunication):
     """
@@ -80,21 +87,21 @@ class SupabaseConversation(BaseCommunication):
         system_prompt: Optional[str] = None,
         time_enabled: bool = False,
         autosave: bool = False,  # Standardized parameter name - less relevant for DB-backed, but kept for interface
-        save_filepath: str = None, # Used for export/import
+        save_filepath: str = None,  # Used for export/import
         tokenizer: Any = None,
         context_length: int = 8192,
         rules: str = None,
         custom_rules_prompt: str = None,
         user: str = "User:",
-        save_as_yaml: bool = True, # Default export format
-        save_as_json_bool: bool = False, # Alternative export format
+        save_as_yaml: bool = True,  # Default export format
+        save_as_json_bool: bool = False,  # Alternative export format
         token_count: bool = True,
-        cache_enabled: bool = True, # Currently for token counting
+        cache_enabled: bool = True,  # Currently for token counting
         table_name: str = "conversations",
-        enable_timestamps: bool = True, # DB schema handles this with DEFAULT NOW()
+        enable_timestamps: bool = True,  # DB schema handles this with DEFAULT NOW()
         enable_logging: bool = True,
         use_loguru: bool = True,
-        max_retries: int = 3, # For Supabase API calls (not implemented yet, supabase-py might handle)
+        max_retries: int = 3,  # For Supabase API calls (not implemented yet, supabase-py might handle)
         *args,
         **kwargs,
     ):
@@ -121,11 +128,13 @@ class SupabaseConversation(BaseCommunication):
         self.supabase_url = supabase_url
         self.supabase_key = supabase_key
         self.table_name = table_name
-        self.enable_timestamps = enable_timestamps # DB handles actual timestamping
+        self.enable_timestamps = (
+            enable_timestamps  # DB handles actual timestamping
+        )
         self.enable_logging = enable_logging
         self.use_loguru = use_loguru and LOGURU_AVAILABLE
         self.max_retries = max_retries
-        
+
         # Setup logging
         if self.enable_logging:
             if self.use_loguru and logger:
@@ -146,28 +155,50 @@ class SupabaseConversation(BaseCommunication):
             self.logger.addHandler(logging.NullHandler())
 
         self.current_conversation_id: Optional[str] = None
-        self._lock = threading.Lock() # For thread-safe operations if any (e.g. token calculation)
+        self._lock = (
+            threading.Lock()
+        )  # For thread-safe operations if any (e.g. token calculation)
 
         try:
-            self.client: Client = create_client(supabase_url, supabase_key)
+            self.client: Client = create_client(
+                supabase_url, supabase_key
+            )
             if self.enable_logging:
-                self.logger.info(f"Successfully initialized Supabase client for URL: {supabase_url}")
+                self.logger.info(
+                    f"Successfully initialized Supabase client for URL: {supabase_url}"
+                )
         except Exception as e:
             if self.enable_logging:
-                self.logger.error(f"Failed to initialize Supabase client: {e}")
-            raise SupabaseConnectionError(f"Failed to connect to Supabase: {e}")
+                self.logger.error(
+                    f"Failed to initialize Supabase client: {e}"
+                )
+            raise SupabaseConnectionError(
+                f"Failed to connect to Supabase: {e}"
+            )
 
         self._init_db()  # Verifies table existence
-        self.start_new_conversation() # Initializes a conversation ID
+        self.start_new_conversation()  # Initializes a conversation ID
 
         # Add initial prompts if provided
         if self.system_prompt:
-            self.add(role="system", content=self.system_prompt, message_type=MessageType.SYSTEM)
+            self.add(
+                role="system",
+                content=self.system_prompt,
+                message_type=MessageType.SYSTEM,
+            )
         if self.rules:
             # Assuming rules are spoken by the system or user based on context
-            self.add(role="system", content=self.rules, message_type=MessageType.SYSTEM)
+            self.add(
+                role="system",
+                content=self.rules,
+                message_type=MessageType.SYSTEM,
+            )
         if self.custom_rules_prompt:
-            self.add(role=self.user, content=self.custom_rules_prompt, message_type=MessageType.USER)
+            self.add(
+                role=self.user,
+                content=self.custom_rules_prompt,
+                message_type=MessageType.USER,
+            )
 
     def _init_db(self):
         """
@@ -190,47 +221,77 @@ class SupabaseConversation(BaseCommunication):
                 created_at TIMESTAMPTZ DEFAULT NOW()
             );
             """
-            
+
             # Try to create index as well
             create_index_sql = f"""
             CREATE INDEX IF NOT EXISTS idx_{self.table_name}_conversation_id 
             ON {self.table_name} (conversation_id);
             """
-            
+
             # Attempt to create table using RPC function
             # Note: This requires a stored procedure to be created in Supabase
             # If RPC is not available, we'll fall back to checking if table exists
             try:
                 # Try using a custom RPC function if available
-                self.client.rpc('exec_sql', {'sql': create_table_sql}).execute()
+                self.client.rpc(
+                    "exec_sql", {"sql": create_table_sql}
+                ).execute()
                 if self.enable_logging:
-                    self.logger.info(f"Successfully created or verified table '{self.table_name}' using RPC.")
+                    self.logger.info(
+                        f"Successfully created or verified table '{self.table_name}' using RPC."
+                    )
             except Exception as rpc_error:
                 if self.enable_logging:
-                    self.logger.debug(f"RPC table creation failed (expected if no custom function): {rpc_error}")
-                
+                    self.logger.debug(
+                        f"RPC table creation failed (expected if no custom function): {rpc_error}"
+                    )
+
                 # Fallback: Try to verify table exists, if not provide helpful error
                 try:
-                    response = self.client.table(self.table_name).select("id").limit(1).execute()
-                    if response.error and "does not exist" in str(response.error).lower():
+                    response = (
+                        self.client.table(self.table_name)
+                        .select("id")
+                        .limit(1)
+                        .execute()
+                    )
+                    if (
+                        response.error
+                        and "does not exist"
+                        in str(response.error).lower()
+                    ):
                         # Table doesn't exist, try alternative creation method
                         self._create_table_fallback()
                     elif response.error:
-                        raise SupabaseOperationError(f"Error accessing table: {response.error.message}")
+                        raise SupabaseOperationError(
+                            f"Error accessing table: {response.error.message}"
+                        )
                     else:
                         if self.enable_logging:
-                            self.logger.info(f"Successfully verified existing table '{self.table_name}'.")
+                            self.logger.info(
+                                f"Successfully verified existing table '{self.table_name}'."
+                            )
                 except Exception as table_check_error:
-                    if "does not exist" in str(table_check_error).lower() or "relation" in str(table_check_error).lower():
+                    if (
+                        "does not exist"
+                        in str(table_check_error).lower()
+                        or "relation"
+                        in str(table_check_error).lower()
+                    ):
                         # Table definitely doesn't exist, provide creation instructions
                         self._handle_missing_table()
                     else:
-                        raise SupabaseOperationError(f"Failed to access or create table: {table_check_error}")
-                        
+                        raise SupabaseOperationError(
+                            f"Failed to access or create table: {table_check_error}"
+                        )
+
         except Exception as e:
             if self.enable_logging:
-                self.logger.error(f"Database initialization failed: {e}")
-            raise SupabaseOperationError(f"Failed to initialize database: {e}")
+                self.logger.error(
+                    f"Database initialization failed: {e}"
+                )
+            raise SupabaseOperationError(
+                f"Failed to initialize database: {e}"
+            )
 
     def _create_table_fallback(self):
         """
@@ -255,18 +316,26 @@ class SupabaseConversation(BaseCommunication):
             CREATE INDEX IF NOT EXISTS idx_{self.table_name}_conversation_id 
             ON {self.table_name} (conversation_id);
             """
-            
+
             # Note: This might not work with all Supabase configurations
             # but we attempt it anyway
-            if hasattr(self.client, 'postgrest') and hasattr(self.client.postgrest, 'rpc'):
-                result = self.client.postgrest.rpc('exec_sql', {'query': admin_sql}).execute()
+            if hasattr(self.client, "postgrest") and hasattr(
+                self.client.postgrest, "rpc"
+            ):
+                result = self.client.postgrest.rpc(
+                    "exec_sql", {"query": admin_sql}
+                ).execute()
                 if self.enable_logging:
-                    self.logger.info(f"Successfully created table '{self.table_name}' using admin API.")
+                    self.logger.info(
+                        f"Successfully created table '{self.table_name}' using admin API."
+                    )
                 return
         except Exception as e:
             if self.enable_logging:
-                self.logger.debug(f"Admin API table creation failed: {e}")
-        
+                self.logger.debug(
+                    f"Admin API table creation failed: {e}"
+                )
+
         # If all else fails, call the missing table handler
         self._handle_missing_table()
 
@@ -301,7 +370,7 @@ ALTER TABLE {self.table_name} ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
     FOR ALL USING (true);  -- Adjust this policy based on your security requirements
 """
-        
+
         error_msg = (
             f"Table '{self.table_name}' does not exist in your Supabase database and cannot be created automatically. "
             f"Please create it manually by running the following SQL in your Supabase SQL Editor:\n\n{table_creation_sql}\n\n"
@@ -316,17 +385,19 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
             f"$$ LANGUAGE plpgsql SECURITY DEFINER;\n\n"
             f"After creating either the table or the RPC function, retry initializing the SupabaseConversation."
         )
-        
+
         if self.enable_logging:
             self.logger.error(error_msg)
         raise SupabaseOperationError(error_msg)
 
-    def _handle_api_response(self, response, operation_name: str = "Supabase operation"):
+    def _handle_api_response(
+        self, response, operation_name: str = "Supabase operation"
+    ):
         """Handles Supabase API response, checking for errors and returning data."""
         # The new supabase-py client structure: response has .data and .count attributes
         # Errors are raised as exceptions rather than being in response.error
         try:
-            if hasattr(response, 'data'):
+            if hasattr(response, "data"):
                 # Return the data, which could be None, a list, or a dict
                 return response.data
             else:
@@ -335,19 +406,25 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
         except Exception as e:
             if self.enable_logging:
                 self.logger.error(f"{operation_name} failed: {e}")
-            raise SupabaseOperationError(f"{operation_name} failed: {e}")
+            raise SupabaseOperationError(
+                f"{operation_name} failed: {e}"
+            )
 
-    def _serialize_content(self, content: Union[str, dict, list]) -> str:
+    def _serialize_content(
+        self, content: Union[str, dict, list]
+    ) -> str:
         """Serializes content to JSON string if it's a dict or list."""
         if isinstance(content, (dict, list)):
             return json.dumps(content, cls=DateTimeEncoder)
         return str(content)
 
-    def _deserialize_content(self, content_str: str) -> Union[str, dict, list]:
+    def _deserialize_content(
+        self, content_str: str
+    ) -> Union[str, dict, list]:
         """Deserializes content from JSON string if it looks like JSON. More robust approach."""
         if not content_str:
             return content_str
-        
+
         # Always try to parse as JSON first, fall back to string
         try:
             return json.loads(content_str)
@@ -355,18 +432,26 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
             # Not valid JSON, return as string
             return content_str
 
-    def _serialize_metadata(self, metadata: Optional[Dict]) -> Optional[str]:
+    def _serialize_metadata(
+        self, metadata: Optional[Dict]
+    ) -> Optional[str]:
         """Serializes metadata dict to JSON string using simplified encoder."""
         if metadata is None:
             return None
         try:
-            return json.dumps(metadata, default=str, ensure_ascii=False)
+            return json.dumps(
+                metadata, default=str, ensure_ascii=False
+            )
         except (TypeError, ValueError) as e:
             if self.enable_logging:
-                self.logger.warning(f"Failed to serialize metadata: {e}")
+                self.logger.warning(
+                    f"Failed to serialize metadata: {e}"
+                )
             return None
 
-    def _deserialize_metadata(self, metadata_str: Optional[str]) -> Optional[Dict]:
+    def _deserialize_metadata(
+        self, metadata_str: Optional[str]
+    ) -> Optional[Dict]:
         """Deserializes metadata from JSON string with better error handling."""
         if metadata_str is None:
             return None
@@ -374,19 +459,27 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
             return json.loads(metadata_str)
         except (json.JSONDecodeError, TypeError) as e:
             if self.enable_logging:
-                self.logger.warning(f"Failed to deserialize metadata: {metadata_str[:50]}... Error: {e}")
+                self.logger.warning(
+                    f"Failed to deserialize metadata: {metadata_str[:50]}... Error: {e}"
+                )
             return None
 
     def _generate_conversation_id(self) -> str:
         """Generate a unique conversation ID using UUID and timestamp."""
-        timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
+        timestamp = datetime.datetime.now(
+            datetime.timezone.utc
+        ).strftime("%Y%m%d_%H%M%S_%f")
         unique_id = str(uuid.uuid4())[:8]
         return f"conv_{timestamp}_{unique_id}"
 
     def start_new_conversation(self) -> str:
         """Starts a new conversation and returns its ID."""
-        self.current_conversation_id = self._generate_conversation_id()
-        self.logger.info(f"Started new conversation with ID: {self.current_conversation_id}")
+        self.current_conversation_id = (
+            self._generate_conversation_id()
+        )
+        self.logger.info(
+            f"Started new conversation with ID: {self.current_conversation_id}"
+        )
         return self.current_conversation_id
 
     def add(
@@ -402,46 +495,72 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
             self.start_new_conversation()
 
         serialized_content = self._serialize_content(content)
-        current_timestamp_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        current_timestamp_iso = datetime.datetime.now(
+            datetime.timezone.utc
+        ).isoformat()
 
         message_data = {
             "conversation_id": self.current_conversation_id,
             "role": role,
             "content": serialized_content,
-            "timestamp": current_timestamp_iso, # Supabase will use its default if not provided / column allows NULL
-            "message_type": message_type.value if message_type else None,
+            "timestamp": current_timestamp_iso,  # Supabase will use its default if not provided / column allows NULL
+            "message_type": (
+                message_type.value if message_type else None
+            ),
             "metadata": self._serialize_metadata(metadata),
             # token_count handled below
         }
 
         # Calculate token_count if enabled and not provided
-        if self.calculate_token_count and token_count is None and self.tokenizer:
+        if (
+            self.calculate_token_count
+            and token_count is None
+            and self.tokenizer
+        ):
             try:
                 # For now, do this synchronously. For long content, consider async/threading.
-                message_data["token_count"] = self.tokenizer.count_tokens(str(content))
+                message_data["token_count"] = (
+                    self.tokenizer.count_tokens(str(content))
+                )
             except Exception as e:
                 if self.enable_logging:
-                    self.logger.warning(f"Failed to count tokens for content: {e}")
+                    self.logger.warning(
+                        f"Failed to count tokens for content: {e}"
+                    )
         elif token_count is not None:
             message_data["token_count"] = token_count
-        
+
         # Filter out None values to let Supabase handle defaults or NULLs appropriately
-        message_to_insert = {k: v for k, v in message_data.items() if v is not None}
+        message_to_insert = {
+            k: v for k, v in message_data.items() if v is not None
+        }
 
         try:
-            response = self.client.table(self.table_name).insert(message_to_insert).execute()
+            response = (
+                self.client.table(self.table_name)
+                .insert(message_to_insert)
+                .execute()
+            )
             data = self._handle_api_response(response, "add_message")
             if data and len(data) > 0 and "id" in data[0]:
                 inserted_id = data[0]["id"]
                 if self.enable_logging:
-                    self.logger.debug(f"Added message with ID {inserted_id} to conversation {self.current_conversation_id}")
+                    self.logger.debug(
+                        f"Added message with ID {inserted_id} to conversation {self.current_conversation_id}"
+                    )
                 return inserted_id
             if self.enable_logging:
-                self.logger.error(f"Failed to retrieve ID for inserted message in conversation {self.current_conversation_id}")
-            raise SupabaseOperationError("Failed to retrieve ID for inserted message.")
+                self.logger.error(
+                    f"Failed to retrieve ID for inserted message in conversation {self.current_conversation_id}"
+                )
+            raise SupabaseOperationError(
+                "Failed to retrieve ID for inserted message."
+            )
         except Exception as e:
             if self.enable_logging:
-                self.logger.error(f"Error adding message to Supabase: {e}")
+                self.logger.error(
+                    f"Error adding message to Supabase: {e}"
+                )
             raise SupabaseOperationError(f"Error adding message: {e}")
 
     def batch_add(self, messages: List[Message]) -> List[int]:
@@ -451,61 +570,108 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
 
         messages_to_insert = []
         for msg_obj in messages:
-            serialized_content = self._serialize_content(msg_obj.content)
-            current_timestamp_iso = (msg_obj.timestamp or datetime.datetime.now(datetime.timezone.utc).isoformat())
+            serialized_content = self._serialize_content(
+                msg_obj.content
+            )
+            current_timestamp_iso = (
+                msg_obj.timestamp
+                or datetime.datetime.now(
+                    datetime.timezone.utc
+                ).isoformat()
+            )
 
             msg_data = {
                 "conversation_id": self.current_conversation_id,
                 "role": msg_obj.role,
                 "content": serialized_content,
                 "timestamp": current_timestamp_iso,
-                "message_type": msg_obj.message_type.value if msg_obj.message_type else None,
-                "metadata": self._serialize_metadata(msg_obj.metadata),
+                "message_type": (
+                    msg_obj.message_type.value
+                    if msg_obj.message_type
+                    else None
+                ),
+                "metadata": self._serialize_metadata(
+                    msg_obj.metadata
+                ),
             }
-            
+
             # Token count
             current_token_count = msg_obj.token_count
-            if self.calculate_token_count and current_token_count is None and self.tokenizer:
+            if (
+                self.calculate_token_count
+                and current_token_count is None
+                and self.tokenizer
+            ):
                 try:
-                    current_token_count = self.tokenizer.count_tokens(str(msg_obj.content))
+                    current_token_count = self.tokenizer.count_tokens(
+                        str(msg_obj.content)
+                    )
                 except Exception as e:
-                    self.logger.warning(f"Failed to count tokens for batch message: {e}")
+                    self.logger.warning(
+                        f"Failed to count tokens for batch message: {e}"
+                    )
             if current_token_count is not None:
-                 msg_data["token_count"] = current_token_count
-            
-            messages_to_insert.append({k: v for k, v in msg_data.items() if v is not None})
+                msg_data["token_count"] = current_token_count
+
+            messages_to_insert.append(
+                {k: v for k, v in msg_data.items() if v is not None}
+            )
 
         if not messages_to_insert:
             return []
 
         try:
-            response = self.client.table(self.table_name).insert(messages_to_insert).execute()
-            data = self._handle_api_response(response, "batch_add_messages")
-            inserted_ids = [item['id'] for item in data if 'id' in item]
+            response = (
+                self.client.table(self.table_name)
+                .insert(messages_to_insert)
+                .execute()
+            )
+            data = self._handle_api_response(
+                response, "batch_add_messages"
+            )
+            inserted_ids = [
+                item["id"] for item in data if "id" in item
+            ]
             if len(inserted_ids) != len(messages_to_insert):
-                self.logger.warning("Mismatch in expected and inserted message counts during batch_add.")
-            self.logger.debug(f"Batch added {len(inserted_ids)} messages to conversation {self.current_conversation_id}")
+                self.logger.warning(
+                    "Mismatch in expected and inserted message counts during batch_add."
+                )
+            self.logger.debug(
+                f"Batch added {len(inserted_ids)} messages to conversation {self.current_conversation_id}"
+            )
             return inserted_ids
         except Exception as e:
-            self.logger.error(f"Error batch adding messages to Supabase: {e}")
-            raise SupabaseOperationError(f"Error batch adding messages: {e}")
+            self.logger.error(
+                f"Error batch adding messages to Supabase: {e}"
+            )
+            raise SupabaseOperationError(
+                f"Error batch adding messages: {e}"
+            )
 
     def _format_row_to_dict(self, row: Dict) -> Dict:
         """Helper to format a raw row from Supabase to our standard message dict."""
         formatted_message = {
             "id": row.get("id"),
             "role": row.get("role"),
-            "content": self._deserialize_content(row.get("content", "")),
+            "content": self._deserialize_content(
+                row.get("content", "")
+            ),
             "timestamp": row.get("timestamp"),
             "message_type": row.get("message_type"),
-            "metadata": self._deserialize_metadata(row.get("metadata")),
+            "metadata": self._deserialize_metadata(
+                row.get("metadata")
+            ),
             "token_count": row.get("token_count"),
             "conversation_id": row.get("conversation_id"),
             "created_at": row.get("created_at"),
         }
         # Clean None values from the root, but keep them within deserialized content/metadata
-        return {k: v for k, v in formatted_message.items() if v is not None or k in ["metadata", "token_count", "message_type"]}
-
+        return {
+            k: v
+            for k, v in formatted_message.items()
+            if v is not None
+            or k in ["metadata", "token_count", "message_type"]
+        }
 
     def get_messages(
         self,
@@ -516,33 +682,48 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
         if self.current_conversation_id is None:
             return []
         try:
-            query = self.client.table(self.table_name).select("*") \
-                .eq("conversation_id", self.current_conversation_id) \
-                .order("timestamp", desc=False) # Assuming 'timestamp' or 'id' for ordering
+            query = (
+                self.client.table(self.table_name)
+                .select("*")
+                .eq("conversation_id", self.current_conversation_id)
+                .order("timestamp", desc=False)
+            )  # Assuming 'timestamp' or 'id' for ordering
 
             if limit is not None:
                 query = query.limit(limit)
             if offset is not None:
                 query = query.offset(offset)
-            
+
             response = query.execute()
             data = self._handle_api_response(response, "get_messages")
             return [self._format_row_to_dict(row) for row in data]
         except Exception as e:
-            self.logger.error(f"Error getting messages from Supabase: {e}")
-            raise SupabaseOperationError(f"Error getting messages: {e}")
+            self.logger.error(
+                f"Error getting messages from Supabase: {e}"
+            )
+            raise SupabaseOperationError(
+                f"Error getting messages: {e}"
+            )
 
     def get_str(self) -> str:
         """Get the current conversation history as a formatted string."""
         messages_dict = self.get_messages()
         conv_str = []
         for msg in messages_dict:
-            ts_prefix = f"[{msg['timestamp']}] " if msg.get('timestamp') and self.time_enabled else ""
+            ts_prefix = (
+                f"[{msg['timestamp']}] "
+                if msg.get("timestamp") and self.time_enabled
+                else ""
+            )
             # Content might be dict/list if deserialized
-            content_display = msg['content']
+            content_display = msg["content"]
             if isinstance(content_display, (dict, list)):
-                content_display = json.dumps(content_display, indent=2, cls=DateTimeEncoder)
-            conv_str.append(f"{ts_prefix}{msg['role']}: {content_display}")
+                content_display = json.dumps(
+                    content_display, indent=2, cls=DateTimeEncoder
+                )
+            conv_str.append(
+                f"{ts_prefix}{msg['role']}: {content_display}"
+            )
         return "\n".join(conv_str)
 
     def display_conversation(self, detailed: bool = False):
@@ -554,46 +735,69 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
         """Delete a message from the conversation history by its primary key 'id'."""
         if self.current_conversation_id is None:
             if self.enable_logging:
-                self.logger.warning("Cannot delete message: No current conversation.")
+                self.logger.warning(
+                    "Cannot delete message: No current conversation."
+                )
             return
-        
+
         try:
             # Handle both string and int message IDs
             try:
                 message_id = int(index)
             except ValueError:
                 if self.enable_logging:
-                    self.logger.error(f"Invalid message ID for delete: {index}. Must be an integer.")
-                raise ValueError(f"Invalid message ID for delete: {index}. Must be an integer.")
+                    self.logger.error(
+                        f"Invalid message ID for delete: {index}. Must be an integer."
+                    )
+                raise ValueError(
+                    f"Invalid message ID for delete: {index}. Must be an integer."
+                )
 
-            response = self.client.table(self.table_name).delete() \
-                .eq("id", message_id) \
-                .eq("conversation_id", self.current_conversation_id) \
+            response = (
+                self.client.table(self.table_name)
+                .delete()
+                .eq("id", message_id)
+                .eq("conversation_id", self.current_conversation_id)
                 .execute()
-            self._handle_api_response(response, f"delete_message (id: {message_id})")
+            )
+            self._handle_api_response(
+                response, f"delete_message (id: {message_id})"
+            )
             if self.enable_logging:
-                self.logger.info(f"Deleted message with ID {message_id} from conversation {self.current_conversation_id}")
+                self.logger.info(
+                    f"Deleted message with ID {message_id} from conversation {self.current_conversation_id}"
+                )
         except Exception as e:
             if self.enable_logging:
-                self.logger.error(f"Error deleting message ID {index} from Supabase: {e}")
-            raise SupabaseOperationError(f"Error deleting message ID {index}: {e}")
+                self.logger.error(
+                    f"Error deleting message ID {index} from Supabase: {e}"
+                )
+            raise SupabaseOperationError(
+                f"Error deleting message ID {index}: {e}"
+            )
 
-    def update(self, index: str, role: str, content: Union[str, dict]):
+    def update(
+        self, index: str, role: str, content: Union[str, dict]
+    ):
         """Update a message in the conversation history. Matches BaseCommunication signature exactly."""
         # Use the flexible internal method
-        return self._update_flexible(index=index, role=role, content=content)
+        return self._update_flexible(
+            index=index, role=role, content=content
+        )
 
     def _update_flexible(
-        self, 
-        index: Union[str, int], 
-        role: Optional[str] = None, 
+        self,
+        index: Union[str, int],
+        role: Optional[str] = None,
         content: Optional[Union[str, dict]] = None,
-        metadata: Optional[Dict] = None
+        metadata: Optional[Dict] = None,
     ) -> bool:
         """Internal flexible update method. Returns True if successful, False otherwise."""
         if self.current_conversation_id is None:
             if self.enable_logging:
-                self.logger.warning("Cannot update message: No current conversation.")
+                self.logger.warning(
+                    "Cannot update message: No current conversation."
+                )
             return False
 
         # Handle both string and int message IDs
@@ -604,7 +808,9 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
                 message_id = index
         except ValueError:
             if self.enable_logging:
-                self.logger.error(f"Invalid message ID for update: {index}. Must be an integer.")
+                self.logger.error(
+                    f"Invalid message ID for update: {index}. Must be an integer."
+                )
             return False
 
         update_data = {}
@@ -614,39 +820,60 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
             update_data["content"] = self._serialize_content(content)
             if self.calculate_token_count and self.tokenizer:
                 try:
-                    update_data["token_count"] = self.tokenizer.count_tokens(str(content))
+                    update_data["token_count"] = (
+                        self.tokenizer.count_tokens(str(content))
+                    )
                 except Exception as e:
                     if self.enable_logging:
-                        self.logger.warning(f"Failed to count tokens for updated content: {e}")
-        if metadata is not None: # Allows setting metadata to null by passing {} then serializing
-            update_data["metadata"] = self._serialize_metadata(metadata)
-        
+                        self.logger.warning(
+                            f"Failed to count tokens for updated content: {e}"
+                        )
+        if (
+            metadata is not None
+        ):  # Allows setting metadata to null by passing {} then serializing
+            update_data["metadata"] = self._serialize_metadata(
+                metadata
+            )
+
         if not update_data:
             if self.enable_logging:
-                self.logger.info("No fields provided to update for message.")
+                self.logger.info(
+                    "No fields provided to update for message."
+                )
             return False
 
         try:
-            response = self.client.table(self.table_name).update(update_data) \
-                .eq("id", message_id) \
-                .eq("conversation_id", self.current_conversation_id) \
+            response = (
+                self.client.table(self.table_name)
+                .update(update_data)
+                .eq("id", message_id)
+                .eq("conversation_id", self.current_conversation_id)
                 .execute()
-            
-            data = self._handle_api_response(response, f"update_message (id: {message_id})")
-            
+            )
+
+            data = self._handle_api_response(
+                response, f"update_message (id: {message_id})"
+            )
+
             # Check if any rows were actually updated
             if data and len(data) > 0:
                 if self.enable_logging:
-                    self.logger.info(f"Updated message with ID {message_id} in conversation {self.current_conversation_id}")
+                    self.logger.info(
+                        f"Updated message with ID {message_id} in conversation {self.current_conversation_id}"
+                    )
                 return True
             else:
                 if self.enable_logging:
-                    self.logger.warning(f"No message found with ID {message_id} in conversation {self.current_conversation_id}")
+                    self.logger.warning(
+                        f"No message found with ID {message_id} in conversation {self.current_conversation_id}"
+                    )
                 return False
-                
+
         except Exception as e:
             if self.enable_logging:
-                self.logger.error(f"Error updating message ID {message_id} in Supabase: {e}")
+                self.logger.error(
+                    f"Error updating message ID {message_id} in Supabase: {e}"
+                )
             return False
 
     def query(self, index: str) -> Dict:
@@ -659,22 +886,31 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
                 message_id = int(index)
             except ValueError:
                 if self.enable_logging:
-                    self.logger.warning(f"Invalid message ID for query: {index}. Must be an integer.")
+                    self.logger.warning(
+                        f"Invalid message ID for query: {index}. Must be an integer."
+                    )
                 return {}
 
-            response = self.client.table(self.table_name).select("*") \
-                .eq("id", message_id) \
-                .eq("conversation_id", self.current_conversation_id) \
-                .maybe_single() \
-                .execute() # maybe_single returns one record or None
-            
-            data = self._handle_api_response(response, f"query_message (id: {message_id})")
+            response = (
+                self.client.table(self.table_name)
+                .select("*")
+                .eq("id", message_id)
+                .eq("conversation_id", self.current_conversation_id)
+                .maybe_single()
+                .execute()
+            )  # maybe_single returns one record or None
+
+            data = self._handle_api_response(
+                response, f"query_message (id: {message_id})"
+            )
             if data:
                 return self._format_row_to_dict(data)
             return {}
         except Exception as e:
             if self.enable_logging:
-                self.logger.error(f"Error querying message ID {index} from Supabase: {e}")
+                self.logger.error(
+                    f"Error querying message ID {index} from Supabase: {e}"
+                )
             return {}
 
     def query_optional(self, index: str) -> Optional[Dict]:
@@ -688,46 +924,67 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
             return []
         try:
             # PostgREST ilike is case-insensitive
-            response = self.client.table(self.table_name).select("*") \
-                .eq("conversation_id", self.current_conversation_id) \
-                .ilike("content", f"%{keyword}%") \
-                .order("timestamp", desc=False) \
+            response = (
+                self.client.table(self.table_name)
+                .select("*")
+                .eq("conversation_id", self.current_conversation_id)
+                .ilike("content", f"%{keyword}%")
+                .order("timestamp", desc=False)
                 .execute()
-            data = self._handle_api_response(response, f"search_messages (keyword: {keyword})")
+            )
+            data = self._handle_api_response(
+                response, f"search_messages (keyword: {keyword})"
+            )
             return [self._format_row_to_dict(row) for row in data]
         except Exception as e:
-            self.logger.error(f"Error searching messages in Supabase: {e}")
-            raise SupabaseOperationError(f"Error searching messages: {e}")
+            self.logger.error(
+                f"Error searching messages in Supabase: {e}"
+            )
+            raise SupabaseOperationError(
+                f"Error searching messages: {e}"
+            )
 
     def _export_to_file(self, filename: str, format_type: str):
         """Helper to export conversation to JSON or YAML file."""
         if self.current_conversation_id is None:
             self.logger.warning("No current conversation to export.")
             return
-        
-        data_to_export = self.to_dict() # Gets messages for current_conversation_id
+
+        data_to_export = (
+            self.to_dict()
+        )  # Gets messages for current_conversation_id
         try:
             with open(filename, "w") as f:
                 if format_type == "json":
-                    json.dump(data_to_export, f, indent=2, cls=DateTimeEncoder)
+                    json.dump(
+                        data_to_export,
+                        f,
+                        indent=2,
+                        cls=DateTimeEncoder,
+                    )
                 elif format_type == "yaml":
                     yaml.dump(data_to_export, f, sort_keys=False)
                 else:
-                    raise ValueError(f"Unsupported export format: {format_type}")
-            self.logger.info(f"Conversation {self.current_conversation_id} exported to {filename} as {format_type}.")
+                    raise ValueError(
+                        f"Unsupported export format: {format_type}"
+                    )
+            self.logger.info(
+                f"Conversation {self.current_conversation_id} exported to {filename} as {format_type}."
+            )
         except Exception as e:
-            self.logger.error(f"Failed to export conversation to {format_type}: {e}")
+            self.logger.error(
+                f"Failed to export conversation to {format_type}: {e}"
+            )
             raise
 
     def export_conversation(self, filename: str):
         """Export the current conversation history to a file (JSON or YAML based on init flags)."""
         if self.save_as_json_on_export:
             self._export_to_file(filename, "json")
-        elif self.save_as_yaml_on_export: # Default if json is false
+        elif self.save_as_yaml_on_export:  # Default if json is false
             self._export_to_file(filename, "yaml")
-        else: # Fallback if somehow both are false
-             self._export_to_file(filename, "yaml")
-
+        else:  # Fallback if somehow both are false
+            self._export_to_file(filename, "yaml")
 
     def _import_from_file(self, filename: str, format_type: str):
         """Helper to import conversation from JSON or YAML file."""
@@ -738,38 +995,56 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
                 elif format_type == "yaml":
                     imported_data = yaml.safe_load(f)
                 else:
-                    raise ValueError(f"Unsupported import format: {format_type}")
+                    raise ValueError(
+                        f"Unsupported import format: {format_type}"
+                    )
 
             if not isinstance(imported_data, list):
-                raise ValueError("Imported data must be a list of messages.")
+                raise ValueError(
+                    "Imported data must be a list of messages."
+                )
 
             # Start a new conversation for the imported data
             self.start_new_conversation()
-            
+
             messages_to_batch = []
             for msg_data in imported_data:
                 # Adapt to Message dataclass structure if possible
                 role = msg_data.get("role")
                 content = msg_data.get("content")
                 if role is None or content is None:
-                    self.logger.warning(f"Skipping message due to missing role/content: {msg_data}")
+                    self.logger.warning(
+                        f"Skipping message due to missing role/content: {msg_data}"
+                    )
                     continue
 
-                messages_to_batch.append(Message(
-                    role=role,
-                    content=content,
-                    timestamp=msg_data.get("timestamp"), # Will be handled by batch_add
-                    message_type=MessageType(msg_data["message_type"]) if msg_data.get("message_type") else None,
-                    metadata=msg_data.get("metadata"),
-                    token_count=msg_data.get("token_count")
-                ))
-            
+                messages_to_batch.append(
+                    Message(
+                        role=role,
+                        content=content,
+                        timestamp=msg_data.get(
+                            "timestamp"
+                        ),  # Will be handled by batch_add
+                        message_type=(
+                            MessageType(msg_data["message_type"])
+                            if msg_data.get("message_type")
+                            else None
+                        ),
+                        metadata=msg_data.get("metadata"),
+                        token_count=msg_data.get("token_count"),
+                    )
+                )
+
             if messages_to_batch:
                 self.batch_add(messages_to_batch)
-            self.logger.info(f"Conversation imported from {filename} ({format_type}) into new ID {self.current_conversation_id}.")
+            self.logger.info(
+                f"Conversation imported from {filename} ({format_type}) into new ID {self.current_conversation_id}."
+            )
 
         except Exception as e:
-            self.logger.error(f"Failed to import conversation from {format_type}: {e}")
+            self.logger.error(
+                f"Failed to import conversation from {format_type}: {e}"
+            )
             raise
 
     def import_conversation(self, filename: str):
@@ -783,12 +1058,18 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
                 # Try JSON first, then YAML as a fallback
                 try:
                     self._import_from_file(filename, "json")
-                except (json.JSONDecodeError, ValueError): # ValueError if not list
-                    self.logger.info(f"Failed to import {filename} as JSON, trying YAML.")
+                except (
+                    json.JSONDecodeError,
+                    ValueError,
+                ):  # ValueError if not list
+                    self.logger.info(
+                        f"Failed to import {filename} as JSON, trying YAML."
+                    )
                     self._import_from_file(filename, "yaml")
-        except Exception as e: # Catch errors from _import_from_file
-             raise SupabaseOperationError(f"Could not import {filename}: {e}")
-
+        except Exception as e:  # Catch errors from _import_from_file
+            raise SupabaseOperationError(
+                f"Could not import {filename}: {e}"
+            )
 
     def count_messages_by_role(self) -> Dict[str, int]:
         """Count messages by role for the current conversation."""
@@ -797,7 +1078,9 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
         try:
             # Supabase rpc might be better for direct count, but select + python count is also fine
             # For direct DB count: self.client.rpc('count_roles', {'conv_id': self.current_conversation_id}).execute()
-            messages = self.get_messages() # Fetches for current_conversation_id
+            messages = (
+                self.get_messages()
+            )  # Fetches for current_conversation_id
             counts = {}
             for msg in messages:
                 role = msg.get("role", "unknown")
@@ -805,7 +1088,9 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
             return counts
         except Exception as e:
             self.logger.error(f"Error counting messages by role: {e}")
-            raise SupabaseOperationError(f"Error counting messages by role: {e}")
+            raise SupabaseOperationError(
+                f"Error counting messages by role: {e}"
+            )
 
     def return_history_as_string(self) -> str:
         """Return the conversation history as a string."""
@@ -817,25 +1102,41 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
             self.logger.info("No current conversation to clear.")
             return
         try:
-            response = self.client.table(self.table_name).delete() \
-                .eq("conversation_id", self.current_conversation_id) \
+            response = (
+                self.client.table(self.table_name)
+                .delete()
+                .eq("conversation_id", self.current_conversation_id)
                 .execute()
+            )
             # response.data will be a list of deleted items.
             # response.count might be available for delete operations in some supabase-py versions or configurations.
             # For now, we assume success if no error.
-            self._handle_api_response(response, f"clear_conversation (id: {self.current_conversation_id})")
-            self.logger.info(f"Cleared conversation with ID: {self.current_conversation_id}")
+            self._handle_api_response(
+                response,
+                f"clear_conversation (id: {self.current_conversation_id})",
+            )
+            self.logger.info(
+                f"Cleared conversation with ID: {self.current_conversation_id}"
+            )
         except Exception as e:
-            self.logger.error(f"Error clearing conversation {self.current_conversation_id} from Supabase: {e}")
-            raise SupabaseOperationError(f"Error clearing conversation: {e}")
+            self.logger.error(
+                f"Error clearing conversation {self.current_conversation_id} from Supabase: {e}"
+            )
+            raise SupabaseOperationError(
+                f"Error clearing conversation: {e}"
+            )
 
     def to_dict(self) -> List[Dict]:
         """Convert the current conversation history to a list of dictionaries."""
-        return self.get_messages() # Already fetches for current_conversation_id
+        return (
+            self.get_messages()
+        )  # Already fetches for current_conversation_id
 
     def to_json(self) -> str:
         """Convert the current conversation history to a JSON string."""
-        return json.dumps(self.to_dict(), indent=2, cls=DateTimeEncoder)
+        return json.dumps(
+            self.to_dict(), indent=2, cls=DateTimeEncoder
+        )
 
     def to_yaml(self) -> str:
         """Convert the current conversation history to a YAML string."""
@@ -862,27 +1163,42 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
         if self.current_conversation_id is None:
             return None
         try:
-            response = self.client.table(self.table_name).select("*") \
-                .eq("conversation_id", self.current_conversation_id) \
-                .order("timestamp", desc=True) \
-                .limit(1) \
-                .maybe_single() \
+            response = (
+                self.client.table(self.table_name)
+                .select("*")
+                .eq("conversation_id", self.current_conversation_id)
+                .order("timestamp", desc=True)
+                .limit(1)
+                .maybe_single()
                 .execute()
-            data = self._handle_api_response(response, "get_last_message")
+            )
+            data = self._handle_api_response(
+                response, "get_last_message"
+            )
             return self._format_row_to_dict(data) if data else None
         except Exception as e:
-            self.logger.error(f"Error getting last message from Supabase: {e}")
-            raise SupabaseOperationError(f"Error getting last message: {e}")
+            self.logger.error(
+                f"Error getting last message from Supabase: {e}"
+            )
+            raise SupabaseOperationError(
+                f"Error getting last message: {e}"
+            )
 
     def get_last_message_as_string(self) -> str:
         """Get the last message as a formatted string."""
         last_msg = self.get_last_message()
         if not last_msg:
             return ""
-        ts_prefix = f"[{last_msg['timestamp']}] " if last_msg.get('timestamp') and self.time_enabled else ""
-        content_display = last_msg['content']
+        ts_prefix = (
+            f"[{last_msg['timestamp']}] "
+            if last_msg.get("timestamp") and self.time_enabled
+            else ""
+        )
+        content_display = last_msg["content"]
         if isinstance(content_display, (dict, list)):
-            content_display = json.dumps(content_display, cls=DateTimeEncoder)
+            content_display = json.dumps(
+                content_display, cls=DateTimeEncoder
+            )
         return f"{ts_prefix}{last_msg['role']}: {content_display}"
 
     def get_messages_by_role(self, role: str) -> List[Dict]:
@@ -890,22 +1206,31 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
         if self.current_conversation_id is None:
             return []
         try:
-            response = self.client.table(self.table_name).select("*") \
-                .eq("conversation_id", self.current_conversation_id) \
-                .eq("role", role) \
-                .order("timestamp", desc=False) \
+            response = (
+                self.client.table(self.table_name)
+                .select("*")
+                .eq("conversation_id", self.current_conversation_id)
+                .eq("role", role)
+                .order("timestamp", desc=False)
                 .execute()
-            data = self._handle_api_response(response, f"get_messages_by_role (role: {role})")
+            )
+            data = self._handle_api_response(
+                response, f"get_messages_by_role (role: {role})"
+            )
             return [self._format_row_to_dict(row) for row in data]
         except Exception as e:
-            self.logger.error(f"Error getting messages by role '{role}' from Supabase: {e}")
-            raise SupabaseOperationError(f"Error getting messages by role '{role}': {e}")
+            self.logger.error(
+                f"Error getting messages by role '{role}' from Supabase: {e}"
+            )
+            raise SupabaseOperationError(
+                f"Error getting messages by role '{role}': {e}"
+            )
 
     def get_conversation_summary(self) -> Dict:
         """Get a summary of the current conversation."""
         if self.current_conversation_id is None:
             return {"error": "No current conversation."}
-        
+
         # This could be optimized with an RPC call in Supabase for better performance
         # Example RPC: CREATE OR REPLACE FUNCTION get_conversation_summary(conv_id TEXT) ...
         messages = self.get_messages()
@@ -923,10 +1248,12 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
         roles_counts = {}
         total_tokens_sum = 0
         for msg in messages:
-            roles_counts[msg["role"]] = roles_counts.get(msg["role"], 0) + 1
+            roles_counts[msg["role"]] = (
+                roles_counts.get(msg["role"], 0) + 1
+            )
             if msg.get("token_count") is not None:
                 total_tokens_sum += int(msg["token_count"])
-        
+
         return {
             "conversation_id": self.current_conversation_id,
             "total_messages": len(messages),
@@ -948,13 +1275,16 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
     def delete_current_conversation(self) -> bool:
         """Delete the current conversation. Returns True if successful."""
         if self.current_conversation_id:
-            self.clear() # clear messages for current_conversation_id
-            self.logger.info(f"Deleted current conversation: {self.current_conversation_id}")
-            self.current_conversation_id = None # No active conversation after deletion
+            self.clear()  # clear messages for current_conversation_id
+            self.logger.info(
+                f"Deleted current conversation: {self.current_conversation_id}"
+            )
+            self.current_conversation_id = (
+                None  # No active conversation after deletion
+            )
             return True
         self.logger.info("No current conversation to delete.")
         return False
-
 
     def search_messages(self, query: str) -> List[Dict]:
         """Search for messages containing specific text (alias for search)."""
@@ -967,7 +1297,7 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
         if self.current_conversation_id is None:
             return {"error": "No current conversation."}
         summary = self.get_conversation_summary()
-        
+
         # Example of additional metadata one might compute client-side or via RPC
         # message_type_distribution, average_tokens_per_message, hourly_message_frequency
         return {
@@ -976,36 +1306,42 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
             # Placeholder for more detailed stats if implemented
         }
 
-
     def get_conversation_timeline_dict(self) -> Dict[str, List[Dict]]:
         """Get the conversation organized by timestamps (dates as keys)."""
         if self.current_conversation_id is None:
             return {}
-        
-        messages = self.get_messages() # Assumes messages are ordered by timestamp
+
+        messages = (
+            self.get_messages()
+        )  # Assumes messages are ordered by timestamp
         timeline_dict = {}
         for msg in messages:
             try:
                 # Ensure timestamp is a string and valid ISO format
                 ts_str = msg.get("timestamp")
                 if isinstance(ts_str, str):
-                    date_key = datetime.datetime.fromisoformat(ts_str.replace("Z", "+00:00")).strftime('%Y-%m-%d')
+                    date_key = datetime.datetime.fromisoformat(
+                        ts_str.replace("Z", "+00:00")
+                    ).strftime("%Y-%m-%d")
                     if date_key not in timeline_dict:
                         timeline_dict[date_key] = []
                     timeline_dict[date_key].append(msg)
                 else:
-                    self.logger.warning(f"Message ID {msg.get('id')} has invalid timestamp format: {ts_str}")
+                    self.logger.warning(
+                        f"Message ID {msg.get('id')} has invalid timestamp format: {ts_str}"
+                    )
             except ValueError as e:
-                self.logger.warning(f"Could not parse timestamp for message ID {msg.get('id')}: {ts_str}, Error: {e}")
+                self.logger.warning(
+                    f"Could not parse timestamp for message ID {msg.get('id')}: {ts_str}, Error: {e}"
+                )
 
         return timeline_dict
-
 
     def get_conversation_by_role_dict(self) -> Dict[str, List[Dict]]:
         """Get the conversation organized by roles."""
         if self.current_conversation_id is None:
             return {}
-        
+
         messages = self.get_messages()
         role_dict = {}
         for msg in messages:
@@ -1019,46 +1355,56 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
         """Get the entire current conversation as a dictionary with messages and metadata."""
         if self.current_conversation_id is None:
             return {"error": "No current conversation."}
-        
+
         return {
             "conversation_id": self.current_conversation_id,
             "messages": self.get_messages(),
-            "metadata": self.get_conversation_summary(), # Using summary as metadata
+            "metadata": self.get_conversation_summary(),  # Using summary as metadata
         }
 
     def truncate_memory_with_tokenizer(self):
         """Truncate the conversation history based on token count if a tokenizer is provided. Optimized for better performance."""
         if not self.tokenizer or self.current_conversation_id is None:
             if self.enable_logging:
-                self.logger.info("Tokenizer not available or no current conversation, skipping truncation.")
+                self.logger.info(
+                    "Tokenizer not available or no current conversation, skipping truncation."
+                )
             return
 
         try:
             # Fetch messages with only necessary fields for efficiency
-            response = self.client.table(self.table_name).select("id, content, token_count") \
-                .eq("conversation_id", self.current_conversation_id) \
-                .order("timestamp", desc=False) \
+            response = (
+                self.client.table(self.table_name)
+                .select("id, content, token_count")
+                .eq("conversation_id", self.current_conversation_id)
+                .order("timestamp", desc=False)
                 .execute()
-            
-            messages = self._handle_api_response(response, "fetch_messages_for_truncation")
+            )
+
+            messages = self._handle_api_response(
+                response, "fetch_messages_for_truncation"
+            )
             if not messages:
                 return
 
             # Calculate tokens and determine which messages to delete
             total_tokens = 0
             message_tokens = []
-            
+
             for msg in messages:
                 token_count = msg.get("token_count")
                 if token_count is None and self.calculate_token_count:
                     # Recalculate if missing
-                    content = self._deserialize_content(msg.get("content", ""))
-                    token_count = self.tokenizer.count_tokens(str(content))
-                    
-                message_tokens.append({
-                    "id": msg["id"],
-                    "tokens": token_count or 0
-                })
+                    content = self._deserialize_content(
+                        msg.get("content", "")
+                    )
+                    token_count = self.tokenizer.count_tokens(
+                        str(content)
+                    )
+
+                message_tokens.append(
+                    {"id": msg["id"], "tokens": token_count or 0}
+                )
                 total_tokens += token_count or 0
 
             tokens_to_remove = total_tokens - self.context_length
@@ -1079,30 +1425,50 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
             # Batch delete for better performance
             if len(ids_to_delete) == 1:
                 # Single delete
-                response = self.client.table(self.table_name).delete() \
-                    .eq("id", ids_to_delete[0]) \
-                    .eq("conversation_id", self.current_conversation_id) \
+                response = (
+                    self.client.table(self.table_name)
+                    .delete()
+                    .eq("id", ids_to_delete[0])
+                    .eq(
+                        "conversation_id",
+                        self.current_conversation_id,
+                    )
                     .execute()
+                )
             else:
                 # Batch delete using 'in' operator
-                response = self.client.table(self.table_name).delete() \
-                    .in_("id", ids_to_delete) \
-                    .eq("conversation_id", self.current_conversation_id) \
+                response = (
+                    self.client.table(self.table_name)
+                    .delete()
+                    .in_("id", ids_to_delete)
+                    .eq(
+                        "conversation_id",
+                        self.current_conversation_id,
+                    )
                     .execute()
-            
-            self._handle_api_response(response, "truncate_conversation_batch_delete")
-            
+                )
+
+            self._handle_api_response(
+                response, "truncate_conversation_batch_delete"
+            )
+
             if self.enable_logging:
-                self.logger.info(f"Truncated conversation {self.current_conversation_id}, removed {len(ids_to_delete)} oldest messages.")
+                self.logger.info(
+                    f"Truncated conversation {self.current_conversation_id}, removed {len(ids_to_delete)} oldest messages."
+                )
 
         except Exception as e:
             if self.enable_logging:
-                self.logger.error(f"Error during memory truncation for conversation {self.current_conversation_id}: {e}")
+                self.logger.error(
+                    f"Error during memory truncation for conversation {self.current_conversation_id}: {e}"
+                )
             # Don't re-raise, truncation is best-effort
 
     # Methods from duckdb_wrap.py that seem generally useful and can be adapted
     def get_visible_messages(
-        self, agent: Optional[Callable] = None, turn: Optional[int] = None
+        self,
+        agent: Optional[Callable] = None,
+        turn: Optional[int] = None,
     ) -> List[Dict]:
         """
         Get visible messages, optionally filtered by agent visibility and turn.
@@ -1113,42 +1479,65 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
             return []
 
         # Base query
-        query = self.client.table(self.table_name).select("*") \
-            .eq("conversation_id", self.current_conversation_id) \
+        query = (
+            self.client.table(self.table_name)
+            .select("*")
+            .eq("conversation_id", self.current_conversation_id)
             .order("timestamp", desc=False)
-        
+        )
+
         # Execute and then filter in Python, as JSONB querying for array containment or
         # numeric comparison within JSON can be complex with supabase-py's fluent API.
         # For complex filtering, an RPC function in Supabase would be more efficient.
-        
+
         try:
             response = query.execute()
-            all_messages = self._handle_api_response(response, "get_visible_messages_fetch_all")
+            all_messages = self._handle_api_response(
+                response, "get_visible_messages_fetch_all"
+            )
         except Exception as e:
-            self.logger.error(f"Error fetching messages for visibility check: {e}")
+            self.logger.error(
+                f"Error fetching messages for visibility check: {e}"
+            )
             return []
 
         visible_messages = []
         for row_data in all_messages:
             msg = self._format_row_to_dict(row_data)
-            metadata = msg.get("metadata") if isinstance(msg.get("metadata"), dict) else {}
+            metadata = (
+                msg.get("metadata")
+                if isinstance(msg.get("metadata"), dict)
+                else {}
+            )
 
             # Turn filtering
             if turn is not None:
                 msg_turn = metadata.get("turn")
-                if not (isinstance(msg_turn, int) and msg_turn < turn):
-                    continue # Skip if turn condition not met
+                if not (
+                    isinstance(msg_turn, int) and msg_turn < turn
+                ):
+                    continue  # Skip if turn condition not met
 
             # Agent visibility filtering
             if agent is not None:
                 visible_to = metadata.get("visible_to")
-                agent_name_attr = getattr(agent, 'agent_name', None) # Safely get agent_name
-                if agent_name_attr is None: # If agent has no name, assume it can't see restricted msgs
+                agent_name_attr = getattr(
+                    agent, "agent_name", None
+                )  # Safely get agent_name
+                if (
+                    agent_name_attr is None
+                ):  # If agent has no name, assume it can't see restricted msgs
                     if visible_to is not None and visible_to != "all":
                         continue
-                elif isinstance(visible_to, list) and agent_name_attr not in visible_to:
-                    continue # Skip if agent not in visible_to list
-                elif isinstance(visible_to, str) and visible_to != "all": 
+                elif (
+                    isinstance(visible_to, list)
+                    and agent_name_attr not in visible_to
+                ):
+                    continue  # Skip if agent not in visible_to list
+                elif (
+                    isinstance(visible_to, str)
+                    and visible_to != "all"
+                ):
                     # If visible_to is a string but not "all", and doesn't match agent_name
                     if visible_to != agent_name_attr:
                         continue
@@ -1168,26 +1557,39 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
         """Return the conversation messages as a list of dictionaries [{role: R, content: C}]."""
         messages_dict = self.get_messages()
         return [
-            {"role": msg.get("role"), "content": msg.get("content")} # Content already deserialized by _format_row_to_dict
+            {
+                "role": msg.get("role"),
+                "content": msg.get("content"),
+            }  # Content already deserialized by _format_row_to_dict
             for msg in messages_dict
         ]
 
-    def add_tool_output_to_agent(self, role: str, tool_output: dict): # role is usually "tool"
+    def add_tool_output_to_agent(
+        self, role: str, tool_output: dict
+    ):  # role is usually "tool"
         """Add a tool output to the conversation history."""
         # Assuming tool_output is a dict that should be stored as content
-        self.add(role=role, content=tool_output, message_type=MessageType.TOOL)
+        self.add(
+            role=role,
+            content=tool_output,
+            message_type=MessageType.TOOL,
+        )
 
     def get_final_message(self) -> Optional[str]:
         """Return the final message from the conversation history as 'role: content' string."""
         last_msg = self.get_last_message()
         if not last_msg:
             return None
-        content_display = last_msg['content']
+        content_display = last_msg["content"]
         if isinstance(content_display, (dict, list)):
-            content_display = json.dumps(content_display, cls=DateTimeEncoder)
+            content_display = json.dumps(
+                content_display, cls=DateTimeEncoder
+            )
         return f"{last_msg.get('role', 'unknown')}: {content_display}"
 
-    def get_final_message_content(self) -> Union[str, dict, list, None]:
+    def get_final_message_content(
+        self,
+    ) -> Union[str, dict, list, None]:
         """Return the content of the final message from the conversation history."""
         last_msg = self.get_last_message()
         return last_msg.get("content") if last_msg else None
@@ -1199,17 +1601,24 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
         all_messages = self.get_messages()
         return all_messages[1:] if len(all_messages) > 1 else []
 
-
     def return_all_except_first_string(self) -> str:
         """Return all messages except the first one as a concatenated string."""
         messages_to_format = self.return_all_except_first()
         conv_str = []
         for msg in messages_to_format:
-            ts_prefix = f"[{msg['timestamp']}] " if msg.get('timestamp') and self.time_enabled else ""
-            content_display = msg['content']
+            ts_prefix = (
+                f"[{msg['timestamp']}] "
+                if msg.get("timestamp") and self.time_enabled
+                else ""
+            )
+            content_display = msg["content"]
             if isinstance(content_display, (dict, list)):
-                content_display = json.dumps(content_display, indent=2, cls=DateTimeEncoder)
-            conv_str.append(f"{ts_prefix}{msg['role']}: {content_display}")
+                content_display = json.dumps(
+                    content_display, indent=2, cls=DateTimeEncoder
+                )
+            conv_str.append(
+                f"{ts_prefix}{msg['role']}: {content_display}"
+            )
         return "\n".join(conv_str)
 
     def update_message(
@@ -1220,4 +1629,6 @@ CREATE POLICY "Users can manage their own conversations" ON {self.table_name}
     ) -> bool:
         """Update an existing message. Matches BaseCommunication.update_message signature exactly."""
         # Use the flexible internal method
-        return self._update_flexible(index=message_id, content=content, metadata=metadata)
+        return self._update_flexible(
+            index=message_id, content=content, metadata=metadata
+        )
