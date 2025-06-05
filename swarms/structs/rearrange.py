@@ -2,7 +2,7 @@ import asyncio
 import json
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 
 from swarms.structs.agent import Agent
@@ -68,7 +68,7 @@ class AgentRearrange(BaseSwarm):
         id: str = swarm_id(),
         name: str = "AgentRearrange",
         description: str = "A swarm of agents for rearranging tasks.",
-        agents: List[Agent] = None,
+        agents: List[Union[Agent, Callable]] = None,
         flow: str = None,
         max_loops: int = 1,
         verbose: bool = True,

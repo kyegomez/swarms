@@ -1,6 +1,23 @@
 # SwarmRouter Documentation
 
-The `SwarmRouter` class is a flexible routing system designed to manage different types of swarms for task execution. It provides a unified interface to interact with various swarm types, including `AgentRearrange`, `MixtureOfAgents`, `SpreadSheetSwarm`, `SequentialWorkflow`, `ConcurrentWorkflow`, `GroupChat`, `MultiAgentRouter`, `HierarchicalSwarm`, `MajorityVoting`, and `auto` which will dynamically select the most appropriate swarm for you by analyzing your task, name, and description. We will be continuously adding more swarm architectures as we progress with new developments.
+The `SwarmRouter` class is a flexible routing system designed to manage different types of swarms for task execution. It provides a unified interface to interact with various swarm types, including:
+
+| Swarm Type | Description |
+|------------|-------------|
+| `AgentRearrange` | Optimizes agent arrangement for task execution |
+| `MixtureOfAgents` | Combines multiple agent types for diverse tasks |
+| `SpreadSheetSwarm` | Uses spreadsheet-like operations for task management |
+| `SequentialWorkflow` | Executes tasks sequentially |
+| `ConcurrentWorkflow` | Executes tasks in parallel |
+| `GroupChat` | Facilitates communication among agents in a group chat format |
+| `MultiAgentRouter` | Routes tasks between multiple agents |
+| `AutoSwarmBuilder` | Automatically builds swarm structure |
+| `HiearchicalSwarm` | Hierarchical organization of agents |
+| `MajorityVoting` | Uses majority voting for decision making |
+| `MALT` | Multi-Agent Language Tasks |
+| `DeepResearchSwarm` | Specialized for deep research tasks |
+| `CouncilAsAJudge` | Council-based judgment system |
+| `auto` | Automatically selects best swarm type via embedding search |
 
 ## Classes
 
@@ -28,52 +45,67 @@ A Pydantic model for capturing log entries.
 | `metadata` | Dict[str, Any] | Additional metadata (optional). |
 | `documents` | List[Document] | List of documents associated with the log. |
 
+### SwarmRouterConfig
+
+Configuration model for SwarmRouter.
+
+| Attribute | Type | Description |
+| --- | --- | --- |
+| `name` | str | Name identifier for the SwarmRouter instance |
+| `description` | str | Description of the SwarmRouter's purpose |
+| `swarm_type` | SwarmType | Type of swarm to use |
+| `rearrange_flow` | Optional[str] | Flow configuration string |
+| `rules` | Optional[str] | Rules to inject into every agent |
+| `multi_agent_collab_prompt` | bool | Whether to enable multi-agent collaboration prompts |
+| `task` | str | The task to be executed by the swarm |
+
 ### SwarmRouter
 
 Main class for routing tasks to different swarm types.
 
 | Attribute | Type | Description |
 | --- | --- | --- |
-| `name` | str | Name of the SwarmRouter instance. |
-| `description` | str | Description of the SwarmRouter instance. |
-| `max_loops` | int | Maximum number of loops to perform. |
-| `agents` | List[Union[Agent, Callable]] | List of Agent objects or callable functions to be used in the swarm. |
-| `swarm_type` | SwarmType | Type of swarm to be used. |
-| `autosave` | bool | Flag to enable/disable autosave. |
-| `rearrange_flow` | str | The flow for the AgentRearrange swarm type. |
-| `return_json` | bool | Flag to enable/disable returning the result in JSON format. |
-| `auto_generate_prompts` | bool | Flag to enable/disable auto generation of prompts. |
-| `shared_memory_system` | Any | Shared memory system for agents. |
-| `rules` | str | Rules to inject into every agent. |
-| `documents` | List[str] | List of document file paths. |
-| `output_type` | OutputType | Output format type (e.g., "string", "dict"). |
-| `no_cluster_ops` | bool | Flag to disable cluster operations. |
-| `speaker_fn` | callable | Speaker function for GroupChat swarm type. |
-| `load_agents_from_csv` | bool | Flag to enable/disable loading agents from CSV. |
-| `csv_file_path` | str | Path to the CSV file for loading agents. |
-| `return_entire_history` | bool | Flag to enable/disable returning the entire conversation history. |
-| `swarm` | Union[AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow, GroupChat, MultiAgentRouter, HierarchicalSwarm, MajorityVoting] | Instantiated swarm object. |
-| `logs` | List[SwarmLog] | List of log entries captured during operations. |
+| `name` | str | Name of the SwarmRouter instance |
+| `description` | str | Description of the SwarmRouter's purpose |
+| `max_loops` | int | Maximum number of loops to perform |
+| `agents` | List[Union[Agent, Callable]] | List of Agent objects or callable functions |
+| `swarm_type` | SwarmType | Type of swarm to be used |
+| `autosave` | bool | Flag to enable/disable autosave |
+| `rearrange_flow` | str | The flow for the AgentRearrange swarm type |
+| `return_json` | bool | Flag to enable/disable returning the result in JSON format |
+| `auto_generate_prompts` | bool | Flag to enable/disable auto generation of prompts |
+| `shared_memory_system` | Any | Shared memory system for agents |
+| `rules` | str | Rules to inject into every agent |
+| `documents` | List[str] | List of document file paths |
+| `output_type` | OutputType | Output format type (e.g., "string", "dict", "list", "json", "yaml", "xml") |
+| `no_cluster_ops` | bool | Flag to disable cluster operations |
+| `speaker_fn` | callable | Speaker function for GroupChat swarm type |
+| `load_agents_from_csv` | bool | Flag to enable/disable loading agents from CSV |
+| `csv_file_path` | str | Path to the CSV file for loading agents |
+| `return_entire_history` | bool | Flag to enable/disable returning the entire conversation history |
+| `multi_agent_collab_prompt` | bool | Whether to enable multi-agent collaboration prompts |
 
 #### Methods:
 
 | Method | Parameters | Description |
 | --- | --- | --- |
-| `__init__` | `self, name: str = "swarm-router", description: str = "Routes your task to the desired swarm", max_loops: int = 1, agents: List[Union[Agent, Callable]] = [], swarm_type: SwarmType = "SequentialWorkflow", autosave: bool = False, rearrange_flow: str = None, return_json: bool = False, auto_generate_prompts: bool = False, shared_memory_system: Any = None, rules: str = None, documents: List[str] = [], output_type: OutputType = "dict", no_cluster_ops: bool = False, speaker_fn: callable = None, load_agents_from_csv: bool = False, csv_file_path: str = None, return_entire_history: bool = True, *args, **kwargs` | Initialize the SwarmRouter. |
-| `activate_shared_memory` | `self` | Activate shared memory with all agents. |
-| `handle_rules` | `self` | Inject rules to every agent. |
-| `activate_ape` | `self` | Activate automatic prompt engineering for agents that support it. |
-| `reliability_check` | `self` | Perform reliability checks on the SwarmRouter configuration. |
-| `_create_swarm` | `self, task: str = None, *args, **kwargs` | Create and return the specified swarm type or automatically match the best swarm type for a given task. |
-| `_log` | `self, level: str, message: str, task: str = "", metadata: Dict[str, Any] = None` | Create a log entry and add it to the logs list. |
-| `_run` | `self, task: str, img: str, *args, **kwargs` | Dynamically run the specified task on the selected or matched swarm type. |
-| `run` | `self, task: str, img: str = None, *args, **kwargs` | Execute a task on the selected swarm type. |
-| `__call__` | `self, task: str, *args, **kwargs` | Make the SwarmRouter instance callable. |
-| `batch_run` | `self, tasks: List[str], *args, **kwargs` | Execute a batch of tasks on the selected or matched swarm type. |
-| `async_run` | `self, task: str, *args, **kwargs` | Execute a task on the selected or matched swarm type asynchronously. |
-| `get_logs` | `self` | Retrieve all logged entries. |
-| `concurrent_run` | `self, task: str, *args, **kwargs` | Execute a task on the selected or matched swarm type concurrently. |
-| `concurrent_batch_run` | `self, tasks: List[str], *args, **kwargs` | Execute a batch of tasks on the selected or matched swarm type concurrently. |
+| `__init__` | `name: str = "swarm-router", description: str = "Routes your task to the desired swarm", max_loops: int = 1, agents: List[Union[Agent, Callable]] = [], swarm_type: SwarmType = "SequentialWorkflow", autosave: bool = False, rearrange_flow: str = None, return_json: bool = False, auto_generate_prompts: bool = False, shared_memory_system: Any = None, rules: str = None, documents: List[str] = [], output_type: OutputType = "dict", no_cluster_ops: bool = False, speaker_fn: callable = None, load_agents_from_csv: bool = False, csv_file_path: str = None, return_entire_history: bool = True, multi_agent_collab_prompt: bool = True` | Initialize the SwarmRouter |
+| `setup` | None | Set up the SwarmRouter by activating APE and handling shared memory and rules |
+| `activate_shared_memory` | None | Activate shared memory with all agents |
+| `handle_rules` | None | Inject rules to every agent |
+| `activate_ape` | None | Activate automatic prompt engineering for agents that support it |
+| `reliability_check` | None | Perform reliability checks on the SwarmRouter configuration |
+| `_create_swarm` | `task: str = None, *args, **kwargs` | Create and return the specified swarm type |
+| `update_system_prompt_for_agent_in_swarm` | None | Update system prompts for all agents with collaboration prompts |
+| `_log` | `level: str, message: str, task: str = "", metadata: Dict[str, Any] = None` | Create a log entry |
+| `_run` | `task: str, img: Optional[str] = None, model_response: Optional[str] = None, *args, **kwargs` | Run the specified task on the selected swarm type |
+| `run` | `task: str, img: Optional[str] = None, model_response: Optional[str] = None, *args, **kwargs` | Execute a task on the selected swarm type |
+| `__call__` | `task: str, *args, **kwargs` | Make the SwarmRouter instance callable |
+| `batch_run` | `tasks: List[str], *args, **kwargs` | Execute multiple tasks in sequence |
+| `async_run` | `task: str, *args, **kwargs` | Execute a task asynchronously |
+| `get_logs` | None | Retrieve all logged entries |
+| `concurrent_run` | `task: str, *args, **kwargs` | Execute a task using concurrent execution |
+| `concurrent_batch_run` | `tasks: List[str], *args, **kwargs` | Execute multiple tasks concurrently |
 
 ## Function: swarm_router
 
@@ -533,34 +565,183 @@ result = swarm_router(
 )
 ```
 
+I'll help you create tables for each section while maintaining their titles. I'll convert the bullet points into organized tables.
+
 ## Best Practices
 
-1. Choose the appropriate swarm type based on your task requirements.
+**1. Choose the Right Swarm Type**
 
-2. Provide clear and specific tasks to the swarm for optimal results.
+| Swarm Type | Use Case |
+|------------|----------|
+| `SequentialWorkflow` | Tasks that need to be executed in order |
+| `ConcurrentWorkflow` | Independent tasks that can run in parallel |
+| `MALT` | Complex language processing tasks |
+| `DeepResearchSwarm` | Comprehensive research tasks |
+| `CouncilAsAJudge` | Consensus-based decision making |
+| `auto` | When unsure which swarm type is best |
 
-3. Regularly review logs to monitor performance and identify potential issues.
+**2. Configure Multi-Agent Collaboration**
 
-4. Use descriptive names and descriptions for your SwarmRouter and agents.
+| Feature | Purpose |
+|---------|----------|
+| `multi_agent_collab_prompt` | Enable better agent cooperation |
+| `GroupChat` swarm type | Interactive agent discussions |
+| Shared memory | Share context between agents |
 
-5. Implement proper error handling in your application code.
+**3. Optimize Performance**
 
-6. Consider the nature of your tasks when choosing a swarm type (e.g., use ConcurrentWorkflow for tasks that can be parallelized).
+| Feature | Purpose |
+|---------|----------|
+| `output_type` | Set appropriate output format |
+| `autosave` | Enable for long-running tasks |
+| `concurrent_batch_run` | Process multiple independent tasks |
+| `max_loops` | Set reasonable limits to prevent infinite loops |
 
-7. Optimize your agents' prompts and configurations for best performance within the swarm.
+**4. Error Handling and Logging**
 
-8. Utilize the automatic swarm type selection feature for tasks where the optimal swarm type is not immediately clear.
+| Feature | Purpose |
+|---------|----------|
+| `get_logs()` | Regular log checking |
+| Error handling | Proper application error management |
+| `reliability_check` | Verify system reliability |
 
-9. Take advantage of batch processing and concurrent execution for handling multiple tasks efficiently.
+**5. Agent Configuration**
 
-10. Use the reliability check feature to ensure your SwarmRouter is properly configured before running tasks.
+| Feature | Purpose |
+|---------|----------|
+| System prompts | Provide clear and specific instructions |
+| Model settings | Configure appropriate temperature and parameters |
+| CSV loading | Manage large agent sets efficiently |
 
-11. Consider using shared memory systems when agents need to share context or knowledge.
+**6. Resource Management**
 
-12. Inject common rules when you want consistent behavior across all agents.
+| Feature | Purpose |
+|---------|----------|
+| `no_cluster_ops` | Work with limited resources |
+| Background tasks | Handle long-running operations |
+| Resource cleanup | Proper cleanup and release |
 
-13. Use the appropriate output type (string, dict, etc.) based on how you plan to process the results.
+**7. Security and Rules**
 
-14. When working with large documents, provide file paths instead of loading content into memory.
+| Feature | Purpose |
+|---------|----------|
+| `rules` | Enforce agent behavior constraints |
+| Authentication | Implement proper API security |
+| Input validation | Sanitize and validate inputs |
 
-15. For complex agent interactions, use the GroupChat or HierarchicalSwarm types to facilitate structured communication.
+**8. Monitoring and Debugging**
+
+| Feature | Purpose |
+|---------|----------|
+| Logging system | Effective system monitoring |
+| Performance monitoring | Track swarm performance |
+| Error reporting | Implement proper error tracking |
+
+**9. Scalability**
+
+| Feature | Purpose |
+|---------|----------|
+| Horizontal scaling | Design for system expansion |
+| Batch sizes | Configure appropriate concurrent operations |
+| Resource limitations | Consider system constraints |
+
+**10. Documentation and Maintenance**
+
+| Feature | Purpose |
+|---------|----------|
+| Custom configurations | Document system extensions |
+| Performance metrics | Track swarm performance |
+| Agent prompts | Regular updates of prompts and rules |
+
+## Common Use Cases
+
+**1. Document Analysis**
+
+| Component | Purpose |
+|-----------|----------|
+| `DeepResearchSwarm` | Comprehensive document analysis |
+| `MALT` | Complex language processing |
+| `SequentialWorkflow` | Structured document processing |
+
+**2. Decision Making**
+| Component | Purpose |
+|-----------|----------|
+| `CouncilAsAJudge` | Consensus-based decisions |
+| `MajorityVoting` | Democratic decision making |
+| `GroupChat` | Interactive decision processes |
+
+**3. Research and Analysis**
+
+| Component | Purpose |
+|-----------|----------|
+| `DeepResearchSwarm` | Deep research tasks |
+| `MixtureOfAgents` | Combine multiple expert agents |
+| `HiearchicalSwarm` | Organized research workflows |
+
+**4. Data Processing**
+
+| Component | Purpose |
+|-----------|----------|
+| `ConcurrentWorkflow` | Parallel data processing |
+| `SpreadSheetSwarm` | Structured data operations |
+| `SequentialWorkflow` | Ordered data transformations |
+
+**5. Collaborative Tasks**
+
+| Feature | Purpose |
+|---------|----------|
+| `multi_agent_collab_prompt` | Better cooperation |
+| `GroupChat` | Interactive collaboration |
+| Shared memory | Context sharing |
+
+## Troubleshooting
+
+**1. Common Issues**
+
+| Area | Action |
+|------|---------|
+| Agent configurations | Check configurations and prompts |
+| Swarm type | Verify compatibility with task |
+| Resource usage | Monitor limitations |
+
+**2. Performance Issues**
+
+| Area | Action |
+|------|---------|
+| Operations | Optimize batch sizes and concurrent operations |
+| Memory | Check for leaks and resource cleanup |
+| System resources | Monitor scaling |
+
+**3. Integration Issues**
+
+| Area | Action |
+|------|---------|
+| API configurations | Verify settings and authentication |
+| External services | Check compatibility |
+| Network | Monitor connectivity and timeouts |
+
+## Future Development
+
+**1. Planned Features**
+
+| Feature | Description |
+|---------|-------------|
+| Swarm types | Additional specialized tasks |
+| Collaboration | Enhanced mechanisms |
+| Performance | Improved optimizations |
+
+**2. Contributing**
+
+| Area | Action |
+|------|---------|
+| Guidelines | Follow contribution rules |
+| Bug reports | Submit issues and requests |
+| Community | Participate in discussions |
+
+**3. Roadmap**
+
+| Feature | Description |
+|---------|-------------|
+| AI models | Integration with more models |
+| Tools | Enhanced monitoring and debugging |
+| Performance | Improved scalability |

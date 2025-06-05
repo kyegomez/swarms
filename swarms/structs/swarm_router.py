@@ -334,17 +334,7 @@ class SwarmRouter:
 
     def _create_swarm(
         self, task: str = None, *args, **kwargs
-    ) -> Union[
-        AgentRearrange,
-        MixtureOfAgents,
-        SpreadSheetSwarm,
-        SequentialWorkflow,
-        ConcurrentWorkflow,
-        GroupChat,
-        MultiAgentRouter,
-        MajorityVoting,
-        HierarchicalSwarm,
-    ]:
+    ):
         """
         Dynamically create and return the specified swarm type or automatically match the best swarm type for a given task.
 
