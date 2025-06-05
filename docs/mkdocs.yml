@@ -319,6 +319,8 @@ nav:
       - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
       # - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
 
+      - Agent Output Types: "swarms/examples/agent_output_types.md"
+
 
       # - Swarms Tools: 
       #   - Agent with Yahoo Finance: "swarms/examples/yahoo_finance.md"
