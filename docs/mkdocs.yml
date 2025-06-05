@@ -302,24 +302,23 @@ nav:
         - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
     
   - Examples:
-    - Individal LLM Examples:
-      - OpenAI: "swarms/examples/openai_example.md"
-      - Anthropic: "swarms/examples/claude.md"
-      - Groq: "swarms/examples/groq.md"
-      - Cohere: "swarms/examples/cohere.md"
-      - DeepSeek: "swarms/examples/deepseek.md"
-      - Ollama: "swarms/examples/ollama.md"
-      - OpenRouter: "swarms/examples/openrouter.md"
-      - XAI: "swarms/examples/xai.md"
-      - VLLM: "swarms/examples/vllm_integration.md"
-      - Llama4: "swarms/examples/llama4.md"
-
     - Agent Examples:
       - Basic Agent: "swarms/examples/basic_agent.md"
       - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
       # - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
-
       - Agent Output Types: "swarms/examples/agent_output_types.md"
+      - Various Model Providers:
+        - OpenAI: "swarms/examples/openai_example.md"
+        - Anthropic: "swarms/examples/claude.md"
+        - Groq: "swarms/examples/groq.md"
+        - Cohere: "swarms/examples/cohere.md"
+        - DeepSeek: "swarms/examples/deepseek.md"
+        - Ollama: "swarms/examples/ollama.md"
+        - OpenRouter: "swarms/examples/openrouter.md"
+        - XAI: "swarms/examples/xai.md"
+        - VLLM: "swarms/examples/vllm_integration.md"
+        - Llama4: "swarms/examples/llama4.md"
+
 
 
       # - Swarms Tools: 
