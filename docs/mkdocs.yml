@@ -302,43 +302,53 @@ nav:
         - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
     
   - Examples:
-    - Individal LLM Examples:
-      - OpenAI: "swarms/examples/openai_example.md"
-      - Anthropic: "swarms/examples/claude.md"
-      - Groq: "swarms/examples/groq.md"
-      - Cohere: "swarms/examples/cohere.md"
-      - DeepSeek: "swarms/examples/deepseek.md"
-      - Ollama: "swarms/examples/ollama.md"
-      - OpenRouter: "swarms/examples/openrouter.md"
-      - XAI: "swarms/examples/xai.md"
-      - VLLM: "swarms/examples/vllm_integration.md"
-      - Llama4: "swarms/examples/llama4.md"
+    - Agent Examples:
+      - Basic Agent: "swarms/examples/basic_agent.md"
+      - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
+      # - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
+      - Agent Output Types: "swarms/examples/agent_output_types.md"
+      - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
+      - Various Model Providers:
+        - OpenAI: "swarms/examples/openai_example.md"
+        - Anthropic: "swarms/examples/claude.md"
+        - Groq: "swarms/examples/groq.md"
+        - Cohere: "swarms/examples/cohere.md"
+        - DeepSeek: "swarms/examples/deepseek.md"
+        - Ollama: "swarms/examples/ollama.md"
+        - OpenRouter: "swarms/examples/openrouter.md"
+        - XAI: "swarms/examples/xai.md"
+        - VLLM: "swarms/examples/vllm_integration.md"
+        - Llama4: "swarms/examples/llama4.md"
 
-      - Swarms Tools: 
-        - Agent with Yahoo Finance: "swarms/examples/yahoo_finance.md"
-        - Twitter Agents: "swarms_tools/twitter.md"
-        - Blockchain Agents:
-          - Agent with HTX + CoinGecko: "swarms/examples/swarms_tools_htx.md"
-          - Agent with HTX + CoinGecko Function Calling: "swarms/examples/swarms_tools_htx_gecko.md"
-          - Lumo: "swarms/examples/lumo.md"
-          - Quant Crypto Agent: "swarms/examples/quant_crypto_agent.md"
+
+
+      # - Swarms Tools: 
+      #   - Agent with Yahoo Finance: "swarms/examples/yahoo_finance.md"
+      #   - Twitter Agents: "swarms_tools/twitter.md"
+      #   - Blockchain Agents:
+      #     - Agent with HTX + CoinGecko: "swarms/examples/swarms_tools_htx.md"
+      #     - Agent with HTX + CoinGecko Function Calling: "swarms/examples/swarms_tools_htx_gecko.md"
+      #     - Lumo: "swarms/examples/lumo.md"
+      #     - Quant Crypto Agent: "swarms/examples/quant_crypto_agent.md"
+
     - Multi-Agent Collaboration:
-      - Unique Swarms: "swarms/examples/unique_swarms.md"
-      - Swarms DAO: "swarms/examples/swarms_dao.md"
       - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
       - Group Chat Example: "swarms/examples/groupchat_example.md"
-      - Meme Agent Builder: "swarms/examples/meme_agents.md"
       - Sequential Workflow Example: "swarms/examples/sequential_example.md"
-      - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
-      - External Agents:
+      - SwarmRouter Example: "swarms/examples/swarm_router.md"
+      - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
+      - MixtureOfAgents Example: "swarms/examples/mixture_of_agents.md"
+      - Unique Swarms: "swarms/examples/unique_swarms.md"
+      - Applications:
+        - Swarms DAO: "swarms/examples/swarms_dao.md"
         - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
+        - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
+
     
     - Swarms API Examples:
       - Medical Swarm: "swarms/examples/swarms_api_medical.md"
       - Finance Swarm: "swarms/examples/swarms_api_finance.md"
       - ML Model Code Generation Swarm: "swarms/examples/swarms_api_ml_model.md"
-    - Swarms UI:
-      - Overview: "swarms/ui/main.md"
 
   - Swarm Models:
     - Overview: "swarms/models/index.md"
@@ -383,9 +393,9 @@ nav:
 
   - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"
-    # - Agent Marketplace: "swarms_platform/share_discover.md"
     - Swarm Platform API Keys: "swarms_platform/apikeys.md"
     - Account Management: "swarms_platform/account_management.md"
+    - Swarms Chat Tutorial: "swarms/ui/main.md"
 
   - Swarms Rust:
     - Overview: "swarms_rs/overview.md"
@@ -408,9 +418,9 @@ nav:
     #   - PUT: "swarms_platform/telemetry/index.md"
     # - Swarms Wallet API:
     #   - Overview: "swarms/wallet/api.md"
-    # - Tools API:
-    #   - Overview: "swarms_platform/tools_api.md"
-    #   - Add Tools: "swarms_platform/fetch_tools.md"
+    #   - Tools API:
+    #     - Overview: "swarms_platform/tools_api.md"
+    #     - Add Tools: "swarms_platform/fetch_tools.md"
   # - Corporate:
   #   - Culture: "corporate/culture.md"
   #   - Hiring: "corporate/hiring.md"

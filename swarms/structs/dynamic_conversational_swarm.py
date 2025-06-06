@@ -3,6 +3,7 @@ import random
 from swarms.structs.agent import Agent
 from typing import List
 from swarms.structs.conversation import Conversation
+from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -84,14 +85,24 @@ class DynamicConversationalSwarm:
         except json.JSONDecodeError:
             raise ValueError("Invalid JSON string")
 
-    def find_agent_by_name(self, agent_name: str) -> Agent:
-        for agent in self.agents:
-            if agent.name == agent_name:
-                return agent
-        raise ValueError(f"Agent with name {agent_name} not found")
-
     def run_agent(self, agent_name: str, task: str) -> str:
-        agent = self.find_agent_by_name(agent_name)
+        """
+        Run a specific agent with a given task.
+
+        Args:
+            agent_name (str): The name of the agent to run
+            task (str): The task to execute
+
+        Returns:
+            str: The agent's response to the task
+
+        Raises:
+            ValueError: If agent is not found
+            RuntimeError: If there's an error running the agent
+        """
+        agent = find_agent_by_name(
+            agents=self.agents, agent_name=agent_name
+        )
         return agent.run(task)
 
     def fetch_random_agent_name(self) -> str:

@@ -29,8 +29,10 @@ agents = [
     ),
 ]
 
-aggregate(
+out = aggregate(
     workers=agents,
     task="What is the best sector to invest in?",
     type="all",
 )
+
+print(out)

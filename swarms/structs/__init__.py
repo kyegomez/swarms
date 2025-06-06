@@ -1,10 +1,13 @@
 from swarms.structs.agent import Agent
 from swarms.structs.agent_builder import AgentsBuilder
+from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.base_workflow import BaseWorkflow
+from swarms.structs.batch_agent_execution import batch_agent_execution
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
+from swarms.structs.council_judge import CouncilAsAJudge
 from swarms.structs.de_hallucination_swarm import DeHallucinationSwarm
 from swarms.structs.deep_research_swarm import DeepResearchSwarm
 from swarms.structs.graph_workflow import (
@@ -20,6 +23,11 @@ from swarms.structs.groupchat import (
 from swarms.structs.hybrid_hiearchical_peer_swarm import (
     HybridHierarchicalClusterSwarm,
 )
+from swarms.structs.ma_blocks import (
+    aggregate,
+    find_agent_by_name,
+    run_agent,
+)
 from swarms.structs.majority_voting import (
     MajorityVoting,
     majority_voting,
@@ -34,6 +42,8 @@ from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.model_router import ModelRouter
 from swarms.structs.multi_agent_collab import MultiAgentCollaboration
 from swarms.structs.multi_agent_exec import (
+    get_agents_info,
+    get_swarms_info,
     run_agent_with_timeout,
     run_agents_concurrently,
     run_agents_concurrently_async,
@@ -43,8 +53,6 @@ from swarms.structs.multi_agent_exec import (
     run_agents_with_resource_monitoring,
     run_agents_with_tasks_concurrently,
     run_single_agent,
-    get_agents_info,
-    get_swarms_info,
 )
 from swarms.structs.multi_agent_router import MultiAgentRouter
 from swarms.structs.rearrange import AgentRearrange, rearrange
@@ -76,11 +84,6 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
-from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
-from swarms.structs.council_judge import CouncilAsAJudge
-from swarms.structs.batch_agent_execution import batch_agent_execution
-from swarms.structs.ma_blocks import aggregate
-
 
 __all__ = [
     "Agent",
@@ -151,4 +154,6 @@ __all__ = [
     "CouncilAsAJudge",
     "batch_agent_execution",
     "aggregate",
+    "find_agent_by_name",
+    "run_agent",
 ]
