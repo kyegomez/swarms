@@ -2,12 +2,6 @@ import time
 import json
 from datetime import datetime
 from loguru import logger
-import sys
-from pathlib import Path
-
-# Add the project root to Python path to allow imports
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
 
 from swarms.communication.redis_wrap import (
     RedisConversation,
