@@ -623,7 +623,11 @@ class Conversation(BaseStructure):
         ]
 
     def display_conversation(self, detailed: bool = False):
-        """Display the conversation history."""
+        """Display the conversation history.
+
+        Args:
+            detailed (bool, optional): Flag to display detailed information. Defaults to False.
+        """
         if self.backend_instance:
             try:
                 return self.backend_instance.display_conversation(detailed)
@@ -632,23 +636,28 @@ class Conversation(BaseStructure):
                 # Fallback to in-memory display
                 pass
         
-        # Simple display implementation
-        print("\n🗨️  Conversation History:")
-        print("=" * 50)
-        
-        for i, message in enumerate(self.conversation_history):
-            role = message.get("role", "Unknown")
+        # In-memory display implementation with proper formatting
+        for message in self.conversation_history:
             content = message.get("content", "")
-            
+            role = message.get("role", "Unknown")
+
+            # Format the message content
+            if isinstance(content, (dict, list)):
+                content = json.dumps(content, indent=2)
+
+            # Create the display string
+            display_str = f"{role}: {content}"
+
+            # Add details if requested
             if detailed:
-                token_count = message.get("token_count", "N/A")
-                timestamp = message.get("timestamp", "N/A")
-                print(f"\n[{i}] {role}: {content}")
-                print(f"    Tokens: {token_count}, Time: {timestamp}")
-            else:
-                print(f"\n{role}: {content}")
-        
-        print("\n" + "=" * 50)
+                display_str += f"\nTimestamp: {message.get('timestamp', 'Unknown')}"
+                display_str += f"\nMessage ID: {message.get('message_id', 'Unknown')}"
+                if "token_count" in message:
+                    display_str += (
+                        f"\nTokens: {message['token_count']}"
+                    )
+
+            formatter.print_panel(display_str)
 
     def export_conversation(self, filename: str, *args, **kwargs):
         """Export the conversation history to a file.
@@ -664,11 +673,16 @@ class Conversation(BaseStructure):
                 logger.error(f"Backend export failed: {e}")
                 # Fallback to in-memory export
                 pass
+        
+        # In-memory export implementation
         # If the filename ends with .json, use save_as_json
         if filename.endswith(".json"):
             self.save_as_json(filename)
         else:
-            self.save_as_json(filename)
+            # Simple text export for non-JSON files
+            with open(filename, "w",encoding="utf-8") as f:
+                for message in self.conversation_history:
+                    f.write(f"{message['role']}: {message['content']}\n")
 
     def import_conversation(self, filename: str):
         """Import a conversation history from a file.
