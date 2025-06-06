@@ -7,7 +7,6 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
-import duckdb
 import yaml
 
 from swarms.communication.base_communication import (
@@ -76,6 +75,35 @@ class DuckDBConversation(BaseCommunication):
         *args,
         **kwargs,
     ):
+        # Lazy load duckdb with auto-installation
+        try:
+            import duckdb
+            self.duckdb = duckdb
+            self.duckdb_available = True
+        except ImportError:
+            # Auto-install duckdb if not available
+            print("📦 DuckDB not found. Installing automatically...")
+            try:
+                import subprocess
+                import sys
+                
+                # Install duckdb
+                subprocess.check_call([
+                    sys.executable, "-m", "pip", "install", "duckdb"
+                ])
+                print("✅ DuckDB installed successfully!")
+                
+                # Try importing again
+                import duckdb
+                self.duckdb = duckdb
+                self.duckdb_available = True
+                print("✅ DuckDB loaded successfully!")
+                
+            except Exception as e:
+                raise ImportError(
+                    f"Failed to auto-install DuckDB. Please install manually with 'pip install duckdb': {e}"
+                )
+
         super().__init__(
             system_prompt=system_prompt,
             time_enabled=time_enabled,
@@ -171,7 +199,7 @@ class DuckDBConversation(BaseCommunication):
         conn = None
         for attempt in range(self.max_retries):
             try:
-                conn = duckdb.connect(str(self.db_path))
+                conn = self.duckdb.connect(str(self.db_path))
                 yield conn
                 break
             except Exception as e:

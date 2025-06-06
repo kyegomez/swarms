@@ -11,6 +11,17 @@ from typing import Any, Dict, List, Optional, Union
 
 import yaml
 
+from loguru import logger
+
+from swarms.structs.base_structure import BaseStructure
+from swarms.utils.any_to_str import any_to_str
+from swarms.utils.formatter import formatter
+from swarms.utils.litellm_tokenizer import count_tokens
+
+# Module-level variable to track Redis availability
+REDIS_AVAILABLE = False
+
+# Try to import Redis and set availability flag
 try:
     import redis
     from redis.exceptions import (
@@ -20,17 +31,35 @@ try:
         RedisError,
         TimeoutError,
     )
-
     REDIS_AVAILABLE = True
 except ImportError:
-    REDIS_AVAILABLE = False
-
-from loguru import logger
-
-from swarms.structs.base_structure import BaseStructure
-from swarms.utils.any_to_str import any_to_str
-from swarms.utils.formatter import formatter
-from swarms.utils.litellm_tokenizer import count_tokens
+    # Auto-install Redis at import time
+    print("📦 Redis not found. Installing automatically...")
+    try:
+        import subprocess
+        import sys
+        
+        # Install redis
+        subprocess.check_call([
+            sys.executable, "-m", "pip", "install", "redis"
+        ])
+        print("✅ Redis installed successfully!")
+        
+        # Try importing again
+        import redis
+        from redis.exceptions import (
+            AuthenticationError,
+            BusyLoadingError,
+            ConnectionError,
+            RedisError,
+            TimeoutError,
+        )
+        REDIS_AVAILABLE = True
+        print("✅ Redis loaded successfully!")
+        
+    except Exception as e:
+        REDIS_AVAILABLE = False
+        print(f"❌ Failed to auto-install Redis. Please install manually with 'pip install redis': {e}")
 
 
 class RedisConnectionError(Exception):
@@ -96,6 +125,11 @@ rdbchecksum yes
             bool: True if server started successfully, False otherwise
         """
         try:
+            # Check if Redis is available
+            if not REDIS_AVAILABLE:
+                logger.error("Redis package is not installed")
+                return False
+
             # Use data directory if persistence is enabled and auto_persist is True
             if not (self.persist and self.auto_persist):
                 self.data_dir = tempfile.mkdtemp()
@@ -152,7 +186,7 @@ rdbchecksum yes
         try:
             if self.process:
                 # Send SAVE and BGSAVE commands before stopping if persistence is enabled
-                if self.persist and self.auto_persist:
+                if self.persist and self.auto_persist and REDIS_AVAILABLE:
                     try:
                         r = redis.Redis(
                             host="localhost", port=self.port
@@ -293,13 +327,16 @@ class RedisConversation(BaseStructure):
             RedisConnectionError: If connection to Redis fails.
             RedisOperationError: If Redis operations fail.
         """
+        global REDIS_AVAILABLE
+        
+        # Check if Redis is available (should be True after module import auto-installation)
         if not REDIS_AVAILABLE:
-            logger.error(
-                "Redis package is not installed. Please install it with 'pip install redis'"
-            )
             raise ImportError(
-                "Redis package is not installed. Please install it with 'pip install redis'"
+                "Redis is not available. Module-level auto-installation failed. "
+                "Please install manually with 'pip install redis'"
             )
+        
+        self.redis_available = True
 
         super().__init__()
         self.system_prompt = system_prompt

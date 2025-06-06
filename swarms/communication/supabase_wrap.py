@@ -7,18 +7,6 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 import yaml
 
-try:
-    from supabase import Client, create_client
-    from postgrest import APIResponse, APIError as PostgrestAPIError
-
-    SUPABASE_AVAILABLE = True
-except ImportError:
-    SUPABASE_AVAILABLE = False
-    Client = None
-    APIResponse = None
-    PostgrestAPIError = None
-
-
 from swarms.communication.base_communication import (
     BaseCommunication,
     Message,
@@ -105,10 +93,41 @@ class SupabaseConversation(BaseCommunication):
         *args,
         **kwargs,
     ):
-        if not SUPABASE_AVAILABLE:
-            raise ImportError(
-                "Supabase client library is not installed. Please install it using: pip install supabase"
-            )
+        # Lazy load Supabase with auto-installation
+        try:
+            from supabase import Client, create_client
+            self.supabase_client = Client
+            self.create_client = create_client
+            self.supabase_available = True
+        except ImportError:
+            # Auto-install supabase if not available
+            print("📦 Supabase not found. Installing automatically...")
+            try:
+                import subprocess
+                import sys
+                
+                # Install supabase
+                subprocess.check_call([
+                    sys.executable, "-m", "pip", "install", "supabase"
+                ])
+                print("✅ Supabase installed successfully!")
+                
+                # Try importing again
+                from supabase import Client, create_client
+                self.supabase_client = Client
+                self.create_client = create_client
+                self.supabase_available = True
+                print("✅ Supabase loaded successfully!")
+                
+            except Exception as e:
+                self.supabase_available = False
+                if logger:
+                    logger.error(
+                        f"Failed to auto-install Supabase. Please install manually with 'pip install supabase': {e}"
+                    )
+                raise ImportError(
+                    f"Failed to auto-install Supabase. Please install manually with 'pip install supabase': {e}"
+                )
 
         # Store initialization parameters - BaseCommunication.__init__ is just pass
         self.system_prompt = system_prompt
@@ -160,9 +179,7 @@ class SupabaseConversation(BaseCommunication):
         )  # For thread-safe operations if any (e.g. token calculation)
 
         try:
-            self.client: Client = create_client(
-                supabase_url, supabase_key
-            )
+            self.client = self.create_client(supabase_url, supabase_key)
             if self.enable_logging:
                 self.logger.info(
                     f"Successfully initialized Supabase client for URL: {supabase_url}"
