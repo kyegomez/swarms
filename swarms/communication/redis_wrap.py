@@ -435,7 +435,7 @@ class RedisConversation(BaseStructure):
 
                 if custom_rules_prompt is not None:
                     self.add(user or "User", custom_rules_prompt)
-            except Exception as e:
+            except RedisError as e:
                 logger.error(
                     f"Failed to initialize conversation: {str(e)}"
                 )
@@ -500,10 +500,10 @@ class RedisConversation(BaseStructure):
                 )
                 return
             except (
-                redis.ConnectionError,
-                redis.TimeoutError,
-                redis.AuthenticationError,
-                redis.BusyLoadingError,
+                ConnectionError,
+                TimeoutError,
+                AuthenticationError,
+                BusyLoadingError,
             ) as e:
                 if attempt < retry_attempts - 1:
                     logger.warning(
@@ -560,7 +560,7 @@ class RedisConversation(BaseStructure):
         """
         try:
             return operation_func(*args, **kwargs)
-        except redis.RedisError as e:
+        except RedisError as e:
             error_msg = (
                 f"Redis operation '{operation_name}' failed: {str(e)}"
             )

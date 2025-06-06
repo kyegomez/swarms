@@ -109,7 +109,7 @@ class PulsarConversation(BaseCommunication):
             logger.debug(
                 f"Connecting to Pulsar broker at {pulsar_host}"
             )
-            self.client = self.pulsar.Client(pulsar_host)
+            self.client = pulsar.Client(pulsar_host)
 
             logger.debug(f"Creating producer for topic: {self.topic}")
             self.producer = self.client.create_producer(self.topic)
@@ -122,7 +122,7 @@ class PulsarConversation(BaseCommunication):
             )
             logger.info("Successfully connected to Pulsar broker")
 
-        except self.pulsar.ConnectError as e:
+        except pulsar.ConnectError as e:
             error_msg = f"Failed to connect to Pulsar broker at {pulsar_host}: {str(e)}"
             logger.error(error_msg)
             raise PulsarConnectionError(error_msg)
@@ -211,7 +211,7 @@ class PulsarConversation(BaseCommunication):
             )
             return message["id"]
 
-        except self.pulsar.ConnectError as e:
+        except pulsar.ConnectError as e:
             error_msg = f"Failed to send message to Pulsar: Connection error: {str(e)}"
             logger.error(error_msg)
             raise PulsarConnectionError(error_msg)
@@ -248,7 +248,7 @@ class PulsarConversation(BaseCommunication):
                     msg = self.consumer.receive(timeout_millis=1000)
                     messages.append(json.loads(msg.data()))
                     self.consumer.acknowledge(msg)
-                except self.pulsar.Timeout:
+                except pulsar.Timeout:
                     break  # No more messages available
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to decode message: {e}")
@@ -263,7 +263,7 @@ class PulsarConversation(BaseCommunication):
 
             return messages
 
-        except self.pulsar.ConnectError as e:
+        except pulsar.ConnectError as e:
             error_msg = f"Failed to receive messages from Pulsar: Connection error: {str(e)}"
             logger.error(error_msg)
             raise PulsarConnectionError(error_msg)
@@ -400,7 +400,7 @@ class PulsarConversation(BaseCommunication):
                 f"Successfully cleared conversation. New ID: {self.conversation_id}"
             )
 
-        except self.pulsar.ConnectError as e:
+        except pulsar.ConnectError as e:
             error_msg = f"Failed to clear conversation: Connection error: {str(e)}"
             logger.error(error_msg)
             raise PulsarConnectionError(error_msg)
@@ -696,7 +696,7 @@ class PulsarConversation(BaseCommunication):
                     msg = self.consumer.receive(timeout_millis=1000)
                     self.consumer.acknowledge(msg)
                     health["consumer_active"] = True
-                except self.pulsar.Timeout:
+                except pulsar.Timeout:
                     pass
 
             logger.info(f"Health check results: {health}")

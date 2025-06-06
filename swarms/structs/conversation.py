@@ -55,7 +55,6 @@ def get_conversation_dir():
 # Define available providers
 providers = Literal["mem0", "in-memory", "supabase", "redis", "sqlite", "duckdb", "pulsar"]
 
-
 def _create_backend_conversation(backend: str, **kwargs):
     """
     Create a backend conversation instance based on the specified backend type.
@@ -153,12 +152,6 @@ class Conversation(BaseStructure):
         save_as_json_bool (bool): Flag to save conversation history as JSON.
         token_count (bool): Flag to enable token counting for messages.
         conversation_history (list): List to store the history of messages.
-        cache_enabled (bool): Flag to enable prompt caching.
-        cache_stats (dict): Statistics about cache usage.
-        cache_lock (threading.Lock): Lock for thread-safe cache operations.
-        conversations_dir (str): Directory to store cached conversations.
-        backend (str): The storage backend to use.
-        backend_instance: The actual backend instance (for non-memory backends).
     """
 
     def __init__(
@@ -179,6 +172,7 @@ class Conversation(BaseStructure):
         save_as_yaml: bool = False,
         save_as_json_bool: bool = False,
         token_count: bool = True,
+        message_id_on: bool = False,
         provider: providers = "in-memory",
         backend: Optional[str] = None,
         # Backend-specific parameters
@@ -195,6 +189,8 @@ class Conversation(BaseStructure):
         persist_redis: bool = True,
         auto_persist: bool = True,
         redis_data_dir: Optional[str] = None,
+        conversations_dir: Optional[str] = None,
+
         *args,
         **kwargs,
     ):
@@ -243,15 +239,7 @@ class Conversation(BaseStructure):
         self.save_as_yaml = save_as_yaml
         self.save_as_json_bool = save_as_json_bool
         self.token_count = token_count
-        self.cache_enabled = cache_enabled
         self.provider = provider  # Keep for backwards compatibility
-        self.cache_stats = {
-            "hits": 0,
-            "misses": 0,
-            "cached_tokens": 0,
-            "total_tokens": 0,
-        }
-        self.cache_lock = threading.Lock()
         self.conversations_dir = conversations_dir
 
         # Initialize backend if using persistent storage
@@ -302,11 +290,9 @@ class Conversation(BaseStructure):
             "rules": self.rules,
             "custom_rules_prompt": self.custom_rules_prompt,
             "user": self.user,
-            "auto_save": self.auto_save,
             "save_as_yaml": self.save_as_yaml,
             "save_as_json_bool": self.save_as_json_bool,
             "token_count": self.token_count,
-            "cache_enabled": self.cache_enabled,
         }
 
         # Add backend-specific parameters
@@ -665,7 +651,12 @@ class Conversation(BaseStructure):
         print("\n" + "=" * 50)
 
     def export_conversation(self, filename: str, *args, **kwargs):
-        """Export the conversation history to a file."""
+        """Export the conversation history to a file.
+
+        Args:
+            filename (str): Filename to export to.
+        """
+
         if self.backend_instance:
             try:
                 return self.backend_instance.export_conversation(filename, *args, **kwargs)
@@ -680,7 +671,11 @@ class Conversation(BaseStructure):
             self.save_as_json(filename)
 
     def import_conversation(self, filename: str):
-        """Import a conversation history from a file."""
+        """Import a conversation history from a file.
+
+        Args:
+            filename (str): Filename to import from.
+        """
         if self.backend_instance:
             try:
                 return self.backend_instance.import_conversation(filename)
@@ -694,22 +689,34 @@ class Conversation(BaseStructure):
         """Count the number of messages by role.
 
         Returns:
-            dict: A dictionary mapping roles to message counts.
+            dict: A dictionary with counts of messages by role.
         """
+        # Check backend instance first
         if self.backend_instance:
             try:
                 return self.backend_instance.count_messages_by_role()
             except Exception as e:
                 logger.error(f"Backend count_messages_by_role failed: {e}")
-                # Fallback to in-memory count
+                # Fallback to local implementation below
                 pass
-            
-        role_counts = {}
+        # Initialize counts with expected roles
+        counts = {
+            "system": 0,
+            "user": 0,
+            "assistant": 0,
+            "function": 0,
+        }
+        
+        # Count messages by role
         for message in self.conversation_history:
             role = message["role"]
-            role_counts[role] = role_counts.get(role, 0) + 1
-        return role_counts
-
+            if role in counts:
+                counts[role] += 1
+            else:
+                # Handle unexpected roles dynamically
+                counts[role] = counts.get(role, 0) + 1
+        
+        return counts
     def return_history_as_string(self):
         """Return the conversation history as a string.
 
@@ -753,17 +760,55 @@ class Conversation(BaseStructure):
         Args:
             filename (str): Filename to save the conversation history.
         """
+        # Check backend instance first
         if self.backend_instance:
             try:
                 return self.backend_instance.save_as_json(filename)
             except Exception as e:
                 logger.error(f"Backend save_as_json failed: {e}")
-                # Fallback to in-memory save
-                pass
-            
-        if filename is not None:
-            with open(filename, "w") as f:
-                json.dump(self.conversation_history, f)
+                # Fallback to local save implementation below
+        
+        # Don't save if saving is disabled
+        if not self.save_enabled:
+            return
+
+        save_path = filename or self.save_filepath
+        if save_path is not None:
+            try:
+                # Prepare metadata
+                metadata = {
+                    "id": self.id,
+                    "name": self.name,
+                    "created_at": datetime.datetime.now().isoformat(),
+                    "system_prompt": self.system_prompt,
+                    "rules": self.rules,
+                    "custom_rules_prompt": self.custom_rules_prompt,
+                }
+
+                # Prepare save data
+                save_data = {
+                    "metadata": metadata,
+                    "history": self.conversation_history,
+                }
+
+                # Create directory if it doesn't exist
+                os.makedirs(
+                    os.path.dirname(save_path),
+                    mode=0o755,
+                    exist_ok=True,
+                )
+
+                # Write directly to file
+                with open(save_path, "w") as f:
+                    json.dump(save_data, f, indent=2)
+
+                # Only log explicit saves, not autosaves
+                if not self.autosave:
+                    logger.info(
+                        f"Successfully saved conversation to {save_path}"
+                    )
+            except Exception as e:
+                logger.error(f"Failed to save conversation: {str(e)}")
 
     def load_from_json(self, filename: str):
         """Load the conversation history from a JSON file.
@@ -771,17 +816,32 @@ class Conversation(BaseStructure):
         Args:
             filename (str): Filename to load from.
         """
-        if self.backend_instance:
+        if filename is not None and os.path.exists(filename):
             try:
-                return self.backend_instance.load_from_json(filename)
+                with open(filename) as f:
+                    data = json.load(f)
+
+                # Load metadata
+                metadata = data.get("metadata", {})
+                self.id = metadata.get("id", self.id)
+                self.name = metadata.get("name", self.name)
+                self.system_prompt = metadata.get(
+                    "system_prompt", self.system_prompt
+                )
+                self.rules = metadata.get("rules", self.rules)
+                self.custom_rules_prompt = metadata.get(
+                    "custom_rules_prompt", self.custom_rules_prompt
+                )
+
+                # Load conversation history
+                self.conversation_history = data.get("history", [])
+
+                logger.info(
+                    f"Successfully loaded conversation from {filename}"
+                )
             except Exception as e:
-                logger.error(f"Backend load_from_json failed: {e}")
-                # Fallback to in-memory load
-                pass
-            
-        if filename is not None:
-            with open(filename) as f:
-                self.conversation_history = json.load(f)
+                logger.error(f"Failed to load conversation: {str(e)}")
+                raise
 
     def search_keyword_in_conversation(self, keyword: str):
         """Search for a keyword in the conversation history.
@@ -865,7 +925,7 @@ class Conversation(BaseStructure):
         """Convert the conversation history to a dictionary.
 
         Returns:
-            dict: The conversation history as a dictionary.
+            list: The conversation history as a list of dictionaries.
         """
         if self.backend_instance:
             try:
@@ -1154,12 +1214,52 @@ class Conversation(BaseStructure):
             return []
 
         conversations = []
-        for file in os.listdir(conversations_dir):
-            if file.endswith(".json"):
-                conversations.append(
-                    file[:-5]
-                )  # Remove .json extension
-        return conversations
+        seen_ids = (
+            set()
+        )  # Track seen conversation IDs to avoid duplicates
+
+        for filename in os.listdir(conv_dir):
+            if filename.endswith(".json"):
+                try:
+                    filepath = os.path.join(conv_dir, filename)
+                    with open(filepath) as f:
+                        data = json.load(f)
+                        metadata = data.get("metadata", {})
+                        conv_id = metadata.get("id")
+                        name = metadata.get("name")
+                        created_at = metadata.get("created_at")
+
+                        # Skip if we've already seen this ID or if required fields are missing
+                        if (
+                            not all([conv_id, name, created_at])
+                            or conv_id in seen_ids
+                        ):
+                            continue
+
+                        seen_ids.add(conv_id)
+                        conversations.append(
+                            {
+                                "id": conv_id,
+                                "name": name,
+                                "created_at": created_at,
+                                "filepath": filepath,
+                            }
+                        )
+                except json.JSONDecodeError:
+                    logger.warning(
+                        f"Skipping corrupted conversation file: {filename}"
+                    )
+                    continue
+                except Exception as e:
+                    logger.error(
+                        f"Failed to read conversation {filename}: {str(e)}"
+                    )
+                    continue
+
+        # Sort by creation date, newest first
+        return sorted(
+            conversations, key=lambda x: x["created_at"], reverse=True
+        )
 
     def clear_memory(self):
         """Clear the memory of the conversation."""

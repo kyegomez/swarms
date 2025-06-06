@@ -85,7 +85,6 @@ class RedisConversationTester:
     def setup(self):
         """Initialize Redis server and conversation for testing."""
         try:
-            # Try first with external Redis (if available)
             logger.info("Trying to connect to external Redis server...")
             self.conversation = RedisConversation(
                 system_prompt="Test System Prompt",
@@ -99,7 +98,6 @@ class RedisConversationTester:
         except Exception as external_error:
             logger.info(f"External Redis connection failed: {external_error}")
             logger.info("Trying to start embedded Redis server...")
-            
             try:
                 # Fallback to embedded Redis
                 self.conversation = RedisConversation(
@@ -119,16 +117,8 @@ class RedisConversationTester:
 
     def cleanup(self):
         """Cleanup resources after tests."""
-        if self.conversation:
-            try:
-                # Check if we have an embedded server to stop
-                if hasattr(self.conversation, 'embedded_server') and self.conversation.embedded_server is not None:
-                    self.conversation.embedded_server.stop()
-                # Close Redis client if it exists
-                if hasattr(self.conversation, 'redis_client') and self.conversation.redis_client:
-                    self.conversation.redis_client.close()
-            except Exception as e:
-                logger.warning(f"Error during cleanup: {str(e)}")
+        if self.redis_server:
+            self.redis_server.stop()
 
     def test_initialization(self):
         """Test basic initialization."""
@@ -151,8 +141,6 @@ class RedisConversationTester:
         json_content = {"key": "value", "nested": {"data": 123}}
         self.conversation.add("system", json_content)
         last_message = self.conversation.get_final_message_content()
-        
-        # Parse the JSON string back to dict for comparison
         if isinstance(last_message, str):
             try:
                 parsed_content = json.loads(last_message)
@@ -173,29 +161,20 @@ class RedisConversationTester:
         initial_count = len(
             self.conversation.return_messages_as_list()
         )
-        if initial_count > 0:
-            self.conversation.delete(0)
-            new_count = len(self.conversation.return_messages_as_list())
-            assert (
-                new_count == initial_count - 1
-            ), "Failed to delete message"
+        self.conversation.delete(0)
+        new_count = len(self.conversation.return_messages_as_list())
+        assert (
+            new_count == initial_count - 1
+        ), "Failed to delete message"
 
     def test_update(self):
         """Test message update."""
         # Add initial message
         self.conversation.add("user", "original message")
-        
-        # Get all messages to find the last message ID
         all_messages = self.conversation.return_messages_as_list()
         if len(all_messages) > 0:
-            # Update the last message (index 0 in this case means the first message)
-            # Note: This test may need adjustment based on how Redis stores messages
-            self.conversation.update(0, "user", "updated message")
-            
-            # Get the message directly using query
+            self.conversation.update(0, "user", "updated message")  
             updated_message = self.conversation.query(0)
-            
-            # Since Redis might store content differently, just check that update didn't crash
             assert True, "Update method executed successfully"
 
     def test_clear(self):
@@ -207,28 +186,14 @@ class RedisConversationTester:
 
     def test_export_import(self):
         """Test export and import functionality."""
-        try:
-            self.conversation.add("user", "export test")
-            self.conversation.export_conversation("test_export.txt")
-            
-            # Clear conversation
-            self.conversation.clear()
-            
-            # Import back
-            self.conversation.import_conversation("test_export.txt")
-            messages = self.conversation.return_messages_as_list()
-            assert (
-                len(messages) > 0
-            ), "Failed to export/import conversation"
-            
-            # Cleanup test file
-            import os
-            if os.path.exists("test_export.txt"):
-                os.remove("test_export.txt")
-        except Exception as e:
-            logger.warning(f"Export/import test failed: {e}")
-            # Don't fail the test entirely, just log the warning
-            assert True, "Export/import test completed with warnings"
+        self.conversation.add("user", "export test")
+        self.conversation.export_conversation("test_export.txt")
+        self.conversation.clear()
+        self.conversation.import_conversation("test_export.txt")
+        messages = self.conversation.return_messages_as_list()
+        assert (
+            len(messages) > 0
+        ), "Failed to export/import conversation"
 
     def test_json_operations(self):
         """Test JSON operations."""
@@ -249,7 +214,6 @@ class RedisConversationTester:
         self.conversation.add("user", "token test message")
         time.sleep(1)  # Wait for async token counting
         messages = self.conversation.to_dict()
-        # Token counting may not be implemented in Redis version, so just check it doesn't crash
         assert isinstance(messages, list), "Token counting test completed"
 
     def test_cache_operations(self):
@@ -322,7 +286,6 @@ class RedisConversationTester:
 def main():
     """Main function to run tests and save results."""
     logger.info(f"Starting Redis tests. REDIS_AVAILABLE: {REDIS_AVAILABLE}")
-    
     tester = RedisConversationTester()
     markdown_results = tester.run_all_tests()
 
@@ -333,8 +296,6 @@ def main():
         logger.info("Test results have been saved to redis_test_results.md")
     except Exception as e:
         logger.error(f"Failed to save test results: {e}")
-    
-    # Also print results to console
     print(markdown_results)
 
 
