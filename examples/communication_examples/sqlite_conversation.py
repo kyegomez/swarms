@@ -1,3 +1,9 @@
+"""Persist agent dialogue using SQLiteConversation.
+
+Run `pip install -e .` in the repository root so the ``swarms`` package is
+available before executing this script.
+"""
+
 from swarms import Agent
 from swarms.communication.sqlite_wrap import SQLiteConversation
 
@@ -15,7 +21,9 @@ agent = Agent(
     model_name="gpt-4o-mini",
     long_term_memory=conversation_store,
     max_loops=1,
-    autosave=True,
+    # Autosave attempts to call `save()` on the memory object which is not
+    # implemented in SQLiteConversation, so we disable it for this example.
+    autosave=False,
 )
 
 response = agent.run("How do I reset my password?")
