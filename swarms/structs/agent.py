@@ -40,6 +40,7 @@ from swarms.schemas.base_schemas import (
     ChatCompletionResponseChoice,
     ChatMessageResponse,
 )
+from swarms.schemas.llm_agent_schema import ModelConfigOrigin
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.conversation import Conversation
 from swarms.structs.safe_loading import (
@@ -407,6 +408,9 @@ class Agent:
         mcp_config: Optional[MCPConnection] = None,
         top_p: Optional[float] = 0.90,
         conversation_schema: Optional[ConversationSchema] = None,
+        aditional_llm_config: Optional[ModelConfigOrigin] = None,
+        llm_base_url: Optional[str] = None,
+        llm_api_key: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -534,10 +538,9 @@ class Agent:
         self.mcp_config = mcp_config
         self.top_p = top_p
         self.conversation_schema = conversation_schema
-
-        self._cached_llm = (
-            None  # Add this line to cache the LLM instance
-        )
+        self.aditional_llm_config = aditional_llm_config
+        self.llm_base_url = llm_base_url
+        self.llm_api_key = llm_api_key
 
         # self.short_memory = self.short_memory_init()
 
@@ -546,6 +549,8 @@ class Agent:
 
         # self.init_handling()
         self.setup_config()
+
+        self.short_memory = self.short_memory_init()
 
         if exists(self.docs_folder):
             self.get_docs_from_doc_folders()
@@ -563,8 +568,6 @@ class Agent:
 
         if self.react_on is True:
             self.system_prompt += REACT_SYS_PROMPT
-
-        self.short_memory = self.short_memory_init()
 
         # Run sequential operations after all concurrent tasks are done
         # self.agent_output = self.agent_output_model()
@@ -661,8 +664,8 @@ class Agent:
 
     def llm_handling(self):
         # Use cached instance if available
-        if self._cached_llm is not None:
-            return self._cached_llm
+        if self.llm is not None:
+            return self.llm
 
         if self.model_name is None:
             self.model_name = "gpt-4o-mini"
@@ -682,11 +685,9 @@ class Agent:
             }
 
             if self.llm_args is not None:
-                self._cached_llm = LiteLLM(
-                    **{**common_args, **self.llm_args}
-                )
+                self.llm = LiteLLM(**{**common_args, **self.llm_args})
             elif self.tools_list_dictionary is not None:
-                self._cached_llm = LiteLLM(
+                self.llm = LiteLLM(
                     **common_args,
                     tools_list_dictionary=self.tools_list_dictionary,
                     tool_choice="auto",
@@ -694,7 +695,7 @@ class Agent:
                 )
 
             elif self.mcp_url is not None:
-                self._cached_llm = LiteLLM(
+                self.llm = LiteLLM(
                     **common_args,
                     tools_list_dictionary=self.add_mcp_tools_to_memory(),
                     tool_choice="auto",
@@ -702,11 +703,14 @@ class Agent:
                     mcp_call=True,
                 )
             else:
-                self._cached_llm = LiteLLM(
-                    **common_args, stream=self.streaming_on
+                # common_args.update(self.aditional_llm_config.model_dump())
+
+                self.llm = LiteLLM(
+                    **common_args,
+                    stream=self.streaming_on,
                 )
 
-            return self._cached_llm
+            return self.llm
         except AgentLLMInitializationError as e:
             logger.error(
                 f"Error in llm_handling: {e} Your current configuration is not supported. Please check the configuration and parameters."
@@ -789,7 +793,7 @@ class Agent:
                     "No agent details found. Using task as fallback for prompt generation."
                 )
                 self.system_prompt = auto_generate_prompt(
-                    task=task, model=self._cached_llm
+                    task=task, model=self.llm
                 )
             else:
                 # Combine all available components
@@ -1012,16 +1016,20 @@ class Agent:
                             )
                             self.memory_query(task_prompt)
 
-                        # Generate response using LLM
-                        response_args = (
-                            (task_prompt, *args)
-                            if img is None
-                            else (task_prompt, img, *args)
-                        )
+                        # # Generate response using LLM
+                        # response_args = (
+                        #     (task_prompt, *args)
+                        #     if img is None
+                        #     else (task_prompt, img, *args)
+                        # )
 
-                        # Call the LLM
+                        # # Call the LLM
+                        # response = self.call_llm(
+                        #     *response_args, **kwargs
+                        # )
+
                         response = self.call_llm(
-                            *response_args, **kwargs
+                            task=task_prompt, img=img, *args, **kwargs
                         )
 
                         if exists(self.tools_list_dictionary):
@@ -2388,7 +2396,9 @@ class Agent:
 
         return None
 
-    def call_llm(self, task: str, *args, **kwargs) -> str:
+    def call_llm(
+        self, task: str, img: str = None, *args, **kwargs
+    ) -> str:
         """
         Calls the appropriate method on the `llm` object based on the given task.
 
@@ -2407,17 +2417,9 @@ class Agent:
             TypeError: If task is not a string or llm object is None.
             ValueError: If task is empty.
         """
-        # if not isinstance(task, str):
-        #     task = any_to_str(task)
-
-        # if img is not None:
-        #     kwargs['img'] = img
-
-        # if audio is not None:
-        #     kwargs['audio'] = audio
 
         try:
-            out = self.llm.run(task=task, *args, **kwargs)
+            out = self.llm.run(task=task, img=img, *args, **kwargs)
 
             return out
         except AgentLLMError as e:
@@ -2764,13 +2766,7 @@ class Agent:
 
             # Create a temporary LLM instance without tools for the follow-up call
             try:
-                temp_llm = LiteLLM(
-                    model_name=self.model_name,
-                    temperature=self.temperature,
-                    max_tokens=self.max_tokens,
-                    system_prompt=self.system_prompt,
-                    stream=self.streaming_on,
-                )
+                temp_llm = self.temp_llm_instance_for_tool_summary()
 
                 summary = temp_llm.run(
                     task=self.short_memory.get_str()
@@ -2791,6 +2787,19 @@ class Agent:
         except AgentMCPToolError as e:
             logger.error(f"Error in MCP tool: {e}")
             raise e
+
+    def temp_llm_instance_for_tool_summary(self):
+        return LiteLLM(
+            model_name=self.model_name,
+            temperature=self.temperature,
+            max_tokens=self.max_tokens,
+            system_prompt=self.system_prompt,
+            stream=self.streaming_on,
+            tools_list_dictionary=None,
+            parallel_tool_calls=False,
+            base_url=self.llm_base_url,
+            api_key=self.llm_api_key,
+        )
 
     def execute_tools(self, response: any, loop_count: int):
 
@@ -2813,15 +2822,7 @@ class Agent:
         # Now run the LLM again without tools - create a temporary LLM instance
         # instead of modifying the cached one
         # Create a temporary LLM instance without tools for the follow-up call
-        temp_llm = LiteLLM(
-            model_name=self.model_name,
-            temperature=self.temperature,
-            max_tokens=self.max_tokens,
-            system_prompt=self.system_prompt,
-            stream=self.streaming_on,
-            tools_list_dictionary=None,
-            parallel_tool_calls=False,
-        )
+        temp_llm = self.temp_llm_instance_for_tool_summary()
 
         tool_response = temp_llm.run(
             f"""

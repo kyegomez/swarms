@@ -251,6 +251,9 @@ nav:
           - Auto Agent Builder: "swarms/structs/auto_agent_builder.md"
           - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
           - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
+
+        - Multi-Agent Multi-Modal Structures:
+          - ImageAgentBatchProcessor: "swarms/structs/image_batch_agent.md"
         
         
         - Workflows:
@@ -302,12 +305,13 @@ nav:
         - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
     
   - Examples:
-    - Agent Examples:
+    - Customizing Agents:
       - Basic Agent: "swarms/examples/basic_agent.md"
       - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
       # - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
       - Agent Output Types: "swarms/examples/agent_output_types.md"
       - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
+      - Agents with Vision: "swarms/examples/vision_processing.md"
       - Various Model Providers:
         - OpenAI: "swarms/examples/openai_example.md"
         - Anthropic: "swarms/examples/claude.md"
@@ -339,6 +343,7 @@ nav:
       - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
       - MixtureOfAgents Example: "swarms/examples/mixture_of_agents.md"
       - Unique Swarms: "swarms/examples/unique_swarms.md"
+      - Agents as Tools: "swarms/examples/agents_as_tools.md"
       - Applications:
         - Swarms DAO: "swarms/examples/swarms_dao.md"
         - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"

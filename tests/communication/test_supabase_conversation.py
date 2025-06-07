@@ -294,7 +294,7 @@ def test_logging_configuration() -> bool:
 
     try:
         assert (
-            conversation_with_logging.enable_logging == True
+            conversation_with_logging.enable_logging is True
         ), "Logging should be enabled"
         assert (
             conversation_with_logging.logger is not None
@@ -309,7 +309,7 @@ def test_logging_configuration() -> bool:
         )
 
         assert (
-            conversation_no_logging.enable_logging == False
+            conversation_no_logging.enable_logging is False
         ), "Logging should be disabled"
 
         print("✓ Logging configuration test passed")
@@ -629,7 +629,7 @@ def test_update_message_method() -> bool:
         )
 
         assert (
-            success == True
+            success is True
         ), "update_message should return True on success"
 
         # Verify the update
@@ -643,7 +643,7 @@ def test_update_message_method() -> bool:
             updated_msg["metadata"]["version"] == 2
         ), "Metadata should be updated"
         assert (
-            updated_msg["metadata"]["updated"] == True
+            updated_msg["metadata"]["updated"] is True
         ), "New metadata field should be added"
 
         # Test update_message with non-existent ID
@@ -651,7 +651,7 @@ def test_update_message_method() -> bool:
             message_id=999999, content="This should fail"
         )
         assert (
-            failure == False
+            failure is False
         ), "update_message should return False for non-existent message"
 
         print("✓ Update message method test passed")
@@ -1106,7 +1106,7 @@ def test_enhanced_error_handling() -> bool:
 
     # Test invalid credentials
     try:
-        invalid_conversation = SupabaseConversation(
+        SupabaseConversation(
             supabase_url="https://invalid-url.supabase.co",
             supabase_key="invalid_key",
             enable_logging=False,
@@ -1139,7 +1139,7 @@ def test_enhanced_error_handling() -> bool:
             "999999", "user", "content"
         )
         assert (
-            update_result == False
+            update_result is False
         ), "_update_flexible should return False for invalid ID"
 
         # Test update_message with invalid ID
@@ -1147,7 +1147,7 @@ def test_enhanced_error_handling() -> bool:
             999999, "invalid content"
         )
         assert (
-            result == False
+            result is False
         ), "update_message should return False for invalid ID"
 
         # Test search with empty query
@@ -1174,7 +1174,7 @@ def test_enhanced_error_handling() -> bool:
             "not_a_number", "user", "content"
         )
         assert (
-            invalid_update == False
+            invalid_update is False
         ), "Invalid ID should return False for update"
 
         print("✓ Enhanced error handling test passed")
