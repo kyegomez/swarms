@@ -15,7 +15,7 @@ agent = Agent(
     model_name="gpt-4o-mini",
     long_term_memory=conversation_store,
     max_loops=1,
-    autosave=True,
+    autosave=False,
 )
 
 response = agent.run("What time is check-out?")
