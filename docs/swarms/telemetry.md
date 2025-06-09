@@ -15,6 +15,8 @@ This initialization ensures minimal console output while still capturing importa
 ## Enabling or Disabling Telemetry
 
 Telemetry collection is controlled with the environment variable `USE_TELEMETRY`.
+By default, telemetry is disabled, so no data is sent unless you explicitly set
+`USE_TELEMETRY=true`.
 
 ```bash
 # Enable telemetry
