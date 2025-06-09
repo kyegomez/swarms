@@ -307,6 +307,7 @@ nav:
     
   - Examples:
     - Overview: "examples/index.md"
+    - CookBook Index: "examples/cookbook_index.md"
     - Customizing Agents:
       - Basic Agent: "swarms/examples/basic_agent.md"
       - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"

@@ -41,6 +41,10 @@ from swarms.schemas.base_schemas import (
     ChatMessageResponse,
 )
 from swarms.schemas.llm_agent_schema import ModelConfigOrigin
+from swarms.structs.agent_rag_handler import (
+    RAGConfig,
+    AgentRAGHandler,
+)
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.conversation import Conversation
 from swarms.structs.safe_loading import (
@@ -317,7 +321,7 @@ class Agent:
         pdf_path: Optional[str] = None,
         list_of_pdf: Optional[str] = None,
         tokenizer: Optional[Any] = None,
-        long_term_memory: Optional[Any] = None,
+        long_term_memory: Optional[Union[Callable, Any]] = None,
         preset_stopping_token: Optional[bool] = False,
         traceback: Optional[Any] = None,
         traceback_handlers: Optional[Any] = None,
@@ -411,6 +415,7 @@ class Agent:
         aditional_llm_config: Optional[ModelConfigOrigin] = None,
         llm_base_url: Optional[str] = None,
         llm_api_key: Optional[str] = None,
+        rag_config: Optional[RAGConfig] = None,
         *args,
         **kwargs,
     ):
@@ -541,6 +546,7 @@ class Agent:
         self.aditional_llm_config = aditional_llm_config
         self.llm_base_url = llm_base_url
         self.llm_api_key = llm_api_key
+        self.rag_config = rag_config
 
         # self.short_memory = self.short_memory_init()
 
@@ -581,6 +587,17 @@ class Agent:
 
         if self.random_models_on is True:
             self.model_name = set_random_models_for_agents()
+
+        if self.long_term_memory is not None:
+            self.rag_handler = self.rag_setup_handling()
+
+    def rag_setup_handling(self):
+        return AgentRAGHandler(
+            long_term_memory=self.long_term_memory,
+            config=self.rag_config,
+            agent_name=self.agent_name,
+            verbose=self.verbose,
+        )
 
     def tool_handling(self):
 
@@ -1053,35 +1070,6 @@ class Agent:
 
                         # Check and execute tools
                         if exists(self.tools):
-                            # out = self.parse_and_execute_tools(
-                            #     response
-                            # )
-
-                            # self.short_memory.add(
-                            #     role="Tool Executor", content=out
-                            # )
-
-                            # if self.no_print is False:
-                            #     agent_print(
-                            #         f"{self.agent_name} - Tool Executor",
-                            #         out,
-                            #         loop_count,
-                            #         self.streaming_on,
-                            #     )
-
-                            # out = self.call_llm(task=out)
-
-                            # self.short_memory.add(
-                            #     role=self.agent_name, content=out
-                            # )
-
-                            # if self.no_print is False:
-                            #     agent_print(
-                            #         f"{self.agent_name} - Agent Analysis",
-                            #         out,
-                            #         loop_count,
-                            #         self.streaming_on,
-                            #     )
 
                             self.execute_tools(
                                 response=response,
@@ -1165,9 +1153,6 @@ class Agent:
                 self.save()
 
             log_agent_data(self.to_dict())
-
-            if self.autosave:
-                self.save()
 
             # Output formatting based on output_type
             return history_output_formatter(
