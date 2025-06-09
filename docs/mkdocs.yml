@@ -178,6 +178,7 @@ nav:
       - Installation: "swarms/install/install.md"
       - Environment Configuration: "swarms/install/env.md"
       - Quickstart: "swarms/install/quickstart.md"
+      - Telemetry Setup: "swarms/telemetry.md"
       # - Swarms CLI: "swarms/cli/main.md"
     # - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
     # - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
