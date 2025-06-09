@@ -15,11 +15,15 @@ from swarms.agents.auto_generate_swarm_config import (
 from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
 )
+from swarms.structs.agent_registry import AgentRegistry
 from swarms.cli.onboarding_process import OnboardingProcess
 from swarms.utils.formatter import formatter
 
 # Initialize console with custom styling
 console = Console()
+
+# Global registry for storing agents loaded via the CLI
+registry = AgentRegistry()
 
 
 class SwarmCLIError(Exception):
@@ -91,6 +95,7 @@ def create_command_table() -> Table:
         ("get-api-key", "Retrieve your API key from the platform"),
         ("check-login", "Verify login status and initialize cache"),
         ("run-agents", "Execute agents from your YAML configuration"),
+        ("list-agents", "Display names of registered agents"),
         ("auto-upgrade", "Update Swarms to the latest version"),
         ("book-call", "Schedule a strategy session with our team"),
         ("autoswarm", "Generate and execute an autonomous swarm"),
@@ -173,6 +178,38 @@ def check_login():
     return True
 
 
+def list_registered_agents(yaml_file: str) -> None:
+    """Load agents from YAML and display their names."""
+    if not os.path.exists(yaml_file):
+        raise FileNotFoundError(
+            f"YAML file not found: {yaml_file}"
+        )
+
+    agents = create_agents_from_yaml(
+        yaml_file=yaml_file,
+        return_type="agents",
+    )
+
+    # Ensure agents is a list
+    if not isinstance(agents, list):
+        agents = [agents]
+
+    registry.add_many(agents)
+
+    table = Table(
+        show_header=True,
+        header_style=f"bold {COLORS['primary']}",
+        border_style=COLORS["secondary"],
+        title="Registered Agents",
+    )
+    table.add_column("Agent Name", style="bold white")
+
+    for name in registry.list_agents():
+        table.add_row(name)
+
+    console.print(table)
+
+
 def run_autoswarm(task: str, model: str):
     """Run autoswarm with enhanced error handling"""
     try:
@@ -242,6 +279,7 @@ def main():
                 "get-api-key",
                 "check-login",
                 "run-agents",
+                "list-agents",
                 "auto-upgrade",
                 "book-call",
                 "autoswarm",
@@ -390,6 +428,13 @@ def main():
                             "2. Verify your API keys are set\n"
                             "3. Check network connectivity",
                         )
+            elif args.command == "list-agents":
+                try:
+                    list_registered_agents(args.yaml_file)
+                except FileNotFoundError as e:
+                    show_error("File Error", str(e))
+                except Exception as e:
+                    show_error("Execution Error", str(e))
             elif args.command == "book-call":
                 webbrowser.open(
                     "https://cal.com/swarms/swarms-strategy-session"
