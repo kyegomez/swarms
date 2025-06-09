@@ -609,20 +609,19 @@ class DeepResearchSwarm:
 
 
 # Example usage
-
-if __name__ == "__main__":
-    try:
-        swarm = DeepResearchSwarm(
-            output_type="json",
-        )
-        result = swarm.step(
-            "What is the active tariff situation with mexico? Only create 2 queries"
-        )
+# if __name__ == "__main__":
+#     try:
+#         swarm = DeepResearchSwarm(
+#             output_type="json",
+#         )
+#         result = swarm.step(
+#             "What is the active tariff situation with mexico? Only create 2 queries"
+#         )
         
-        # Parse and display results in rich format with markdown export
-        swarm.parse_and_display_results(result, export_markdown=True)
+#         # Parse and display results in rich format with markdown export
+#         swarm.parse_and_display_results(result, export_markdown=True)
         
-    except Exception as e:
-        print(f"Error running deep research swarm: {str(e)}")
-        import traceback
-        traceback.print_exc()
+#     except Exception as e:
+#         print(f"Error running deep research swarm: {str(e)}")
+#         import traceback
+#         traceback.print_exc()
