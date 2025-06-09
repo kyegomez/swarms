@@ -1,12 +1,14 @@
-from typing import List, Union, Callable
 import re
+from typing import Callable, List, Union
+
 from loguru import logger
+
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
-from swarms.utils.generate_keys import generate_api_key
 
 
 class InteractiveGroupChatError(Exception):
@@ -22,13 +24,13 @@ class AgentNotFoundError(InteractiveGroupChatError):
 
 
 class NoMentionedAgentsError(InteractiveGroupChatError):
-    """Raised when no agents are mentioned in the message"""
+    """Raised when no agents are mentioned in the task"""
 
     pass
 
 
-class InvalidMessageFormatError(InteractiveGroupChatError):
-    """Raised when the message format is invalid"""
+class InvalidTaskFormatError(InteractiveGroupChatError):
+    """Raised when the task format is invalid"""
 
     pass
 
@@ -38,7 +40,7 @@ class InteractiveGroupChat:
     An interactive group chat system that enables conversations with multiple agents using @mentions.
 
     This class allows users to interact with multiple agents by mentioning them using @agent_name syntax.
-    When multiple agents are mentioned, they can see and respond to each other's messages.
+    When multiple agents are mentioned, they can see and respond to each other's tasks.
 
     Attributes:
         name (str): Name of the group chat
@@ -70,7 +72,7 @@ class InteractiveGroupChat:
         output_type: str = "string",
         interactive: bool = False,
     ):
-        self.id = id 
+        self.id = id
         self.name = name
         self.description = description
         self.agents = agents
@@ -175,22 +177,22 @@ class InteractiveGroupChat:
                     f"Updated system prompt for agent: {agent.agent_name}"
                 )
 
-    def _extract_mentions(self, message: str) -> List[str]:
+    def _extract_mentions(self, task: str) -> List[str]:
         """
-        Extracts @mentions from the message.
+        Extracts @mentions from the task.
 
         Args:
-            message (str): The input message
+            task (str): The input task
 
         Returns:
             List[str]: List of mentioned agent names
 
         Raises:
-            InvalidMessageFormatError: If the message format is invalid
+            InvalidtaskFormatError: If the task format is invalid
         """
         try:
             # Find all @mentions using regex
-            mentions = re.findall(r"@(\w+)", message)
+            mentions = re.findall(r"@(\w+)", task)
             return [
                 mention
                 for mention in mentions
@@ -198,9 +200,7 @@ class InteractiveGroupChat:
             ]
         except Exception as e:
             logger.error(f"Error extracting mentions: {e}")
-            raise InvalidMessageFormatError(
-                f"Invalid message format: {e}"
-            )
+            raise InvalidTaskFormatError(f"Invalid task format: {e}")
 
     def start_interactive_session(self):
         """
@@ -248,7 +248,7 @@ class InteractiveGroupChat:
                     print("\nHelp:")
                     print("1. Mention agents using @agent_name")
                     print(
-                        "2. You can mention multiple agents in one message"
+                        "2. You can mention multiple agents in one task"
                     )
                     print("3. Available agents:")
                     for name in self.agent_map:
@@ -261,7 +261,7 @@ class InteractiveGroupChat:
                 if not user_input:
                     continue
 
-                # Process the message and get responses
+                # Process the task and get responses
                 try:
                     response = self.run(user_input)
                     print("\nChat:")
@@ -285,23 +285,23 @@ class InteractiveGroupChat:
                     "The session will continue. You can type 'exit' to end it."
                 )
 
-    def run(self, message: str) -> str:
+    def run(self, task: str) -> str:
         """
-        Process a message and get responses from mentioned agents.
+        Process a task and get responses from mentioned agents.
         If interactive mode is enabled, this will be called by start_interactive_session().
-        Otherwise, it can be called directly for single message processing.
+        Otherwise, it can be called directly for single task processing.
         """
         try:
             # Extract mentioned agents
-            mentioned_agents = self._extract_mentions(message)
+            mentioned_agents = self._extract_mentions(task)
 
             if not mentioned_agents:
                 raise NoMentionedAgentsError(
-                    "No valid agents mentioned in the message"
+                    "No valid agents mentioned in the task"
                 )
 
-            # Add user message to conversation
-            self.conversation.add(role="User", content=message)
+            # Add user task to conversation
+            self.conversation.add(role="User", content=task)
 
             # Get responses from mentioned agents
             for agent_name in mentioned_agents:
@@ -320,7 +320,7 @@ class InteractiveGroupChat:
                     # Get response from agent
                     if isinstance(agent, Agent):
                         response = agent.run(
-                            task=f"{context}\nPlease respond to the latest message as {agent_name}."
+                            task=f"{context}\nPlease respond to the latest task as {agent_name}."
                         )
                     else:
                         # For callable functions

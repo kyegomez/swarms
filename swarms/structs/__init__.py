@@ -84,6 +84,7 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
+from swarms.structs.interactive_groupchat import InteractiveGroupChat
 
 __all__ = [
     "Agent",
@@ -156,4 +157,5 @@ __all__ = [
     "aggregate",
     "find_agent_by_name",
     "run_agent",
+    "InteractiveGroupChat",
 ]

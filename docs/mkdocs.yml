@@ -242,6 +242,7 @@ nav:
         - MatrixSwarm: "swarms/structs/matrix_swarm.md"
         - ModelRouter: "swarms/structs/model_router.md"
         - MALT: "swarms/structs/malt.md"
+        - Interactive Group Chat: "swarms/structs/interactive_groupchat.md"
         - Various Execution Methods: "swarms/structs/various_execution_methods.md"
         - Deep Research Swarm: "swarms/structs/deep_research_swarm.md"
         - Swarm Matcher: "swarms/structs/swarm_matcher.md"
@@ -305,6 +306,7 @@ nav:
         - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
     
   - Examples:
+    - Overview: "examples/index.md"
     - Customizing Agents:
       - Basic Agent: "swarms/examples/basic_agent.md"
       - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
