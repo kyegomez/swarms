@@ -25,6 +25,7 @@ pip install swarms
 Initializes a new InteractiveGroupChat instance with the specified configuration.
 
 **Arguments:**
+
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `id` | str | Unique identifier for the chat | auto-generated key |
@@ -36,6 +37,7 @@ Initializes a new InteractiveGroupChat instance with the specified configuration
 | `interactive` | bool | Whether to enable interactive mode | False |
 
 **Example:**
+
 ```python
 from swarms import Agent, InteractiveGroupChat
 
