@@ -49,7 +49,7 @@ class RAGConfig(BaseModel):
         default=None, description="Keywords to check for relevance"
     )
 
-    @field_validator("relevance_keywords", pre=True)
+    @field_validator("relevance_keywords", mode="before")
     def set_default_keywords(cls, v):
         if v is None:
             return [
