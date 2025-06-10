@@ -1,6 +1,8 @@
+import traceback
 from typing import Optional
 import base64
 import requests
+from pathlib import Path
 
 import asyncio
 from typing import List
@@ -9,11 +11,7 @@ from loguru import logger
 import litellm
 from pydantic import BaseModel
 
-from litellm import completion, acompletion
-
-litellm.set_verbose = True
-litellm.ssl_verify = False
-# litellm._turn_on_debug()
+from litellm import completion, acompletion, supports_vision
 
 
 class LiteLLMException(Exception):
@@ -53,6 +51,35 @@ def get_audio_base64(audio_source: str) -> str:
     return encoded_string
 
 
+def get_image_base64(image_source: str) -> str:
+    """
+    Convert image from a given source to a base64 encoded string.
+    Handles URLs, local file paths, and data URIs.
+    """
+    # If already a data URI, return as is
+    if image_source.startswith("data:image"):
+        return image_source
+
+    # Handle URL
+    if image_source.startswith(("http://", "https://")):
+        response = requests.get(image_source)
+        response.raise_for_status()
+        image_data = response.content
+    # Handle local file
+    else:
+        with open(image_source, "rb") as file:
+            image_data = file.read()
+
+    # Get file extension for mime type
+    extension = Path(image_source).suffix.lower()
+    mime_type = (
+        f"image/{extension[1:]}" if extension else "image/jpeg"
+    )
+
+    encoded_string = base64.b64encode(image_data).decode("utf-8")
+    return f"data:{mime_type};base64,{encoded_string}"
+
+
 class LiteLLM:
     """
     This class represents a LiteLLM.
@@ -72,12 +99,15 @@ class LiteLLM:
         tool_choice: str = "auto",
         parallel_tool_calls: bool = False,
         audio: str = None,
-        retries: int = 3,
+        retries: int = 0,
         verbose: bool = False,
         caching: bool = False,
         mcp_call: bool = False,
         top_p: float = 1.0,
         functions: List[dict] = None,
+        return_all: bool = False,
+        base_url: str = None,
+        api_key: str = None,
         *args,
         **kwargs,
     ):
@@ -105,8 +135,11 @@ class LiteLLM:
         self.mcp_call = mcp_call
         self.top_p = top_p
         self.functions = functions
+        self.audio = audio
+        self.return_all = return_all
+        self.base_url = base_url
+        self.api_key = api_key
         self.modalities = []
-        self._cached_messages = {}  # Cache for prepared messages
         self.messages = []  # Initialize messages list
 
         # Configure litellm settings
@@ -135,7 +168,11 @@ class LiteLLM:
                 out = out.model_dump()
             return out
 
-    def _prepare_messages(self, task: str) -> list:
+    def _prepare_messages(
+        self,
+        task: str,
+        img: str = None,
+    ):
         """
         Prepare the messages for the given task.
 
@@ -145,21 +182,162 @@ class LiteLLM:
         Returns:
             list: A list of messages prepared for the task.
         """
-        # Check cache first
-        cache_key = f"{self.system_prompt}:{task}"
-        if cache_key in self._cached_messages:
-            return self._cached_messages[cache_key].copy()
+        self.check_if_model_supports_vision(img=img)
 
+        # Initialize messages
         messages = []
-        if self.system_prompt:
+
+        # Add system prompt if present
+        if self.system_prompt is not None:
             messages.append(
                 {"role": "system", "content": self.system_prompt}
             )
-        messages.append({"role": "user", "content": task})
 
-        # Cache the prepared messages
-        self._cached_messages[cache_key] = messages.copy()
+        # Handle vision case
+        if img is not None:
+            messages = self.vision_processing(
+                task=task, image=img, messages=messages
+            )
+        else:
+            messages.append({"role": "user", "content": task})
+
         return messages
+
+    def anthropic_vision_processing(
+        self, task: str, image: str, messages: list
+    ) -> list:
+        """
+        Process vision input specifically for Anthropic models.
+        Handles Anthropic's specific image format requirements.
+        """
+        # Get base64 encoded image
+        image_url = get_image_base64(image)
+
+        # Extract mime type from the data URI or use default
+        mime_type = "image/jpeg"  # default
+        if "data:" in image_url and ";base64," in image_url:
+            mime_type = image_url.split(";base64,")[0].split("data:")[
+                1
+            ]
+
+        # Ensure mime type is one of the supported formats
+        supported_formats = [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+        ]
+        if mime_type not in supported_formats:
+            mime_type = (
+                "image/jpeg"  # fallback to jpeg if unsupported
+            )
+
+        # Construct Anthropic vision message
+        messages.append(
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": task},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": image_url,
+                            "format": mime_type,
+                        },
+                    },
+                ],
+            }
+        )
+
+        return messages
+
+    def openai_vision_processing(
+        self, task: str, image: str, messages: list
+    ) -> list:
+        """
+        Process vision input specifically for OpenAI models.
+        Handles OpenAI's specific image format requirements.
+        """
+        # Get base64 encoded image with proper format
+        image_url = get_image_base64(image)
+
+        # Prepare vision message
+        vision_message = {
+            "type": "image_url",
+            "image_url": {"url": image_url},
+        }
+
+        # Add format for specific models
+        extension = Path(image).suffix.lower()
+        mime_type = (
+            f"image/{extension[1:]}" if extension else "image/jpeg"
+        )
+        vision_message["image_url"]["format"] = mime_type
+
+        # Append vision message
+        messages.append(
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": task},
+                    vision_message,
+                ],
+            }
+        )
+
+        return messages
+
+    def vision_processing(
+        self, task: str, image: str, messages: Optional[list] = None
+    ):
+        """
+        Process the image for the given task.
+        Handles different image formats and model requirements.
+        """
+        # # # Handle Anthropic models separately
+        # # if "anthropic" in self.model_name.lower() or "claude" in self.model_name.lower():
+        # #     messages = self.anthropic_vision_processing(task, image, messages)
+        # #     return messages
+
+        # # Get base64 encoded image with proper format
+        # image_url = get_image_base64(image)
+
+        # # Prepare vision message
+        # vision_message = {
+        #     "type": "image_url",
+        #     "image_url": {"url": image_url},
+        # }
+
+        # # Add format for specific models
+        # extension = Path(image).suffix.lower()
+        # mime_type = f"image/{extension[1:]}" if extension else "image/jpeg"
+        # vision_message["image_url"]["format"] = mime_type
+
+        # # Append vision message
+        # messages.append(
+        #     {
+        #         "role": "user",
+        #         "content": [
+        #             {"type": "text", "text": task},
+        #             vision_message,
+        #         ],
+        #     }
+        # )
+
+        # return messages
+        if (
+            "anthropic" in self.model_name.lower()
+            or "claude" in self.model_name.lower()
+        ):
+            messages = self.anthropic_vision_processing(
+                task, image, messages
+            )
+            return messages
+        else:
+            messages = self.openai_vision_processing(
+                task, image, messages
+            )
+            return messages
 
     def audio_processing(self, task: str, audio: str):
         """
@@ -169,11 +347,9 @@ class LiteLLM:
             task (str): The task to be processed.
             audio (str): The path or identifier for the audio file.
         """
-        self.modalities.append("audio")
-
         encoded_string = get_audio_base64(audio)
 
-        # Append messages
+        # Append audio message
         self.messages.append(
             {
                 "role": "user",
@@ -190,46 +366,17 @@ class LiteLLM:
             }
         )
 
-    def vision_processing(self, task: str, image: str):
+    def check_if_model_supports_vision(self, img: str = None):
         """
-        Process the image for the given task.
+        Check if the model supports vision.
         """
-        self.modalities.append("vision")
-
-        # Append messages
-        self.messages.append(
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": task},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": image,
-                            # "detail": "high"
-                            # "format": "image",
-                        },
-                    },
-                ],
-            }
-        )
-
-    def handle_modalities(
-        self, task: str, audio: str = None, img: str = None
-    ):
-        """
-        Handle the modalities for the given task.
-        """
-        self.messages = []  # Reset messages
-        self.modalities.append("text")
-
-        if audio is not None:
-            self.audio_processing(task=task, audio=audio)
-            self.modalities.append("audio")
-
         if img is not None:
-            self.vision_processing(task=task, image=img)
-            self.modalities.append("vision")
+            out = supports_vision(model=self.model_name)
+
+            if out is False:
+                raise ValueError(
+                    f"Model {self.model_name} does not support vision"
+                )
 
     def run(
         self,
@@ -256,13 +403,7 @@ class LiteLLM:
             Exception: If there is an error in processing the request.
         """
         try:
-            messages = self._prepare_messages(task)
-
-            if audio is not None or img is not None:
-                self.handle_modalities(
-                    task=task, audio=audio, img=img
-                )
-                messages = self.messages
+            messages = self._prepare_messages(task=task, img=img)
 
             # Base completion parameters
             completion_params = {
@@ -298,6 +439,9 @@ class LiteLLM:
                     {"functions": self.functions}
                 )
 
+            if self.base_url is not None:
+                completion_params["base_url"] = self.base_url
+
             # Add modalities if needed
             if self.modalities and len(self.modalities) >= 2:
                 completion_params["modalities"] = self.modalities
@@ -308,12 +452,16 @@ class LiteLLM:
             # Handle tool-based response
             if self.tools_list_dictionary is not None:
                 return self.output_for_tools(response)
+            elif self.return_all is True:
+                return response.model_dump()
             else:
                 # Return standard response content
                 return response.choices[0].message.content
 
         except LiteLLMException as error:
-            logger.error(f"Error in LiteLLM run: {str(error)}")
+            logger.error(
+                f"Error in LiteLLM run: {str(error)} Traceback: {traceback.format_exc()}"
+            )
             if "rate_limit" in str(error).lower():
                 logger.warning(
                     "Rate limit hit, retrying with exponential backoff..."

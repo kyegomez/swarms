@@ -14,6 +14,7 @@ Cargo.lock
 .pytest_cache
 static/generated
 conversations/
+next_swarms_update.txt
 runs
 Financial-Analysis-Agent_state.json
 conversations/

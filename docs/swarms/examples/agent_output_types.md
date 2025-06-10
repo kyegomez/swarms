@@ -1,11 +1,12 @@
-# Agent Output Types Examples
+# Agent Output Types Examples with Vision Capabilities
 
-This example demonstrates how to use different output types when working with Swarms agents. Each output type formats the agent's response in a specific way, making it easier to integrate with different parts of your application.
+This example demonstrates how to use different output types when working with Swarms agents, including vision-enabled agents that can analyze images. Each output type formats the agent's response in a specific way, making it easier to integrate with different parts of your application.
 
 ## Prerequisites
 
 - Python 3.7+
 - OpenAI API key
+- Anthropic API key (optional, for Claude models)
 - Swarms library
 
 ## Installation
@@ -18,171 +19,61 @@ pip3 install -U swarms
 
 ```plaintext
 WORKSPACE_DIR="agent_workspace"
-OPENAI_API_KEY=""
-ANTHROPIC_API_KEY=""
+OPENAI_API_KEY=""  # Required for GPT-4V vision capabilities
+ANTHROPIC_API_KEY=""  # Optional, for Claude models
 ```
-
-## Available Output Types
-
-The following output types are supported:
-
-| Output Type | Description |
-|------------|-------------|
-| `"list"` | Returns response as a JSON string containing a list |
-| `"dict"` or `"dictionary"` | Returns response as a Python dictionary |
-| `"string"` or `"str"` | Returns response as a plain string |
-| `"final"` or `"last"` | Returns only the final response |
-| `"json"` | Returns response as a JSON string |
-| `"all"` | Returns all responses in the conversation |
-| `"yaml"` | Returns response formatted as YAML |
-| `"xml"` | Returns response formatted as XML |
-| `"dict-all-except-first"` | Returns all responses except the first as a dictionary |
-| `"str-all-except-first"` | Returns all responses except the first as a string |
-| `"basemodel"` | Returns response as a Pydantic BaseModel |
 
 ## Examples
 
-### 1. String Output (Default)
+### Vision-Enabled Quality Control Agent
 
 ```python
-from swarms import Agent
-
-# Initialize agent with string output
-agent = Agent(
-    agent_name="String-Output-Agent",
-    agent_description="Demonstrates string output format",
-    system_prompt="You are a helpful assistant that provides clear text responses.",
-    output_type="str",  # or "string"
+from swarms.structs import Agent
+from swarms.prompts.logistics import (
+    Quality_Control_Agent_Prompt,
 )
 
-response = agent.run("What is the capital of France?")
+# Image for analysis
+factory_image = "image.jpg"
+
+
+# Quality control agent
+quality_control_agent = Agent(
+    agent_name="Quality Control Agent",
+    agent_description="A quality control agent that analyzes images and provides a detailed report on the quality of the product in the image.",
+    model_name="gpt-4.1-mini",
+    system_prompt=Quality_Control_Agent_Prompt,
+    multi_modal=True,
+    max_loops=2,
+    output_type="str-all-except-first",
+)
+
+
+response = quality_control_agent.run(
+    task="what is in the image?",
+    img=factory_image,
+)
+
+print(response)
 
 ```
 
-### 2. JSON Output
+### Supported Image Formats
 
-```python
-# Initialize agent with JSON output
-agent = Agent(
-    agent_name="JSON-Output-Agent",
-    agent_description="Demonstrates JSON output format",
-    system_prompt="You are an assistant that provides structured data responses.",
-    output_type="json"
-)
+The vision-enabled agents support various image formats including:
 
-response = agent.run("List the top 3 programming languages.")
+| Format | Description |
+|--------|-------------|
+| JPEG/JPG | Standard image format with lossy compression |
+| PNG | Lossless format supporting transparency |
+| GIF | Animated format (only first frame used) |
+| WebP | Modern format with both lossy and lossless compression |
 
-```
+### Best Practices for Vision Tasks
 
-### 3. List Output
-
-```python
-# Initialize agent with list output
-agent = Agent(
-    agent_name="List-Output-Agent",
-    agent_description="Demonstrates list output format",
-    system_prompt="You are an assistant that provides list-based responses.",
-    output_type="list"
-)
-
-response = agent.run("Name three primary colors.")
-
-```
-
-### 4. Dictionary Output
-
-```python
-# Initialize agent with dictionary output
-agent = Agent(
-    agent_name="Dict-Output-Agent",
-    agent_description="Demonstrates dictionary output format",
-    system_prompt="You are an assistant that provides dictionary-based responses.",
-    output_type="dict"  # or "dictionary"
-)
-
-response = agent.run("Provide information about a book.")
-
-```
-
-### 5. YAML Output
-
-```python
-# Initialize agent with YAML output
-agent = Agent(
-    agent_name="YAML-Output-Agent",
-    agent_description="Demonstrates YAML output format",
-    system_prompt="You are an assistant that provides YAML-formatted responses.",
-    output_type="yaml"
-)
-
-response = agent.run("Describe a recipe.")
-```
-
-### 6. XML Output
-
-```python
-# Initialize agent with XML output
-agent = Agent(
-    agent_name="XML-Output-Agent",
-    agent_description="Demonstrates XML output format",
-    system_prompt="You are an assistant that provides XML-formatted responses.",
-    output_type="xml"
-)
-
-response = agent.run("Provide user information.")
-```
-
-### 7. All Responses
-
-```python
-# Initialize agent to get all responses
-agent = Agent(
-    agent_name="All-Output-Agent",
-    agent_description="Demonstrates getting all responses",
-    system_prompt="You are an assistant that provides multiple responses.",
-    output_type="all"
-)
-
-response = agent.run("Tell me about climate change.")
-```
-
-### 8. Final Response Only
-
-```python
-# Initialize agent to get only final response
-agent = Agent(
-    agent_name="Final-Output-Agent",
-    agent_description="Demonstrates getting only final response",
-    system_prompt="You are an assistant that provides concise final answers.",
-    output_type="final"  # or "last"
-)
-
-response = agent.run("What's the meaning of life?")
-```
-
-
-## Best Practices
-
-1. Choose the output type based on your application's needs:
-   
-   | Output Type | Use Case |
-   |------------|----------|
-   | `"str"` | Simple text responses |
-   | `"json"` or `"dict"` | Structured data |
-   | `"list"` | Array-like data |
-   | `"yaml"` | Configuration-like data |
-   | `"xml"` | XML-based integrations |
-   | `"basemodel"` | Type-safe data handling |
-
-2. Handle the output appropriately in your application:
-
-   - Parse JSON/YAML responses when needed
-   
-   - Validate structured data
-   
-   - Handle potential formatting errors
-
-3. Consider using `try-except` blocks when working with structured output types to handle potential parsing errors.
-
-
-This comprehensive guide shows how to use all available output types in the Swarms framework, making it easier to integrate agent responses into your applications in the most suitable format for your needs.
+| Best Practice | Description |
+|--------------|-------------|
+| Image Quality | Ensure images are clear and well-lit for optimal analysis |
+| Image Size | Keep images under 20MB and in supported formats |
+| Task Specificity | Provide clear, specific instructions for image analysis |
+| Model Selection | Use vision-capable models (e.g., GPT-4V) for image tasks |

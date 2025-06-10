@@ -240,10 +240,6 @@ class SupabaseConversation(BaseCommunication):
             """
 
             # Try to create index as well
-            create_index_sql = f"""
-            CREATE INDEX IF NOT EXISTS idx_{self.table_name}_conversation_id 
-            ON {self.table_name} (conversation_id);
-            """
 
             # Attempt to create table using RPC function
             # Note: This requires a stored procedure to be created in Supabase
@@ -339,7 +335,7 @@ class SupabaseConversation(BaseCommunication):
             if hasattr(self.client, "postgrest") and hasattr(
                 self.client.postgrest, "rpc"
             ):
-                result = self.client.postgrest.rpc(
+                self.client.postgrest.rpc(
                     "exec_sql", {"query": admin_sql}
                 ).execute()
                 if self.enable_logging:

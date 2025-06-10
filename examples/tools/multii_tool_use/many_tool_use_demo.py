@@ -423,7 +423,7 @@ agent = Agent(
     system_prompt="You are an advanced financial advisor agent with access to real-time cryptocurrency data from multiple sources including CoinGecko, Jupiter Protocol, and HTX. You can help users analyze market trends, check prices, find trading opportunities, perform swaps, and get detailed market insights. Always provide accurate, up-to-date information and explain market data in an easy-to-understand way.",
     max_loops=1,
     max_tokens=4096,
-    model_name="gpt-4o-mini",
+    model_name="gpt-4.1-mini",
     dynamic_temperature_enabled=True,
     output_type="all",
     tools=[
@@ -442,5 +442,7 @@ agent = Agent(
 )
 
 # agent.run("Use defi stats to find the best defi project to invest in")
-agent.run("Get the market sentiment for bitcoin")
+agent.run(
+    "Get the market sentiment for bitcoin and fetch the price of ethereum"
+)
 # Automatically executes any number and combination of tools you have uploaded to the tools parameter!
