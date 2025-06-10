@@ -1,0 +1,11 @@
+# Test configuration for listing agents via CLI
+# This file demonstrates a simple multi-agent setup for testing purposes
+agents:
+  - agent_name: "Test-Agent-1"
+    model_name: "gpt-4o-mini"
+    system_prompt: "You are Test-Agent-1, designed to handle Task 1 efficiently."
+    task: "Task 1: Analyze provided text for sentiment and key themes."
+  - agent_name: "Test-Agent-2"
+    model_name: "gpt-4o-mini" 
+    system_prompt: "You are Test-Agent-2, specialized in processing and responding to Task 2."
+    task: "Task 2: Generate a concise summary of the provided information."
