@@ -1015,9 +1015,7 @@ class Agent:
                     self.dynamic_temperature()
 
                 # Task prompt
-                task_prompt = (
-                    self.short_memory.return_history_as_string()
-                )
+                task_prompt = self.short_memory.get_str()
 
                 # Parameters
                 attempt = 0
@@ -2112,9 +2110,7 @@ class Agent:
     def check_available_tokens(self):
         # Log the amount of tokens left in the memory and in the task
         if self.tokenizer is not None:
-            tokens_used = count_tokens(
-                self.short_memory.return_history_as_string()
-            )
+            tokens_used = count_tokens(self.short_memory.get_str())
             logger.info(
                 f"Tokens available: {self.context_length - tokens_used}"
             )
@@ -2123,9 +2119,7 @@ class Agent:
 
     def tokens_checks(self):
         # Check the tokens available
-        tokens_used = count_tokens(
-            self.short_memory.return_history_as_string()
-        )
+        tokens_used = count_tokens(self.short_memory.get_str())
         out = self.check_available_tokens()
 
         logger.info(
