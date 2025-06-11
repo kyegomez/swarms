@@ -49,7 +49,7 @@ class RAGConfig(BaseModel):
         default=None, description="Keywords to check for relevance"
     )
 
-    @field_validator("relevance_keywords", pre=True)
+    @field_validator("relevance_keywords", mode="before")
     def set_default_keywords(cls, v):
         if v is None:
             return [
@@ -227,9 +227,12 @@ class AgentRAGHandler:
         formatted_sections = [header]
 
         for i, result in enumerate(results, 1):
-            content, score, source, metadata = (
-                self._extract_result_fields(result)
-            )
+            (
+                content,
+                score,
+                source,
+                metadata,
+            ) = self._extract_result_fields(result)
 
             section = f"""
 [Memory {i}] Relevance: {score} | Source: {source}
