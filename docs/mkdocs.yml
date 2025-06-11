@@ -274,6 +274,10 @@ nav:
         - Social Media:
           - Twitter: "swarms_tools/twitter.md"
 
+    - Swarms Utilities:
+      - Overview: "swarms/utils/index.md"
+      - Visualizer: "swarms/utils/visualizer.md"
+
     - Swarms Memory:
       - Overview: "swarms_memory/index.md"
       - Memory Systems:
