@@ -12,20 +12,6 @@ from swarms.communication.base_communication import (
 )
 
 
-# Check if Pulsar is available
-try:
-    import pulsar
-
-    PULSAR_AVAILABLE = True
-    logger.info("Apache Pulsar client library is available")
-except ImportError as e:
-    PULSAR_AVAILABLE = False
-    logger.error(
-        f"Apache Pulsar client library is not installed: {e}"
-    )
-    logger.error("Please install it using: pip install pulsar-client")
-
-
 class PulsarConnectionError(Exception):
     """Exception raised for Pulsar connection errors."""
 
@@ -77,11 +63,38 @@ class PulsarConversation(BaseCommunication):
         **kwargs,
     ):
         """Initialize the Pulsar conversation interface."""
-        if not PULSAR_AVAILABLE:
-            raise ImportError(
-                "Apache Pulsar client library is not installed. "
-                "Please install it using: pip install pulsar-client"
-            )
+        # Lazy load Pulsar with auto-installation
+        try:
+            import pulsar
+            self.pulsar = pulsar
+            self.pulsar_available = True
+        except ImportError:
+            # Auto-install pulsar-client if not available
+            print("📦 Pulsar client not found. Installing automatically...")
+            try:
+                import subprocess
+                import sys
+                
+                # Install pulsar-client
+                subprocess.check_call([
+                    sys.executable, "-m", "pip", "install", "pulsar-client"
+                ])
+                print("✅ Pulsar client installed successfully!")
+                
+                # Try importing again
+                import pulsar
+                self.pulsar = pulsar
+                self.pulsar_available = True
+                print("✅ Pulsar loaded successfully!")
+                
+            except Exception as e:
+                self.pulsar_available = False
+                logger.error(
+                    f"Failed to auto-install Pulsar client. Please install manually with 'pip install pulsar-client': {e}"
+                )
+                raise ImportError(
+                    f"Failed to auto-install Pulsar client. Please install manually with 'pip install pulsar-client': {e}"
+                )
 
         logger.info(
             f"Initializing PulsarConversation with host: {pulsar_host}"
@@ -631,7 +644,10 @@ class PulsarConversation(BaseCommunication):
         Returns:
             bool: True if Pulsar is available and accessible, False otherwise
         """
-        if not PULSAR_AVAILABLE:
+        try:
+            import pulsar
+            pulsar_available = True
+        except ImportError:
             logger.error("Pulsar client library is not installed")
             return False
 
