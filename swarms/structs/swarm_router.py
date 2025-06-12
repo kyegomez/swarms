@@ -178,7 +178,7 @@ class SwarmRouter:
         name: str = "swarm-router",
         description: str = "Routes your task to the desired swarm",
         max_loops: int = 1,
-        agents: List[Union[Agent, Callable]] = [],
+        agents: List[Union[Agent, Callable]] = None,
         swarm_type: SwarmType = "SequentialWorkflow",  # "SpreadSheetSwarm" # "auto"
         autosave: bool = False,
         rearrange_flow: str = None,
@@ -197,6 +197,7 @@ class SwarmRouter:
         *args,
         **kwargs,
     ):
+        agents = agents or []
         self.name = name
         self.description = description
         self.max_loops = max_loops

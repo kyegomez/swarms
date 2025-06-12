@@ -142,7 +142,7 @@ class MajorityVoting:
         self,
         name: str = "MajorityVoting",
         description: str = "A majority voting system for agents",
-        agents: List[Agent] = [],
+        agents: List[Agent] = None,
         output_parser: Optional[Callable] = majority_voting,
         consensus_agent: Optional[Agent] = None,
         autosave: bool = False,
@@ -152,6 +152,7 @@ class MajorityVoting:
         *args,
         **kwargs,
     ):
+        agents = agents or []
         self.name = name
         self.description = description
         self.agents = agents

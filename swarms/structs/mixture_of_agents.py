@@ -25,7 +25,7 @@ class MixtureOfAgents:
         self,
         name: str = "MixtureOfAgents",
         description: str = "A class to run a mixture of agents and aggregate their responses.",
-        agents: List[Agent] = [],
+        agents: List[Agent] = None,
         aggregator_agent: Agent = None,
         aggregator_system_prompt: str = aggregator_system_prompt_main,
         layers: int = 3,
@@ -44,6 +44,7 @@ class MixtureOfAgents:
             aggregator_system_prompt (str, optional): The system prompt for the aggregator agent. Defaults to "".
             layers (int, optional): The number of layers to process in the mixture. Defaults to 3.
         """
+        agents = agents or []
         self.name = name
         self.description = description
         self.agents = agents

@@ -59,7 +59,7 @@ class MultiAgentRouter:
         self,
         name: str = "swarm-router",
         description: str = "Routes tasks to specialized agents based on their capabilities",
-        agents: List[Agent] = [],
+        agents: List[Agent] = None,
         model: str = "gpt-4o-mini",
         temperature: float = 0.1,
         shared_memory_system: callable = None,
@@ -78,6 +78,7 @@ class MultiAgentRouter:
             output_type (Literal["json", "string"], optional): The type of output expected from the agents. Defaults to "json".
             execute_task (bool, optional): A flag indicating whether the task should be executed by the selected agent. Defaults to True.
         """
+        agents = agents or []
         self.name = name
         self.description = description
         self.shared_memory_system = shared_memory_system

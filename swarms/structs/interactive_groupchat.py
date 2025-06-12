@@ -67,11 +67,12 @@ class InteractiveGroupChat:
         id: str = generate_api_key(prefix="swarms-"),
         name: str = "InteractiveGroupChat",
         description: str = "An interactive group chat for multiple agents",
-        agents: List[Union[Agent, Callable]] = [],
+        agents: List[Union[Agent, Callable]] = None,
         max_loops: int = 1,
         output_type: str = "string",
         interactive: bool = False,
     ):
+        agents = agents or []
         self.id = id
         self.name = name
         self.description = description

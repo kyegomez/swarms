@@ -81,7 +81,7 @@ class SpreadSheetSwarm(BaseSwarm):
         self,
         name: str = "Spreadsheet-Swarm",
         description: str = "A swarm that that processes tasks concurrently using multiple agents and saves the metadata to a CSV file.",
-        agents: Union[Agent, List[Agent]] = [],
+        agents: Union[Agent, List[Agent]] = None,
         autosave_on: bool = True,
         save_file_path: str = None,
         max_loops: int = 1,
@@ -90,6 +90,7 @@ class SpreadSheetSwarm(BaseSwarm):
         *args,
         **kwargs,
     ):
+        agents = agents or []
         super().__init__(
             name=name,
             description=description,
