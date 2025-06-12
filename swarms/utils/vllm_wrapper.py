@@ -133,9 +133,8 @@ class VLLMWrapper:
         Returns:
             List[str]: List of model responses.
         """
-        # Fetch 95% of the available CPU cores
-        num_cores = os.cpu_count()
-        num_workers = int(num_cores * 0.95)
+        # Calculate the worker count based on 95% of available CPU cores
+        num_workers = max(1, int((os.cpu_count() or 1) * 0.95))
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=num_workers
         ) as executor:
