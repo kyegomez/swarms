@@ -167,12 +167,13 @@ class MALT:
         max_loops: int = 1,
         return_list: bool = False,
         return_dict: bool = False,
-        agents: list[Agent] = [],
+        agents: list[Agent] = None,
         preset_agents: bool = True,
     ):
         logger.info(
             "Initializing MALT with provided agents and parameters."
         )
+        agents = agents or []
         self.main_agent = main_agent
         self.refiner_agent = refiner_agent
         self.verifier_agent = verifier_agent

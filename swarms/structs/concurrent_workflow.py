@@ -63,7 +63,7 @@ class ConcurrentWorkflow(BaseSwarm):
         self,
         name: str = "ConcurrentWorkflow",
         description: str = "Execution of multiple agents concurrently",
-        agents: List[Union[Agent, Callable]] = [],
+        agents: List[Union[Agent, Callable]] = None,
         metadata_output_path: str = "agent_metadata.json",
         auto_save: bool = True,
         output_type: str = "dict-all-except-first",
@@ -77,6 +77,7 @@ class ConcurrentWorkflow(BaseSwarm):
         *args,
         **kwargs,
     ):
+        agents = agents or []
         super().__init__(
             name=name,
             description=description,

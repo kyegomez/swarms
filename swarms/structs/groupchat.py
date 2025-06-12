@@ -222,12 +222,13 @@ class GroupChat:
         self,
         name: str = "GroupChat",
         description: str = "A group chat for multiple agents",
-        agents: List[Agent] = [],
+        agents: List[Agent] = None,
         speaker_fn: SpeakerFunction = round_robin,
         max_loops: int = 1,
         rules: str = "",
         output_type: str = "string",
     ):
+        agents = agents or []
         self.name = name
         self.description = description
         self.agents = agents
