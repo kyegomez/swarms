@@ -31,13 +31,14 @@ class SequentialWorkflow:
         self,
         name: str = "SequentialWorkflow",
         description: str = "Sequential Workflow, where agents are executed in a sequence.",
-        agents: List[Union[Agent, Callable]] = [],
+        agents: List[Union[Agent, Callable]] = None,
         max_loops: int = 1,
         output_type: OutputType = "dict",
         shared_memory_system: callable = None,
         *args,
         **kwargs,
     ):
+        agents = agents or []
         self.name = name
         self.description = description
         self.agents = agents

@@ -52,12 +52,13 @@ class DynamicConversationalSwarm:
         self,
         name: str = "Dynamic Conversational Swarm",
         description: str = "A swarm that uses a dynamic conversational model to solve complex tasks.",
-        agents: List[Agent] = [],
+        agents: List[Agent] = None,
         max_loops: int = 1,
         output_type: str = "list",
         *args,
         **kwargs,
     ):
+        agents = agents or []
         self.name = name
         self.description = description
         self.agents = agents
