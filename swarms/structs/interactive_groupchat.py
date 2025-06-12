@@ -223,7 +223,7 @@ class InteractiveGroupChat:
         for name, agent in self.agent_map.items():
             if isinstance(agent, Agent):
                 print(
-                    f"- @{name}: {agent.system_prompt.split('\n')[0]}"
+                    f"- @{name}: {agent.system_prompt.splitlines()[0]}"
                 )
             else:
                 print(f"- @{name}: Custom callable function")
