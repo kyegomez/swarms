@@ -267,6 +267,7 @@ nav:
       - Overview: "swarms_tools/overview.md"
       - BaseTool Reference: "swarms/tools/base_tool.md"
       - MCP Client Utils: "swarms/tools/mcp_client_call.md"
+      - Logits Processor: "swarms/tools/logits_processor.md"
 
       - Vertical Tools:
         - Finance: "swarms_tools/finance.md"
