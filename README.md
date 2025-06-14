@@ -491,6 +491,19 @@ agent.model_dump_json()
 print(agent.to_toml())
 
 ```
+### Export Conversation History
+
+```python
+from swarms.structs.conversation import Conversation
+from swarms.utils.history_output_formatter import history_output_formatter
+
+conversation = Conversation()
+conversation.add("user", "Hello")
+conversation.add("assistant", "Hi!")
+
+yaml_history = history_output_formatter(conversation, type="yaml")
+xml_history = history_output_formatter(conversation, type="xml")
+```
 
 
 
