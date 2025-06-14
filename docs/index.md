@@ -2,6 +2,7 @@
 
 [![Join our Discord](https://img.shields.io/badge/Discord-Join%20our%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/jM3Z6M9uMq) [![Subscribe on YouTube](https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@kyegomez3242) [![Connect on LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/kye-g-38759a207/) [![Follow on X.com](https://img.shields.io/badge/X.com-Follow-1DA1F2?style=for-the-badge&logo=x&logoColor=white)](https://x.com/swarms_corp)
 
+
 ## Swarms Installation
 
 ```bash
@@ -45,12 +46,12 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 | Section              | Links                                                                                      |
 |----------------------|--------------------------------------------------------------------------------------------|
 | Swarms Python Framework Docs     | [Framework Docs](https://docs.swarms.world/en/latest/swarms/install/install/)                                                            |
-| Swarms Cloud API     | [Cloud API](https://docs.swarms.world/en/latest/swarms_cloud/launch/)                                                            |
+| Swarms Cloud API     | [Cloud API](https://docs.swarms.world/en/latest/swarms_cloud/swarms_api/)                                                            |
 | Swarms Marketplace API     | [Marketplace API](https://docs.swarms.world/en/latest/swarms_platform/)                                                            |
 | Swarms Memory Systems     | [Memory Systems](https://docs.swarms.world/en/latest/swarms_memory/)                                                            |
 | Available Models     | [Models Overview](https://docs.swarms.world/en/latest/swarms/models/)                                                            |
 | Swarms Tools     | [Tools Overview](https://docs.swarms.world/en/latest/swarms_tools/overview/)                                                            |
-| Example Applications     | [Examples](https://docs.swarms.world/en/latest/swarms/examples/unique_swarms/)                                                            |
+| Example Applications     | [Examples](https://docs.swarms.world/en/latest/swarms/examples)                                                            |
 | Swarms Corp Github     | [Swarms Corp GitHub](https://github.com/The-Swarm-Corporation)                      |
 
 

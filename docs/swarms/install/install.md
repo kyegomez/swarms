@@ -286,12 +286,12 @@ Before you begin, ensure you have the following installed:
     }
     ```
 
-## Javascript
+## Rust
 
-=== "NPM install (Work in Progress)"
+=== "Cargo install"
 
-    Get started with the NPM implementation of Swarms:
+    Get started with the Rust implementation of Swarms:
 
     ```bash
-    npm install swarms-js
+    cargo add swarms-rs
     ```
