@@ -2078,6 +2078,10 @@ Join our growing community around the world, for real-time support, ideas, and d
 - Connect with us on [LinkedIn](https://www.linkedin.com/company/the-swarm-corporation)
 - Visit us on [YouTube](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ)
 - Sign up for our events [Sign up here](https://lu.ma/5p2jnc2v)
+## Citation
+
+If you use **swarms** in your research, please cite the project by referencing the metadata in [CITATION.cff](./CITATION.cff).
+
 
 # License
 
