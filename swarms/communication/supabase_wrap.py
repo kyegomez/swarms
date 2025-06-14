@@ -96,29 +96,39 @@ class SupabaseConversation(BaseCommunication):
         # Lazy load Supabase with auto-installation
         try:
             from supabase import Client, create_client
+
             self.supabase_client = Client
             self.create_client = create_client
             self.supabase_available = True
         except ImportError:
             # Auto-install supabase if not available
-            print("📦 Supabase not found. Installing automatically...")
+            print(
+                "📦 Supabase not found. Installing automatically..."
+            )
             try:
                 import subprocess
                 import sys
-                
+
                 # Install supabase
-                subprocess.check_call([
-                    sys.executable, "-m", "pip", "install", "supabase"
-                ])
+                subprocess.check_call(
+                    [
+                        sys.executable,
+                        "-m",
+                        "pip",
+                        "install",
+                        "supabase",
+                    ]
+                )
                 print("✅ Supabase installed successfully!")
-                
+
                 # Try importing again
                 from supabase import Client, create_client
+
                 self.supabase_client = Client
                 self.create_client = create_client
                 self.supabase_available = True
                 print("✅ Supabase loaded successfully!")
-                
+
             except Exception as e:
                 self.supabase_available = False
                 if logger:
@@ -179,7 +189,9 @@ class SupabaseConversation(BaseCommunication):
         )  # For thread-safe operations if any (e.g. token calculation)
 
         try:
-            self.client = self.create_client(supabase_url, supabase_key)
+            self.client = self.create_client(
+                supabase_url, supabase_key
+            )
             if self.enable_logging:
                 self.logger.info(
                     f"Successfully initialized Supabase client for URL: {supabase_url}"

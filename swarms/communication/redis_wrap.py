@@ -31,6 +31,7 @@ try:
         RedisError,
         TimeoutError,
     )
+
     REDIS_AVAILABLE = True
 except ImportError:
     # Auto-install Redis at import time
@@ -38,13 +39,13 @@ except ImportError:
     try:
         import subprocess
         import sys
-        
+
         # Install redis
-        subprocess.check_call([
-            sys.executable, "-m", "pip", "install", "redis"
-        ])
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "redis"]
+        )
         print("✅ Redis installed successfully!")
-        
+
         # Try importing again
         import redis
         from redis.exceptions import (
@@ -54,12 +55,15 @@ except ImportError:
             RedisError,
             TimeoutError,
         )
+
         REDIS_AVAILABLE = True
         print("✅ Redis loaded successfully!")
-        
+
     except Exception as e:
         REDIS_AVAILABLE = False
-        print(f"❌ Failed to auto-install Redis. Please install manually with 'pip install redis': {e}")
+        print(
+            f"❌ Failed to auto-install Redis. Please install manually with 'pip install redis': {e}"
+        )
 
 
 class RedisConnectionError(Exception):
@@ -186,7 +190,11 @@ rdbchecksum yes
         try:
             if self.process:
                 # Send SAVE and BGSAVE commands before stopping if persistence is enabled
-                if self.persist and self.auto_persist and REDIS_AVAILABLE:
+                if (
+                    self.persist
+                    and self.auto_persist
+                    and REDIS_AVAILABLE
+                ):
                     try:
                         r = redis.Redis(
                             host="localhost", port=self.port
@@ -328,14 +336,14 @@ class RedisConversation(BaseStructure):
             RedisOperationError: If Redis operations fail.
         """
         global REDIS_AVAILABLE
-        
+
         # Check if Redis is available (should be True after module import auto-installation)
         if not REDIS_AVAILABLE:
             raise ImportError(
                 "Redis is not available. Module-level auto-installation failed. "
                 "Please install manually with 'pip install redis'"
             )
-        
+
         self.redis_available = True
 
         super().__init__()

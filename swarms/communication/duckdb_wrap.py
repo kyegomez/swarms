@@ -78,6 +78,7 @@ class DuckDBConversation(BaseCommunication):
         # Lazy load duckdb with auto-installation
         try:
             import duckdb
+
             self.duckdb = duckdb
             self.duckdb_available = True
         except ImportError:
@@ -86,19 +87,20 @@ class DuckDBConversation(BaseCommunication):
             try:
                 import subprocess
                 import sys
-                
+
                 # Install duckdb
-                subprocess.check_call([
-                    sys.executable, "-m", "pip", "install", "duckdb"
-                ])
+                subprocess.check_call(
+                    [sys.executable, "-m", "pip", "install", "duckdb"]
+                )
                 print("✅ DuckDB installed successfully!")
-                
+
                 # Try importing again
                 import duckdb
+
                 self.duckdb = duckdb
                 self.duckdb_available = True
                 print("✅ DuckDB loaded successfully!")
-                
+
             except Exception as e:
                 raise ImportError(
                     f"Failed to auto-install DuckDB. Please install manually with 'pip install duckdb': {e}"

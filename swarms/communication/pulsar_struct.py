@@ -66,27 +66,37 @@ class PulsarConversation(BaseCommunication):
         # Lazy load Pulsar with auto-installation
         try:
             import pulsar
+
             self.pulsar = pulsar
             self.pulsar_available = True
         except ImportError:
             # Auto-install pulsar-client if not available
-            print("📦 Pulsar client not found. Installing automatically...")
+            print(
+                "📦 Pulsar client not found. Installing automatically..."
+            )
             try:
                 import subprocess
                 import sys
-                
+
                 # Install pulsar-client
-                subprocess.check_call([
-                    sys.executable, "-m", "pip", "install", "pulsar-client"
-                ])
+                subprocess.check_call(
+                    [
+                        sys.executable,
+                        "-m",
+                        "pip",
+                        "install",
+                        "pulsar-client",
+                    ]
+                )
                 print("✅ Pulsar client installed successfully!")
-                
+
                 # Try importing again
                 import pulsar
+
                 self.pulsar = pulsar
                 self.pulsar_available = True
                 print("✅ Pulsar loaded successfully!")
-                
+
             except Exception as e:
                 self.pulsar_available = False
                 logger.error(
@@ -646,6 +656,7 @@ class PulsarConversation(BaseCommunication):
         """
         try:
             import pulsar
+
             pulsar_available = True
         except ImportError:
             logger.error("Pulsar client library is not installed")

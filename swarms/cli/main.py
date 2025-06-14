@@ -67,7 +67,7 @@ def show_ascii_art():
         Text(ASCII_ART, style=f"bold {COLORS['primary']}"),
         border_style=COLORS["secondary"],
         title="[bold]Welcome to Swarms[/bold]",
-        subtitle="[dim]Power to the Swarms[/dim]",
+        subtitle="[dim]swarms.ai[/dim]",
     )
     console.print(panel)
 

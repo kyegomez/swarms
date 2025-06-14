@@ -315,6 +315,7 @@ nav:
       - Agent Output Types: "swarms/examples/agent_output_types.md"
       - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
       - Agents with Vision: "swarms/examples/vision_processing.md"
+      - Gradio Chat Interface: "swarms/ui/main.md"
       - Various Model Providers:
         - OpenAI: "swarms/examples/openai_example.md"
         - Anthropic: "swarms/examples/claude.md"
@@ -392,6 +393,7 @@ nav:
       - Swarms API Pricing: "swarms_cloud/api_pricing.md"
       - Swarms API Pricing in Chinese: "swarms_cloud/chinese_api_pricing.md"
       - Swarms Cloud Subscription Tiers: "swarms_cloud/subscription_tiers.md"
+
     - Swarm Ecosystem APIs:
       - MCS API: "swarms_cloud/mcs_api.md"
       # - CreateNow API: "swarms_cloud/create_api.md"
@@ -403,15 +405,14 @@ nav:
     - Overview: "swarms_platform/index.md"
     - Swarm Platform API Keys: "swarms_platform/apikeys.md"
     - Account Management: "swarms_platform/account_management.md"
-    - Swarms Chat Tutorial: "swarms/ui/main.md"
 
   - Swarms Rust:
     - Overview: "swarms_rs/overview.md"
     - Agents: "swarms_rs/agents.md"
 
-  - Governance:
-    - Resources: "governance/main.md"
-    - Tokenomics: "web3/token.md"
+  - Resources:
+    - Overview: "governance/main.md"
+  #   - Tokenomics: "web3/token.md"
 
     
     # - Prompts API: 

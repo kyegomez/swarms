@@ -86,7 +86,9 @@ class RedisConversationTester:
         """Initialize Redis server and conversation for testing."""
         try:
             # Try first with external Redis (if available)
-            logger.info("Trying to connect to external Redis server...")
+            logger.info(
+                "Trying to connect to external Redis server..."
+            )
             self.conversation = RedisConversation(
                 system_prompt="Test System Prompt",
                 redis_host="localhost",
@@ -94,10 +96,14 @@ class RedisConversationTester:
                 redis_retry_attempts=1,
                 use_embedded_redis=False,  # Try external first
             )
-            logger.info("Successfully connected to external Redis server")
+            logger.info(
+                "Successfully connected to external Redis server"
+            )
             return True
         except Exception as external_error:
-            logger.info(f"External Redis connection failed: {external_error}")
+            logger.info(
+                f"External Redis connection failed: {external_error}"
+            )
             logger.info("Trying to start embedded Redis server...")
 
             try:
@@ -109,10 +115,14 @@ class RedisConversationTester:
                     redis_retry_attempts=3,
                     use_embedded_redis=True,
                 )
-                logger.info("Successfully started embedded Redis server")
+                logger.info(
+                    "Successfully started embedded Redis server"
+                )
                 return True
             except Exception as embedded_error:
-                logger.error(f"Both external and embedded Redis failed:")
+                logger.error(
+                    "Both external and embedded Redis failed:"
+                )
                 logger.error(f"  External: {external_error}")
                 logger.error(f"  Embedded: {embedded_error}")
                 return False
@@ -122,10 +132,16 @@ class RedisConversationTester:
         if self.conversation:
             try:
                 # Check if we have an embedded server to stop
-                if hasattr(self.conversation, 'embedded_server') and self.conversation.embedded_server is not None:
+                if (
+                    hasattr(self.conversation, "embedded_server")
+                    and self.conversation.embedded_server is not None
+                ):
                     self.conversation.embedded_server.stop()
                 # Close Redis client if it exists
-                if hasattr(self.conversation, 'redis_client') and self.conversation.redis_client:
+                if (
+                    hasattr(self.conversation, "redis_client")
+                    and self.conversation.redis_client
+                ):
                     self.conversation.redis_client.close()
             except Exception as e:
                 logger.warning(f"Error during cleanup: {str(e)}")
@@ -151,16 +167,22 @@ class RedisConversationTester:
         json_content = {"key": "value", "nested": {"data": 123}}
         self.conversation.add("system", json_content)
         last_message = self.conversation.get_final_message_content()
-        
+
         # Parse the JSON string back to dict for comparison
         if isinstance(last_message, str):
             try:
                 parsed_content = json.loads(last_message)
-                assert isinstance(parsed_content, dict), "Failed to handle JSON message"
+                assert isinstance(
+                    parsed_content, dict
+                ), "Failed to handle JSON message"
             except json.JSONDecodeError:
-                assert False, "JSON message was not stored as valid JSON"
+                assert (
+                    False
+                ), "JSON message was not stored as valid JSON"
         else:
-            assert isinstance(last_message, dict), "Failed to handle JSON message"
+            assert isinstance(
+                last_message, dict
+            ), "Failed to handle JSON message"
 
     def test_search(self):
         """Test search functionality."""
@@ -175,7 +197,9 @@ class RedisConversationTester:
         )
         if initial_count > 0:
             self.conversation.delete(0)
-            new_count = len(self.conversation.return_messages_as_list())
+            new_count = len(
+                self.conversation.return_messages_as_list()
+            )
             assert (
                 new_count == initial_count - 1
             ), "Failed to delete message"
@@ -228,7 +252,9 @@ class RedisConversationTester:
         self.conversation.add("user", "token test message")
         time.sleep(1)  # Wait for async token counting
         messages = self.conversation.to_dict()
-        assert isinstance(messages, list), "Token counting test completed"
+        assert isinstance(
+            messages, list
+        ), "Token counting test completed"
 
     def test_cache_operations(self):
         """Test cache operations."""
@@ -254,8 +280,10 @@ class RedisConversationTester:
 
         try:
             if not self.setup():
-                logger.warning("Failed to setup Redis connection. This is expected on systems without Redis server.")
-                
+                logger.warning(
+                    "Failed to setup Redis connection. This is expected on systems without Redis server."
+                )
+
                 # Generate a report indicating the limitation
                 setup_failed_md = [
                     "# Redis Conversation Test Results",
@@ -265,9 +293,9 @@ class RedisConversationTester:
                     "## Summary",
                     "❌ **Redis Server Setup Failed**",
                     "",
-                    "The Redis conversation class will work properly when a Redis server is available."
+                    "The Redis conversation class will work properly when a Redis server is available.",
                 ]
-                
+
                 return "\n".join(setup_failed_md)
 
             tests = [
@@ -304,12 +332,16 @@ def main():
 
     # Save results to file
     try:
-        with open("redis_test_results.md", "w", encoding="utf-8") as f:
+        with open(
+            "redis_test_results.md", "w", encoding="utf-8"
+        ) as f:
             f.write(markdown_results)
-        logger.info("Test results have been saved to redis_test_results.md")
+        logger.info(
+            "Test results have been saved to redis_test_results.md"
+        )
     except Exception as e:
         logger.error(f"Failed to save test results: {e}")
-    
+
     # Also print results to console
     print(markdown_results)
 

@@ -53,41 +53,65 @@ def get_conversation_dir():
 
 
 # Define available providers
-providers = Literal["mem0", "in-memory", "supabase", "redis", "sqlite", "duckdb", "pulsar"]
+providers = Literal[
+    "mem0",
+    "in-memory",
+    "supabase",
+    "redis",
+    "sqlite",
+    "duckdb",
+    "pulsar",
+]
+
 
 def _create_backend_conversation(backend: str, **kwargs):
     """
     Create a backend conversation instance based on the specified backend type.
-    
+
     This function uses lazy loading to import backend dependencies only when needed.
     Each backend class handles its own dependency management and error messages.
-    
+
     Args:
         backend (str): The backend type to create
         **kwargs: Arguments to pass to the backend constructor
-        
+
     Returns:
         Backend conversation instance
-        
+
     Raises:
         ImportError: If required packages for the backend are not installed (raised by lazy loading)
         ValueError: If backend is not supported
     """
     try:
         if backend == "supabase":
-            from swarms.communication.supabase_wrap import SupabaseConversation
+            from swarms.communication.supabase_wrap import (
+                SupabaseConversation,
+            )
+
             return SupabaseConversation(**kwargs)
         elif backend == "redis":
-            from swarms.communication.redis_wrap import RedisConversation
+            from swarms.communication.redis_wrap import (
+                RedisConversation,
+            )
+
             return RedisConversation(**kwargs)
         elif backend == "sqlite":
-            from swarms.communication.sqlite_wrap import SQLiteConversation
+            from swarms.communication.sqlite_wrap import (
+                SQLiteConversation,
+            )
+
             return SQLiteConversation(**kwargs)
         elif backend == "duckdb":
-            from swarms.communication.duckdb_wrap import DuckDBConversation
+            from swarms.communication.duckdb_wrap import (
+                DuckDBConversation,
+            )
+
             return DuckDBConversation(**kwargs)
         elif backend == "pulsar":
-            from swarms.communication.pulsar_struct import PulsarConversation
+            from swarms.communication.pulsar_struct import (
+                PulsarConversation,
+            )
+
             return PulsarConversation(**kwargs)
         else:
             raise ValueError(
@@ -103,8 +127,10 @@ def _create_backend_conversation(backend: str, **kwargs):
             "duckdb": "pip install duckdb",
             "pulsar": "pip install pulsar-client",
         }
-        
-        install_cmd = backend_deps.get(backend, f"Check documentation for {backend}")
+
+        install_cmd = backend_deps.get(
+            backend, f"Check documentation for {backend}"
+        )
         logger.error(
             f"Failed to initialize {backend} backend. "
             f"Missing dependencies. Install with: {install_cmd}"
@@ -190,7 +216,6 @@ class Conversation(BaseStructure):
         auto_persist: bool = True,
         redis_data_dir: Optional[str] = None,
         conversations_dir: Optional[str] = None,
-
         *args,
         **kwargs,
     ):
@@ -202,7 +227,15 @@ class Conversation(BaseStructure):
         self.backend_instance = None
 
         # Validate backend
-        valid_backends = ["in-memory", "mem0", "supabase", "redis", "sqlite", "duckdb", "pulsar"]
+        valid_backends = [
+            "in-memory",
+            "mem0",
+            "supabase",
+            "redis",
+            "sqlite",
+            "duckdb",
+            "pulsar",
+        ]
         if self.backend not in valid_backends:
             raise ValueError(
                 f"Invalid backend: '{self.backend}'. "
@@ -243,7 +276,13 @@ class Conversation(BaseStructure):
         self.conversations_dir = conversations_dir
 
         # Initialize backend if using persistent storage
-        if self.backend in ["supabase", "redis", "sqlite", "duckdb", "pulsar"]:
+        if self.backend in [
+            "supabase",
+            "redis",
+            "sqlite",
+            "duckdb",
+            "pulsar",
+        ]:
             try:
                 self._initialize_backend(
                     supabase_url=supabase_url,
@@ -258,7 +297,7 @@ class Conversation(BaseStructure):
                     persist_redis=persist_redis,
                     auto_persist=auto_persist,
                     redis_data_dir=redis_data_dir,
-                    **kwargs
+                    **kwargs,
                 )
             except Exception as e:
                 logger.warning(
@@ -275,7 +314,7 @@ class Conversation(BaseStructure):
     def _initialize_backend(self, **kwargs):
         """
         Initialize the persistent storage backend.
-        
+
         Args:
             **kwargs: Backend-specific configuration parameters
         """
@@ -297,52 +336,78 @@ class Conversation(BaseStructure):
 
         # Add backend-specific parameters
         if self.backend == "supabase":
-            supabase_url = kwargs.get("supabase_url") or os.getenv("SUPABASE_URL")
-            supabase_key = kwargs.get("supabase_key") or os.getenv("SUPABASE_ANON_KEY")
-            
+            supabase_url = kwargs.get("supabase_url") or os.getenv(
+                "SUPABASE_URL"
+            )
+            supabase_key = kwargs.get("supabase_key") or os.getenv(
+                "SUPABASE_ANON_KEY"
+            )
+
             if not supabase_url or not supabase_key:
                 raise ValueError(
                     "Supabase backend requires 'supabase_url' and 'supabase_key' parameters "
                     "or SUPABASE_URL and SUPABASE_ANON_KEY environment variables"
                 )
-            backend_kwargs.update({
-                "supabase_url": supabase_url,
-                "supabase_key": supabase_key,
-                "table_name": kwargs.get("table_name", "conversations"),
-            })
-            
+            backend_kwargs.update(
+                {
+                    "supabase_url": supabase_url,
+                    "supabase_key": supabase_key,
+                    "table_name": kwargs.get(
+                        "table_name", "conversations"
+                    ),
+                }
+            )
+
         elif self.backend == "redis":
-            backend_kwargs.update({
-                "redis_host": kwargs.get("redis_host", "localhost"),
-                "redis_port": kwargs.get("redis_port", 6379),
-                "redis_db": kwargs.get("redis_db", 0),
-                "redis_password": kwargs.get("redis_password"),
-                "use_embedded_redis": kwargs.get("use_embedded_redis", True),
-                "persist_redis": kwargs.get("persist_redis", True),
-                "auto_persist": kwargs.get("auto_persist", True),
-                "redis_data_dir": kwargs.get("redis_data_dir"),
-                "conversation_id": self.id,
-                "name": self.name,
-            })
-            
+            backend_kwargs.update(
+                {
+                    "redis_host": kwargs.get(
+                        "redis_host", "localhost"
+                    ),
+                    "redis_port": kwargs.get("redis_port", 6379),
+                    "redis_db": kwargs.get("redis_db", 0),
+                    "redis_password": kwargs.get("redis_password"),
+                    "use_embedded_redis": kwargs.get(
+                        "use_embedded_redis", True
+                    ),
+                    "persist_redis": kwargs.get(
+                        "persist_redis", True
+                    ),
+                    "auto_persist": kwargs.get("auto_persist", True),
+                    "redis_data_dir": kwargs.get("redis_data_dir"),
+                    "conversation_id": self.id,
+                    "name": self.name,
+                }
+            )
+
         elif self.backend in ["sqlite", "duckdb"]:
             db_path = kwargs.get("db_path")
             if db_path:
                 backend_kwargs["db_path"] = db_path
-                
+
         elif self.backend == "pulsar":
             # Add pulsar-specific parameters
-            backend_kwargs.update({
-                "pulsar_url": kwargs.get("pulsar_url", "pulsar://localhost:6650"),
-                "topic": kwargs.get("topic", f"conversation-{self.id}"),
-            })
+            backend_kwargs.update(
+                {
+                    "pulsar_url": kwargs.get(
+                        "pulsar_url", "pulsar://localhost:6650"
+                    ),
+                    "topic": kwargs.get(
+                        "topic", f"conversation-{self.id}"
+                    ),
+                }
+            )
 
         # Create the backend instance
         logger.info(f"Initializing {self.backend} backend...")
-        self.backend_instance = _create_backend_conversation(self.backend, **backend_kwargs)
-        
+        self.backend_instance = _create_backend_conversation(
+            self.backend, **backend_kwargs
+        )
+
         # Log successful initialization
-        logger.info(f"Successfully initialized {self.backend} backend for conversation '{self.name}'")
+        logger.info(
+            f"Successfully initialized {self.backend} backend for conversation '{self.name}'"
+        )
 
     def setup(self):
         # Set up conversations directory
@@ -473,7 +538,9 @@ class Conversation(BaseStructure):
                 )
             else:
                 # Fallback to in-memory if mem0 is not available
-                logger.warning("Mem0 provider not available, falling back to in-memory storage")
+                logger.warning(
+                    "Mem0 provider not available, falling back to in-memory storage"
+                )
                 self.add_in_memory(role, content)
 
     def add(
@@ -486,9 +553,13 @@ class Conversation(BaseStructure):
         # If using a persistent backend, delegate to it
         if self.backend_instance:
             try:
-                return self.backend_instance.add(role=role, content=content, metadata=metadata)
+                return self.backend_instance.add(
+                    role=role, content=content, metadata=metadata
+                )
             except Exception as e:
-                logger.error(f"Backend add failed: {e}. Falling back to in-memory.")
+                logger.error(
+                    f"Backend add failed: {e}. Falling back to in-memory."
+                )
                 return self.add_in_memory(role, content)
         elif self.provider == "in-memory":
             return self.add_in_memory(role, content)
@@ -570,7 +641,9 @@ class Conversation(BaseStructure):
         """
         if self.backend_instance:
             try:
-                return self.backend_instance.update(index, role, content)
+                return self.backend_instance.update(
+                    index, role, content
+                )
             except Exception as e:
                 logger.error(f"Backend update failed: {e}")
                 raise
@@ -615,7 +688,7 @@ class Conversation(BaseStructure):
                 logger.error(f"Backend search failed: {e}")
                 # Fallback to in-memory search
                 pass
-        
+
         return [
             message
             for message in self.conversation_history
@@ -630,12 +703,14 @@ class Conversation(BaseStructure):
         """
         if self.backend_instance:
             try:
-                return self.backend_instance.display_conversation(detailed)
+                return self.backend_instance.display_conversation(
+                    detailed
+                )
             except Exception as e:
                 logger.error(f"Backend display failed: {e}")
                 # Fallback to in-memory display
                 pass
-        
+
         # In-memory display implementation with proper formatting
         for message in self.conversation_history:
             content = message.get("content", "")
@@ -668,21 +743,25 @@ class Conversation(BaseStructure):
 
         if self.backend_instance:
             try:
-                return self.backend_instance.export_conversation(filename, *args, **kwargs)
+                return self.backend_instance.export_conversation(
+                    filename, *args, **kwargs
+                )
             except Exception as e:
                 logger.error(f"Backend export failed: {e}")
                 # Fallback to in-memory export
                 pass
-        
+
         # In-memory export implementation
         # If the filename ends with .json, use save_as_json
         if filename.endswith(".json"):
             self.save_as_json(filename)
         else:
             # Simple text export for non-JSON files
-            with open(filename, "w",encoding="utf-8") as f:
+            with open(filename, "w", encoding="utf-8") as f:
                 for message in self.conversation_history:
-                    f.write(f"{message['role']}: {message['content']}\n")
+                    f.write(
+                        f"{message['role']}: {message['content']}\n"
+                    )
 
     def import_conversation(self, filename: str):
         """Import a conversation history from a file.
@@ -692,7 +771,9 @@ class Conversation(BaseStructure):
         """
         if self.backend_instance:
             try:
-                return self.backend_instance.import_conversation(filename)
+                return self.backend_instance.import_conversation(
+                    filename
+                )
             except Exception as e:
                 logger.error(f"Backend import failed: {e}")
                 # Fallback to in-memory import
@@ -710,7 +791,9 @@ class Conversation(BaseStructure):
             try:
                 return self.backend_instance.count_messages_by_role()
             except Exception as e:
-                logger.error(f"Backend count_messages_by_role failed: {e}")
+                logger.error(
+                    f"Backend count_messages_by_role failed: {e}"
+                )
                 # Fallback to local implementation below
                 pass
         # Initialize counts with expected roles
@@ -720,7 +803,7 @@ class Conversation(BaseStructure):
             "assistant": 0,
             "function": 0,
         }
-        
+
         # Count messages by role
         for message in self.conversation_history:
             role = message["role"]
@@ -729,8 +812,9 @@ class Conversation(BaseStructure):
             else:
                 # Handle unexpected roles dynamically
                 counts[role] = counts.get(role, 0) + 1
-        
+
         return counts
+
     def return_history_as_string(self):
         """Return the conversation history as a string.
 
@@ -739,12 +823,16 @@ class Conversation(BaseStructure):
         """
         if self.backend_instance:
             try:
-                return self.backend_instance.return_history_as_string()
+                return (
+                    self.backend_instance.return_history_as_string()
+                )
             except Exception as e:
-                logger.error(f"Backend return_history_as_string failed: {e}")
+                logger.error(
+                    f"Backend return_history_as_string failed: {e}"
+                )
                 # Fallback to in-memory implementation
                 pass
-            
+
         formatted_messages = []
         for message in self.conversation_history:
             formatted_messages.append(
@@ -781,7 +869,7 @@ class Conversation(BaseStructure):
             except Exception as e:
                 logger.error(f"Backend save_as_json failed: {e}")
                 # Fallback to local save implementation below
-        
+
         # Don't save if saving is disabled
         if not self.save_enabled:
             return
@@ -1000,9 +1088,13 @@ class Conversation(BaseStructure):
         """
         if self.backend_instance:
             try:
-                return self.backend_instance.get_last_message_as_string()
+                return (
+                    self.backend_instance.get_last_message_as_string()
+                )
             except Exception as e:
-                logger.error(f"Backend get_last_message_as_string failed: {e}")
+                logger.error(
+                    f"Backend get_last_message_as_string failed: {e}"
+                )
                 # Fallback to in-memory implementation
                 pass
         elif self.provider == "mem0":
@@ -1025,7 +1117,9 @@ class Conversation(BaseStructure):
             try:
                 return self.backend_instance.return_messages_as_list()
             except Exception as e:
-                logger.error(f"Backend return_messages_as_list failed: {e}")
+                logger.error(
+                    f"Backend return_messages_as_list failed: {e}"
+                )
                 # Fallback to in-memory implementation
                 pass
         return [
@@ -1041,9 +1135,13 @@ class Conversation(BaseStructure):
         """
         if self.backend_instance:
             try:
-                return self.backend_instance.return_messages_as_dictionary()
+                return (
+                    self.backend_instance.return_messages_as_dictionary()
+                )
             except Exception as e:
-                logger.error(f"Backend return_messages_as_dictionary failed: {e}")
+                logger.error(
+                    f"Backend return_messages_as_dictionary failed: {e}"
+                )
                 # Fallback to in-memory implementation
                 pass
         return [
@@ -1099,9 +1197,13 @@ class Conversation(BaseStructure):
         """
         if self.backend_instance:
             try:
-                return self.backend_instance.get_final_message_content()
+                return (
+                    self.backend_instance.get_final_message_content()
+                )
             except Exception as e:
-                logger.error(f"Backend get_final_message_content failed: {e}")
+                logger.error(
+                    f"Backend get_final_message_content failed: {e}"
+                )
                 # Fallback to in-memory implementation
                 pass
         if self.conversation_history:
@@ -1119,7 +1221,9 @@ class Conversation(BaseStructure):
             try:
                 return self.backend_instance.return_all_except_first()
             except Exception as e:
-                logger.error(f"Backend return_all_except_first failed: {e}")
+                logger.error(
+                    f"Backend return_all_except_first failed: {e}"
+                )
                 # Fallback to in-memory implementation
                 pass
         return self.conversation_history[2:]
@@ -1132,9 +1236,13 @@ class Conversation(BaseStructure):
         """
         if self.backend_instance:
             try:
-                return self.backend_instance.return_all_except_first_string()
+                return (
+                    self.backend_instance.return_all_except_first_string()
+                )
             except Exception as e:
-                logger.error(f"Backend return_all_except_first_string failed: {e}")
+                logger.error(
+                    f"Backend return_all_except_first_string failed: {e}"
+                )
                 # Fallback to in-memory implementation
                 pass
         return "\n".join(
