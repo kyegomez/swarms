@@ -12,6 +12,7 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Union,
 )
 
 import yaml
@@ -76,7 +77,7 @@ class BaseSwarm(ABC):
         self,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        agents: Optional[List[Agent]] = None,
+        agents: Optional[List[Union[Agent, Callable]]] = None,
         models: Optional[List[Any]] = None,
         max_loops: Optional[int] = 200,
         callbacks: Optional[Sequence[callable]] = None,

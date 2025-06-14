@@ -1,22 +1,14 @@
-import asyncio
 import concurrent.futures
 import json
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, List
 
-import aiohttp
 from dotenv import load_dotenv
 from rich.console import Console
-from rich.panel import Panel
-from rich.tree import Tree
+import requests
 
-from swarms.agents.reasoning_duo import ReasoningDuo
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from swarms.utils.any_to_str import any_to_str
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -36,37 +28,73 @@ MAX_WORKERS = (
 ###############################################################################
 
 
-def format_exa_results(json_data: Dict[str, Any]) -> str:
-    """Formats Exa.ai search results into structured text"""
+def exa_search(query: str, **kwargs: Any) -> str:
+    """Performs web search using Exa.ai API and returns formatted results."""
+    api_url = "https://api.exa.ai/search"
+    api_key = os.getenv("EXA_API_KEY")
+
+    if not api_key:
+        return "### Error\nEXA_API_KEY environment variable not set\n"
+
+    headers = {
+        "x-api-key": api_key,
+        "Content-Type": "application/json",
+    }
+
+    safe_kwargs = {
+        str(k): v
+        for k, v in kwargs.items()
+        if k is not None and v is not None and str(k) != "None"
+    }
+
+    payload = {
+        "query": query,
+        "useAutoprompt": True,
+        "numResults": safe_kwargs.get("num_results", 10),
+        "contents": {
+            "text": True,
+            "highlights": {"numSentences": 10},
+        },
+    }
+
+    for key, value in safe_kwargs.items():
+        if key not in payload and key not in [
+            "query",
+            "useAutoprompt",
+            "numResults",
+            "contents",
+        ]:
+            payload[key] = value
+
+    try:
+        response = requests.post(
+            api_url, json=payload, headers=headers
+        )
+        if response.status_code != 200:
+            return f"### Error\nHTTP {response.status_code}: {response.text}\n"
+        json_data = response.json()
+    except Exception as e:
+        return f"### Error\n{str(e)}\n"
+
     if "error" in json_data:
         return f"### Error\n{json_data['error']}\n"
 
-    # Pre-allocate formatted_text list with initial capacity
     formatted_text = []
-
-    # Extract search metadata
     search_params = json_data.get("effectiveFilters", {})
     query = search_params.get("query", "General web search")
     formatted_text.append(
         f"### Exa Search Results for: '{query}'\n\n---\n"
     )
 
-    # Process results
     results = json_data.get("results", [])
-
     if not results:
         formatted_text.append("No results found.\n")
         return "".join(formatted_text)
 
-    def process_result(
-        result: Dict[str, Any], index: int
-    ) -> List[str]:
-        """Process a single result in a thread-safe manner"""
+    for i, result in enumerate(results, 1):
         title = result.get("title", "No title")
         url = result.get("url", result.get("id", "No URL"))
         published_date = result.get("publishedDate", "")
-
-        # Handle highlights efficiently
         highlights = result.get("highlights", [])
         highlight_text = (
             "\n".join(
@@ -81,120 +109,16 @@ def format_exa_results(json_data: Dict[str, Any]) -> str:
             else "No summary available"
         )
 
-        return [
-            f"{index}. **{title}**\n",
-            f"   - URL: {url}\n",
-            f"   - Published: {published_date.split('T')[0] if published_date else 'Date unknown'}\n",
-            f"   - Key Points:\n      {highlight_text}\n\n",
-        ]
-
-    # Process results concurrently
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        future_to_result = {
-            executor.submit(process_result, result, i + 1): i
-            for i, result in enumerate(results)
-        }
-
-        # Collect results in order
-        processed_results = [None] * len(results)
-        for future in as_completed(future_to_result):
-            idx = future_to_result[future]
-            try:
-                processed_results[idx] = future.result()
-            except Exception as e:
-                console.print(
-                    f"[bold red]Error processing result {idx + 1}: {str(e)}[/bold red]"
-                )
-                processed_results[idx] = [
-                    f"Error processing result {idx + 1}: {str(e)}\n"
-                ]
-
-    # Extend formatted text with processed results in correct order
-    for result_text in processed_results:
-        formatted_text.extend(result_text)
+        formatted_text.extend(
+            [
+                f"{i}. **{title}**\n",
+                f"   - URL: {url}\n",
+                f"   - Published: {published_date.split('T')[0] if published_date else 'Date unknown'}\n",
+                f"   - Key Points:\n      {highlight_text}\n\n",
+            ]
+        )
 
     return "".join(formatted_text)
-
-
-async def _async_exa_search(
-    query: str, **kwargs: Any
-) -> Dict[str, Any]:
-    """Asynchronous helper function for Exa.ai API requests"""
-    api_url = "https://api.exa.ai/search"
-
-    # Check if API key is available
-    api_key = os.getenv("EXA_API_KEY")
-    if not api_key:
-        return {"error": "EXA_API_KEY environment variable not set"}
-
-    headers = {
-        "x-api-key": api_key,
-        "Content-Type": "application/json",
-    }
-
-    # Filter out None keys AND None values from kwargs
-    safe_kwargs = {
-        str(k): v
-        for k, v in kwargs.items()
-        if k is not None and v is not None and str(k) != "None"
-    }
-
-    payload = {
-        "query": query,
-        "useAutoprompt": True,
-        "numResults": safe_kwargs.get("num_results", 10),
-        "contents": {
-            "text": True,
-            "highlights": {"numSentences": 2},
-        },
-    }
-
-    # Only add safe_kwargs if they don't conflict with existing keys
-    for key, value in safe_kwargs.items():
-        if key not in payload and key not in [
-            "query",
-            "useAutoprompt",
-            "numResults",
-            "contents",
-        ]:
-            payload[key] = value
-
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                api_url, json=payload, headers=headers
-            ) as response:
-                if response.status != 200:
-                    return {
-                        "error": f"HTTP {response.status}: {await response.text()}"
-                    }
-                return await response.json()
-    except Exception as e:
-        return {"error": str(e)}
-
-
-def exa_search(query: str, **kwargs: Any) -> str:
-    """Performs web search using Exa.ai API with concurrent processing"""
-    try:
-        # Run async search in the event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            response_json = loop.run_until_complete(
-                _async_exa_search(query, **kwargs)
-            )
-        finally:
-            loop.close()
-
-        # Format results concurrently
-        formatted_text = format_exa_results(response_json)
-
-        return formatted_text
-
-    except Exception as e:
-        error_msg = f"Unexpected error: {str(e)}"
-        console.print(f"[bold red]{error_msg}[/bold red]")
-        return error_msg
 
 
 # Define the research tools schema
@@ -310,6 +234,7 @@ class DeepResearchSwarm:
         * 2,  # Let the system decide optimal thread count
         token_count: bool = False,
         research_model_name: str = "gpt-4o-mini",
+        claude_summarization_model_name: str = "claude-3-5-sonnet-20240620",
     ):
         self.name = name
         self.description = description
@@ -318,6 +243,9 @@ class DeepResearchSwarm:
         self.output_type = output_type
         self.max_workers = max_workers
         self.research_model_name = research_model_name
+        self.claude_summarization_model_name = (
+            claude_summarization_model_name
+        )
 
         self.reliability_check()
         self.conversation = Conversation(token_count=token_count)
@@ -335,12 +263,17 @@ class DeepResearchSwarm:
             system_prompt=RESEARCH_AGENT_PROMPT,
             max_loops=1,  # Allow multiple iterations for thorough research
             tools_list_dictionary=tools,
-            model_name="gpt-4o-mini",
+            model_name=self.research_model_name,
+            output_type="final",
         )
 
-        self.reasoning_duo = ReasoningDuo(
+        self.summarization_agent = Agent(
+            agent_name="Summarization-Agent",
+            agent_description="Specialized agent for summarizing research results",
             system_prompt=SUMMARIZATION_AGENT_PROMPT,
-            output_type="string",
+            max_loops=1,
+            model_name=self.claude_summarization_model_name,
+            output_type="final",
         )
 
     def __del__(self):
@@ -372,45 +305,49 @@ class DeepResearchSwarm:
         # Get the agent's response
         agent_output = self.research_agent.run(query)
 
-        self.conversation.add(
-            role=self.research_agent.agent_name, content=agent_output
+        # Transform the string into a list of dictionaries
+        agent_output = json.loads(agent_output)
+        print(agent_output)
+        print(type(agent_output))
+
+        formatter.print_panel(
+            f"Agent output type: {type(agent_output)} \n {agent_output}",
+            "blue",
         )
 
-        # Convert the string output to dictionary
-        output_dict = str_to_dict(agent_output)
+        # Convert the output to a dictionary if it's a list
+        if isinstance(agent_output, list):
+            agent_output = json.dumps(agent_output)
 
-        # Print the conversation history
-        if self.nice_print:
-            to_do_list = any_to_str(output_dict)
-            formatter.print_panel(to_do_list, "blue")
+        if isinstance(agent_output, str):
+            # Convert the string output to dictionary
+            output_dict = (
+                str_to_dict(agent_output)
+                if isinstance(agent_output, str)
+                else agent_output
+            )
 
         # Extract the detailed queries from the output
-        if (
-            isinstance(output_dict, dict)
-            and "detailed_queries" in output_dict
-        ):
-            queries = output_dict["detailed_queries"]
-            formatter.print_panel(
-                f"Generated {len(queries)} queries", "blue"
-            )
-            return queries
+        # Search for the key "detailed_queries" in the output list[dictionary]
+        if isinstance(output_dict, list):
+            for item in output_dict:
+                if "detailed_queries" in item:
+                    queries = item["detailed_queries"]
+                    break
+        else:
+            queries = output_dict.get("detailed_queries", [])
 
-        return []
+        print(queries)
 
-    def _process_query(self, query: str) -> str:
-        """
-        Process a single query with search only.
-        This function is designed to be run in a separate thread.
+        # Log the number of queries generated
+        formatter.print_panel(
+            f"Generated {len(queries)} queries", "blue"
+        )
 
-        Args:
-            query (str): The query to process
+        print(queries)
+        print(type(queries))
 
-        Returns:
-            str: Search results
-        """
-        # Run the search only - no individual reasoning to avoid duplication
-        results = exa_search(query)
-        return results
+        return queries
 
     def step(self, query: str):
         """
@@ -426,21 +363,12 @@ class DeepResearchSwarm:
             # Get all the queries to process
             queries = self.get_queries(query)
 
-            if not queries:
-                error_msg = (
-                    "No queries generated. Please check your input."
-                )
-                self.conversation.add(
-                    role="System", content=error_msg
-                )
-                return history_output_formatter(
-                    self.conversation, type=self.output_type
-                )
+            print(queries)
 
             # Submit all queries for concurrent processing
             futures = []
             for q in queries:
-                future = self.executor.submit(self._process_query, q)
+                future = self.executor.submit(exa_search, q)
                 futures.append((q, future))
 
             # Process results as they complete
@@ -468,12 +396,12 @@ class DeepResearchSwarm:
 
             # Generate final comprehensive analysis after all searches are complete
             try:
-                final_summary = self.reasoning_duo.run(
-                    f"Generate an extensive report of the following content: {self.conversation.get_str()}"
+                final_summary = self.summarization_agent.run(
+                    f"Please generate a comprehensive 4,000-word report analyzing the following content: {self.conversation.get_str()}"
                 )
 
                 self.conversation.add(
-                    role=self.reasoning_duo.agent_name,
+                    role=self.summarization_agent.agent_name,
                     content=final_summary,
                 )
             except Exception as e:
@@ -534,144 +462,6 @@ class DeepResearchSwarm:
         for task in tasks:
             future = self.executor.submit(self.step, task)
             futures.append((task, future))
-
-    def parse_and_display_results(
-        self, json_result: str, export_markdown: bool = True
-    ):
-        """
-        Parse JSON results and display in rich format with optional markdown export.
-
-        Args:
-            json_result (str): JSON string containing conversation results
-            export_markdown (bool): Whether to export to markdown file
-        """
-        try:
-            # Parse JSON
-            data = json.loads(json_result)
-
-            # Create rich display
-            console.print("\n" + "=" * 100, style="cyan")
-            console.print(
-                "🔬 DEEP RESEARCH RESULTS",
-                style="bold cyan",
-                justify="center",
-            )
-            console.print("=" * 100, style="cyan")
-
-            # Create conversation tree
-            tree = Tree("🗣️ Research Conversation", style="bold blue")
-            markdown_content = [
-                "# Deep Research Results\n",
-                f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n",
-            ]
-
-            for i, entry in enumerate(data, 1):
-                if isinstance(entry, dict):
-                    role = entry.get("role", "Unknown")
-                    content = entry.get("content", "")
-                    timestamp = entry.get("timestamp", "")
-
-                    # Get role info for display
-                    role_info = self._get_role_display_info(role)
-
-                    # Create tree branch
-                    branch_text = f"{role_info['emoji']} {role}"
-                    if timestamp:
-                        time_part = (
-                            timestamp.split()[-1]
-                            if " " in timestamp
-                            else timestamp[-8:]
-                        )
-                        branch_text += f" ({time_part})"
-
-                    branch = tree.add(
-                        branch_text, style=role_info["style"]
-                    )
-
-                    # Add content preview to tree
-                    content_preview = (
-                        content[:150] + "..."
-                        if len(content) > 150
-                        else content
-                    )
-                    content_preview = content_preview.replace(
-                        "\n", " "
-                    )
-                    branch.add(content_preview, style="dim")
-
-                    # Add to markdown
-                    markdown_content.append(f"\n## {i}. {role}")
-                    if timestamp:
-                        markdown_content.append(
-                            f"**Timestamp:** {timestamp}"
-                        )
-                    markdown_content.append(f"\n{content}\n")
-
-                    # Display full content for important entries
-                    if (
-                        role.lower() in ["reasoning-agent-01"]
-                        and len(content) > 300
-                    ):
-                        console.print(
-                            f"\n📋 {role} Full Response:",
-                            style="bold green",
-                        )
-                        console.print(
-                            Panel(
-                                content,
-                                border_style="green",
-                                title=f"{role} Analysis",
-                            )
-                        )
-
-            # Display the tree
-            console.print(tree)
-
-            # Export to markdown if requested
-            if export_markdown:
-                # Create deepsearch_results directory
-                results_dir = Path("deepsearch_results")
-                results_dir.mkdir(exist_ok=True)
-
-                # Generate filename with timestamp
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                filename = (
-                    results_dir / f"research_results_{timestamp}.md"
-                )
-
-                # Write markdown file
-                with open(filename, "w", encoding="utf-8") as f:
-                    f.write("\n".join(markdown_content))
-
-                console.print(
-                    f"\n💾 Results exported to: {filename}",
-                    style="bold green",
-                )
-
-            console.print(
-                "\n✅ Research analysis complete!", style="bold cyan"
-            )
-
-        except json.JSONDecodeError as e:
-            console.print(f"❌ Error parsing JSON: {e}", style="red")
-        except Exception as e:
-            console.print(
-                f"❌ Error displaying results: {e}", style="red"
-            )
-
-    def _get_role_display_info(self, role: str) -> Dict[str, str]:
-        """Get display information for different conversation roles."""
-        role_map = {
-            "user": {"emoji": "👤", "style": "cyan"},
-            "deep-research-agent": {"emoji": "🔍", "style": "blue"},
-            "reasoning-agent-01": {"emoji": "🧠", "style": "magenta"},
-            "system": {"emoji": "⚙️", "style": "yellow"},
-        }
-
-        role_lower = role.lower()
-        return role_map.get(
-            role_lower, {"emoji": "🤖", "style": "white"}
-        )
 
 
 # Example usage

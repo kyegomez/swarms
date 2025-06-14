@@ -358,25 +358,25 @@ nav:
       - Finance Swarm: "swarms/examples/swarms_api_finance.md"
       - ML Model Code Generation Swarm: "swarms/examples/swarms_api_ml_model.md"
 
-  - Swarm Models:
-    - Overview: "swarms/models/index.md"
-    # - Models Available: "swarms/models/index.md"
-    # - Available Models from OpenAI, Huggingface, TogetherAI, and more: "swarms/models/models_available_overview.md"
-    # - Model Router
-    - Quickstart: "swarms/models/models_available_overview.md"
-    - How to Create A Custom Language Model: "swarms/models/custom_model.md"
-    - Language Models:
-      - BaseLLM: "swarms/models/base_llm.md"
-      - HuggingFaceLLM: "swarms/models/huggingface.md"
-      - Anthropic: "swarms/models/anthropic.md"
-      - OpenAIChat: "swarms/models/openai.md"
-      - OpenAIFunctionCaller: "swarms/models/openai_function_caller.md"
-      - Groq: "swarms/models/groq.md"
-      - Cerebras: "swarms/models/cerebras.md"
-    - MultiModal Models:
-      - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
-      - Multi Modal Models Available: "swarms/models/multimodal_models.md"
-      - GPT4VisionAPI: "swarms/models/gpt4v.md"
+  # - Swarm Models:
+  #   - Overview: "swarms/models/index.md"
+  #   # - Models Available: "swarms/models/index.md"
+  #   # - Available Models from OpenAI, Huggingface, TogetherAI, and more: "swarms/models/models_available_overview.md"
+  #   # - Model Router
+  #   - Quickstart: "swarms/models/models_available_overview.md"
+  #   - How to Create A Custom Language Model: "swarms/models/custom_model.md"
+  #   - Language Models:
+  #     - BaseLLM: "swarms/models/base_llm.md"
+  #     - HuggingFaceLLM: "swarms/models/huggingface.md"
+  #     - Anthropic: "swarms/models/anthropic.md"
+  #     - OpenAIChat: "swarms/models/openai.md"
+  #     - OpenAIFunctionCaller: "swarms/models/openai_function_caller.md"
+  #     - Groq: "swarms/models/groq.md"
+  #     - Cerebras: "swarms/models/cerebras.md"
+  #   - MultiModal Models:
+  #     - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
+  #     - Multi Modal Models Available: "swarms/models/multimodal_models.md"
+  #     - GPT4VisionAPI: "swarms/models/gpt4v.md"
   - Swarms Cloud API:
     - Overview: "swarms_cloud/swarms_api.md"
     - Swarms API as MCP: "swarms_cloud/mcp.md"

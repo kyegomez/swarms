@@ -17,6 +17,7 @@ The `SwarmRouter` class is a flexible routing system designed to manage differen
 | `MALT` | Multi-Agent Language Tasks |
 | `DeepResearchSwarm` | Specialized for deep research tasks |
 | `CouncilAsAJudge` | Council-based judgment system |
+| `InteractiveGroupChat` | Interactive group chat with user participation |
 | `auto` | Automatically selects best swarm type via embedding search |
 
 ## Classes
@@ -465,6 +466,25 @@ auto_router = SwarmRouter(
 
 result = auto_router.run("Conduct a comprehensive market analysis for Product X")
 ```
+
+### InteractiveGroupChat
+
+Use Case: Interactive group discussions with user participation.
+
+```python
+interactive_chat_router = SwarmRouter(
+    name="InteractiveGroupChat",
+    description="Interactive group chat with user participation",
+    max_loops=10,
+    agents=[financial_analyst, market_researcher, competitor_analyst],
+    swarm_type="InteractiveGroupChat",
+    output_type="string"
+)
+
+result = interactive_chat_router.run("Discuss the market trends and provide interactive analysis")
+```
+
+The InteractiveGroupChat allows for dynamic interaction between agents and users, enabling real-time participation in group discussions and decision-making processes. This is particularly useful for scenarios requiring human input or validation during the conversation flow.
 
 ## Advanced Features
 

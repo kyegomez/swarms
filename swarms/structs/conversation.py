@@ -1211,6 +1211,13 @@ class Conversation(BaseStructure):
             save_enabled=True,
         )
 
+    def return_dict_final(self):
+        """Return the final message as a dictionary."""
+        return (
+            self.conversation_history[-1]["content"],
+            self.conversation_history[-1]["content"],
+        )
+
     @classmethod
     def list_conversations(
         cls, conversations_dir: Optional[str] = None

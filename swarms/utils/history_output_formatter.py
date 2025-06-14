@@ -25,6 +25,8 @@ def history_output_formatter(
         return conversation.return_all_except_first()
     elif type == "str-all-except-first":
         return conversation.return_all_except_first_string()
+    elif type == "dict-final":
+        return conversation.return_dict_final()
     elif type == "xml":
         data = conversation.to_dict()
         return to_xml_string(data, root_tag="conversation")

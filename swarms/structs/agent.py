@@ -60,6 +60,7 @@ from swarms.utils.any_to_str import any_to_str
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
+from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -444,7 +445,7 @@ class Agent:
         self.system_prompt = system_prompt
         self.agent_name = agent_name
         self.agent_description = agent_description
-        self.saved_state_path = f"{self.agent_name}_state.json"
+        self.saved_state_path = f"{self.agent_name}_{generate_api_key(prefix='agent-')}_state.json"
         self.autosave = autosave
         self.response_filters = []
         self.self_healing_enabled = self_healing_enabled
@@ -642,11 +643,6 @@ class Agent:
             ),
             message_id_on=(
                 self.conversation_schema.message_id_on
-                if self.conversation_schema
-                else False
-            ),
-            autosave=(
-                self.conversation_schema.autosave
                 if self.conversation_schema
                 else False
             ),
@@ -1079,6 +1075,18 @@ class Agent:
                         if exists(self.mcp_url):
                             self.mcp_tool_handling(
                                 response, loop_count
+                            )
+
+                        if exists(self.mcp_url) and exists(
+                            self.tools
+                        ):
+                            self.mcp_tool_handling(
+                                response, loop_count
+                            )
+
+                            self.execute_tools(
+                                response=response,
+                                loop_count=loop_count,
                             )
 
                         self.sentiment_and_evaluator(response)
@@ -2382,7 +2390,7 @@ class Agent:
         return None
 
     def call_llm(
-        self, task: str, img: str = None, *args, **kwargs
+        self, task: str, img: Optional[str] = None, *args, **kwargs
     ) -> str:
         """
         Calls the appropriate method on the `llm` object based on the given task.
@@ -2404,7 +2412,12 @@ class Agent:
         """
 
         try:
-            out = self.llm.run(task=task, img=img, *args, **kwargs)
+            if img is not None:
+                out = self.llm.run(
+                    task=task, img=img, *args, **kwargs
+                )
+            else:
+                out = self.llm.run(task=task, *args, **kwargs)
 
             return out
         except AgentLLMError as e:

@@ -16,6 +16,7 @@ HistoryOutputType = Literal[
     "dict-all-except-first",
     "str-all-except-first",
     "basemodel",
+    "dict-final",
 ]
 
 OutputType = HistoryOutputType

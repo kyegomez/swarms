@@ -25,6 +25,8 @@ from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.malt import MALT
 from swarms.structs.deep_research_swarm import DeepResearchSwarm
 from swarms.structs.council_judge import CouncilAsAJudge
+from swarms.structs.interactive_groupchat import InteractiveGroupChat
+
 
 logger = initialize_logger(log_folder="swarm_router")
 
@@ -43,6 +45,7 @@ SwarmType = Literal[
     "MALT",
     "DeepResearchSwarm",
     "CouncilAsAJudge",
+    "InteractiveGroupChat",
 ]
 
 
@@ -187,7 +190,7 @@ class SwarmRouter:
         shared_memory_system: Any = None,
         rules: str = None,
         documents: List[str] = [],  # A list of docs file paths
-        output_type: OutputType = "dict",
+        output_type: OutputType = "dict-all-except-first",
         no_cluster_ops: bool = False,
         speaker_fn: callable = None,
         load_agents_from_csv: bool = False,
@@ -383,6 +386,15 @@ class SwarmRouter:
                 model_name=self.model_name,
                 output_type=self.output_type,
                 base_agent=self.agents[0] if self.agents else None,
+            )
+
+        elif self.swarm_type == "InteractiveGroupChat":
+            return InteractiveGroupChat(
+                name=self.name,
+                description=self.description,
+                agents=self.agents,
+                max_loops=self.max_loops,
+                output_type=self.output_type,
             )
 
         elif self.swarm_type == "DeepResearchSwarm":
