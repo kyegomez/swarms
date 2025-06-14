@@ -281,6 +281,8 @@ nav:
         - Pinecone: "swarms_memory/pinecone.md"
         - Faiss: "swarms_memory/faiss.md"
 
+    - Utilities:
+      - History Output Formatter: "utils/history_output_formatter.md"
     - Deployment Solutions:
       - Deploy your Swarms on Google Cloud Run: "swarms_cloud/cloud_run.md"
       - Deploy your Swarms on Phala: "swarms_cloud/phala_deploy.md"
