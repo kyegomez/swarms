@@ -34,6 +34,37 @@ Before you begin, ensure you have the following installed:
     pip install swarms
     ```
 
+=== "UV Installation"
+
+    UV is a fast Python package installer and resolver written in Rust. It's significantly faster than pip and provides better dependency resolution.
+
+    === "Basic Installation"
+
+        ```bash
+        # Install UV first
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+
+        # Install swarms using UV
+        uv pip install swarms
+        ```
+
+    === "Development Installation"
+
+        ```bash
+        # Clone the repository
+        git clone https://github.com/kyegomez/swarms.git
+        cd swarms
+
+        # Install in editable mode
+        uv pip install -e .
+        ```
+
+        For desktop installation with extras:
+
+        ```bash
+        uv pip install -e .[desktop]
+        ```
+
 === "Development Installation"
 
     === "Using virtualenv"
@@ -290,8 +321,10 @@ Before you begin, ensure you have the following installed:
 
 === "Cargo install"
 
-    Get started with the Rust implementation of Swarms:
+    Get started with the Rust implementation of Swarms. [Get started with the docs here](https://docs.swarms.world/en/latest/swarms_rs/overview/)
 
     ```bash
     cargo add swarms-rs
     ```
+
+
