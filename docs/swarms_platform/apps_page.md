@@ -1,6 +1,5 @@
 # Swarms Marketplace Apps Documentation
 
-## Overview
 
 The Swarms Apps page (`https://swarms.world/apps`) is your central hub for managing and customizing your workspace experience. Here you can control which applications appear in your sidebar, organize them using templates, and quickly access the tools you need for different workflows.
 
