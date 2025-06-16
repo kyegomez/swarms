@@ -483,8 +483,16 @@ print(agent.to_toml())
 Execute tools from multiple MCP servers by providing a list of URLs via the
 `mcp_urls` parameter or the `MCP_URLS` environment variable.
 
+Start the example servers:
+
+```bash
+python examples/tools/mcp_examples/servers/weather_server.py
+python examples/tools/mcp_examples/servers/news_server.py
+```
+
 ```python
 import os
+import json
 from swarms import Agent
 
 # Using an environment variable for server configuration
@@ -497,7 +505,8 @@ agent = Agent(
 )
 
 # Example MCP payloads returned by your model
-mcp_payloads = [
+mcp_response = json.dumps([
+
     {
         "function_name": "get_price",
         "server_url": "http://localhost:8000/sse",
@@ -508,9 +517,10 @@ mcp_payloads = [
         "server_url": "http://localhost:9001/sse",
         "payload": {"symbol": "BTC"},
     },
-]
+])
 
-agent.handle_multiple_mcp_tools(agent.mcp_urls, mcp_payloads)
+agent.handle_multiple_mcp_tools(agent.mcp_urls, mcp_response)
+
 ```
 
 ## Auto Generate Prompt + CPU Execution
