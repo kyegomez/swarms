@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the following metadata."
+title: "swarms"
+version: "7.8.6"
+url: "https://github.com/kyegomez/swarms"
+date-released: "2023-05-11"
+authors:
+  - family-names: Gomez
+    given-names: Kye
+    email: "kye@swarms.world"
+    affiliation: "The Galactic Swarm Corporation"
