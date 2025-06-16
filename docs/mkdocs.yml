@@ -403,6 +403,8 @@ nav:
 
   - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"
+    - Customize Your Sidebar: "swarms_platform/apps_page.md"
+    - Playground: "swarms_platform/playground_page.md"
     - Swarm Platform API Keys: "swarms_platform/apikeys.md"
     - Account Management: "swarms_platform/account_management.md"
 
