@@ -506,6 +506,7 @@ agent = Agent(
 
 # Example MCP payloads returned by your model
 mcp_response = json.dumps([
+
     {
         "function_name": "get_price",
         "server_url": "http://localhost:8000/sse",
@@ -519,6 +520,7 @@ mcp_response = json.dumps([
 ])
 
 agent.handle_multiple_mcp_tools(agent.mcp_urls, mcp_response)
+
 ```
 
 ## Auto Generate Prompt + CPU Execution

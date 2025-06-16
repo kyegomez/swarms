@@ -1,6 +1,7 @@
 import asyncio
 import json
 from swarms.structs.agent import Agent, extract_json_from_response
+
 from swarms.structs.agent import execute_mcp_call
 from unittest.mock import patch
 
@@ -46,3 +47,4 @@ def test_extract_json_from_response():
     text = "Random text" + json.dumps(payloads) + " end"
     result = extract_json_from_response(text)
     assert result == payloads
+

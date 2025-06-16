@@ -1126,6 +1126,7 @@ class Agent:
                                     response,
                                     current_loop=loop_count,
                                 )
+
                             except Exception as e:
                                 logger.error(
                                     f"Error handling multiple MCP tools: {e}"
@@ -2843,6 +2844,7 @@ class Agent:
 
         payloads = extract_json_from_response(response)
         for payload in payloads:
+
             function_name = payload.get("function_name")
             server_url = payload.get("server_url")
             arguments = payload.get("payload", {})
