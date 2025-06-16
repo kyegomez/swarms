@@ -30,6 +30,7 @@ from swarms.tools.json_utils import base_model_to_json
 from swarms.tools.mcp_client_call import (
     execute_tool_call_simple,
     _execute_tool_call_simple,
+    execute_mcp_call,
     get_tools_for_multiple_mcp_servers,
     get_mcp_tools_sync,
     aget_mcp_tools,
@@ -59,6 +60,7 @@ __all__ = [
     "base_model_to_json",
     "execute_tool_call_simple",
     "_execute_tool_call_simple",
+    "execute_mcp_call",
     "get_tools_for_multiple_mcp_servers",
     "get_mcp_tools_sync",
     "aget_mcp_tools",

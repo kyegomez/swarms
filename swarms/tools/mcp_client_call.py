@@ -502,3 +502,74 @@ async def execute_tool_call_simple(
         *args,
         **kwargs,
     )
+
+
+async def execute_mcp_call(
+    function_name: str,
+    server_url: str,
+    payload: Dict[str, Any],
+    connection: Optional[MCPConnection] = None,
+    output_type: Literal["json", "dict", "str"] = "str",
+    *args,
+    **kwargs,
+) -> Any:
+    """Execute a specific MCP tool call on a server.
+
+    Parameters
+    ----------
+    function_name: str
+        Name of the MCP tool to execute.
+    server_url: str
+        URL of the MCP server.
+    payload: Dict[str, Any]
+        Arguments to pass to the MCP tool.
+    connection: Optional[MCPConnection]
+        Optional connection configuration.
+    output_type: str
+        Output formatting type.
+    """
+
+    if exists(connection):
+        headers, timeout, _transport, url = connect_to_mcp_server(
+            connection
+        )
+    else:
+        headers, timeout, _transport, url = None, 5, None, server_url
+
+    try:
+        async with sse_client(
+            url=url, headers=headers, timeout=timeout, *args, **kwargs
+        ) as (
+            read,
+            write,
+        ):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                req = MCPCallToolRequestParams(
+                    name=function_name, arguments=payload
+                )
+                result = await call_mcp_tool(
+                    session=session, call_tool_request_params=req
+                )
+
+                if output_type == "json":
+                    return result.model_dump_json(indent=4)
+                if output_type == "dict":
+                    return result.model_dump()
+
+                data = result.model_dump()
+                formatted_lines = []
+                for key, value in data.items():
+                    if isinstance(value, list):
+                        for item in value:
+                            if isinstance(item, dict):
+                                for k, v in item.items():
+                                    formatted_lines.append(
+                                        f"{k}: {v}"
+                                    )
+                    else:
+                        formatted_lines.append(f"{key}: {value}")
+                return "\n".join(formatted_lines)
+    except Exception as e:
+        logger.error(f"Error executing MCP call: {e}")
+        raise MCPExecutionError(f"Failed to execute MCP call: {e}")
