@@ -47,6 +47,7 @@ The `AgentSpec` class defines the configuration for an individual agent.
 | `role` | string | "worker" | The agent's role within a swarm, influencing its behavior and interactions |
 | `max_loops` | integer | 1 | Maximum number of times the agent can repeat its task for iterative processing |
 | `tools_dictionary` | array | None | Dictionary of tools the agent can use to complete its task |
+| `mcp_url` | string | None | URL for the MCP server that the agent can connect to |
 
 ### Agent Completion
 
@@ -56,6 +57,7 @@ The `AgentCompletion` class combines an agent configuration with a specific task
 |-----------|------|-------------|
 | `agent_config` | AgentSpec | Configuration of the agent to be completed |
 | `task` | string | The task to be completed by the agent |
+| `history` | Optional[Union[Dict[Any, Any], List[Dict[str, str]]]] | The history of the agent's previous tasks and responses. Can be either a dictionary or a list of message objects. |
 
 ### Single Agent Endpoint
 
