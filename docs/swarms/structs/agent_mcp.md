@@ -145,6 +145,13 @@ payload in the following format:
 Use `handle_multiple_mcp_tools` to execute each payload across the configured
 servers.
 
+Example servers can be started with:
+
+```bash
+python examples/tools/mcp_examples/servers/weather_server.py
+python examples/tools/mcp_examples/servers/news_server.py
+```
+
 ---
 
 ## Integration Flow

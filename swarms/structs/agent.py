@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 import logging
 import os
 import random
@@ -74,6 +75,7 @@ from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.tools.mcp_client_call import (
     execute_tool_call_simple,
     get_mcp_tools_sync,
+    execute_mcp_call,
 )
 from swarms.schemas.mcp_schemas import (
     MCPConnection,
@@ -96,6 +98,25 @@ def stop_when_repeats(response: str) -> bool:
 def parse_done_token(response: str) -> bool:
     """Parse the response to see if the done token is present"""
     return "<DONE>" in response
+
+
+def extract_json_from_response(response: str) -> List[Dict[str, Any]]:
+    """Extract a JSON list from a model response string."""
+    if not response:
+        return []
+    if not isinstance(response, str):
+        return response if isinstance(response, list) else []
+    try:
+        return json.loads(response)
+    except json.JSONDecodeError:
+        match = re.search(r"\[[\s\S]*?\]", response)
+        if match:
+            try:
+                return json.loads(match.group(0))
+            except json.JSONDecodeError:
+                pass
+    logger.error("Failed to parse MCP payloads from response")
+    return []
 
 
 # Agent ID generator
@@ -442,6 +463,8 @@ class Agent:
         self.sop = sop
         self.sop_list = sop_list
         self.tools = tools
+        # Ensure tool_struct exists even when no tools are provided
+        self.tool_struct = {}
         self.system_prompt = system_prompt
         self.agent_name = agent_name
         self.agent_description = agent_description
@@ -1098,18 +1121,11 @@ class Agent:
 
                         if exists(self.mcp_urls):
                             try:
-                                payload = (
-                                    json.loads(response)
-                                    if isinstance(response, str)
-                                    else response
+                                self.handle_multiple_mcp_tools(
+                                    self.mcp_urls,
+                                    response,
+                                    current_loop=loop_count,
                                 )
-
-                                if isinstance(payload, list):
-                                    self.handle_multiple_mcp_tools(
-                                        self.mcp_urls,
-                                        payload,
-                                        current_loop=loop_count,
-                                    )
                             except Exception as e:
                                 logger.error(
                                     f"Error handling multiple MCP tools: {e}"
@@ -2820,12 +2836,13 @@ class Agent:
     def handle_multiple_mcp_tools(
         self,
         mcp_url_list: List[str],
-        mcp_payloads: List[Dict[str, Any]],
+        response: Union[str, List[Dict[str, Any]]],
         current_loop: int = 0,
     ) -> None:
-        """Execute a list of MCP tool calls across multiple servers."""
+        """Execute multiple MCP tool calls across configured servers."""
 
-        for payload in mcp_payloads:
+        payloads = extract_json_from_response(response)
+        for payload in payloads:
             function_name = payload.get("function_name")
             server_url = payload.get("server_url")
             arguments = payload.get("payload", {})
@@ -2836,25 +2853,31 @@ class Agent:
                 )
                 continue
 
-            try:
-                tool_response = asyncio.run(
-                    execute_mcp_call(
-                        function_name=function_name,
-                        server_url=server_url,
-                        payload=arguments,
+            attempt = 0
+            while attempt < 3:
+                try:
+                    tool_response = asyncio.run(
+                        execute_mcp_call(
+                            function_name=function_name,
+                            server_url=server_url,
+                            payload=arguments,
+                        )
                     )
-                )
-                self.short_memory.add(
-                    role="Tool Executor",
-                    content=str(tool_response),
-                )
-                self.pretty_print(
-                    str(tool_response), loop_count=current_loop
-                )
-            except Exception as e:  # noqa: PERF203
-                logger.error(
-                    f"Error executing {function_name} on {server_url}: {e}"
-                )
+                    self.short_memory.add(
+                        role="Tool Executor",
+                        content=str(tool_response),
+                    )
+                    self.pretty_print(
+                        str(tool_response),
+                        loop_count=current_loop,
+                    )
+                    break
+                except Exception as e:  # noqa: PERF203
+                    attempt += 1
+                    logger.error(
+                        f"Error executing {function_name} on {server_url}: {e}"
+                    )
+                    time.sleep(1)
 
     def temp_llm_instance_for_tool_summary(self):
         return LiteLLM(

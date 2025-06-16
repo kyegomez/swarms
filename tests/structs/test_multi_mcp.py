@@ -1,5 +1,6 @@
 import asyncio
-from swarms.structs.agent import Agent
+import json
+from swarms.structs.agent import Agent, extract_json_from_response
 from swarms.structs.agent import execute_mcp_call
 from unittest.mock import patch
 
@@ -30,9 +31,18 @@ def test_handle_multiple_mcp_tools():
     with patch(
         "swarms.structs.agent.execute_mcp_call", side_effect=fake_exec
     ):
-        agent.handle_multiple_mcp_tools(urls, payloads)
+        agent.handle_multiple_mcp_tools(urls, json.dumps(payloads))
 
     assert called == [
         ("tool1", "http://server1", {"a": 1}),
         ("tool2", "http://server2", {}),
     ]
+
+
+def test_extract_json_from_response():
+    payloads = [
+        {"function_name": "foo", "server_url": "http://x", "payload": {"x": 1}}
+    ]
+    text = "Random text" + json.dumps(payloads) + " end"
+    result = extract_json_from_response(text)
+    assert result == payloads
