@@ -537,7 +537,19 @@ class Agent:
         self.no_print = no_print
         self.tools_list_dictionary = tools_list_dictionary
         self.mcp_url = mcp_url
-        self.mcp_urls = mcp_urls
+        if mcp_urls is None:
+            env_urls = os.getenv("MCP_URLS")
+            self.mcp_urls = (
+                [
+                    url.strip()
+                    for url in env_urls.split(",")
+                    if url.strip()
+                ]
+                if env_urls
+                else None
+            )
+        else:
+            self.mcp_urls = mcp_urls
         self.react_on = react_on
         self.safety_prompt_on = safety_prompt_on
         self.random_models_on = random_models_on
@@ -1083,6 +1095,25 @@ class Agent:
                             self.mcp_tool_handling(
                                 response, loop_count
                             )
+
+                        if exists(self.mcp_urls):
+                            try:
+                                payload = (
+                                    json.loads(response)
+                                    if isinstance(response, str)
+                                    else response
+                                )
+
+                                if isinstance(payload, list):
+                                    self.handle_multiple_mcp_tools(
+                                        self.mcp_urls,
+                                        payload,
+                                        current_loop=loop_count,
+                                    )
+                            except Exception as e:
+                                logger.error(
+                                    f"Error handling multiple MCP tools: {e}"
+                                )
 
                             self.execute_tools(
                                 response=response,
@@ -2785,6 +2816,45 @@ class Agent:
         except AgentMCPToolError as e:
             logger.error(f"Error in MCP tool: {e}")
             raise e
+
+    def handle_multiple_mcp_tools(
+        self,
+        mcp_url_list: List[str],
+        mcp_payloads: List[Dict[str, Any]],
+        current_loop: int = 0,
+    ) -> None:
+        """Execute a list of MCP tool calls across multiple servers."""
+
+        for payload in mcp_payloads:
+            function_name = payload.get("function_name")
+            server_url = payload.get("server_url")
+            arguments = payload.get("payload", {})
+
+            if server_url not in mcp_url_list:
+                logger.warning(
+                    f"Server URL {server_url} not in configured MCP URL list"
+                )
+                continue
+
+            try:
+                tool_response = asyncio.run(
+                    execute_mcp_call(
+                        function_name=function_name,
+                        server_url=server_url,
+                        payload=arguments,
+                    )
+                )
+                self.short_memory.add(
+                    role="Tool Executor",
+                    content=str(tool_response),
+                )
+                self.pretty_print(
+                    str(tool_response), loop_count=current_loop
+                )
+            except Exception as e:  # noqa: PERF203
+                logger.error(
+                    f"Error executing {function_name} on {server_url}: {e}"
+                )
 
     def temp_llm_instance_for_tool_summary(self):
         return LiteLLM(
