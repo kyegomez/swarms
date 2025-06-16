@@ -403,6 +403,7 @@ nav:
 
   - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"
+    - Share and Discover Agents, Prompts, and Tools: "swarms_platform/share_and_discover.md"
     - Customize Your Sidebar: "swarms_platform/apps_page.md"
     - Playground: "swarms_platform/playground_page.md"
     - Swarm Platform API Keys: "swarms_platform/apikeys.md"
