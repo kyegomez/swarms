@@ -419,6 +419,8 @@ multi_agent_router = SwarmRouter(
 result = multi_agent_router.run("Analyze the competitive landscape for our new product")
 ```
 
+See [MultiAgentRouter Minimal Example](../examples/multi_agent_router_minimal.md) for a lightweight demonstration.
+
 ### HierarchicalSwarm
 
 Use Case: Creating a hierarchical structure of agents with a director.
