@@ -344,6 +344,7 @@ nav:
       - Group Chat Example: "swarms/examples/groupchat_example.md"
       - Sequential Workflow Example: "swarms/examples/sequential_example.md"
       - SwarmRouter Example: "swarms/examples/swarm_router.md"
+      - MultiAgentRouter Minimal Example: "swarms/examples/multi_agent_router_minimal.md"
       - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
       - MixtureOfAgents Example: "swarms/examples/mixture_of_agents.md"
       - Unique Swarms: "swarms/examples/unique_swarms.md"
