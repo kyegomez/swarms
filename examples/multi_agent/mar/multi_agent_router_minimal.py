@@ -17,4 +17,3 @@ if __name__ == "__main__":
     router = MultiAgentRouter(agents=agents)
 
     result = router.route_task("Write a function that adds two numbers")
-    print("Chosen agent:", result["boss_decision"]["selected_agent"])

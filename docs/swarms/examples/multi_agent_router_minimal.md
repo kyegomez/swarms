@@ -21,7 +21,6 @@ agents = [
 router = MultiAgentRouter(agents=agents)
 
 result = router.route_task("Write a function that adds two numbers")
-print("Chosen agent:", result["boss_decision"]["selected_agent"])
 ```
 
 View the source on [GitHub](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/mar/multi_agent_router_minimal.py).
