@@ -79,6 +79,7 @@ Additionally, we have more comprehensive examples available in [The Swarms Cookb
 | Scheduling | [Round Robin](https://github.com/The-Swarm-Corporation/swarms-examples/blob/main/examples/structs/swarms/multi_agent_collaboration/round_robin_example.py) | Round-robin task scheduling and execution |
 | Load Balancing | [Load Balancer](https://github.com/The-Swarm-Corporation/swarms-examples/blob/main/examples/structs/swarms/multi_agent_collaboration/load_balancer_example.py) | Dynamic task distribution system for optimal resource utilization |
 | Consensus | [Majority Voting](https://github.com/The-Swarm-Corporation/swarms-examples/blob/main/examples/structs/swarms/multi_agent_collaboration/majority_voting.py) | Consensus-building system using democratic voting among agents |
+| Workflow | [MultiAgentCollab Workflow](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/collaboration_examples/multiagent_collab_workflow.py) | Simple collaborative workflow using `MultiAgentCollaboration` |
 
 ### Industry Applications
 | Category | Example | Description |
