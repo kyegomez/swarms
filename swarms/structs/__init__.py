@@ -1,5 +1,6 @@
 from swarms.structs.agent import Agent
 from swarms.structs.agent_builder import AgentsBuilder
+from swarms.structs.agent_rag_handler import RAGConfig
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
@@ -158,4 +159,5 @@ __all__ = [
     "find_agent_by_name",
     "run_agent",
     "InteractiveGroupChat",
+    "RAGConfig",
 ]

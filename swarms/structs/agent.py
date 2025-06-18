@@ -244,6 +244,7 @@ class Agent:
         artifacts_output_path (str): The artifacts output path
         artifacts_file_extension (str): The artifacts file extension (.pdf, .md, .txt, )
         scheduled_run_date (datetime): The date and time to schedule the task
+        rag_config (RAGConfig): Configuration for RAG (Retrieval-Augmented Generation) operations
 
     Methods:
         run: Run the agent
@@ -277,6 +278,18 @@ class Agent:
         construct_dynamic_prompt: Construct the dynamic prompt
         handle_artifacts: Handle artifacts
 
+        # RAG (Retrieval-Augmented Generation) Methods:
+        enable_rag: Enable RAG functionality with optional memory store and configuration
+        disable_rag: Disable RAG functionality
+        is_rag_enabled: Check if RAG functionality is enabled
+        get_rag_config: Get current RAG configuration
+        set_rag_config: Set RAG configuration
+        save_to_rag_memory: Manually save content to RAG memory
+        query_rag_memory: Manually query RAG memory
+        get_rag_stats: Get RAG handler statistics
+        search_memories: Search long-term memory using RAG handler
+        update_rag_config: Update RAG configuration
+        clear_rag_session: Clear RAG session data
 
     Examples:
     >>> from swarm_models import OpenAIChat
@@ -589,16 +602,29 @@ class Agent:
         if self.random_models_on is True:
             self.model_name = set_random_models_for_agents()
 
+        # Initialize RAG handler with the new comprehensive handler
         if self.long_term_memory is not None:
-            self.rag_handler = self.rag_setup_handling()
+            self.rag_handler = AgentRAGHandler(
+                long_term_memory=self.long_term_memory,
+                config=self.rag_config,
+                agent_name=self.agent_name,
+                max_context_length=self.context_length,
+                verbose=self.verbose,
+            )
+        else:
+            self.rag_handler = None
 
     def rag_setup_handling(self):
-        return AgentRAGHandler(
-            long_term_memory=self.long_term_memory,
-            config=self.rag_config,
-            agent_name=self.agent_name,
-            verbose=self.verbose,
-        )
+        """Legacy method - now handled by AgentRAGHandler initialization"""
+        if self.rag_handler is None and self.long_term_memory is not None:
+            self.rag_handler = AgentRAGHandler(
+                long_term_memory=self.long_term_memory,
+                config=self.rag_config,
+                agent_name=self.agent_name,
+                max_context_length=self.context_length,
+                verbose=self.verbose,
+            )
+        return self.rag_handler
 
     def tool_handling(self):
 
@@ -971,9 +997,14 @@ class Agent:
             # Clear the short memory
             response = None
 
-            # Query the long term memory first for the context
-            if self.long_term_memory is not None:
-                self.memory_query(task)
+            # Query the long term memory first for the context using new RAG handler
+            if self.rag_handler is not None:
+                retrieved_context = self.rag_handler.handle_initial_memory_query(task)
+                if retrieved_context:
+                    self.short_memory.add(
+                        role="Database",
+                        content=retrieved_context,
+                    )
 
             # Autosave
             if self.autosave:
@@ -986,6 +1017,9 @@ class Agent:
                     f"\n User: {task}",
                     f"Task Request for {self.agent_name}",
                 )
+
+            # Track tools used for final summary
+            tools_used = []
 
             while (
                 self.max_loops == "auto"
@@ -1018,28 +1052,25 @@ class Agent:
                 # Parameters
                 attempt = 0
                 success = False
+                has_tool_usage = False
+                
                 while attempt < self.retry_attempts and not success:
                     try:
-                        if (
-                            self.long_term_memory is not None
-                            and self.rag_every_loop is True
-                        ):
-                            logger.info(
-                                "Querying RAG database for context..."
+                        # Handle RAG operations for this loop using new handler
+                        if self.rag_handler is not None:
+                            retrieved_context = self.rag_handler.handle_loop_memory_operations(
+                                task=task,
+                                response=response if response else "",
+                                loop_count=loop_count,
+                                conversation_context=task_prompt,
+                                has_tool_usage=has_tool_usage,
                             )
-                            self.memory_query(task_prompt)
-
-                        # # Generate response using LLM
-                        # response_args = (
-                        #     (task_prompt, *args)
-                        #     if img is None
-                        #     else (task_prompt, img, *args)
-                        # )
-
-                        # # Call the LLM
-                        # response = self.call_llm(
-                        #     *response_args, **kwargs
-                        # )
+                            
+                            if retrieved_context:
+                                self.short_memory.add(
+                                    role="Database",
+                                    content=retrieved_context,
+                                )
 
                         response = self.call_llm(
                             task=task_prompt, img=img, *args, **kwargs
@@ -1066,13 +1097,14 @@ class Agent:
 
                         # Check and execute tools
                         if exists(self.tools):
-
+                            has_tool_usage = True
                             self.execute_tools(
                                 response=response,
                                 loop_count=loop_count,
                             )
 
                         if exists(self.mcp_url):
+                            has_tool_usage = True
                             self.mcp_tool_handling(
                                 response, loop_count
                             )
@@ -1080,6 +1112,7 @@ class Agent:
                         if exists(self.mcp_url) and exists(
                             self.tools
                         ):
+                            has_tool_usage = True
                             self.mcp_tool_handling(
                                 response, loop_count
                             )
@@ -1154,6 +1187,15 @@ class Agent:
                         f"Sleeping for {self.loop_interval} seconds"
                     )
                     time.sleep(self.loop_interval)
+
+            # Handle final memory consolidation using new RAG handler
+            if self.rag_handler is not None:
+                self.rag_handler.handle_final_memory_consolidation(
+                    task=task,
+                    final_response=response,
+                    total_loops=loop_count,
+                    tools_used=tools_used,
+                )
 
             if self.autosave is True:
                 log_agent_data(self.to_dict())
@@ -1569,6 +1611,24 @@ class Agent:
                         f"Could not save memory manager: {e}"
                     )
 
+            # Save RAG handler stats if it exists
+            if (
+                hasattr(self, "rag_handler")
+                and self.rag_handler is not None
+            ):
+                rag_stats_path = f"{os.path.splitext(base_path)[0]}_rag_stats.json"
+                try:
+                    rag_stats = self.rag_handler.get_memory_stats()
+                    with open(rag_stats_path, 'w') as f:
+                        json.dump(rag_stats, f, indent=2)
+                    logger.info(
+                        f"Saved RAG handler stats to: {rag_stats_path}"
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Could not save RAG handler stats: {e}"
+                    )
+
         except Exception as e:
             logger.warning(f"Error saving additional components: {e}")
 
@@ -1695,6 +1755,20 @@ class Agent:
                 max_workers=os.cpu_count()
             ) as executor:
                 self.executor = executor
+
+            # Reinitialize RAG handler if needed
+            if (
+                hasattr(self, "long_term_memory")
+                and self.long_term_memory is not None
+                and (not hasattr(self, "rag_handler") or self.rag_handler is None)
+            ):
+                self.rag_handler = AgentRAGHandler(
+                    long_term_memory=self.long_term_memory,
+                    config=getattr(self, "rag_config", None),
+                    agent_name=self.agent_name,
+                    max_context_length=self.context_length,
+                    verbose=self.verbose,
+                )
 
             # # Reinitialize tool structure if needed
             # if hasattr(self, 'tools') and (self.tools or getattr(self, 'list_base_models', None)):
@@ -2017,37 +2091,23 @@ class Agent:
             raise error
 
     def memory_query(self, task: str = None, *args, **kwargs) -> None:
+        """Legacy method - now uses AgentRAGHandler"""
+        if self.rag_handler is None:
+            return None
+            
         try:
-            # Query the long term memory
-            if self.long_term_memory is not None:
-                formatter.print_panel(f"Querying RAG for: {task}")
-
-                memory_retrieval = self.long_term_memory.query(
-                    task, *args, **kwargs
-                )
-
-                memory_retrieval = (
-                    f"Documents Available: {str(memory_retrieval)}"
-                )
-
-                # # Count the tokens
-                # memory_token_count = count_tokens(
-                #     memory_retrieval
-                # )
-                # if memory_token_count > self.memory_chunk_size:
-                #     # Truncate the memory by the memory chunk size
-                #     memory_retrieval = self.truncate_string_by_tokens(
-                #         memory_retrieval, self.memory_chunk_size
-                #     )
-
+            # Use the new RAG handler for initial memory query
+            retrieved_context = self.rag_handler.handle_initial_memory_query(task)
+            
+            if retrieved_context:
                 self.short_memory.add(
                     role="Database",
-                    content=memory_retrieval,
+                    content=retrieved_context,
                 )
-
-                return None
+                
+            return None
         except Exception as e:
-            logger.error(f"An error occurred: {e}")
+            logger.error(f"An error occurred during memory query: {e}")
             raise e
 
     def sentiment_analysis_handler(self, response: str = None):
@@ -2845,3 +2905,85 @@ class Agent:
 
     def list_output_types(self):
         return OutputType
+
+    def get_rag_stats(self) -> Dict[str, Any]:
+        """Get RAG handler statistics"""
+        if self.rag_handler is None:
+            return {"rag_enabled": False}
+        return self.rag_handler.get_memory_stats()
+
+    def search_memories(self, query: str, top_k: int = None, similarity_threshold: float = None) -> List[Dict]:
+        """Search long-term memory using RAG handler"""
+        if self.rag_handler is None:
+            return []
+        return self.rag_handler.search_memories(query, top_k, similarity_threshold)
+
+    def update_rag_config(self, **kwargs):
+        """Update RAG configuration"""
+        if self.rag_handler is None:
+            logger.warning("RAG handler not initialized")
+            return
+        self.rag_handler.update_config(**kwargs)
+
+    def clear_rag_session(self):
+        """Clear RAG session data"""
+        if self.rag_handler is None:
+            return
+        self.rag_handler.clear_session_data()
+
+    def enable_rag(self, long_term_memory: Any = None, config: RAGConfig = None):
+        """Enable RAG functionality with optional memory store and configuration"""
+        if long_term_memory is not None:
+            self.long_term_memory = long_term_memory
+            
+        if config is not None:
+            self.rag_config = config
+            
+        self.rag_handler = AgentRAGHandler(
+            long_term_memory=self.long_term_memory,
+            config=self.rag_config,
+            agent_name=self.agent_name,
+            max_context_length=self.context_length,
+            verbose=self.verbose,
+        )
+        
+        logger.info(f"RAG functionality enabled for agent: {self.agent_name}")
+
+    def disable_rag(self):
+        """Disable RAG functionality"""
+        self.rag_handler = None
+        logger.info(f"RAG functionality disabled for agent: {self.agent_name}")
+
+    def is_rag_enabled(self) -> bool:
+        """Check if RAG functionality is enabled"""
+        return self.rag_handler is not None and self.rag_handler.is_enabled()
+
+    def get_rag_config(self) -> Optional[RAGConfig]:
+        """Get current RAG configuration"""
+        if self.rag_handler is None:
+            return None
+        return self.rag_handler.config
+
+    def set_rag_config(self, config: RAGConfig):
+        """Set RAG configuration"""
+        if self.rag_handler is None:
+            logger.warning("RAG handler not initialized. Use enable_rag() first.")
+            return
+        self.rag_handler.config = config
+        logger.info("RAG configuration updated")
+
+    def save_to_rag_memory(self, content: str, metadata: Optional[Dict] = None, content_type: str = "manual"):
+        """Manually save content to RAG memory"""
+        if self.rag_handler is None:
+            logger.warning("RAG handler not initialized. Use enable_rag() first.")
+            return False
+            
+        return self.rag_handler.save_to_memory(content, metadata, content_type)
+
+    def query_rag_memory(self, query: str, context_type: str = "manual") -> str:
+        """Manually query RAG memory"""
+        if self.rag_handler is None:
+            logger.warning("RAG handler not initialized. Use enable_rag() first.")
+            return ""
+            
+        return self.rag_handler.query_memory(query, context_type)
