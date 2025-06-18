@@ -4,7 +4,7 @@ if __name__ == "__main__":
     # Initialize the ReasoningDuo with two lightweight models
     duo = ReasoningDuo(
         model_names=["gpt-4o-mini", "gpt-4o-mini"],
-        max_loops=1,
+        # max_loops=1,  # Remove this line
     )
 
     # Batched tasks to process
