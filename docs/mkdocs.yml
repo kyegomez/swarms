@@ -345,6 +345,7 @@ nav:
       - Sequential Workflow Example: "swarms/examples/sequential_example.md"
       - SwarmRouter Example: "swarms/examples/swarm_router.md"
       - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
+      - Stopping Condition Swarm: "swarms/examples/swarm_stopping_condition.md"
       - MixtureOfAgents Example: "swarms/examples/mixture_of_agents.md"
       - Unique Swarms: "swarms/examples/unique_swarms.md"
       - Agents as Tools: "swarms/examples/agents_as_tools.md"
