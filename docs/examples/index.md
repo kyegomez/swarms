@@ -68,6 +68,7 @@ Additionally, we have more comprehensive examples available in [The Swarms Cookb
 | Federated | [Federated Swarm](https://github.com/The-Swarm-Corporation/swarms-examples/blob/main/examples/structs/swarms/experimental/federated_swarm.py) | Distributed learning system with privacy-preserving agent collaboration |
 | Ant Colony | [Ant Swarm](https://github.com/The-Swarm-Corporation/swarms-examples/blob/main/examples/structs/swarms/experimental/ant_swarm.py) | Bio-inspired optimization using ant colony algorithms for agent coordination |
 | Matrix | [Agent Matrix](https://github.com/The-Swarm-Corporation/swarms-examples/blob/main/examples/structs/swarms/experimental/agent_matrix.py) | Grid-based agent organization for complex problem-solving |
+| MatrixSwarm | [MatrixSwarm Example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/matrix_swarm_example.py) | Demonstrates transpose/add operations and running agents |
 | DFS | [DFS Search Swarm](https://github.com/The-Swarm-Corporation/swarms-examples/blob/main/examples/structs/swarms/experimental/dfs_search_swarm.py) | Depth-first search swarm for complex problem exploration |
 | Pulsar | [Pulsar Swarm](https://github.com/The-Swarm-Corporation/swarms-examples/blob/main/examples/structs/swarms/experimental/pulsar_swarm.py) | Pulsar-based coordination for synchronized agent behavior |
 
