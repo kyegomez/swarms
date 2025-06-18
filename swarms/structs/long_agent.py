@@ -1,7 +1,7 @@
 import concurrent.futures
 import os
 from typing import Union, List
-import PyPDF2
+import pypdf
 import markdown
 from pathlib import Path
 from swarms.utils.litellm_tokenizer import count_tokens
@@ -57,7 +57,7 @@ class LongAgent:
 
         text = ""
         with open(file_path, "rb") as file:
-            pdf_reader = PyPDF2.PdfReader(file)
+            pdf_reader = pypdf.PdfReader(file)
             for page in pdf_reader.pages:
                 text += page.extract_text()
 
