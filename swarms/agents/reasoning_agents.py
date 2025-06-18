@@ -7,7 +7,7 @@ from swarms.agents.i_agent import (
     IterativeReflectiveExpansion as IREAgent,
 )
 from swarms.agents.reasoning_duo import ReasoningDuo
-from swarms.structs.output_types import OutputType
+from swarms.utils.output_types import OutputType
 from swarms.agents.agent_judge import AgentJudge
 
 agent_types = Literal[
