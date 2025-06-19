@@ -83,7 +83,20 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
-from swarms.structs.interactive_groupchat import InteractiveGroupChat
+from swarms.structs.swarms_api import (
+    AgentInput,
+    SwarmAPIError,
+    SwarmAuthenticationError,
+    SwarmRequest,
+    SwarmsAPIClient,
+    SwarmValidationError,
+)
+from swarms.structs.agent_builder import AgentsBuilder
+from swarms.structs.aicoscientist import (
+    AIScientistFramework,
+    AgentRole,
+    Hypothesis,
+)
 
 __all__ = [
     "Agent",
@@ -143,17 +156,7 @@ __all__ = [
     "MemeAgentGenerator",
     "ModelRouter",
     "AgentsBuilder",
-    "MALT",
-    "DeHallucinationSwarm",
-    "DeepResearchSwarm",
-    "HybridHierarchicalClusterSwarm",
-    "get_agents_info",
-    "get_swarms_info",
-    "AutoSwarmBuilder",
-    "CouncilAsAJudge",
-    "batch_agent_execution",
-    "aggregate",
-    "find_agent_by_name",
-    "run_agent",
-    "InteractiveGroupChat",
+    "AIScientistFramework",
+    "AgentRole",
+    "Hypothesis",
 ]
