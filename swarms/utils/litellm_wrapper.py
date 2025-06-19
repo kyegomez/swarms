@@ -152,21 +152,45 @@ class LiteLLM:
         )
 
     def output_for_tools(self, response: any):
-        if self.mcp_call is True:
-            out = response.choices[0].message.tool_calls[0].function
-            output = {
-                "function": {
-                    "name": out.name,
-                    "arguments": out.arguments,
-                }
-            }
-            return output
-        else:
-            out = response.choices[0].message.tool_calls
-
-            if isinstance(out, BaseModel):
-                out = out.model_dump()
-            return out
+        try:
+            if self.mcp_call is True:
+                # Validate response structure for MCP calls
+                if (hasattr(response, 'choices') and 
+                    len(response.choices) > 0 and 
+                    hasattr(response.choices[0], 'message') and
+                    hasattr(response.choices[0].message, 'tool_calls') and
+                    response.choices[0].message.tool_calls and
+                    len(response.choices[0].message.tool_calls) > 0):
+                    
+                    out = response.choices[0].message.tool_calls[0].function
+                    output = {
+                        "function": {
+                            "name": out.name,
+                            "arguments": out.arguments,
+                        }
+                    }
+                    return output
+                else:
+                    logger.warning("Invalid MCP response structure, returning empty dict")
+                    return {}
+            else:
+                # Validate response structure for regular tool calls
+                if (hasattr(response, 'choices') and 
+                    len(response.choices) > 0 and 
+                    hasattr(response.choices[0], 'message') and
+                    hasattr(response.choices[0].message, 'tool_calls')):
+                    
+                    out = response.choices[0].message.tool_calls
+                    
+                    if isinstance(out, BaseModel):
+                        out = out.model_dump()
+                    return out
+                else:
+                    logger.warning("Invalid tool response structure, returning empty list")
+                    return []
+        except Exception as e:
+            logger.error(f"Error processing tool response: {e}")
+            return {} if self.mcp_call else []
 
     def _prepare_messages(
         self,
@@ -449,14 +473,29 @@ class LiteLLM:
             # Make the completion call
             response = completion(**completion_params)
 
+            # Validate response structure before processing
+            if not hasattr(response, 'choices') or not response.choices:
+                logger.error("Invalid response: no choices found")
+                return "Error: Invalid response from API"
+            
+            if not hasattr(response.choices[0], 'message'):
+                logger.error("Invalid response: no message found in first choice")
+                return "Error: Invalid response structure"
+
             # Handle tool-based response
-            if self.tools_list_dictionary is not None:
+            if (self.tools_list_dictionary is not None and 
+                hasattr(response.choices[0].message, 'tool_calls') and 
+                response.choices[0].message.tool_calls is not None):
                 return self.output_for_tools(response)
             elif self.return_all is True:
                 return response.model_dump()
             else:
                 # Return standard response content
-                return response.choices[0].message.content
+                content = response.choices[0].message.content
+                if content is None:
+                    logger.warning("Response content is None, returning empty string")
+                    return ""
+                return content
 
         except LiteLLMException as error:
             logger.error(

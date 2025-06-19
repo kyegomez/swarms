@@ -2800,48 +2800,72 @@ class Agent:
         )
 
     def execute_tools(self, response: any, loop_count: int):
-
-        output = (
-            self.tool_struct.execute_function_calls_from_api_response(
-                response
+        try:
+            output = (
+                self.tool_struct.execute_function_calls_from_api_response(
+                    response
+                )
             )
-        )
 
-        self.short_memory.add(
-            role="Tool Executor",
-            content=format_data_structure(output),
-        )
+            # Handle empty or None output
+            if not output:
+                logger.info("No tool function calls found in response")
+                return
 
-        self.pretty_print(
-            f"{format_data_structure(output)}",
-            loop_count,
-        )
+            self.short_memory.add(
+                role="Tool Executor",
+                content=format_data_structure(output),
+            )
 
-        # Now run the LLM again without tools - create a temporary LLM instance
-        # instead of modifying the cached one
-        # Create a temporary LLM instance without tools for the follow-up call
-        temp_llm = self.temp_llm_instance_for_tool_summary()
+            self.pretty_print(
+                f"{format_data_structure(output)}",
+                loop_count,
+            )
 
-        tool_response = temp_llm.run(
-            f"""
-            Please analyze and summarize the following tool execution output in a clear and concise way. 
-            Focus on the key information and insights that would be most relevant to the user's original request.
-            If there are any errors or issues, highlight them prominently.
-            
-            Tool Output:
-            {output}
-            """
-        )
+            # Now run the LLM again without tools - create a temporary LLM instance
+            # instead of modifying the cached one
+            # Create a temporary LLM instance without tools for the follow-up call
+            try:
+                temp_llm = self.temp_llm_instance_for_tool_summary()
 
-        self.short_memory.add(
-            role=self.agent_name,
-            content=tool_response,
-        )
+                tool_response = temp_llm.run(
+                    f"""
+                    Please analyze and summarize the following tool execution output in a clear and concise way. 
+                    Focus on the key information and insights that would be most relevant to the user's original request.
+                    If there are any errors or issues, highlight them prominently.
+                    
+                    Tool Output:
+                    {output}
+                    """
+                )
 
-        self.pretty_print(
-            f"{tool_response}",
-            loop_count,
-        )
+                self.short_memory.add(
+                    role=self.agent_name,
+                    content=tool_response,
+                )
+
+                self.pretty_print(
+                    f"{tool_response}",
+                    loop_count,
+                )
+            except Exception as e:
+                logger.error(f"Error in tool summary generation: {e}")
+                # Add a fallback summary
+                fallback_summary = f"Tool execution completed. Output: {format_data_structure(output)}"
+                self.short_memory.add(
+                    role=self.agent_name,
+                    content=fallback_summary,
+                )
+                self.pretty_print(fallback_summary, loop_count)
+
+        except Exception as e:
+            logger.error(f"Error in tool execution: {e}")
+            error_message = f"Tool execution failed: {str(e)}"
+            self.short_memory.add(
+                role="Tool Executor",
+                content=error_message,
+            )
+            self.pretty_print(error_message, loop_count)
 
     def list_output_types(self):
         return OutputType
