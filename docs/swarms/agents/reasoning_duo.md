@@ -156,3 +156,7 @@ logger.info("Task processing started")
 - Processing time may vary based on task complexity
 - Model response quality depends on input clarity
 - Resource usage scales with batch size
+
+## Example Script
+
+For a runnable demonstration, see the [reasoning_duo_batched.py](https://github.com/kyegomez/swarms/blob/master/examples/models/reasoning_duo_batched.py) example.

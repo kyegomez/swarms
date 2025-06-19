@@ -6,7 +6,7 @@ import pytest
 
 from swarms import Agent
 from swarm_models import OpenAIChat
-from swarms.structs.multi_agent_collab import MultiAgentCollaboration
+from experimental.multi_agent_collab import MultiAgentCollaboration
 
 # Initialize the director agent
 

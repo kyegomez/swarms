@@ -34,6 +34,7 @@ Swarm architectures leverage these communication patterns to ensure that agents 
 | Spreadsheet Swarm             | Manages tasks at scale, tracking agent outputs in a structured format like CSV files.                                                                                   | [Code Link](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)                 | Large-scale marketing analytics, financial audits                                                 |
 | Forest Swarm                  | A swarm structure that organizes agents in a tree-like hierarchy for complex decision-making processes.                                                                 | [Code Link](https://docs.swarms.world/en/latest/swarms/structs/forest_swarm/)                      | Multi-stage workflows, hierarchical reinforcement learning                                        |
 | Swarm Router                  | Routes and chooses the swarm architecture based on the task requirements and available agents.                                                                        | [Code Link](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)                       | Dynamic task routing, adaptive swarm architecture selection, optimized agent allocation            |
+| MultiAgentRouter              | Boss agent selects the best agent for each task. | [Minimal Example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/mar/multi_agent_router_minimal.py) | Task-specific agent routing |
 
 
 

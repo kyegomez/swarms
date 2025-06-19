@@ -212,7 +212,7 @@ class RedisConversationTester:
         all_messages = self.conversation.return_messages_as_list()
         if len(all_messages) > 0:
             self.conversation.update(0, "user", "updated message")
-            updated_message = self.conversation.query(0)
+            self.conversation.query(0)
             assert True, "Update method executed successfully"
 
     def test_clear(self):

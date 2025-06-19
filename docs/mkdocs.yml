@@ -187,9 +187,9 @@ nav:
     - Agents:
       # - Overview: "swarms/structs/index.md"
       - Concepts:
-        - Managing Prompts in Production: "swarms/prompts/main.md"
+        # - Managing Prompts in Production: "swarms/prompts/main.md"
         - Introduction into The Agent Architecture: "swarms/framework/agents_explained.md"
-    
+        # - Introduction to Tools: "swarms/tools/overview.md"
       - Documentation:
         - Agent Class Documentation: "swarms/structs/agent.md"
         - Create and Run Agents from YAML: "swarms/agents/create_agents_yaml.md"
@@ -344,10 +344,13 @@ nav:
       - Group Chat Example: "swarms/examples/groupchat_example.md"
       - Sequential Workflow Example: "swarms/examples/sequential_example.md"
       - SwarmRouter Example: "swarms/examples/swarm_router.md"
+      - MultiAgentRouter Minimal Example: "swarms/examples/multi_agent_router_minimal.md"
       - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
       - MixtureOfAgents Example: "swarms/examples/mixture_of_agents.md"
       - Unique Swarms: "swarms/examples/unique_swarms.md"
       - Agents as Tools: "swarms/examples/agents_as_tools.md"
+      - Aggregate Multi-Agent Responses: "swarms/examples/aggregate.md"
+      - Interactive GroupChat Example: "swarms/examples/interactive_groupchat_example.md"
       - Applications:
         - Swarms DAO: "swarms/examples/swarms_dao.md"
         - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"

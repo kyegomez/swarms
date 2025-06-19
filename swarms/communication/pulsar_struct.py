@@ -657,7 +657,6 @@ class PulsarConversation(BaseCommunication):
         try:
             import pulsar
 
-            pulsar_available = True
         except ImportError:
             logger.error("Pulsar client library is not installed")
             return False

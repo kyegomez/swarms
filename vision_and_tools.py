@@ -1,12 +1,8 @@
-import json
 from swarms.structs import Agent
 from swarms.prompts.logistics import (
     Quality_Control_Agent_Prompt,
 )
-from swarms import BaseTool
-import litellm
 
-litellm._turn_on_debug()
 
 # Image for analysis
 factory_image = "image.jpg"
@@ -43,19 +39,21 @@ def security_analysis(danger_level: str = None) -> str:
     return "Unknown danger level"
 
 
-schema = BaseTool().function_to_dict(security_analysis)
-print(json.dumps(schema, indent=4))
+# schema = BaseTool().function_to_dict(security_analysis)
+# print(json.dumps(schema, indent=4))
 
 # Quality control agent
 quality_control_agent = Agent(
     agent_name="Quality Control Agent",
     agent_description="A quality control agent that analyzes images and provides a detailed report on the quality of the product in the image.",
-    model_name="anthropic/claude-3-opus-20240229",
+    # model_name="anthropic/claude-3-opus-20240229",
+    model_name="gpt-4o-mini",
     system_prompt=Quality_Control_Agent_Prompt,
     multi_modal=True,
     max_loops=1,
     output_type="str-all-except-first",
-    tools_list_dictionary=[schema],
+    # tools_list_dictionary=[schema],
+    tools=[security_analysis],
 )
 
 
