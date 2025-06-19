@@ -40,7 +40,6 @@ from swarms.structs.meme_agent_persona_generator import (
 )
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.model_router import ModelRouter
-from swarms.structs.multi_agent_collab import MultiAgentCollaboration
 from swarms.structs.multi_agent_exec import (
     get_agents_info,
     get_swarms_info,
@@ -98,7 +97,6 @@ __all__ = [
     "majority_voting",
     "most_frequent",
     "parse_code_completion",
-    "MultiAgentCollaboration",
     "AgentRearrange",
     "rearrange",
     "RoundRobinSwarm",

@@ -349,6 +349,7 @@ nav:
       - MixtureOfAgents Example: "swarms/examples/mixture_of_agents.md"
       - Unique Swarms: "swarms/examples/unique_swarms.md"
       - Agents as Tools: "swarms/examples/agents_as_tools.md"
+      - Interactive GroupChat Example: "swarms/examples/interactive_groupchat_example.md"
       - Applications:
         - Swarms DAO: "swarms/examples/swarms_dao.md"
         - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"

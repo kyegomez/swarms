@@ -3,12 +3,25 @@ from typing import (
     Dict,
     TypedDict,
     Any,
+    Union,
+    TypeVar,
 )
 from dataclasses import dataclass
 import csv
+import json
+import yaml
 from pathlib import Path
 from enum import Enum
 from swarms.structs.agent import Agent
+from swarms.schemas.swarms_api_schemas import AgentSpec
+from litellm import model_list
+import concurrent.futures
+from tqdm import tqdm
+
+# Type variable for agent configuration
+AgentConfigType = TypeVar(
+    "AgentConfigType", bound=Union[AgentSpec, Dict[str, Any]]
+)
 
 
 class ModelName(str, Enum):
@@ -32,12 +45,20 @@ class ModelName(str, Enum):
         return model_name in cls.get_model_names()
 
 
+class FileType(str, Enum):
+    """Supported file types for agent configuration"""
+
+    CSV = "csv"
+    JSON = "json"
+    YAML = "yaml"
+
+
 class AgentConfigDict(TypedDict):
     """TypedDict for agent configuration"""
 
     agent_name: str
     system_prompt: str
-    model_name: str  # Using str instead of ModelName for flexibility
+    model_name: str
     max_loops: int
     autosave: bool
     dashboard: bool
@@ -68,15 +89,26 @@ class AgentValidator:
     """Validates agent configuration data"""
 
     @staticmethod
-    def validate_config(config: Dict[str, Any]) -> AgentConfigDict:
-        """Validate and convert agent configuration"""
+    def validate_config(
+        config: Union[AgentSpec, Dict[str, Any]],
+    ) -> AgentConfigDict:
+        """Validate and convert agent configuration from either AgentSpec or Dict"""
         try:
-            # Validate model name
+            # Convert AgentSpec to dict if needed
+            if isinstance(config, AgentSpec):
+                config = config.model_dump()
+
+            # Validate model name using litellm model list
             model_name = str(config["model_name"])
-            if not ModelName.is_valid_model(model_name):
-                valid_models = ModelName.get_model_names()
+            if not any(
+                model_name in model["model_name"]
+                for model in model_list
+            ):
+                valid_models = [
+                    model["model_name"] for model in model_list
+                ]
                 raise AgentValidationError(
-                    f"Invalid model name. Must be one of: {', '.join(valid_models)}",
+                    "Invalid model name. Must be one of the supported litellm models",
                     "model_name",
                     model_name,
                 )
@@ -138,38 +170,36 @@ class AgentValidator:
 
 
 class AgentLoader:
-    """Class to manage agents through CSV with type safety"""
+    """Class to manage agents through various file formats with type safety and high performance"""
 
-    csv_path: Path
-
-    def __post_init__(self) -> None:
-        """Convert string path to Path object if necessary"""
-        if isinstance(self.csv_path, str):
-            self.csv_path = Path(self.csv_path)
+    def __init__(
+        self, file_path: Union[str, Path], max_workers: int = 10
+    ):
+        """Initialize the AgentLoader with file path and max workers for parallel processing"""
+        self.file_path = (
+            Path(file_path)
+            if isinstance(file_path, str)
+            else file_path
+        )
+        self.max_workers = max_workers
 
     @property
-    def headers(self) -> List[str]:
-        """CSV headers for agent configuration"""
-        return [
-            "agent_name",
-            "system_prompt",
-            "model_name",
-            "max_loops",
-            "autosave",
-            "dashboard",
-            "verbose",
-            "dynamic_temperature",
-            "saved_state_path",
-            "user_name",
-            "retry_attempts",
-            "context_length",
-            "return_step_meta",
-            "output_type",
-            "streaming",
-        ]
+    def file_type(self) -> FileType:
+        """Determine the file type based on extension"""
+        ext = self.file_path.suffix.lower()
+        if ext == ".csv":
+            return FileType.CSV
+        elif ext == ".json":
+            return FileType.JSON
+        elif ext in [".yaml", ".yml"]:
+            return FileType.YAML
+        else:
+            raise ValueError(f"Unsupported file type: {ext}")
 
-    def create_agent_csv(self, agents: List[Dict[str, Any]]) -> None:
-        """Create a CSV file with validated agent configurations"""
+    def create_agent_file(
+        self, agents: List[Union[AgentSpec, Dict[str, Any]]]
+    ) -> None:
+        """Create a file with validated agent configurations"""
         validated_agents = []
         for agent in agents:
             try:
@@ -183,80 +213,70 @@ class AgentLoader:
                 )
                 raise
 
-        with open(self.csv_path, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=self.headers)
-            writer.writeheader()
-            writer.writerows(validated_agents)
+        if self.file_type == FileType.CSV:
+            self._write_csv(validated_agents)
+        elif self.file_type == FileType.JSON:
+            self._write_json(validated_agents)
+        elif self.file_type == FileType.YAML:
+            self._write_yaml(validated_agents)
 
         print(
-            f"Created CSV with {len(validated_agents)} agents at {self.csv_path}"
+            f"Created {self.file_type.value} file with {len(validated_agents)} agents at {self.file_path}"
         )
 
-    def load_agents(self, file_type: str = "csv") -> List[Agent]:
-        """Load and create agents from CSV or JSON with validation"""
-        if file_type == "csv":
-            if not self.csv_path.exists():
-                raise FileNotFoundError(
-                    f"CSV file not found at {self.csv_path}"
-                )
-            return self._load_agents_from_csv()
-        elif file_type == "json":
-            return self._load_agents_from_json()
-        else:
-            raise ValueError(
-                "Unsupported file type. Use 'csv' or 'json'."
-            )
-
-    def _load_agents_from_csv(self) -> List[Agent]:
-        """Load agents from a CSV file"""
-        agents: List[Agent] = []
-        with open(self.csv_path, "r") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                try:
-                    validated_config = AgentValidator.validate_config(
-                        row
-                    )
-                    agent = self._create_agent(validated_config)
-                    agents.append(agent)
-                except AgentValidationError as e:
-                    print(
-                        f"Skipping invalid agent configuration: {e}"
-                    )
-                    continue
-
-        print(f"Loaded {len(agents)} agents from {self.csv_path}")
-        return agents
-
-    def _load_agents_from_json(self) -> List[Agent]:
-        """Load agents from a JSON file"""
-        import json
-
-        if not self.csv_path.with_suffix(".json").exists():
+    def load_agents(self) -> List[Agent]:
+        """Load and create agents from file with validation and parallel processing"""
+        if not self.file_path.exists():
             raise FileNotFoundError(
-                f"JSON file not found at {self.csv_path.with_suffix('.json')}"
+                f"File not found at {self.file_path}"
             )
 
-        agents: List[Agent] = []
-        with open(self.csv_path.with_suffix(".json"), "r") as f:
-            agents_data = json.load(f)
-            for agent in agents_data:
-                try:
-                    validated_config = AgentValidator.validate_config(
-                        agent
-                    )
-                    agent = self._create_agent(validated_config)
-                    agents.append(agent)
-                except AgentValidationError as e:
-                    print(
-                        f"Skipping invalid agent configuration: {e}"
-                    )
-                    continue
+        if self.file_type == FileType.CSV:
+            agents_data = self._read_csv()
+        elif self.file_type == FileType.JSON:
+            agents_data = self._read_json()
+        elif self.file_type == FileType.YAML:
+            agents_data = self._read_yaml()
 
-        print(
-            f"Loaded {len(agents)} agents from {self.csv_path.with_suffix('.json')}"
-        )
+        # Process agents in parallel with progress bar
+        agents: List[Agent] = []
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=self.max_workers
+        ) as executor:
+            futures = []
+            for agent_data in agents_data:
+                futures.append(
+                    executor.submit(self._process_agent, agent_data)
+                )
+
+            # Use tqdm to show progress
+            for future in tqdm(
+                concurrent.futures.as_completed(futures),
+                total=len(futures),
+                desc="Loading agents",
+            ):
+                try:
+                    agent = future.result()
+                    if agent:
+                        agents.append(agent)
+                except Exception as e:
+                    print(f"Error processing agent: {e}")
+
+        print(f"Loaded {len(agents)} agents from {self.file_path}")
         return agents
+
+    def _process_agent(
+        self, agent_data: Union[AgentSpec, Dict[str, Any]]
+    ) -> Union[Agent, None]:
+        """Process a single agent configuration"""
+        try:
+            validated_config = AgentValidator.validate_config(
+                agent_data
+            )
+            return self._create_agent(validated_config)
+        except AgentValidationError as e:
+            print(f"Skipping invalid agent configuration: {e}")
+            return None
 
     def _create_agent(
         self, validated_config: AgentConfigDict
@@ -281,3 +301,36 @@ class AgentLoader:
             output_type=validated_config["output_type"],
             streaming_on=validated_config["streaming"],
         )
+
+    def _write_csv(self, agents: List[Dict[str, Any]]) -> None:
+        """Write agents to CSV file"""
+        with open(self.file_path, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=agents[0].keys())
+            writer.writeheader()
+            writer.writerows(agents)
+
+    def _write_json(self, agents: List[Dict[str, Any]]) -> None:
+        """Write agents to JSON file"""
+        with open(self.file_path, "w") as f:
+            json.dump(agents, f, indent=2)
+
+    def _write_yaml(self, agents: List[Dict[str, Any]]) -> None:
+        """Write agents to YAML file"""
+        with open(self.file_path, "w") as f:
+            yaml.dump(agents, f, default_flow_style=False)
+
+    def _read_csv(self) -> List[Dict[str, Any]]:
+        """Read agents from CSV file"""
+        with open(self.file_path, "r") as f:
+            reader = csv.DictReader(f)
+            return list(reader)
+
+    def _read_json(self) -> List[Dict[str, Any]]:
+        """Read agents from JSON file"""
+        with open(self.file_path, "r") as f:
+            return json.load(f)
+
+    def _read_yaml(self) -> List[Dict[str, Any]]:
+        """Read agents from YAML file"""
+        with open(self.file_path, "r") as f:
+            return yaml.safe_load(f)
