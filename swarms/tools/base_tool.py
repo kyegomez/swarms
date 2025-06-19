@@ -2402,12 +2402,7 @@ class BaseTool(BaseModel):
                     try:
                         # Parse arguments JSON string
                         if isinstance(arguments_str, str):
-                            # Handle empty or whitespace-only arguments
-                            arguments_str = arguments_str.strip()
-                            if not arguments_str:
-                                arguments = {}
-                            else:
-                                arguments = json.loads(arguments_str)
+                            arguments = self._parse_json_string(arguments_str)
                         else:
                             arguments = arguments_str if arguments_str is not None else {}
 
