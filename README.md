@@ -1381,6 +1381,7 @@ print(out)
 -------
 
 ## SpreadSheetSwarm
+
 SpreadSheetSwarm manages thousands of agents concurrently for efficient task processing. It supports one-to-many task distribution, scalability, and autosaving results. Initialized with a name, description, agents, and settings, the run method executes tasks and returns a dictionary of agent outputs.
 
 [Learn more:](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)
@@ -2029,34 +2030,17 @@ if __name__ == "__main__":
 ----------
 
 ## Onboarding Session
+
 Get onboarded now with the creator and lead maintainer of Swarms, Kye Gomez, who will show you how to get started with the installation, usage examples, and starting to build your custom use case! [CLICK HERE](https://cal.com/swarms/swarms-onboarding-session)
 
 
 ---
 
 ## Documentation
+
 Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
 
 -----
-
-## Folder Structure
-The swarms package has been meticulously crafted for extreme usability and understanding,the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The package is split into various modules, with the most important being `structs`, `tools`, and `agents`.
-
-```sh
-├── __init__.py
-├── agents/
-├── artifacts/
-├── client/
-├── cli/
-├── prompts/
-├── schemas/
-├── structs/
-├── telemetry/
-├── tools/
-└── utils/
-```
-
-----
 
 ## 🫶 Contributions:
 
@@ -2067,17 +2051,20 @@ Swarms is an open-source project, and contributions are VERY welcome. If you wan
 ----
 
 
-## Community
+### Connect With Us
 
-Join our growing community around the world, for real-time support, ideas, and discussions on Swarms 😊 
+| Platform | Link | Description |
+|----------|------|-------------|
+| 📚 Documentation | [docs.swarms.world](https://docs.swarms.world) | Official documentation and guides |
+| 📝 Blog | [Medium](https://medium.com/@kyeg) | Latest updates and technical articles |
+| 💬 Discord | [Join Discord](https://discord.gg/jM3Z6M9uMq) | Live chat and community support |
+| 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
+| 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
+| 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
+| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
 
-- View our official [Documents](https://docs.swarms.world)
-- View our official [Blog](https://medium.com/@kyeg)
-- Chat live with us on [Discord](https://discord.gg/jM3Z6M9uMq)
-- Follow us on [Twitter](https://twitter.com/kyegomez)
-- Connect with us on [LinkedIn](https://www.linkedin.com/company/the-swarm-corporation)
-- Visit us on [YouTube](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ)
-- Sign up for our events [Sign up here](https://lu.ma/5p2jnc2v)
+
+
 ## Citation
 
 If you use **swarms** in your research, please cite the project by referencing the metadata in [CITATION.cff](./CITATION.cff).

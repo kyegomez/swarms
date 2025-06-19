@@ -1,8 +1,8 @@
-### Swarms Tool Documentation
+# Swarms Tool Documentation
 
-A tool is a Python function designed to perform specific tasks, with clear type annotations and comprehensive docstrings. Below are examples of tools to help you get started.
+A tool is a Python function designed to perform specific tasks with clear type annotations and comprehensive docstrings. Below are examples of financial tools to help you get started.
 
-# Rules
+## Rules
 
 To create a tool in the Swarms environment, follow these rules:
 
@@ -25,172 +25,257 @@ To create a tool in the Swarms environment, follow these rules:
    - The function's input must be a string.
    - The function's output must be a string.
 
+## Example Financial Tools
 
-### Example Tools
+### Example 1: Fetch Stock Price from Yahoo Finance
 
+```python
+import yfinance as yf
 
-### Examples and Anti-Examples
+def get_stock_price(symbol: str) -> str:
+    """
+    Fetches the current stock price from Yahoo Finance.
 
-#### Example 1: Fetch Financial News
+    Args:
+        symbol (str): The stock symbol (e.g., "AAPL", "TSLA", "NVDA").
 
-**Correct Implementation**
+    Returns:
+        str: A formatted string containing the current stock price and basic information.
+
+    Raises:
+        ValueError: If the stock symbol is invalid or data cannot be retrieved.
+        Exception: If there is an error with the API request.
+    """
+    try:
+        # Remove any whitespace and convert to uppercase
+        symbol = symbol.strip().upper()
+        
+        if not symbol:
+            raise ValueError("Stock symbol cannot be empty.")
+        
+        # Fetch stock data
+        stock = yf.Ticker(symbol)
+        info = stock.info
+        
+        if not info or 'regularMarketPrice' not in info:
+            raise ValueError(f"Unable to fetch data for symbol: {symbol}")
+        
+        current_price = info.get('regularMarketPrice', 'N/A')
+        previous_close = info.get('regularMarketPreviousClose', 'N/A')
+        market_cap = info.get('marketCap', 'N/A')
+        company_name = info.get('longName', symbol)
+        
+        # Format market cap for readability
+        if isinstance(market_cap, (int, float)) and market_cap > 0:
+            if market_cap >= 1e12:
+                market_cap_str = f"${market_cap/1e12:.2f}T"
+            elif market_cap >= 1e9:
+                market_cap_str = f"${market_cap/1e9:.2f}B"
+            elif market_cap >= 1e6:
+                market_cap_str = f"${market_cap/1e6:.2f}M"
+            else:
+                market_cap_str = f"${market_cap:,.0f}"
+        else:
+            market_cap_str = "N/A"
+        
+        # Calculate price change
+        if isinstance(current_price, (int, float)) and isinstance(previous_close, (int, float)):
+            price_change = current_price - previous_close
+            price_change_percent = (price_change / previous_close) * 100
+            change_str = f"{price_change:+.2f} ({price_change_percent:+.2f}%)"
+        else:
+            change_str = "N/A"
+        
+        result = f"""
+Stock: {company_name} ({symbol})
+Current Price: ${current_price}
+Previous Close: ${previous_close}
+Change: {change_str}
+Market Cap: {market_cap_str}
+        """.strip()
+        
+        return result
+        
+    except ValueError as e:
+        print(f"Value Error: {e}")
+        raise
+    except Exception as e:
+        print(f"Error fetching stock data: {e}")
+        raise
+```
+
+### Example 2: Fetch Cryptocurrency Price from CoinGecko
 
 ```python
 import requests
-import os
 
-def fetch_financial_news(query: str = "Nvidia news", num_articles: int = 5) -> str:
+def get_crypto_price(coin_id: str) -> str:
     """
-    Fetches financial news from the Google News API and returns a formatted string of the top news.
+    Fetches the current cryptocurrency price from CoinGecko API.
 
     Args:
-        query (str): The query term to search for news. Default is "Nvidia news".
-        num_articles (int): The number of top articles to fetch. Default is 5.
+        coin_id (str): The cryptocurrency ID (e.g., "bitcoin", "ethereum", "cardano").
 
     Returns:
-        str: A formatted string of the top financial news articles.
+        str: A formatted string containing the current crypto price and market data.
 
     Raises:
-        ValueError: If the API response is invalid or there are no articles found.
-        requests.exceptions.RequestException: If there is an error with the request.
+        ValueError: If the coin ID is invalid or data cannot be retrieved.
+        requests.exceptions.RequestException: If there is an error with the API request.
     """
-    url = "https://newsapi.org/v2/everything"
-    params = {
-        "q": query,
-        "apiKey": os.getenv("NEWSAPI_KEY"),
-        "pageSize": num_articles,
-        "sortBy": "relevancy",
-    }
-
     try:
-        response = requests.get(url, params=params)
+        # Remove any whitespace and convert to lowercase
+        coin_id = coin_id.strip().lower()
+        
+        if not coin_id:
+            raise ValueError("Coin ID cannot be empty.")
+        
+        url = f"https://api.coingecko.com/api/v3/simple/price"
+        params = {
+            "ids": coin_id,
+            "vs_currencies": "usd",
+            "include_market_cap": "true",
+            "include_24hr_vol": "true",
+            "include_24hr_change": "true",
+            "include_last_updated_at": "true"
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
         response.raise_for_status()
         data = response.json()
-
-        if "articles" not in data or len(data["articles"]) == 0:
-            raise ValueError("No articles found or invalid API response.")
-
-        articles = data["articles"]
-        formatted_articles = []
-
-        for i, article in enumerate(articles, start=1):
-            title = article.get("title", "No Title")
-            description = article.get("description", "No Description")
-            url = article.get("url", "No URL")
-            formatted_articles.append(
-                f"{i}. {title}\nDescription: {description}\nRead more: {url}\n"
-            )
-
-        return "\n".join(formatted_articles)
-
+        
+        if coin_id not in data:
+            raise ValueError(f"Coin ID '{coin_id}' not found. Please check the spelling.")
+        
+        coin_data = data[coin_id]
+        
+        if not coin_data:
+            raise ValueError(f"No data available for coin ID: {coin_id}")
+        
+        usd_price = coin_data.get('usd', 'N/A')
+        market_cap = coin_data.get('usd_market_cap', 'N/A')
+        volume_24h = coin_data.get('usd_24h_vol', 'N/A')
+        change_24h = coin_data.get('usd_24h_change', 'N/A')
+        last_updated = coin_data.get('last_updated_at', 'N/A')
+        
+        # Format large numbers for readability
+        def format_number(value):
+            if isinstance(value, (int, float)) and value > 0:
+                if value >= 1e12:
+                    return f"${value/1e12:.2f}T"
+                elif value >= 1e9:
+                    return f"${value/1e9:.2f}B"
+                elif value >= 1e6:
+                    return f"${value/1e6:.2f}M"
+                elif value >= 1e3:
+                    return f"${value/1e3:.2f}K"
+                else:
+                    return f"${value:,.2f}"
+            return "N/A"
+        
+        # Format the result
+        result = f"""
+Cryptocurrency: {coin_id.title()}
+Current Price: ${usd_price:,.8f}" if isinstance(usd_price, (int, float)) else f"Current Price: {usd_price}
+Market Cap: {format_number(market_cap)}
+24h Volume: {format_number(volume_24h)}
+24h Change: {change_24h:+.2f}%" if isinstance(change_24h, (int, float)) else f"24h Change: {change_24h}
+Last Updated: {last_updated}
+        """.strip()
+        
+        return result
+        
     except requests.exceptions.RequestException as e:
         print(f"Request Error: {e}")
         raise
     except ValueError as e:
         print(f"Value Error: {e}")
         raise
-```
-
-**Incorrect Implementation**
-
-```python
-import requests
-import os
-
-def fetch_financial_news(query="Nvidia news", num_articles=5):
-    # Fetches financial news from the Google News API and returns a formatted string of the top news.
-    url = "https://newsapi.org/v2/everything"
-    params = {
-        "q": query,
-        "apiKey": os.getenv("NEWSAPI_KEY"),
-        "pageSize": num_articles,
-        "sortBy": "relevancy",
-    }
-
-    response = requests.get(url, params=params)
-    response.raise_for_status()
-    data = response.json()
-
-    if "articles" not in data or len(data["articles"]) == 0:
-        raise ValueError("No articles found or invalid API response.")
-
-    articles = data["articles"]
-    formatted_articles = []
-
-    for i, article in enumerate(articles, start=1):
-        title = article.get("title", "No Title")
-        description = article.get("description", "No Description")
-        url = article.get("url", "No URL")
-        formatted_articles.append(
-            f"{i}. {title}\nDescription: {description}\nRead more: {url}\n"
-        )
-
-    return "\n".join(formatted_articles)
-```
-
-**Issues with Incorrect Implementation:**
-- No type annotations for arguments and return value.
-- Missing comprehensive docstring.
-
-#### Example 2: Convert Celsius to Fahrenheit
-
-**Correct Implementation**
-
-```python
-def celsius_to_fahrenheit(celsius_str: str) -> str:
-    """
-    Converts a temperature from Celsius to Fahrenheit.
-
-    Args:
-        celsius_str (str): The temperature in Celsius as a string.
-
-    Returns:
-        str: The temperature converted to Fahrenheit as a formatted string.
-
-    Raises:
-        ValueError: If the input cannot be converted to a float.
-    """
-    try:
-        celsius = float(celsius_str)
-        fahrenheit = celsius * 9/5 + 32
-        return f"{celsius}°C is {fahrenheit}°F"
-    except ValueError as e:
-        print(f"Value Error: {e}")
+    except Exception as e:
+        print(f"Error fetching crypto data: {e}")
         raise
 ```
 
-**Incorrect Implementation**
+### Example 3: Calculate Portfolio Performance
 
 ```python
-def celsius_to_fahrenheit(celsius):
-    # Converts a temperature from Celsius to Fahrenheit.
-    celsius = float(celsius)
-    fahrenheit = celsius * 9/5 + 32
-    return f"{celsius}°C is {fahrenheit}°F"
-```
-
-**Issues with Incorrect Implementation:**
-- No type annotations for arguments and return value.
-- Missing comprehensive docstring.
-- Input type is not enforced as string.
-
-#### Example 3: Calculate Compound Interest
-
-**Correct Implementation**
-
-```python
-def calculate_compound_interest(principal_str: str, rate_str: str, time_str: str, n_str: str) -> str:
+def calculate_portfolio_performance(initial_investment_str: str, current_value_str: str, time_period_str: str) -> str:
     """
-    Calculates compound interest.
+    Calculates portfolio performance metrics including return percentage and annualized return.
 
     Args:
-        principal_str (str): The initial amount of money as a string.
-        rate_str (str): The annual interest rate (decimal) as a string.
-        time_str (str): The time the money is invested for in years as a string.
-        n_str (str): The number of times that interest is compounded per year as a string.
+        initial_investment_str (str): The initial investment amount as a string.
+        current_value_str (str): The current portfolio value as a string.
+        time_period_str (str): The time period in years as a string.
 
     Returns:
-        str: The amount of money accumulated after n years, including interest.
+        str: A formatted string containing portfolio performance metrics.
+
+    Raises:
+        ValueError: If any of the inputs cannot be converted to the appropriate type or are negative.
+    """
+    try:
+        initial_investment = float(initial_investment_str)
+        current_value = float(current_value_str)
+        time_period = float(time_period_str)
+        
+        if initial_investment <= 0 or current_value < 0 or time_period <= 0:
+            raise ValueError("Initial investment and time period must be positive, current value must be non-negative.")
+        
+        # Calculate total return
+        total_return = current_value - initial_investment
+        total_return_percentage = (total_return / initial_investment) * 100
+        
+        # Calculate annualized return
+        if time_period > 0:
+            annualized_return = ((current_value / initial_investment) ** (1 / time_period) - 1) * 100
+        else:
+            annualized_return = 0
+        
+        # Determine performance status
+        if total_return > 0:
+            status = "Profitable"
+        elif total_return < 0:
+            status = "Loss"
+        else:
+            status = "Break-even"
+        
+        result = f"""
+Portfolio Performance Analysis:
+Initial Investment: ${initial_investment:,.2f}
+Current Value: ${current_value:,.2f}
+Time Period: {time_period:.1f} years
+
+Total Return: ${total_return:+,.2f} ({total_return_percentage:+.2f}%)
+Annualized Return: {annualized_return:+.2f}%
+Status: {status}
+        """.strip()
+        
+        return result
+        
+    except ValueError as e:
+        print(f"Value Error: {e}")
+        raise
+    except Exception as e:
+        print(f"Error calculating portfolio performance: {e}")
+        raise
+```
+
+### Example 4: Calculate Compound Interest
+
+```python
+def calculate_compound_interest(principal_str: str, rate_str: str, time_str: str, compounding_frequency_str: str) -> str:
+    """
+    Calculates compound interest for investment planning.
+
+    Args:
+        principal_str (str): The initial investment amount as a string.
+        rate_str (str): The annual interest rate (as decimal) as a string.
+        time_str (str): The investment time period in years as a string.
+        compounding_frequency_str (str): The number of times interest is compounded per year as a string.
+
+    Returns:
+        str: A formatted string containing the compound interest calculation results.
 
     Raises:
         ValueError: If any of the inputs cannot be converted to the appropriate type or are negative.
@@ -199,387 +284,256 @@ def calculate_compound_interest(principal_str: str, rate_str: str, time_str: str
         principal = float(principal_str)
         rate = float(rate_str)
         time = float(time_str)
-        n = int(n_str)
+        n = int(compounding_frequency_str)
         
-        if principal < 0 or rate < 0 or time < 0 or n < 0:
-            raise ValueError("Inputs must be non-negative.")
+        if principal <= 0 or rate < 0 or time <= 0 or n <= 0:
+            raise ValueError("Principal, time, and compounding frequency must be positive. Rate must be non-negative.")
         
+        # Calculate compound interest
         amount = principal * (1 + rate / n) ** (n * time)
-        return f"The amount after {time} years is {amount:.2f}"
+        interest_earned = amount - principal
+        
+        # Calculate effective annual rate
+        effective_rate = ((1 + rate / n) ** n - 1) * 100
+        
+        result = f"""
+Compound Interest Calculation:
+Principal: ${principal:,.2f}
+Annual Rate: {rate*100:.2f}%
+Time Period: {time:.1f} years
+Compounding Frequency: {n} times per year
+
+Final Amount: ${amount:,.2f}
+Interest Earned: ${interest_earned:,.2f}
+Effective Annual Rate: {effective_rate:.2f}%
+        """.strip()
+        
+        return result
+        
     except ValueError as e:
         print(f"Value Error: {e}")
         raise
-```
-
-**Incorrect Implementation**
-
-```python
-def calculate_compound_interest(principal, rate, time, n):
-    # Calculates compound interest.
-    principal = float(principal)
-    rate = float(rate)
-    time = float(time)
-    n = int(n)
-    
-    if principal < 0 or rate < 0 or time < 0 or n < 0:
-        raise ValueError("Inputs must be non-negative.")
-    
-    amount = principal * (1 + rate / n) ** (n * time)
-    return f"The amount after {time} years is {amount:.2f}"
-```
-
-**Issues with Incorrect Implementation:**
-- No type annotations for arguments and return value.
-- Missing comprehensive docstring.
-- Input types are not enforced as strings.
-
-By following these rules and using the examples provided, you can create robust and well-documented tools in the Swarms environment. Ensure that all functions include proper type annotations, comprehensive docstrings, and that both input and output types are strings.
-
-#### Example Tool 4: Reverse a String
-
-**Functionality**: Reverses a given string.
-
-```python
-def reverse_string(s: str) -> str:
-    """
-    Reverses a given string.
-
-    Args:
-        s (str): The string to reverse.
-
-    Returns:
-        str: The reversed string.
-
-    Raises:
-        TypeError: If the input is not a string.
-    """
-    try:
-        if not isinstance(s, str):
-            raise TypeError("Input must be a string.")
-        return s[::-1]
-    except TypeError as e:
-        print(f"Type Error: {e}")
+    except Exception as e:
+        print(f"Error calculating compound interest: {e}")
         raise
 ```
 
-#### Example Tool 5: Check Palindrome
+## Integrating Tools into an Agent
 
-**Functionality**: Checks if a given string is a palindrome.
-
-```python
-def is_palindrome(s: str) -> str:
-    """
-    Checks if a given string is a palindrome.
-
-    Args:
-        s (str): The string to check.
-
-    Returns:
-        str: A message indicating whether the string is a palindrome or not.
-
-    Raises:
-        TypeError: If the input is not a string.
-    """
-    try:
-        if not isinstance(s, str):
-            raise TypeError("Input must be a string.")
-        normalized_str = ''.join(filter(str.isalnum, s)).lower()
-        is_palindrome = normalized_str == normalized_str[::-1]
-        return f"The string '{s}' is {'a palindrome' if is_palindrome else 'not a palindrome'}."
-    except TypeError as e:
-        print(f"Type Error: {e}")
-        raise
-```
-
-#### Example Tool 6: Fetch Current Weather
-
-**Functionality**: Fetches the current weather for a given city from the OpenWeatherMap API.
+To integrate tools into an agent, simply pass callable functions with proper type annotations and documentation into the agent class.
 
 ```python
-import requests
-import os
-
-def fetch_current_weather(city: str) -> str:
-    """
-    Fetches the current weather for a given city from the OpenWeatherMap API.
-
-    Args:
-        city (str): The name of the city to fetch the weather for.
-
-    Returns:
-        str: A formatted string of the current weather in the specified city.
-
-    Raises:
-        ValueError: If the API response is invalid or the city is not found.
-        requests.exceptions.RequestException: If there is an error with the request.
-    """
-    url = "http://api.openweathermap.org/data/2.5/weather"
-    params = {
-        "q": city,
-        "appid": os.getenv("OPENWEATHERMAP_KEY"),
-        "units": "metric",
-    }
-
-    try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        data = response.json()
-
-        if "weather" not in data or "main" not in data:
-            raise ValueError("Invalid API response or city not found.")
-
-        weather_description = data["weather"][0]["description"]
-        temperature = data["main"]["temp"]
-        return f"The current weather in {city} is {weather_description} with a temperature of {temperature}°C."
-
-    except requests.exceptions.RequestException as e:
-        print(f"Request Error: {e}")
-        raise
-    except ValueError as e:
-        print(f"Value Error: {e}")
-        raise
-```
-
-By following the examples provided, you can create your own tools to perform various tasks in the Swarms environment. Ensure each function includes type annotations, comprehensive docstrings, and appropriate error handling to make your tools robust and easy to use.
-
-
-
-
-
-## Integrate tools into Agent
-To integrate tools into an agent, you'd simply just pass in a callable function with types and documentation into the agent class.
-
-```python
-
-
-from swarms import Agent, OpenAIChat  # ChromaDB
-import subprocess
-
-# Model
-llm = OpenAIChat(
-    temperature=0.1,
-)
-
-
-# Tools
-def terminal(
-    code: str,
-):
-    """
-    Run code in the terminal.
-
-    Args:
-        code (str): The code to run in the terminal.
-
-    Returns:
-        str: The output of the code.
-    """
-    out = subprocess.run(
-        code, shell=True, capture_output=True, text=True
-    ).stdout
-    return str(out)
-
-
-def browser(query: str):
-    """
-    Search the query in the browser with the `browser` tool.
-
-    Args:
-        query (str): The query to search in the browser.
-
-    Returns:
-        str: The search results.
-    """
-    import webbrowser
-
-    url = f"https://www.google.com/search?q={query}"
-    webbrowser.open(url)
-    return f"Searching for {query} in the browser."
-
-
-def create_file(file_path: str, content: str):
-    """
-    Create a file using the file editor tool.
-
-    Args:
-        file_path (str): The path to the file.
-        content (str): The content to write to the file.
-
-    Returns:
-        str: The result of the file creation operation.
-    """
-    with open(file_path, "w") as file:
-        file.write(content)
-    return f"File {file_path} created successfully."
-
-
-def file_editor(file_path: str, mode: str, content: str):
-    """
-    Edit a file using the file editor tool.
-
-    Args:
-        file_path (str): The path to the file.
-        mode (str): The mode to open the file in.
-        content (str): The content to write to the file.
-
-    Returns:
-        str: The result of the file editing operation.
-    """
-    with open(file_path, mode) as file:
-        file.write(content)
-    return f"File {file_path} edited successfully."
-
-
-# Agent
-agent = Agent(
-    agent_name="Devin",
-    system_prompt=(
-        "Autonomous agent that can interact with humans and other"
-        " agents. Be Helpful and Kind. Use the tools provided to"
-        " assist the user. Return all code in markdown format."
-    ),
-    llm=llm,
-    max_loops="auto",
-    autosave=True,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    interactive=True,
-    tools=[terminal, browser, file_editor, create_file],
-    # long_term_memory=chromadb,
-    metadata_output_type="json",
-    # List of schemas that the agent can handle
-    # list_base_models=[tool_schema],
-    function_calling_format_type="OpenAI",
-    function_calling_type="json",  # or soon yaml
-)
-
-# Run the agent
-agent.run("Create a new file for a plan to take over the world.")
-
-```
-
-
-## Example 2
-
-
-```python
-
-import os
-
-import requests
-
 from swarms import Agent
-from swarm_models import OpenAIChat
 
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Create an instance of the OpenAIChat class
-model = OpenAIChat(
-    api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
-)
-
-
-def fetch_financial_news(
-    query: str = "Nvidia news", num_articles: int = 5
-) -> str:
-    """
-    Fetches financial news from the Google News API and returns a formatted string of the top news.
-
-    Args:
-        api_key (str): Your Google News API key.
-        query (str): The query term to search for news. Default is "financial".
-        num_articles (int): The number of top articles to fetch. Default is 5.
-
-    Returns:
-        str: A formatted string of the top financial news articles.
-
-    Raises:
-        ValueError: If the API response is invalid or there are no articles found.
-        requests.exceptions.RequestException: If there is an error with the request.
-    """
-    url = "https://newsapi.org/v2/everything"
-    params = {
-        "q": query,
-        "apiKey": os.getenv("NEWSAPI_KEY"),
-        "pageSize": num_articles,
-        "sortBy": "relevancy",
-    }
-
-    try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        data = response.json()
-
-        if "articles" not in data or len(data["articles"]) == 0:
-            raise ValueError("No articles found or invalid API response.")
-
-        articles = data["articles"]
-        formatted_articles = []
-
-        for i, article in enumerate(articles, start=1):
-            title = article.get("title", "No Title")
-            description = article.get("description", "No Description")
-            url = article.get("url", "No URL")
-            formatted_articles.append(
-                f"{i}. {title}\nDescription: {description}\nRead more: {url}\n"
-            )
-
-        return "\n".join(formatted_articles)
-
-    except requests.exceptions.RequestException as e:
-        print(f"Request Error: {e}")
-        raise
-    except ValueError as e:
-        print(f"Value Error: {e}")
-        raise
-
-
-# # Example usage:
-# api_key = "ceabc81a7d8f45febfedadb27177f3a3"
-# print(fetch_financial_news(api_key))
-
-
-# Initialize the agent
+# Initialize the financial analysis agent
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
-    # system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-    llm=model,
-    max_loops=2,
+    system_prompt=(
+        "You are a professional financial analyst agent. Use the provided tools to "
+        "analyze stocks, cryptocurrencies, and investment performance. Provide "
+        "clear, accurate financial insights and recommendations. Always format "
+        "responses in markdown for better readability."
+    ),
+    model_name="gpt-4o",
+    max_loops=3,
     autosave=True,
-    # dynamic_temperature_enabled=True,
     dashboard=False,
     verbose=True,
     streaming_on=True,
-    # interactive=True, # Set to False to disable interactive mode
     dynamic_temperature_enabled=True,
-    saved_state_path="finance_agent.json",
-    tools=[fetch_financial_news],
-    # stopping_token="Stop!",
-    # interactive=True,
-    # docs_folder="docs", # Enter your folder name
-    # pdf_path="docs/finance_agent.pdf",
-    # sop="Calculate the profit for a company.",
-    # sop_list=["Calculate the profit for a company."],
-    user_name="swarms_corp",
-    # # docs=
-    # # docs_folder="docs",
+    saved_state_path="financial_agent.json",
+    tools=[get_stock_price, get_crypto_price, calculate_portfolio_performance],
+    user_name="financial_analyst",
     retry_attempts=3,
-    # context_length=1000,
-    # tool_schema = dict
     context_length=200000,
-    # tool_schema=
-    # tools
-    # agent_ops_on=True,
-    # long_term_memory=ChromaDB(docs_folder="artifacts"),
 )
 
+# Run the agent
+response = agent("Analyze the current price of Apple stock and Bitcoin, then calculate the performance of a $10,000 investment in each over the past 2 years.")
+print(response)
+```
+
+## Complete Financial Analysis Example
+
+```python
+import yfinance as yf
+import requests
+from swarms import Agent
+
+def get_stock_price(symbol: str) -> str:
+    """
+    Fetches the current stock price from Yahoo Finance.
+
+    Args:
+        symbol (str): The stock symbol (e.g., "AAPL", "TSLA", "NVDA").
+
+    Returns:
+        str: A formatted string containing the current stock price and basic information.
+
+    Raises:
+        ValueError: If the stock symbol is invalid or data cannot be retrieved.
+        Exception: If there is an error with the API request.
+    """
+    try:
+        symbol = symbol.strip().upper()
+        
+        if not symbol:
+            raise ValueError("Stock symbol cannot be empty.")
+        
+        stock = yf.Ticker(symbol)
+        info = stock.info
+        
+        if not info or 'regularMarketPrice' not in info:
+            raise ValueError(f"Unable to fetch data for symbol: {symbol}")
+        
+        current_price = info.get('regularMarketPrice', 'N/A')
+        previous_close = info.get('regularMarketPreviousClose', 'N/A')
+        market_cap = info.get('marketCap', 'N/A')
+        company_name = info.get('longName', symbol)
+        
+        if isinstance(market_cap, (int, float)) and market_cap > 0:
+            if market_cap >= 1e12:
+                market_cap_str = f"${market_cap/1e12:.2f}T"
+            elif market_cap >= 1e9:
+                market_cap_str = f"${market_cap/1e9:.2f}B"
+            elif market_cap >= 1e6:
+                market_cap_str = f"${market_cap/1e6:.2f}M"
+            else:
+                market_cap_str = f"${market_cap:,.0f}"
+        else:
+            market_cap_str = "N/A"
+        
+        if isinstance(current_price, (int, float)) and isinstance(previous_close, (int, float)):
+            price_change = current_price - previous_close
+            price_change_percent = (price_change / previous_close) * 100
+            change_str = f"{price_change:+.2f} ({price_change_percent:+.2f}%)"
+        else:
+            change_str = "N/A"
+        
+        result = f"""
+Stock: {company_name} ({symbol})
+Current Price: ${current_price}
+Previous Close: ${previous_close}
+Change: {change_str}
+Market Cap: {market_cap_str}
+        """.strip()
+        
+        return result
+        
+    except ValueError as e:
+        print(f"Value Error: {e}")
+        raise
+    except Exception as e:
+        print(f"Error fetching stock data: {e}")
+        raise
+
+def get_crypto_price(coin_id: str) -> str:
+    """
+    Fetches the current cryptocurrency price from CoinGecko API.
+
+    Args:
+        coin_id (str): The cryptocurrency ID (e.g., "bitcoin", "ethereum", "cardano").
+
+    Returns:
+        str: A formatted string containing the current crypto price and market data.
+
+    Raises:
+        ValueError: If the coin ID is invalid or data cannot be retrieved.
+        requests.exceptions.RequestException: If there is an error with the API request.
+    """
+    try:
+        coin_id = coin_id.strip().lower()
+        
+        if not coin_id:
+            raise ValueError("Coin ID cannot be empty.")
+        
+        url = f"https://api.coingecko.com/api/v3/simple/price"
+        params = {
+            "ids": coin_id,
+            "vs_currencies": "usd",
+            "include_market_cap": "true",
+            "include_24hr_vol": "true",
+            "include_24hr_change": "true",
+            "include_last_updated_at": "true"
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        if coin_id not in data:
+            raise ValueError(f"Coin ID '{coin_id}' not found. Please check the spelling.")
+        
+        coin_data = data[coin_id]
+        
+        if not coin_data:
+            raise ValueError(f"No data available for coin ID: {coin_id}")
+        
+        usd_price = coin_data.get('usd', 'N/A')
+        market_cap = coin_data.get('usd_market_cap', 'N/A')
+        volume_24h = coin_data.get('usd_24h_vol', 'N/A')
+        change_24h = coin_data.get('usd_24h_change', 'N/A')
+        last_updated = coin_data.get('last_updated_at', 'N/A')
+        
+        def format_number(value):
+            if isinstance(value, (int, float)) and value > 0:
+                if value >= 1e12:
+                    return f"${value/1e12:.2f}T"
+                elif value >= 1e9:
+                    return f"${value/1e9:.2f}B"
+                elif value >= 1e6:
+                    return f"${value/1e6:.2f}M"
+                elif value >= 1e3:
+                    return f"${value/1e3:.2f}K"
+                else:
+                    return f"${value:,.2f}"
+            return "N/A"
+        
+        result = f"""
+Cryptocurrency: {coin_id.title()}
+Current Price: ${usd_price:,.8f}" if isinstance(usd_price, (int, float)) else f"Current Price: {usd_price}
+Market Cap: {format_number(market_cap)}
+24h Volume: {format_number(volume_24h)}
+24h Change: {change_24h:+.2f}%" if isinstance(change_24h, (int, float)) else f"24h Change: {change_24h}
+Last Updated: {last_updated}
+        """.strip()
+        
+        return result
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Request Error: {e}")
+        raise
+    except ValueError as e:
+        print(f"Value Error: {e}")
+        raise
+    except Exception as e:
+        print(f"Error fetching crypto data: {e}")
+        raise
+
+# Initialize the financial analysis agent
+agent = Agent(
+    agent_name="Financial-Analysis-Agent",
+    system_prompt=(
+        "You are a professional financial analyst agent specializing in stock and "
+        "cryptocurrency analysis. Use the provided tools to fetch real-time market "
+        "data and provide comprehensive financial insights. Always present data "
+        "in a clear, professional format with actionable recommendations."
+    ),
+    model_name="gpt-4o",
+    max_loops=3,
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    dynamic_temperature_enabled=True,
+    saved_state_path="financial_agent.json",
+    tools=[get_stock_price, get_crypto_price],
+    user_name="financial_analyst",
+    retry_attempts=3,
+    context_length=200000,
+)
 
 # Run the agent
-response = agent("What are the latest financial news on Nvidia?")
+response = agent("What are the current prices and market data for Apple stock and Bitcoin? Provide a brief analysis of their performance.")
 print(response)
-
-
 ```
