@@ -60,6 +60,7 @@ Additionally, we have more comprehensive examples available in [The Swarms Cookb
 | Concurrent | [Concurrent Swarm](https://github.com/The-Swarm-Corporation/swarms-examples/blob/main/examples/structs/swarms/concurrent_swarm/concurrent_swarm_example.py) | Parallel execution of tasks across multiple agents for improved performance |
 | Star | [Star Swarm](https://github.com/The-Swarm-Corporation/swarms-examples/blob/main/examples/structs/swarms/different_architectures/star_swarm.py) | Centralized architecture with a hub agent coordinating peripheral agents |
 | Circular | [Circular Swarm](https://github.com/The-Swarm-Corporation/swarms-examples/blob/main/examples/structs/swarms/different_architectures/circular_swarm.py) | Ring topology for cyclic information flow between agents |
+| Graph Workflow | [Graph Workflow Basic](https://github.com/kyegomez/swarms/blob/main/examples/structs/graph_workflow_basic.py) | Minimal graph workflow with two agents and one task |
 
 ### Experimental Architectures
 | Category | Example | Description |
