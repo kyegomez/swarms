@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 import logging
 import os
 import random
@@ -74,6 +75,7 @@ from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.tools.mcp_client_call import (
     execute_tool_call_simple,
     get_mcp_tools_sync,
+    execute_mcp_call,
 )
 from swarms.schemas.mcp_schemas import (
     MCPConnection,
@@ -96,6 +98,25 @@ def stop_when_repeats(response: str) -> bool:
 def parse_done_token(response: str) -> bool:
     """Parse the response to see if the done token is present"""
     return "<DONE>" in response
+
+
+def extract_json_from_response(response: str) -> List[Dict[str, Any]]:
+    """Extract a JSON list from a model response string."""
+    if not response:
+        return []
+    if not isinstance(response, str):
+        return response if isinstance(response, list) else []
+    try:
+        return json.loads(response)
+    except json.JSONDecodeError:
+        match = re.search(r"\[[\s\S]*?\]", response)
+        if match:
+            try:
+                return json.loads(match.group(0))
+            except json.JSONDecodeError:
+                pass
+    logger.error("Failed to parse MCP payloads from response")
+    return []
 
 
 # Agent ID generator
@@ -442,6 +463,8 @@ class Agent:
         self.sop = sop
         self.sop_list = sop_list
         self.tools = tools
+        # Ensure tool_struct exists even when no tools are provided
+        self.tool_struct = {}
         self.system_prompt = system_prompt
         self.agent_name = agent_name
         self.agent_description = agent_description
@@ -537,7 +560,19 @@ class Agent:
         self.no_print = no_print
         self.tools_list_dictionary = tools_list_dictionary
         self.mcp_url = mcp_url
-        self.mcp_urls = mcp_urls
+        if mcp_urls is None:
+            env_urls = os.getenv("MCP_URLS")
+            self.mcp_urls = (
+                [
+                    url.strip()
+                    for url in env_urls.split(",")
+                    if url.strip()
+                ]
+                if env_urls
+                else None
+            )
+        else:
+            self.mcp_urls = mcp_urls
         self.react_on = react_on
         self.safety_prompt_on = safety_prompt_on
         self.random_models_on = random_models_on
@@ -1083,6 +1118,19 @@ class Agent:
                             self.mcp_tool_handling(
                                 response, loop_count
                             )
+
+                        if exists(self.mcp_urls):
+                            try:
+                                self.handle_multiple_mcp_tools(
+                                    self.mcp_urls,
+                                    response,
+                                    current_loop=loop_count,
+                                )
+
+                            except Exception as e:
+                                logger.error(
+                                    f"Error handling multiple MCP tools: {e}"
+                                )
 
                             self.execute_tools(
                                 response=response,
@@ -2785,6 +2833,53 @@ class Agent:
         except AgentMCPToolError as e:
             logger.error(f"Error in MCP tool: {e}")
             raise e
+
+    def handle_multiple_mcp_tools(
+        self,
+        mcp_url_list: List[str],
+        response: Union[str, List[Dict[str, Any]]],
+        current_loop: int = 0,
+    ) -> None:
+        """Execute multiple MCP tool calls across configured servers."""
+
+        payloads = extract_json_from_response(response)
+        for payload in payloads:
+
+            function_name = payload.get("function_name")
+            server_url = payload.get("server_url")
+            arguments = payload.get("payload", {})
+
+            if server_url not in mcp_url_list:
+                logger.warning(
+                    f"Server URL {server_url} not in configured MCP URL list"
+                )
+                continue
+
+            attempt = 0
+            while attempt < 3:
+                try:
+                    tool_response = asyncio.run(
+                        execute_mcp_call(
+                            function_name=function_name,
+                            server_url=server_url,
+                            payload=arguments,
+                        )
+                    )
+                    self.short_memory.add(
+                        role="Tool Executor",
+                        content=str(tool_response),
+                    )
+                    self.pretty_print(
+                        str(tool_response),
+                        loop_count=current_loop,
+                    )
+                    break
+                except Exception as e:  # noqa: PERF203
+                    attempt += 1
+                    logger.error(
+                        f"Error executing {function_name} on {server_url}: {e}"
+                    )
+                    time.sleep(1)
 
     def temp_llm_instance_for_tool_summary(self):
         return LiteLLM(

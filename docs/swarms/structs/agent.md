@@ -478,6 +478,51 @@ agent.model_dump_json()
 print(agent.to_toml())
 ```
 
+### Multi-MCP Tool Execution
+
+Execute tools from multiple MCP servers by providing a list of URLs via the
+`mcp_urls` parameter or the `MCP_URLS` environment variable.
+
+Start the example servers:
+
+```bash
+python examples/tools/mcp_examples/servers/weather_server.py
+python examples/tools/mcp_examples/servers/news_server.py
+```
+
+```python
+import os
+import json
+from swarms import Agent
+
+# Using an environment variable for server configuration
+os.environ["MCP_URLS"] = "http://localhost:8000/sse,http://localhost:9001/sse"
+
+agent = Agent(
+    agent_name="Multi-MCP-Agent",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+)
+
+# Example MCP payloads returned by your model
+mcp_response = json.dumps([
+
+    {
+        "function_name": "get_price",
+        "server_url": "http://localhost:8000/sse",
+        "payload": {"symbol": "BTC"},
+    },
+    {
+        "function_name": "market_sentiment",
+        "server_url": "http://localhost:9001/sse",
+        "payload": {"symbol": "BTC"},
+    },
+])
+
+agent.handle_multiple_mcp_tools(agent.mcp_urls, mcp_response)
+
+```
+
 ## Auto Generate Prompt + CPU Execution
 
 

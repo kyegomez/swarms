@@ -62,7 +62,7 @@ The **Model Context Protocol (MCP)** integration enables Swarms agents to dynami
     | Feature | Status | Expected |
     |---------|--------|----------|
     | **MCPConnection Model** | 🚧 Development | Q1 2024 |
-    | **Multiple Server Support** | 🚧 Planned | Q2 2024 |
+    | **Multiple Server Support** | ✅ Ready | - |
     | **Parallel Function Calling** | 🚧 Research | Q2 2024 |
     | **Auto-discovery** | 🚧 Planned | Q3 2024 |
 
@@ -124,6 +124,34 @@ The **Model Context Protocol (MCP)** integration enables Swarms agents to dynami
         verbose=True,
     )
     ```
+
+---
+
+### MCP Payload Format
+
+When the agent generates a function call for an MCP tool it should return a
+payload in the following format:
+
+```json
+[
+  {
+    "function_name": "tool_name",
+    "server_url": "http://server:8000/sse",
+    "payload": {"arg": "value"}
+  }
+]
+```
+
+Use `handle_multiple_mcp_tools` to execute each payload across the configured
+servers.
+
+Example servers can be started with:
+
+```bash
+python examples/tools/mcp_examples/servers/weather_server.py
+python examples/tools/mcp_examples/servers/news_server.py
+```
+
 
 ---
 
@@ -214,7 +242,10 @@ graph TD
         agent_name="Crypto-Trading-Agent",
         agent_description="Real-time cryptocurrency market analyzer",
         max_loops=2,
-        mcp_url="http://crypto-server:8000/sse",
+        mcp_urls=[
+            "http://crypto-server:8000/sse",
+            "http://backup-server:8001/sse",
+        ],
         output_type="json",
         temperature=0.1,
     )
@@ -406,19 +437,17 @@ graph TD
     mcp_url = "http://server:8000/sse"
     ```
 
-    ### 🚧 Single Server Limitation
-    
-    Currently supports one server per agent:
-    
+    ### ✅ Multiple Server Support
+
+    Agents can now connect to multiple MCP servers. Provide a list of URLs via
+    the `mcp_urls` parameter or set the environment variable `MCP_URLS`.
+
     ```python
-    # ❌ Multiple servers not supported
-    mcp_servers = [
+    mcp_urls = [
         "http://server1:8000/sse",
-        "http://server2:8000/sse"
+        "http://server2:8000/sse",
     ]
-    
-    # ✅ Single server only
-    mcp_url = "http://primary-server:8000/sse"
+    agent = Agent(mcp_urls=mcp_urls)
     ```
 
     ### 🚧 Sequential Execution
@@ -688,7 +717,7 @@ graph TD
         - **Connection Pooling** - Improved performance
 
     === "2 Week"
-        - **Multiple Server Support** - Connect to multiple MCPs
+        - **Multiple Server Support** - *Completed*
         - **Parallel Execution** - Concurrent tool calling
         - **Load Balancing** - Distribute requests across servers
         - **Advanced Monitoring** - Real-time metrics
