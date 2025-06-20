@@ -1051,7 +1051,19 @@ class Agent:
 
                         # # Convert to a str if the response is not a str
                         # if self.mcp_url is None or self.tools is None:
-                        response = self.parse_llm_output(response)
+                        # response = self.parse_llm_output(response)
+                        # Check if response is empty
+                        if (response is None or
+                            (isinstance(response, dict) and not response) or
+                            (isinstance(response, str) and not response.strip()) or
+                            (isinstance(response, list) and not response) or
+                            (hasattr(response, "__len__") and len(response) == 0)):
+                            
+                            # response is empty, assign prompt information
+                            response = {"message": "The LLM return value is empty"}
+                        else:
+                            # response is not empty, perform normal parsing
+                            response = self.parse_llm_output(response)
 
                         self.short_memory.add(
                             role=self.agent_name,
