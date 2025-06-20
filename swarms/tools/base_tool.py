@@ -2253,15 +2253,6 @@ class BaseTool(BaseModel):
         else:
             # Convert string to dict if needed
             if isinstance(api_response, str):
-                # Handle empty or whitespace-only strings
-                api_response = api_response.strip()
-                if not api_response:
-                    self._log_if_verbose(
-                        "warning",
-                        "Empty API response string received, returning empty list"
-                    )
-                    return []
-                
                 try:
                     api_response = json.loads(api_response)
                 except json.JSONDecodeError as e:
@@ -2269,7 +2260,6 @@ class BaseTool(BaseModel):
                         "error",
                         f"Failed to parse JSON from API response: {e}. Response: '{api_response[:100]}...'"
                     )
-                    # If JSON parsing fails, try to continue without function calls
                     return []
 
             if not isinstance(api_response, dict):
@@ -2401,10 +2391,11 @@ class BaseTool(BaseModel):
                 if name:
                     try:
                         # Parse arguments JSON string
-                        if isinstance(arguments_str, str):
-                            arguments = self._parse_json_string(arguments_str)
-                        else:
-                            arguments = arguments_str if arguments_str is not None else {}
+                        arguments = (
+                            json.loads(arguments_str)
+                            if isinstance(arguments_str, str)
+                            else arguments_str
+                        )
 
                         function_calls.append(
                             {
@@ -2417,16 +2408,7 @@ class BaseTool(BaseModel):
                     except json.JSONDecodeError as e:
                         self._log_if_verbose(
                             "error",
-                            f"Failed to parse arguments for {name}: {e}. Using empty dict instead.",
-                        )
-                        # Use empty dict as fallback
-                        function_calls.append(
-                            {
-                                "name": name,
-                                "arguments": {},
-                                "id": response.get("id"),
-                                "type": "openai",
-                            }
+                            f"Failed to parse arguments for {name}: {e}",
                         )
 
             # Check for choices[].message.tool_calls format
@@ -2907,15 +2889,12 @@ class BaseTool(BaseModel):
 
                         if name:
                             try:
-                                # Parse arguments JSON string with better error handling
-                                if isinstance(arguments_str, str):
-                                    arguments_str = arguments_str.strip()
-                                    if not arguments_str:
-                                        arguments = {}
-                                    else:
-                                        arguments = json.loads(arguments_str)
-                                else:
-                                    arguments = arguments_str if arguments_str is not None else {}
+                                # Parse arguments JSON string
+                                arguments = (
+                                    json.loads(arguments_str)
+                                    if isinstance(arguments_str, str)
+                                    else arguments_str
+                                )
 
                                 function_calls.append(
                                     {
@@ -2930,18 +2909,7 @@ class BaseTool(BaseModel):
                             except json.JSONDecodeError as e:
                                 self._log_if_verbose(
                                     "error",
-                                    f"Failed to parse arguments for {name}: {e}. Using empty dict instead.",
-                                )
-                                # Use empty dict as fallback
-                                function_calls.append(
-                                    {
-                                        "name": name,
-                                        "arguments": {},
-                                        "id": getattr(
-                                            tool_call, "id", None
-                                        ),
-                                        "type": "openai",
-                                    }
+                                    f"Failed to parse arguments for {name}: {e}",
                                 )
 
                 # Handle dictionary representations of tool calls
