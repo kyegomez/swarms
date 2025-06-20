@@ -2256,14 +2256,18 @@ class BaseTool(BaseModel):
                 try:
                     api_response = json.loads(api_response)
                 except json.JSONDecodeError as e:
-                    raise ToolValidationError(
-                        f"Invalid JSON in API response: {e}"
-                    ) from e
+                    self._log_if_verbose(
+                        "error",
+                        f"Failed to parse JSON from API response: {e}. Response: '{api_response[:100]}...'"
+                    )
+                    return []
 
             if not isinstance(api_response, dict):
-                raise ToolValidationError(
-                    "API response must be a dictionary, JSON string, BaseModel, or list of tool calls"
+                self._log_if_verbose(
+                    "warning",
+                    f"API response is not a dictionary (type: {type(api_response)}), returning empty list"
                 )
+                return []
 
             # Extract function calls from dictionary response
             function_calls = (
