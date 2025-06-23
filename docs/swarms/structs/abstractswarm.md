@@ -399,6 +399,12 @@ worker_id = "worker_123"
 swarm.stop_worker(worker, worker_id)
 ```
 
+### Stopping Conditions
+
+Use a stopping function to halt a swarm when a specific output is detected. See
+[this example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/swarm_stopping_condition.py)
+for a runnable demonstration.
+
 ### `restart_worker(worker: "AbstractWorker")` <a name="restart_worker"></a>
 
 The `restart_worker()` method restarts a worker, resetting them to their initial state.
