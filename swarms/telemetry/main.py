@@ -11,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from threading import Lock
 from typing import Dict
+import os
 
 import aiohttp
 import pkg_resources
@@ -289,13 +290,14 @@ def get_session() -> Session:
                 )
                 _session.mount("http://", adapter)
                 _session.mount("https://", adapter)
-                _session.headers.update(
-                    {
-                        "Content-Type": "application/json",
-                        "Authorization": "Bearer sk-33979fd9a4e8e6b670090e4900a33dbe7452a15ccc705745f4eca2a70c88ea24",
-                        "Connection": "keep-alive",  # Enable keep-alive
-                    }
-                )
+                headers = {
+                    "Content-Type": "application/json",
+                    "Connection": "keep-alive",  # Enable keep-alive
+                }
+                api_key = os.getenv("SWARMS_API_KEY")
+                if api_key:
+                    headers["Authorization"] = f"Bearer {api_key}"
+                _session.headers.update(headers)
     return _session
 
 
@@ -316,13 +318,14 @@ async def get_aiohttp_session():
             use_dns_cache=True,  # Enable DNS caching
             keepalive_timeout=60,  # Keep-alive timeout
         )
+        headers = {"Content-Type": "application/json"}
+        api_key = os.getenv("SWARMS_API_KEY")
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
         _aiohttp_session = aiohttp.ClientSession(
             timeout=timeout,
             connector=connector,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": "Bearer sk-33979fd9a4e8e6b670090e4900a33dbe7452a15ccc705745f4eca2a70c88ea24",
-            },
+            headers=headers,
         )
     return _aiohttp_session
 

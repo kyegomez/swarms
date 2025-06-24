@@ -176,9 +176,13 @@ OPENAI_API_KEY=""
 WORKSPACE_DIR="agent_workspace"
 ANTHROPIC_API_KEY=""
 GROQ_API_KEY=""
+SWARMS_API_KEY=""
 ```
 
 - [Learn more about the environment configuration here](https://docs.swarms.world/en/latest/swarms/install/env/)
+
+The optional `SWARMS_API_KEY` is used for interacting with the Swarms API and will
+be included in telemetry requests if set.
 
 ---
 
