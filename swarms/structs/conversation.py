@@ -1326,6 +1326,12 @@ class Conversation(BaseStructure):
             self.conversation_history[-1]["content"],
         )
 
+    def return_list_final(self):
+        """Return the final message as a list."""
+        return [
+            self.conversation_history[-1]["content"],
+        ]
+
     @classmethod
     def list_conversations(
         cls, conversations_dir: Optional[str] = None

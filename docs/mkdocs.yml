@@ -236,10 +236,10 @@ nav:
         - SpreadSheetSwarm: "swarms/structs/spreadsheet_swarm.md"
         - ForestSwarm: "swarms/structs/forest_swarm.md"
         - SwarmRouter: "swarms/structs/swarm_router.md"
-        - TaskQueueSwarm: "swarms/structs/taskqueue_swarm.md"
+        # - TaskQueueSwarm: "swarms/structs/taskqueue_swarm.md"
         - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
         - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
-        - MatrixSwarm: "swarms/structs/matrix_swarm.md"
+        # - MatrixSwarm: "swarms/structs/matrix_swarm.md"
         - ModelRouter: "swarms/structs/model_router.md"
         - MALT: "swarms/structs/malt.md"
         - Interactive Group Chat: "swarms/structs/interactive_groupchat.md"
@@ -308,6 +308,7 @@ nav:
   - Examples:
     - Overview: "examples/index.md"
     - CookBook Index: "examples/cookbook_index.md"
+    - PreBuilt Templates: "examples/templates_index.md"
     - Customizing Agents:
       - Basic Agent: "swarms/examples/basic_agent.md"
       - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"

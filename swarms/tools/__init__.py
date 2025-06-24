@@ -33,6 +33,11 @@ from swarms.tools.mcp_client_call import (
     get_tools_for_multiple_mcp_servers,
     get_mcp_tools_sync,
     aget_mcp_tools,
+    execute_multiple_tools_on_multiple_mcp_servers,
+    execute_multiple_tools_on_multiple_mcp_servers_sync,
+    _create_server_tool_mapping,
+    _create_server_tool_mapping_async,
+    _execute_tool_on_server,
 )
 
 
@@ -62,4 +67,9 @@ __all__ = [
     "get_tools_for_multiple_mcp_servers",
     "get_mcp_tools_sync",
     "aget_mcp_tools",
+    "execute_multiple_tools_on_multiple_mcp_servers",
+    "execute_multiple_tools_on_multiple_mcp_servers_sync",
+    "_create_server_tool_mapping",
+    "_create_server_tool_mapping_async",
+    "_execute_tool_on_server",
 ]

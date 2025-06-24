@@ -1,11 +1,11 @@
-import time
 from swarms import Agent
 
 # Initialize the agent
 agent = Agent(
     agent_name="Quantitative-Trading-Agent",
     agent_description="Advanced quantitative trading and algorithmic analysis agent",
-    system_prompt="""You are an expert quantitative trading agent with deep expertise in:
+    system_prompt="""
+    You are an expert quantitative trading agent with deep expertise in:
     - Algorithmic trading strategies and implementation
     - Statistical arbitrage and market making
     - Risk management and portfolio optimization
@@ -38,11 +38,12 @@ agent = Agent(
     model_name="gpt-4o-mini",
     dynamic_temperature_enabled=True,
     output_type="all",
-    max_tokens=16384,
-    # dashboard=True
+    mcp_urls=[
+        "http://0.0.0.0:8000/sse",
+        "http://0.0.0.0:8001/sse",
+    ],
 )
 
-out = agent.run("What are the best top 3 etfs for gold coverage?")
-
-time.sleep(10)
-print(out)
+agent.run(
+    "Please use the get_okx_crypto_volume tool to get the trading volume for Bitcoin (BTC). Provide the volume information."
+)

@@ -176,15 +176,15 @@ agent = Agent(
     max_loops=1,
     model_name="gpt-4o-mini",
     dynamic_temperature_enabled=True,
-    output_type="all",
+    output_type="final",
+    tool_call_summary=True,
     tools=[
         get_coin_price,
-        get_top_cryptocurrencies,
     ],
+    # output_raw_json_from_tool_call=True,
 )
 
-print(
-    agent.run(
-        "What is the price of Bitcoin? what are the top 5 cryptocurrencies by market cap?"
-    )
-)
+out = agent.run("What is the price of Bitcoin?")
+
+print(out)
+print(f"Output type: {type(out)}")

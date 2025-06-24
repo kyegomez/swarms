@@ -8,8 +8,9 @@ import subprocess
 import sys
 from typing import Literal, Optional, Union
 from swarms.utils.loguru_logger import initialize_logger
-import pkg_resources
 
+
+from importlib.metadata import distribution, PackageNotFoundError
 
 logger = initialize_logger("autocheckpackages")
 
@@ -39,13 +40,13 @@ def check_and_install_package(
         # Check if package exists
         if package_manager == "pip":
             try:
-                pkg_resources.get_distribution(package_name)
+                distribution(package_name)
                 if not upgrade:
                     logger.info(
                         f"Package {package_name} is already installed"
                     )
                     return True
-            except pkg_resources.DistributionNotFound:
+            except PackageNotFoundError:
                 pass
 
             # Construct installation command
