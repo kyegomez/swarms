@@ -215,17 +215,17 @@ nav:
         - GKP Agent: "swarms/agents/gkp_agent.md"
         - Agent Judge: "swarms/agents/agent_judge.md"
     
-    - Swarm Architectures:
+    - Multi-Agent Architectures:
       - Introduction to Multi-Agent Collaboration: "swarms/concept/why.md"
       
       - Concepts:
-        - Introduction to Swarm Architectures: "swarms/concept/swarm_architectures.md"
-        - How to Choose the Right Swarm Architecture: "swarms/concept/how_to_choose_swarms.md"
+        - Introduction to Multi Agent Architectures: "swarms/concept/swarm_architectures.md"
+        - How to Choose the Right Multi Agent Architecture: "swarms/concept/how_to_choose_swarms.md"
         - How to Build Custom Swarms: "swarms/structs/custom_swarm.md"
-        - How to Create New Swarm Architectures: "swarms/structs/create_new_swarm.md"
-        - Introduction to Hiearchical Swarm Architectures: "swarms/structs/multi_swarm_orchestration.md"
+        - How to Create New Multi Agent Architectures: "swarms/structs/create_new_swarm.md"
+        - Introduction to Hiearchical Multi Agent Architectures: "swarms/structs/multi_swarm_orchestration.md"
 
-      - Swarm Architectures Documentation:
+      - Multi-Agent Architectures Documentation:
         - Overview: "swarms/structs/overview.md"
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - AgentRearrange: "swarms/structs/agent_rearrange.md"
@@ -404,7 +404,7 @@ nav:
       # - CreateNow API: "swarms_cloud/create_api.md"
     - Guides:
       - Swarms API Best Practices: "swarms_cloud/best_practices.md"
-      - Swarm Architectures Available: "swarms_cloud/swarm_types.md"
+      - Multi Agent Architectures Available: "swarms_cloud/swarm_types.md"
 
   - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"
