@@ -2258,14 +2258,14 @@ class BaseTool(BaseModel):
                 except json.JSONDecodeError as e:
                     self._log_if_verbose(
                         "error",
-                        f"Failed to parse JSON from API response: {e}. Response: '{api_response[:100]}...'"
+                        f"Failed to parse JSON from API response: {e}. Response: '{api_response[:100]}...'",
                     )
                     return []
 
             if not isinstance(api_response, dict):
                 self._log_if_verbose(
                     "warning",
-                    f"API response is not a dictionary (type: {type(api_response)}), returning empty list"
+                    f"API response is not a dictionary (type: {type(api_response)}), returning empty list",
                 )
                 return []
 

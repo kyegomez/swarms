@@ -56,7 +56,6 @@ from swarms.tools.base_tool import BaseTool
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
 )
-from swarms.utils.any_to_str import any_to_str
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
@@ -420,6 +419,7 @@ class Agent:
         rag_config: Optional[RAGConfig] = None,
         tool_call_summary: bool = True,
         output_raw_json_from_tool_call: bool = False,
+        summarize_multiple_images: bool = False,
         *args,
         **kwargs,
     ):
@@ -558,6 +558,7 @@ class Agent:
         self.output_raw_json_from_tool_call = (
             output_raw_json_from_tool_call
         )
+        self.summarize_multiple_images = summarize_multiple_images
 
         # self.short_memory = self.short_memory_init()
 
@@ -810,6 +811,29 @@ class Agent:
 
         return json.loads(self.tools_list_dictionary)
 
+    def check_model_supports_utilities(self, img: str = None) -> bool:
+        """
+        Check if the current model supports vision capabilities.
+
+        Args:
+            img (str, optional): Image input to check vision support for. Defaults to None.
+
+        Returns:
+            bool: True if model supports vision and image is provided, False otherwise.
+        """
+        from litellm.utils import supports_vision
+
+        # Only check vision support if an image is provided
+        if img is not None:
+            out = supports_vision(self.model_name)
+            if not out:
+                raise ValueError(
+                    f"Model {self.model_name} does not support vision capabilities. Please use a vision-enabled model."
+                )
+            return out
+
+        return False
+
     def check_if_no_prompt_then_autogenerate(self, task: str = None):
         """
         Checks if auto_generate_prompt is enabled and generates a prompt by combining agent name, description and system prompt if available.
@@ -931,12 +955,7 @@ class Agent:
         self,
         task: Optional[Union[str, Any]] = None,
         img: Optional[str] = None,
-        speech: Optional[str] = None,
-        video: Optional[str] = None,
-        is_last: Optional[bool] = False,
         print_task: Optional[bool] = False,
-        generate_speech: Optional[bool] = False,
-        correct_answer: Optional[str] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -960,6 +979,9 @@ class Agent:
         try:
 
             self.check_if_no_prompt_then_autogenerate(task)
+
+            if img is not None:
+                self.check_model_supports_utilities(img=img)
 
             self.short_memory.add(role=self.user_name, content=task)
 
@@ -1030,12 +1052,19 @@ class Agent:
                             )
                             self.memory_query(task_prompt)
 
-                        response = self.call_llm(
-                            task=task_prompt, img=img, *args, **kwargs
-                        )
+                        if img is not None:
+                            response = self.call_llm(
+                                task=task_prompt,
+                                img=img,
+                                *args,
+                                **kwargs,
+                            )
+                        else:
+                            response = self.call_llm(
+                                task=task_prompt, *args, **kwargs
+                            )
 
-                        print(f"Response: {response}")
-
+                        # Parse the response from the agent with the output type
                         if exists(self.tools_list_dictionary):
                             if isinstance(response, BaseModel):
                                 response = response.model_dump()
@@ -1058,7 +1087,6 @@ class Agent:
                                 self.output_raw_json_from_tool_call
                                 is True
                             ):
-                                print(type(response))
                                 response = response
                             else:
                                 self.execute_tools(
@@ -1130,7 +1158,10 @@ class Agent:
                         user_input.lower()
                         == self.custom_exit_command.lower()
                     ):
-                        print("Exiting as per user request.")
+                        self.pretty_print(
+                            "Exiting as per user request.",
+                            loop_count=loop_count,
+                        )
                         break
 
                     self.short_memory.add(
@@ -1231,12 +1262,6 @@ class Agent:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        is_last: bool = False,
-        device: str = "cpu",  # gpu
-        device_id: int = 1,
-        all_cores: bool = True,
-        do_not_use_cluster_ops: bool = True,
-        all_gpus: bool = False,
         *args,
         **kwargs,
     ) -> Any:
@@ -1245,10 +1270,6 @@ class Agent:
         Args:
             task (Optional[str]): The task to be performed. Defaults to None.
             img (Optional[str]): The image to be processed. Defaults to None.
-            is_last (bool): Indicates if this is the last task. Defaults to False.
-            device (str): The device to use for execution. Defaults to "cpu".
-            device_id (int): The ID of the GPU to use if device is set to "gpu". Defaults to 0.
-            all_cores (bool): If True, uses all available CPU cores. Defaults to True.
         """
         try:
             return self.run(
@@ -2479,7 +2500,7 @@ class Agent:
         self,
         task: Optional[Union[str, Any]] = None,
         img: Optional[str] = None,
-        scheduled_run_date: Optional[datetime] = None,
+        imgs: Optional[List[str]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -2493,11 +2514,7 @@ class Agent:
         Args:
             task (Optional[str], optional): The task to be executed. Defaults to None.
             img (Optional[str], optional): The image to be processed. Defaults to None.
-            device (str, optional): The device to use for execution. Defaults to "cpu".
-            device_id (int, optional): The ID of the GPU to use if device is set to "gpu". Defaults to 0.
-            all_cores (bool, optional): If True, uses all available CPU cores. Defaults to True.
-            scheduled_run_date (Optional[datetime], optional): The date and time to schedule the task. Defaults to None.
-            do_not_use_cluster_ops (bool, optional): If True, does not use cluster ops. Defaults to False.
+            imgs (Optional[List[str]], optional): The list of images to be processed. Defaults to None.
             *args: Additional positional arguments to be passed to the execution method.
             **kwargs: Additional keyword arguments to be passed to the execution method.
 
@@ -2510,21 +2527,20 @@ class Agent:
         """
 
         if not isinstance(task, str):
-            task = any_to_str(task)
-
-        if scheduled_run_date:
-            while datetime.now() < scheduled_run_date:
-                time.sleep(
-                    1
-                )  # Sleep for a short period to avoid busy waiting
+            task = format_data_structure(task)
 
         try:
-            output = self._run(
-                task=task,
-                img=img,
-                *args,
-                **kwargs,
-            )
+            if exists(imgs):
+                output = self.run_multiple_images(
+                    task=task, imgs=imgs, *args, **kwargs
+                )
+            else:
+                output = self._run(
+                    task=task,
+                    img=img,
+                    *args,
+                    **kwargs,
+                )
 
             return output
 
@@ -2781,7 +2797,7 @@ class Agent:
                 )
                 # tool_response = format_data_structure(tool_response)
 
-                print(f"Multiple MCP Tool Response: {tool_response}")
+                # print(f"Multiple MCP Tool Response: {tool_response}")
             else:
                 raise AgentMCPConnectionError(
                     "mcp_url must be either a string URL or MCPConnection object"
@@ -2888,3 +2904,58 @@ class Agent:
 
     def list_output_types(self):
         return OutputType
+
+    def run_multiple_images(
+        self, task: str, imgs: List[str], *args, **kwargs
+    ):
+        """
+        Run the agent with multiple images.
+
+        Args:
+            task (str): The task to be performed on each image.
+            imgs (List[str]): List of image paths or URLs to process.
+            *args: Additional positional arguments to pass to the agent's run method.
+            **kwargs: Additional keyword arguments to pass to the agent's run method.
+
+        Returns:
+            List[Any]: A list of outputs generated for each image in the same order as the input images.
+
+        Examples:
+            >>> agent = Agent()
+            >>> outputs = agent.run_multiple_images(
+            ...     task="Describe what you see in this image",
+            ...     imgs=["image1.jpg", "image2.png", "image3.jpeg"]
+            ... )
+            >>> print(f"Processed {len(outputs)} images")
+            Processed 3 images
+
+        Raises:
+            Exception: If an error occurs while processing any of the images.
+        """
+        outputs = []
+        for img in imgs:
+            output = self.run(task=task, img=img, *args, **kwargs)
+            outputs.append(output)
+
+        # Combine the outputs into a single string
+        if self.summarize_multiple_images is True:
+            output = "\n".join(outputs)
+
+            prompt = f"""
+            You have already analyzed {len(outputs)} images and provided detailed descriptions for each one. 
+            Now, based on your previous analysis of these images, create a comprehensive report that:
+
+            1. Synthesizes the key findings across all images
+            2. Identifies common themes, patterns, or relationships between the images
+            3. Provides an overall summary that captures the most important insights
+            4. Highlights any notable differences or contrasts between the images
+
+            Here are your previous analyses of the images:
+            {output}
+
+            Please create a well-structured report that brings together your insights from all {len(outputs)} images.
+            """
+
+            outputs = self.run(task=prompt, *args, **kwargs)
+
+        return outputs

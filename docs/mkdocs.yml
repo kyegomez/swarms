@@ -316,6 +316,7 @@ nav:
       - Agent Output Types: "swarms/examples/agent_output_types.md"
       - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
       - Agents with Vision: "swarms/examples/vision_processing.md"
+      - Agent with Multiple Images: "swarms/examples/multiple_images.md"
       - Gradio Chat Interface: "swarms/ui/main.md"
       - Various Model Providers:
         - OpenAI: "swarms/examples/openai_example.md"
