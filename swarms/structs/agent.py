@@ -1080,25 +1080,24 @@ class Agent:
                         # Print
                         self.pretty_print(response, loop_count)
 
-                        # Handle tools
-                        if (
-                            hasattr(self, "tool_struct")
-                            and self.tool_struct is not None
-                            and self.output_raw_json_from_tool_call
-                            is True
-                        ):
-                            response = response
-                        else:
-                            # Only execute tools if response is not None
-                            if response is not None:
-                                self.execute_tools(
-                                    response=response,
-                                    loop_count=loop_count,
-                                )
+                        # Check and execute callable tools
+                        if exists(self.tools):
+                            if (
+                                self.tool_struct is not None
+                                and self.output_raw_json_from_tool_call is True
+                            ):
+                                response = response
                             else:
-                                logger.warning(
-                                    f"LLM returned None response in loop {loop_count}, skipping tool execution"
-                                )
+                                # Only execute tools if response is not None
+                                if response is not None:
+                                    self.execute_tools(
+                                        response=response,
+                                        loop_count=loop_count,
+                                    )
+                                else:
+                                    logger.warning(
+                                        f"LLM returned None response in loop {loop_count}, skipping tool execution"
+                                    )
 
                         # Handle MCP tools
                         if (
