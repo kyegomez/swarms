@@ -61,12 +61,22 @@ class VLLMWrapper:
         self.tool_choice = tool_choice
         self.parallel_tool_calls = parallel_tool_calls
 
-        # Initialize vLLM
-        self.llm = LLM(model=model_name, **kwargs)
-        self.sampling_params = SamplingParams(
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
+        # store kwargs for later lazy initialization
+        self._llm_kwargs = kwargs
+
+        # Initialize attributes for lazy loading
+        self.llm = None
+        self.sampling_params = None
+
+    def _ensure_initialized(self):
+        """Lazily initialize the underlying vLLM objects if needed."""
+        if self.llm is None:
+            self.llm = LLM(model=self.model_name, **self._llm_kwargs)
+        if self.sampling_params is None:
+            self.sampling_params = SamplingParams(
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+            )
 
     def _prepare_prompt(self, task: str) -> str:
         """
@@ -95,6 +105,7 @@ class VLLMWrapper:
             str: The model's response.
         """
         try:
+            self._ensure_initialized()
             prompt = self._prepare_prompt(task)
 
             outputs = self.llm.generate(prompt, self.sampling_params)
@@ -133,6 +144,7 @@ class VLLMWrapper:
         Returns:
             List[str]: List of model responses.
         """
+        self._ensure_initialized()
         # Calculate the worker count based on 95% of available CPU cores
         num_workers = max(1, int((os.cpu_count() or 1) * 0.95))
         with concurrent.futures.ThreadPoolExecutor(
