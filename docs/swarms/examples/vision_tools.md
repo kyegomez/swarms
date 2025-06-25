@@ -50,8 +50,6 @@ OPENAI_API_KEY=""
 
 - Add your image path to the run method like: `Agent().run(task=task, img=img)`
 
-- 
-
 ```python
 from swarms.structs import Agent
 from swarms.prompts.logistics import (
