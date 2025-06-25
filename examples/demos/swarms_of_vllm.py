@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Initialize the VLLM wrapper
+# Initialize the VLLM wrapper (model loads lazily on first run)
 vllm = VLLMWrapper(
     model_name="meta-llama/Llama-2-7b-chat-hf",
     system_prompt="You are a helpful assistant.",
