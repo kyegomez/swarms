@@ -1083,8 +1083,8 @@ class Agent:
                         # Check and execute callable tools
                         if exists(self.tools):
                             if (
-                                self.tool_struct is not None
-                                and self.output_raw_json_from_tool_call is True
+                                self.output_raw_json_from_tool_call
+                                is True
                             ):
                                 response = response
                             else:
