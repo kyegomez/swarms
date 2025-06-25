@@ -985,7 +985,7 @@ class Agent:
 
             self.short_memory.add(role=self.user_name, content=task)
 
-            if self.plan_enabled or self.planning_prompt is not None:
+            if self.plan_enabled is True:
                 self.plan(task)
 
             # Set the loop count
@@ -1372,10 +1372,15 @@ class Agent:
             # Get the current conversation history
             history = self.short_memory.get_str()
 
+            plan_prompt = f"Create a comprehensive step-by-step plan to complete the following task: \n\n {task}"
+
             # Construct the planning prompt by combining history, planning prompt, and task
-            planning_prompt = (
-                f"{history}\n\n{self.planning_prompt}\n\nTask: {task}"
-            )
+            if exists(self.planning_prompt):
+                planning_prompt = f"{history}\n\n{self.planning_prompt}\n\nTask: {task}"
+            else:
+                planning_prompt = (
+                    f"{history}\n\n{plan_prompt}\n\nTask: {task}"
+                )
 
             # Generate the plan using the LLM
             plan = self.llm.run(task=planning_prompt, *args, **kwargs)
@@ -1383,9 +1388,6 @@ class Agent:
             # Store the generated plan in short-term memory
             self.short_memory.add(role=self.agent_name, content=plan)
 
-            logger.info(
-                f"Successfully created plan for task: {task[:50]}..."
-            )
             return None
 
         except Exception as error:
@@ -2513,6 +2515,7 @@ class Agent:
         task: Optional[Union[str, Any]] = None,
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
+        correct_answer: Optional[str] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -2545,6 +2548,14 @@ class Agent:
             if exists(imgs):
                 output = self.run_multiple_images(
                     task=task, imgs=imgs, *args, **kwargs
+                )
+            elif exists(correct_answer):
+                output = self.continuous_run_with_answer(
+                    task=task,
+                    img=img,
+                    correct_answer=correct_answer,
+                    *args,
+                    **kwargs,
                 )
             else:
                 output = self._run(
@@ -2928,7 +2939,7 @@ class Agent:
         self, task: str, imgs: List[str], *args, **kwargs
     ):
         """
-        Run the agent with multiple images.
+        Run the agent with multiple images using concurrent processing.
 
         Args:
             task (str): The task to be performed on each image.
@@ -2951,12 +2962,33 @@ class Agent:
         Raises:
             Exception: If an error occurs while processing any of the images.
         """
-        outputs = []
-        for img in imgs:
-            output = self.run(task=task, img=img, *args, **kwargs)
-            outputs.append(output)
+        # Calculate number of workers as 95% of available CPU cores
+        cpu_count = os.cpu_count()
+        max_workers = max(1, int(cpu_count * 0.95))
 
-        # Combine the outputs into a single string
+        # Use ThreadPoolExecutor for concurrent processing
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all image processing tasks
+            future_to_img = {
+                executor.submit(
+                    self.run, task=task, img=img, *args, **kwargs
+                ): img
+                for img in imgs
+            }
+
+            # Collect results in order
+            outputs = []
+            for future in future_to_img:
+                try:
+                    output = future.result()
+                    outputs.append(output)
+                except Exception as e:
+                    logger.error(f"Error processing image: {e}")
+                    outputs.append(
+                        None
+                    )  # or raise the exception based on your preference
+
+        # Combine the outputs into a single string if summarization is enabled
         if self.summarize_multiple_images is True:
             output = "\n".join(outputs)
 
@@ -2978,3 +3010,58 @@ class Agent:
             outputs = self.run(task=prompt, *args, **kwargs)
 
         return outputs
+
+    def continuous_run_with_answer(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        correct_answer: str = None,
+        max_attempts: int = 10,
+    ):
+        """
+        Run the agent with the task until the correct answer is provided.
+
+        Args:
+            task (str): The task to be performed
+            correct_answer (str): The correct answer that must be found in the response
+            max_attempts (int): Maximum number of attempts before giving up (default: 10)
+
+        Returns:
+            str: The response containing the correct answer
+
+        Raises:
+            Exception: If max_attempts is reached without finding the correct answer
+        """
+        attempts = 0
+
+        while attempts < max_attempts:
+            attempts += 1
+
+            if self.verbose:
+                logger.info(
+                    f"Attempt {attempts}/{max_attempts} to find correct answer"
+                )
+
+            response = self._run(task=task, img=img)
+
+            # Check if the correct answer is in the response (case-insensitive)
+            if correct_answer.lower() in response.lower():
+                if self.verbose:
+                    logger.info(
+                        f"Correct answer found on attempt {attempts}"
+                    )
+                return response
+            else:
+                # Add feedback to help guide the agent
+                feedback = "Your previous response was incorrect. Think carefully about the question and ensure your response directly addresses what was asked."
+                self.short_memory.add(role="User", content=feedback)
+
+                if self.verbose:
+                    logger.info(
+                        f"Correct answer not found. Expected: '{correct_answer}'"
+                    )
+
+        # If we reach here, we've exceeded max_attempts
+        raise Exception(
+            f"Failed to find correct answer '{correct_answer}' after {max_attempts} attempts"
+        )
