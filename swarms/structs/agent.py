@@ -2488,15 +2488,30 @@ class Agent:
                 
                 # If we get a streaming response, handle it with the new streaming panel
                 if hasattr(streaming_response, '__iter__') and not isinstance(streaming_response, str):
-                    # Use the new streaming panel to display and collect the response
+                    # Collect chunks for conversation saving
+                    collected_chunks = []
+                    
+                    def on_chunk_received(chunk: str):
+                        """Callback to collect chunks as they arrive"""
+                        collected_chunks.append(chunk)
+                        # Optional: Save each chunk to conversation in real-time
+                        # This creates a more detailed conversation history
+                        if self.verbose:
+                            logger.debug(f"Streaming chunk received: {chunk[:50]}...")
+                    
+                    # Use the streaming panel to display and collect the response
                     complete_response = formatter.print_streaming_panel(
                         streaming_response,
                         title=f"🤖 {self.agent_name} Streaming Response",
-                        style="bold cyan"
+                        style="bold cyan",
+                        collect_chunks=True,
+                        on_chunk_callback=on_chunk_received
                     )
                     
                     # Restore original stream setting
                     self.llm.stream = original_stream
+                    
+                    # Return the complete response for further processing
                     return complete_response
                 else:
                     # Restore original stream setting

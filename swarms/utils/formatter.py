@@ -1,6 +1,6 @@
 import threading
 import time
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 from rich.console import Console
 from rich.live import Live
@@ -150,6 +150,8 @@ class Formatter:
         streaming_response,
         title: str = "🤖 Agent Streaming Response",
         style: str = "bold cyan",
+        collect_chunks: bool = False,
+        on_chunk_callback: Optional[Callable] = None,
     ) -> str:
         """
         Display real-time streaming response using Rich Live and Panel.
@@ -159,6 +161,8 @@ class Formatter:
             streaming_response: The streaming response generator from LiteLLM.
             title (str): Title of the panel.
             style (str): Style for the panel border.
+            collect_chunks (bool): Whether to collect individual chunks for conversation saving.
+            on_chunk_callback (Optional[Callable]): Callback function to call for each chunk.
 
         Returns:
             str: The complete accumulated response text.
@@ -187,6 +191,7 @@ class Formatter:
         # Create a Text object for streaming content
         streaming_text = Text()
         complete_response = ""
+        chunks_collected = []
 
         # TRUE streaming with Rich's automatic text wrapping
         with Live(
@@ -201,6 +206,14 @@ class Formatter:
                         chunk = part.choices[0].delta.content
                         streaming_text.append(chunk, style="white")
                         complete_response += chunk
+                        
+                        # Collect chunks if requested
+                        if collect_chunks:
+                            chunks_collected.append(chunk)
+                        
+                        # Call chunk callback if provided
+                        if on_chunk_callback:
+                            on_chunk_callback(chunk)
                         
                         # Update display with new text - Rich handles all wrapping automatically
                         live.update(create_streaming_panel(streaming_text, is_complete=False))
