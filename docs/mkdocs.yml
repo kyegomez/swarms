@@ -410,11 +410,14 @@ nav:
 
   - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"
-    - Share and Discover Agents, Prompts, and Tools: "swarms_platform/share_and_discover.md"
-    - Customize Your Sidebar: "swarms_platform/apps_page.md"
-    - Playground: "swarms_platform/playground_page.md"
-    - API Key Management: "swarms_platform/apikeys.md"
-    - Account Management: "swarms_platform/account_management.md"
+    - Marketplace:
+      - Share and Discover Agents, Prompts, and Tools: "swarms_platform/share_and_discover.md"
+      - Monetize Your Prompts, Agents, and Tools: "swarms_platform/monetize.md"
+    - Platform:
+      - Customize Your Sidebar: "swarms_platform/apps_page.md"
+      - Playground: "swarms_platform/playground_page.md"
+      - API Key Management: "swarms_platform/apikeys.md"
+      - Account Management: "swarms_platform/account_management.md"
 
   - Swarms Rust:
     - Overview: "swarms_rs/overview.md"

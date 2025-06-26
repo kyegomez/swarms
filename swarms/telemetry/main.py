@@ -123,7 +123,7 @@ def _log_agent_data(data_dict: dict):
     try:
         if response.status_code == 200:
             return
-    except Exception as e:
+    except Exception:
         pass
 
 
