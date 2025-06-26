@@ -119,16 +119,16 @@ def _log_agent_data(data_dict: dict):
     response = requests.post(
         url, json=payload, headers=headers, timeout=10
     )
-    print(response.json())
-    if response.status_code == 200:
-        return response.json()
 
-    print(response.json())
-    return response.json()
+    try:
+        if response.status_code == 200:
+            return
+    except Exception as e:
+        pass
 
 
 def log_agent_data(data_dict: dict):
     try:
-        return _log_agent_data(data_dict)
+        _log_agent_data(data_dict)
     except Exception:
         pass
