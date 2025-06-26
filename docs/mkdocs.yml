@@ -61,19 +61,19 @@ extra:
     provider: google
     property: G-MPE9C65596
 
-  alternate:
-    - name: English
-      link: /
-      lang: en
-    - name: 简体中文
-      link: /zh/
-      lang: zh
-    - name: 日本語
-      link: /ja/
-      lang: ja
-    - name: 한국어
-      link: /ko/
-      lang: ko
+  # alternate:
+  #   - name: English
+  #     link: /
+  #     lang: en
+  #   - name: 简体中文
+  #     link: /zh/
+  #     lang: zh
+  #   - name: 日本語
+  #     link: /ja/
+  #     lang: ja
+  #   - name: 한국어
+  #     link: /ko/
+  #     lang: ko
 
 theme:
   name: material
@@ -317,6 +317,7 @@ nav:
       - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
       - Agents with Vision: "swarms/examples/vision_processing.md"
       - Agent with Multiple Images: "swarms/examples/multiple_images.md"
+      - Agents with Vision and Tool Usage: "swarms/examples/vision_tools.md"
       - Gradio Chat Interface: "swarms/ui/main.md"
       - Various Model Providers:
         - OpenAI: "swarms/examples/openai_example.md"
@@ -348,7 +349,8 @@ nav:
       - SwarmRouter Example: "swarms/examples/swarm_router.md"
       - MultiAgentRouter Minimal Example: "swarms/examples/multi_agent_router_minimal.md"
       - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
-      - MixtureOfAgents Example: "swarms/examples/mixture_of_agents.md"
+      # - MixtureOfAgents Example: "swarms/examples/mixture_of_agents.md"
+      - Mixture of Agents Example: "swarms/examples/moa_example.md"
       - Unique Swarms: "swarms/examples/unique_swarms.md"
       - Agents as Tools: "swarms/examples/agents_as_tools.md"
       - Aggregate Multi-Agent Responses: "swarms/examples/aggregate.md"
