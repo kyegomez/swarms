@@ -1052,34 +1052,90 @@ class Agent:
                             )
                             self.memory_query(task_prompt)
 
-                        if img is not None:
-                            response = self.call_llm(
-                                task=task_prompt,
-                                img=img,
-                                *args,
-                                **kwargs,
-                            )
+                        # This variable will hold the full, structured response object from the LLM
+                        response_obj = None
+
+                        # Check if streaming is enabled for this run
+                        if self.streaming_on:
+                            # This utility is needed to rebuild the full response after streaming is complete
+                            from litellm import stream_chunk_builder
+
+                            # Call our wrapper, which will now return a stream/generator
+                            if img is not None:
+                                response_stream = self.call_llm(
+                                    task=task_prompt, img=img, *args, **kwargs
+                                )
+                            else:
+                                response_stream = self.call_llm(
+                                    task=task_prompt, *args, **kwargs
+                                )
+
+                            # Prepare to collect the streaming chunks
+                            collected_chunks = []
+                            if not self.no_print:
+                                # --- FIX: Manually print a header for clarity ---
+                                print(f"--- Streaming Response from {self.agent_name} [Loop: {loop_count}] ---")
+                                print(f"{self.agent_name}: ", end="")
+                            
+                            try:
+                                # Iterate through the stream in real-time
+                                for chunk in response_stream:
+                                    collected_chunks.append(chunk)
+                                    content = chunk.choices[0].delta.content or ""
+                                    # Print each piece of text as it arrives
+                                    if content and not self.no_print:
+                                        print(content, end="", flush=True)
+                            finally:
+                                # --- FIX: Manually print a footer for clarity ---
+                                if not self.no_print:
+                                    print() # Ensures we move to a new line after the stream
+                                    print("--- End of Stream ---")
+                            
+                            # Reconstruct the full response object from all the chunks
+                            response_obj = stream_chunk_builder(collected_chunks)
                         else:
-                            response = self.call_llm(
-                                task=task_prompt, *args, **kwargs
-                            )
-
-                        # Parse the response from the agent with the output type
-                        if exists(self.tools_list_dictionary):
-                            if isinstance(response, BaseModel):
-                                response = response.model_dump()
-
-                        # Parse the response from the agent with the output type
-                        response = self.parse_llm_output(response)
-
+                            # If not streaming, just get the complete response object at once
+                            if img is not None:
+                                response_obj = self.call_llm(
+                                    task=task_prompt,
+                                    img=img,
+                                    *args,
+                                    **kwargs,
+                                )
+                            else:
+                                response_obj = self.call_llm(
+                                    task=task_prompt, *args, **kwargs
+                                )
+                        
+                        # From this point on, the logic is the same for both streaming and non-streaming
+                        
+                        # 1. Get the text-only part of the response for logging and memory
+                        response_text = self.parse_llm_output(response_obj)
+                        
+                        # 2. Add the text to the agent's short-term memory
                         self.short_memory.add(
                             role=self.agent_name,
-                            content=response,
+                            content=response_text,
                         )
 
-                        # Print
-                        self.pretty_print(response, loop_count)
+                        # 3. If we didn't stream, print the whole response now
+                        if not self.streaming_on:
+                             self.pretty_print(response_text, loop_count)
 
+                        # 4. Pass the COMPLETE response object (with tool data) to the tool executor
+                        if exists(self.tools):
+                            if (
+                                self.output_raw_json_from_tool_call
+                                is True
+                            ):
+                                tool_response_data = response_text
+                            else:
+                                tool_response_data = response_obj
+                            
+                            self.execute_tools(
+                                response=tool_response_data,
+                                loop_count=loop_count,
+                            )
                         # Check and execute callable tools
                         if exists(self.tools):
 
@@ -1087,12 +1143,15 @@ class Agent:
                                 self.output_raw_json_from_tool_call
                                 is True
                             ):
-                                response = response
+                                tool_response_data = response_text
                             else:
-                                self.execute_tools(
-                                    response=response,
-                                    loop_count=loop_count,
-                                )
+                                # The standard, robust way using the full object
+                                tool_response_data = response_obj
+                            
+                            self.execute_tools(
+                                response=tool_response_data,
+                                loop_count=loop_count,
+                            )
 
                         # Handle MCP tools
                         if (

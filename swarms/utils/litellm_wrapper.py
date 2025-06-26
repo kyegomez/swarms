@@ -449,7 +449,12 @@ class LiteLLM:
             # Make the completion call
             response = completion(**completion_params)
 
-            # Handle tool-based response
+            # If streaming is enabled, return the response generator directly.
+            # The Agent class will handle iterating through it.
+            if self.stream:
+                return response
+
+            # If not streaming, process the complete response object as before.
             if self.tools_list_dictionary is not None:
                 return self.output_for_tools(response)
             elif self.return_all is True:
