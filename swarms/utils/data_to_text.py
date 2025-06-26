@@ -1,8 +1,22 @@
 import csv
 import json
 import os
+import base64
 
 from swarms.utils.pdf_to_text import pdf_to_text
+
+
+# Binary file extensions that should be opened in binary mode
+BINARY_EXTENSIONS = {
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".bmp",
+    ".wav",
+    ".mp3",
+    ".mp4",
+}
 
 
 def csv_to_text(file: str) -> str:
@@ -18,6 +32,7 @@ def csv_to_text(file: str) -> str:
     Raises:
         FileNotFoundError: If the file does not exist.
         IOError: If there is an error reading the file.
+        ValueError: If the file extension is unsupported.
 
     """
     with open(file) as file:
@@ -93,6 +108,7 @@ def md_to_text(file: str) -> str:
 def data_to_text(file: str) -> str:
     """
     Converts the given data file to text format.
+    Binary files are returned as base64 encoded strings.
 
     Args:
         file (str): The path to the data file.
@@ -126,14 +142,23 @@ def data_to_text(file: str) -> str:
             return pdf_to_text(file)
         elif ext == ".md":
             return md_to_text(file)
-        else:
-            # Check if the file is a binary file (like an image)
-            if ext in [".png", ".jpg", ".jpeg", ".gif", ".bmp"]:
-                # Skip binary files
-                return None
-            else:
-                with open(file) as file:
-                    data = file.read()
+        elif ext in BINARY_EXTENSIONS:
+            try:
+                with open(file, "rb") as binary_file:
+                    data = base64.b64encode(
+                        binary_file.read()
+                    ).decode("utf-8")
                 return data
+            except Exception as e:
+                raise OSError(
+                    f"Error reading binary file: {file}"
+                ) from e
+        else:
+            try:
+                with open(file, "r", encoding="utf-8") as file_obj:
+                    data = file_obj.read()
+                return data
+            except UnicodeDecodeError:
+                raise ValueError(f"Unsupported file extension: {ext}")
     except Exception as e:
         raise OSError(f"Error reading file: {file}") from e
