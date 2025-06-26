@@ -18,7 +18,7 @@ quality_control_agent = Agent(
 
 
 response = quality_control_agent.run(
-    task="what is in the image?",
+    task="Analyze our factories images and provide a detailed health report for each factory.",
     imgs=[factory_image, "burning_image.jpg"],
 )
 

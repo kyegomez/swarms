@@ -1,5 +1,8 @@
 from typing import List, Any, Optional, Union, Callable
 import random
+from swarms.prompts.collaborative_prompts import (
+    get_multi_agent_collaboration_prompt_one,
+)
 
 
 def list_all_agents(
@@ -8,6 +11,7 @@ def list_all_agents(
     name: Optional[str] = None,
     description: Optional[str] = None,
     add_to_conversation: Optional[bool] = False,
+    add_collaboration_prompt: Optional[bool] = True,
 ) -> str:
     """Lists all agents in a swarm and optionally adds them to a conversation.
 
@@ -60,7 +64,12 @@ def list_all_agents(
             content=all_agents,
         )
 
-    return all_agents
+    if add_collaboration_prompt:
+        return get_multi_agent_collaboration_prompt_one(
+            agents_in_swarm=all_agents
+        )
+    else:
+        return all_agents
 
 
 models = [

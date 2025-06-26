@@ -403,7 +403,7 @@ class Agent:
         llm_args: dict = None,
         load_state_path: str = None,
         role: agent_roles = "worker",
-        no_print: bool = False,
+        print_on: bool = False,
         tools_list_dictionary: Optional[List[Dict[str, Any]]] = None,
         mcp_url: Optional[Union[str, MCPConnection]] = None,
         mcp_urls: List[str] = None,
@@ -540,7 +540,7 @@ class Agent:
         self.llm_args = llm_args
         self.load_state_path = load_state_path
         self.role = role
-        self.no_print = no_print
+        self.print_on = print_on
         self.tools_list_dictionary = tools_list_dictionary
         self.mcp_url = mcp_url
         self.mcp_urls = mcp_urls
@@ -631,7 +631,7 @@ class Agent:
         )
 
         self.short_memory.add(
-            role=f"{self.agent_name}",
+            role=self.agent_name,
             content=self.tools_list_dictionary,
         )
 
@@ -2691,14 +2691,14 @@ class Agent:
         return self.role
 
     def pretty_print(self, response: str, loop_count: int):
-        if self.no_print is False:
+        if self.print_on is False:
             if self.streaming_on is True:
                 # self.stream_response(response)
                 formatter.print_panel_token_by_token(
                     f"{self.agent_name}: {response}",
                     title=f"Agent Name: {self.agent_name} [Max Loops: {loop_count}]",
                 )
-            elif self.no_print is True:
+            elif self.print_on is True:
                 pass
             else:
                 # logger.info(f"Response: {response}")
@@ -2818,7 +2818,7 @@ class Agent:
             # execute_tool_call_simple returns a string directly, not an object with content attribute
             text_content = f"MCP Tool Response: \n\n {json.dumps(tool_response, indent=2)}"
 
-            if self.no_print is False:
+            if self.print_on is False:
                 formatter.print_panel(
                     text_content,
                     "MCP Tool Response: 🛠️",
