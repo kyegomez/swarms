@@ -286,6 +286,11 @@ class Agent:
     >>> response = agent.run("Generate a report on the financials.")
     >>> print(response)
     >>> # Generate a report on the financials.
+    
+    >>> # Real-time streaming example
+    >>> agent = Agent(llm=llm, max_loops=1, streaming_on=True)
+    >>> response = agent.run("Tell me a long story.")  # Will stream in real-time
+    >>> print(response)  # Final complete response
 
     """
 
@@ -2469,14 +2474,45 @@ class Agent:
         """
 
         try:
-            if img is not None:
-                out = self.llm.run(
-                    task=task, img=img, *args, **kwargs
-                )
+            # Set streaming parameter in LLM if streaming is enabled
+            if self.streaming_on and hasattr(self.llm, 'stream'):
+                original_stream = self.llm.stream
+                self.llm.stream = True
+                
+                if img is not None:
+                    streaming_response = self.llm.run(
+                        task=task, img=img, *args, **kwargs
+                    )
+                else:
+                    streaming_response = self.llm.run(task=task, *args, **kwargs)
+                
+                # If we get a streaming response, handle it with the new streaming panel
+                if hasattr(streaming_response, '__iter__') and not isinstance(streaming_response, str):
+                    # Use the new streaming panel to display and collect the response
+                    complete_response = formatter.print_streaming_panel(
+                        streaming_response,
+                        title=f"🤖 {self.agent_name} Streaming Response",
+                        style="bold cyan"
+                    )
+                    
+                    # Restore original stream setting
+                    self.llm.stream = original_stream
+                    return complete_response
+                else:
+                    # Restore original stream setting
+                    self.llm.stream = original_stream
+                    return streaming_response
             else:
-                out = self.llm.run(task=task, *args, **kwargs)
+                # Non-streaming call
+                if img is not None:
+                    out = self.llm.run(
+                        task=task, img=img, *args, **kwargs
+                    )
+                else:
+                    out = self.llm.run(task=task, *args, **kwargs)
 
-            return out
+                return out
+
         except AgentLLMError as e:
             logger.error(
                 f"Error calling LLM: {e}. Task: {task}, Args: {args}, Kwargs: {kwargs}"
@@ -2861,7 +2897,7 @@ class Agent:
             temperature=self.temperature,
             max_tokens=self.max_tokens,
             system_prompt=self.system_prompt,
-            stream=self.streaming_on,
+            stream=False,  # Always disable streaming for tool summaries
             tools_list_dictionary=None,
             parallel_tool_calls=False,
             base_url=self.llm_base_url,

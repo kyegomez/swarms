@@ -449,8 +449,12 @@ class LiteLLM:
             # Make the completion call
             response = completion(**completion_params)
 
+            # Handle streaming response
+            if self.stream:
+                return response  # Return the streaming generator directly
+            
             # Handle tool-based response
-            if self.tools_list_dictionary is not None:
+            elif self.tools_list_dictionary is not None:
                 return self.output_for_tools(response)
             elif self.return_all is True:
                 return response.model_dump()
