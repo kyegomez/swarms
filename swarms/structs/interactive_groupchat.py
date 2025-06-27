@@ -263,9 +263,9 @@ class InteractiveGroupChat:
 
                 # Process the task and get responses
                 try:
-                    response = self.run(user_input)
+                    self.run(user_input)
                     print("\nChat:")
-                    print(response)
+                    # print(response)
 
                 except NoMentionedAgentsError:
                     print(
