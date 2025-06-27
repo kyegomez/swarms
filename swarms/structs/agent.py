@@ -1087,17 +1087,22 @@ class Agent:
 
                         # Check and execute callable tools
                         if exists(self.tools):
-
                             if (
                                 self.output_raw_json_from_tool_call
                                 is True
                             ):
                                 response = response
                             else:
-                                self.execute_tools(
-                                    response=response,
-                                    loop_count=loop_count,
-                                )
+                                # Only execute tools if response is not None
+                                if response is not None:
+                                    self.execute_tools(
+                                        response=response,
+                                        loop_count=loop_count,
+                                    )
+                                else:
+                                    logger.warning(
+                                        f"LLM returned None response in loop {loop_count}, skipping tool execution"
+                                    )
 
                         # Handle MCP tools
                         if (
@@ -1105,10 +1110,16 @@ class Agent:
                             or exists(self.mcp_config)
                             or exists(self.mcp_urls)
                         ):
-                            self.mcp_tool_handling(
-                                response=response,
-                                current_loop=loop_count,
-                            )
+                            # Only handle MCP tools if response is not None
+                            if response is not None:
+                                self.mcp_tool_handling(
+                                    response=response,
+                                    current_loop=loop_count,
+                                )
+                            else:
+                                logger.warning(
+                                    f"LLM returned None response in loop {loop_count}, skipping MCP tool handling"
+                                )
 
                         self.sentiment_and_evaluator(response)
 
@@ -2931,6 +2942,13 @@ class Agent:
         )
 
     def execute_tools(self, response: any, loop_count: int):
+        # Handle None response gracefully
+        if response is None:
+            logger.warning(
+                f"Cannot execute tools with None response in loop {loop_count}. "
+                "This may indicate the LLM did not return a valid response."
+            )
+            return
 
         output = (
             self.tool_struct.execute_function_calls_from_api_response(

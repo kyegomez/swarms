@@ -2223,8 +2223,13 @@ class BaseTool(BaseModel):
             >>> tool_calls = [ChatCompletionMessageToolCall(...), ...]
             >>> results = tool.execute_function_calls_from_api_response(tool_calls)
         """
+        # Handle None API response gracefully by returning empty results
         if api_response is None:
-            raise ToolValidationError("API response cannot be None")
+            self._log_if_verbose(
+                "warning", 
+                "API response is None, returning empty results. This may indicate the LLM did not return a valid response."
+            )
+            return [] if not return_as_string else []
 
         # Handle direct list of tool call objects (e.g., from OpenAI ChatCompletionMessageToolCall or Anthropic BaseModels)
         if isinstance(api_response, list):
