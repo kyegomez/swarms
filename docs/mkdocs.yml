@@ -311,6 +311,7 @@ nav:
     # - PreBuilt Templates: "examples/templates_index.md"
     - Customizing Agents:
       - Basic Agent: "swarms/examples/basic_agent.md"
+      - Agent with Streaming: "examples/agent_stream.md"
       - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
       # - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
       - Agent Output Types: "swarms/examples/agent_output_types.md"

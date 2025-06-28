@@ -10,6 +10,23 @@ from rich.table import Table
 from rich.text import Text
 
 
+def choose_random_color():
+    import random
+
+    colors = [
+        "red",
+        "green",
+        "blue",
+        "yellow",
+        "magenta",
+        "cyan",
+        "white",
+    ]
+    random_color = random.choice(colors)
+
+    return random_color
+
+
 class Formatter:
     """
     A class for formatting and printing rich text to the console.
@@ -32,18 +49,8 @@ class Formatter:
             title (str, optional): The title of the panel. Defaults to "".
             style (str, optional): The style of the panel. Defaults to "bold blue".
         """
-        import random
-
-        colors = [
-            "red",
-            "green",
-            "blue",
-            "yellow",
-            "magenta",
-            "cyan",
-            "white",
-        ]
-        random_color = random.choice(colors)
+        random_color = choose_random_color()
+        
         panel = Panel(
             content, title=title, style=f"bold {random_color}"
         )
@@ -149,7 +156,7 @@ class Formatter:
         self,
         streaming_response,
         title: str = "🤖 Agent Streaming Response",
-        style: str = "bold cyan",
+        style: str = choose_random_color(),
         collect_chunks: bool = False,
         on_chunk_callback: Optional[Callable] = None,
     ) -> str:
@@ -167,18 +174,19 @@ class Formatter:
         Returns:
             str: The complete accumulated response text.
         """
+
         def create_streaming_panel(text_obj, is_complete=False):
             """Create panel with proper text wrapping using Rich's built-in capabilities"""
             panel_title = f"[bold cyan]{title}[/bold cyan]"
             if is_complete:
                 panel_title += " [bold green]✅[/bold green]"
-            
+
             # Add blinking cursor if still streaming
             display_text = Text.from_markup("")
             display_text.append_text(text_obj)
             if not is_complete:
                 display_text.append("▊", style="bold green blink")
-            
+
             panel = Panel(
                 display_text,
                 title=panel_title,
@@ -195,36 +203,54 @@ class Formatter:
 
         # TRUE streaming with Rich's automatic text wrapping
         with Live(
-            create_streaming_panel(streaming_text), 
-            console=self.console, 
-            refresh_per_second=20
+            create_streaming_panel(streaming_text),
+            console=self.console,
+            refresh_per_second=20,
         ) as live:
             try:
                 for part in streaming_response:
-                    if hasattr(part, 'choices') and part.choices and part.choices[0].delta.content:
+                    if (
+                        hasattr(part, "choices")
+                        and part.choices
+                        and part.choices[0].delta.content
+                    ):
                         # Add ONLY the new chunk to the Text object
                         chunk = part.choices[0].delta.content
                         streaming_text.append(chunk, style="white")
                         complete_response += chunk
-                        
+
                         # Collect chunks if requested
                         if collect_chunks:
                             chunks_collected.append(chunk)
-                        
+
                         # Call chunk callback if provided
                         if on_chunk_callback:
                             on_chunk_callback(chunk)
-                        
+
                         # Update display with new text - Rich handles all wrapping automatically
-                        live.update(create_streaming_panel(streaming_text, is_complete=False))
-                
+                        live.update(
+                            create_streaming_panel(
+                                streaming_text, is_complete=False
+                            )
+                        )
+
                 # Final update to show completion
-                live.update(create_streaming_panel(streaming_text, is_complete=True))
-                
+                live.update(
+                    create_streaming_panel(
+                        streaming_text, is_complete=True
+                    )
+                )
+
             except Exception as e:
                 # Handle any streaming errors gracefully
-                streaming_text.append(f"\n[Error: {str(e)}]", style="bold red")
-                live.update(create_streaming_panel(streaming_text, is_complete=True))
+                streaming_text.append(
+                    f"\n[Error: {str(e)}]", style="bold red"
+                )
+                live.update(
+                    create_streaming_panel(
+                        streaming_text, is_complete=True
+                    )
+                )
 
         return complete_response
 

@@ -286,7 +286,7 @@ class Agent:
     >>> response = agent.run("Generate a report on the financials.")
     >>> print(response)
     >>> # Generate a report on the financials.
-    
+
     >>> # Real-time streaming example
     >>> agent = Agent(llm=llm, max_loops=1, streaming_on=True)
     >>> response = agent.run("Tell me a long story.")  # Will stream in real-time
@@ -1061,12 +1061,16 @@ class Agent:
                             response = self.call_llm(
                                 task=task_prompt,
                                 img=img,
+                                current_loop=loop_count,
                                 *args,
                                 **kwargs,
                             )
                         else:
                             response = self.call_llm(
-                                task=task_prompt, *args, **kwargs
+                                task=task_prompt,
+                                current_loop=loop_count,
+                                *args,
+                                **kwargs,
                             )
 
                         # Parse the response from the agent with the output type
@@ -2463,7 +2467,12 @@ class Agent:
         return None
 
     def call_llm(
-        self, task: str, img: Optional[str] = None, *args, **kwargs
+        self,
+        task: str,
+        img: Optional[str] = None,
+        current_loop: int = 0,
+        *args,
+        **kwargs,
     ) -> str:
         """
         Calls the appropriate method on the `llm` object based on the given task.
@@ -2486,55 +2495,72 @@ class Agent:
 
         try:
             # Set streaming parameter in LLM if streaming is enabled
-            if self.streaming_on and hasattr(self.llm, 'stream'):
+            if self.streaming_on and hasattr(self.llm, "stream"):
                 original_stream = self.llm.stream
                 self.llm.stream = True
-                
+
                 if img is not None:
                     streaming_response = self.llm.run(
                         task=task, img=img, *args, **kwargs
                     )
                 else:
-                    streaming_response = self.llm.run(task=task, *args, **kwargs)
-                
+                    streaming_response = self.llm.run(
+                        task=task, *args, **kwargs
+                    )
+
                 # If we get a streaming response, handle it with the new streaming panel
-                if hasattr(streaming_response, '__iter__') and not isinstance(streaming_response, str):
+                if hasattr(
+                    streaming_response, "__iter__"
+                ) and not isinstance(streaming_response, str):
                     # Check print_on parameter for different streaming behaviors
                     if self.print_on is False:
                         # Show raw streaming text without formatting panels
                         chunks = []
-                        print(f"\n{self.agent_name}: ", end="", flush=True)
+                        print(
+                            f"\n{self.agent_name}: ",
+                            end="",
+                            flush=True,
+                        )
                         for chunk in streaming_response:
-                            if hasattr(chunk, 'choices') and chunk.choices[0].delta.content:
-                                content = chunk.choices[0].delta.content
-                                print(content, end="", flush=True)  # Print raw streaming text
+                            if (
+                                hasattr(chunk, "choices")
+                                and chunk.choices[0].delta.content
+                            ):
+                                content = chunk.choices[
+                                    0
+                                ].delta.content
+                                print(
+                                    content, end="", flush=True
+                                )  # Print raw streaming text
                                 chunks.append(content)
                         print()  # New line after streaming completes
-                        complete_response = ''.join(chunks)
+                        complete_response = "".join(chunks)
                     else:
                         # Collect chunks for conversation saving
                         collected_chunks = []
-                        
+
                         def on_chunk_received(chunk: str):
                             """Callback to collect chunks as they arrive"""
                             collected_chunks.append(chunk)
                             # Optional: Save each chunk to conversation in real-time
                             # This creates a more detailed conversation history
                             if self.verbose:
-                                logger.debug(f"Streaming chunk received: {chunk[:50]}...")
-                        
+                                logger.debug(
+                                    f"Streaming chunk received: {chunk[:50]}..."
+                                )
+
                         # Use the streaming panel to display and collect the response
                         complete_response = formatter.print_streaming_panel(
                             streaming_response,
-                            title=f"🤖 {self.agent_name} Streaming Response",
+                            title=f"🤖 Agent: {self.agent_name} Loops: {current_loop}",
                             style="bold cyan",
                             collect_chunks=True,
-                            on_chunk_callback=on_chunk_received
+                            on_chunk_callback=on_chunk_received,
                         )
-                    
+
                     # Restore original stream setting
                     self.llm.stream = original_stream
-                    
+
                     # Return the complete response for further processing
                     return complete_response
                 else:

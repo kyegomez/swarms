@@ -452,7 +452,7 @@ class LiteLLM:
             # Handle streaming response
             if self.stream:
                 return response  # Return the streaming generator directly
-            
+
             # Handle tool-based response
             elif self.tools_list_dictionary is not None:
                 return self.output_for_tools(response)
