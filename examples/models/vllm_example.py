@@ -2,8 +2,8 @@ from swarms.utils.vllm_wrapper import VLLMWrapper
 
 
 def main():
-    # Initialize the vLLM wrapper with a model
-    # Note: You'll need to have the model downloaded or specify a HuggingFace model ID
+    # Initialize the vLLM wrapper.
+    # The actual model weights load lazily on the first call to `run()`.
     llm = VLLMWrapper(
         model_name="meta-llama/Llama-2-7b-chat-hf",  # Replace with your model path or HF model ID
         temperature=0.7,
@@ -17,7 +17,7 @@ def main():
     response = llm.run(task)
     print("Response:", response)
 
-    # Example with system prompt
+    # Example with system prompt. Model initialization is still lazy.
     llm_with_system = VLLMWrapper(
         model_name="meta-llama/Llama-2-7b-chat-hf",  # Replace with your model path or HF model ID
         system_prompt="You are a helpful AI assistant that provides concise answers.",
