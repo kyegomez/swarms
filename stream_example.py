@@ -6,7 +6,7 @@ agent = Agent(
     model_name="gpt-4o-mini",
     streaming_on=True,  # 🔥 This enables real streaming!
     max_loops=1,
-    print_on=True,  # By Default its False, raw streaming !!
+    print_on=False,  # By Default its False, raw streaming !!
     output_type="all",
 )
 
