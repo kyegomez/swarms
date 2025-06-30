@@ -295,6 +295,8 @@ swarm.run(task=f"Generate a post about: {property_description}")
 # Check marketing_posts.csv for the results!
 ```
 
+---
+
 ### AgentRearrange
 
 Inspired by `einsum`, `AgentRearrange` lets you define complex, non-linear relationships between agents using a simple string-based syntax. [Learn more](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)
