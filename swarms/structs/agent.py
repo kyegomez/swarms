@@ -2518,13 +2518,8 @@ class Agent:
                 ) and not isinstance(streaming_response, str):
                     # Check print_on parameter for different streaming behaviors
                     if self.print_on is False:
-                        # Show raw streaming text without formatting panels
+                        # Silent streaming - no printing, just collect chunks
                         chunks = []
-                        print(
-                            f"\n{self.agent_name}: ",
-                            end="",
-                            flush=True,
-                        )
                         for chunk in streaming_response:
                             if (
                                 hasattr(chunk, "choices")
@@ -2533,11 +2528,7 @@ class Agent:
                                 content = chunk.choices[
                                     0
                                 ].delta.content
-                                print(
-                                    content, end="", flush=True
-                                )  # Print raw streaming text
                                 chunks.append(content)
-                        print()  # New line after streaming completes
                         complete_response = "".join(chunks)
                     else:
                         # Collect chunks for conversation saving
@@ -2802,8 +2793,8 @@ class Agent:
             return
         
         if self.print_on is False:
-            # Show raw text without formatting panels
-            print(f"\n{self.agent_name}: {response}\n")
+            # Silent mode - no printing at all
+            return
         else:
             # Use formatted panels (default behavior when print_on=True)
             formatter.print_panel(

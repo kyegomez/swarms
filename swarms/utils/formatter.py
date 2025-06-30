@@ -181,7 +181,7 @@ class Formatter:
 
         def create_streaming_panel(text_obj, is_complete=False):
             """Create panel with proper text wrapping using Rich's built-in capabilities"""
-            panel_title = f"[bold cyan]{title}[/bold cyan]"
+            panel_title = f"[white]{title}[/white]"
             if is_complete:
                 panel_title += " [bold green]✅[/bold green]"
 
