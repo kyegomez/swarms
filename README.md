@@ -420,9 +420,7 @@ The `SwarmRouter` is a powerful tool for simplifying multi-agent orchestration. 
 
 ### MixtureOfAgents (MoA)
 
-The `MixtureOfAgents` architecture processes tasks by feeding them to multiple "expert" agents in parallel. Their diverse outputs are then synthesized by an aggregator agent to produce a final, high-quality result.
-
-**Description:** Use this to achieve state-of-the-art performance on complex reasoning tasks by leveraging the collective intelligence of specialized agents.
+The `MixtureOfAgents` architecture processes tasks by feeding them to multiple "expert" agents in parallel. Their diverse outputs are then synthesized by an aggregator agent to produce a final, high-quality result. [Learn more here](https://docs.swarms.world/en/latest/swarms/examples/moa_example/)
 
 ```python
 from swarms import Agent, MixtureOfAgents
