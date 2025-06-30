@@ -156,7 +156,7 @@ class Formatter:
         self,
         streaming_response,
         title: str = "🤖 Agent Streaming Response",
-        style: str = choose_random_color(),
+        style: str = None,
         collect_chunks: bool = False,
         on_chunk_callback: Optional[Callable] = None,
     ) -> str:
@@ -167,13 +167,17 @@ class Formatter:
         Args:
             streaming_response: The streaming response generator from LiteLLM.
             title (str): Title of the panel.
-            style (str): Style for the panel border.
+            style (str): Style for the panel border (if None, will use random color).
             collect_chunks (bool): Whether to collect individual chunks for conversation saving.
             on_chunk_callback (Optional[Callable]): Callback function to call for each chunk.
 
         Returns:
             str: The complete accumulated response text.
         """
+        # Get random color similar to non-streaming approach
+        random_color = choose_random_color()
+        panel_style = f"bold {random_color}" if style is None else style
+        text_style = random_color
 
         def create_streaming_panel(text_obj, is_complete=False):
             """Create panel with proper text wrapping using Rich's built-in capabilities"""
@@ -190,7 +194,7 @@ class Formatter:
             panel = Panel(
                 display_text,
                 title=panel_title,
-                border_style=style,
+                border_style=panel_style,
                 padding=(1, 2),
                 width=self.console.size.width,  # Rich handles wrapping automatically
             )
@@ -214,9 +218,9 @@ class Formatter:
                         and part.choices
                         and part.choices[0].delta.content
                     ):
-                        # Add ONLY the new chunk to the Text object
+                        # Add ONLY the new chunk to the Text object with random color style
                         chunk = part.choices[0].delta.content
-                        streaming_text.append(chunk, style="white")
+                        streaming_text.append(chunk, style=text_style)
                         complete_response += chunk
 
                         # Collect chunks if requested
