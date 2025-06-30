@@ -326,6 +326,9 @@ outputs = rearrange_system.run("Analyze the impact of AI on modern cinema.")
 print(outputs)
 ```
 
+----
+
+<!-- 
 ### GraphWorkflow
 
 `GraphWorkflow` orchestrates tasks using a Directed Acyclic Graph (DAG), allowing you to manage complex dependencies where some tasks must wait for others to complete.
@@ -355,7 +358,66 @@ graph.set_end_points(["tester"])
 # Run the graph workflow
 results = graph.run("Create a function that calculates the factorial of a number.")
 print(results)
+``` -->
+
+----
+
+### SwarmRouter: The Universal Swarm Orchestrator
+
+The `SwarmRouter` simplifies building complex workflows by providing a single interface to run any type of swarm. Instead of importing and managing different swarm classes, you can dynamically select the one you need just by changing the `swarm_type` parameter. [Read the full documentation](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)
+
+This makes your code cleaner and more flexible, allowing you to switch between different multi-agent strategies with ease. Here's a complete example that shows how to define agents and then use `SwarmRouter` to execute the same task using different collaborative strategies.
+
+```python
+from swarms import Agent
+from swarms.structs.swarm_router import SwarmRouter, SwarmType
+
+# Define a few generic agents
+writer = Agent(agent_name="Writer", system_prompt="You are a creative writer.", model_name="gpt-4o-mini")
+editor = Agent(agent_name="Editor", system_prompt="You are an expert editor for stories.", model_name="gpt-4o-mini")
+reviewer = Agent(agent_name="Reviewer", system_prompt="You are a final reviewer who gives a score.", model_name="gpt-4o-mini")
+
+# The agents and task will be the same for all examples
+agents = [writer, editor, reviewer]
+task = "Write a short story about a robot who discovers music."
+
+# --- Example 1: SequentialWorkflow ---
+# Agents run one after another in a chain: Writer -> Editor -> Reviewer.
+print("Running a Sequential Workflow...")
+sequential_router = SwarmRouter(swarm_type=SwarmType.SequentialWorkflow, agents=agents)
+sequential_output = sequential_router.run(task)
+print(f"Final Sequential Output:\n{sequential_output}\n")
+
+# --- Example 2: ConcurrentWorkflow ---
+# All agents receive the same initial task and run at the same time.
+print("Running a Concurrent Workflow...")
+concurrent_router = SwarmRouter(swarm_type=SwarmType.ConcurrentWorkflow, agents=agents)
+concurrent_outputs = concurrent_router.run(task)
+# This returns a dictionary of each agent's output
+for agent_name, output in concurrent_outputs.items():
+    print(f"Output from {agent_name}:\n{output}\n")
+
+# --- Example 3: MixtureOfAgents ---
+# All agents run in parallel, and a special 'aggregator' agent synthesizes their outputs.
+print("Running a Mixture of Agents Workflow...")
+aggregator = Agent(
+    agent_name="Aggregator",
+    system_prompt="Combine the story, edits, and review into a final document.",
+    model_name="gpt-4o-mini"
+)
+moa_router = SwarmRouter(
+    swarm_type=SwarmType.MixtureOfAgents,
+    agents=agents,
+    aggregator_agent=aggregator, # MoA requires an aggregator
+)
+aggregated_output = moa_router.run(task)
+print(f"Final Aggregated Output:\n{aggregated_output}\n")
 ```
+
+
+The `SwarmRouter` is a powerful tool for simplifying multi-agent orchestration. It provides a consistent and flexible way to deploy different collaborative strategies, allowing you to build more sophisticated applications with less code.
+
+-------
 
 ### MixtureOfAgents (MoA)
 
