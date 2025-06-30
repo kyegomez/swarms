@@ -496,27 +496,22 @@ Thank you for contributing to swarms. Your work is extremely appreciated and rec
 
 -----
 
-## Onboarding Session
+## Connect With Us
 
-Get onboarded now with the creator and lead maintainer of Swarms, Kye Gomez, who will show you how to get started with the installation, usage examples, and starting to build your custom use case! [CLICK HERE](https://cal.com/swarms/swarms-onboarding-session)
+Join our community of agent engineers and researchers for technical support, cutting-edge updates, and exclusive access to world-class agent engineering insights!
 
+| Platform | Description | Link |
+|----------|-------------|------|
+| 📚 Documentation | Official documentation and guides | [docs.swarms.world](https://docs.swarms.world) |
+| 📝 Blog | Latest updates and technical articles | [Medium](https://medium.com/@kyeg) |
+| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/jM3Z6M9uMq) |
+| 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
+| 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
+| 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
+| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
+| 🚀 Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
 
-----
-
-
-### Connect With Us
-
-| Platform | Link | Description |
-|----------|------|-------------|
-| 📚 Documentation | [docs.swarms.world](https://docs.swarms.world) | Official documentation and guides |
-| 📝 Blog | [Medium](https://medium.com/@kyeg) | Latest updates and technical articles |
-| 💬 Discord | [Join Discord](https://discord.gg/jM3Z6M9uMq) | Live chat and community support |
-| 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
-| 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
-| 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
-| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
-
-
+------
 
 ## Citation
 
