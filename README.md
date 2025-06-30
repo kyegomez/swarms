@@ -1999,7 +1999,7 @@ If you use **swarms** in your research, please cite the project by referencing t
 
 ```bibtex
 @software{SWARMS_2O22,
-  author = {Kye Gomez, Pliny, Swarms Community},
+  author = {Kye Gomez, Pliny, Harshal More, Swarms Community},
   title = {Swarms: Production-Grade Multi-Agent Infrastructure Platform},
   year = {2022},
   url = {https://github.com/kyegomez/swarms},
