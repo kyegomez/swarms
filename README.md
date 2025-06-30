@@ -326,7 +326,6 @@ outputs = rearrange_system.run("Analyze the impact of AI on modern cinema.")
 print(outputs)
 ```
 
-----
 
 <!-- 
 ### GraphWorkflow
