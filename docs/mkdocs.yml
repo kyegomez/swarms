@@ -405,12 +405,11 @@ nav:
     - Overview: "contributors/main.md"
     - Bounty Program: "corporate/bounty_program.md"
     - Links & Resources: "governance/main.md"
-    - Learn more:
-      - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
-      - Code Cleanliness: "swarms/framework/code_cleanliness.md"
-      - Code Philosophy: "swarms/concept/philosophy.md"
+    - Learn More:
+      - Framework Architecture Overview: "swarms/concept/framework_architecture.md"
+      - Code Quality Standards: "swarms/framework/code_cleanliness.md"
+      - Agentic Development Philosophy: "swarms/concept/philosophy.md"
     - Contributing: 
-      - Overview: "swarms/contributing.md"
       - Adding New Tests: "swarms/framework/test.md"
       - Add New Tools & Custom Plugins: "contributors/tools.md"
       - Add New Documentations: "contributors/docs.md"
