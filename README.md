@@ -452,6 +452,47 @@ Refer to our documentation for production grade implementation details.
 
 
 
+------
+
+
+## 🫶 Contribute to Swarms
+
+Swarms is built by the community, for the community. We believe that collaborative development is the key to pushing the boundaries of what's possible with multi-agent AI. Your contributions are not only welcome—they are essential to our mission. [Learn more about why you should contribute to swarms](https://docs.swarms.world/en/latest/contributors/main/)
+
+### Why Contribute?
+
+By joining us, you have the opportunity to:
+
+* 🚀 **Work on the Frontier of agents:** Shape the future of autonomous agent technology and help build a production-grade, open-source framework.
+
+* 🤝 **Join a Vibrant Community:** Collaborate with a passionate and growing group of agent developers, researchers, and AI enthusiasts.
+
+* 🛠️ **Make a Tangible Impact:** Whether you're fixing a bug, adding a new feature, or improving documentation, your work will be used in real-world applications.
+
+* 📚 **Learn and Grow:** Gain hands-on experience with advanced AI concepts and strengthen your software engineering skills.
+
+Discover more about our mission and the benefits of becoming a contributor in our official [**Contributor's Guide**](https://docs.swarms.world/en/latest/contributors/main/).
+
+### How to Get Started
+
+We've made it easy to start contributing. Here's how you can help:
+
+1.  **Find an Issue to Tackle:** The best way to begin is by visiting our [**contributing project board**](https://github.com/users/kyegomez/projects/1). Look for issues tagged with `good first issue`—these are specifically selected for new contributors.
+
+2.  **Report a Bug or Request a Feature:** Have a new idea or found something that isn't working right? We'd love to hear from you. Please [**file a Bug Report or Feature Request**](https://github.com/kyegomez/swarms/issues) on our GitHub Issues page.
+
+3.  **Understand Our Workflow and Standards:** Before submitting your work, please review our complete [**Contribution Guidelines**](https://github.com/kyegomez/swarms/blob/master/CONTRIBUTING.md). To help maintain code quality, we also encourage you to read our guide on [**Code Cleanliness**](https://docs.swarms.world/en/latest/swarms/framework/code_cleanliness/).
+
+4.  **Join the Discussion:** To participate in roadmap discussions and connect with other developers, join our community on [**Discord**](https://discord.gg/jM3Z6M9uMq).
+
+
+### ✨ Our Valued Contributors
+
+Thank you for contributing to swarms. Your work is extremely appreciated and recognized.
+
+<a href="https://github.com/kyegomez/swarms/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=kyegomez/swarms" />
+</a>
 
 -----
 
@@ -459,14 +500,6 @@ Refer to our documentation for production grade implementation details.
 
 Get onboarded now with the creator and lead maintainer of Swarms, Kye Gomez, who will show you how to get started with the installation, usage examples, and starting to build your custom use case! [CLICK HERE](https://cal.com/swarms/swarms-onboarding-session)
 
-
------
-
-## 🫶 Contributions:
-
-The easiest way to contribute is to pick any issue with the `good first issue` tag 💪. Read the Contributing guidelines [here](/CONTRIBUTING.md). Bug Report? [File here](https://github.com/swarms/gateway/issues) | Feature Request? [File here](https://github.com/swarms/gateway/issues)
-
-Swarms is an open-source project, and contributions are VERY welcome. If you want to contribute, you can create new features, fix bugs, or improve the infrastructure. Please refer to the [CONTRIBUTING.md](https://github.com/kyegomez/swarms/blob/master/CONTRIBUTING.md) and our [contributing board](https://github.com/users/kyegomez/projects/1) to participate in Roadmap discussions!
 
 ----
 
@@ -503,3 +536,5 @@ If you use **swarms** in your research, please cite the project by referencing t
 # License
 
 APACHE 
+
+
