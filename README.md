@@ -425,17 +425,12 @@ for message in conversation_history:
 Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
 
 
------
+---
 
 
 ## Guides and Walkthroughs
 
-Refer to our documentation for production grade implementation details.
-
-
-## Guides and Walkthroughs
-
-Refer to our documentation for production grade implementation details.
+Here are quick reference guides on how to get started with swarms.
 
 | Section              | Description                                                                                | Links                                                                                      |
 |----------------------|--------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
@@ -452,7 +447,7 @@ Refer to our documentation for production grade implementation details.
 
 
 
-------
+---
 
 
 ## 🫶 Contribute to Swarms
