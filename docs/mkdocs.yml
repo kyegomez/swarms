@@ -402,20 +402,22 @@ nav:
 
 
   - Contributors:
-    - Overview: "governance/main.md"
+    - Overview: "contributors/main.md"
     - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
     - Bounty Program: "corporate/bounty_program.md"
-    - Contributing to Documentation: "contributors/docs.md"
-    - Contributing Tools/Custom Plugins for Swarms: "contributors/tools.md"
     - Contributing: 
       - Contributing: "swarms/contributing.md"
       - Tests: "swarms/framework/test.md"
       - Code Cleanliness: "swarms/framework/code_cleanliness.md"
       - Philosophy: "swarms/concept/philosophy.md"
+      - Contributing Tools & Custom Plugins: "contributors/tools.md"
+      - Contributing to Documentation: "contributors/docs.md"
     - Changelog:
       - Swarms 5.6.8: "swarms/changelog/5_6_8.md"
       - Swarms 5.8.1: "swarms/changelog/5_8_1.md"
       - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
+    - Links and Resources:
+      - Overview: "governance/main.md"
 
 
   #   - Tokenomics: "web3/token.md"
