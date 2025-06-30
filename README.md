@@ -184,7 +184,7 @@ GROQ_API_KEY=""
 
 ### 🤖 Your First Agent
 
-An **Agent** is the fundamental building block of a swarm—an autonomous entity powered by a large language model (LLM).
+An **Agent** is the fundamental building block of a swarm—an autonomous entity powered by an LLM + Tools + Memory. [Learn more Here](https://docs.swarms.world/en/latest/swarms/structs/agent/)
 
 ```python
 from swarms import Agent
@@ -202,7 +202,7 @@ agent.run("What are the key benefits of using a multi-agent system?")
 
 ### 🤝 Your First Swarm: Multi-Agent Collaboration
 
-A **Swarm** consists of multiple agents working together. This simple example creates a two-agent workflow for researching and writing a blog post.
+A **Swarm** consists of multiple agents working together. This simple example creates a two-agent workflow for researching and writing a blog post. [Learn More About SequentialWorkflow](https://docs.swarms.world/en/latest/swarms/structs/sequential_workflow/)
 
 ```python
 from swarms import Agent, SequentialWorkflow
@@ -274,6 +274,9 @@ elevator_pitch = workflow.run()
 print(elevator_pitch)
 ```
 
+-----
+
+
 ### ConcurrentWorkflow (with `SpreadSheetSwarm`)
 
 A concurrent workflow runs multiple agents simultaneously. `SpreadSheetSwarm` is a powerful implementation that can manage thousands of concurrent agents and log their outputs to a CSV file.
@@ -311,7 +314,7 @@ swarm.run(task=f"Generate a post about: {property_description}")
 
 ### AgentRearrange
 
-Inspired by `einsum`, `AgentRearrange` lets you define complex, non-linear relationships between agents using a simple string-based syntax.
+Inspired by `einsum`, `AgentRearrange` lets you define complex, non-linear relationships between agents using a simple string-based syntax. [Learn more](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)
 
 **Description:** Perfect for orchestrating dynamic workflows where agents might work in parallel, sequence, or a combination of both.
 
