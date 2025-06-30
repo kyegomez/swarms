@@ -112,23 +112,6 @@
 | 🎯 Use Case Support | • Task-Specific Agents<br>• Custom Workflows<br>• Industry Solutions<br>• Extensible Framework | • Quick deployment<br>• Flexible solutions<br>• Industry readiness<br>• Easy customization |
 
 
-## Guides and Walkthroughs
-Refer to our documentation for production grade implementation details.
-
-
-| Section              | Links                                                                                      |
-|----------------------|--------------------------------------------------------------------------------------------|
-| Installation    | [Installation](https://docs.swarms.world/en/latest/swarms/install/install/)                                                            |
-| Quickstart | [Get Started](https://docs.swarms.world/en/latest/swarms/install/quickstart/)                                                 |
-| Agent Internal Mechanisms | [Agent Architecture](https://docs.swarms.world/en/latest/swarms/framework/agents_explained/)                                                 |
-| Agent API | [Agent API](https://docs.swarms.world/en/latest/swarms/structs/agent/)                                                 |
-| Integrating External Agents Griptape, Autogen, etc | [Integrating External APIs](https://docs.swarms.world/en/latest/swarms/agents/external_party_agents/)                                                 |
-| Creating Agents from YAML | [Creating Agents from YAML](https://docs.swarms.world/en/latest/swarms/agents/create_agents_yaml/)                                                 |
-| Why You Need Swarms | [Why MultiAgent Collaboration is Necessary](https://docs.swarms.world/en/latest/swarms/concept/why/)                                                 |
-| Swarm Architectures Analysis | [Swarm Architectures](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/)                                                 |
-| Choosing the Right Swarm for Your Business Problem¶ | [CLICK HERE](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/)                                                 |
-| AgentRearrange Docs| [CLICK HERE](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)                                                 |
-
 
 ## Install 💻
 
@@ -435,18 +418,43 @@ for message in conversation_history:
     print(f"[{message['agent_name']}]: {message['content']}")
 ```
 
-----------
-
-## Onboarding Session
-
-Get onboarded now with the creator and lead maintainer of Swarms, Kye Gomez, who will show you how to get started with the installation, usage examples, and starting to build your custom use case! [CLICK HERE](https://cal.com/swarms/swarms-onboarding-session)
-
-
 ---
 
 ## Documentation
 
 Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
+
+
+-----
+
+
+## Guides and Walkthroughs
+
+Refer to our documentation for production grade implementation details.
+
+
+| Section              | Links                                                                                      |
+|----------------------|--------------------------------------------------------------------------------------------|
+| Installation         | [Installation](https://docs.swarms.world/en/latest/swarms/install/install/)                |
+| Quickstart           | [Get Started](https://docs.swarms.world/en/latest/swarms/install/quickstart/)              |
+| Agent Internal Mechanisms | [Agent Architecture](https://docs.swarms.world/en/latest/swarms/framework/agents_explained/) |
+| Agent API            | [Agent API](https://docs.swarms.world/en/latest/swarms/structs/agent/)                     |
+| Integrating External Agents (Griptape, Autogen, etc.) | [Integrating External APIs](https://docs.swarms.world/en/latest/swarms/agents/external_party_agents/) |
+| Creating Agents from YAML | [Creating Agents from YAML](https://docs.swarms.world/en/latest/swarms/agents/create_agents_yaml/) |
+| Why You Need Swarms  | [Why Multi-Agent Collaboration is Necessary](https://docs.swarms.world/en/latest/swarms/concept/why/) |
+| Swarm Architectures Analysis | [Swarm Architectures](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/) |
+| Choosing the Right Swarm for Your Business Problem | [CLICK HERE](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/) |
+| AgentRearrange Docs  | [CLICK HERE](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)          |
+
+
+
+
+-----
+
+## Onboarding Session
+
+Get onboarded now with the creator and lead maintainer of Swarms, Kye Gomez, who will show you how to get started with the installation, usage examples, and starting to build your custom use case! [CLICK HERE](https://cal.com/swarms/swarms-onboarding-session)
+
 
 -----
 
