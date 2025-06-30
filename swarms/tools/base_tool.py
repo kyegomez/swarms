@@ -2226,8 +2226,8 @@ class BaseTool(BaseModel):
         # Handle None API response gracefully by returning empty results
         if api_response is None:
             self._log_if_verbose(
-                "warning", 
-                "API response is None, returning empty results. This may indicate the LLM did not return a valid response."
+                "warning",
+                "API response is None, returning empty results. This may indicate the LLM did not return a valid response.",
             )
             return [] if not return_as_string else []
 

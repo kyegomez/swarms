@@ -50,7 +50,7 @@ class Formatter:
             style (str, optional): The style of the panel. Defaults to "bold blue".
         """
         random_color = choose_random_color()
-        
+
         panel = Panel(
             content, title=title, style=f"bold {random_color}"
         )

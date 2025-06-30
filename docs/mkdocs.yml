@@ -52,28 +52,16 @@ extra:
       link: https://x.com/swarms_corp
     - icon: fontawesome/brands/github
       link: https://github.com/kyegomez/swarms
-    - icon: fontawesome/brands/twitter
-      link: https://x.com/swarms_corp
     - icon: fontawesome/brands/discord
       link: https://discord.gg/jM3Z6M9uMq
+    - icon: fontawesome/brands/youtube
+      link: https://www.youtube.com/@kyegomez3242
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/company/swarms-corp/
 
   analytics:
     provider: google
     property: G-MPE9C65596
-
-  # alternate:
-  #   - name: English
-  #     link: /
-  #     lang: en
-  #   - name: 简体中文
-  #     link: /zh/
-  #     lang: zh
-  #   - name: 日本語
-  #     link: /ja/
-  #     lang: ja
-  #   - name: 한국어
-  #     link: /ko/
-  #     lang: ko
 
 theme:
   name: material
@@ -290,20 +278,7 @@ nav:
       - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
       - Swarms Products: "swarms/products.md"
 
-    - Contributors:
-      - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
-      - Bounty Program: "corporate/bounty_program.md"
-      - Contributing to Documentation: "contributors/docs.md"
-      - Contributing Tools/Custom Plugins for Swarms: "contributors/tools.md"
-      - Contributing: 
-        - Contributing: "swarms/contributing.md"
-        - Tests: "swarms/framework/test.md"
-        - Code Cleanliness: "swarms/framework/code_cleanliness.md"
-        - Philosophy: "swarms/concept/philosophy.md"
-      - Changelog:
-        - Swarms 5.6.8: "swarms/changelog/5_6_8.md"
-        - Swarms 5.8.1: "swarms/changelog/5_8_1.md"
-        - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
+
     
   - Examples:
     - Overview: "examples/index.md"
@@ -320,7 +295,8 @@ nav:
       - Agent with Multiple Images: "swarms/examples/multiple_images.md"
       - Agents with Vision and Tool Usage: "swarms/examples/vision_tools.md"
       - Gradio Chat Interface: "swarms/ui/main.md"
-      - Various Model Providers:
+      - Model Providers:
+        - Overview: "swarms/examples/model_providers.md"
         - OpenAI: "swarms/examples/openai_example.md"
         - Anthropic: "swarms/examples/claude.md"
         - Groq: "swarms/examples/groq.md"
@@ -424,8 +400,24 @@ nav:
     - Overview: "swarms_rs/overview.md"
     - Agents: "swarms_rs/agents.md"
 
-  - Resources:
+
+  - Contributors:
     - Overview: "governance/main.md"
+    - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
+    - Bounty Program: "corporate/bounty_program.md"
+    - Contributing to Documentation: "contributors/docs.md"
+    - Contributing Tools/Custom Plugins for Swarms: "contributors/tools.md"
+    - Contributing: 
+      - Contributing: "swarms/contributing.md"
+      - Tests: "swarms/framework/test.md"
+      - Code Cleanliness: "swarms/framework/code_cleanliness.md"
+      - Philosophy: "swarms/concept/philosophy.md"
+    - Changelog:
+      - Swarms 5.6.8: "swarms/changelog/5_6_8.md"
+      - Swarms 5.8.1: "swarms/changelog/5_8_1.md"
+      - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
+
+
   #   - Tokenomics: "web3/token.md"
 
     

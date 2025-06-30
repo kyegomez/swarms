@@ -7,8 +7,11 @@ agent = Agent(
     streaming_on=True,  # 🔥 This enables real streaming!
     max_loops=1,
     print_on=True,  # By Default its False, raw streaming !!
+    output_type="all",
 )
 
 # This will now stream in real-time with beautiful UI!
-response = agent.run("Tell me a detailed story about Humanity colonizing the stars")
+response = agent.run(
+    "Tell me a detailed story about Humanity colonizing the stars"
+)
 print(response)

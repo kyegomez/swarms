@@ -1,18 +1,16 @@
-import json
 import logging
 from swarms.structs import Agent
 from swarms.prompts.logistics import (
     Quality_Control_Agent_Prompt,
 )
-from swarms import BaseTool
 
 # Set up debug logging
 logging.basicConfig(level=logging.DEBUG)
 
 # Image for analysis
-# factory_image="image.png"   # normal image of a factory 
+# factory_image="image.png"   # normal image of a factory
 
-factory_image = "image2.png"    # image of a burning factory 
+factory_image = "image2.png"  # image of a burning factory
 
 
 def security_analysis(danger_level: str) -> str:
@@ -52,11 +50,9 @@ def security_analysis(danger_level: str) -> str:
         🚨 Operations may need to be suspended
         
         Recommendations: Immediate intervention required, evacuate if necessary, implement emergency protocols, and conduct thorough security review."""
-    
+
     else:
         return f"ERROR: Invalid danger level '{danger_level}'. Must be 'low', 'medium', or 'high'."
-
-
 
 
 # Custom system prompt that includes tool usage

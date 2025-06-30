@@ -641,11 +641,15 @@ class Agent:
         )
 
     def short_memory_init(self):
-        if (
-            self.agent_name is not None
-            or self.agent_description is not None
-        ):
-            prompt = f"\n Your Name: {self.agent_name} \n\n Your Description: {self.agent_description} \n\n {self.system_prompt}"
+        prompt = ""
+
+        # Add agent name, description, and instructions to the prompt
+        if self.agent_name is not None:
+            prompt += f"\n Name: {self.agent_name}"
+        elif self.agent_description is not None:
+            prompt += f"\n Description: {self.agent_description}"
+        elif self.system_prompt is not None:
+            prompt += f"\n Instructions: {self.system_prompt}"
         else:
             prompt = self.system_prompt
 
