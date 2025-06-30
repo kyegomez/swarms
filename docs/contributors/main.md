@@ -1,6 +1,4 @@
-# Contributing to Swarms
-
-## Building the Infrastructure for the World's Autonomous Economy
+# Contributing to Swarms: Building the Infrastructure for The Agentic Economy
 
 Multi-agent collaboration is the most important technology in human history. It will reshape civilization by enabling billions of autonomous agents to coordinate and solve problems at unprecedented scale.
 
