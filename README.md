@@ -98,7 +98,7 @@
 
 ## ✨ Features
 
-Swarms delivers a comprehensive, enterprise-grade multi-agent infrastructure platform designed for production-scale deployments and seamless integration with existing systems. Learn more about the swarms feature set
+Swarms delivers a comprehensive, enterprise-grade multi-agent infrastructure platform designed for production-scale deployments and seamless integration with existing systems. [Learn more about the swarms feature set here](https://docs.swarms.world/en/latest/swarms/features/)
 
 | Category | Features | Benefits |
 |----------|----------|-----------|
