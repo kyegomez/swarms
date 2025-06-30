@@ -1998,12 +1998,12 @@ Swarms is an open-source project, and contributions are VERY welcome. If you wan
 If you use **swarms** in your research, please cite the project by referencing the metadata in [CITATION.cff](./CITATION.cff).
 
 ```bibtex
-@software{SWARMS_2O22,
-  author = {Kye Gomez, Pliny, Harshal More, Swarms Community},
-  title = {Swarms: Production-Grade Multi-Agent Infrastructure Platform},
-  year = {2022},
-  url = {https://github.com/kyegomez/swarms},
-  note = {docs.swarms.world},
+@misc{SWARMS_2022,
+  author  = {Gomez, Kye and Pliny and More, Harshal and Swarms Community},
+  title   = {{Swarms: Production-Grade Multi-Agent Infrastructure Platform}},
+  year    = {2022},
+  howpublished = {\url{https://github.com/kyegomez/swarms}},
+  note    = {Documentation available at \url{https://docs.swarms.world}},
   version = {latest}
 }
 ```
