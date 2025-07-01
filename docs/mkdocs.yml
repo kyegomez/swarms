@@ -85,29 +85,11 @@ theme:
     - content.code.annotate
     - navigation.tabs
     - navigation.sections
-    # - navigation.expand
     - navigation.top
     - announce.dismiss
   font:
     text: "Fira Sans"      # Clean and readable text
     code: "Fira Code"      # Modern look for code snippets
-
-
-  # Add language selector
-  language: en
-  alternate:
-    - name: English
-      link: /
-      lang: en
-    - name: 简体中文
-      link: /zh/
-      lang: zh
-    - name: 日本語
-      link: /ja/
-      lang: ja
-    - name: 한국어
-      link: /ko/
-      lang: ko
 
 
 # Extensions
@@ -159,7 +141,6 @@ markdown_extensions:
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.tilde
-
 nav:
   - Home:
     - Overview: "index.md"
@@ -395,7 +376,6 @@ nav:
   - Swarms Rust:
     - Overview: "swarms_rs/overview.md"
     - Agents: "swarms_rs/agents.md"
-
 
   - Contributors:
     - Overview: "contributors/main.md"
