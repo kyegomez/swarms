@@ -38,11 +38,6 @@ plugins:
       # token: !ENV ["GITHUB_TOKEN"]
   - git-revision-date-localized:
       enable_creation_date: true
-  # - mkdocs-jupyter:
-  #     kernel_name: python3
-  #     execute: false
-  #     include_source: True
-  #     include_requirejs: true
 extra_css:
   - assets/css/extra.css
 
@@ -140,7 +135,8 @@ markdown_extensions:
           case: lower
   - pymdownx.tasklist:
       custom_checkbox: true
-  - pymdownx.tilde
+
+
 nav:
   - Home:
     - Overview: "index.md"
@@ -344,7 +340,6 @@ nav:
     - Swarms API as MCP: "swarms_cloud/mcp.md"
     - Swarms API Tools: "swarms_cloud/swarms_api_tools.md"
     - Individual Agent Completions: "swarms_cloud/agent_api.md"
-
 
     - Clients:
       - Swarms API Python Client: "swarms_cloud/python_client.md"
