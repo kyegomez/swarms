@@ -261,29 +261,33 @@ nav:
     - Overview: "examples/index.md"
     - CookBook Index: "examples/cookbook_index.md"
     # - PreBuilt Templates: "examples/templates_index.md"
-    - Customizing Agents:
-      - Basic Agent: "swarms/examples/basic_agent.md"
-      - Agent with Streaming: "examples/agent_stream.md"
-      - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
-      # - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
-      - Agent Output Types: "swarms/examples/agent_output_types.md"
-      - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
-      - Agents with Vision: "swarms/examples/vision_processing.md"
-      - Agent with Multiple Images: "swarms/examples/multiple_images.md"
-      - Agents with Vision and Tool Usage: "swarms/examples/vision_tools.md"
-      - Gradio Chat Interface: "swarms/ui/main.md"
-      - Model Providers:
-        - Overview: "swarms/examples/model_providers.md"
-        - OpenAI: "swarms/examples/openai_example.md"
-        - Anthropic: "swarms/examples/claude.md"
-        - Groq: "swarms/examples/groq.md"
-        - Cohere: "swarms/examples/cohere.md"
-        - DeepSeek: "swarms/examples/deepseek.md"
-        - Ollama: "swarms/examples/ollama.md"
-        - OpenRouter: "swarms/examples/openrouter.md"
-        - XAI: "swarms/examples/xai.md"
-        - VLLM: "swarms/examples/vllm_integration.md"
-        - Llama4: "swarms/examples/llama4.md"
+    - Basic Examples:
+      - Individual Agents:
+        - Basic Agent: "swarms/examples/basic_agent.md"
+        - Tool Usage:
+          - Agents with Vision and Tool Usage: "swarms/examples/vision_tools.md"
+          - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
+          - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
+          - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
+        - Vision:
+          - Agents with Vision: "swarms/examples/vision_processing.md"
+          - Agent with Multiple Images: "swarms/examples/multiple_images.md"
+        - Utils:
+          - Agent with Streaming: "examples/agent_stream.md"
+          - Agent Output Types: "swarms/examples/agent_output_types.md"
+          - Gradio Chat Interface: "swarms/ui/main.md"
+        - LLM Providers:
+          - Overview: "swarms/examples/model_providers.md"
+          - OpenAI: "swarms/examples/openai_example.md"
+          - Anthropic: "swarms/examples/claude.md"
+          - Groq: "swarms/examples/groq.md"
+          - Cohere: "swarms/examples/cohere.md"
+          - DeepSeek: "swarms/examples/deepseek.md"
+          - Ollama: "swarms/examples/ollama.md"
+          - OpenRouter: "swarms/examples/openrouter.md"
+          - XAI: "swarms/examples/xai.md"
+          - VLLM: "swarms/examples/vllm_integration.md"
+          - Llama4: "swarms/examples/llama4.md"
 
 
 
@@ -296,23 +300,24 @@ nav:
       #     - Lumo: "swarms/examples/lumo.md"
       #     - Quant Crypto Agent: "swarms/examples/quant_crypto_agent.md"
 
-    - Multi-Agent Collaboration:
-      - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
-      - Group Chat Example: "swarms/examples/groupchat_example.md"
-      - Sequential Workflow Example: "swarms/examples/sequential_example.md"
-      - SwarmRouter Example: "swarms/examples/swarm_router.md"
-      - MultiAgentRouter Minimal Example: "swarms/examples/multi_agent_router_minimal.md"
-      - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
-      # - MixtureOfAgents Example: "swarms/examples/mixture_of_agents.md"
-      - Mixture of Agents Example: "swarms/examples/moa_example.md"
-      - Unique Swarms: "swarms/examples/unique_swarms.md"
-      - Agents as Tools: "swarms/examples/agents_as_tools.md"
-      - Aggregate Multi-Agent Responses: "swarms/examples/aggregate.md"
-      - Interactive GroupChat Example: "swarms/examples/interactive_groupchat_example.md"
-      - Applications:
-        - Swarms DAO: "swarms/examples/swarms_dao.md"
-        - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
-        - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
+    - Advanced Examples:
+      - Multi-Agent Architectures:
+        - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
+        - Group Chat Example: "swarms/examples/groupchat_example.md"
+        - Sequential Workflow Example: "swarms/examples/sequential_example.md"
+        - SwarmRouter Example: "swarms/examples/swarm_router.md"
+        - MultiAgentRouter Minimal Example: "swarms/examples/multi_agent_router_minimal.md"
+        - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
+        # - MixtureOfAgents Example: "swarms/examples/mixture_of_agents.md"
+        - Mixture of Agents Example: "swarms/examples/moa_example.md"
+        - Unique Swarms: "swarms/examples/unique_swarms.md"
+        - Agents as Tools: "swarms/examples/agents_as_tools.md"
+        - Aggregate Multi-Agent Responses: "swarms/examples/aggregate.md"
+        - Interactive GroupChat Example: "swarms/examples/interactive_groupchat_example.md"
+        - Applications:
+          - Swarms DAO: "swarms/examples/swarms_dao.md"
+          - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
+          - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
 
     
     - Swarms API Examples:
