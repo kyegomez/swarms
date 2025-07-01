@@ -159,6 +159,7 @@ markdown_extensions:
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.tilde
+
 nav:
   - Home:
     - Overview: "index.md"
@@ -172,7 +173,6 @@ nav:
     # - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
     # - Swarms Products: "swarms/products.md"
     # - Swarms Vision: "swarms/concept/vision.md"
-    
     - Agents:
       # - Overview: "swarms/structs/index.md"
       - Concepts:
@@ -252,7 +252,7 @@ nav:
           - GraphWorkflow: "swarms/structs/graph_workflow.md"
         - Communication Structure: "swarms/structs/conversation.md"
     
-    - Swarms Tools:
+    - Tools:
       - Overview: "swarms_tools/overview.md"
       - BaseTool Reference: "swarms/tools/base_tool.md"
       - MCP Client Utils: "swarms/tools/mcp_client_call.md"
@@ -263,7 +263,7 @@ nav:
         - Social Media:
           - Twitter: "swarms_tools/twitter.md"
 
-    - Swarms Memory:
+    - Memory:
       - Overview: "swarms_memory/index.md"
       - Memory Systems:
         - ChromaDB: "swarms_memory/chromadb.md"
@@ -271,14 +271,9 @@ nav:
         - Faiss: "swarms_memory/faiss.md"
 
     - Deployment Solutions:
-      - Deploy your Swarms on Google Cloud Run: "swarms_cloud/cloud_run.md"
-      - Deploy your Swarms on Phala: "swarms_cloud/phala_deploy.md"
-
-    - About Us:
-      - Swarms Vision: "swarms/concept/vision.md"
-      - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
-      - Swarms Products: "swarms/products.md"
-
+      - Deploy your agents on Google Cloud Run: "swarms_cloud/cloud_run.md"
+      - Deploy your agents on Phala: "swarms_cloud/phala_deploy.md"
+      - Deploy your agents on FastAPI:
 
     
   - Examples:
@@ -406,6 +401,9 @@ nav:
     - Overview: "contributors/main.md"
     - Bounty Program: "corporate/bounty_program.md"
     - Links & Resources: "governance/main.md"
+    - Swarms Vision: "swarms/concept/vision.md"
+    - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
+    - Swarms Products: "swarms/products.md"
     - Learn More:
       - Understanding Swarms Architecture: "swarms/concept/framework_architecture.md"
       - Code Style Guide & Best Practices: "swarms/framework/code_cleanliness.md"

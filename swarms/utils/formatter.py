@@ -176,7 +176,9 @@ class Formatter:
         """
         # Get random color similar to non-streaming approach
         random_color = choose_random_color()
-        panel_style = f"bold {random_color}" if style is None else style
+        panel_style = (
+            f"bold {random_color}" if style is None else style
+        )
         text_style = random_color
 
         def create_streaming_panel(text_obj, is_complete=False):
