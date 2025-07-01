@@ -79,7 +79,8 @@ theme:
     - content.code.copy
     - content.code.annotate
     - navigation.tabs
-    # - navigation.sections
+    - navigation.sections
+    - navigation.expand
     - navigation.top
     - announce.dismiss
   font:
@@ -143,13 +144,9 @@ nav:
       - Environment Configuration: "swarms/install/env.md"
       - Quickstart: "swarms/install/quickstart.md"
       - Feature Set: "swarms/features.md"
-      # - Swarms CLI: "swarms/cli/main.md"
-    # - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
-    # - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
-    # - Swarms Products: "swarms/products.md"
-    # - Swarms Vision: "swarms/concept/vision.md"
     - Agents:
       # - Overview: "swarms/structs/index.md"
+      - Overview: "swarms/agents/index.md"
       - Concepts:
         # - Managing Prompts in Production: "swarms/prompts/main.md"
         - Introduction into The Agent Architecture: "swarms/framework/agents_explained.md"
@@ -194,11 +191,9 @@ nav:
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
         - Mixture of Agents: "swarms/structs/moa.md"
-        - GroupChat: "swarms/structs/group_chat.md"
         - SpreadSheetSwarm: "swarms/structs/spreadsheet_swarm.md"
         - ForestSwarm: "swarms/structs/forest_swarm.md"
         - MALT: "swarms/structs/malt.md"
-        - Interactive Group Chat: "swarms/structs/interactive_groupchat.md"
         - Various Execution Methods: "swarms/structs/various_execution_methods.md"
         - Deep Research Swarm: "swarms/structs/deep_research_swarm.md"
         - Council of Judges: "swarms/structs/council_of_judges.md"
@@ -224,6 +219,10 @@ nav:
         - Rearrangers:
           - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
           - AgentRearrange: "swarms/structs/agent_rearrange.md"
+
+        - GroupChats:
+          - GroupChat: "swarms/structs/group_chat.md"
+          - Interactive Group Chat: "swarms/structs/interactive_groupchat.md"
 
         - Workflows:
           - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
