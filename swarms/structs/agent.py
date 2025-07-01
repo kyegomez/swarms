@@ -2518,13 +2518,8 @@ class Agent:
                 ) and not isinstance(streaming_response, str):
                     # Check print_on parameter for different streaming behaviors
                     if self.print_on is False:
-                        # Show raw streaming text without formatting panels
+                        # Silent streaming - no printing, just collect chunks
                         chunks = []
-                        print(
-                            f"\n{self.agent_name}: ",
-                            end="",
-                            flush=True,
-                        )
                         for chunk in streaming_response:
                             if (
                                 hasattr(chunk, "choices")
@@ -2533,11 +2528,7 @@ class Agent:
                                 content = chunk.choices[
                                     0
                                 ].delta.content
-                                print(
-                                    content, end="", flush=True
-                                )  # Print raw streaming text
                                 chunks.append(content)
-                        print()  # New line after streaming completes
                         complete_response = "".join(chunks)
                     else:
                         # Collect chunks for conversation saving
@@ -2557,7 +2548,7 @@ class Agent:
                         complete_response = formatter.print_streaming_panel(
                             streaming_response,
                             title=f"🤖 Agent: {self.agent_name} Loops: {current_loop}",
-                            style="bold cyan",
+                            style=None,  # Use random color like non-streaming approach
                             collect_chunks=True,
                             on_chunk_callback=on_chunk_received,
                         )
@@ -2796,19 +2787,20 @@ class Agent:
         return self.role
 
     def pretty_print(self, response: str, loop_count: int):
+        if self.streaming_on is True:
+            # Skip printing here since real streaming is handled in call_llm
+            # This avoids double printing when streaming_on=True
+            return
+        
         if self.print_on is False:
-            if self.streaming_on is True:
-                # Skip printing here since real streaming is handled in call_llm
-                # This avoids double printing when streaming_on=True
-                pass
-            elif self.no_print is True:
-                pass
-            else:
-                # logger.info(f"Response: {response}")
-                formatter.print_panel(
-                    f"{self.agent_name}: {response}",
-                    f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
-                )
+            # Silent mode - no printing at all
+            return
+        else:
+            # Use formatted panels (default behavior when print_on=True)
+            formatter.print_panel(
+                f"{self.agent_name}: {response}",
+                f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
+            )
 
     def parse_llm_output(self, response: Any):
         """Parse and standardize the output from the LLM.
