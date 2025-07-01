@@ -313,7 +313,7 @@ nav:
         - Unique Swarms: "swarms/examples/unique_swarms.md"
         - Agents as Tools: "swarms/examples/agents_as_tools.md"
         - Aggregate Multi-Agent Responses: "swarms/examples/aggregate.md"
-        - Interactive GroupChat Example: "swarms/examples/interactive_groupchat_example.md"
+        - Interactive GroupChat Example: "swarms/examples/igc_example.md"
         - Applications:
           - Swarms DAO: "swarms/examples/swarms_dao.md"
           - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
