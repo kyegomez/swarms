@@ -137,7 +137,7 @@ markdown_extensions:
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.inlinehilite
-  
+
 nav:
   - Home:
     - Overview: "index.md"
@@ -254,7 +254,7 @@ nav:
     - Deployment Solutions:
       - Deploy your agents on Google Cloud Run: "swarms_cloud/cloud_run.md"
       - Deploy your agents on Phala: "swarms_cloud/phala_deploy.md"
-      - Deploy your agents on FastAPI:
+      # - Deploy your agents on FastAPI:
 
     
   - Examples:
