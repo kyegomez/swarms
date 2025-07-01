@@ -2787,19 +2787,23 @@ class Agent:
         return self.role
 
     def pretty_print(self, response: str, loop_count: int):
-        if self.print_on is False:
-            if self.streaming_on is True:
-                # Skip printing here since real streaming is handled in call_llm
-                # This avoids double printing when streaming_on=True
-                pass
-            elif self.print_on is False:
-                pass
-            else:
-                # logger.info(f"Response: {response}")
-                formatter.print_panel(
-                    f"{self.agent_name}: {response}",
-                    f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
-                )
+        """Pretty-print agent responses depending on user preferences.
+
+        Printing should occur when `self.print_on` is *True* (the default). We
+        also avoid double printing if real-time streaming is already enabled.
+        """
+
+        # Only print if printing is enabled
+        if self.print_on:
+            # Skip extra printing while streaming – the streaming panel is
+            # already handled inside `call_llm`.
+            if self.streaming_on:
+                return
+
+            formatter.print_panel(
+                f"{self.agent_name}: {response}",
+                f"Agent Name {self.agent_name} [Loop: {loop_count}]",
+            )
 
     def parse_llm_output(self, response: Any):
         """Parse and standardize the output from the LLM.
@@ -2912,7 +2916,8 @@ class Agent:
             # execute_tool_call_simple returns a string directly, not an object with content attribute
             text_content = f"MCP Tool Response: \n\n {json.dumps(tool_response, indent=2)}"
 
-            if self.print_on is False:
+            # Display tool output if printing is enabled
+            if self.print_on:
                 formatter.print_panel(
                     text_content,
                     "MCP Tool Response: 🛠️",
