@@ -85,7 +85,7 @@ theme:
     - content.code.annotate
     - navigation.tabs
     - navigation.sections
-    - navigation.expand
+    # - navigation.expand
     - navigation.top
     - announce.dismiss
   font:
