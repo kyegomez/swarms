@@ -192,39 +192,44 @@ nav:
       - Multi-Agent Architectures Documentation:
         - Overview: "swarms/structs/overview.md"
         - MajorityVoting: "swarms/structs/majorityvoting.md"
-        - AgentRearrange: "swarms/structs/agent_rearrange.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
         - Mixture of Agents: "swarms/structs/moa.md"
         - GroupChat: "swarms/structs/group_chat.md"
-        - AgentRegistry: "swarms/structs/agent_registry.md"
         - SpreadSheetSwarm: "swarms/structs/spreadsheet_swarm.md"
         - ForestSwarm: "swarms/structs/forest_swarm.md"
-        - SwarmRouter: "swarms/structs/swarm_router.md"
-        # - TaskQueueSwarm: "swarms/structs/taskqueue_swarm.md"
-        - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
-        - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
-        # - MatrixSwarm: "swarms/structs/matrix_swarm.md"
-        - ModelRouter: "swarms/structs/model_router.md"
         - MALT: "swarms/structs/malt.md"
         - Interactive Group Chat: "swarms/structs/interactive_groupchat.md"
         - Various Execution Methods: "swarms/structs/various_execution_methods.md"
         - Deep Research Swarm: "swarms/structs/deep_research_swarm.md"
-        - Swarm Matcher: "swarms/structs/swarm_matcher.md"
         - Council of Judges: "swarms/structs/council_of_judges.md"
+
 
         - Hiearchical Architectures:
           - Auto Agent Builder: "swarms/structs/auto_agent_builder.md"
           - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
           - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
+          - Swarm Matcher: "swarms/structs/swarm_matcher.md"
 
         - Multi-Agent Multi-Modal Structures:
           - ImageAgentBatchProcessor: "swarms/structs/image_batch_agent.md"
-        
-        
+
+        - Storage:
+          - AgentRegistry: "swarms/structs/agent_registry.md"
+
+        - Routers:
+          - SwarmRouter: "swarms/structs/swarm_router.md"
+          - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
+          - ModelRouter: "swarms/structs/model_router.md"
+
+        - Rearrangers:
+          - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
+          - AgentRearrange: "swarms/structs/agent_rearrange.md"
+
         - Workflows:
           - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
           - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
           - GraphWorkflow: "swarms/structs/graph_workflow.md"
+
         - Communication Structure: "swarms/structs/conversation.md"
     
     - Tools:
@@ -389,31 +394,3 @@ nav:
       - Swarms 5.6.8: "swarms/changelog/5_6_8.md"
       - Swarms 5.8.1: "swarms/changelog/5_8_1.md"
       - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
-
-
-  #   - Tokenomics: "web3/token.md"
-
-    
-    # - Prompts API: 
-    #   - Add Prompts: "swarms_platform/prompts/add_prompt.md"
-    #   - Edit Prompts: "swarms_platform/prompts/edit_prompt.md"
-    #   - Query Prompts: "swarms_platform/prompts/fetch_prompts.md"
-    # - Agents API:
-    #   - Add Agents: "swarms_platform/agents/agents_api.md"
-    #   - Query Agents: "swarms_platform/agents/fetch_agents.md"
-    #   - Edit Agents: "swarms_platform/agents/edit_agent.md"
-    # - Telemetry API:
-    #   - PUT: "swarms_platform/telemetry/index.md"
-    # - Swarms Wallet API:
-    #   - Overview: "swarms/wallet/api.md"
-    #   - Tools API:
-    #     - Overview: "swarms_platform/tools_api.md"
-    #     - Add Tools: "swarms_platform/fetch_tools.md"
-  # - Corporate:
-  #   - Culture: "corporate/culture.md"
-  #   - Hiring: "corporate/hiring.md"
-  #   - Swarms Goals & Milestone Tracking; A Vision for 2024 and Beyond: "corporate/2024_2025_goals.md"
-  # - Web3:
-  #   # - Overview: "finance/index.md"
-  #   - Swarms Wallet: "finance/wallet.md"
-  #   - Swarms Subscription: "finance/subscription.md"
