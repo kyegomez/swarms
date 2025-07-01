@@ -79,7 +79,7 @@ theme:
     - content.code.copy
     - content.code.annotate
     - navigation.tabs
-    - navigation.sections
+    # - navigation.sections
     - navigation.top
     - announce.dismiss
   font:
@@ -135,8 +135,6 @@ markdown_extensions:
           case: lower
   - pymdownx.tasklist:
       custom_checkbox: true
-
-
 nav:
   - Home:
     - Overview: "index.md"
