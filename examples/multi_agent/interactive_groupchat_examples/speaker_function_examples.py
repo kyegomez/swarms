@@ -24,7 +24,7 @@ def create_example_agents():
     analyst = Agent(
         agent_name="analyst",
         system_prompt="You are a data analyst. You excel at analyzing data, creating charts, and providing insights.",
-        model_name="gpt-4.1",
+        model_name="claude-3-5-sonnet-20240620",
         streaming_on=True,
         print_on=True,
     )
@@ -32,7 +32,7 @@ def create_example_agents():
     researcher = Agent(
         agent_name="researcher",
         system_prompt="You are a research specialist. You are great at gathering information, fact-checking, and providing detailed research.",
-        model_name="gpt-4.1",
+        model_name="claude-3-5-sonnet-20240620",
         streaming_on=True,
         print_on=True,
     )
@@ -40,7 +40,7 @@ def create_example_agents():
     writer = Agent(
         agent_name="writer",
         system_prompt="You are a content writer. You excel at writing clear, engaging content and summarizing information.",
-        model_name="gpt-4.1",
+        model_name="claude-3-5-sonnet-20240620",
         streaming_on=True,
         print_on=True,
     )
@@ -61,7 +61,7 @@ def example_random():
     )
 
     # Test the random behavior
-    task = "Let's create a marketing strategy. @analyst @researcher @writer please contribute."
+    task = "Let's create a marketing strategy for a personal healthcare ai consumer assistant app. @analyst @researcher @writer please contribute."
 
     response = group_chat.run(task)
     print(f"Response:\n{response}\n")

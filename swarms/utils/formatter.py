@@ -179,7 +179,9 @@ class Formatter:
         panel_style = (
             f"bold {random_color}" if style is None else style
         )
-        text_style = random_color
+        text_style = (
+            "white"  # Make text white instead of random color
+        )
 
         def create_streaming_panel(text_obj, is_complete=False):
             """Create panel with proper text wrapping using Rich's built-in capabilities"""

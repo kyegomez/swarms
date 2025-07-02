@@ -182,6 +182,7 @@ class SwarmRouter:
         list_all_agents: bool = False,
         conversation: Any = None,
         agents_config: Optional[Dict[Any, Any]] = None,
+        speaker_function: str = None,
         *args,
         **kwargs,
     ):
@@ -208,6 +209,7 @@ class SwarmRouter:
         self.list_all_agents = list_all_agents
         self.conversation = conversation
         self.agents_config = agents_config
+        self.speaker_function = speaker_function
 
         # Reliability check
         self.reliability_check()
@@ -358,6 +360,7 @@ class SwarmRouter:
                 agents=self.agents,
                 max_loops=self.max_loops,
                 output_type=self.output_type,
+                speaker_function=self.speaker_function,
             )
 
         elif self.swarm_type == "DeepResearchSwarm":

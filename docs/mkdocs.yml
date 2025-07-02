@@ -260,7 +260,6 @@ nav:
   - Examples:
     - Overview: "examples/index.md"
     - CookBook Index: "examples/cookbook_index.md"
-    # - PreBuilt Templates: "examples/templates_index.md"
     - Basic Examples:
       - Individual Agents:
         - Basic Agent: "swarms/examples/basic_agent.md"
