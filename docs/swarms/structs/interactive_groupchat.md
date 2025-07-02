@@ -4,29 +4,20 @@ The InteractiveGroupChat is a sophisticated multi-agent system that enables inte
 
 ## Features
 
-- **@mentions Support**: Direct tasks to specific agents using @agent_name syntax
-
-- **Multi-Agent Collaboration**: Multiple mentioned agents can see and respond to each other's tasks
-
-- **Enhanced Collaborative Prompts**: Agents are trained to acknowledge, build upon, and synthesize each other's responses
-
-- **Speaker Functions**: Control the order in which agents respond (round robin, random, priority, custom)
-
-- **Dynamic Speaker Management**: Change speaker functions and priorities during runtime
-
-- **Random Dynamic Speaker**: Advanced speaker function that follows @mentions in agent responses
-
-- **Parallel and Sequential Strategies**: Support for both parallel and sequential agent execution
-
-- **Callable Function Support**: Supports both Agent instances and callable functions as chat participants
-
-- **Comprehensive Error Handling**: Custom error classes for different scenarios
-
-- **Conversation History**: Maintains a complete history of the conversation
-
-- **Flexible Output Formatting**: Configurable output format for conversation history
-
-- **Interactive Terminal Mode**: Full REPL interface for real-time chat with agents
+| Feature | Description |
+|---------|-------------|
+| **@mentions Support** | Direct tasks to specific agents using @agent_name syntax |
+| **Multi-Agent Collaboration** | Multiple mentioned agents can see and respond to each other's tasks |
+| **Enhanced Collaborative Prompts** | Agents are trained to acknowledge, build upon, and synthesize each other's responses |
+| **Speaker Functions** | Control the order in which agents respond (round robin, random, priority, custom) |
+| **Dynamic Speaker Management** | Change speaker functions and priorities during runtime |
+| **Random Dynamic Speaker** | Advanced speaker function that follows @mentions in agent responses |
+| **Parallel and Sequential Strategies** | Support for both parallel and sequential agent execution |
+| **Callable Function Support** | Supports both Agent instances and callable functions as chat participants |
+| **Comprehensive Error Handling** | Custom error classes for different scenarios |
+| **Conversation History** | Maintains a complete history of the conversation |
+| **Flexible Output Formatting** | Configurable output format for conversation history |
+| **Interactive Terminal Mode** | Full REPL interface for real-time chat with agents |
 
 ## Installation
 
