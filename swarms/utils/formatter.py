@@ -20,7 +20,6 @@ def choose_random_color():
         "yellow",
         "magenta",
         "cyan",
-        "white",
     ]
     random_color = random.choice(colors)
 
@@ -42,7 +41,7 @@ class Formatter:
         self, content: str, title: str = "", style: str = "bold blue"
     ) -> None:
         """
-        Prints a rich panel to the console with a random color.
+        Prints a rich panel to the console with a random color border and white text.
 
         Args:
             content (str): The content of the panel.
@@ -51,8 +50,14 @@ class Formatter:
         """
         random_color = choose_random_color()
 
+        # Create white text content
+        white_content = Text(content, style="white")
+        
+        # Create panel with random colored border and white title
         panel = Panel(
-            content, title=title, style=f"bold {random_color}"
+            white_content, 
+            title=f"[white]{title}[/white]", 
+            border_style=f"bold {random_color}"
         )
         self.console.print(panel)
 
@@ -135,20 +140,24 @@ class Formatter:
             delay (float): Delay in seconds between displaying each token.
             by_word (bool): If True, display by words; otherwise, display by characters.
         """
-        text = Text(style=style)
+        text = Text(style="white")  # Changed to white text
 
         # Split tokens into characters or words
         token_list = tokens.split() if by_word else tokens
 
+        # Get random color for border
+        random_color = choose_random_color()
+        border_style = f"bold {random_color}"
+
         with Live(
-            Panel(text, title=title, border_style=style),
+            Panel(text, title=f"[white]{title}[/white]", border_style=border_style),
             console=self.console,
             refresh_per_second=10,
         ) as live:
             for token in token_list:
                 text.append(token + (" " if by_word else ""))
                 live.update(
-                    Panel(text, title=title, border_style=style)
+                    Panel(text, title=f"[white]{title}[/white]", border_style=border_style)
                 )
                 time.sleep(delay)
 
@@ -174,12 +183,11 @@ class Formatter:
         Returns:
             str: The complete accumulated response text.
         """
-        # Get random color similar to non-streaming approach
+        # Get random color for panel border
         random_color = choose_random_color()
         panel_style = (
             f"bold {random_color}" if style is None else style
         )
-        text_style = random_color
 
         def create_streaming_panel(text_obj, is_complete=False):
             """Create panel with proper text wrapping using Rich's built-in capabilities"""
@@ -202,8 +210,8 @@ class Formatter:
             )
             return panel
 
-        # Create a Text object for streaming content
-        streaming_text = Text()
+        # Create a Text object for streaming content with white text
+        streaming_text = Text(style="white")
         complete_response = ""
         chunks_collected = []
 
@@ -220,9 +228,9 @@ class Formatter:
                         and part.choices
                         and part.choices[0].delta.content
                     ):
-                        # Add ONLY the new chunk to the Text object with random color style
+                        # Add ONLY the new chunk to the Text object with white style
                         chunk = part.choices[0].delta.content
-                        streaming_text.append(chunk, style=text_style)
+                        streaming_text.append(chunk, style="white")
                         complete_response += chunk
 
                         # Collect chunks if requested
