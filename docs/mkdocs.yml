@@ -38,11 +38,6 @@ plugins:
       # token: !ENV ["GITHUB_TOKEN"]
   - git-revision-date-localized:
       enable_creation_date: true
-  # - mkdocs-jupyter:
-  #     kernel_name: python3
-  #     execute: false
-  #     include_source: True
-  #     include_requirejs: true
 extra_css:
   - assets/css/extra.css
 
@@ -85,6 +80,7 @@ theme:
     - content.code.annotate
     - navigation.tabs
     - navigation.sections
+    # - navigation.expand
     - navigation.top
     - announce.dismiss
   font:
@@ -140,7 +136,8 @@ markdown_extensions:
           case: lower
   - pymdownx.tasklist:
       custom_checkbox: true
-  - pymdownx.tilde
+  - pymdownx.inlinehilite
+
 nav:
   - Home:
     - Overview: "index.md"
@@ -149,13 +146,9 @@ nav:
       - Environment Configuration: "swarms/install/env.md"
       - Quickstart: "swarms/install/quickstart.md"
       - Feature Set: "swarms/features.md"
-      # - Swarms CLI: "swarms/cli/main.md"
-    # - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
-    # - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
-    # - Swarms Products: "swarms/products.md"
-    # - Swarms Vision: "swarms/concept/vision.md"
     - Agents:
       # - Overview: "swarms/structs/index.md"
+      - Overview: "swarms/agents/index.md"
       - Concepts:
         # - Managing Prompts in Production: "swarms/prompts/main.md"
         - Introduction into The Agent Architecture: "swarms/framework/agents_explained.md"
@@ -198,39 +191,46 @@ nav:
       - Multi-Agent Architectures Documentation:
         - Overview: "swarms/structs/overview.md"
         - MajorityVoting: "swarms/structs/majorityvoting.md"
-        - AgentRearrange: "swarms/structs/agent_rearrange.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
         - Mixture of Agents: "swarms/structs/moa.md"
-        - GroupChat: "swarms/structs/group_chat.md"
-        - AgentRegistry: "swarms/structs/agent_registry.md"
         - SpreadSheetSwarm: "swarms/structs/spreadsheet_swarm.md"
         - ForestSwarm: "swarms/structs/forest_swarm.md"
-        - SwarmRouter: "swarms/structs/swarm_router.md"
-        # - TaskQueueSwarm: "swarms/structs/taskqueue_swarm.md"
-        - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
-        - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
-        # - MatrixSwarm: "swarms/structs/matrix_swarm.md"
-        - ModelRouter: "swarms/structs/model_router.md"
         - MALT: "swarms/structs/malt.md"
-        - Interactive Group Chat: "swarms/structs/interactive_groupchat.md"
         - Various Execution Methods: "swarms/structs/various_execution_methods.md"
         - Deep Research Swarm: "swarms/structs/deep_research_swarm.md"
-        - Swarm Matcher: "swarms/structs/swarm_matcher.md"
         - Council of Judges: "swarms/structs/council_of_judges.md"
+
 
         - Hiearchical Architectures:
           - Auto Agent Builder: "swarms/structs/auto_agent_builder.md"
           - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
           - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
+          - Swarm Matcher: "swarms/structs/swarm_matcher.md"
 
         - Multi-Agent Multi-Modal Structures:
           - ImageAgentBatchProcessor: "swarms/structs/image_batch_agent.md"
-        
-        
+
+        - Storage:
+          - AgentRegistry: "swarms/structs/agent_registry.md"
+
+        - Routers:
+          - SwarmRouter: "swarms/structs/swarm_router.md"
+          - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
+          - ModelRouter: "swarms/structs/model_router.md"
+
+        - Rearrangers:
+          - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
+          - AgentRearrange: "swarms/structs/agent_rearrange.md"
+
+        - GroupChats:
+          - GroupChat: "swarms/structs/group_chat.md"
+          - Interactive Group Chat: "swarms/structs/interactive_groupchat.md"
+
         - Workflows:
           - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
           - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
           - GraphWorkflow: "swarms/structs/graph_workflow.md"
+
         - Communication Structure: "swarms/structs/conversation.md"
     
     - Tools:
@@ -254,36 +254,40 @@ nav:
     - Deployment Solutions:
       - Deploy your agents on Google Cloud Run: "swarms_cloud/cloud_run.md"
       - Deploy your agents on Phala: "swarms_cloud/phala_deploy.md"
-      - Deploy your agents on FastAPI:
+      # - Deploy your agents on FastAPI:
 
     
   - Examples:
     - Overview: "examples/index.md"
     - CookBook Index: "examples/cookbook_index.md"
     # - PreBuilt Templates: "examples/templates_index.md"
-    - Customizing Agents:
-      - Basic Agent: "swarms/examples/basic_agent.md"
-      - Agent with Streaming: "examples/agent_stream.md"
-      - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
-      # - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
-      - Agent Output Types: "swarms/examples/agent_output_types.md"
-      - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
-      - Agents with Vision: "swarms/examples/vision_processing.md"
-      - Agent with Multiple Images: "swarms/examples/multiple_images.md"
-      - Agents with Vision and Tool Usage: "swarms/examples/vision_tools.md"
-      - Gradio Chat Interface: "swarms/ui/main.md"
-      - Model Providers:
-        - Overview: "swarms/examples/model_providers.md"
-        - OpenAI: "swarms/examples/openai_example.md"
-        - Anthropic: "swarms/examples/claude.md"
-        - Groq: "swarms/examples/groq.md"
-        - Cohere: "swarms/examples/cohere.md"
-        - DeepSeek: "swarms/examples/deepseek.md"
-        - Ollama: "swarms/examples/ollama.md"
-        - OpenRouter: "swarms/examples/openrouter.md"
-        - XAI: "swarms/examples/xai.md"
-        - VLLM: "swarms/examples/vllm_integration.md"
-        - Llama4: "swarms/examples/llama4.md"
+    - Basic Examples:
+      - Individual Agents:
+        - Basic Agent: "swarms/examples/basic_agent.md"
+        - Tool Usage:
+          - Agents with Vision and Tool Usage: "swarms/examples/vision_tools.md"
+          - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
+          - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
+          - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
+        - Vision:
+          - Agents with Vision: "swarms/examples/vision_processing.md"
+          - Agent with Multiple Images: "swarms/examples/multiple_images.md"
+        - Utils:
+          - Agent with Streaming: "examples/agent_stream.md"
+          - Agent Output Types: "swarms/examples/agent_output_types.md"
+          - Gradio Chat Interface: "swarms/ui/main.md"
+        - LLM Providers:
+          - Overview: "swarms/examples/model_providers.md"
+          - OpenAI: "swarms/examples/openai_example.md"
+          - Anthropic: "swarms/examples/claude.md"
+          - Groq: "swarms/examples/groq.md"
+          - Cohere: "swarms/examples/cohere.md"
+          - DeepSeek: "swarms/examples/deepseek.md"
+          - Ollama: "swarms/examples/ollama.md"
+          - OpenRouter: "swarms/examples/openrouter.md"
+          - XAI: "swarms/examples/xai.md"
+          - VLLM: "swarms/examples/vllm_integration.md"
+          - Llama4: "swarms/examples/llama4.md"
 
 
 
@@ -296,29 +300,30 @@ nav:
       #     - Lumo: "swarms/examples/lumo.md"
       #     - Quant Crypto Agent: "swarms/examples/quant_crypto_agent.md"
 
-    - Multi-Agent Collaboration:
-      - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
-      - Group Chat Example: "swarms/examples/groupchat_example.md"
-      - Sequential Workflow Example: "swarms/examples/sequential_example.md"
-      - SwarmRouter Example: "swarms/examples/swarm_router.md"
-      - MultiAgentRouter Minimal Example: "swarms/examples/multi_agent_router_minimal.md"
-      - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
-      # - MixtureOfAgents Example: "swarms/examples/mixture_of_agents.md"
-      - Mixture of Agents Example: "swarms/examples/moa_example.md"
-      - Unique Swarms: "swarms/examples/unique_swarms.md"
-      - Agents as Tools: "swarms/examples/agents_as_tools.md"
-      - Aggregate Multi-Agent Responses: "swarms/examples/aggregate.md"
-      - Interactive GroupChat Example: "swarms/examples/interactive_groupchat_example.md"
-      - Applications:
-        - Swarms DAO: "swarms/examples/swarms_dao.md"
-        - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
-        - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
+    - Advanced Examples:
+      - Multi-Agent Architectures:
+        - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
+        - Group Chat Example: "swarms/examples/groupchat_example.md"
+        - Sequential Workflow Example: "swarms/examples/sequential_example.md"
+        - SwarmRouter Example: "swarms/examples/swarm_router.md"
+        - MultiAgentRouter Minimal Example: "swarms/examples/multi_agent_router_minimal.md"
+        - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
+        # - MixtureOfAgents Example: "swarms/examples/mixture_of_agents.md"
+        - Mixture of Agents Example: "swarms/examples/moa_example.md"
+        - Unique Swarms: "swarms/examples/unique_swarms.md"
+        - Agents as Tools: "swarms/examples/agents_as_tools.md"
+        - Aggregate Multi-Agent Responses: "swarms/examples/aggregate.md"
+        - Interactive GroupChat Example: "swarms/examples/igc_example.md"
+        - Applications:
+          - Swarms DAO: "swarms/examples/swarms_dao.md"
+          - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
+          - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
 
     
     - Swarms API Examples:
       - Medical Swarm: "swarms/examples/swarms_api_medical.md"
       - Finance Swarm: "swarms/examples/swarms_api_finance.md"
-      - ML Model Code Generation Swarm: "swarms/examples/swarms_api_ml_model.md"
+      # - ML Model Code Generation Swarm: "swarms/examples/swarms_api_ml_model.md"
 
   # - Swarm Models:
   #   - Overview: "swarms/models/index.md"
@@ -344,7 +349,6 @@ nav:
     - Swarms API as MCP: "swarms_cloud/mcp.md"
     - Swarms API Tools: "swarms_cloud/swarms_api_tools.md"
     - Individual Agent Completions: "swarms_cloud/agent_api.md"
-
 
     - Clients:
       - Swarms API Python Client: "swarms_cloud/python_client.md"
@@ -396,31 +400,3 @@ nav:
       - Swarms 5.6.8: "swarms/changelog/5_6_8.md"
       - Swarms 5.8.1: "swarms/changelog/5_8_1.md"
       - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
-
-
-  #   - Tokenomics: "web3/token.md"
-
-    
-    # - Prompts API: 
-    #   - Add Prompts: "swarms_platform/prompts/add_prompt.md"
-    #   - Edit Prompts: "swarms_platform/prompts/edit_prompt.md"
-    #   - Query Prompts: "swarms_platform/prompts/fetch_prompts.md"
-    # - Agents API:
-    #   - Add Agents: "swarms_platform/agents/agents_api.md"
-    #   - Query Agents: "swarms_platform/agents/fetch_agents.md"
-    #   - Edit Agents: "swarms_platform/agents/edit_agent.md"
-    # - Telemetry API:
-    #   - PUT: "swarms_platform/telemetry/index.md"
-    # - Swarms Wallet API:
-    #   - Overview: "swarms/wallet/api.md"
-    #   - Tools API:
-    #     - Overview: "swarms_platform/tools_api.md"
-    #     - Add Tools: "swarms_platform/fetch_tools.md"
-  # - Corporate:
-  #   - Culture: "corporate/culture.md"
-  #   - Hiring: "corporate/hiring.md"
-  #   - Swarms Goals & Milestone Tracking; A Vision for 2024 and Beyond: "corporate/2024_2025_goals.md"
-  # - Web3:
-  #   # - Overview: "finance/index.md"
-  #   - Swarms Wallet: "finance/wallet.md"
-  #   - Swarms Subscription: "finance/subscription.md"
