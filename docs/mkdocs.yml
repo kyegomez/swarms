@@ -156,7 +156,6 @@ nav:
       - Feature Set: "swarms/features.md"
     - Agents:
       - Overview: "swarms/agents/index.md"
-      - Overview: "swarms/agents/index.md"
       - Concepts:
         # - Managing Prompts in Production: "swarms/prompts/main.md"
         - Introduction into The Agent Architecture: "swarms/framework/agents_explained.md"
