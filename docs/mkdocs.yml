@@ -140,6 +140,14 @@ markdown_extensions:
 
 nav:
   - Home:
+    - Overview: "quickstart.md"
+    - Installation: "swarms/install/install.md"
+    - Environment Configuration: "swarms/install/env.md"
+    - Agents: "swarms/agents/index.md"
+    - Multi-Agent Architectures: "swarms/structs/index.md"
+    # - Learn More: "swarms/learn_more/index.md"
+
+  - Guides:
     - Overview: "index.md"
     - Onboarding: 
       - Installation: "swarms/install/install.md"
@@ -147,7 +155,7 @@ nav:
       - Quickstart: "swarms/install/quickstart.md"
       - Feature Set: "swarms/features.md"
     - Agents:
-      # - Overview: "swarms/structs/index.md"
+      - Overview: "swarms/agents/index.md"
       - Overview: "swarms/agents/index.md"
       - Concepts:
         # - Managing Prompts in Production: "swarms/prompts/main.md"
@@ -345,9 +353,15 @@ nav:
   #     - GPT4VisionAPI: "swarms/models/gpt4v.md"
   - Swarms Cloud API:
     - Overview: "swarms_cloud/swarms_api.md"
-    - Swarms API as MCP: "swarms_cloud/mcp.md"
-    - Swarms API Tools: "swarms_cloud/swarms_api_tools.md"
-    - Individual Agent Completions: "swarms_cloud/agent_api.md"
+    - Quickstart: "swarms_cloud/quickstart.md"
+    - MCP Server: "swarms_cloud/mcp.md"
+
+    - Capabilities:
+      - Agents:
+        - Individual Agent Completions: "swarms_cloud/agent_api.md"
+        - Tools: "swarms_cloud/swarms_api_tools.md"
+      - Multi-Agent:
+        - Multi Agent Architectures Available: "swarms_cloud/swarm_types.md"
 
     - Clients:
       - Swarms API Python Client: "swarms_cloud/python_client.md"
@@ -358,12 +372,8 @@ nav:
       - Swarms API Pricing in Chinese: "swarms_cloud/chinese_api_pricing.md"
       - Swarms Cloud Subscription Tiers: "swarms_cloud/subscription_tiers.md"
 
-    - Swarm Ecosystem APIs:
-      - MCS API: "swarms_cloud/mcs_api.md"
-      # - CreateNow API: "swarms_cloud/create_api.md"
     - Guides:
       - Swarms API Best Practices: "swarms_cloud/best_practices.md"
-      - Multi Agent Architectures Available: "swarms_cloud/swarm_types.md"
 
   - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"

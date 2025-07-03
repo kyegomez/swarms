@@ -155,7 +155,7 @@ def example_round_robin_panel():
     @cardiologist @oncologist @endocrinologist @infectious_disease please provide your 
     assessment and treatment recommendations for this complex case."""
 
-    response = group_chat.run(case1)
+    group_chat.run(case1)
 
 
 if __name__ == "__main__":
