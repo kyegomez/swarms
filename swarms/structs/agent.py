@@ -1524,10 +1524,13 @@ class Agent:
                     f"The model '{self.model_name}' does not support function calling. Please use a model that supports function calling."
                 )
 
-        if self.max_tokens > get_max_tokens(self.model_name):
-            raise AgentInitializationError(
-                f"Max tokens is set to {self.max_tokens}, but the model '{self.model_name}' only supports {get_max_tokens(self.model_name)} tokens. Please set max tokens to {get_max_tokens(self.model_name)} or less."
-            )
+        try:
+            if self.max_tokens > get_max_tokens(self.model_name):
+                raise AgentInitializationError(
+                    f"Max tokens is set to {self.max_tokens}, but the model '{self.model_name}' only supports {get_max_tokens(self.model_name)} tokens. Please set max tokens to {get_max_tokens(self.model_name)} or less."
+                )
+        except Exception:
+            pass
 
         if self.model_name not in model_list:
             logger.warning(

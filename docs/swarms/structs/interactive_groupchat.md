@@ -4,23 +4,20 @@ The InteractiveGroupChat is a sophisticated multi-agent system that enables inte
 
 ## Features
 
-- **@mentions Support**: Direct tasks to specific agents using @agent_name syntax
-
-- **Multi-Agent Collaboration**: Multiple mentioned agents can see and respond to each other's tasks
-
-- **Enhanced Collaborative Prompts**: Agents are trained to acknowledge, build upon, and synthesize each other's responses
-
-- **Speaker Functions**: Control the order in which agents respond (round robin, random, priority, custom)
-
-- **Dynamic Speaker Management**: Change speaker functions and priorities during runtime
-
-- **Callable Function Support**: Supports both Agent instances and callable functions as chat participants
-
-- **Comprehensive Error Handling**: Custom error classes for different scenarios
-
-- **Conversation History**: Maintains a complete history of the conversation
-
-- **Flexible Output Formatting**: Configurable output format for conversation history
+| Feature | Description |
+|---------|-------------|
+| **@mentions Support** | Direct tasks to specific agents using @agent_name syntax |
+| **Multi-Agent Collaboration** | Multiple mentioned agents can see and respond to each other's tasks |
+| **Enhanced Collaborative Prompts** | Agents are trained to acknowledge, build upon, and synthesize each other's responses |
+| **Speaker Functions** | Control the order in which agents respond (round robin, random, priority, custom) |
+| **Dynamic Speaker Management** | Change speaker functions and priorities during runtime |
+| **Random Dynamic Speaker** | Advanced speaker function that follows @mentions in agent responses |
+| **Parallel and Sequential Strategies** | Support for both parallel and sequential agent execution |
+| **Callable Function Support** | Supports both Agent instances and callable functions as chat participants |
+| **Comprehensive Error Handling** | Custom error classes for different scenarios |
+| **Conversation History** | Maintains a complete history of the conversation |
+| **Flexible Output Formatting** | Configurable output format for conversation history |
+| **Interactive Terminal Mode** | Full REPL interface for real-time chat with agents |
 
 ## Installation
 
@@ -46,7 +43,7 @@ Initializes a new InteractiveGroupChat instance with the specified configuration
 | `max_loops` | int | Maximum conversation turns | 1 |
 | `output_type` | str | Type of output format | "string" |
 | `interactive` | bool | Whether to enable interactive mode | False |
-| `speaker_function` | Callable | Function to determine speaking order | round_robin_speaker |
+| `speaker_function` | Union[str, Callable] | Function to determine speaking order | round_robin_speaker |
 | `speaker_state` | dict | Initial state for speaker function | {"current_index": 0} |
 
 **Example:**
@@ -90,6 +87,8 @@ Processes a task and gets responses from mentioned agents. This is the main meth
 **Arguments:**
 
 - `task` (str): The input task containing @mentions to agents
+- `img` (Optional[str]): Optional image for the task
+- `imgs` (Optional[List[str]]): Optional list of images for the task
 
 **Returns:**
 
@@ -104,6 +103,10 @@ print(response)
 # Multiple agent collaboration
 response = chat.run("@FinancialAdvisor and @TaxExpert, how can I minimize taxes on my investments?")
 print(response)
+
+# With image input
+response = chat.run("@FinancialAdvisor analyze this chart", img="chart.png")
+print(response)
 ```
 
 ### Start Interactive Session (`start_interactive_session`)
@@ -113,6 +116,13 @@ Starts an interactive terminal session for real-time chat with agents. This crea
 
 **Arguments:**
 None
+
+**Features:**
+- Real-time chat with agents using @mentions
+- View available agents and their descriptions
+- Change speaker functions during the session
+- Built-in help system
+- Graceful exit with 'exit' or 'quit' commands
 
 **Example:**
 
@@ -125,6 +135,119 @@ chat = InteractiveGroupChat(
 
 # Start the interactive session
 chat.start_interactive_session()
+```
+
+**Interactive Session Commands:**
+- `@agent_name message` - Mention specific agents
+- `help` or `?` - Show help information
+- `speaker` - Change speaker function
+- `exit` or `quit` - End the session
+
+### Set Speaker Function (`set_speaker_function`)
+
+**Description:**  
+
+Dynamically changes the speaker function and optional state during runtime.
+
+**Arguments:**
+
+- `speaker_function` (Union[str, Callable]): Function that determines speaking order
+  - String options: "round-robin-speaker", "random-speaker", "priority-speaker", "random-dynamic-speaker"
+  - Callable: Custom function that takes (agents: List[str], **kwargs) -> str
+- `speaker_state` (dict, optional): State for the speaker function
+
+**Example:**
+```python
+from swarms.structs.interactive_groupchat import random_speaker, priority_speaker
+
+# Change to random speaker function
+chat.set_speaker_function(random_speaker)
+
+# Change to priority speaker with custom priorities
+chat.set_speaker_function(priority_speaker, {"financial_advisor": 3, "tax_expert": 2})
+
+# Change to random dynamic speaker
+chat.set_speaker_function("random-dynamic-speaker")
+```
+
+### Get Available Speaker Functions (`get_available_speaker_functions`)
+
+**Description:**  
+
+Returns a list of all available built-in speaker function names.
+
+**Arguments:**
+None
+
+**Returns:**
+
+- List[str]: List of available speaker function names
+
+**Example:**
+```python
+available_functions = chat.get_available_speaker_functions()
+print(available_functions)
+# Output: ['round-robin-speaker', 'random-speaker', 'priority-speaker', 'random-dynamic-speaker']
+```
+
+### Get Current Speaker Function (`get_current_speaker_function`)
+
+**Description:**  
+
+Returns the name of the currently active speaker function.
+
+**Arguments:**
+None
+
+**Returns:**
+
+- str: Name of the current speaker function, or "custom" if it's a custom function
+
+**Example:**
+```python
+current_function = chat.get_current_speaker_function()
+print(current_function)  # Output: "round-robin-speaker"
+```
+
+### Set Priorities (`set_priorities`)
+
+**Description:**  
+
+Sets agent priorities for priority-based speaking order.
+
+**Arguments:**
+
+- `priorities` (dict): Dictionary mapping agent names to priority weights
+
+**Example:**
+```python
+# Set agent priorities (higher numbers = higher priority)
+chat.set_priorities({
+    "financial_advisor": 5,
+    "tax_expert": 3,
+    "investment_analyst": 1
+})
+```
+
+### Set Dynamic Strategy (`set_dynamic_strategy`)
+
+**Description:**  
+
+Sets the strategy for the random-dynamic-speaker function.
+
+**Arguments:**
+
+- `strategy` (str): Either "sequential" or "parallel"
+  - "sequential": Process one agent at a time based on @mentions
+  - "parallel": Process all mentioned agents simultaneously
+
+**Example:**
+```python
+# Set to sequential strategy (one agent at a time)
+chat.set_dynamic_strategy("sequential")
+
+# Set to parallel strategy (all mentioned agents respond simultaneously)
+chat.set_dynamic_strategy("parallel")
 ```
 
 ### Extract Mentions (`_extract_mentions`)
@@ -205,49 +328,6 @@ None
 # Agent prompts are automatically updated during initialization
 chat = InteractiveGroupChat(agents=[financial_advisor, tax_expert])
 # Each agent now knows about the other participants and how to collaborate effectively
-```
-
-### Set Speaker Function (`set_speaker_function`)
-
-**Description:**  
-
-Dynamically changes the speaker function and optional state during runtime.
-
-**Arguments:**
-
-- `speaker_function` (Callable): Function that determines speaking order
-
-- `speaker_state` (dict, optional): State for the speaker function
-
-**Example:**
-```python
-from swarms.structs.interactive_groupchat import random_speaker, priority_speaker
-
-# Change to random speaker function
-chat.set_speaker_function(random_speaker)
-
-# Change to priority speaker with custom priorities
-chat.set_speaker_function(priority_speaker, {"financial_advisor": 3, "tax_expert": 2})
-```
-
-### Set Priorities (`set_priorities`)
-
-**Description:**  
-
-Sets agent priorities for priority-based speaking order.
-
-**Arguments:**
-
-- `priorities` (dict): Dictionary mapping agent names to priority weights
-
-**Example:**
-```python
-# Set agent priorities (higher numbers = higher priority)
-chat.set_priorities({
-    "financial_advisor": 5,
-    "tax_expert": 3,
-    "investment_analyst": 1
-})
 ```
 
 ### Get Speaking Order (`_get_speaking_order`)
@@ -345,6 +425,41 @@ chat = InteractiveGroupChat(
 
 - Good for hierarchical teams or expert-led discussions
 
+#### Random Dynamic Speaker (`random_dynamic_speaker`)
+
+Advanced speaker function that follows @mentions in agent responses, enabling dynamic conversation flow.
+
+```python
+from swarms.structs.interactive_groupchat import InteractiveGroupChat, random_dynamic_speaker
+
+chat = InteractiveGroupChat(
+    agents=agents,
+    speaker_function=random_dynamic_speaker,
+    speaker_state={"strategy": "parallel"},  # or "sequential"
+    interactive=False,
+)
+```
+
+**Behavior:**
+
+- **First Call**: Randomly selects an agent to start the conversation
+- **Subsequent Calls**: Extracts @mentions from the previous agent's response and selects the next speaker(s)
+- **Two Strategies**:
+  - **Sequential**: Processes one agent at a time based on @mentions
+  - **Parallel**: Processes all mentioned agents simultaneously
+
+**Example Dynamic Flow:**
+```python
+# Agent A responds: "I think @AgentB should analyze this data and @AgentC should review the methodology"
+# With sequential strategy: Agent B speaks next
+# With parallel strategy: Both Agent B and Agent C speak simultaneously
+```
+
+**Use Cases:**
+- Complex problem-solving where agents need to delegate to specific experts
+- Dynamic workflows where the conversation flow depends on agent responses
+- Collaborative decision-making processes
+
 ### Custom Speaker Functions
 
 You can create your own speaker functions to implement custom logic:
@@ -394,6 +509,10 @@ chat.set_speaker_function(random_speaker)
 # Change to priority with custom priorities
 chat.set_priorities({"financial_advisor": 5, "tax_expert": 3, "analyst": 1})
 chat.set_speaker_function(priority_speaker)
+
+# Change to dynamic speaker with parallel strategy
+chat.set_speaker_function("random-dynamic-speaker")
+chat.set_dynamic_strategy("parallel")
 ```
 
 ## Enhanced Collaborative Behavior
@@ -518,6 +637,8 @@ except InvalidSpeakerFunctionError as e:
 | Agent Naming | Use clear, unique names for agents to avoid confusion | `financial_advisor`, `tax_expert` |
 | Task Format | Always use @mentions to direct tasks to specific agents | `@financial_advisor What's your investment advice?` |
 | Speaker Functions | Choose appropriate speaker functions for your use case | Round robin for fairness, priority for expert-led discussions |
+| Dynamic Speaker | Use random-dynamic-speaker for complex workflows with delegation | When agents need to call on specific experts |
+| Strategy Selection | Choose sequential for focused discussions, parallel for brainstorming | Sequential for analysis, parallel for idea generation |
 | Collaborative Design | Design agents with complementary expertise for better collaboration | Analyst + Researcher + Strategist |
 | Error Handling | Implement proper error handling for various scenarios | `try/except` blocks for `AgentNotFoundError` |
 | Context Management | Be aware that agents can see the full conversation history | Monitor conversation length and relevance |
@@ -614,6 +735,53 @@ response = chat.run(task)
 print(response)
 ```
 
+### Dynamic Speaker Function with Delegation
+
+```python
+from swarms.structs.interactive_groupchat import InteractiveGroupChat, random_dynamic_speaker
+
+# Create specialized medical agents
+cardiologist = Agent(
+    agent_name="cardiologist",
+    system_prompt="You are a cardiologist specializing in heart conditions.",
+    llm="gpt-4",
+)
+
+oncologist = Agent(
+    agent_name="oncologist",
+    system_prompt="You are an oncologist specializing in cancer treatment.",
+    llm="gpt-4",
+)
+
+endocrinologist = Agent(
+    agent_name="endocrinologist",
+    system_prompt="You are an endocrinologist specializing in hormone disorders.",
+    llm="gpt-4",
+)
+
+# Create dynamic group chat
+chat = InteractiveGroupChat(
+    name="Medical Panel Discussion",
+    description="A collaborative panel of medical specialists",
+    agents=[cardiologist, oncologist, endocrinologist],
+    speaker_function=random_dynamic_speaker,
+    speaker_state={"strategy": "sequential"},
+    interactive=False,
+)
+
+# Complex medical case with dynamic delegation
+case = """CASE PRESENTATION:
+A 65-year-old male with Type 2 diabetes, hypertension, and recent diagnosis of 
+stage 3 colon cancer presents with chest pain and shortness of breath. 
+ECG shows ST-segment elevation. Recent blood work shows elevated blood glucose (280 mg/dL) 
+and signs of infection (WBC 15,000, CRP elevated).
+
+@cardiologist @oncologist @endocrinologist please provide your assessment and treatment recommendations."""
+
+response = chat.run(case)
+print(response)
+```
+
 ### Dynamic Speaker Function Changes
 
 ```python
@@ -621,7 +789,8 @@ from swarms.structs.interactive_groupchat import (
     InteractiveGroupChat, 
     round_robin_speaker, 
     random_speaker, 
-    priority_speaker
+    priority_speaker,
+    random_dynamic_speaker
 )
 
 # Create brainstorming agents
@@ -647,10 +816,16 @@ chat.set_speaker_function(priority_speaker)
 task2 = "Now let's analyze the feasibility of these ideas. @creative @analytical @practical"
 response2 = chat.run(task2)
 
-# Phase 3: Implementation (round robin for equal input)
-chat.set_speaker_function(round_robin_speaker)
-task3 = "Finally, let's plan implementation. @creative @analytical @practical"
+# Phase 3: Dynamic delegation (agents mention each other)
+chat.set_speaker_function(random_dynamic_speaker)
+chat.set_dynamic_strategy("sequential")
+task3 = "Let's plan implementation with dynamic delegation. @creative @analytical @practical"
 response3 = chat.run(task3)
+
+# Phase 4: Final synthesis (round robin for equal input)
+chat.set_speaker_function(round_robin_speaker)
+task4 = "Finally, let's synthesize our findings. @creative @analytical @practical"
+response4 = chat.run(task4)
 ```
 
 ### Custom Speaker Function
@@ -726,38 +901,47 @@ chat.start_interactive_session()
 3. **Better Delegation**: Agents naturally delegate to appropriate experts
 4. **Enhanced Problem Solving**: Complex problems are addressed systematically
 5. **More Natural Interactions**: Agents respond like real team members
+6. **Dynamic Workflows**: Conversation flow adapts based on agent responses
+7. **Flexible Execution**: Support for both sequential and parallel processing
 
 ### Use Cases
 
-| Use Case Category | Specific Use Case | Agent Team Composition |
-|------------------|-------------------|----------------------|
-| **Business Analysis and Strategy** | Data Analysis | Analyst + Researcher + Strategist |
-| | Market Research | Multiple experts analyzing different aspects |
-| | Strategic Planning | Expert-led discussions with collaborative input |
-| **Product Development** | Requirements Gathering | Product Manager + Developer + Designer |
-| | Technical Architecture | Senior + Junior developers with different expertise |
-| | User Experience | UX Designer + Product Manager + Developer |
-| **Research and Development** | Scientific Research | Multiple researchers with different specializations |
-| | Literature Review | Different experts reviewing various aspects |
-| | Experimental Design | Statistician + Domain Expert + Methodologist |
-| **Creative Projects** | Content Creation | Writer + Editor + Designer |
-| | Marketing Campaigns | Creative + Analyst + Strategist |
-| | Design Projects | Designer + Developer + Product Manager |
-| **Problem Solving** | Troubleshooting | Technical + Business + User perspective experts |
-| | Crisis Management | Emergency + Communication + Technical teams |
-| | Decision Making | Executive + Analyst + Specialist |
+| Use Case Category | Specific Use Case | Agent Team Composition | Recommended Speaker Function |
+|------------------|-------------------|----------------------|------------------------------|
+| **Business Analysis and Strategy** | Data Analysis | Analyst + Researcher + Strategist | Round Robin |
+| | Market Research | Multiple experts analyzing different aspects | Random Dynamic |
+| | Strategic Planning | Expert-led discussions with collaborative input | Priority |
+| **Product Development** | Requirements Gathering | Product Manager + Developer + Designer | Round Robin |
+| | Technical Architecture | Senior + Junior developers with different expertise | Priority |
+| | User Experience | UX Designer + Product Manager + Developer | Random Dynamic |
+| **Research and Development** | Scientific Research | Multiple researchers with different specializations | Random Dynamic |
+| | Literature Review | Different experts reviewing various aspects | Round Robin |
+| | Experimental Design | Statistician + Domain Expert + Methodologist | Priority |
+| **Creative Projects** | Content Creation | Writer + Editor + Designer | Random |
+| | Marketing Campaigns | Creative + Analyst + Strategist | Random Dynamic |
+| | Design Projects | Designer + Developer + Product Manager | Round Robin |
+| **Problem Solving** | Troubleshooting | Technical + Business + User perspective experts | Priority |
+| | Crisis Management | Emergency + Communication + Technical teams | Priority |
+| | Decision Making | Executive + Analyst + Specialist | Priority |
+| **Medical Consultation** | Complex Cases | Multiple specialists (Cardiologist + Oncologist + Endocrinologist) | Random Dynamic |
+| | Treatment Planning | Senior + Junior doctors with different expertise | Priority |
+| | Research Review | Multiple researchers reviewing different aspects | Round Robin |
 
 ### Speaker Function Selection Guide
 
-| Use Case | Recommended Speaker Function | Reasoning |
-|----------|------------------------------|-----------|
-| Team Meetings | Round Robin | Ensures equal participation |
-| Brainstorming | Random | Prevents bias and encourages creativity |
-| Expert Consultation | Priority | Senior experts speak first |
-| Problem Solving | Priority | Most relevant experts prioritize |
-| Creative Sessions | Random | Encourages diverse perspectives |
-| Decision Making | Priority | Decision makers speak first |
-| Research Review | Round Robin | Equal contribution from all reviewers |
+| Use Case | Recommended Speaker Function | Strategy | Reasoning |
+|----------|------------------------------|----------|-----------|
+| Team Meetings | Round Robin | N/A | Ensures equal participation |
+| Brainstorming | Random | N/A | Prevents bias and encourages creativity |
+| Expert Consultation | Priority | N/A | Senior experts speak first |
+| Problem Solving | Priority | N/A | Most relevant experts prioritize |
+| Creative Sessions | Random | N/A | Encourages diverse perspectives |
+| Decision Making | Priority | N/A | Decision makers speak first |
+| Research Review | Round Robin | N/A | Equal contribution from all reviewers |
+| Complex Workflows | Random Dynamic | Sequential | Follows natural conversation flow |
+| Parallel Analysis | Random Dynamic | Parallel | Multiple agents work simultaneously |
+| Medical Panels | Random Dynamic | Sequential | Specialists delegate to relevant experts |
+| Technical Architecture | Random Dynamic | Sequential | Senior architects guide the discussion |
 
 ## Contributing
 

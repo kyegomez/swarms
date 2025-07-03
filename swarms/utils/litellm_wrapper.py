@@ -151,6 +151,8 @@ class LiteLLM:
             retries  # Add retries for better reliability
         )
 
+        litellm.drop_params = True
+
     def output_for_tools(self, response: any):
         if self.mcp_call is True:
             out = response.choices[0].message.tool_calls[0].function

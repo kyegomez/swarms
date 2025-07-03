@@ -86,6 +86,7 @@ models = [
     "o4-mini",
     "o3",
     "gpt-4.1",
+    "groq/llama-3.1-8b-instant",
     "gpt-4.1-nano",
 ]
 
