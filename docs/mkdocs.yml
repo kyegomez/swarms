@@ -368,9 +368,10 @@ nav:
       - Swarms API Rust Client: "swarms_cloud/rust_client.md"
 
     - Pricing:
-      - Swarms API Pricing: "swarms_cloud/api_pricing.md"
-      - Swarms API Pricing in Chinese: "swarms_cloud/chinese_api_pricing.md"
-      - Swarms Cloud Subscription Tiers: "swarms_cloud/subscription_tiers.md"
+      - Pricing: "swarms_cloud/api_pricing.md"
+      - Pricing in Chinese: "swarms_cloud/chinese_api_pricing.md"
+      - Subscription Tiers: "swarms_cloud/subscription_tiers.md"
+      - Rate Limits: "swarms_cloud/rate_limits.md"
 
     - Guides:
       - Swarms API Best Practices: "swarms_cloud/best_practices.md"
