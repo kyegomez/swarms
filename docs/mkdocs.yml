@@ -355,6 +355,7 @@ nav:
     - Overview: "swarms_cloud/swarms_api.md"
     - Quickstart: "swarms_cloud/quickstart.md"
     - MCP Server: "swarms_cloud/mcp.md"
+    - Rate Limits: "swarms_cloud/rate_limits.md"
 
     - Capabilities:
       - Agents:
@@ -371,7 +372,6 @@ nav:
       - Pricing: "swarms_cloud/api_pricing.md"
       - Pricing in Chinese: "swarms_cloud/chinese_api_pricing.md"
       - Subscription Tiers: "swarms_cloud/subscription_tiers.md"
-      - Rate Limits: "swarms_cloud/rate_limits.md"
 
     - Guides:
       - Swarms API Best Practices: "swarms_cloud/best_practices.md"
