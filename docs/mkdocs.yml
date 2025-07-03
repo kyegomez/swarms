@@ -326,11 +326,6 @@ nav:
           - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
           - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
 
-    
-    - Swarms API Examples:
-      - Medical Swarm: "swarms/examples/swarms_api_medical.md"
-      - Finance Swarm: "swarms/examples/swarms_api_finance.md"
-      # - ML Model Code Generation Swarm: "swarms/examples/swarms_api_ml_model.md"
 
   # - Swarm Models:
   #   - Overview: "swarms/models/index.md"
@@ -363,10 +358,13 @@ nav:
         - Tools: "swarms_cloud/swarms_api_tools.md"
       - Multi-Agent:
         - Multi Agent Architectures Available: "swarms_cloud/swarm_types.md"
+        - Examples:
+          - Medical Swarm: "swarms/examples/swarms_api_medical.md"
+          - Finance Swarm: "swarms/examples/swarms_api_finance.md"
 
     - Clients:
-      - Swarms API Python Client: "swarms_cloud/python_client.md"
-      - Swarms API Rust Client: "swarms_cloud/rust_client.md"
+      - Python Client: "swarms_cloud/python_client.md"
+      - Rust Client: "swarms_cloud/rust_client.md"
 
     - Pricing:
       - Pricing: "swarms_cloud/api_pricing.md"
@@ -374,7 +372,7 @@ nav:
       - Subscription Tiers: "swarms_cloud/subscription_tiers.md"
 
     - Guides:
-      - Swarms API Best Practices: "swarms_cloud/best_practices.md"
+      - Best Practices: "swarms_cloud/best_practices.md"
 
   - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"
