@@ -85,7 +85,6 @@ from swarms.structs.swarming_architectures import (
 )
 from swarms.structs.interactive_groupchat import (
     InteractiveGroupChat,
-    speaker_function,
     round_robin_speaker,
     random_speaker,
     priority_speaker,
@@ -163,7 +162,6 @@ __all__ = [
     "find_agent_by_name",
     "run_agent",
     "InteractiveGroupChat",
-    "speaker_function",
     "round_robin_speaker",
     "random_speaker",
     "priority_speaker",

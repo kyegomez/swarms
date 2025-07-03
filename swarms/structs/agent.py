@@ -5,6 +5,7 @@ import os
 import random
 import threading
 import time
+import traceback
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -85,6 +86,7 @@ from swarms.utils.index import (
 )
 from swarms.schemas.conversation_schema import ConversationSchema
 from swarms.utils.output_types import OutputType
+from swarms.utils.retry_func import retry_function
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -149,6 +151,12 @@ class AgentMemoryError(AgentError):
 
 class AgentLLMInitializationError(AgentError):
     """Exception raised when the LLM fails to initialize properly. Please check the configuration and parameters."""
+
+    pass
+
+
+class AgentToolExecutionError(AgentError):
+    """Exception raised when the agent fails to execute a tool. Check the tool's configuration and availability."""
 
     pass
 
@@ -425,6 +433,7 @@ class Agent:
         tool_call_summary: bool = True,
         output_raw_json_from_tool_call: bool = False,
         summarize_multiple_images: bool = False,
+        tool_retry_attempts: int = 3,
         *args,
         **kwargs,
     ):
@@ -564,6 +573,7 @@ class Agent:
             output_raw_json_from_tool_call
         )
         self.summarize_multiple_images = summarize_multiple_images
+        self.tool_retry_attempts = tool_retry_attempts
 
         # self.short_memory = self.short_memory_init()
 
@@ -1015,8 +1025,8 @@ class Agent:
             # Print the request
             if print_task is True:
                 formatter.print_panel(
-                    f"\n User: {task}",
-                    f"Task Request for {self.agent_name}",
+                    content=f"\n User: {task}",
+                    title=f"Task Request for {self.agent_name}",
                 )
 
             while (
@@ -1091,26 +1101,22 @@ class Agent:
                         )
 
                         # Print
-                        self.pretty_print(response, loop_count)
+                        if self.print_on is True:
+                            if isinstance(response, list):
+                                self.pretty_print(
+                                    f"Structured Output - Attempting Function Call Execution [{time.strftime('%H:%M:%S')}] \n\n {format_data_structure(response)} ",
+                                    loop_count,
+                                )
+                            else:
+                                self.pretty_print(
+                                    response, loop_count
+                                )
 
                         # Check and execute callable tools
                         if exists(self.tools):
-                            if (
-                                self.output_raw_json_from_tool_call
-                                is True
-                            ):
-                                response = response
-                            else:
-                                # Only execute tools if response is not None
-                                if response is not None:
-                                    self.execute_tools(
-                                        response=response,
-                                        loop_count=loop_count,
-                                    )
-                                else:
-                                    logger.warning(
-                                        f"LLM returned None response in loop {loop_count}, skipping tool execution"
-                                    )
+                            self.tool_execution_retry(
+                                response, loop_count
+                            )
 
                         # Handle MCP tools
                         if (
@@ -2790,19 +2796,23 @@ class Agent:
         return self.role
 
     def pretty_print(self, response: str, loop_count: int):
-        if self.print_on is False:
-            if self.streaming_on is True:
-                # Skip printing here since real streaming is handled in call_llm
-                # This avoids double printing when streaming_on=True
-                pass
-            elif self.print_on is False:
-                pass
-            else:
-                # logger.info(f"Response: {response}")
-                formatter.print_panel(
-                    f"{self.agent_name}: {response}",
-                    f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
-                )
+        # if self.print_on is False:
+        #     if self.streaming_on is True:
+        #         # Skip printing here since real streaming is handled in call_llm
+        #         # This avoids double printing when streaming_on=True
+        #         pass
+        #     elif self.print_on is False:
+        #         pass
+        #     else:
+        #         # logger.info(f"Response: {response}")
+        #         formatter.print_panel(
+        #             response,
+        #             f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
+        #         )
+        formatter.print_panel(
+            response,
+            f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
+        )
 
     def parse_llm_output(self, response: Any):
         """Parse and standardize the output from the LLM.
@@ -2915,10 +2925,10 @@ class Agent:
             # execute_tool_call_simple returns a string directly, not an object with content attribute
             text_content = f"MCP Tool Response: \n\n {json.dumps(tool_response, indent=2)}"
 
-            if self.print_on is False:
+            if self.print_on is True:
                 formatter.print_panel(
-                    text_content,
-                    "MCP Tool Response: 🛠️",
+                    content=text_content,
+                    title="MCP Tool Response: 🛠️",
                     style="green",
                 )
 
@@ -2974,11 +2984,19 @@ class Agent:
             )
             return
 
-        output = (
-            self.tool_struct.execute_function_calls_from_api_response(
+        try:
+            output = self.tool_struct.execute_function_calls_from_api_response(
                 response
             )
-        )
+        except Exception as e:
+            # Retry the tool call
+            output = self.tool_struct.execute_function_calls_from_api_response(
+                response
+            )
+
+            if output is None:
+                logger.error(f"Error executing tools: {e}")
+                raise e
 
         self.short_memory.add(
             role="Tool Executor",
@@ -2986,7 +3004,7 @@ class Agent:
         )
 
         self.pretty_print(
-            f"{format_data_structure(output)}",
+            "Tool Executed Successfully",
             loop_count,
         )
 
@@ -3013,7 +3031,7 @@ class Agent:
             )
 
             self.pretty_print(
-                f"{tool_response}",
+                tool_response,
                 loop_count,
             )
 
@@ -3150,3 +3168,53 @@ class Agent:
         raise Exception(
             f"Failed to find correct answer '{correct_answer}' after {max_attempts} attempts"
         )
+
+    def tool_execution_retry(self, response: any, loop_count: int):
+        """
+        Execute tools with retry logic for handling failures.
+
+        This method attempts to execute tools based on the LLM response. If the response
+        is None, it logs a warning and skips execution. If an exception occurs during
+        tool execution, it logs the error with full traceback and retries the operation
+        using the configured retry attempts.
+
+        Args:
+            response (any): The response from the LLM that may contain tool calls to execute.
+                          Can be None if the LLM failed to provide a valid response.
+            loop_count (int): The current iteration loop number for logging and debugging purposes.
+
+        Returns:
+            None
+
+        Raises:
+            Exception: Re-raises any exception that occurs during tool execution after
+                      all retry attempts have been exhausted.
+
+        Note:
+            - Uses self.tool_retry_attempts for the maximum number of retry attempts
+            - Logs detailed error information including agent name and loop count
+            - Skips execution gracefully if response is None
+        """
+        try:
+            if response is not None:
+                self.execute_tools(
+                    response=response,
+                    loop_count=loop_count,
+                )
+            else:
+                logger.warning(
+                    f"Agent '{self.agent_name}' received None response from LLM in loop {loop_count}. "
+                    f"This may indicate an issue with the model or prompt. Skipping tool execution."
+                )
+        except Exception as e:
+            logger.error(
+                f"Agent '{self.agent_name}' encountered error during tool execution in loop {loop_count}: {str(e)}. "
+                f"Full traceback: {traceback.format_exc()}. "
+                f"Attempting to retry tool execution with 3 attempts"
+            )
+            retry_function(
+                self.execute_tools,
+                response=response,
+                loop_count=loop_count,
+                max_retries=self.tool_retry_attempts,
+            )
