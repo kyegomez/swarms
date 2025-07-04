@@ -164,7 +164,7 @@ class ConcurrentWorkflow(BaseSwarm):
 
         return history_output_formatter(
             conversation=self.conversation,
-            output_type=self.output_type,
+            type=self.output_type,
         )
 
     def batch_run(
