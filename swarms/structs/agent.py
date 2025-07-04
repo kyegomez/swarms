@@ -573,7 +573,6 @@ class Agent:
         )
         self.summarize_multiple_images = summarize_multiple_images
         self.tool_retry_attempts = tool_retry_attempts
-
         # Streaming / tool-call coordination flags
         # When a tool call is expected we temporarily disable streaming so the
         # LLM returns a complete JSON payload that can be parsed reliably. After
@@ -1366,6 +1365,37 @@ class Agent:
             "Please process this message and respond appropriately."
         )
         return self.run(task=improved_prompt, *args, **kwargs)
+
+    # def parse_and_execute_tools(self, response: str, *args, **kwargs):
+    #     max_retries = 3  # Maximum number of retries
+    #     retries = 0
+    #     while retries < max_retries:
+    #         try:
+    #             logger.info("Executing tool...")
+
+    #             # try to Execute the tool and return a string
+    #             out = parse_and_execute_json(
+    #                 functions=self.tools,
+    #                 json_string=response,
+    #                 parse_md=True,
+    #                 *args,
+    #                 **kwargs,
+    #             )
+    #             logger.info(f"Tool Output: {out}")
+    #             # Add the output to the memory
+    #             # self.short_memory.add(
+    #             #     role="Tool Executor",
+    #             #     content=out,
+    #             # )
+    #             return out
+    #         except Exception as error:
+    #             retries += 1
+    #             logger.error(
+    #                 f"Attempt {retries}: Error executing tool: {error}"
+    #             )
+    #             if retries == max_retries:
+    #                 raise error
+    #             time.sleep(1)  # Wait for a bit before retrying
 
     def add_memory(self, message: str):
         """Add a memory to the agent
@@ -2583,7 +2613,7 @@ class Agent:
                             collect_chunks=True,
                             on_chunk_callback=on_chunk_received,
                         )
-                        
+                    
                     # Restore original stream setting
                     self.llm.stream = original_stream
 
@@ -3049,6 +3079,7 @@ class Agent:
                 Focus on the key information and insights that would be most relevant to the user's original request.
                 {self.run_task}
                 If there are any errors or issues, highlight them prominently.
+
                 Tool Output:
                 {output}
                 """
