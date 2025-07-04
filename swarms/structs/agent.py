@@ -801,10 +801,11 @@ class Agent:
                 or exists(self.mcp_urls)
                 or exists(self.mcp_config)
             ):
-                self.pretty_print(
-                    f"✨ [SYSTEM] Successfully integrated {len(tools)} MCP tools into agent: {self.agent_name} | Status: ONLINE | Time: {time.strftime('%H:%M:%S')} ✨",
-                    loop_count=0,
-                )
+                if self.print_on is True:
+                    self.pretty_print(
+                        f"✨ [SYSTEM] Successfully integrated {len(tools)} MCP tools into agent: {self.agent_name} | Status: ONLINE | Time: {time.strftime('%H:%M:%S')} ✨",
+                        loop_count=0,
+                    )
 
             return tools
         except AgentMCPConnectionError as e:
@@ -1087,6 +1088,8 @@ class Agent:
                                 **kwargs,
                             )
 
+                        # If streaming is enabled, then don't print the response
+
                         # Parse the response from the agent with the output type
                         if exists(self.tools_list_dictionary):
                             if isinstance(response, BaseModel):
@@ -1107,6 +1110,8 @@ class Agent:
                                     f"Structured Output - Attempting Function Call Execution [{time.strftime('%H:%M:%S')}] \n\n {format_data_structure(response)} ",
                                     loop_count,
                                 )
+                            elif self.streaming_on is True:
+                                pass
                             else:
                                 self.pretty_print(
                                     response, loop_count
@@ -1147,8 +1152,12 @@ class Agent:
                             self.save()
 
                         logger.error(
-                            f"Attempt {attempt+1}: Error generating"
-                            f" response: {e}"
+                            f"Attempt {attempt+1}/{self.max_retries}: Error generating response in loop {loop_count} for agent '{self.agent_name}': {str(e)} | "
+                            f"Error type: {type(e).__name__}, Error details: {e.__dict__ if hasattr(e, '__dict__') else 'No additional details'} | "
+                            f"Current task: '{task}', Agent state: max_loops={self.max_loops}, "
+                            f"model={getattr(self.llm, 'model_name', 'unknown')}, "
+                            f"temperature={getattr(self.llm, 'temperature', 'unknown')}"
+                            f"{f' | Traceback: {e.__traceback__}' if hasattr(e, '__traceback__') else ''}"
                         )
                         attempt += 1
 
@@ -1170,13 +1179,19 @@ class Agent:
                     self.stopping_condition is not None
                     and self._check_stopping_condition(response)
                 ):
-                    logger.info("Stopping condition met.")
+                    logger.info(
+                        f"Agent '{self.agent_name}' stopping condition met. "
+                        f"Loop: {loop_count}, Response length: {len(str(response)) if response else 0}"
+                    )
                     break
                 elif (
                     self.stopping_func is not None
                     and self.stopping_func(response)
                 ):
-                    logger.info("Stopping function met.")
+                    logger.info(
+                        f"Agent '{self.agent_name}' stopping function condition met. "
+                        f"Loop: {loop_count}, Response length: {len(str(response)) if response else 0}"
+                    )
                     break
 
                 if self.interactive:
@@ -1223,14 +1238,27 @@ class Agent:
             self._handle_run_error(error)
 
     def __handle_run_error(self, error: any):
+        import traceback
+
         log_agent_data(self.to_dict())
 
         if self.autosave is True:
             self.save()
 
-        logger.info(
-            f"Error detected running your agent {self.agent_name} \n Error {error} \n Optimize your input parameters and or add an issue on the swarms github and contact our team on discord for support ;) "
+        # Get detailed error information
+        error_type = type(error).__name__
+        error_message = str(error)
+        traceback_info = traceback.format_exc()
+
+        logger.error(
+            f"Error detected running your agent {self.agent_name}\n"
+            f"Error Type: {error_type}\n"
+            f"Error Message: {error_message}\n"
+            f"Traceback:\n{traceback_info}\n"
+            f"Agent State: {self.to_dict()}\n"
+            f"Optimize your input parameters and or add an issue on the swarms github and contact our team on discord for support ;)"
         )
+
         raise error
 
     def _handle_run_error(self, error: any):
@@ -2952,7 +2980,8 @@ class Agent:
                 # Fallback: provide a default summary
                 summary = "I successfully executed the MCP tool and retrieved the information above."
 
-            self.pretty_print(summary, loop_count=current_loop)
+            if self.print_on is True:
+                self.pretty_print(summary, loop_count=current_loop)
 
             # Add to the memory
             self.short_memory.add(
@@ -3003,10 +3032,11 @@ class Agent:
             content=format_data_structure(output),
         )
 
-        self.pretty_print(
-            "Tool Executed Successfully",
-            loop_count,
-        )
+        if self.print_on is True:
+            self.pretty_print(
+                f"Tool Executed Successfully [{time.strftime('%H:%M:%S')}]",
+                loop_count,
+            )
 
         # Now run the LLM again without tools - create a temporary LLM instance
         # instead of modifying the cached one
@@ -3030,10 +3060,11 @@ class Agent:
                 content=tool_response,
             )
 
-            self.pretty_print(
-                tool_response,
-                loop_count,
-            )
+            if self.print_on is True:
+                self.pretty_print(
+                    tool_response,
+                    loop_count,
+                )
 
     def list_output_types(self):
         return OutputType

@@ -1,12 +1,13 @@
-from typing import List
 import http.client
 import json
-from swarms import Agent
+import os
+from typing import List
 
 from dotenv import load_dotenv
 
+from swarms import Agent
+
 load_dotenv()
-import os
 
 
 def get_realtor_data_from_one_source(location: str):
@@ -28,7 +29,7 @@ def get_realtor_data_from_one_source(location: str):
     )
 
     headers = {
-        "x-rapidapi-key": os.getenv("RAPIDAPI_KEY"),
+        "x-rapidapi-key": os.getenv("RAPID_API_KEY"),
         "x-rapidapi-host": "realtor-search.p.rapidapi.com",
     }
 
@@ -47,15 +48,15 @@ def get_realtor_data_from_one_source(location: str):
     res = conn.getresponse()
     data = res.read()
 
-    return "chicken data"
+    # return "chicken data"
 
-    # # Parse and format the response
-    # try:
-    #     json_data = json.loads(data.decode("utf-8"))
-    #     # Return formatted string instead of raw JSON
-    #     return json.dumps(json_data, indent=2)
-    # except json.JSONDecodeError:
-    #     return "Error: Could not parse API response"
+    # Parse and format the response
+    try:
+        json_data = json.loads(data.decode("utf-8"))
+        # Return formatted string instead of raw JSON
+        return json.dumps(json_data, indent=2)
+    except json.JSONDecodeError:
+        return "Error: Could not parse API response"
 
 
 def get_realtor_data_from_multiple_sources(
@@ -144,11 +145,11 @@ When you receive property data:
 Provide clear, objective analysis while maintaining professional standards and ethical considerations.""",
     model_name="claude-3-sonnet-20240229",
     max_loops=1,
-    tools=[get_realtor_data_from_one_source],
     print_on=True,
+    streaming_on=True,
 )
 
 
 agent.run(
-    "What are the best properties in Menlo Park, CA for rent under 3,000$?"
+    f"Create a report on the best properties in Menlo Park, CA, showcase, the name, description, price, and link to the property: {get_realtor_data_from_one_source('Menlo Park, CA')}"
 )

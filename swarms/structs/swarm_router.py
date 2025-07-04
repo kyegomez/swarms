@@ -466,14 +466,10 @@ class SwarmRouter:
 
     def update_system_prompt_for_agent_in_swarm(self):
         # Use list comprehension for faster iteration
-        [
-            setattr(
-                agent,
-                "system_prompt",
-                agent.system_prompt + MULTI_AGENT_COLLAB_PROMPT_TWO,
-            )
-            for agent in self.agents
-        ]
+        for agent in self.agents:
+            if agent.system_prompt is None:
+                agent.system_prompt = ""
+            agent.system_prompt += MULTI_AGENT_COLLAB_PROMPT_TWO
 
     def agent_config(self):
         agent_config = {}
