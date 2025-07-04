@@ -2528,6 +2528,10 @@ class Agent:
             ValueError: If task is empty.
         """
 
+        # Filter out is_last from kwargs if present
+        if 'is_last' in kwargs:
+            del kwargs['is_last']
+
         try:
             # Set streaming parameter in LLM if streaming is enabled
             if self.streaming_on and hasattr(self.llm, "stream"):

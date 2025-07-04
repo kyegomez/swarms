@@ -1,7 +1,7 @@
 from swarms import Agent, SequentialWorkflow
-import litellm
+# import litellm
 
-litellm._turn_on_debug()
+# litellm._turn_on_debug()
 
 
 # Initialize market research agent
@@ -16,6 +16,7 @@ market_researcher = Agent(
     model_name="claude-3-sonnet-20240229",
     max_loops=1,
     temperature=0.7,
+    streaming_on=True,
 )
 
 # Initialize financial analyst agent
@@ -29,6 +30,7 @@ financial_analyst = Agent(
     5. Recommending financial strategies""",
     model_name="claude-3-sonnet-20240229",
     max_loops=1,
+    streaming_on=True,
     temperature=0.7,
 )
 
@@ -44,6 +46,7 @@ technical_analyst = Agent(
     model_name="claude-3-sonnet-20240229",
     max_loops=1,
     temperature=0.7,
+    streaming_on=True,
 )
 
 # Create list of agents

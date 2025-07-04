@@ -281,7 +281,6 @@ class AgentRearrange(BaseSwarm):
                 )
 
                 for task_idx, task in enumerate(tasks):
-                    is_last = task == tasks[-1]
                     agent_names = [
                         name.strip() for name in task.split(",")
                     ]
@@ -297,7 +296,6 @@ class AgentRearrange(BaseSwarm):
                             result = agent.run(
                                 task=self.conversation.get_str(),
                                 img=img,
-                                is_last=is_last,
                                 *args,
                                 **kwargs,
                             )
@@ -326,7 +324,6 @@ class AgentRearrange(BaseSwarm):
                         current_task = agent.run(
                             task=self.conversation.get_str(),
                             img=img,
-                            is_last=is_last,
                             *args,
                             **kwargs,
                         )
