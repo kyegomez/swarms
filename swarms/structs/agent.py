@@ -2529,8 +2529,8 @@ class Agent:
         """
 
         # Filter out is_last from kwargs if present
-        if 'is_last' in kwargs:
-            del kwargs['is_last']
+        if "is_last" in kwargs:
+            del kwargs["is_last"]
 
         try:
             # Set streaming parameter in LLM if streaming is enabled

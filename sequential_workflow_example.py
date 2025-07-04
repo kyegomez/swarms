@@ -1,8 +1,4 @@
 from swarms import Agent, SequentialWorkflow
-# import litellm
-
-# litellm._turn_on_debug()
-
 
 # Initialize market research agent
 market_researcher = Agent(
@@ -52,17 +48,7 @@ technical_analyst = Agent(
 # Create list of agents
 agents = [market_researcher, financial_analyst, technical_analyst]
 
-# # Initialize the concurrent workflow
-# workflow = ConcurrentWorkflow(
-#     name="market-analysis-workflow",
-#     agents=agents,
-#     max_loops=1,
-# )
 
-# # Run the workflow
-# result = workflow.run(
-#     "Analyze Tesla (TSLA) stock from market, financial, and technical perspectives"
-# )
 router = SequentialWorkflow(
     name="market-analysis-router",
     agents=agents,
