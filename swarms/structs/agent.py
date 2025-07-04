@@ -161,7 +161,6 @@ class AgentToolExecutionError(AgentError):
     pass
 
 
-# [FEAT][AGENT]
 class Agent:
     """
     Agent is the backbone to connect LLMs with tools and long term memory. Agent also provides the ability to
@@ -1152,12 +1151,7 @@ class Agent:
                             self.save()
 
                         logger.error(
-                            f"Attempt {attempt+1}/{self.max_retries}: Error generating response in loop {loop_count} for agent '{self.agent_name}': {str(e)} | "
-                            f"Error type: {type(e).__name__}, Error details: {e.__dict__ if hasattr(e, '__dict__') else 'No additional details'} | "
-                            f"Current task: '{task}', Agent state: max_loops={self.max_loops}, "
-                            f"model={getattr(self.llm, 'model_name', 'unknown')}, "
-                            f"temperature={getattr(self.llm, 'temperature', 'unknown')}"
-                            f"{f' | Traceback: {e.__traceback__}' if hasattr(e, '__traceback__') else ''}"
+                            f"Attempt {attempt+1}/{self.retry_attempts}: Error generating response in loop {loop_count} for agent '{self.agent_name}': {str(e)} | "
                         )
                         attempt += 1
 

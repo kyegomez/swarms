@@ -503,7 +503,12 @@ class SwarmRouter:
         """
         self.swarm = self._create_swarm(task, *args, **kwargs)
 
-        self.conversation = self.swarm.conversation
+        if self.swarm_type == "SequentialWorkflow":
+            self.conversation = (
+                self.swarm.agent_rearrange.conversation
+            )
+        else:
+            self.conversation = self.swarm.conversation
 
         if self.list_all_agents is True:
             list_all_agents(

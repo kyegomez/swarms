@@ -49,15 +49,12 @@ class SequentialWorkflow:
         self.flow = self.sequential_flow()
 
         self.agent_rearrange = AgentRearrange(
-            name=name,
-            description=description,
-            agents=agents,
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
             flow=self.flow,
-            max_loops=max_loops,
-            output_type=output_type,
-            shared_memory_system=shared_memory_system,
-            *args,
-            **kwargs,
+            max_loops=self.max_loops,
+            output_type=self.output_type,
         )
 
     def sequential_flow(self):
@@ -105,11 +102,7 @@ class SequentialWorkflow:
         self,
         task: str,
         img: Optional[str] = None,
-        device: str = "cpu",
-        all_cores: bool = False,
-        all_gpus: bool = False,
-        device_id: int = 0,
-        no_use_clusterops: bool = True,
+        imgs: Optional[List[str]] = None,
         *args,
         **kwargs,
     ):
@@ -134,14 +127,14 @@ class SequentialWorkflow:
         """
 
         try:
-            result = self.agent_rearrange.run(
+            return self.agent_rearrange.run(
                 task=task,
                 img=img,
-                *args,
-                **kwargs,
+                # imgs=imgs,
+                # *args,
+                # **kwargs,
             )
 
-            return result
         except Exception as e:
             logger.error(
                 f"An error occurred while executing the task: {e}"
