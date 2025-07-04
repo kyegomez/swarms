@@ -1144,7 +1144,6 @@ class Agent:
                             self.tool_call_completed = True
                             # Reset expecting_tool_call so subsequent requests can stream
                             self.expecting_tool_call = False
-
                         # Handle MCP tools
                         if (
                             exists(self.mcp_url)
@@ -2558,7 +2557,6 @@ class Agent:
         try:
             # Decide whether streaming should be used for this call
             streaming_enabled = self.streaming_on and not getattr(self, "expecting_tool_call", False)
-
             # Set streaming parameter in LLM if streaming is enabled for this call
             if streaming_enabled and hasattr(self.llm, "stream"):
                 original_stream = self.llm.stream
@@ -2573,7 +2571,7 @@ class Agent:
                         task=task, *args, **kwargs
                     )
 
-                # If we get a streaming response, handle it with the streaming panel
+                # If we get a streaming response, handle it with the new streaming panel
                 if hasattr(
                     streaming_response, "__iter__"
                 ) and not isinstance(streaming_response, str):
@@ -2613,7 +2611,7 @@ class Agent:
                             collect_chunks=True,
                             on_chunk_callback=on_chunk_received,
                         )
-                    
+
                     # Restore original stream setting
                     self.llm.stream = original_stream
 
@@ -3079,11 +3077,9 @@ class Agent:
                 Focus on the key information and insights that would be most relevant to the user's original request.
                 {self.run_task}
                 If there are any errors or issues, highlight them prominently.
-
                 Tool Output:
                 {output}
                 """
-
             # Stream the tool summary only if the agent is configured for streaming
             if self.streaming_on and self.print_on:
                 # Handle streaming response with streaming panel
