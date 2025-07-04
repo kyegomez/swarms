@@ -581,8 +581,6 @@ class Agent:
         # subsequent requests / summaries.
         self.expecting_tool_call: bool = False
         self.tool_call_completed: bool = False
-        self.original_streaming_state: bool = self.streaming_on
-        self.should_stream_after_tools: bool = False
 
         # self.short_memory = self.short_memory_init()
 
@@ -1006,6 +1004,9 @@ class Agent:
             agent(task="What is the capital of France?", img="path/to/image.jpg", is_last=True)
         """
         try:
+            # Preserve the original user task so that tool summaries can reference it
+            if task is not None:
+                self.run_task = str(task)
 
             self.check_if_no_prompt_then_autogenerate(task)
 
@@ -1071,7 +1072,6 @@ class Agent:
                 if self.streaming_on and exists(self.tools) and not self.tool_call_completed:
                     # Disable streaming for this request so we can reliably parse JSON
                     self.expecting_tool_call = True
-                    self.should_stream_after_tools = True
                 else:
                     self.expecting_tool_call = False
 
@@ -1366,37 +1366,6 @@ class Agent:
             "Please process this message and respond appropriately."
         )
         return self.run(task=improved_prompt, *args, **kwargs)
-
-    # def parse_and_execute_tools(self, response: str, *args, **kwargs):
-    #     max_retries = 3  # Maximum number of retries
-    #     retries = 0
-    #     while retries < max_retries:
-    #         try:
-    #             logger.info("Executing tool...")
-
-    #             # try to Execute the tool and return a string
-    #             out = parse_and_execute_json(
-    #                 functions=self.tools,
-    #                 json_string=response,
-    #                 parse_md=True,
-    #                 *args,
-    #                 **kwargs,
-    #             )
-    #             logger.info(f"Tool Output: {out}")
-    #             # Add the output to the memory
-    #             # self.short_memory.add(
-    #             #     role="Tool Executor",
-    #             #     content=out,
-    #             # )
-    #             return out
-    #         except Exception as error:
-    #             retries += 1
-    #             logger.error(
-    #                 f"Attempt {retries}: Error executing tool: {error}"
-    #             )
-    #             if retries == max_retries:
-    #                 raise error
-    #             time.sleep(1)  # Wait for a bit before retrying
 
     def add_memory(self, message: str):
         """Add a memory to the agent
@@ -3003,15 +2972,18 @@ class Agent:
             raise e
 
     def temp_llm_instance_for_tool_summary(self):
-        # Enable streaming for tool summary if original streaming was enabled and we should stream after tools
-        should_stream = getattr(self, 'should_stream_after_tools', False) and getattr(self, 'original_streaming_state', False)
-        
+        """Create a temporary LiteLLM instance for the post-tool summary.
+
+        If the agent was configured with `streaming_on=True`, the summary
+        request will also stream; otherwise it will be a normal synchronous
+        call. No extra coordination flags are required.
+        """
         return LiteLLM(
             model_name=self.model_name,
             temperature=self.temperature,
             max_tokens=self.max_tokens,
             system_prompt=self.system_prompt,
-            stream=should_stream,  # Enable streaming for tool summaries if conditions are met
+            stream=self.streaming_on,
             tools_list_dictionary=None,
             parallel_tool_calls=False,
             base_url=self.llm_base_url,
@@ -3061,16 +3033,14 @@ class Agent:
             tool_prompt = f"""
                 Please analyze and summarize the following tool execution output in a clear and concise way. 
                 Focus on the key information and insights that would be most relevant to the user's original request.
+                {self.run_task}
                 If there are any errors or issues, highlight them prominently.
-                
                 Tool Output:
                 {output}
                 """
 
-            # Check if we should stream the tool summary
-            should_stream = getattr(self, 'should_stream_after_tools', False) and getattr(self, 'original_streaming_state', False)
-
-            if should_stream and self.print_on:
+            # Stream the tool summary only if the agent is configured for streaming
+            if self.streaming_on and self.print_on:
                 # Handle streaming response with streaming panel
                 streaming_response = temp_llm.run(tool_prompt)
                 
