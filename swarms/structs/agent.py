@@ -2562,14 +2562,28 @@ class Agent:
                                 chunks.append(content)
                         complete_response = "".join(chunks)
                     else:
-                        # Use the streaming panel to display the response
+                        # Collect chunks for conversation saving
+                        collected_chunks = []
+
+                        def on_chunk_received(chunk: str):
+                            """Callback to collect chunks as they arrive"""
+                            collected_chunks.append(chunk)
+                            # Optional: Save each chunk to conversation in real-time
+                            # This creates a more detailed conversation history
+                            if self.verbose:
+                                logger.debug(
+                                    f"Streaming chunk received: {chunk[:50]}..."
+                                )
+
+                        # Use the streaming panel to display and collect the response
                         complete_response = formatter.print_streaming_panel(
                             streaming_response,
                             title=f"🤖 Agent: {self.agent_name} Loops: {current_loop}",
-                            style=None,
+                            style=None,  # Use random color like non-streaming approach
                             collect_chunks=True,
+                            on_chunk_callback=on_chunk_received,
                         )
-
+                        
                     # Restore original stream setting
                     self.llm.stream = original_stream
 
