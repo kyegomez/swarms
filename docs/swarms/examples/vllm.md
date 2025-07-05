@@ -47,12 +47,14 @@ Here's a complete example of setting up the stock analysis swarm:
 from swarms import Agent, ConcurrentWorkflow
 from swarms.utils.vllm_wrapper import VLLMWrapper
 
-# Initialize the VLLM wrapper
+# Initialize the VLLM wrapper (model loads when used)
 vllm = VLLMWrapper(
     model_name="meta-llama/Llama-2-7b-chat-hf",
     system_prompt="You are a helpful assistant.",
 )
 ```
+
+The model is initialized when `run()` or `batched_run()` is first called.
 
 !!! note "Model Selection"
     The example uses Llama-2-7b-chat, but you can use any VLLM-compatible model. Make sure you have the necessary permissions and resources to run your chosen model.
