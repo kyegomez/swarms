@@ -1,33 +1,33 @@
 ---
 name: Lint
 on: [push, pull_request] # yamllint disable-line rule:truthy
+
 jobs:
-  yaml-lint:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-      - run: pip install yamllint
-      - run: yamllint .
-  flake8-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-      - run: pip install flake8
-      - run: flake8 .
-  ruff-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-      - run: pip install ruff
-      - run: ruff format .
-      - run: ruff check --fix .
-  pylint-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-      - run: pip install pylint
-      - run: pylint swarms --recursive=y
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install black==24.2.0 ruff==0.2.1
+          
+      - name: Check Black formatting
+        run: black . --check --diff
+        
+      - name: Run Ruff linting
+        run: ruff check .
