@@ -1,6 +1,12 @@
-from typing import List, Literal, Dict, Callable, Any, Optional, Tuple, Hashable
-
-from functools import lru_cache
+from typing import (
+    List,
+    Literal,
+    Dict,
+    Callable,
+    Any,
+    Tuple,
+    Hashable,
+)
 
 
 
@@ -44,10 +50,8 @@ class ReasoningAgentRouter:
         output_type (OutputType): The format of the output (e.g., dict, list).
     """
 
-
     # Class variable to store cached agent instances
     _agent_cache: Dict[Tuple[Hashable, ...], Any] = {}
-
 
     def __init__(
         self,
@@ -73,14 +77,9 @@ class ReasoningAgentRouter:
         self.num_knowledge_items = num_knowledge_items
         self.memory_capacity = memory_capacity
 
-        
-       
-
-
         # Added: Initialize the factory mapping dictionary
 
         self._initialize_agent_factories()
-
 
     def _initialize_agent_factories(self) -> None:
         """
@@ -91,12 +90,10 @@ class ReasoningAgentRouter:
             # ReasoningDuo factory method
             "reasoning-duo": self._create_reasoning_duo,
             "reasoning-agent": self._create_reasoning_duo,
-
             # SelfConsistencyAgent factory methods
             "self-consistency": self._create_consistency_agent,
             "consistency-agent": self._create_consistency_agent,
             # IREAgent factory methods
-
             "ire": self._create_ire_agent,
             "ire-agent": self._create_ire_agent,
             # Other agent type factory methods
@@ -104,7 +101,6 @@ class ReasoningAgentRouter:
             "ReflexionAgent": self._create_reflexion_agent,
             "GKPAgent": self._create_gkp_agent,
         }
-
 
     def _get_cache_key(self) -> Tuple[Hashable, ...]:
         """
@@ -125,9 +121,8 @@ class ReasoningAgentRouter:
             self.num_samples,
             self.output_type,
             self.num_knowledge_items,
-            self.memory_capacity
+            self.memory_capacity,
         )
-
 
     def _create_reasoning_duo(self):
         """Create an agent instance for the ReasoningDuo type"""
@@ -189,7 +184,6 @@ class ReasoningAgentRouter:
             num_knowledge_items=self.num_knowledge_items,
         )
 
-
     def select_swarm(self):
         """
         Select and initialize the appropriate reasoning swarm based on the specified swarm type.
@@ -202,24 +196,22 @@ class ReasoningAgentRouter:
 
         # Generate cache key
         cache_key = self._get_cache_key()
-        
+
         # Check if an instance with the same configuration already exists in the cache
         if cache_key in self.__class__._agent_cache:
             return self.__class__._agent_cache[cache_key]
-            
 
         try:
             # Use the factory method to create a new instance
             agent = self.agent_factories[self.swarm_type]()
-            
+
             # Add the newly created instance to the cache
             self.__class__._agent_cache[cache_key] = agent
-            
+
             return agent
         except KeyError:
             # Keep the same error handling as the original code
             raise ValueError(f"Invalid swarm type: {self.swarm_type}")
-
 
     def run(self, task: str, *args, **kwargs):
         """
@@ -235,7 +227,6 @@ class ReasoningAgentRouter:
         """
         swarm = self.select_swarm()
         return swarm.run(task=task)
-
 
     def batched_run(self, tasks: List[str], *args, **kwargs):
         """
@@ -254,8 +245,6 @@ class ReasoningAgentRouter:
             results.append(self.run(task, *args, **kwargs))
         return results
 
-
-
     @classmethod
     def clear_cache(cls):
         """
@@ -263,5 +252,3 @@ class ReasoningAgentRouter:
         Use this when you need to free memory or force the creation of new instances.
         """
         cls._agent_cache.clear()
-
-
