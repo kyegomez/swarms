@@ -35,10 +35,10 @@ agent = Agent(
     
     You communicate in precise, technical terms while maintaining clarity for stakeholders.""",
     max_loops=1,
-    model_name="gpt-4o-mini",
+    model_name="claude-3-sonnet-20240229",
     dynamic_temperature_enabled=True,
     output_type="all",
-    safety_prompt_on=True,
+    # dashboard=True
 )
 
 out = agent.run("What are the best top 3 etfs for gold coverage?")

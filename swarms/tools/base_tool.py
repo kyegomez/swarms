@@ -2223,8 +2223,13 @@ class BaseTool(BaseModel):
             >>> tool_calls = [ChatCompletionMessageToolCall(...), ...]
             >>> results = tool.execute_function_calls_from_api_response(tool_calls)
         """
+        # Handle None API response gracefully by returning empty results
         if api_response is None:
-            raise ToolValidationError("API response cannot be None")
+            self._log_if_verbose(
+                "warning",
+                "API response is None, returning empty results. This may indicate the LLM did not return a valid response.",
+            )
+            return [] if not return_as_string else []
 
         # Handle direct list of tool call objects (e.g., from OpenAI ChatCompletionMessageToolCall or Anthropic BaseModels)
         if isinstance(api_response, list):
@@ -2256,14 +2261,18 @@ class BaseTool(BaseModel):
                 try:
                     api_response = json.loads(api_response)
                 except json.JSONDecodeError as e:
-                    raise ToolValidationError(
-                        f"Invalid JSON in API response: {e}"
-                    ) from e
+                    self._log_if_verbose(
+                        "error",
+                        f"Failed to parse JSON from API response: {e}. Response: '{api_response[:100]}...'",
+                    )
+                    return []
 
             if not isinstance(api_response, dict):
-                raise ToolValidationError(
-                    "API response must be a dictionary, JSON string, BaseModel, or list of tool calls"
+                self._log_if_verbose(
+                    "warning",
+                    f"API response is not a dictionary (type: {type(api_response)}), returning empty list",
                 )
+                return []
 
             # Extract function calls from dictionary response
             function_calls = (

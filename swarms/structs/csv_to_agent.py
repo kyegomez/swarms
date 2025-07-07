@@ -104,9 +104,7 @@ class AgentValidator:
                 model_name in model["model_name"]
                 for model in model_list
             ):
-                valid_models = [
-                    model["model_name"] for model in model_list
-                ]
+                [model["model_name"] for model in model_list]
                 raise AgentValidationError(
                     "Invalid model name. Must be one of the supported litellm models",
                     "model_name",

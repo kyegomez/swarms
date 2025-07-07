@@ -1,12 +1,17 @@
 from typing import List, Any, Optional, Union, Callable
 import random
+from swarms.prompts.collaborative_prompts import (
+    get_multi_agent_collaboration_prompt_one,
+)
 
 
 def list_all_agents(
     agents: List[Union[Callable, Any]],
     conversation: Optional[Any] = None,
-    name: str = "",
-    add_to_conversation: bool = False,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    add_to_conversation: Optional[bool] = False,
+    add_collaboration_prompt: Optional[bool] = True,
 ) -> str:
     """Lists all agents in a swarm and optionally adds them to a conversation.
 
@@ -27,6 +32,7 @@ def list_all_agents(
         >>> conversation = Conversation()
         >>> agent_info = list_all_agents(agents, conversation, "MySwarm")
         >>> print(agent_info)
+        Swarm: MySwarm
         Total Agents: 2
 
         Agent: Agent1
@@ -39,8 +45,15 @@ def list_all_agents(
     # Compile information about all agents
     total_agents = len(agents)
 
-    all_agents = f"Total Agents: {total_agents}\n\n" + "\n\n".join(
-        f"Agent: {agent.agent_name} \n\n Description: {agent.description or (agent.system_prompt[:50] + '...' if len(agent.system_prompt) > 50 else agent.system_prompt)}"
+    all_agents = f"Team Name: {name}\n" if name else ""
+    all_agents += (
+        f"Team Description: {description}\n" if description else ""
+    )
+    all_agents += f"Total Agents: {total_agents}\n\n"
+    all_agents += "| Agent | Description |\n"
+    all_agents += "|-------|-------------|\n"
+    all_agents += "\n".join(
+        f"| {agent.agent_name} | {agent.description or (agent.system_prompt[:50] + '...' if len(agent.system_prompt) > 50 else agent.system_prompt)} |"
         for agent in agents
     )
 
@@ -48,10 +61,15 @@ def list_all_agents(
         # Add the agent information to the conversation
         conversation.add(
             role="System",
-            content=f"All Agents Available in the Swarm {name}:\n\n{all_agents}",
+            content=all_agents,
         )
 
-    return all_agents
+    if add_collaboration_prompt:
+        return get_multi_agent_collaboration_prompt_one(
+            agents_in_swarm=all_agents
+        )
+    else:
+        return all_agents
 
 
 models = [
@@ -68,6 +86,7 @@ models = [
     "o4-mini",
     "o3",
     "gpt-4.1",
+    "groq/llama-3.1-8b-instant",
     "gpt-4.1-nano",
 ]
 

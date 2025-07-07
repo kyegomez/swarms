@@ -11,11 +11,13 @@ agent = Agent(
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     max_loops=1,
     mcp_url="http://0.0.0.0:8000/sse",
+    model_name="gpt-4o-mini",
+    output_type="all",
 )
 
 # Create a markdown file with initial content
 out = agent.run(
-    "Use any of the tools available to you",
+    "Use the get_okx_crypto_volume to get the volume of BTC just put the name of the coin",
 )
 
 print(out)

@@ -1,6 +1,7 @@
+import concurrent.futures
+import json
 import os
-import uuid
-from datetime import datetime
+import traceback
 from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
@@ -20,13 +21,15 @@ from swarms.structs.rearrange import AgentRearrange
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.swarm_matcher import swarm_matcher
+from swarms.telemetry.log_executions import log_execution
 from swarms.utils.output_types import OutputType
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.malt import MALT
 from swarms.structs.deep_research_swarm import DeepResearchSwarm
 from swarms.structs.council_judge import CouncilAsAJudge
 from swarms.structs.interactive_groupchat import InteractiveGroupChat
-
+from swarms.structs.ma_utils import list_all_agents
+from swarms.utils.generate_keys import generate_api_key
 
 logger = initialize_logger(log_folder="swarm_router")
 
@@ -52,25 +55,6 @@ SwarmType = Literal[
 class Document(BaseModel):
     file_path: str
     data: str
-
-
-class SwarmLog(BaseModel):
-    """
-    A Pydantic model to capture log entries.
-    """
-
-    id: Optional[str] = Field(
-        default_factory=lambda: str(uuid.uuid4())
-    )
-    timestamp: Optional[datetime] = Field(
-        default_factory=datetime.utcnow
-    )
-    level: Optional[str] = None
-    message: Optional[str] = None
-    swarm_type: Optional[SwarmType] = None
-    task: Optional[str] = ""
-    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    documents: List[Document] = []
 
 
 class SwarmRouterConfig(BaseModel):
@@ -172,12 +156,11 @@ class SwarmRouter:
         concurrent_batch_run(tasks: List[str], *args, **kwargs) -> List[Any]:
             Executes multiple tasks concurrently
 
-        get_logs() -> List[SwarmLog]:
-            Retrieves execution logs
     """
 
     def __init__(
         self,
+        id: str = generate_api_key(prefix="swarm-router"),
         name: str = "swarm-router",
         description: str = "Routes your task to the desired swarm",
         max_loops: int = 1,
@@ -191,15 +174,19 @@ class SwarmRouter:
         rules: str = None,
         documents: List[str] = [],  # A list of docs file paths
         output_type: OutputType = "dict-all-except-first",
-        no_cluster_ops: bool = False,
         speaker_fn: callable = None,
         load_agents_from_csv: bool = False,
         csv_file_path: str = None,
         return_entire_history: bool = True,
         multi_agent_collab_prompt: bool = True,
+        list_all_agents: bool = False,
+        conversation: Any = None,
+        agents_config: Optional[Dict[Any, Any]] = None,
+        speaker_function: str = None,
         *args,
         **kwargs,
     ):
+        self.id = id
         self.name = name
         self.description = description
         self.max_loops = max_loops
@@ -213,13 +200,16 @@ class SwarmRouter:
         self.rules = rules
         self.documents = documents
         self.output_type = output_type
-        self.no_cluster_ops = no_cluster_ops
         self.speaker_fn = speaker_fn
         self.logs = []
         self.load_agents_from_csv = load_agents_from_csv
         self.csv_file_path = csv_file_path
         self.return_entire_history = return_entire_history
         self.multi_agent_collab_prompt = multi_agent_collab_prompt
+        self.list_all_agents = list_all_agents
+        self.conversation = conversation
+        self.agents_config = agents_config
+        self.speaker_function = speaker_function
 
         # Reliability check
         self.reliability_check()
@@ -229,6 +219,8 @@ class SwarmRouter:
             self.agents = AgentLoader(
                 csv_path=self.csv_file_path
             ).load_agents()
+
+        self.agent_config = self.agent_config()
 
     def setup(self):
         if self.auto_generate_prompts is True:
@@ -276,15 +268,12 @@ class SwarmRouter:
             logger.info(
                 f"Successfully activated APE for {activated_count} agents"
             )
-            self._log(
-                "info",
-                f"Activated automatic prompt engineering for {activated_count} agents",
-            )
 
         except Exception as e:
             error_msg = f"Error activating automatic prompt engineering: {str(e)}"
-            logger.error(error_msg)
-            self._log("error", error_msg)
+            logger.error(
+                f"Error activating automatic prompt engineering in SwarmRouter: {str(e)}"
+            )
             raise RuntimeError(error_msg) from e
 
     def reliability_check(self):
@@ -293,47 +282,23 @@ class SwarmRouter:
         Validates essential swarm parameters and configuration before execution.
         Handles special case for CouncilAsAJudge which may not require agents.
         """
-        logger.info(
-            "🔍 [SYSTEM] Initializing advanced swarm reliability diagnostics..."
-        )
-        logger.info(
-            "⚡ [SYSTEM] Running pre-flight checks and system validation..."
-        )
 
         # Check swarm type first since it affects other validations
         if self.swarm_type is None:
-            logger.error(
-                "❌ [CRITICAL] Swarm type validation failed - type cannot be 'none'"
+            raise ValueError(
+                "SwarmRouter: Swarm type cannot be 'none'."
             )
-            raise ValueError("Swarm type cannot be 'none'.")
 
-        # Special handling for CouncilAsAJudge
-        if self.swarm_type == "CouncilAsAJudge":
-            if self.agents is not None:
-                logger.warning(
-                    "⚠️ [ADVISORY] CouncilAsAJudge detected with agents - this is atypical"
-                )
-        elif not self.agents:
-            logger.error(
-                "❌ [CRITICAL] Agent validation failed - no agents detected in swarm"
+        if self.agents is None:
+            raise ValueError(
+                "SwarmRouter: No agents provided for the swarm."
             )
-            raise ValueError("No agents provided for the swarm.")
 
         # Validate max_loops
         if self.max_loops == 0:
-            logger.error(
-                "❌ [CRITICAL] Loop validation failed - max_loops cannot be 0"
-            )
-            raise ValueError("max_loops cannot be 0.")
+            raise ValueError("SwarmRouter: max_loops cannot be 0.")
 
-        # Setup other functionality
-        logger.info("🔄 [SYSTEM] Initializing swarm subsystems...")
         self.setup()
-
-        logger.info(
-            "✅ [SYSTEM] All reliability checks passed successfully"
-        )
-        logger.info("🚀 [SYSTEM] Swarm is ready for deployment")
 
     def _create_swarm(self, task: str = None, *args, **kwargs):
         """
@@ -395,6 +360,7 @@ class SwarmRouter:
                 agents=self.agents,
                 max_loops=self.max_loops,
                 output_type=self.output_type,
+                speaker_function=self.speaker_function,
             )
 
         elif self.swarm_type == "DeepResearchSwarm":
@@ -500,46 +466,24 @@ class SwarmRouter:
 
     def update_system_prompt_for_agent_in_swarm(self):
         # Use list comprehension for faster iteration
-        [
-            setattr(
-                agent,
-                "system_prompt",
-                agent.system_prompt + MULTI_AGENT_COLLAB_PROMPT_TWO,
-            )
-            for agent in self.agents
-        ]
+        for agent in self.agents:
+            if agent.system_prompt is None:
+                agent.system_prompt = ""
+            agent.system_prompt += MULTI_AGENT_COLLAB_PROMPT_TWO
 
-    def _log(
-        self,
-        level: str,
-        message: str,
-        task: str = "",
-        metadata: Dict[str, Any] = None,
-    ):
-        """
-        Create a log entry and add it to the logs list.
+    def agent_config(self):
+        agent_config = {}
+        for agent in self.agents:
+            agent_config[agent.agent_name] = agent.to_dict()
 
-        Args:
-            level (str): The log level (e.g., "info", "error").
-            message (str): The log message.
-            task (str, optional): The task being performed. Defaults to "".
-            metadata (Dict[str, Any], optional): Additional metadata. Defaults to None.
-        """
-        log_entry = SwarmLog(
-            level=level,
-            message=message,
-            swarm_type=self.swarm_type,
-            task=task,
-            metadata=metadata or {},
-        )
-        self.logs.append(log_entry)
-        logger.log(level.upper(), message)
+        return agent_config
 
     def _run(
         self,
         task: str,
         img: Optional[str] = None,
         model_response: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -559,17 +503,39 @@ class SwarmRouter:
         """
         self.swarm = self._create_swarm(task, *args, **kwargs)
 
+        if self.swarm_type == "SequentialWorkflow":
+            self.conversation = (
+                self.swarm.agent_rearrange.conversation
+            )
+        else:
+            self.conversation = self.swarm.conversation
+
+        if self.list_all_agents is True:
+            list_all_agents(
+                agents=self.agents,
+                conversation=self.swarm.conversation,
+                name=self.name,
+                description=self.description,
+                add_collaboration_prompt=True,
+                add_to_conversation=True,
+            )
+
         if self.multi_agent_collab_prompt is True:
             self.update_system_prompt_for_agent_in_swarm()
 
-        try:
-            logger.info(
-                f"Running task on {self.swarm_type} swarm with task: {task}"
-            )
+        log_execution(
+            swarm_id=self.id,
+            status="start",
+            swarm_config=self.to_dict(),
+            swarm_architecture="swarm_router",
+        )
 
+        try:
             if self.swarm_type == "CouncilAsAJudge":
                 result = self.swarm.run(
                     task=task,
+                    img=img,
+                    imgs=imgs,
                     model_response=model_response,
                     *args,
                     **kwargs,
@@ -577,21 +543,24 @@ class SwarmRouter:
             else:
                 result = self.swarm.run(task=task, *args, **kwargs)
 
-            logger.info("Swarm completed successfully")
+            log_execution(
+                swarm_id=self.id,
+                status="completion",
+                swarm_config=self.to_dict(),
+                swarm_architecture="swarm_router",
+            )
+
             return result
         except Exception as e:
-            self._log(
-                "error",
-                f"Error occurred while running task on {self.swarm_type} swarm: {str(e)}",
-                task=task,
-                metadata={"error": str(e)},
+            raise RuntimeError(
+                f"SwarmRouter: Error executing task on swarm: {str(e)} Traceback: {traceback.format_exc()}"
             )
-            raise
 
     def run(
         self,
         task: str,
         img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
         model_response: Optional[str] = None,
         *args,
         **kwargs,
@@ -617,15 +586,24 @@ class SwarmRouter:
             return self._run(
                 task=task,
                 img=img,
+                imgs=imgs,
                 model_response=model_response,
                 *args,
                 **kwargs,
             )
         except Exception as e:
-            logger.error(f"Error executing task on swarm: {str(e)}")
-            raise
+            raise RuntimeError(
+                f"SwarmRouter: Error executing task on swarm: {str(e)} Traceback: {traceback.format_exc()}"
+            )
 
-    def __call__(self, task: str, *args, **kwargs) -> Any:
+    def __call__(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        *args,
+        **kwargs,
+    ) -> Any:
         """
         Make the SwarmRouter instance callable.
 
@@ -637,10 +615,17 @@ class SwarmRouter:
         Returns:
             Any: The result of the swarm's execution.
         """
-        return self.run(task=task, *args, **kwargs)
+        return self.run(
+            task=task, img=img, imgs=imgs, *args, **kwargs
+        )
 
     def batch_run(
-        self, tasks: List[str], *args, **kwargs
+        self,
+        tasks: List[str],
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        *args,
+        **kwargs,
     ) -> List[Any]:
         """
         Execute a batch of tasks on the selected or matched swarm type.
@@ -659,62 +644,24 @@ class SwarmRouter:
         results = []
         for task in tasks:
             try:
-                result = self.run(task, *args, **kwargs)
+                result = self.run(
+                    task, img=img, imgs=imgs, *args, **kwargs
+                )
                 results.append(result)
             except Exception as e:
-                self._log(
-                    "error",
-                    f"Error occurred while running batch task on {self.swarm_type} swarm: {str(e)}",
-                    task=task,
-                    metadata={"error": str(e)},
+                raise RuntimeError(
+                    f"SwarmRouter: Error executing batch task on swarm: {str(e)} Traceback: {traceback.format_exc()}"
                 )
-                raise
         return results
 
-    def async_run(self, task: str, *args, **kwargs) -> Any:
-        """
-        Execute a task on the selected or matched swarm type asynchronously.
-
-        Args:
-            task (str): The task to be executed by the swarm.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-
-        Returns:
-            Any: The result of the swarm's execution.
-
-        Raises:
-            Exception: If an error occurs during task execution.
-        """
-        import asyncio
-
-        async def run_async():
-            try:
-                result = await asyncio.to_thread(
-                    self.run, task, *args, **kwargs
-                )
-                return result
-            except Exception as e:
-                self._log(
-                    "error",
-                    f"Error occurred while running task asynchronously on {self.swarm_type} swarm: {str(e)}",
-                    task=task,
-                    metadata={"error": str(e)},
-                )
-                raise
-
-        return asyncio.run(run_async())
-
-    def get_logs(self) -> List[SwarmLog]:
-        """
-        Retrieve all logged entries.
-
-        Returns:
-            List[SwarmLog]: A list of all log entries.
-        """
-        return self.logs
-
-    def concurrent_run(self, task: str, *args, **kwargs) -> Any:
+    def concurrent_run(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        *args,
+        **kwargs,
+    ) -> Any:
         """
         Execute a task on the selected or matched swarm type concurrently.
 
@@ -729,52 +676,70 @@ class SwarmRouter:
         Raises:
             Exception: If an error occurs during task execution.
         """
-        from concurrent.futures import ThreadPoolExecutor
 
-        with ThreadPoolExecutor(
+        with concurrent.futures.ThreadPoolExecutor(
             max_workers=os.cpu_count()
         ) as executor:
-            future = executor.submit(self.run, task, *args, **kwargs)
+            future = executor.submit(
+                self.run, task, img=img, imgs=imgs, *args, **kwargs
+            )
             result = future.result()
             return result
 
-    def concurrent_batch_run(
-        self, tasks: List[str], *args, **kwargs
-    ) -> List[Any]:
+    def _serialize_callable(
+        self, attr_value: Callable
+    ) -> Dict[str, Any]:
         """
-        Execute a batch of tasks on the selected or matched swarm type concurrently.
+        Serializes callable attributes by extracting their name and docstring.
 
         Args:
-            tasks (List[str]): A list of tasks to be executed by the swarm.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
+            attr_value (Callable): The callable to serialize.
 
         Returns:
-            List[Any]: A list of results from the swarm's execution.
-
-        Raises:
-            Exception: If an error occurs during task execution.
+            Dict[str, Any]: Dictionary with name and docstring of the callable.
         """
-        from concurrent.futures import (
-            ThreadPoolExecutor,
-            as_completed,
-        )
+        return {
+            "name": getattr(
+                attr_value, "__name__", type(attr_value).__name__
+            ),
+            "doc": getattr(attr_value, "__doc__", None),
+        }
 
-        results = []
-        with ThreadPoolExecutor() as executor:
-            # Submit all tasks to executor
-            futures = [
-                executor.submit(self.run, task, *args, **kwargs)
-                for task in tasks
-            ]
+    def _serialize_attr(self, attr_name: str, attr_value: Any) -> Any:
+        """
+        Serializes an individual attribute, handling non-serializable objects.
 
-            # Process results as they complete rather than waiting for all
-            for future in as_completed(futures):
-                try:
-                    result = future.result()
-                    results.append(result)
-                except Exception as e:
-                    logger.error(f"Task execution failed: {str(e)}")
-                    results.append(None)
+        Args:
+            attr_name (str): The name of the attribute.
+            attr_value (Any): The value of the attribute.
 
-        return results
+        Returns:
+            Any: The serialized value of the attribute.
+        """
+        try:
+            if callable(attr_value):
+                return self._serialize_callable(attr_value)
+            elif hasattr(attr_value, "to_dict"):
+                return (
+                    attr_value.to_dict()
+                )  # Recursive serialization for nested objects
+            else:
+                json.dumps(
+                    attr_value
+                )  # Attempt to serialize to catch non-serializable objects
+                return attr_value
+        except (TypeError, ValueError):
+            return f"<Non-serializable: {type(attr_value).__name__}>"
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Converts all attributes of the class, including callables, into a dictionary.
+        Handles non-serializable attributes by converting them or skipping them.
+
+        Returns:
+            Dict[str, Any]: A dictionary representation of the class attributes.
+        """
+        return {
+            attr_name: self._serialize_attr(attr_name, attr_value)
+            for attr_name, attr_value in self.__dict__.items()
+        }

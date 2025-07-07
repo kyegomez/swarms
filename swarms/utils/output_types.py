@@ -12,11 +12,11 @@ HistoryOutputType = Literal[
     "all",
     "yaml",
     "xml",
-    # "dict-final",
     "dict-all-except-first",
     "str-all-except-first",
     "basemodel",
     "dict-final",
+    "list-final",
 ]
 
 OutputType = HistoryOutputType

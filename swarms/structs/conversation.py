@@ -221,27 +221,6 @@ class Conversation(BaseStructure):
     ):
         super().__init__()
 
-        # Support both 'provider' and 'backend' parameters for backwards compatibility
-        # 'backend' takes precedence if both are provided
-        self.backend = backend or provider
-        self.backend_instance = None
-
-        # Validate backend
-        valid_backends = [
-            "in-memory",
-            "mem0",
-            "supabase",
-            "redis",
-            "sqlite",
-            "duckdb",
-            "pulsar",
-        ]
-        if self.backend not in valid_backends:
-            raise ValueError(
-                f"Invalid backend: '{self.backend}'. "
-                f"Valid backends are: {', '.join(valid_backends)}"
-            )
-
         # Initialize all attributes first
         self.id = id
         self.name = name or id
@@ -274,6 +253,27 @@ class Conversation(BaseStructure):
         self.token_count = token_count
         self.provider = provider  # Keep for backwards compatibility
         self.conversations_dir = conversations_dir
+
+        #  Support both 'provider' and 'backend' parameters for backwards compatibility
+        # 'backend' takes precedence if both are provided
+        self.backend = backend or provider
+        self.backend_instance = None
+
+        # Validate backend
+        valid_backends = [
+            "in-memory",
+            "mem0",
+            "supabase",
+            "redis",
+            "sqlite",
+            "duckdb",
+            "pulsar",
+        ]
+        if self.backend not in valid_backends:
+            raise ValueError(
+                f"Invalid backend: '{self.backend}'. "
+                f"Valid backends are: {', '.join(valid_backends)}"
+            )
 
         # Initialize backend if using persistent storage
         if self.backend in [
@@ -484,8 +484,7 @@ class Conversation(BaseStructure):
         self,
         role: str,
         content: Union[str, dict, list, Any],
-        *args,
-        **kwargs,
+        category: Optional[str] = None,
     ):
         """Add a message to the conversation history.
 
@@ -505,6 +504,9 @@ class Conversation(BaseStructure):
         if self.message_id_on:
             message["message_id"] = str(uuid.uuid4())
 
+        if category:
+            message["category"] = category
+
         # Add message to conversation history
         self.conversation_history.append(message)
 
@@ -519,6 +521,79 @@ class Conversation(BaseStructure):
                 logger.error(
                     f"Failed to autosave conversation: {str(e)}"
                 )
+
+    def export_and_count_categories(
+        self, tokenizer_model_name: Optional[str] = "gpt-4.1-mini"
+    ) -> Dict[str, int]:
+        """Export all messages with category 'input' and 'output' and count their tokens.
+
+        This method searches through the conversation history and:
+        1. Extracts all messages marked with category 'input' or 'output'
+        2. Concatenates the content of each category
+        3. Counts tokens for each category using the specified tokenizer model
+
+        Args:
+            tokenizer_model_name (str): Name of the model to use for tokenization
+
+        Returns:
+            Dict[str, int]: A dictionary containing:
+                - input_tokens: Number of tokens in input messages
+                - output_tokens: Number of tokens in output messages
+                - total_tokens: Total tokens across both categories
+        """
+        try:
+            # Extract input and output messages
+            input_messages = []
+            output_messages = []
+
+            for message in self.conversation_history:
+                # Get message content and ensure it's a string
+                content = message.get("content", "")
+                if not isinstance(content, str):
+                    content = str(content)
+
+                # Sort messages by category
+                category = message.get("category", "")
+                if category == "input":
+                    input_messages.append(content)
+                elif category == "output":
+                    output_messages.append(content)
+
+            # Join messages with spaces
+            all_input_text = " ".join(input_messages)
+            all_output_text = " ".join(output_messages)
+
+            print(all_input_text)
+            print(all_output_text)
+
+            # Count tokens only if there is text
+            input_tokens = (
+                count_tokens(all_input_text, tokenizer_model_name)
+                if all_input_text.strip()
+                else 0
+            )
+            output_tokens = (
+                count_tokens(all_output_text, tokenizer_model_name)
+                if all_output_text.strip()
+                else 0
+            )
+            total_tokens = input_tokens + output_tokens
+
+            return {
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "total_tokens": total_tokens,
+            }
+
+        except Exception as e:
+            logger.error(
+                f"Error in export_and_count_categories: {str(e)}"
+            )
+            return {
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "total_tokens": 0,
+            }
 
     def add_mem0(
         self,
@@ -546,8 +621,9 @@ class Conversation(BaseStructure):
     def add(
         self,
         role: str,
-        content: Union[str, dict, list],
+        content: Union[str, dict, list, Any],
         metadata: Optional[dict] = None,
+        category: Optional[str] = None,
     ):
         """Add a message to the conversation history."""
         # If using a persistent backend, delegate to it
@@ -562,7 +638,9 @@ class Conversation(BaseStructure):
                 )
                 return self.add_in_memory(role, content)
         elif self.provider == "in-memory":
-            return self.add_in_memory(role, content)
+            return self.add_in_memory(
+                role=role, content=content, category=category
+            )
         elif self.provider == "mem0":
             return self.add_mem0(
                 role=role, content=content, metadata=metadata
@@ -1325,6 +1403,12 @@ class Conversation(BaseStructure):
             self.conversation_history[-1]["content"],
             self.conversation_history[-1]["content"],
         )
+
+    def return_list_final(self):
+        """Return the final message as a list."""
+        return [
+            self.conversation_history[-1]["content"],
+        ]
 
     @classmethod
     def list_conversations(

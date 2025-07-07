@@ -72,8 +72,13 @@ class ReasoningAgentRouter:
         self.output_type = output_type
         self.num_knowledge_items = num_knowledge_items
         self.memory_capacity = memory_capacity
+
         
-        # Initialize agent factory mapping dictionary
+       
+
+
+        # Added: Initialize the factory mapping dictionary
+
         self._initialize_agent_factories()
 
 
@@ -86,19 +91,18 @@ class ReasoningAgentRouter:
             # ReasoningDuo factory method
             "reasoning-duo": self._create_reasoning_duo,
             "reasoning-agent": self._create_reasoning_duo,
-            
-            # SelfConsistencyAgent factory method
+
+            # SelfConsistencyAgent factory methods
             "self-consistency": self._create_consistency_agent,
             "consistency-agent": self._create_consistency_agent,
-            
-            # IREAgent factory method
+            # IREAgent factory methods
+
             "ire": self._create_ire_agent,
             "ire-agent": self._create_ire_agent,
-            
             # Other agent type factory methods
             "AgentJudge": self._create_agent_judge,
             "ReflexionAgent": self._create_reflexion_agent,
-            "GKPAgent": self._create_gkp_agent
+            "GKPAgent": self._create_gkp_agent,
         }
 
 
@@ -134,7 +138,7 @@ class ReasoningAgentRouter:
             system_prompt=self.system_prompt,
             output_type=self.output_type,
         )
-    
+
     def _create_consistency_agent(self):
         """Create an agent instance for the SelfConsistencyAgent type"""
         return SelfConsistencyAgent(
@@ -146,7 +150,7 @@ class ReasoningAgentRouter:
             num_samples=self.num_samples,
             output_type=self.output_type,
         )
-    
+
     def _create_ire_agent(self):
         """Create an agent instance for the IREAgent type"""
         return IREAgent(
@@ -158,7 +162,7 @@ class ReasoningAgentRouter:
             max_iterations=self.num_samples,
             output_type=self.output_type,
         )
-    
+
     def _create_agent_judge(self):
         """Create an agent instance for the AgentJudge type"""
         return AgentJudge(
@@ -167,7 +171,7 @@ class ReasoningAgentRouter:
             system_prompt=self.system_prompt,
             max_loops=self.max_loops,
         )
-    
+
     def _create_reflexion_agent(self):
         """Create an agent instance for the ReflexionAgent type"""
         return ReflexionAgent(
@@ -176,7 +180,7 @@ class ReasoningAgentRouter:
             model_name=self.model_name,
             max_loops=self.max_loops,
         )
-    
+
     def _create_gkp_agent(self):
         """Create an agent instance for the GKPAgent type"""
         return GKPAgent(
@@ -195,6 +199,7 @@ class ReasoningAgentRouter:
         Returns:
             The selected reasoning swarm instance.
         """
+
         # Generate cache key
         cache_key = self._get_cache_key()
         
@@ -202,6 +207,7 @@ class ReasoningAgentRouter:
         if cache_key in self.__class__._agent_cache:
             return self.__class__._agent_cache[cache_key]
             
+
         try:
             # Use the factory method to create a new instance
             agent = self.agent_factories[self.swarm_type]()
@@ -249,6 +255,7 @@ class ReasoningAgentRouter:
         return results
 
 
+
     @classmethod
     def clear_cache(cls):
         """
@@ -256,3 +263,5 @@ class ReasoningAgentRouter:
         Use this when you need to free memory or force the creation of new instances.
         """
         cls._agent_cache.clear()
+
+

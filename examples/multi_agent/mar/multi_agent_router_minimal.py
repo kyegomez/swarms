@@ -18,7 +18,7 @@ router = SwarmRouter(
     name="multi-agent-router-demo",
     description="Routes tasks to the most suitable agent",
     agents=agents,
-    swarm_type="MultiAgentRouter"
+    swarm_type="MultiAgentRouter",
 )
 
 result = router.run("Write a function that adds two numbers")

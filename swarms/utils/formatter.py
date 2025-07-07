@@ -1,6 +1,6 @@
 import threading
 import time
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 from rich.console import Console
 from rich.live import Live
@@ -8,6 +8,23 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 from rich.text import Text
+
+
+def choose_random_color():
+    import random
+
+    colors = [
+        "red",
+        "green",
+        "blue",
+        "yellow",
+        "magenta",
+        "cyan",
+        "white",
+    ]
+    random_color = random.choice(colors)
+
+    return random_color
 
 
 class Formatter:
@@ -32,18 +49,8 @@ class Formatter:
             title (str, optional): The title of the panel. Defaults to "".
             style (str, optional): The style of the panel. Defaults to "bold blue".
         """
-        import random
+        random_color = choose_random_color()
 
-        colors = [
-            "red",
-            "green",
-            "blue",
-            "yellow",
-            "magenta",
-            "cyan",
-            "white",
-        ]
-        random_color = random.choice(colors)
         panel = Panel(
             content, title=title, style=f"bold {random_color}"
         )
@@ -144,6 +151,116 @@ class Formatter:
                     Panel(text, title=title, border_style=style)
                 )
                 time.sleep(delay)
+
+    def print_streaming_panel(
+        self,
+        streaming_response,
+        title: str = "🤖 Agent Streaming Response",
+        style: str = None,
+        collect_chunks: bool = False,
+        on_chunk_callback: Optional[Callable] = None,
+    ) -> str:
+        """
+        Display real-time streaming response using Rich Live and Panel.
+        Similar to the approach used in litellm_stream.py.
+
+        Args:
+            streaming_response: The streaming response generator from LiteLLM.
+            title (str): Title of the panel.
+            style (str): Style for the panel border (if None, will use random color).
+            collect_chunks (bool): Whether to collect individual chunks for conversation saving.
+            on_chunk_callback (Optional[Callable]): Callback function to call for each chunk.
+
+        Returns:
+            str: The complete accumulated response text.
+        """
+        # Get random color similar to non-streaming approach
+        random_color = choose_random_color()
+        panel_style = (
+            f"bold {random_color}" if style is None else style
+        )
+        text_style = (
+            "white"  # Make text white instead of random color
+        )
+
+        def create_streaming_panel(text_obj, is_complete=False):
+            """Create panel with proper text wrapping using Rich's built-in capabilities"""
+            panel_title = f"[white]{title}[/white]"
+            if is_complete:
+                panel_title += " [bold green]✅[/bold green]"
+
+            # Add blinking cursor if still streaming
+            display_text = Text.from_markup("")
+            display_text.append_text(text_obj)
+            if not is_complete:
+                display_text.append("▊", style="bold green blink")
+
+            panel = Panel(
+                display_text,
+                title=panel_title,
+                border_style=panel_style,
+                padding=(1, 2),
+                width=self.console.size.width,  # Rich handles wrapping automatically
+            )
+            return panel
+
+        # Create a Text object for streaming content
+        streaming_text = Text()
+        complete_response = ""
+        chunks_collected = []
+
+        # TRUE streaming with Rich's automatic text wrapping
+        with Live(
+            create_streaming_panel(streaming_text),
+            console=self.console,
+            refresh_per_second=20,
+        ) as live:
+            try:
+                for part in streaming_response:
+                    if (
+                        hasattr(part, "choices")
+                        and part.choices
+                        and part.choices[0].delta.content
+                    ):
+                        # Add ONLY the new chunk to the Text object with random color style
+                        chunk = part.choices[0].delta.content
+                        streaming_text.append(chunk, style=text_style)
+                        complete_response += chunk
+
+                        # Collect chunks if requested
+                        if collect_chunks:
+                            chunks_collected.append(chunk)
+
+                        # Call chunk callback if provided
+                        if on_chunk_callback:
+                            on_chunk_callback(chunk)
+
+                        # Update display with new text - Rich handles all wrapping automatically
+                        live.update(
+                            create_streaming_panel(
+                                streaming_text, is_complete=False
+                            )
+                        )
+
+                # Final update to show completion
+                live.update(
+                    create_streaming_panel(
+                        streaming_text, is_complete=True
+                    )
+                )
+
+            except Exception as e:
+                # Handle any streaming errors gracefully
+                streaming_text.append(
+                    f"\n[Error: {str(e)}]", style="bold red"
+                )
+                live.update(
+                    create_streaming_panel(
+                        streaming_text, is_complete=True
+                    )
+                )
+
+        return complete_response
 
 
 formatter = Formatter()

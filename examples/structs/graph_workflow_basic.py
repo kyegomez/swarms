@@ -31,9 +31,15 @@ if __name__ == "__main__":
 
     # Build the workflow graph
     wf_graph = GraphWorkflow()
-    wf_graph.add_node(Node(id="agent1", type=NodeType.AGENT, agent=agent1))
-    wf_graph.add_node(Node(id="agent2", type=NodeType.AGENT, agent=agent2))
-    wf_graph.add_node(Node(id="task1", type=NodeType.TASK, callable=sample_task))
+    wf_graph.add_node(
+        Node(id="agent1", type=NodeType.AGENT, agent=agent1)
+    )
+    wf_graph.add_node(
+        Node(id="agent2", type=NodeType.AGENT, agent=agent2)
+    )
+    wf_graph.add_node(
+        Node(id="task1", type=NodeType.TASK, callable=sample_task)
+    )
 
     wf_graph.add_edge(Edge(source="agent1", target="task1"))
     wf_graph.add_edge(Edge(source="agent2", target="task1"))
@@ -47,4 +53,3 @@ if __name__ == "__main__":
     # Execute the graph
     results = wf_graph.run()
     print("Execution results:", results)
-

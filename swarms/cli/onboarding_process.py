@@ -7,7 +7,6 @@ from swarms.utils.loguru_logger import initialize_logger
 
 
 from swarms.telemetry.main import (
-    capture_system_data,
     log_agent_data,
 )
 
@@ -34,7 +33,6 @@ class OnboardingProcess:
             cache_save_path (str): The path where user data is cached for reliability.
         """
         self.user_data: Dict[str, str] = {}
-        self.system_data: Dict[str, str] = capture_system_data()
         self.auto_save_path = auto_save_path
         self.cache_save_path = cache_save_path
         self.load_existing_data()
@@ -85,7 +83,7 @@ class OnboardingProcess:
 
         while attempt < retry_attempts:
             try:
-                combined_data = {**self.user_data, **self.system_data}
+                combined_data = {**self.user_data}
                 log_agent_data(combined_data)
                 return  # Exit the function if saving was successful
             except Exception as e:

@@ -13,42 +13,10 @@ pip3 install -U swarms
 ## Environment Variables
 
 ```txt
+WORKSPACE_DIR=""
 OPENAI_API_KEY=""
 ANTHROPIC_API_KEY=""
 ```
-
-## Function Parameters
-
-### `workers: List[Callable]` (Required)
-
-A list of Agent instances that will work on the task concurrently. Each agent should be a callable object (typically an Agent instance).
-
-### `task: str` (Required)
-
-The task or question that all agents will work on simultaneously. This should be a clear, specific prompt that allows for diverse perspectives.
-
-### `type: HistoryOutputType` (Optional, Default: "all")
-
-Controls the format of the returned conversation history. Available options:
-
-| Type | Description |
-|------|-------------|
-| **"all"** | Returns the complete conversation including all agent responses and the final aggregation |
-| **"list"** | Returns the conversation as a list format |
-| **"dict"** or **"dictionary"** | Returns the conversation as a dictionary format |
-| **"string"** or **"str"** | Returns only the final aggregated response as a string |
-| **"final"** or **"last"** | Returns only the final aggregated response |
-| **"json"** | Returns the conversation in JSON format |
-| **"yaml"** | Returns the conversation in YAML format |
-| **"xml"** | Returns the conversation in XML format |
-| **"dict-all-except-first"** | Returns dictionary format excluding the first message |
-| **"str-all-except-first"** | Returns string format excluding the first message |
-| **"basemodel"** | Returns the conversation as a base model object |
-| **"dict-final"** | Returns dictionary format with only the final response |
-
-### `aggregator_model_name: str` (Optional, Default: "anthropic/claude-3-sonnet-20240229")
-
-The model to use for the aggregator agent that synthesizes all the individual agent responses. This should be a model capable of understanding and summarizing complex multi-agent conversations.
 
 ## How It Works
 
@@ -102,35 +70,3 @@ result = aggregate(
 
 print(result)
 ```
-
-## Code Example
-
-
-
-## Use Cases
-
-| Use Case | Description |
-|----------|-------------|
-| **Investment Analysis** | Get multiple financial perspectives on investment decisions |
-| **Research Synthesis** | Combine insights from different research agents |
-| **Problem Solving** | Gather diverse approaches to complex problems |
-| **Content Creation** | Generate comprehensive content from multiple specialized agents |
-| **Decision Making** | Get balanced recommendations from different expert perspectives |
-
-## Error Handling
-
-The function includes validation for:
-
-- Required parameters (`task` and `workers`)
-
-- Proper data types (workers must be a list of callable objects)
-
-- Agent compatibility
-
-## Performance Considerations
-
-- All agents run concurrently, so total execution time is limited by the slowest agent
-
-- The aggregator agent processes all responses, so consider response length and complexity
-
-- Memory usage scales with the number of agents and their response sizes

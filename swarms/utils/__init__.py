@@ -20,6 +20,9 @@ from swarms.utils.output_types import HistoryOutputType
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
+from swarms.utils.check_all_model_max_tokens import (
+    check_all_model_max_tokens,
+)
 
 
 __all__ = [
@@ -39,4 +42,5 @@ __all__ = [
     "count_tokens",
     "HistoryOutputType",
     "history_output_formatter",
+    "check_all_model_max_tokens",
 ]

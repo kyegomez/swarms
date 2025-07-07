@@ -1,4 +1,4 @@
-from swarms.structs import Agent
+from swarms import Agent
 from swarms.prompts.logistics import (
     Quality_Control_Agent_Prompt,
 )
@@ -16,6 +16,8 @@ quality_control_agent = Agent(
     multi_modal=True,
     max_loops=1,
     output_type="str-all-except-first",
+    dynamic_temperature_enabled=True,
+    stream=True,
 )
 
 response = quality_control_agent.run(
