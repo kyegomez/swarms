@@ -1,8 +1,11 @@
-from typing import List, Any, Optional, Union, Callable
+from typing import Dict, List, Any, Optional, Union, Callable
 import random
 from swarms.prompts.collaborative_prompts import (
     get_multi_agent_collaboration_prompt_one,
 )
+from functools import lru_cache
+
+from loguru import logger
 
 
 def list_all_agents(
@@ -116,3 +119,65 @@ def set_random_models_for_agents(
     else:
         setattr(agents, "model_name", random.choice(model_names))
         return agents
+
+
+@lru_cache(maxsize=128)
+def _create_agent_map_cached(
+    agent_tuple: tuple,
+) -> Dict[str, Union[Callable, Any]]:
+    """Internal cached version of create_agent_map that takes a tuple for hashability."""
+    try:
+        return {
+            (
+                agent.agent_name
+                if isinstance(agent, Callable)
+                else agent.__name__
+            ): agent
+            for agent in agent_tuple
+        }
+    except (AttributeError, TypeError) as e:
+        logger.error(f"Error creating agent map: {e}")
+        return {}
+
+
+def create_agent_map(
+    agents: List[Union[Callable, Any]],
+) -> Dict[str, Union[Callable, Any]]:
+    """Creates a map of agent names to agents for fast lookup.
+
+    This function is optimized with LRU caching to avoid recreating maps for identical agent lists.
+    The cache stores up to 128 different agent map configurations.
+
+    Args:
+        agents (List[Union[Callable, Any]]): List of agents to create a map of. Each agent should either be:
+            - A callable with a __name__ attribute
+            - An object with an agent_name attribute
+
+    Returns:
+        Dict[str, Union[Callable, Any]]: Map of agent names to agents
+
+    Examples:
+        >>> def agent1(): pass
+        >>> def agent2(): pass
+        >>> agents = [agent1, agent2]
+        >>> agent_map = create_agent_map(agents)
+        >>> print(agent_map.keys())
+        dict_keys(['agent1', 'agent2'])
+
+        >>> class Agent:
+        ...     def __init__(self, name):
+        ...         self.agent_name = name
+        >>> agents = [Agent("bot1"), Agent("bot2")]
+        >>> agent_map = create_agent_map(agents)
+        >>> print(agent_map.keys())
+        dict_keys(['bot1', 'bot2'])
+
+    Raises:
+        ValueError: If agents list is empty
+        TypeError: If any agent lacks required name attributes
+    """
+    if not agents:
+        raise ValueError("Agents list cannot be empty")
+
+    # Convert list to tuple for hashability
+    return _create_agent_map_cached(tuple(agents))

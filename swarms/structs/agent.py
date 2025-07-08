@@ -433,6 +433,7 @@ class Agent:
         output_raw_json_from_tool_call: bool = False,
         summarize_multiple_images: bool = False,
         tool_retry_attempts: int = 3,
+        speed_mode: str = "fast",
         *args,
         **kwargs,
     ):
@@ -573,6 +574,7 @@ class Agent:
         )
         self.summarize_multiple_images = summarize_multiple_images
         self.tool_retry_attempts = tool_retry_attempts
+        self.speed_mode = speed_mode
 
         # self.short_memory = self.short_memory_init()
 
@@ -1219,6 +1221,192 @@ class Agent:
                 self.save()
 
             log_agent_data(self.to_dict())
+
+            # Output formatting based on output_type
+            return history_output_formatter(
+                self.short_memory, type=self.output_type
+            )
+
+        except Exception as error:
+            self._handle_run_error(error)
+
+        except KeyboardInterrupt as error:
+            self._handle_run_error(error)
+
+    def _run_fast(
+        self,
+        task: Optional[Union[str, Any]] = None,
+        img: Optional[str] = None,
+        print_task: Optional[bool] = False,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """
+        run the agent
+
+        Args:
+            task (str): The task to be performed.
+            img (str): The image to be processed.
+            is_last (bool): Indicates if this is the last task.
+
+        Returns:
+            Any: The output of the agent.
+            (string, list, json, dict, yaml, xml)
+
+        Examples:
+            agent(task="What is the capital of France?")
+            agent(task="What is the capital of France?", img="path/to/image.jpg")
+            agent(task="What is the capital of France?", img="path/to/image.jpg", is_last=True)
+        """
+        try:
+
+            self.short_memory.add(role=self.user_name, content=task)
+
+            # Set the loop count
+            loop_count = 0
+
+            # Clear the short memory
+            response = None
+
+            # Query the long term memory first for the context
+            if self.long_term_memory is not None:
+                self.memory_query(task)
+
+            # Print the request
+            if print_task is True:
+                formatter.print_panel(
+                    content=f"\n User: {task}",
+                    title=f"Task Request for {self.agent_name}",
+                )
+
+            while (
+                self.max_loops == "auto"
+                or loop_count < self.max_loops
+            ):
+                loop_count += 1
+
+                if self.max_loops >= 2:
+                    self.short_memory.add(
+                        role=self.agent_name,
+                        content=f"Current Internal Reasoning Loop: {loop_count}/{self.max_loops}",
+                    )
+
+                # If it is the final loop, then add the final loop message
+                if loop_count >= 2 and loop_count == self.max_loops:
+                    self.short_memory.add(
+                        role=self.agent_name,
+                        content=f"🎉 Final Internal Reasoning Loop: {loop_count}/{self.max_loops} Prepare your comprehensive response.",
+                    )
+
+                # Dynamic temperature
+                if self.dynamic_temperature_enabled is True:
+                    self.dynamic_temperature()
+
+                # Task prompt
+                task_prompt = (
+                    self.short_memory.return_history_as_string()
+                )
+
+                # Parameters
+                attempt = 0
+                success = False
+                while attempt < self.retry_attempts and not success:
+                    try:
+                        if (
+                            self.long_term_memory is not None
+                            and self.rag_every_loop is True
+                        ):
+                            logger.info(
+                                "Querying RAG database for context..."
+                            )
+                            self.memory_query(task_prompt)
+
+                        if img is not None:
+                            response = self.call_llm(
+                                task=task_prompt,
+                                img=img,
+                                current_loop=loop_count,
+                                *args,
+                                **kwargs,
+                            )
+                        else:
+                            response = self.call_llm(
+                                task=task_prompt,
+                                current_loop=loop_count,
+                                *args,
+                                **kwargs,
+                            )
+
+                        # If streaming is enabled, then don't print the response
+
+                        # Parse the response from the agent with the output type
+                        if exists(self.tools_list_dictionary):
+                            if isinstance(response, BaseModel):
+                                response = response.model_dump()
+
+                        # Parse the response from the agent with the output type
+                        response = self.parse_llm_output(response)
+
+                        self.short_memory.add(
+                            role=self.agent_name,
+                            content=response,
+                        )
+
+                        # Print
+                        if self.print_on is True:
+                            if isinstance(response, list):
+                                self.pretty_print(
+                                    f"Structured Output - Attempting Function Call Execution [{time.strftime('%H:%M:%S')}] \n\n {format_data_structure(response)} ",
+                                    loop_count,
+                                )
+                            elif self.streaming_on is True:
+                                pass
+                            else:
+                                self.pretty_print(
+                                    response, loop_count
+                                )
+
+                        # Check and execute callable tools
+                        if exists(self.tools):
+                            self.tool_execution_retry(
+                                response, loop_count
+                            )
+
+                        # Handle MCP tools
+                        if (
+                            exists(self.mcp_url)
+                            or exists(self.mcp_config)
+                            or exists(self.mcp_urls)
+                        ):
+                            # Only handle MCP tools if response is not None
+                            if response is not None:
+                                self.mcp_tool_handling(
+                                    response=response,
+                                    current_loop=loop_count,
+                                )
+                            else:
+                                logger.warning(
+                                    f"LLM returned None response in loop {loop_count}, skipping MCP tool handling"
+                                )
+
+                        success = True  # Mark as successful to exit the retry loop
+
+                    except Exception as e:
+
+                        logger.error(
+                            f"Attempt {attempt+1}/{self.retry_attempts}: Error generating response in loop {loop_count} for agent '{self.agent_name}': {str(e)} | "
+                        )
+                        attempt += 1
+
+                if not success:
+
+                    logger.error(
+                        "Failed to generate a valid response after"
+                        " retry attempts."
+                    )
+                    break  # Exit the loop if all retry attempts fail
+
+            # log_agent_data(self.to_dict())
 
             # Output formatting based on output_type
             return history_output_formatter(
@@ -2673,6 +2861,13 @@ class Agent:
                     task=task,
                     img=img,
                     correct_answer=correct_answer,
+                    *args,
+                    **kwargs,
+                )
+            elif self.speed_mode == "fast":
+                output = self._run_fast(
+                    task=task,
+                    img=img,
                     *args,
                     **kwargs,
                 )

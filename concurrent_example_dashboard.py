@@ -1,4 +1,5 @@
-from swarms import Agent, SwarmRouter
+from swarms import Agent
+from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 
 # Initialize market research agent
 market_researcher = Agent(
@@ -9,8 +10,10 @@ market_researcher = Agent(
     3. Evaluating competitor strategies
     4. Assessing customer needs and preferences
     5. Providing actionable market insights""",
-    model_name="claude-sonnet-4-20250514",
+    model_name="claude-3-sonnet-20240229",
     max_loops=1,
+    temperature=0.7,
+    # streaming_on=True,
 )
 
 # Initialize financial analyst agent
@@ -22,8 +25,10 @@ financial_analyst = Agent(
     3. Assessing risk factors
     4. Providing financial forecasts
     5. Recommending financial strategies""",
-    model_name="claude-sonnet-4-20250514",
+    model_name="claude-3-sonnet-20240229",
     max_loops=1,
+    # streaming_on=True,
+    temperature=0.7,
 )
 
 # Initialize technical analyst agent
@@ -35,30 +40,22 @@ technical_analyst = Agent(
     3. Identifying support and resistance levels
     4. Assessing market momentum
     5. Providing trading recommendations""",
-    model_name="claude-sonnet-4-20250514",
+    model_name="claude-3-sonnet-20240229",
     max_loops=1,
+    temperature=0.7,
+    # streaming_on=True,
 )
 
 # Create list of agents
 agents = [market_researcher, financial_analyst, technical_analyst]
 
-# # Initialize the concurrent workflow
-# workflow = ConcurrentWorkflow(
-#     name="market-analysis-workflow",
-#     agents=agents,
-#     max_loops=1,
-# )
 
-# # Run the workflow
-# result = workflow.run(
-#     "Analyze Tesla (TSLA) stock from market, financial, and technical perspectives"
-# )
-router = SwarmRouter(
+router = ConcurrentWorkflow(
     name="market-analysis-router",
-    swarm_type="ConcurrentWorkflow",
     agents=agents,
     max_loops=1,
     # output_type="all",
+    show_dashboard=True,
 )
 
 result = router.run(

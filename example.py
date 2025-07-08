@@ -1,4 +1,5 @@
 import time
+
 from swarms import Agent
 
 # Initialize the agent
@@ -38,6 +39,9 @@ agent = Agent(
     model_name="claude-3-sonnet-20240229",
     dynamic_temperature_enabled=True,
     output_type="all",
+    speed_mode="fast",
+    streaming_on=True,
+    print_on=True,
     # dashboard=True
 )
 
