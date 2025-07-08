@@ -544,21 +544,12 @@ class LiteLLM:
         """
         return self.run(task, *args, **kwargs)
 
-    async def arun(
-        self,
-        task: str,
-        audio: Optional[str] = None,
-        img: Optional[str] = None,
-        *args,
-        **kwargs
-    ):
+    async def arun(self, task: str, *args, **kwargs):
         """
         Run the LLM model asynchronously for the given task.
 
         Args:
             task (str): The task to run the model for.
-            audio (str, optional): Audio input if any. Defaults to None.
-            img (str, optional): Image input if any. Defaults to None.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -566,7 +557,7 @@ class LiteLLM:
             str: The content of the response from the model.
         """
         try:
-            messages = self._prepare_messages(task=task, img=img)
+            messages = self._prepare_messages(task)
 
             # Prepare common completion parameters
             completion_params = {
