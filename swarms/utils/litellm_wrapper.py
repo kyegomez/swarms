@@ -328,47 +328,22 @@ class LiteLLM:
         # Only use direct URL for HTTP/HTTPS URLs
         if not image.startswith(("http://", "https://")):
             return False
-            
-        # Check if the model supports direct URL passing
-        # Most major providers (OpenAI, Anthropic, etc.) support direct URLs
+        
+        # Check for local/custom models that might not support direct URLs
         model_lower = self.model_name.lower()
+        local_indicators = ["localhost", "127.0.0.1", "local", "custom", "ollama", "llama-cpp"]
         
-        # List of models/providers that support direct URL passing
-        url_supported_models = [
-            "gpt-4",
-            "gpt-4o", 
-            "gpt-4-vision",
-            "claude",
-            "anthropic",
-            "openai",
-            "gemini",
-            "vertex_ai",
-        ]
+        is_local = any(indicator in model_lower for indicator in local_indicators) or \
+                   (self.base_url is not None and any(indicator in self.base_url.lower() for indicator in local_indicators))
         
-        # Check if any of the supported model patterns match
-        return any(pattern in model_lower for pattern in url_supported_models)
-
-    def _is_local_model(self) -> bool:
-        """
-        Check if the model is a local/custom model that might not support direct URLs.
+        if is_local:
+            return False
         
-        Returns:
-            bool: True if it's likely a local model
-        """
-        model_lower = self.model_name.lower()
-        
-        # Indicators of local/custom models
-        local_indicators = [
-            "localhost",
-            "127.0.0.1", 
-            "local",
-            "custom",
-            "ollama",
-            "llama-cpp",
-        ]
-        
-        return any(indicator in model_lower for indicator in local_indicators) or \
-               (self.base_url is not None and any(indicator in self.base_url.lower() for indicator in local_indicators))
+        # Use LiteLLM's supports_vision to check if model supports vision and direct URLs
+        try:
+            return supports_vision(model=self.model_name)
+        except Exception:
+            return False
 
     def vision_processing(
         self, task: str, image: str, messages: Optional[list] = None
@@ -571,12 +546,21 @@ class LiteLLM:
         """
         return self.run(task, *args, **kwargs)
 
-    async def arun(self, task: str, *args, **kwargs):
+    async def arun(
+        self,
+        task: str,
+        audio: Optional[str] = None,
+        img: Optional[str] = None,
+        *args,
+        **kwargs
+    ):
         """
         Run the LLM model asynchronously for the given task.
 
         Args:
             task (str): The task to run the model for.
+            audio (str, optional): Audio input if any. Defaults to None.
+            img (str, optional): Image input if any. Defaults to None.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -584,9 +568,9 @@ class LiteLLM:
             str: The content of the response from the model.
         """
         try:
-            messages = self._prepare_messages(task)
+            messages = self._prepare_messages(task=task, img=img)
 
-            # Prepare common completion parameters
+            # Base completion parameters
             completion_params = {
                 "model": self.model_name,
                 "messages": messages,
@@ -698,31 +682,3 @@ class LiteLLM:
             f"Running {len(tasks)} tasks asynchronously in batches of {batch_size}"
         )
         return await self._process_batch(tasks, batch_size)
-
-    def get_vision_processing_info(self, image: str) -> dict:
-        """
-        Get information about how the image will be processed for this model.
-        
-        This utility method helps users understand whether their image will be:
-        - Passed directly as URL (more efficient)
-        - Converted to base64 (fallback for unsupported models/local files)
-        
-        Args:
-            image (str): The image source (URL or file path)
-            
-        Returns:
-            dict: Information about the processing approach
-        """
-        return {
-            "model_name": self.model_name,
-            "image_source": image,
-            "is_url": image.startswith(("http://", "https://")),
-            "is_local_file": not image.startswith(("http://", "https://", "data:")),
-            "will_use_direct_url": self._should_use_direct_url(image),
-            "supports_vision": supports_vision(model=self.model_name),
-            "processing_method": "direct_url" if self._should_use_direct_url(image) else "base64_conversion",
-            "benefits": {
-                "direct_url": "No server bandwidth/CPU usage for image processing",
-                "base64_conversion": "Works with local files and all model types"
-            }
-        }
