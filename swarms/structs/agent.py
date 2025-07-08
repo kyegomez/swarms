@@ -1444,12 +1444,9 @@ class Agent:
         raise error
 
     def _handle_run_error(self, error: any):
-        process_thread = threading.Thread(
-            target=self.__handle_run_error,
-            args=(error,),
-            daemon=True,
-        )
-        process_thread.start()
+        # Handle error directly instead of using daemon thread
+        # to ensure proper exception propagation
+        self.__handle_run_error(error)
 
     async def arun(
         self,
@@ -2123,9 +2120,9 @@ class Agent:
 
         """
         logger.info(f"Adding response filter: {filter_word}")
-        self.reponse_filters.append(filter_word)
+        self.response_filters.append(filter_word)
 
-    def apply_reponse_filters(self, response: str) -> str:
+    def apply_response_filters(self, response: str) -> str:
         """
         Apply the response filters to the response
 
@@ -2200,11 +2197,17 @@ class Agent:
             None
         """
         try:
+            # Process all documents and combine their content
+            all_data = []
             for doc in docs:
                 data = data_to_text(doc)
+                all_data.append(f"Document: {doc}\n{data}")
+            
+            # Combine all document content
+            combined_data = "\n\n".join(all_data)
 
             return self.short_memory.add(
-                role=self.user_name, content=data
+                role=self.user_name, content=combined_data
             )
         except Exception as error:
             logger.info(f"Error ingesting docs: {error}", "red")
