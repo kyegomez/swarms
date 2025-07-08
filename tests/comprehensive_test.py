@@ -137,7 +137,7 @@ def test_tool_execution_with_agent():
     agent = Agent(
         agent_name="CalculatorAgent",
         system_prompt="You are an agent that uses a calculator tool.",
-        llm="gpt-4o",
+        model_name="gpt-4o",
         max_loops=1,
         tools=[simple_calculator],
         output_type="str-all-except-first"
@@ -157,7 +157,7 @@ def test_multimodal_execution():
     agent = Agent(
         agent_name="VisionAgent",
         system_prompt="You are an agent that describes images.",
-        llm="gpt-4o",
+        model_name="gpt-4o",
         max_loops=1,
         multi_modal=True
     )
@@ -175,7 +175,7 @@ def test_multiple_image_execution():
     agent = Agent(
         agent_name="MultiVisionAgent",
         system_prompt="You are an agent that describes multiple images.",
-        llm="gpt-4o",
+        model_name="gpt-4o",
         max_loops=1,
         multi_modal=True
     )
@@ -191,8 +191,8 @@ def test_multiple_image_execution():
 def test_concurrent_workflow():
     """Tests the ConcurrentWorkflow with multiple agents."""
     agents = [
-        Agent(agent_name="Agent1", llm="gpt-4o", max_loops=1),
-        Agent(agent_name="Agent2", llm="gpt-4o", max_loops=1)
+        Agent(agent_name="Agent1", model_name="gpt-4o", max_loops=1),
+        Agent(agent_name="Agent2", model_name="gpt-4o", max_loops=1)
     ]
     workflow = ConcurrentWorkflow(agents=agents, max_loops=1)
     
@@ -205,8 +205,8 @@ def test_concurrent_workflow():
 def test_sequential_workflow():
     """Tests the SequentialWorkflow with multiple agents."""
     agents = [
-        Agent(agent_name="Agent1", system_prompt="Generate a famous quote.", llm="gpt-4o", max_loops=1),
-        Agent(agent_name="Agent2", system_prompt="Explain the meaning of the provided quote.", llm="gpt-4o", max_loops=1)
+        Agent(agent_name="Agent1", system_prompt="Generate a famous quote.", model_name="gpt-4o", max_loops=1),
+        Agent(agent_name="Agent2", system_prompt="Explain the meaning of the provided quote.", model_name="gpt-4o", max_loops=1)
     ]
     workflow = SequentialWorkflow(agents=agents, max_loops=1, output_type="final")
     
@@ -219,12 +219,12 @@ def test_sequential_workflow():
 def test_streaming_and_non_streaming():
     """Tests both streaming and non-streaming modes."""
     # Non-streaming
-    non_streaming_agent = Agent(agent_name="NonStreamer", llm="gpt-4o", max_loops=1, streaming_on=False)
+    non_streaming_agent = Agent(agent_name="NonStreamer", model_name="gpt-4o", max_loops=1, streaming_on=False)
     non_streaming_response = non_streaming_agent.run("Tell me a short story.")
     assert isinstance(non_streaming_response, str)
 
     # Streaming
-    streaming_agent = Agent(agent_name="Streamer", llm="gpt-4o", max_loops=1, streaming_on=True)
+    streaming_agent = Agent(agent_name="Streamer", model_name="gpt-4o", max_loops=1, streaming_on=True)
     streaming_response_generator = streaming_agent.run("Tell me a short story.")
     
     full_response = ""
