@@ -429,9 +429,7 @@ class LiteLLM:
 
             if out is False:
                 raise ValueError(
-                    f"Model {self.model_name} does not support vision. "
-                    f"Use a vision-capable model like gpt-4-vision-preview, "
-                    f"claude-3-sonnet, or gemini-pro-vision."
+                    f"Model {self.model_name} does not support vision"
                 )
 
     def run(
@@ -570,7 +568,7 @@ class LiteLLM:
         try:
             messages = self._prepare_messages(task=task, img=img)
 
-            # Base completion parameters
+            # Prepare common completion parameters
             completion_params = {
                 "model": self.model_name,
                 "messages": messages,
