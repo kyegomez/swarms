@@ -1,0 +1,89 @@
+# .github/workflows/comprehensive_tests.yml
+
+name: Swarms Comprehensive Tests
+
+# This workflow triggers on pushes and pull requests to the master branch.
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # You can test against multiple Python versions here if needed.
+        python-version: ["3.10"]
+
+    steps:
+    # Step 1: Check out the code.
+    # For pull requests, this action automatically checks out the code
+    # from the PR's branch, not the master branch. This is the key
+    # to testing the proposed changes.
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Step 2: Set up the specified Python version.
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    # Step 3: Install Poetry for dependency management.
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    # Step 4: Cache dependencies to speed up subsequent runs.
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+    # Step 5: Install dependencies and the project package itself.
+    # This is the crucial step. 'poetry install' will install all dependencies
+    # and also install the 'swarms' package from the checked-out PR code
+    # in editable mode within the virtual environment.
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction --with dev --all-extras
+
+    # Step 6: Create dummy image files required for multi-modal tests.
+    # This ensures your tests are self-contained.
+    - name: Create dummy image files for testing
+      run: |
+        mkdir -p tests/test_data
+        touch tests/test_data/image1.jpg
+        touch tests/test_data/image2.png
+        echo "dummy image data" > tests/test_data/image1.jpg
+        echo "dummy image data" > tests/test_data/image2.png
+
+    # Step 7: Run the comprehensive test suite.
+    # 'poetry run' executes the command within the virtual environment,
+    # ensuring that when 'tests/comprehensive_test.py' imports 'swarms',
+    # it's importing the code from the pull request.
+    - name: Run Comprehensive Test Suite
+      env:
+        # Securely pass API keys and other secrets to the test environment.
+        # These must be configured in your repository's secrets.
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # GITHUB_REPO_OWNER: "kyegomez"
+        # GITHUB_REPO_NAME: "swarms"
+      run: |
+        poetry run python tests/comprehensive_test.py
+
+    # Step 8: Upload the generated test report as an artifact.
+    # This happens even if the previous steps fail, allowing you to debug.
+    - name: Upload Test Report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-report-${{ matrix.python-version }}
+        path: test_runs/
