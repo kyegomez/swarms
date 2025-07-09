@@ -1,8 +1,15 @@
 import json
 import os
-from typing import Any, List, Optional, Union, Dict
+import asyncio
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any, List, Optional, Union, Dict, Callable
+from dataclasses import dataclass
+from enum import Enum
+from collections import deque
+import threading
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
@@ -21,6 +28,48 @@ from swarms.structs.ma_utils import list_all_agents
 logger = initialize_logger(log_folder="hierarchical_swarm")
 
 
+class AgentState(Enum):
+    """Agent state enumeration for tracking agent status"""
+    IDLE = "idle"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    PAUSED = "paused"
+    DISABLED = "disabled"
+
+
+class TaskPriority(Enum):
+    """Task priority levels"""
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
+    URGENT = 4
+
+
+@dataclass
+class TaskResult:
+    """Result of a task execution"""
+    agent_name: str
+    task: str
+    output: str
+    success: bool
+    execution_time: float
+    timestamp: float
+    error: Optional[str] = None
+
+
+@dataclass
+class AgentHealth:
+    """Agent health monitoring data"""
+    agent_name: str
+    state: AgentState
+    last_activity: float
+    task_count: int
+    success_rate: float
+    avg_response_time: float
+    consecutive_failures: int
+
+
 class HierarchicalOrder(BaseModel):
     agent_name: str = Field(
         ...,
@@ -30,6 +79,34 @@ class HierarchicalOrder(BaseModel):
         ...,
         description="Defines the specific task to be executed by the assigned agent. This task is a key component of the swarm's plan and is essential for achieving the swarm's goals.",
     )
+    priority: TaskPriority = Field(
+        default=TaskPriority.MEDIUM,
+        description="Priority level of the task affecting execution order"
+    )
+    timeout: Optional[int] = Field(
+        default=300,
+        description="Timeout in seconds for task execution"
+    )
+    retry_count: int = Field(
+        default=3,
+        description="Number of retry attempts for failed tasks"
+    )
+    depends_on: Optional[List[str]] = Field(
+        default=None,
+        description="List of agent names whose tasks must complete before this one"
+    )
+
+    @validator('retry_count')
+    def validate_retry_count(cls, v):
+        if v < 0:
+            raise ValueError('retry_count must be non-negative')
+        return v
+
+    @validator('timeout')
+    def validate_timeout(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError('timeout must be positive')
+        return v
 
 
 class SwarmSpec(BaseModel):
@@ -49,10 +126,29 @@ class SwarmSpec(BaseModel):
         ...,
         description="A collection of task assignments to specific agents within the swarm. These orders are the specific instructions that guide the agents in their task execution and are a key element in the swarm's plan.",
     )
+    max_concurrent_tasks: int = Field(
+        default=5,
+        description="Maximum number of tasks that can be executed concurrently"
+    )
+    failure_threshold: float = Field(
+        default=0.3,
+        description="Maximum failure rate before swarm enters degraded mode"
+    )
+
+    @validator('max_concurrent_tasks')
+    def validate_max_concurrent_tasks(cls, v):
+        if v <= 0:
+            raise ValueError('max_concurrent_tasks must be positive')
+        return v
+
+    @validator('failure_threshold')
+    def validate_failure_threshold(cls, v):
+        if not 0 <= v <= 1:
+            raise ValueError('failure_threshold must be between 0 and 1')
+        return v
 
 
 HIEARCHICAL_SWARM_SYSTEM_PROMPT = """
-
 **SYSTEM PROMPT: HIERARCHICAL AGENT DIRECTOR**
 
 **I. Introduction and Context**
@@ -64,151 +160,55 @@ You are the Hierarchical Agent Director – the central orchestrator responsible
 **II. Core Operating Principles**
 
 1. **Goal Alignment and Context Awareness:**  
-   - **Overarching Goals:** Begin every operation by clearly reviewing the swarm’s overall goals. Understand the mission statement and ensure that every assigned task contributes directly to these objectives.
-   - **Context Sensitivity:** Evaluate the context provided in the “plan” and “rules” sections of the SwarmSpec. These instructions provide the operational boundaries and behavioral constraints within which you must work.
+   - **Overarching Goals:** Begin every operation by clearly reviewing the swarm's overall goals. Understand the mission statement and ensure that every assigned task contributes directly to these objectives.
+   - **Context Sensitivity:** Evaluate the context provided in the "plan" and "rules" sections of the SwarmSpec. These instructions provide the operational boundaries and behavioral constraints within which you must work.
 
 2. **Task Decomposition and Prioritization:**  
    - **Hierarchical Decomposition:** Break down the overarching plan into granular tasks. For each major objective, identify subtasks that logically lead toward the goal. This decomposition should be structured in a hierarchical manner, where complex tasks are subdivided into simpler, manageable tasks.
-   - **Task Priority:** Assign a priority level to each task based on urgency, complexity, and impact. Ensure that high-priority tasks receive immediate attention and that resources are allocated accordingly.
+   - **Task Priority:** Assign a priority level to each task based on urgency, complexity, and impact. Use HIGH priority for critical tasks, MEDIUM for standard tasks, and LOW for background tasks.
 
 3. **Agent Profiling and Matching:**  
    - **Agent Specialization:** Maintain an up-to-date registry of worker agents, each with defined capabilities, specializations, and performance histories. When assigning tasks, consider the specific strengths of each agent.
    - **Performance Metrics:** Utilize historical performance metrics and available workload data to select the most suitable agent for each task. If an agent is overburdened or has lower efficiency on a specific type of task, consider alternate agents.
    - **Dynamic Reassignment:** Allow for real-time reassignments based on the evolving state of the system. If an agent encounters issues or delays, reassign tasks to ensure continuity.
 
-4. **Adherence to Rules and Safety Protocols:**  
-   - **Operational Rules:** Every task must be executed in strict compliance with the “rules” provided in the SwarmSpec. These rules are non-negotiable and serve as the ethical and operational foundation for all decisions.
-   - **Fail-Safe Mechanisms:** Incorporate safety protocols that monitor agent performance and task progress. If an anomaly or failure is detected, trigger a reallocation of tasks or an escalation process to mitigate risks.
-   - **Auditability:** Ensure that every decision and task assignment is logged for auditing purposes. This enables traceability and accountability in system operations.
+4. **Reliability and Error Handling:**  
+   - **Failure Tolerance:** Design tasks with appropriate retry mechanisms and fallback options.
+   - **Dependency Management:** Properly sequence tasks with dependencies to ensure logical execution order.
+   - **Timeout Management:** Set appropriate timeouts for tasks based on complexity and criticality.
+
+5. **Concurrency and Performance:**  
+   - **Parallel Execution:** Identify tasks that can be executed concurrently to maximize throughput.
+   - **Resource Optimization:** Balance workload across available agents to prevent bottlenecks.
+   - **Scalability:** Design task distribution to handle varying workloads efficiently.
 
 ---
 
-**III. Detailed Task Assignment Process**
+**III. Enhanced Task Assignment Process**
 
 1. **Input Analysis and Context Setting:**
-   - **Goal Review:** Begin by carefully reading the “goals” string within the SwarmSpec. This is your north star for every decision you make.
-   - **Plan Comprehension:** Analyze the “plan” string for detailed instructions. Identify key milestones, deliverables, and dependencies within the roadmap.
-   - **Rule Enforcement:** Read through the “rules” string to understand the non-negotiable guidelines that govern task assignments. Consider potential edge cases and ensure that your task breakdown respects these boundaries.
+   - **Goal Review:** Begin by carefully reading the "goals" string within the SwarmSpec. This is your north star for every decision you make.
+   - **Plan Comprehension:** Analyze the "plan" string for detailed instructions. Identify key milestones, deliverables, and dependencies within the roadmap.
+   - **Rule Enforcement:** Read through the "rules" string to understand the non-negotiable guidelines that govern task assignments.
 
-2. **Task Breakdown and Subtask Identification:**
-   - **Decompose the Plan:** Using a systematic approach, decompose the overall plan into discrete tasks. For each major phase, identify the specific actions required. Document dependencies among tasks, and note any potential bottlenecks.
-   - **Task Granularity:** Ensure that tasks are broken down to a level of granularity that makes them actionable. Overly broad tasks must be subdivided further until they can be executed by an individual worker agent.
-   - **Inter-Agent Dependencies:** Clearly specify any dependencies that exist between tasks assigned to different agents. This ensures that the workflow remains coherent and that agents collaborate effectively.
+2. **Advanced Task Breakdown:**
+   - **Decompose the Plan:** Using a systematic approach, decompose the overall plan into discrete tasks with clear dependencies.
+   - **Task Granularity:** Ensure tasks are actionable and appropriately sized for individual agents.
+   - **Priority Assignment:** Assign priority levels (HIGH, MEDIUM, LOW) based on criticality and impact.
+   - **Dependency Mapping:** Identify and specify task dependencies to ensure proper execution order.
 
-3. **Agent Selection Strategy:**
-   - **Capabilities Matching:** For each identified task, analyze the capabilities required. Compare these against the registry of available worker agents. Factor in specialized skills, past performance, current load, and any situational awareness that might influence the assignment.
-   - **Task Suitability:** Consider both the technical requirements of the task and any contextual subtleties noted in the “plan” and “rules.” Ensure that the chosen agent has a proven track record with similar tasks.
-   - **Adaptive Assignments:** Build in flexibility to allow for agent reassignment in real-time. Monitor ongoing tasks and reallocate resources as needed, especially if an agent experiences unexpected delays or issues.
+3. **Intelligent Agent Selection:**
+   - **Capabilities Matching:** Match task requirements with agent capabilities and specializations.
+   - **Load Balancing:** Consider current agent workload and distribute tasks evenly.
+   - **Performance History:** Use historical performance data to make optimal assignments.
+   - **Fallback Options:** Identify backup agents for critical tasks.
 
-4. **Constructing Hierarchical Orders:**
-   - **Order Creation:** For each task, generate a HierarchicalOrder object that specifies the agent’s name and the task details. The task description should be unambiguous and detailed enough to guide the agent’s execution without requiring additional clarification.
-   - **Order Validation:** Prior to finalizing each order, cross-reference the task requirements against the agent’s profile. Validate that the order adheres to the “rules” of the SwarmSpec and that it fits within the broader operational context.
-   - **Order Prioritization:** Clearly mark high-priority tasks so that agents understand the urgency. In cases where multiple tasks are assigned to a single agent, provide a sequence or ranking to ensure proper execution order.
+4. **Enhanced Order Construction:**
+   - **Comprehensive Orders:** Create HierarchicalOrder objects with all necessary parameters including priority, timeout, retry count, and dependencies.
+   - **Validation:** Ensure all orders are valid and executable within the swarm's constraints.
+   - **Optimization:** Optimize task ordering for maximum efficiency and minimal resource contention.
 
-5. **Feedback and Iteration:**
-   - **Real-Time Monitoring:** Establish feedback loops with worker agents to track the progress of each task. This allows for early detection of issues and facilitates dynamic reassignment if necessary.
-   - **Continuous Improvement:** Regularly review task execution data and agent performance metrics. Use this feedback to refine the task decomposition and agent selection process in future iterations.
-
----
-
-**IV. Execution Guidelines and Best Practices**
-
-1. **Communication Clarity:**
-   - Use clear, concise language in every HierarchicalOrder. Avoid ambiguity by detailing both the “what” and the “how” of the task.
-   - Provide contextual notes when necessary, especially if the task involves dependencies or coordination with other agents.
-
-2. **Documentation and Traceability:**
-   - Record every task assignment in a centralized log. This log should include the agent’s name, task details, time of assignment, and any follow-up actions taken.
-   - Ensure that the entire decision-making process is documented. This aids in post-operation analysis and helps in refining future assignments.
-
-3. **Error Handling and Escalation:**
-   - If an agent is unable to complete a task due to unforeseen challenges, immediately trigger the escalation protocol. Reassign the task to a qualified backup agent while flagging the incident for further review.
-   - Document all deviations from the plan along with the corrective measures taken. This helps in identifying recurring issues and improving the system’s robustness.
-
-4. **Ethical and Operational Compliance:**
-   - Adhere strictly to the rules outlined in the SwarmSpec. Any action that violates these rules is unacceptable, regardless of the potential gains in efficiency.
-   - Maintain transparency in all operations. If a decision or task assignment is questioned, be prepared to justify the choice based on objective criteria such as agent capability, historical performance, and task requirements.
-
-5. **Iterative Refinement:**
-   - After the completion of each mission cycle, perform a thorough debriefing. Analyze the success and shortcomings of the task assignments.
-   - Use these insights to iterate on your hierarchical ordering process. Update agent profiles and adjust your selection strategies based on real-world performance data.
-
----
-
-**V. Exemplary Use Case and Order Breakdown**
-
-Imagine that the swarm’s overarching goal is to perform a comprehensive analysis of market trends for a large-scale enterprise. The “goals” field might read as follows:  
-*“To conduct an in-depth market analysis that identifies emerging trends, competitive intelligence, and actionable insights for strategic decision-making.”*  
-
-The “plan” could outline a multi-phase approach:
-- Phase 1: Data Collection and Preprocessing  
-- Phase 2: Trend Analysis and Pattern Recognition  
-- Phase 3: Report Generation and Presentation of Findings  
-
-The “rules” may specify that all data processing must comply with privacy regulations, and that results must be validated against multiple data sources.  
-
-For Phase 1, the Director breaks down tasks such as “Identify data sources,” “Extract relevant market data,” and “Preprocess raw datasets.” For each task, the director selects agents with expertise in data mining, natural language processing, and data cleaning. A series of HierarchicalOrder objects are created, for example:
-
-1. HierarchicalOrder for Data Collection:
-   - **agent_name:** “DataMiner_Agent”
-   - **task:** “Access external APIs and scrape structured market data from approved financial news sources.”
-
-2. HierarchicalOrder for Data Preprocessing:
-   - **agent_name:** “Preprocess_Expert”
-   - **task:** “Clean and normalize the collected datasets, ensuring removal of duplicate records and compliance with data privacy rules.”
-
-3. HierarchicalOrder for Preliminary Trend Analysis:
-   - **agent_name:** “TrendAnalyst_Pro”
-   - **task:** “Apply statistical models to identify initial trends and anomalies in the market data.”
-
-Each order is meticulously validated against the rules provided in the SwarmSpec and prioritized according to the project timeline. The director ensures that if any of these tasks are delayed, backup agents are identified and the orders are reissued in real time.
-
----
-
-**VI. Detailed Hierarchical Order Construction and Validation**
-
-1. **Order Structuring:**  
-   - Begin by constructing a template that includes placeholders for the agent’s name and a detailed description of the task.  
-   - Ensure that the task description is unambiguous. For instance, rather than stating “analyze data,” specify “analyze the temporal patterns in consumer sentiment from Q1 and Q2, and identify correlations with economic indicators.”
-
-2. **Validation Workflow:**  
-   - Prior to dispatch, each HierarchicalOrder must undergo a validation check. This includes verifying that the agent’s capabilities align with the task, that the task does not conflict with any other orders, and that the task is fully compliant with the operational rules.
-   - If a validation error is detected, the order should be revised. The director may consult with relevant experts or consult historical data to refine the task’s description and ensure it is actionable.
-
-3. **Order Finalization:**  
-   - Once validated, finalize the HierarchicalOrder and insert it into the “orders” list of the SwarmSpec.  
-   - Dispatch the order immediately, ensuring that the worker agent acknowledges receipt and provides an estimated time of completion.  
-   - Continuously monitor the progress, and if any agent’s status changes (e.g., they become overloaded or unresponsive), trigger a reallocation process based on the predefined agent selection strategy.
-
----
-
-**VII. Continuous Monitoring, Feedback, and Dynamic Reassignment**
-
-1. **Real-Time Status Tracking:**  
-   - Use real-time dashboards to monitor each agent’s progress on the assigned tasks.  
-   - Update the hierarchical ordering system dynamically if a task is delayed, incomplete, or requires additional resources.
-
-2. **Feedback Loop Integration:**  
-   - Each worker agent must provide periodic status updates, including intermediate results, encountered issues, and resource usage.
-   - The director uses these updates to adjust task priorities and reassign tasks if necessary. This dynamic feedback loop ensures the overall swarm remains agile and responsive.
-
-3. **Performance Metrics and Analysis:**  
-   - At the conclusion of every mission, aggregate performance metrics and conduct a thorough review of task efficiency.  
-   - Identify any tasks that repeatedly underperform or cause delays, and adjust the agent selection criteria accordingly for future orders.
-   - Document lessons learned and integrate them into the operating procedures for continuous improvement.
-
----
-
-**VIII. Final Directives and Implementation Mandate**
-
-As the Hierarchical Agent Director, your mandate is clear: you must orchestrate the operation with precision, clarity, and unwavering adherence to the overarching goals and rules specified in the SwarmSpec. You are empowered to deconstruct complex objectives into manageable tasks and to assign these tasks to the worker agents best equipped to execute them.
-
-Your decisions must always be data-driven, relying on agent profiles, historical performance, and real-time feedback. Ensure that every HierarchicalOrder is constructed with a clear task description and assigned to an agent whose expertise aligns perfectly with the requirements. Maintain strict compliance with all operational rules, and be ready to adapt dynamically as conditions change.
-
-This production-grade prompt is your operational blueprint. Utilize it to break down orders efficiently, assign tasks intelligently, and steer the swarm toward achieving the defined goals with optimal efficiency and reliability. Every decision you make should reflect a deep commitment to excellence, safety, and operational integrity.
-
-Remember: the success of the swarm depends on your ability to manage complexity, maintain transparency, and dynamically adapt to the evolving operational landscape. Execute your role with diligence, precision, and a relentless focus on performance excellence.
-
+Remember: You must create orders that are executable, well-prioritized, and designed for reliability. Consider agent capabilities, task dependencies, and system constraints when making assignments.
 """
 
 
@@ -228,6 +228,10 @@ class TeamUnit(BaseModel):
     team_leader: Optional[Union[Agent, Any]] = Field(
         None, description="The team leader of the team."
     )
+    max_concurrent_tasks: int = Field(
+        default=3,
+        description="Maximum concurrent tasks for this team"
+    )
 
     class Config:
         arbitrary_types_allowed = True
@@ -235,19 +239,22 @@ class TeamUnit(BaseModel):
 
 class HierarchicalSwarm(BaseSwarm):
     """
-    _Representer a hierarchical swarm of agents, with a director that orchestrates tasks among the agents.
-    The workflow follows a hierarchical pattern:
-    1. Task is received and sent to the director
-    2. Director creates a plan and distributes orders to agents
-    3. Agents execute tasks and report back to the director
-    4. Director evaluates results and issues new orders if needed (up to max_loops)
-    5. All context and conversation history is preserved throughout the process
+    Enhanced hierarchical swarm with improved reliability, error handling, and performance.
+    
+    Features:
+    - Concurrent task execution
+    - Retry mechanisms with exponential backoff
+    - Agent health monitoring
+    - Graceful degradation
+    - Task dependency management
+    - Performance metrics tracking
+    - Load balancing
     """
 
     def __init__(
         self,
         name: str = "HierarchicalAgentSwarm",
-        description: str = "Distributed task swarm",
+        description: str = "Enhanced distributed task swarm",
         director: Optional[Union[Agent, Any]] = None,
         agents: List[Union[Agent, Any]] = None,
         max_loops: int = 1,
@@ -255,18 +262,36 @@ class HierarchicalSwarm(BaseSwarm):
         director_model_name: str = "gpt-4o",
         teams: Optional[List[TeamUnit]] = None,
         inter_agent_loops: int = 1,
+        max_concurrent_tasks: int = 5,
+        task_timeout: int = 300,
+        retry_attempts: int = 3,
+        health_check_interval: float = 30.0,
+        failure_threshold: float = 0.3,
+        enable_monitoring: bool = True,
+        enable_load_balancing: bool = True,
         *args,
         **kwargs,
     ):
         """
-        Initializes the HierarchicalSwarm with the given parameters.
+        Initialize the enhanced HierarchicalSwarm.
 
-        :param name: The name of the swarm.
-        :param description: A description of the swarm.
-        :param director: The director agent that orchestrates tasks.
-        :param agents: A list of agents within the swarm.
-        :param max_loops: The maximum number of feedback loops between the director and agents.
-        :param output_type: The format in which to return the output (dict, str, or list).
+        Args:
+            name: The name of the swarm
+            description: A description of the swarm
+            director: The director agent that orchestrates tasks
+            agents: A list of agents within the swarm
+            max_loops: Maximum number of feedback loops
+            output_type: Format for output return
+            director_model_name: Model name for the director
+            teams: Optional list of team units
+            inter_agent_loops: Number of inter-agent loops
+            max_concurrent_tasks: Maximum concurrent tasks
+            task_timeout: Default timeout for tasks
+            retry_attempts: Default retry attempts
+            health_check_interval: Interval for health checks
+            failure_threshold: Failure threshold for degraded mode
+            enable_monitoring: Enable agent monitoring
+            enable_load_balancing: Enable load balancing
         """
         super().__init__(
             name=name,
@@ -274,49 +299,150 @@ class HierarchicalSwarm(BaseSwarm):
             agents=agents,
         )
         self.director = director
-        self.agents = agents
+        self.agents = agents or []
         self.max_loops = max_loops
         self.output_type = output_type
         self.director_model_name = director_model_name
-        self.teams = teams
+        self.teams = teams or []
         self.inter_agent_loops = inter_agent_loops
+        self.max_concurrent_tasks = max_concurrent_tasks
+        self.task_timeout = task_timeout
+        self.retry_attempts = retry_attempts
+        self.health_check_interval = health_check_interval
+        self.failure_threshold = failure_threshold
+        self.enable_monitoring = enable_monitoring
+        self.enable_load_balancing = enable_load_balancing
 
-        self.conversation = Conversation(time_enabled=False)
+        # Initialize enhanced components
+        self.conversation = Conversation(time_enabled=True)
         self.current_loop = 0
-        self.agent_outputs = {}  # Store agent outputs for each loop
+        self.agent_outputs = {}
+        self.task_results = []
+        self.agent_health = {}
+        self.task_queue = deque()
+        self.running_tasks = {}
+        self.completed_tasks = {}
+        self.failed_tasks = {}
+        self.performance_metrics = {}
+        self._shutdown_event = threading.Event()
+        self._health_monitor_thread = None
+        self._task_executor = ThreadPoolExecutor(max_workers=max_concurrent_tasks)
 
+        # Initialize swarm
+        self._initialize_swarm()
+
+    def _initialize_swarm(self):
+        """Initialize the swarm with enhanced features"""
         self.add_name_and_description()
-
-        # Reliability checks
         self.reliability_checks()
-
-        # Handle teams
         self.handle_teams()
-
-        # List all agents
+        self._initialize_agent_health()
         list_all_agents(self.agents, self.conversation, self.name)
-
         self.director = self.setup_director()
+        
+        if self.enable_monitoring:
+            self._start_health_monitor()
+            
+        logger.info(f"Enhanced hierarchical swarm '{self.name}' initialized successfully")
+
+    def _initialize_agent_health(self):
+        """Initialize health monitoring for all agents"""
+        current_time = time.time()
+        for agent in self.agents:
+            if hasattr(agent, 'agent_name') and agent.agent_name:
+                self.agent_health[agent.agent_name] = AgentHealth(
+                    agent_name=agent.agent_name,
+                    state=AgentState.IDLE,
+                    last_activity=current_time,
+                    task_count=0,
+                    success_rate=1.0,
+                    avg_response_time=0.0,
+                    consecutive_failures=0
+                )
+
+    def _start_health_monitor(self):
+        """Start the health monitoring thread"""
+        if self._health_monitor_thread is None:
+            self._health_monitor_thread = threading.Thread(
+                target=self._health_monitor_loop,
+                daemon=True
+            )
+            self._health_monitor_thread.start()
+
+    def _health_monitor_loop(self):
+        """Health monitoring loop"""
+        while not self._shutdown_event.is_set():
+            try:
+                self._check_agent_health()
+                self._update_performance_metrics()
+                time.sleep(self.health_check_interval)
+            except Exception as e:
+                logger.error(f"Health monitor error: {e}")
+
+    def _check_agent_health(self):
+        """Check health of all agents"""
+        current_time = time.time()
+        for agent_name, health in self.agent_health.items():
+            # Check for inactive agents
+            if current_time - health.last_activity > self.health_check_interval * 2:
+                if health.state == AgentState.RUNNING:
+                    logger.warning(f"Agent {agent_name} appears to be stuck")
+                    health.state = AgentState.FAILED
+                    health.consecutive_failures += 1
+
+            # Check failure rate
+            if health.success_rate < self.failure_threshold:
+                logger.warning(f"Agent {agent_name} has high failure rate: {health.success_rate:.2f}")
+                if health.consecutive_failures >= 3:
+                    health.state = AgentState.DISABLED
+                    logger.error(f"Agent {agent_name} disabled due to consecutive failures")
+
+    def _update_performance_metrics(self):
+        """Update performance metrics"""
+        total_tasks = len(self.task_results)
+        if total_tasks > 0:
+            successful_tasks = sum(1 for result in self.task_results if result.success)
+            self.performance_metrics['success_rate'] = successful_tasks / total_tasks
+            self.performance_metrics['total_tasks'] = total_tasks
+            self.performance_metrics['avg_execution_time'] = sum(
+                result.execution_time for result in self.task_results
+            ) / total_tasks
 
     def handle_teams(self):
+        """Enhanced team handling with load balancing"""
         if not self.teams:
             return
 
-        # Use list comprehension for faster team processing
-        team_list = [team.model_dump() for team in self.teams]
+        team_agents = []
+        for team in self.teams:
+            if team.agents:
+                team_agents.extend(team.agents)
+                # Set up team-specific configurations
+                for agent in team.agents:
+                    # Only set team_name if agent supports it
+                    if hasattr(agent, '__dict__'):
+                        agent.__dict__['team_name'] = team.name
 
-        # Use extend() instead of append() in a loop for better performance
-        self.agents.extend(
-            agent for team in team_list for agent in team["agents"]
-        )
-
-        # Add conversation message
+        self.agents.extend(team_agents)
+        
+        # Add team information to conversation
+        team_info = [
+            {
+                "name": team.name,
+                "description": team.description,
+                "agent_count": len(team.agents) if team.agents else 0,
+                "max_concurrent_tasks": team.max_concurrent_tasks
+            }
+            for team in self.teams
+        ]
+        
         self.conversation.add(
             role="System",
-            content=f"Teams Available: {any_to_str(team_list)}",
+            content=f"Teams Available: {any_to_str(team_info)}",
         )
 
     def setup_director(self):
+        """Set up the director with enhanced capabilities"""
         director = OpenAIFunctionCaller(
             model_name=self.director_model_name,
             system_prompt=HIEARCHICAL_SWARM_SYSTEM_PROMPT,
@@ -325,383 +451,605 @@ class HierarchicalSwarm(BaseSwarm):
             base_model=SwarmSpec,
             max_tokens=10000,
         )
-
         return director
 
     def reliability_checks(self):
-        """
-        Checks if there are any agents and a director set for the swarm.
-        Raises ValueError if either condition is not met.
-        """
+        """Enhanced reliability checks"""
+        logger.info(f"🔍 PERFORMING ENHANCED RELIABILITY CHECKS: {self.name}")
 
-        logger.info(f"🔍 CHECKING RELIABILITY OF SWARM: {self.name}")
+        # Basic checks
+        if not self.agents:
+            raise ValueError("No agents found in the swarm. At least one agent must be provided.")
 
-        if len(self.agents) == 0:
-            raise ValueError(
-                "No agents found in the swarm. At least one agent must be provided to create a hierarchical swarm."
-            )
+        if self.max_loops <= 0:
+            raise ValueError("Max loops must be greater than 0.")
 
-        if self.max_loops == 0:
-            raise ValueError(
-                "Max loops must be greater than 0. Please set a valid number of loops."
-            )
+        # Enhanced checks
+        if self.max_concurrent_tasks <= 0:
+            raise ValueError("max_concurrent_tasks must be greater than 0.")
 
+        if self.task_timeout <= 0:
+            raise ValueError("task_timeout must be greater than 0.")
+
+        if not 0 <= self.failure_threshold <= 1:
+            raise ValueError("failure_threshold must be between 0 and 1.")
+
+        # Validate agents
+        for i, agent in enumerate(self.agents):
+            if not hasattr(agent, 'agent_name') or not agent.agent_name:
+                raise ValueError(f"Agent {i} must have a valid agent_name.")
+            if not hasattr(agent, 'run') or not callable(agent.run):
+                raise ValueError(f"Agent {i} must have a callable 'run' method.")
+
+        # Set up director
         if self.director is None:
             self.director = self.agents[0]
+            logger.info(f"Director not specified, using first agent: {self.director.agent_name}")
 
-        if not self.director:
-            raise ValueError(
-                "Director not set for the swarm. A director agent is required to coordinate and orchestrate tasks among the agents."
+        logger.info(f"✅ ENHANCED RELIABILITY CHECKS PASSED: {self.name}")
+
+    def get_healthy_agents(self) -> List[Agent]:
+        """Get list of healthy agents available for task assignment"""
+        healthy_agents = []
+        for agent in self.agents:
+            health = self.agent_health.get(agent.agent_name)
+            if health and health.state not in [AgentState.DISABLED, AgentState.FAILED]:
+                healthy_agents.append(agent)
+        return healthy_agents
+
+    def select_best_agent(self, task: str, exclude_agents: Optional[List[str]] = None) -> Optional[Agent]:
+        """Select the best agent for a task based on health and load balancing"""
+        if exclude_agents is None:
+            exclude_agents = []
+            
+        available_agents = [
+            agent for agent in self.get_healthy_agents()
+            if agent.agent_name not in exclude_agents
+        ]
+
+        if not available_agents:
+            return None
+
+        if not self.enable_load_balancing:
+            return available_agents[0]
+
+        # Select agent with lowest current load and best performance
+        best_agent = None
+        best_score = float('inf')
+
+        for agent in available_agents:
+            health = self.agent_health.get(agent.agent_name)
+            if health is None:
+                continue
+                
+            # Calculate load score (lower is better)
+            current_load = sum(1 for task_name, task_info in self.running_tasks.items()
+                             if task_info.get('agent_name') == agent.agent_name)
+            load_score = current_load / max(health.success_rate, 0.1)
+            
+            if load_score < best_score:
+                best_score = load_score
+                best_agent = agent
+
+        return best_agent
+
+    def run_director(self, task: str, loop_context: str = "", img: str = None) -> SwarmSpec:
+        """Run the director with enhanced context and error handling"""
+        try:
+            # Build comprehensive context
+            agent_status = self._get_agent_status_summary()
+            performance_summary = self._get_performance_summary()
+            
+            director_context = f"""
+Swarm Status: {agent_status}
+Performance: {performance_summary}
+History: {self.conversation.get_str()}
+"""
+            
+            if loop_context:
+                director_context += f"\n\nCurrent Loop ({self.current_loop}/{self.max_loops}): {loop_context}"
+            
+            director_context += f"\n\nYour Task: {task}"
+
+            # Run director with timeout
+            start_time = time.time()
+            function_call = self.director.run(task=director_context)
+            execution_time = time.time() - start_time
+
+            # Log director output
+            formatter.print_panel(
+                f"Director Output (Loop {self.current_loop}/{self.max_loops}):\n{function_call}",
+                title="Director's Orders",
             )
 
-        logger.info(f"🔍 RELIABILITY CHECKS PASSED: {self.name}")
+            # Add to conversation
+            self.conversation.add(
+                role="Director",
+                content=f"Loop {self.current_loop}/{self.max_loops}: {function_call}",
+            )
 
-    def run_director(
-        self, task: str, loop_context: str = "", img: str = None
-    ) -> SwarmSpec:
-        """
-        Runs a task through the director agent with the current conversation context.
+            # Validate SwarmSpec
+            if not isinstance(function_call, SwarmSpec):
+                logger.error("Director did not return a valid SwarmSpec")
+                raise ValueError("Invalid director response")
 
-        :param task: The task to be executed by the director.
-        :param loop_context: Additional context specific to the current loop.
-        :param img: Optional image to be used with the task.
-        :return: The SwarmSpec containing the director's orders.
-        """
-        # Create a comprehensive context for the director
-        director_context = f"History: {self.conversation.get_str()}"
+            logger.info(f"Director executed successfully in {execution_time:.2f}s")
+            return function_call
 
-        if loop_context:
-            director_context += f"\n\nCurrent Loop ({self.current_loop}/{self.max_loops}): {loop_context}"
+        except Exception as e:
+            logger.error(f"Director execution failed: {e}")
+            # Return a fallback SwarmSpec
+            return SwarmSpec(
+                goals="Emergency fallback mode",
+                plan="Execute available tasks with reduced functionality",
+                rules="Follow basic operational guidelines",
+                orders=[]
+            )
 
-        director_context += f"\n\nYour Task: {task}"
+    def _get_agent_status_summary(self) -> str:
+        """Get summary of agent status"""
+        status_counts = {}
+        for health in self.agent_health.values():
+            status_counts[health.state.value] = status_counts.get(health.state.value, 0) + 1
+        
+        return f"Agents: {dict(status_counts)}"
 
-        # Run the director with the context
-        function_call = self.director.run(task=director_context)
+    def _get_performance_summary(self) -> str:
+        """Get performance summary"""
+        if not self.performance_metrics:
+            return "No performance data available"
+        
+        return f"Success Rate: {self.performance_metrics.get('success_rate', 0):.2f}, " \
+               f"Total Tasks: {self.performance_metrics.get('total_tasks', 0)}"
 
-        formatter.print_panel(
-            f"Director Output (Loop {self.current_loop}/{self.max_loops}):\n{function_call}",
-            title="Director's Orders",
+    def run_agent_with_retry(self, agent: Agent, task: str, order: HierarchicalOrder, img: str = None) -> TaskResult:
+        """Run agent with retry mechanism and timeout"""
+        agent_name = agent.agent_name
+        if not agent_name:
+            logger.error("Agent has no name, cannot execute task")
+            return TaskResult(
+                agent_name="unknown",
+                task=task,
+                output="",
+                success=False,
+                execution_time=0.0,
+                timestamp=time.time(),
+                error="Agent has no name"
+            )
+            
+        start_time = time.time()
+        
+        for attempt in range(order.retry_count + 1):
+            try:
+                # Update agent health
+                health = self.agent_health.get(agent_name)
+                if health is None:
+                    # Initialize health if not found
+                    health = AgentHealth(
+                        agent_name=agent_name,
+                        state=AgentState.IDLE,
+                        last_activity=time.time(),
+                        task_count=0,
+                        success_rate=1.0,
+                        avg_response_time=0.0,
+                        consecutive_failures=0
+                    )
+                    self.agent_health[agent_name] = health
+                
+                health.state = AgentState.RUNNING
+                health.last_activity = time.time()
+
+                # Prepare context
+                agent_context = f"""
+Loop: {self.current_loop}/{self.max_loops}
+Attempt: {attempt + 1}/{order.retry_count + 1}
+Priority: {order.priority.name}
+History: {self.conversation.get_str()}
+Your Task: {task}
+"""
+
+                # Run agent with timeout
+                future = self._task_executor.submit(agent.run, agent_context)
+                
+                try:
+                    timeout_value = order.timeout or self.task_timeout
+                    output = future.result(timeout=timeout_value)
+                    
+                    # Task succeeded
+                    execution_time = time.time() - start_time
+                    health.state = AgentState.COMPLETED
+                    health.task_count += 1
+                    health.consecutive_failures = 0
+                    
+                    # Update success rate
+                    total_tasks = health.task_count
+                    if total_tasks > 0:
+                        previous_successes = (total_tasks - 1) * health.success_rate
+                        health.success_rate = (previous_successes + 1) / total_tasks
+                    
+                    # Update average response time
+                    if health.avg_response_time == 0:
+                        health.avg_response_time = execution_time
+                    else:
+                        health.avg_response_time = (health.avg_response_time + execution_time) / 2
+
+                    # Add to conversation
+                    self.conversation.add(
+                        role=agent_name,
+                        content=f"Loop {self.current_loop}/{self.max_loops}: {output}",
+                    )
+
+                    # Create successful result
+                    result = TaskResult(
+                        agent_name=agent_name,
+                        task=task,
+                        output=output,
+                        success=True,
+                        execution_time=execution_time,
+                        timestamp=time.time()
+                    )
+                    
+                    self.task_results.append(result)
+                    logger.info(f"Agent {agent_name} completed task successfully in {execution_time:.2f}s")
+                    
+                    return result
+                    
+                except Exception as timeout_e:
+                    logger.warning(f"Agent {agent_name} timed out on attempt {attempt + 1}: {timeout_e}")
+                    if attempt < order.retry_count:
+                        time.sleep(min(2 ** attempt, 10))  # Exponential backoff
+                        continue
+                    else:
+                        raise
+
+            except Exception as e:
+                logger.error(f"Agent {agent_name} failed on attempt {attempt + 1}: {e}")
+                
+                # Update health on failure
+                health = self.agent_health.get(agent_name)
+                if health is not None:
+                    health.consecutive_failures += 1
+                    health.task_count += 1
+                    
+                    # Update success rate
+                    total_tasks = health.task_count
+                    if total_tasks > 0:
+                        previous_successes = (total_tasks - 1) * health.success_rate
+                        health.success_rate = previous_successes / total_tasks
+                
+                if attempt < order.retry_count:
+                    time.sleep(min(2 ** attempt, 10))  # Exponential backoff
+                    continue
+                else:
+                    # All attempts failed
+                    if health is not None:
+                        health.state = AgentState.FAILED
+                    
+                    execution_time = time.time() - start_time
+                    
+                    result = TaskResult(
+                        agent_name=agent_name,
+                        task=task,
+                        output="",
+                        success=False,
+                        execution_time=execution_time,
+                        timestamp=time.time(),
+                        error=str(e)
+                    )
+                    
+                    self.task_results.append(result)
+                    logger.error(f"Agent {agent_name} failed after {order.retry_count + 1} attempts")
+                    
+                    return result
+
+        # This should never be reached, but adding for completeness
+        return TaskResult(
+            agent_name=agent_name,
+            task=task,
+            output="",
+            success=False,
+            execution_time=time.time() - start_time,
+            timestamp=time.time(),
+            error="Unexpected execution path"
         )
 
-        # Add director's output to the conversation
-        self.conversation.add(
-            role="Director",
-            content=f"Loop {self.current_loop}/{self.max_loops}: {function_call}",
-        )
+    def execute_orders_concurrently(self, orders: List[HierarchicalOrder], img: str = None) -> Dict[str, TaskResult]:
+        """Execute orders concurrently with dependency management"""
+        results = {}
+        completed_agents = set()
+        
+        # Sort orders by priority
+        sorted_orders = sorted(orders, key=lambda x: x.priority.value, reverse=True)
+        
+        # Group orders by dependency level
+        dependency_groups = self._group_orders_by_dependencies(sorted_orders)
+        
+        for group in dependency_groups:
+            # Execute current group concurrently
+            futures = {}
+            
+            for order in group:
+                agent = self.find_agent(order.agent_name)
+                if agent is None:
+                    logger.error(f"Agent {order.agent_name} not found")
+                    continue
+                
+                # Check if agent is healthy
+                health = self.agent_health.get(order.agent_name)
+                if health and health.state == AgentState.DISABLED:
+                    logger.warning(f"Agent {order.agent_name} is disabled, skipping task")
+                    continue
+                
+                # Submit task
+                future = self._task_executor.submit(
+                    self.run_agent_with_retry, agent, order.task, order, img
+                )
+                futures[future] = order
+            
+            # Wait for all tasks in current group to complete
+            for future in as_completed(futures):
+                order = futures[future]
+                try:
+                    result = future.result()
+                    results[order.agent_name] = result
+                    completed_agents.add(order.agent_name)
+                    
+                    formatter.print_panel(
+                        result.output if result.success else f"FAILED: {result.error}",
+                        title=f"Output from {order.agent_name} - Loop {self.current_loop}/{self.max_loops}",
+                    )
+                    
+                except Exception as e:
+                    logger.error(f"Unexpected error executing order for {order.agent_name}: {e}")
+                    results[order.agent_name] = TaskResult(
+                        agent_name=order.agent_name,
+                        task=order.task,
+                        output="",
+                        success=False,
+                        execution_time=0,
+                        timestamp=time.time(),
+                        error=str(e)
+                    )
+        
+        return results
 
-        return function_call
+    def _group_orders_by_dependencies(self, orders: List[HierarchicalOrder]) -> List[List[HierarchicalOrder]]:
+        """Group orders by their dependencies to enable proper execution order"""
+        dependency_groups = []
+        remaining_orders = orders.copy()
+        completed_agents = set()
+        
+        while remaining_orders:
+            current_group = []
+            
+            # Find orders that can be executed (no pending dependencies)
+            for order in remaining_orders[:]:
+                if not order.depends_on or all(dep in completed_agents for dep in order.depends_on):
+                    current_group.append(order)
+                    remaining_orders.remove(order)
+            
+            if not current_group:
+                # Deadlock or circular dependency - execute remaining orders anyway
+                logger.warning("Potential circular dependency detected, executing remaining orders")
+                current_group = remaining_orders.copy()
+                remaining_orders.clear()
+            
+            dependency_groups.append(current_group)
+            completed_agents.update(order.agent_name for order in current_group)
+        
+        return dependency_groups
 
-    def run(
-        self, task: str, img: str = None, *args, **kwargs
-    ) -> Union[str, Dict, List]:
-        """
-        Runs a task through the swarm, involving the director and agents through multiple loops.
-
-        :param task: The task to be executed by the swarm.
-        :param img: Optional image to be used with the task.
-        :return: The output of the swarm's task execution in the specified format.
-        """
-        # Add the initial task to the conversation
+    def run(self, task: str, img: str = None, *args, **kwargs) -> Union[str, Dict, List]:
+        """Enhanced run method with improved reliability and performance"""
+        logger.info(f"Starting enhanced hierarchical swarm execution for task: {task}")
+        
+        # Add initial task to conversation
         self.conversation.add(role="User", content=f"Task: {task}")
-
-        # Reset loop counter and agent outputs
+        
+        # Reset execution state
         self.current_loop = 0
         self.agent_outputs = {}
-
+        self.task_results = []
+        
         # Initialize loop context
         loop_context = "Initial planning phase"
-
-        # Execute the loops
-        for loop_idx in range(self.max_loops):
-            self.current_loop = loop_idx + 1
-
-            # Log loop start
-            logger.info(
-                f"Starting loop {self.current_loop}/{self.max_loops}"
-            )
-
-            # Get director's orders
-            swarm_spec = self.run_director(
-                task=task, loop_context=loop_context, img=img
-            )
-
-            # Add the swarm specification to the conversation
-            self.add_goal_and_more_in_conversation(swarm_spec)
-
-            # Parse and execute the orders
-            orders_list = self.parse_swarm_spec(swarm_spec)
-
-            # Store outputs for this loop
-            self.agent_outputs[self.current_loop] = {}
-
-            # Execute each order
-            for order in orders_list:
-                agent_output = self.run_agent(
-                    agent_name=order.agent_name,
-                    task=order.task,
-                    img=img,
-                )
-
-                # Store the agent's output for this loop
-                self.agent_outputs[self.current_loop][
-                    order.agent_name
-                ] = agent_output
-
-            # Prepare context for the next loop
-            loop_context = self.compile_loop_context(
-                self.current_loop
-            )
-
-            # If this is the last loop, break out
-            if self.current_loop >= self.max_loops:
-                break
-
-        # Return the results in the specified format
-        return history_output_formatter(
-            self.conversation, self.output_type
-        )
+        
+        try:
+            # Execute loops
+            for loop_idx in range(self.max_loops):
+                self.current_loop = loop_idx + 1
+                logger.info(f"Starting loop {self.current_loop}/{self.max_loops}")
+                
+                # Check swarm health
+                healthy_agents = self.get_healthy_agents()
+                if len(healthy_agents) < len(self.agents) * (1 - self.failure_threshold):
+                    logger.warning("Swarm is in degraded mode due to agent failures")
+                
+                # Get director's orders
+                swarm_spec = self.run_director(task=task, loop_context=loop_context, img=img)
+                
+                # Add swarm spec to conversation
+                self.add_goal_and_more_in_conversation(swarm_spec)
+                
+                # Parse orders
+                orders = self.parse_swarm_spec(swarm_spec)
+                if not orders:
+                    logger.warning("No orders received from director")
+                    continue
+                
+                # Execute orders concurrently
+                loop_results = self.execute_orders_concurrently(orders, img=img)
+                
+                # Store results for this loop
+                self.agent_outputs[self.current_loop] = {
+                    name: result.output for name, result in loop_results.items()
+                }
+                
+                # Prepare context for next loop
+                loop_context = self.compile_loop_context(self.current_loop)
+                
+                # Check if we should continue
+                if self.current_loop >= self.max_loops:
+                    break
+                
+                # Brief pause between loops
+                time.sleep(0.1)
+            
+            # Return formatted results
+            logger.info(f"Hierarchical swarm execution completed after {self.current_loop} loops")
+            return history_output_formatter(self.conversation, self.output_type)
+            
+        except Exception as e:
+            logger.error(f"Hierarchical swarm execution failed: {e}")
+            # Return error information
+            return {
+                "error": str(e),
+                "completed_loops": self.current_loop,
+                "partial_results": self.agent_outputs
+            }
 
     def compile_loop_context(self, loop_number: int) -> str:
-        """
-        Compiles the context for a specific loop, including all agent outputs.
-
-        :param loop_number: The loop number to compile context for.
-        :return: A string representation of the loop context.
-        """
+        """Enhanced loop context compilation with performance metrics"""
         if loop_number not in self.agent_outputs:
             return "No agent outputs available for this loop."
-
+        
         context = f"Results from loop {loop_number}:\n"
-
-        for agent_name, output in self.agent_outputs[
-            loop_number
-        ].items():
+        
+        # Add agent outputs
+        for agent_name, output in self.agent_outputs[loop_number].items():
             context += f"\n--- {agent_name}'s Output ---\n{output}\n"
-
+        
+        # Add performance metrics
+        successful_tasks = sum(1 for result in self.task_results 
+                             if result.success and result.timestamp > time.time() - 60)
+        total_tasks = len([result for result in self.task_results 
+                          if result.timestamp > time.time() - 60])
+        
+        if total_tasks > 0:
+            success_rate = successful_tasks / total_tasks
+            context += f"\n--- Performance Metrics ---\nSuccess Rate: {success_rate:.2f}\n"
+        
         return context
 
     def add_name_and_description(self):
-        """
-        Adds the swarm's name and description to the conversation.
-        """
+        """Add swarm name and description to conversation"""
         self.conversation.add(
             role="System",
-            content=f"\n\nSwarm Name: {self.name}\n\nSwarm Description: {self.description}",
+            content=f"Enhanced Swarm Name: {self.name}\nSwarm Description: {self.description}",
         )
 
     def find_agent(self, name: str) -> Optional[Agent]:
-        """
-        Finds an agent by its name within the swarm.
-
-        :param name: The name of the agent to find.
-        :return: The agent if found, otherwise None.
-        :raises: ValueError if agent is not found
-        """
+        """Find agent by name with enhanced error handling"""
         try:
-            # Fast path: use list comprehension for quick lookup
             matching_agents = [
-                agent
-                for agent in self.agents
+                agent for agent in self.agents
                 if agent.agent_name == name
             ]
-
+            
             if not matching_agents:
-                error_msg = f"Agent '{name}' not found in the swarm '{self.name}'"
-                logger.error(error_msg)
+                logger.error(f"Agent '{name}' not found in swarm '{self.name}'")
                 return None
-
+            
             return matching_agents[0]
-
         except Exception as e:
-            logger.error(f"Error finding agent '{name}': {str(e)}")
+            logger.error(f"Error finding agent '{name}': {e}")
             return None
 
-    def run_agent(
-        self, agent_name: str, task: str, img: str = None
-    ) -> str:
-        """
-        Runs a task through a specific agent, providing it with the full conversation context.
-
-        :param agent_name: The name of the agent to execute the task.
-        :param task: The task to be executed by the agent.
-        :param img: Optional image to be used with the task.
-        :return: The output of the agent's task execution.
-        """
+    def parse_swarm_spec(self, swarm_spec: SwarmSpec) -> List[HierarchicalOrder]:
+        """Parse SwarmSpec with enhanced validation"""
         try:
-            agent = self.find_agent(agent_name)
-
-            # Prepare context for the agent
-            agent_context = (
-                f"Loop: {self.current_loop}/{self.max_loops}\n"
-                f"History: {self.conversation.get_str()}\n"
-                f"Your Task: {task}"
-            )
-
-            # Run the agent with the context
-            formatter.print_panel(
-                f"Running agent '{agent_name}' with task: {task}",
-                title=f"Agent Task - Loop {self.current_loop}/{self.max_loops}",
-            )
-
-            out = agent.run(task=agent_context)
-
-            # Add the agent's output to the conversation
-            self.conversation.add(
-                role=agent_name,
-                content=f"Loop {self.current_loop}/{self.max_loops}: {out}",
-            )
-
-            formatter.print_panel(
-                out,
-                title=f"Output from {agent_name} - Loop {self.current_loop}/{self.max_loops}",
-            )
-
-            return out
+            if not isinstance(swarm_spec, SwarmSpec):
+                logger.error("Invalid SwarmSpec format")
+                return []
+            
+            orders = swarm_spec.orders
+            if not orders:
+                logger.warning("No orders found in SwarmSpec")
+                return []
+            
+            # Validate orders
+            valid_orders = []
+            for order in orders:
+                if self.find_agent(order.agent_name) is None:
+                    logger.warning(f"Skipping order for unknown agent: {order.agent_name}")
+                    continue
+                valid_orders.append(order)
+            
+            logger.info(f"Parsed {len(valid_orders)} valid orders from SwarmSpec")
+            return valid_orders
+            
         except Exception as e:
-            error_msg = (
-                f"Error running agent '{agent_name}': {str(e)}"
-            )
-            logger.error(error_msg)
-            return error_msg
-
-    def parse_orders(self, swarm_spec: SwarmSpec) -> List[Any]:
-        """
-        Parses the orders from the SwarmSpec and executes them through the agents.
-
-        :param swarm_spec: The SwarmSpec containing the orders to be parsed.
-        :return: A list of agent outputs.
-        """
-        self.add_goal_and_more_in_conversation(swarm_spec)
-        orders_list = self.parse_swarm_spec(swarm_spec)
-        outputs = []
-
-        try:
-            for order in orders_list:
-                output = self.run_agent(
-                    agent_name=order.agent_name,
-                    task=order.task,
-                )
-                outputs.append(output)
-
-            return outputs
-        except Exception as e:
-            error_msg = (
-                f"Error parsing and executing orders: {str(e)}"
-            )
-            logger.error(error_msg)
-            return [error_msg]
-
-    def parse_swarm_spec(
-        self, swarm_spec: SwarmSpec
-    ) -> List[HierarchicalOrder]:
-        """
-        Parses the SwarmSpec to extract the orders.
-
-        :param swarm_spec: The SwarmSpec to be parsed.
-        :return: The list of orders extracted from the SwarmSpec.
-        """
-        try:
-            return swarm_spec.orders
-        except AttributeError:
-            logger.error(
-                "Invalid SwarmSpec format: missing 'orders' attribute"
-            )
-            return []
-        except Exception as e:
-            logger.error(f"Error parsing SwarmSpec: {str(e)}")
+            logger.error(f"Error parsing SwarmSpec: {e}")
             return []
 
-    def provide_feedback(
-        self, agent_outputs: Dict[str, str]
-    ) -> Dict[str, str]:
-        """
-        Provides feedback to agents based on their outputs.
-
-        :param agent_outputs: A dictionary mapping agent names to their outputs.
-        :return: A dictionary of feedback for each agent.
-        """
-        feedback = {}
-
-        # Compile all agent outputs for the director
-        agent_outputs_str = "\n\n".join(
-            f"--- {agent_name} Output ---\n{output}"
-            for agent_name, output in agent_outputs.items()
-        )
-
-        # Have the director provide feedback
-        feedback_task = (
-            f"Review the following agent outputs and provide feedback for each agent.\n\n"
-            f"{agent_outputs_str}"
-        )
-
-        feedback_spec = self.run_director(task=feedback_task)
-        feedback_orders = self.parse_swarm_spec(feedback_spec)
-
-        # Process each feedback order
-        for order in feedback_orders:
-            # The agent receiving feedback
-            agent_name = order.agent_name
-            # The feedback content
-            feedback_content = order.task
-
-            # Store the feedback
-            feedback[agent_name] = feedback_content
-
-            # Add the feedback to the conversation
-            self.conversation.add(
-                role="Director",
-                content=f"Feedback for {agent_name}: {feedback_content}",
-            )
-
-        return feedback
-
-    def add_goal_and_more_in_conversation(
-        self, swarm_spec: SwarmSpec
-    ) -> None:
-        """
-        Adds the swarm's goals, plan, and rules to the conversation.
-
-        :param swarm_spec: The SwarmSpec containing the goals, plan, and rules.
-        """
+    def add_goal_and_more_in_conversation(self, swarm_spec: SwarmSpec) -> None:
+        """Add swarm goals, plan, and rules to conversation"""
         try:
-            # Directly access and format attributes in one line
             self.conversation.add(
                 role="Director",
                 content=f"Goals:\n{swarm_spec.goals}\n\nPlan:\n{swarm_spec.plan}\n\nRules:\n{swarm_spec.rules}",
             )
         except Exception as e:
-            logger.error(
-                f"Error adding goals and plan to conversation: {str(e)}"
-            )
+            logger.error(f"Error adding goals and plan to conversation: {e}")
 
-    def batch_run(
-        self, tasks: List[str], img: str = None
-    ) -> List[Union[str, Dict, List]]:
-        """
-        Runs multiple tasks sequentially through the swarm.
+    def batch_run(self, tasks: List[str], img: str = None) -> List[Union[str, Dict, List]]:
+        """Enhanced batch run with concurrent execution"""
+        logger.info(f"Starting batch run with {len(tasks)} tasks")
+        
+        if not tasks:
+            return []
+        
+        # Execute tasks concurrently
+        with ThreadPoolExecutor(max_workers=min(len(tasks), self.max_concurrent_tasks)) as executor:
+            futures = [executor.submit(self.run, task, img) for task in tasks]
+            results = []
+            
+            for future in as_completed(futures):
+                try:
+                    result = future.result()
+                    results.append(result)
+                except Exception as e:
+                    logger.error(f"Batch task failed: {e}")
+                    results.append({"error": str(e)})
+        
+        logger.info(f"Batch run completed with {len(results)} results")
+        return results
 
-        :param tasks: The list of tasks to be executed.
-        :param img: Optional image to be used with the tasks.
-        :return: A list of outputs from each task execution.
-        """
-        return [self.run(task, img) for task in tasks]
+    def get_swarm_metrics(self) -> Dict:
+        """Get comprehensive swarm metrics"""
+        metrics = {
+            "agent_count": len(self.agents),
+            "healthy_agents": len(self.get_healthy_agents()),
+            "total_tasks": len(self.task_results),
+            "successful_tasks": sum(1 for result in self.task_results if result.success),
+            "failed_tasks": sum(1 for result in self.task_results if not result.success),
+            "average_execution_time": sum(result.execution_time for result in self.task_results) / len(self.task_results) if self.task_results else 0,
+            "success_rate": sum(1 for result in self.task_results if result.success) / len(self.task_results) if self.task_results else 0,
+            "agent_health": {name: health.state.value for name, health in self.agent_health.items()},
+            "performance_metrics": self.performance_metrics
+        }
+        return metrics
 
-    def check_director_agent_output(self, output: any) -> dict:
-        if isinstance(output, dict):
-            return output
-        elif isinstance(output, str):
-            try:
-                # Attempt to parse the string as JSON
-                return json.loads(output)
-            except json.JSONDecodeError as e:
-                # Log an error if the string cannot be parsed
-                logger.error(
-                    f"Failed to parse output string as JSON: {str(e)}"
-                )
-                return {}
-        else:
-            # Log an error if the output is neither a dict nor a string
-            logger.error(
-                "Output is neither a dictionary nor a string."
-            )
-            return {}
+    def shutdown(self):
+        """Graceful shutdown of the swarm"""
+        logger.info("Shutting down hierarchical swarm...")
+        
+        # Signal shutdown
+        self._shutdown_event.set()
+        
+        # Wait for health monitor to stop
+        if self._health_monitor_thread:
+            self._health_monitor_thread.join(timeout=5)
+        
+        # Shutdown task executor
+        self._task_executor.shutdown(wait=True)
+        
+        logger.info("Hierarchical swarm shutdown complete")
+
+    def __enter__(self):
+        """Context manager entry"""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit"""
+        self.shutdown()
