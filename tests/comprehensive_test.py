@@ -443,34 +443,34 @@ def run_all_tests():
 
     tests_to_run = [
         # Basic Tests
-        # test_basic_agent_functionality,
-        # test_agent_with_custom_prompt,
-        # test_tool_execution_with_agent,
+        test_basic_agent_functionality,
+        test_agent_with_custom_prompt,
+        test_tool_execution_with_agent,
         
-        # # Multi-Modal Tests
-        # test_multimodal_execution,
-        # test_multiple_image_execution,
+        # Multi-Modal Tests
+        test_multimodal_execution,
+        test_multiple_image_execution,
         
-        # # Workflow Tests
-        # test_sequential_workflow,
-        # test_concurrent_workflow,
+        # Workflow Tests
+        test_sequential_workflow,
+        test_concurrent_workflow,
         
-        # # Advanced Swarm Tests
-        # test_agent_rearrange,
-        # test_mixture_of_agents,
+        # Advanced Swarm Tests
+        test_agent_rearrange,
+        test_mixture_of_agents,
         test_spreadsheet_swarm,
         test_hierarchical_swarm,
-        # test_majority_voting,
-        # test_round_robin_swarm,
-        # test_swarm_router,
+        test_majority_voting,
+        test_round_robin_swarm,
+        test_swarm_router,
         
-        # # Performance & Features
-        # test_streaming_mode,
-        # test_agent_memory_persistence,
-        # test_error_handling,
+        # Performance & Features
+        test_streaming_mode,
+        test_agent_memory_persistence,
+        test_error_handling,
         
-        # # Integration Tests
-        # test_complex_workflow_integration,
+        # Integration Tests
+        test_complex_workflow_integration,
     ]
 
     results = []
