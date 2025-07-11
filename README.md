@@ -225,6 +225,7 @@ print(final_post)
 | **[GroupChat](https://docs.swarms.world/en/latest/swarms/structs/group_chat/)** | Agents collaborate and make decisions through a conversational interface. | Real-time collaborative decision-making, negotiations, brainstorming. |
 | **[ForestSwarm](https://docs.swarms.world/en/latest/swarms/structs/forest_swarm/)** | Dynamically selects the most suitable agent or tree of agents for a given task. | Task routing, optimizing for expertise, complex decision-making trees. |
 | **[SpreadSheetSwarm](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)** | Manages thousands of agents concurrently, tracking tasks and outputs in a structured format. | Massive-scale parallel operations, large-scale data generation and analysis. |
+| **[HierarchicalSwarm](https://docs.swarms.world/en/latest/swarms/structs/hiearchical_swarm/)** | Orchestrates agents with a director that creates plans and distributes tasks to specialized worker agents. | Complex project management, team coordination, hierarchical decision-making with feedback loops. |
 | **[SwarmRouter](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)** | Universal orchestrator that provides a single interface to run any type of swarm with dynamic selection. | Simplifying complex workflows, switching between swarm strategies, unified multi-agent management. |
 
 -----
@@ -469,6 +470,66 @@ conversation_history = chat.run(
 for message in conversation_history:
     print(f"[{message['agent_name']}]: {message['content']}")
 ```
+
+----
+
+### HierarchicalSwarm
+
+`HierarchicalSwarm` implements a director-worker pattern where a central director agent creates comprehensive plans and distributes specific tasks to specialized worker agents. The director evaluates results and can issue new orders in feedback loops, making it ideal for complex project management and team coordination scenarios.
+
+```python
+from swarms import Agent, HierarchicalSwarm
+
+# Define specialized worker agents
+content_strategist = Agent(
+    agent_name="Content-Strategist",
+    system_prompt="You are a senior content strategist. Develop comprehensive content strategies, editorial calendars, and content roadmaps.",
+    model_name="gpt-4o-mini"
+)
+
+creative_director = Agent(
+    agent_name="Creative-Director", 
+    system_prompt="You are a creative director. Develop compelling advertising concepts, visual directions, and campaign creativity.",
+    model_name="gpt-4o-mini"
+)
+
+seo_specialist = Agent(
+    agent_name="SEO-Specialist",
+    system_prompt="You are an SEO expert. Conduct keyword research, optimize content, and develop organic growth strategies.",
+    model_name="gpt-4o-mini"
+)
+
+brand_strategist = Agent(
+    agent_name="Brand-Strategist",
+    system_prompt="You are a brand strategist. Develop brand positioning, identity systems, and market differentiation strategies.",
+    model_name="gpt-4o-mini"
+)
+
+# Create the hierarchical swarm with a director
+marketing_swarm = HierarchicalSwarm(
+    name="Marketing-Team-Swarm",
+    description="A comprehensive marketing team with specialized agents coordinated by a director",
+    agents=[content_strategist, creative_director, seo_specialist, brand_strategist],
+    max_loops=2,  # Allow for feedback and refinement
+    verbose=True
+)
+
+# Run the swarm on a complex marketing challenge
+result = marketing_swarm.run(
+    "Develop a comprehensive marketing strategy for a new SaaS product launch. "
+    "The product is a project management tool targeting small to medium businesses. "
+    "Coordinate the team to create content strategy, creative campaigns, SEO optimization, "
+    "and brand positioning that work together cohesively."
+)
+
+print(result)
+```
+
+The `HierarchicalSwarm` excels at:
+- **Complex Project Management**: Breaking down large tasks into specialized subtasks
+- **Team Coordination**: Ensuring all agents work toward unified goals
+- **Quality Control**: Director provides feedback and refinement loops
+- **Scalable Workflows**: Easy to add new specialized agents as needed
 
 ---
 
