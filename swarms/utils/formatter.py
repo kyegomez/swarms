@@ -127,12 +127,27 @@ class Formatter:
         title: str = "",
         style: str = "bold blue",
     ) -> None:
-        process_thread = threading.Thread(
-            target=self._print_panel,
-            args=(content, title, style),
-            daemon=True,
-        )
-        process_thread.start()
+        """Print content in a panel with a title and style.
+
+        Args:
+            content (str): The content to display in the panel
+            title (str): The title of the panel
+            style (str): The style to apply to the panel
+        """
+        # Handle None content
+        if content is None:
+            content = "No content to display"
+
+        # Convert non-string content to string
+        if not isinstance(content, str):
+            content = str(content)
+
+        try:
+            self._print_panel(content, title, style)
+        except Exception:
+            # Fallback to basic printing if panel fails
+            print(f"\n{title}:")
+            print(content)
 
     def print_table(
         self, title: str, data: Dict[str, List[str]]

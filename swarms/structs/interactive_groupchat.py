@@ -962,7 +962,7 @@ Remember: You are part of a team. Your response should reflect that you've read,
             if "@" in task:
                 mentioned_agents = self._extract_mentions(task)
             else:
-                pass
+                mentioned_agents = list(self.agent_map.keys())
 
             # Add user task to conversation
             self.conversation.add(role="User", content=task)

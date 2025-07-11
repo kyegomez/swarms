@@ -8,7 +8,7 @@ Swarms is an enterprise grade and production ready multi-agent collaboration fra
 | Models APIs                  | APIs to interact with and utilize the models effectively, providing interfaces for inference, training, and fine-tuning.                                               | ⭐⭐⭐                    | [Documentation](https://docs.swarms.world/en/latest/swarms/models/)            |
 | Agents with Tools            | Agents equipped with specialized tools to perform specific tasks more efficiently, such as data processing, analysis, or interaction with external systems.            | ⭐⭐⭐⭐                   | [Documentation](https://medium.com/@kyeg/the-swarms-tool-system-functions-pydantic-basemodels-as-tools-and-radical-customization-c2a2e227b8ca)            |
 | Agents with Memory                       | Mechanisms for agents to store and recall past interactions, improving learning and adaptability over time.                                                            | ⭐⭐⭐⭐                   | [Documentation](https://github.com/kyegomez/swarms/blob/master/examples/structs/agent/agent_with_longterm_memory.py)            |
-| Multi-Agent Orchestration    | Coordination of multiple agents to work together seamlessly on complex tasks, leveraging their individual strengths to achieve higher overall performance.              | ⭐⭐⭐⭐⭐                  | [Documentation]()            |
+| Multi-Agent Orchestration    | Coordination of multiple agents to work together seamlessly on complex tasks, leveraging their individual strengths to achieve higher overall performance.              | ⭐⭐⭐⭐⭐                  | [Documentation](hierarchical_swarm.md)            |
 
 The performance impact is rated on a scale from one to five stars, with multi-agent orchestration being the highest due to its ability to combine the strengths of multiple agents and optimize task execution.
 
@@ -345,5 +345,54 @@ agent = Agent(
 # Run the workflow on a task
 agent.run(task=task, img=img)
 ```
+
+### `HierarchicalSwarm`
+A sophisticated multi-agent orchestration system that implements a hierarchical workflow pattern with a director agent coordinating specialized worker agents.
+
+```python
+from swarms import Agent
+from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+
+# Create specialized agents
+research_agent = Agent(
+    agent_name="Research-Specialist",
+    agent_description="Expert in market research and analysis",
+    model_name="gpt-4o",
+)
+
+financial_agent = Agent(
+    agent_name="Financial-Analyst",
+    agent_description="Specialist in financial analysis and valuation",
+    model_name="gpt-4o",
+)
+
+# Initialize the hierarchical swarm
+swarm = HierarchicalSwarm(
+    name="Financial-Analysis-Swarm",
+    description="A hierarchical swarm for comprehensive financial analysis",
+    agents=[research_agent, financial_agent],
+    max_loops=2,
+    verbose=True,
+)
+
+# Execute a complex task
+task = "Analyze the market potential for Tesla (TSLA) stock"
+result = swarm.run(task=task)
+print(result)
+```
+
+**Key Features:**
+- **Hierarchical Coordination**: Director agent orchestrates all operations
+- **Specialized Agents**: Each agent has specific expertise and responsibilities
+- **Iterative Refinement**: Multiple feedback loops for improved results
+- **Context Preservation**: Full conversation history maintained
+- **Flexible Output Formats**: Support for various output types (dict, str, list)
+
+**Core Methods:**
+- `run(task)`: Execute the complete hierarchical workflow
+- `step(task)`: Execute a single step of the workflow
+- `batched_run(tasks)`: Process multiple tasks in batch
+
+For detailed documentation, see [Hierarchical Swarm Documentation](hierarchical_swarm.md).
 ----
 
