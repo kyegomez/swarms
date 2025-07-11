@@ -11,7 +11,7 @@ Flow:
 """
 
 import traceback
-from typing import Any, List, Optional, Union, Callable
+from typing import Any, List, Literal, Optional, Union, Callable
 
 from pydantic import BaseModel, Field
 
@@ -53,6 +53,41 @@ class SwarmSpec(BaseModel):
     orders: List[HierarchicalOrder] = Field(
         ...,
         description="A collection of task assignments to specific agents within the swarm. These orders are the specific instructions that guide the agents in their task execution and are a key element in the swarm's plan.",
+    )
+
+
+SwarmType = Literal[
+    "AgentRearrange",
+    "MixtureOfAgents",
+    "SpreadSheetSwarm",
+    "SequentialWorkflow",
+    "ConcurrentWorkflow",
+    "GroupChat",
+    "MultiAgentRouter",
+    "AutoSwarmBuilder",
+    "HiearchicalSwarm",
+    "auto",
+    "MajorityVoting",
+    "MALT",
+    "DeepResearchSwarm",
+    "CouncilAsAJudge",
+    "InteractiveGroupChat",
+]
+
+
+class SwarmRouterCall(BaseModel):
+    goal: str = Field(
+        ...,
+        description="The goal of the swarm router call. This is the goal that the swarm router will use to determine the best swarm to use.",
+    )
+    swarm_type: SwarmType = Field(
+        ...,
+        description="The type of swarm to use. This is the type of swarm that the swarm router will use to determine the best swarm to use.",
+    )
+
+    task: str = Field(
+        ...,
+        description="The task to be executed by the swarm router. This is the task that the swarm router will use to determine the best swarm to use.",
     )
 
 

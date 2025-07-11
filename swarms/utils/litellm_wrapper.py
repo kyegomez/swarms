@@ -236,9 +236,9 @@ class LiteLLM:
             # Extract mime type from the data URI or use default
             mime_type = "image/jpeg"  # default
             if "data:" in image_url and ";base64," in image_url:
-                mime_type = image_url.split(";base64,")[0].split("data:")[
-                    1
-                ]
+                mime_type = image_url.split(";base64,")[0].split(
+                    "data:"
+                )[1]
 
             # Ensure mime type is one of the supported formats
             supported_formats = [
@@ -298,7 +298,9 @@ class LiteLLM:
             # Add format for specific models
             extension = Path(image).suffix.lower()
             mime_type = (
-                f"image/{extension[1:]}" if extension else "image/jpeg"
+                f"image/{extension[1:]}"
+                if extension
+                else "image/jpeg"
             )
             vision_message["image_url"]["format"] = mime_type
 
@@ -318,27 +320,41 @@ class LiteLLM:
     def _should_use_direct_url(self, image: str) -> bool:
         """
         Determine if we should use direct URL passing instead of base64 conversion.
-        
+
         Args:
             image (str): The image source (URL or file path)
-            
+
         Returns:
             bool: True if we should use direct URL, False if we need base64 conversion
         """
         # Only use direct URL for HTTP/HTTPS URLs
         if not image.startswith(("http://", "https://")):
             return False
-        
+
         # Check for local/custom models that might not support direct URLs
         model_lower = self.model_name.lower()
-        local_indicators = ["localhost", "127.0.0.1", "local", "custom", "ollama", "llama-cpp"]
-        
-        is_local = any(indicator in model_lower for indicator in local_indicators) or \
-                   (self.base_url is not None and any(indicator in self.base_url.lower() for indicator in local_indicators))
-        
+        local_indicators = [
+            "localhost",
+            "127.0.0.1",
+            "local",
+            "custom",
+            "ollama",
+            "llama-cpp",
+        ]
+
+        is_local = any(
+            indicator in model_lower for indicator in local_indicators
+        ) or (
+            self.base_url is not None
+            and any(
+                indicator in self.base_url.lower()
+                for indicator in local_indicators
+            )
+        )
+
         if is_local:
             return False
-        
+
         # Use LiteLLM's supports_vision to check if model supports vision and direct URLs
         try:
             return supports_vision(model=self.model_name)
@@ -351,22 +367,26 @@ class LiteLLM:
         """
         Process the image for the given task.
         Handles different image formats and model requirements.
-        
+
         This method now intelligently chooses between:
         1. Direct URL passing (when model supports it and image is a URL)
         2. Base64 conversion (for local files or unsupported models)
-        
+
         This approach reduces server load and improves performance by avoiding
         unnecessary image downloads and base64 conversions when possible.
         """
         logger.info(f"Processing image for model: {self.model_name}")
-        
+
         # Log whether we're using direct URL or base64 conversion
         if self._should_use_direct_url(image):
-            logger.info(f"Using direct URL passing for image: {image[:100]}...")
+            logger.info(
+                f"Using direct URL passing for image: {image[:100]}..."
+            )
         else:
             if image.startswith(("http://", "https://")):
-                logger.info("Converting URL image to base64 (model doesn't support direct URLs)")
+                logger.info(
+                    "Converting URL image to base64 (model doesn't support direct URLs)"
+                )
             else:
                 logger.info("Converting local file to base64")
 
@@ -414,13 +434,13 @@ class LiteLLM:
     def check_if_model_supports_vision(self, img: str = None):
         """
         Check if the model supports vision capabilities.
-        
+
         This method uses LiteLLM's built-in supports_vision function to verify
         that the model can handle image inputs before processing.
-        
+
         Args:
             img (str, optional): Image path/URL to validate against model capabilities
-            
+
         Raises:
             ValueError: If the model doesn't support vision and an image is provided
         """

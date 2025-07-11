@@ -2008,7 +2008,7 @@ class Agent:
             for doc in docs:
                 data = data_to_text(doc)
                 all_data.append(f"Document: {doc}\n{data}")
-            
+
             # Combine all document content
             combined_data = "\n\n".join(all_data)
 

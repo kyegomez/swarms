@@ -228,41 +228,49 @@ def run_test_suite():
         llm = LiteLLM(model_name="gpt-4o")
         # Mock image URL to test message structure
         test_img = "https://github.com/kyegomez/swarms/blob/master/swarms_logo_new.png?raw=true"
-        messages = llm._prepare_messages("Describe this image", img=test_img)
+        messages = llm._prepare_messages(
+            "Describe this image", img=test_img
+        )
         assert isinstance(messages, list)
         assert len(messages) >= 1
         # Check if image content is properly structured
-        user_message = next((msg for msg in messages if msg["role"] == "user"), None)
+        user_message = next(
+            (msg for msg in messages if msg["role"] == "user"), None
+        )
         assert user_message is not None
         log_test_result("Message Preparation with Image", True)
     except Exception as e:
-        log_test_result("Message Preparation with Image", False, str(e))
+        log_test_result(
+            "Message Preparation with Image", False, str(e)
+        )
 
     # Test 11: Vision Processing Methods
     try:
         logger.info("Testing vision processing methods")
         llm = LiteLLM(model_name="gpt-4o")
         messages = []
-        
+
         # Test OpenAI vision processing
         processed_messages = llm.openai_vision_processing(
-            "Describe this image", 
-            "https://github.com/kyegomez/swarms/blob/master/swarms_logo_new.png?raw=true", 
-            messages.copy()
+            "Describe this image",
+            "https://github.com/kyegomez/swarms/blob/master/swarms_logo_new.png?raw=true",
+            messages.copy(),
         )
         assert isinstance(processed_messages, list)
         assert len(processed_messages) > 0
-        
+
         # Test Anthropic vision processing
-        llm_anthropic = LiteLLM(model_name="claude-3-5-sonnet-20241022")
+        llm_anthropic = LiteLLM(
+            model_name="claude-3-5-sonnet-20241022"
+        )
         processed_messages_anthropic = llm_anthropic.anthropic_vision_processing(
-            "Describe this image", 
-            "https://github.com/kyegomez/swarms/blob/master/swarms_logo_new.png?raw=true", 
-            messages.copy()
+            "Describe this image",
+            "https://github.com/kyegomez/swarms/blob/master/swarms_logo_new.png?raw=true",
+            messages.copy(),
         )
         assert isinstance(processed_messages_anthropic, list)
         assert len(processed_messages_anthropic) > 0
-        
+
         log_test_result("Vision Processing Methods", True)
     except Exception as e:
         log_test_result("Vision Processing Methods", False, str(e))
@@ -271,20 +279,22 @@ def run_test_suite():
     try:
         logger.info("Testing local vs URL detection")
         llm = LiteLLM(model_name="gpt-4o")
-        
+
         # Test URL detection
         url_test = "https://github.com/kyegomez/swarms/blob/master/swarms_logo_new.png?raw=true"
         is_url_direct = llm._should_use_direct_url(url_test)
-        
+
         # Test local file detection
         local_test = "/path/to/local/image.jpg"
         is_local_direct = llm._should_use_direct_url(local_test)
-        
+
         # URLs should potentially use direct, local files should not
         assert isinstance(is_url_direct, bool)
         assert isinstance(is_local_direct, bool)
-        assert is_local_direct == False  # Local files should never use direct URL
-        
+        assert (
+            is_local_direct == False
+        )  # Local files should never use direct URL
+
         log_test_result("Local vs URL Detection", True)
     except Exception as e:
         log_test_result("Local vs URL Detection", False, str(e))
@@ -294,22 +304,22 @@ def run_test_suite():
         logger.info("Testing vision message structure")
         llm = LiteLLM(model_name="gpt-4o")
         messages = []
-        
+
         # Test message structure for image input
         result = llm.vision_processing(
             task="What do you see?",
             image="https://github.com/kyegomez/swarms/blob/master/swarms_logo_new.png?raw=true",
-            messages=messages
+            messages=messages,
         )
-        
+
         assert isinstance(result, list)
         assert len(result) > 0
-        
+
         # Verify the message contains both text and image components
         user_msg = result[-1]  # Last message should be user message
         assert user_msg["role"] == "user"
         assert "content" in user_msg
-        
+
         log_test_result("Vision Message Structure", True)
     except Exception as e:
         log_test_result("Vision Message Structure", False, str(e))

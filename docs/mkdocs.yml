@@ -269,6 +269,7 @@ nav:
   - Examples:
     - Overview: "examples/index.md"
     - CookBook Index: "examples/cookbook_index.md"
+    - Paper Implementations: "examples/paper_implementations.md"
     - Basic Examples:
       - Individual Agents:
         - Basic Agent: "swarms/examples/basic_agent.md"
