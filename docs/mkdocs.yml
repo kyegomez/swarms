@@ -139,20 +139,21 @@ markdown_extensions:
   - pymdownx.inlinehilite
 
 nav:
-  - Home:
-    - Overview: "quickstart.md"
-    - Installation: "swarms/install/install.md"
-    - Environment Configuration: "swarms/install/env.md"
-    - Agents: "swarms/agents/index.md"
-    - Multi-Agent Architectures: "swarms/structs/index.md"
-    # - Learn More: "swarms/learn_more/index.md"
+  # - Home:
+  #   - Overview: "quickstart.md"
+  #   - Installation: "swarms/install/install.md"
+  #   - Environment Configuration: "swarms/install/env.md"
+  #   - Agents: "swarms/agents/index.md"
+  #   - Multi-Agent Architectures: "swarms/structs/index.md"
 
-  - Guides:
+  - Home:
     - Overview: "index.md"
     - Onboarding: 
       - Installation: "swarms/install/install.md"
       - Environment Configuration: "swarms/install/env.md"
-      - Quickstart: "swarms/install/quickstart.md"
+      - Quickstart: "quickstart.md"
+      - Agents: "swarms/agents/index.md"
+      - Multi-Agent Architectures: "swarms/structs/index.md"
       - Feature Set: "swarms/features.md"
     - Agents:
       - Overview: "swarms/agents/index.md"
@@ -209,6 +210,7 @@ nav:
 
 
         - Hiearchical Architectures:
+          - HierarchicalSwarm: "swarms/structs/hierarchical_swarm.md"
           - Auto Agent Builder: "swarms/structs/auto_agent_builder.md"
           - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
           - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
@@ -308,6 +310,7 @@ nav:
 
     - Advanced Examples:
       - Multi-Agent Architectures:
+        - HierarchicalSwarm Examples: "swarms/examples/hierarchical_swarm_example.md"
         - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
         - Group Chat Example: "swarms/examples/groupchat_example.md"
         - Sequential Workflow Example: "swarms/examples/sequential_example.md"

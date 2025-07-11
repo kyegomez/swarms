@@ -35,6 +35,7 @@ This page provides a comprehensive overview of all available multi-agent archite
 === "Hierarchical Architectures"
     | Architecture | Use Case | Key Functionality | Documentation |
     |-------------|----------|-------------------|---------------|
+    | HierarchicalSwarm | Hierarchical task orchestration | Director agent coordinates specialized worker agents | [Docs](hierarchical_swarm.md) |
     | Auto Agent Builder | Automated agent creation | Automatically creates and configures agents | [Docs](auto_agent_builder.md) |
     | Hybrid Hierarchical-Cluster Swarm | Complex organization | Combines hierarchical and cluster-based organization | [Docs](hhcs.md) |
     | Auto Swarm Builder | Automated swarm creation | Automatically creates and configures swarms | [Docs](auto_swarm_builder.md) |

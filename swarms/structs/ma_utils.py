@@ -45,19 +45,36 @@ def list_all_agents(
         Description: Second agent description...
     """
 
-    # Compile information about all agents
+    # Compile and describe all agents in the team
     total_agents = len(agents)
 
-    all_agents = f"Team Name: {name}\n" if name else ""
-    all_agents += (
-        f"Team Description: {description}\n" if description else ""
-    )
+    all_agents = ""
+    if name:
+        all_agents += f"Team Name: {name}\n"
+    if description:
+        all_agents += f"Team Description: {description}\n"
+    all_agents += "These are the agents in your team. Each agent has a specific role and expertise to contribute to the team's objectives.\n"
     all_agents += f"Total Agents: {total_agents}\n\n"
-    all_agents += "| Agent | Description |\n"
-    all_agents += "|-------|-------------|\n"
-    all_agents += "\n".join(
-        f"| {agent.agent_name} | {agent.description or (agent.system_prompt[:50] + '...' if len(agent.system_prompt) > 50 else agent.system_prompt)} |"
-        for agent in agents
+    all_agents += "Below is a summary of your team members and their primary responsibilities:\n"
+    all_agents += "| Agent Name | Description |\n"
+    all_agents += "|------------|-------------|\n"
+    for agent in agents:
+        agent_name = getattr(
+            agent,
+            "agent_name",
+            getattr(agent, "name", "Unknown Agent"),
+        )
+        # Try to get a meaningful description or fallback to system prompt
+        agent_desc = getattr(agent, "description", None)
+        if not agent_desc:
+            agent_desc = getattr(agent, "system_prompt", "")
+            if len(agent_desc) > 50:
+                agent_desc = agent_desc[:50] + "..."
+        all_agents += f"| {agent_name} | {agent_desc} |\n"
+
+    all_agents += (
+        "\nEach agent is designed to handle tasks within their area of expertise. "
+        "Collaborate effectively by assigning tasks according to these roles."
     )
 
     if add_to_conversation:
@@ -67,12 +84,15 @@ def list_all_agents(
             content=all_agents,
         )
 
-    if add_collaboration_prompt:
-        return get_multi_agent_collaboration_prompt_one(
-            agents_in_swarm=all_agents
+        return None
+
+    elif add_collaboration_prompt:
+        all_agents += get_multi_agent_collaboration_prompt_one(
+            agents=all_agents
         )
-    else:
         return all_agents
+
+    return all_agents
 
 
 models = [
