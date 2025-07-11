@@ -139,19 +139,21 @@ markdown_extensions:
   - pymdownx.inlinehilite
 
 nav:
-  - Home:
-    - Overview: "quickstart.md"
-    - Installation: "swarms/install/install.md"
-    - Environment Configuration: "swarms/install/env.md"
-    - Agents: "swarms/agents/index.md"
-    - Multi-Agent Architectures: "swarms/structs/index.md"
+  # - Home:
+  #   - Overview: "quickstart.md"
+  #   - Installation: "swarms/install/install.md"
+  #   - Environment Configuration: "swarms/install/env.md"
+  #   - Agents: "swarms/agents/index.md"
+  #   - Multi-Agent Architectures: "swarms/structs/index.md"
 
-  - Guides:
+  - Home:
     - Overview: "index.md"
     - Onboarding: 
       - Installation: "swarms/install/install.md"
       - Environment Configuration: "swarms/install/env.md"
-      - Quickstart: "swarms/install/quickstart.md"
+      - Quickstart: "quickstart.md"
+      - Agents: "swarms/agents/index.md"
+      - Multi-Agent Architectures: "swarms/structs/index.md"
       - Feature Set: "swarms/features.md"
     - Agents:
       - Overview: "swarms/agents/index.md"
