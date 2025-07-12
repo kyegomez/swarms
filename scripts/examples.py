@@ -1,5 +1,6 @@
 import requests
 
+
 def get_example_py_urls():
     owner = "kyegomez"
     repo = "swarms"
@@ -7,7 +8,9 @@ def get_example_py_urls():
     examples_path = "examples"
 
     api_url = f"https://api.github.com/repos/{owner}/{repo}/git/trees/{branch}?recursive=1"
-    raw_base = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/"
+    raw_base = (
+        f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/"
+    )
 
     response = requests.get(api_url)
     response.raise_for_status()
@@ -24,6 +27,7 @@ def get_example_py_urls():
     ]
 
     return example_files
+
 
 if __name__ == "__main__":
     urls = get_example_py_urls()

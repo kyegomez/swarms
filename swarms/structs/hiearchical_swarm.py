@@ -11,7 +11,7 @@ Flow:
 """
 
 import traceback
-from typing import Any, List, Literal, Optional, Union, Callable
+from typing import Any, Callable, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -21,15 +21,13 @@ from swarms.prompts.hiearchical_system_prompt import (
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.conversation import Conversation
+from swarms.structs.ma_utils import list_all_agents
+from swarms.tools.base_tool import BaseTool
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
-from swarms.utils.output_types import OutputType
-
 from swarms.utils.loguru_logger import initialize_logger
-from swarms.tools.base_tool import BaseTool
-from swarms.structs.ma_utils import list_all_agents
-
+from swarms.utils.output_types import OutputType
 
 logger = initialize_logger(log_folder="hierarchical_swarm")
 
@@ -118,6 +116,7 @@ class HierarchicalSwarm(BaseSwarm):
         planning_director_agent: Optional[
             Union[Agent, Callable, Any]
         ] = None,
+        director_feedback_on: bool = True,
         *args,
         **kwargs,
     ):
@@ -150,6 +149,7 @@ class HierarchicalSwarm(BaseSwarm):
         self.director_model_name = director_model_name
         self.add_collaboration_prompt = add_collaboration_prompt
         self.planning_director_agent = planning_director_agent
+        self.director_feedback_on = director_feedback_on
 
         self.init_swarm()
 
@@ -354,7 +354,10 @@ class HierarchicalSwarm(BaseSwarm):
             if self.verbose:
                 logger.info(f"⚡ Executed {len(outputs)} orders")
 
-            feedback = self.feedback_director(outputs)
+            if self.director_feedback_on is True:
+                feedback = self.feedback_director(outputs)
+            else:
+                feedback = outputs
 
             if self.verbose:
                 logger.success("✅ Step completed successfully")
@@ -469,7 +472,9 @@ class HierarchicalSwarm(BaseSwarm):
                     f"Worker Agent Responses: {task}"
                 )
             )
-            self.conversation.add(role="Director", content=output)
+            self.conversation.add(
+                role=self.director.agent_name, content=output
+            )
 
             if self.verbose:
                 logger.success(
