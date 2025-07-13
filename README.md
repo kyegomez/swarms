@@ -690,6 +690,4 @@ If you use **swarms** in your research, please cite the project by referencing t
 
 # License
 
-APACHE 
-
-
+Swarms is licensed under the Apache License 2.0. [Learn more here](./LICENSE)
