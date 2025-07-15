@@ -28,7 +28,7 @@ Here's a simple example of how to use vLLM with Swarms:
 ```python title="basic_usage.py"
 from swarms.utils.vllm_wrapper import VLLMWrapper
 
-# Initialize the vLLM wrapper
+# Initialize the vLLM wrapper (model loads on first use)
 vllm = VLLMWrapper(
     model_name="meta-llama/Llama-2-7b-chat-hf",
     system_prompt="You are a helpful assistant.",
@@ -40,6 +40,8 @@ vllm = VLLMWrapper(
 response = vllm.run("What is the capital of France?")
 print(response)
 ```
+
+The first call to `run()` lazily loads the model weights.
 
 ## VLLMWrapper Class
 
