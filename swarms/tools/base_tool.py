@@ -2262,16 +2262,15 @@ class BaseTool(BaseModel):
                     api_response = json.loads(api_response)
                 except json.JSONDecodeError as e:
                     self._log_if_verbose(
-                        "debug",
-                        f"API response is not JSON format: {e}. This is normal for plain text responses. Response: '{api_response[:100]}...'",
+                        "error",
+                        f"Failed to parse JSON from API response: {e}. Response: '{api_response[:100]}...'",
                     )
-                    # If it's not JSON, it might be plain text without function calls
                     return []
 
             if not isinstance(api_response, dict):
                 self._log_if_verbose(
-                    "debug",
-                    f"API response is not a dictionary (type: {type(api_response)}), no function calls detected",
+                    "warning",
+                    f"API response is not a dictionary (type: {type(api_response)}), returning empty list",
                 )
                 return []
 
