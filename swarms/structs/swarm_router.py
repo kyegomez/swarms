@@ -28,6 +28,7 @@ from swarms.structs.malt import MALT
 from swarms.structs.deep_research_swarm import DeepResearchSwarm
 from swarms.structs.council_judge import CouncilAsAJudge
 from swarms.structs.interactive_groupchat import InteractiveGroupChat
+from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.ma_utils import list_all_agents
 from swarms.utils.generate_keys import generate_api_key
 
@@ -49,6 +50,7 @@ SwarmType = Literal[
     "DeepResearchSwarm",
     "CouncilAsAJudge",
     "InteractiveGroupChat",
+    "HeavySwarm",
 ]
 
 
@@ -183,6 +185,10 @@ class SwarmRouter:
         conversation: Any = None,
         agents_config: Optional[Dict[Any, Any]] = None,
         speaker_function: str = None,
+        heavy_swarm_loops_per_agent: int = 1,
+        heavy_swarm_question_agent_model_name: str = "gpt-4.1",
+        heavy_swarm_worker_model_name: str = "claude-3-5-sonnet-20240620",
+        telemetry_enabled: bool = False,
         *args,
         **kwargs,
     ):
@@ -210,6 +216,14 @@ class SwarmRouter:
         self.conversation = conversation
         self.agents_config = agents_config
         self.speaker_function = speaker_function
+        self.heavy_swarm_loops_per_agent = heavy_swarm_loops_per_agent
+        self.heavy_swarm_question_agent_model_name = (
+            heavy_swarm_question_agent_model_name
+        )
+        self.heavy_swarm_worker_model_name = (
+            heavy_swarm_worker_model_name
+        )
+        self.telemetry_enabled = telemetry_enabled
 
         # Reliability check
         self.reliability_check()
@@ -233,6 +247,12 @@ class SwarmRouter:
         # Handle rules
         if self.rules is not None:
             self.handle_rules()
+
+        if self.multi_agent_collab_prompt is True:
+            self.update_system_prompt_for_agent_in_swarm()
+
+        if self.list_all_agents is True:
+            self.list_agents_to_eachother()
 
     def activate_shared_memory(self):
         logger.info("Activating shared memory with all agents ")
@@ -283,6 +303,10 @@ class SwarmRouter:
         Handles special case for CouncilAsAJudge which may not require agents.
         """
 
+        logger.info(
+            f"Initializing SwarmRouter: {self.name} Reliability Check..."
+        )
+
         # Check swarm type first since it affects other validations
         if self.swarm_type is None:
             raise ValueError(
@@ -299,6 +323,10 @@ class SwarmRouter:
             raise ValueError("SwarmRouter: max_loops cannot be 0.")
 
         self.setup()
+
+        logger.info(
+            f"Reliability check for parameters and configurations are complete. SwarmRouter: {self.name} is ready to run!"
+        )
 
     def _create_swarm(self, task: str = None, *args, **kwargs):
         """
@@ -320,6 +348,18 @@ class SwarmRouter:
             self.swarm_type = str(swarm_matcher(task))
 
             self._create_swarm(self.swarm_type)
+
+        elif self.swarm_type == "HeavySwarm":
+            return HeavySwarm(
+                name=self.name,
+                description=self.description,
+                agents=self.agents,
+                max_loops=self.max_loops,
+                output_type=self.output_type,
+                loops_per_agent=self.heavy_swarm_loops_per_agent,
+                question_agent_model_name=self.heavy_swarm_question_agent_model_name,
+                worker_model_name=self.heavy_swarm_worker_model_name,
+            )
 
         elif self.swarm_type == "AgentRearrange":
             return AgentRearrange(
@@ -478,6 +518,24 @@ class SwarmRouter:
 
         return agent_config
 
+    def list_agents_to_eachother(self):
+        if self.swarm_type == "SequentialWorkflow":
+            self.conversation = (
+                self.swarm.agent_rearrange.conversation
+            )
+        else:
+            self.conversation = self.swarm.conversation
+
+        if self.list_all_agents is True:
+            list_all_agents(
+                agents=self.agents,
+                conversation=self.swarm.conversation,
+                name=self.name,
+                description=self.description,
+                add_collaboration_prompt=True,
+                add_to_conversation=True,
+            )
+
     def _run(
         self,
         task: str,
@@ -503,31 +561,12 @@ class SwarmRouter:
         """
         self.swarm = self._create_swarm(task, *args, **kwargs)
 
-        if self.swarm_type == "SequentialWorkflow":
-            self.conversation = (
-                self.swarm.agent_rearrange.conversation
-            )
-        else:
-            self.conversation = self.swarm.conversation
-
-        if self.list_all_agents is True:
-            list_all_agents(
-                agents=self.agents,
-                conversation=self.swarm.conversation,
-                name=self.name,
-                description=self.description,
-                add_collaboration_prompt=True,
-                add_to_conversation=True,
-            )
-
-        if self.multi_agent_collab_prompt is True:
-            self.update_system_prompt_for_agent_in_swarm()
-
         log_execution(
             swarm_id=self.id,
             status="start",
             swarm_config=self.to_dict(),
             swarm_architecture="swarm_router",
+            enabled_on=self.telemetry_enabled,
         )
 
         try:
@@ -548,12 +587,13 @@ class SwarmRouter:
                 status="completion",
                 swarm_config=self.to_dict(),
                 swarm_architecture="swarm_router",
+                enabled_on=self.telemetry_enabled,
             )
 
             return result
         except Exception as e:
             raise RuntimeError(
-                f"SwarmRouter: Error executing task on swarm: {str(e)} Traceback: {traceback.format_exc()}"
+                f"SwarmRouter: Error executing task on swarm: {str(e)} Traceback: {traceback.format_exc()}. Try reconfiguring the SwarmRouter Settings and or make sure the individual agents are configured correctly."
             )
 
     def run(

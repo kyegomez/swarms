@@ -1539,15 +1539,16 @@ class Agent:
 
         if self.tools_list_dictionary is not None:
             if not supports_function_calling(self.model_name):
-                raise AgentInitializationError(
+                logger.warning(
                     f"The model '{self.model_name}' does not support function calling. Please use a model that supports function calling."
                 )
 
         try:
             if self.max_tokens > get_max_tokens(self.model_name):
-                raise AgentInitializationError(
+                logger.warning(
                     f"Max tokens is set to {self.max_tokens}, but the model '{self.model_name}' only supports {get_max_tokens(self.model_name)} tokens. Please set max tokens to {get_max_tokens(self.model_name)} or less."
                 )
+
         except Exception:
             pass
 
@@ -3231,13 +3232,3 @@ class Agent:
                 f"Full traceback: {traceback.format_exc()}. "
                 f"Attempting to retry tool execution with 3 attempts"
             )
-
-    def add_tool_schema(self, tool_schema: dict):
-        self.tools_list_dictionary = [tool_schema]
-
-        self.output_type = "dict-all-except-first"
-
-    def add_multiple_tool_schemas(self, tool_schemas: list[dict]):
-        self.tools_list_dictionary = tool_schemas
-
-        self.output_type = "dict-all-except-first"
