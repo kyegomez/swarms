@@ -24,36 +24,33 @@ Key capabilities:
 
 ```mermaid
 graph TD
-    A[Input Task/Tasks] --> B[AgentJudge]
+    A[Input Task] --> B[AgentJudge]
     B --> C{Evaluation Mode}
-    
-    C -->|step()| D[Single Evaluation]
-    C -->|run()| E[Iterative Evaluation]
-    C -->|run_batched()| F[Batch Processing]
-    
+
+    C -->|step()| D[Single Eval]
+    C -->|run()| E[Iterative Eval]
+    C -->|run_batched()| F[Batch Eval]
+
     D --> G[Agent Core]
-    E --> H[Context Building Loop]
-    F --> I[Independent Processing]
-    
-    G --> J[LLM Model]
-    H --> J
-    I --> J
-    
-    J --> K[Quality Analysis]
-    K --> L[Feedback Generation]
-    L --> M[Structured Output]
-    
-    subgraph "Evaluation Components"
-        N[Strengths Analysis]
-        O[Weakness Identification] 
-        P[Improvement Suggestions]
-        Q[Factual Accuracy Check]
+    E --> G
+    F --> G
+
+    G --> H[LLM Model]
+    H --> I[Quality Analysis]
+    I --> J[Feedback & Output]
+
+    subgraph "Feedback Details"
+        N[Strengths]
+        O[Weaknesses]
+        P[Improvements]
+        Q[Accuracy Check]
     end
-    
-    L --> N
-    L --> O
-    L --> P
-    L --> Q
+
+    J --> N
+    J --> O
+    J --> P
+    J --> Q
+
 ```
 
 ## Class Reference
