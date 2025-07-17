@@ -573,13 +573,6 @@ class Agent:
         )
         self.summarize_multiple_images = summarize_multiple_images
         self.tool_retry_attempts = tool_retry_attempts
-        # Streaming / tool-call coordination flags
-        # When a tool call is expected we temporarily disable streaming so the
-        # LLM returns a complete JSON payload that can be parsed reliably. After
-        # the first tool call has been executed we re-enable streaming for
-        # subsequent requests / summaries.
-        self.expecting_tool_call: bool = False
-        self.tool_call_completed: bool = False
         self.speed_mode = speed_mode
 
         # Initialize the feedback
@@ -1024,9 +1017,6 @@ class Agent:
             agent(task="What is the capital of France?", img="path/to/image.jpg", is_last=True)
         """
         try:
-            # Preserve the original user task so that tool summaries can reference it
-            if task is not None:
-                self.run_task = str(task)
 
             self.check_if_no_prompt_then_autogenerate(task)
 
@@ -1075,13 +1065,6 @@ class Agent:
                 task_prompt = (
                     self.short_memory.return_history_as_string()
                 )
-
-                # Determine if this request is primarily to obtain the first tool call
-                if self.streaming_on and exists(self.tools) and not self.tool_call_completed:
-                    # Disable streaming for this request so we can reliably parse JSON
-                    self.expecting_tool_call = True
-                else:
-                    self.expecting_tool_call = False
 
                 # Parameters
                 attempt = 0
@@ -1134,15 +1117,10 @@ class Agent:
 
                         # Check and execute callable tools
                         if exists(self.tools):
-                            # Use standard tool execution for both streaming and non-streaming
                             self.tool_execution_retry(
                                 response, loop_count
                             )
 
-                            # Mark that at least one tool call has been processed
-                            self.tool_call_completed = True
-                            # Reset expecting_tool_call so subsequent requests can stream
-                            self.expecting_tool_call = False
                         # Handle MCP tools
                         if (
                             exists(self.mcp_url)
@@ -2552,10 +2530,8 @@ class Agent:
             del kwargs["is_last"]
 
         try:
-            # Decide whether streaming should be used for this call
-            streaming_enabled = self.streaming_on and not getattr(self, "expecting_tool_call", False)
-            # Set streaming parameter in LLM if streaming is enabled for this call
-            if streaming_enabled and hasattr(self.llm, "stream"):
+            # Set streaming parameter in LLM if streaming is enabled
+            if self.streaming_on and hasattr(self.llm, "stream"):
                 original_stream = self.llm.stream
                 self.llm.stream = True
 
@@ -3004,18 +2980,12 @@ class Agent:
             raise e
 
     def temp_llm_instance_for_tool_summary(self):
-        """Create a temporary LiteLLM instance for the post-tool summary.
-
-        If the agent was configured with `streaming_on=True`, the summary
-        request will also stream; otherwise it will be a normal synchronous
-        call. No extra coordination flags are required.
-        """
         return LiteLLM(
             model_name=self.model_name,
             temperature=self.temperature,
             max_tokens=self.max_tokens,
             system_prompt=self.system_prompt,
-            stream=self.streaming_on,
+            stream=False,  # Always disable streaming for tool summaries
             tools_list_dictionary=None,
             parallel_tool_calls=False,
             base_url=self.llm_base_url,
@@ -3062,41 +3032,27 @@ class Agent:
         if self.tool_call_summary is True:
             temp_llm = self.temp_llm_instance_for_tool_summary()
 
-            tool_prompt = f"""
+            tool_response = temp_llm.run(
+                f"""
                 Please analyze and summarize the following tool execution output in a clear and concise way. 
                 Focus on the key information and insights that would be most relevant to the user's original request.
-                {self.run_task}
                 If there are any errors or issues, highlight them prominently.
+                
                 Tool Output:
                 {output}
                 """
-            # Stream the tool summary only if the agent is configured for streaming
-            if self.streaming_on and self.print_on:
-                # Handle streaming response with streaming panel
-                streaming_response = temp_llm.run(tool_prompt)
-                
-                if hasattr(streaming_response, "__iter__") and not isinstance(streaming_response, str):
-                    # Use streaming panel directly
-                    tool_response = formatter.print_streaming_panel(
-                        streaming_response,
-                        title=f"🤖 Agent: {self.agent_name} Tool Summary",
-                        style=None,
-                        collect_chunks=True,
-                    )
-                else:
-                    # Fallback for non-streaming response
-                    tool_response = streaming_response
-                    self.pretty_print(tool_response, loop_count)
-            else:
-                # Non-streaming response
-                tool_response = temp_llm.run(tool_prompt)
-                if self.print_on:
-                    self.pretty_print(tool_response, loop_count)
+            )
 
             self.short_memory.add(
                 role=self.agent_name,
                 content=tool_response,
             )
+
+            if self.print_on is True:
+                self.pretty_print(
+                    tool_response,
+                    loop_count,
+                )
 
     def list_output_types(self):
         return OutputType
