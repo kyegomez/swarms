@@ -267,7 +267,8 @@ nav:
       # - Deploy your agents on FastAPI:
 
     - More About Us:
-      - Swarms Ecosystem: "swarms/concept/ecosystem.md"
+      - Swarms Ecosystem: "swarms/ecosystem.md"
+      - Technical Support: "swarms/support.md"
 
     
   - Examples:

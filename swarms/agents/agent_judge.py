@@ -149,7 +149,7 @@ class AgentJudge:
             raise AgentJudgeFeedbackCycleError(
                 f"Error In Agent Judge Feedback Cycle: {e} Traceback: {traceback.format_exc()}"
             )
-            
+
     def feedback_cycle(
         self,
         agent: Union[Agent, callable],
@@ -161,15 +161,17 @@ class AgentJudge:
         original_task = task  # Preserve the original task
         current_output = None  # Track the current output
         all_outputs = []  # Collect all outputs from each iteration
-        
+
         while loop < loops:
             # First iteration: run the standard feedback cycle step
-            current_output = self.feedback_cycle_step(agent, original_task, img)
-        
+            current_output = self.feedback_cycle_step(
+                agent, original_task, img
+            )
+
             # Add the current output to our collection
             all_outputs.append(current_output)
             loop += 1
-            
+
         return all_outputs
 
     def step(
