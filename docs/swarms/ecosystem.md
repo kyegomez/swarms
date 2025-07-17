@@ -13,18 +13,18 @@
 
 ## **Complete Product Portfolio**
 
-| **Product** | **Technology** | **Status** | **Repository** | **Documentation** | **Key Features** | **Use Cases** |
-|-------------|---------------|------------|----------------|-------------------|------------------|---------------|
-| **Swarms Python Framework** | Python | **Production** | [swarms](https://github.com/kyegomez/swarms) | [Docs](https://docs.swarms.world/en/latest/swarms/install/install/) | • 20+ Multi-Agent Architectures<br/>• Enterprise Tool Integration<br/>• Production Logging & Monitoring<br/>• LLM Provider Agnostic<br/>• Backwards Compatible | • Complex Business Process Automation<br/>• Financial Analysis & Trading<br/>• Research & Knowledge Work<br/>• Content Creation Pipelines<br/>• Healthcare & Legal Applications |
-| **Swarms Rust Framework** | Rust | **Production** | [swarms-rs](https://github.com/The-Swarm-Corporation/swarms-rs) | [Docs](https://docs.swarms.world/en/latest/swarms_rs/overview/) | • Ultra-High Performance<br/>• Memory Safety & Zero-Cost Abstractions<br/>• Concurrent Agent Execution<br/>• MCP Protocol Support<br/>• WebAssembly Compatible | • High-Frequency Trading Systems<br/>• Real-Time Data Processing<br/>• Edge Computing Applications<br/>• System-Level Agent Integration<br/>• Performance-Critical Workloads |
-| **Python API Client** | Python | **Production** | [swarms-sdk](https://github.com/The-Swarm-Corporation/swarms-sdk) | [Docs](https://docs.swarms.world/en/latest/swarms_cloud/python_client/) | • Async/Await Support<br/>• Type-Safe Pydantic Models<br/>• Automatic Retry Logic<br/>• Context Managers<br/>• Rich Logging Integration | • Cloud-Native Applications<br/>• Data Science Workflows<br/>• Machine Learning Pipelines<br/>• Research & Academia<br/>• Enterprise Python Applications |
-| **TypeScript/Node.js Client** | TypeScript | **Production** | [swarms-ts](https://github.com/The-Swarm-Corporation/swarms-ts) | *Coming Soon* | • Full Type Safety<br/>• Promise-Based API<br/>• Browser & Node.js Compatible<br/>• Zero Dependencies<br/>• Modern ES6+ Support | • Web Applications<br/>• Server-Side Applications<br/>• React/Vue/Angular Integration<br/>• Node.js Microservices<br/>• Full-Stack Development |
-| **Go Client** | Go | **Production** | [swarms-client-go](https://github.com/The-Swarm-Corporation/swarms-client-go) | *Coming Soon* | • Context Support<br/>• Structured Logging<br/>• Concurrency Safe<br/>• Minimal Memory Allocation<br/>• Built for Microservices | • Cloud Infrastructure<br/>• Kubernetes Applications<br/>• Microservices Architecture<br/>• DevOps Automation<br/>• System Integration |
-| **Java Client** | Java | **Production** | [swarms-java](https://github.com/The-Swarm-Corporation/swarms-java) | *Coming Soon* | • Spring Boot Integration<br/>• Reactive Streams Support<br/>• Enterprise Features<br/>• Maven Central Available<br/>• JMX Metrics | • Enterprise Java Applications<br/>• Spring Boot Services<br/>• Android Applications<br/>• Banking & Finance Systems<br/>• Large-Scale Enterprise |
-| **Kotlin Client** | Kotlin | **Q2 2025** | *In Development* | *Coming Soon* | • Coroutines Support<br/>• Android Compatibility<br/>• Interop with Java<br/>• Null Safety<br/>• Modern Language Features | • Android Applications<br/>• JVM Applications<br/>• Mobile Development<br/>• Cross-Platform Solutions<br/>• Modern Java Alternatives |
-| **Ruby Client** | Ruby | **Q2 2025** | *In Development* | *Coming Soon* | • Rails Integration<br/>• Gem Packaging<br/>• Elegant API Design<br/>• Convention over Configuration<br/>• Ruby Ecosystem Integration | • Ruby on Rails Applications<br/>• Web Development<br/>• Rapid Prototyping<br/>• Startup Applications<br/>• Content Management |
-| **Rust Client** | Rust | **Q2 2025** | *In Development* | *Coming Soon* | • Memory Safety<br/>• Zero-Cost Abstractions<br/>• WebAssembly Support<br/>• Fearless Concurrency<br/>• System Programming | • System Programming<br/>• WebAssembly Applications<br/>• Performance-Critical Apps<br/>• Blockchain Applications<br/>• Embedded Systems |
-| **C#/.NET Client** | C# | **Q3 2025** | *In Development* | *Coming Soon* | • Async/Await Support<br/>• NuGet Packaging<br/>• .NET Core & Framework<br/>• LINQ Integration<br/>• Enterprise Features | • Enterprise .NET Applications<br/>• Azure Cloud Services<br/>• Desktop Applications<br/>• Game Development<br/>• Financial Services |
+| **Product** | **Technology** | **Status** | **Repository** | **Documentation** |
+|-------------|---------------|------------|----------------|-------------------|
+| **Swarms Python Framework** | Python | **Production** | [swarms](https://github.com/kyegomez/swarms) | [Docs](https://docs.swarms.world/en/latest/swarms/install/install/) |
+| **Swarms Rust Framework** | Rust | **Production** | [swarms-rs](https://github.com/The-Swarm-Corporation/swarms-rs) | [Docs](https://docs.swarms.world/en/latest/swarms_rs/overview/) |
+| **Python API Client** | Python | **Production** | [swarms-sdk](https://github.com/The-Swarm-Corporation/swarms-sdk) | [Docs](https://docs.swarms.world/en/latest/swarms_cloud/python_client/) |
+| **TypeScript/Node.js Client** | TypeScript | **Production** | [swarms-ts](https://github.com/The-Swarm-Corporation/swarms-ts) | *Coming Soon* |
+| **Go Client** | Go | **Production** | [swarms-client-go](https://github.com/The-Swarm-Corporation/swarms-client-go) | *Coming Soon* |
+| **Java Client** | Java | **Production** | [swarms-java](https://github.com/The-Swarm-Corporation/swarms-java) | *Coming Soon* |
+| **Kotlin Client** | Kotlin | **Q2 2025** | *In Development* | *Coming Soon* |
+| **Ruby Client** | Ruby | **Q2 2025** | *In Development* | *Coming Soon* |
+| **Rust Client** | Rust | **Q2 2025** | *In Development* | *Coming Soon* |
+| **C#/.NET Client** | C# | **Q3 2025** | *In Development* | *Coming Soon* |
 
 ---
 
