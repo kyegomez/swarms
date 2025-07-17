@@ -1,4 +1,3 @@
-import time
 from swarms import Agent
 
 # Initialize the agent
@@ -37,11 +36,12 @@ agent = Agent(
     max_loops=1,
     model_name="claude-3-sonnet-20240229",
     dynamic_temperature_enabled=True,
-    output_type="all",
+    output_type="str-all-except-first",
+    streaming_on=True,
+    print_on=True,
+    telemetry_enable=False,
     # dashboard=True
 )
 
 out = agent.run("What are the best top 3 etfs for gold coverage?")
-
-time.sleep(10)
 print(out)

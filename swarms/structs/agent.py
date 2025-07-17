@@ -86,7 +86,6 @@ from swarms.utils.index import (
 )
 from swarms.schemas.conversation_schema import ConversationSchema
 from swarms.utils.output_types import OutputType
-from swarms.utils.retry_func import retry_function
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -433,6 +432,7 @@ class Agent:
         output_raw_json_from_tool_call: bool = False,
         summarize_multiple_images: bool = False,
         tool_retry_attempts: int = 3,
+        speed_mode: str = None,
         *args,
         **kwargs,
     ):
@@ -580,8 +580,7 @@ class Agent:
         # subsequent requests / summaries.
         self.expecting_tool_call: bool = False
         self.tool_call_completed: bool = False
-
-        # self.short_memory = self.short_memory_init()
+        self.speed_mode = speed_mode
 
         # Initialize the feedback
         self.feedback = []
@@ -610,7 +609,8 @@ class Agent:
 
         # Run sequential operations after all concurrent tasks are done
         # self.agent_output = self.agent_output_model()
-        log_agent_data(self.to_dict())
+        if self.autosave is True:
+            log_agent_data(self.to_dict())
 
         if exists(self.tools):
             self.tool_handling()
@@ -832,12 +832,9 @@ class Agent:
         if self.preset_stopping_token is not None:
             self.stopping_token = "<DONE>"
 
-    def prepare_tools_list_dictionary(self):
-        import json
-
-        return json.loads(self.tools_list_dictionary)
-
-    def check_model_supports_utilities(self, img: str = None) -> bool:
+    def check_model_supports_utilities(
+        self, img: Optional[str] = None
+    ) -> bool:
         """
         Check if the current model supports vision capabilities.
 
@@ -847,18 +844,43 @@ class Agent:
         Returns:
             bool: True if model supports vision and image is provided, False otherwise.
         """
-        from litellm.utils import supports_vision
+        from litellm.utils import (
+            supports_vision,
+            supports_function_calling,
+            supports_parallel_function_calling,
+        )
 
         # Only check vision support if an image is provided
         if img is not None:
             out = supports_vision(self.model_name)
-            if not out:
-                raise ValueError(
-                    f"Model {self.model_name} does not support vision capabilities. Please use a vision-enabled model."
+            if out is False:
+                logger.error(
+                    f"[Agent: {self.agent_name}] Model '{self.model_name}' does not support vision capabilities. "
+                    f"Image input was provided: {img[:100]}{'...' if len(img) > 100 else ''}. "
+                    f"Please use a vision-enabled model."
                 )
-            return out
 
-        return False
+        if self.tools_list_dictionary is not None:
+            out = supports_function_calling(self.model_name)
+            if out is False:
+                logger.error(
+                    f"[Agent: {self.agent_name}] Model '{self.model_name}' does not support function calling capabilities. "
+                    f"tools_list_dictionary is set: {self.tools_list_dictionary}. "
+                    f"Please use a function calling-enabled model."
+                )
+
+        if self.tools is not None:
+            if len(self.tools) > 2:
+                out = supports_parallel_function_calling(
+                    self.model_name
+                )
+                if out is False:
+                    logger.error(
+                        f"[Agent: {self.agent_name}] Model '{self.model_name}' does not support parallel function calling capabilities. "
+                        f"Please use a parallel function calling-enabled model."
+                    )
+
+        return None
 
     def check_if_no_prompt_then_autogenerate(self, task: str = None):
         """
@@ -981,7 +1003,6 @@ class Agent:
         self,
         task: Optional[Union[str, Any]] = None,
         img: Optional[str] = None,
-        print_task: Optional[bool] = False,
         *args,
         **kwargs,
     ) -> Any:
@@ -1009,8 +1030,7 @@ class Agent:
 
             self.check_if_no_prompt_then_autogenerate(task)
 
-            if img is not None:
-                self.check_model_supports_utilities(img=img)
+            self.check_model_supports_utilities(img=img)
 
             self.short_memory.add(role=self.user_name, content=task)
 
@@ -1023,21 +1043,10 @@ class Agent:
             # Clear the short memory
             response = None
 
-            # Query the long term memory first for the context
-            if self.long_term_memory is not None:
-                self.memory_query(task)
-
             # Autosave
             if self.autosave:
                 log_agent_data(self.to_dict())
                 self.save()
-
-            # Print the request
-            if print_task is True:
-                formatter.print_panel(
-                    content=f"\n User: {task}",
-                    title=f"Task Request for {self.agent_name}",
-                )
 
             while (
                 self.max_loops == "auto"
@@ -1079,14 +1088,6 @@ class Agent:
                 success = False
                 while attempt < self.retry_attempts and not success:
                     try:
-                        if (
-                            self.long_term_memory is not None
-                            and self.rag_every_loop is True
-                        ):
-                            logger.info(
-                                "Querying RAG database for context..."
-                            )
-                            self.memory_query(task_prompt)
 
                         if img is not None:
                             response = self.call_llm(
@@ -1123,11 +1124,9 @@ class Agent:
                         if self.print_on is True:
                             if isinstance(response, list):
                                 self.pretty_print(
-                                    f"Structured Output - Attempting Function Call Execution [{time.strftime('%H:%M:%S')}] \n\n {format_data_structure(response)} ",
+                                    f"Structured Output - Attempting Function Call Execution [{time.strftime('%H:%M:%S')}] \n\n Output: {format_data_structure(response)} ",
                                     loop_count,
                                 )
-                            elif self.streaming_on is True:
-                                pass
                             else:
                                 self.pretty_print(
                                     response, loop_count
@@ -1161,15 +1160,14 @@ class Agent:
                                     f"LLM returned None response in loop {loop_count}, skipping MCP tool handling"
                                 )
 
-                        self.sentiment_and_evaluator(response)
+                        # self.sentiment_and_evaluator(response)
 
                         success = True  # Mark as successful to exit the retry loop
 
                     except Exception as e:
 
-                        log_agent_data(self.to_dict())
-
                         if self.autosave is True:
+                            log_agent_data(self.to_dict())
                             self.save()
 
                         logger.error(
@@ -1179,9 +1177,8 @@ class Agent:
 
                 if not success:
 
-                    log_agent_data(self.to_dict())
-
                     if self.autosave is True:
+                        log_agent_data(self.to_dict())
                         self.save()
 
                     logger.error(
@@ -1240,8 +1237,6 @@ class Agent:
 
                 self.save()
 
-            log_agent_data(self.to_dict())
-
             # Output formatting based on output_type
             return history_output_formatter(
                 self.short_memory, type=self.output_type
@@ -1256,10 +1251,9 @@ class Agent:
     def __handle_run_error(self, error: any):
         import traceback
 
-        log_agent_data(self.to_dict())
-
         if self.autosave is True:
             self.save()
+            log_agent_data(self.to_dict())
 
         # Get detailed error information
         error_type = type(error).__name__
@@ -1278,12 +1272,9 @@ class Agent:
         raise error
 
     def _handle_run_error(self, error: any):
-        process_thread = threading.Thread(
-            target=self.__handle_run_error,
-            args=(error,),
-            daemon=True,
-        )
-        process_thread.start()
+        # Handle error directly instead of using daemon thread
+        # to ensure proper exception propagation
+        self.__handle_run_error(error)
 
     async def arun(
         self,
@@ -1957,9 +1948,9 @@ class Agent:
 
         """
         logger.info(f"Adding response filter: {filter_word}")
-        self.reponse_filters.append(filter_word)
+        self.response_filters.append(filter_word)
 
-    def apply_reponse_filters(self, response: str) -> str:
+    def apply_response_filters(self, response: str) -> str:
         """
         Apply the response filters to the response
 
@@ -2034,11 +2025,17 @@ class Agent:
             None
         """
         try:
+            # Process all documents and combine their content
+            all_data = []
             for doc in docs:
                 data = data_to_text(doc)
+                all_data.append(f"Document: {doc}\n{data}")
+
+            # Combine all document content
+            combined_data = "\n\n".join(all_data)
 
             return self.short_memory.add(
-                role=self.user_name, content=data
+                role=self.user_name, content=combined_data
             )
         except Exception as error:
             logger.info(f"Error ingesting docs: {error}", "red")
@@ -2846,23 +2843,16 @@ class Agent:
         return self.role
 
     def pretty_print(self, response: str, loop_count: int):
-        # if self.print_on is False:
-        #     if self.streaming_on is True:
-        #         # Skip printing here since real streaming is handled in call_llm
-        #         # This avoids double printing when streaming_on=True
-        #         pass
-        #     elif self.print_on is False:
-        #         pass
-        #     else:
-        #         # logger.info(f"Response: {response}")
-        #         formatter.print_panel(
-        #             response,
-        #             f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
-        #         )
-        formatter.print_panel(
-            response,
-            f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
-        )
+        """Print the response in a formatted panel"""
+        # Handle None response
+        if response is None:
+            response = "No response generated"
+
+        if self.print_on:
+            formatter.print_panel(
+                response,
+                f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
+            )
 
     def parse_llm_output(self, response: Any):
         """Parse and standardize the output from the LLM.
@@ -3285,9 +3275,13 @@ class Agent:
                 f"Full traceback: {traceback.format_exc()}. "
                 f"Attempting to retry tool execution with 3 attempts"
             )
-            retry_function(
-                self.execute_tools,
-                response=response,
-                loop_count=loop_count,
-                max_retries=self.tool_retry_attempts,
-            )
+
+    def add_tool_schema(self, tool_schema: dict):
+        self.tools_list_dictionary = [tool_schema]
+
+        self.output_type = "dict-all-except-first"
+
+    def add_multiple_tool_schemas(self, tool_schemas: list[dict]):
+        self.tools_list_dictionary = tool_schemas
+
+        self.output_type = "dict-all-except-first"

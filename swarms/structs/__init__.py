@@ -91,6 +91,8 @@ from swarms.structs.interactive_groupchat import (
     random_dynamic_speaker,
 )
 
+from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+
 __all__ = [
     "Agent",
     "BaseStructure",
@@ -166,4 +168,5 @@ __all__ = [
     "random_speaker",
     "priority_speaker",
     "random_dynamic_speaker",
+    "HierarchicalSwarm",
 ]

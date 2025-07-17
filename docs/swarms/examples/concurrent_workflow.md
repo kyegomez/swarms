@@ -28,7 +28,8 @@ GROQ_API_KEY=""
 ### 1. Initialize Specialized Agents
 
 ```python
-from swarms import Agent, ConcurrentWorkflow
+from swarms import Agent
+from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 
 # Initialize market research agent
 market_researcher = Agent(
@@ -39,8 +40,9 @@ market_researcher = Agent(
     3. Evaluating competitor strategies
     4. Assessing customer needs and preferences
     5. Providing actionable market insights""",
-    model_name="gpt-4o",
+    model_name="claude-3-sonnet-20240229",
     max_loops=1,
+    temperature=0.7,
 )
 
 # Initialize financial analyst agent
@@ -52,8 +54,9 @@ financial_analyst = Agent(
     3. Assessing risk factors
     4. Providing financial forecasts
     5. Recommending financial strategies""",
-    model_name="gpt-4o",
+    model_name="claude-3-sonnet-20240229",
     max_loops=1,
+    temperature=0.7,
 )
 
 # Initialize technical analyst agent
@@ -65,91 +68,45 @@ technical_analyst = Agent(
     3. Identifying support and resistance levels
     4. Assessing market momentum
     5. Providing trading recommendations""",
-    model_name="gpt-4o",
+    model_name="claude-3-sonnet-20240229",
     max_loops=1,
+    temperature=0.7,
 )
-```
 
-### 2. Create and Run ConcurrentWorkflow
-
-```python
 # Create list of agents
 agents = [market_researcher, financial_analyst, technical_analyst]
 
-# Initialize the concurrent workflow
-workflow = ConcurrentWorkflow(
-    name="market-analysis-workflow",
+# Initialize the concurrent workflow with dashboard
+router = ConcurrentWorkflow(
+    name="market-analysis-router",
     agents=agents,
     max_loops=1,
+    show_dashboard=True,  # Enable the real-time dashboard
 )
 
 # Run the workflow
-result = workflow.run(
+result = router.run(
     "Analyze Tesla (TSLA) stock from market, financial, and technical perspectives"
 )
 ```
 
-## Advanced Usage
+## Features
 
-### 1. Custom Agent Configuration
+### Real-time Dashboard
 
-```python
-from swarms import Agent, ConcurrentWorkflow
+The ConcurrentWorkflow now includes a real-time dashboard feature that can be enabled by setting `show_dashboard=True`. This provides:
 
-# Initialize agents with custom configurations
-sentiment_analyzer = Agent(
-    agent_name="Sentiment-Analyzer",
-    system_prompt="You analyze social media sentiment...",
-    model_name="gpt-4o",
-    max_loops=1,
-    temperature=0.7,
-    streaming_on=True,
-    verbose=True,
-)
+- Live status of each agent's execution
+- Progress tracking
+- Real-time output visualization
+- Task completion metrics
 
-news_analyzer = Agent(
-    agent_name="News-Analyzer",
-    system_prompt="You analyze news articles and reports...",
-    model_name="gpt-4o",
-    max_loops=1,
-    temperature=0.5,
-    streaming_on=True,
-    verbose=True,
-)
+### Concurrent Execution
 
-# Create and run workflow
-workflow = ConcurrentWorkflow(
-    name="sentiment-analysis-workflow",
-    agents=[sentiment_analyzer, news_analyzer],
-    max_loops=1,
-    verbose=True,
-)
-
-result = workflow.run(
-    "Analyze the market sentiment for Bitcoin based on social media and news"
-)
-```
-
-### 2. Error Handling and Logging
-
-```python
-try:
-    workflow = ConcurrentWorkflow(
-        name="error-handled-workflow",
-        agents=agents,
-        max_loops=1,
-        verbose=True,
-    )
-    
-    result = workflow.run("Complex analysis task")
-    
-    # Process results
-    for agent_result in result:
-        print(f"Agent {agent_result['agent']}: {agent_result['output']}")
-        
-except Exception as e:
-    print(f"Error in workflow: {str(e)}")
-```
+- Multiple agents work simultaneously
+- Efficient resource utilization
+- Automatic task distribution
+- Built-in thread management
 
 ## Best Practices
 
@@ -164,7 +121,7 @@ except Exception as e:
    - Set meaningful system prompts
 
 3. Resource Management:
-   - Monitor concurrent execution
+   - Monitor concurrent execution through the dashboard
    - Handle rate limits appropriately
    - Manage memory usage
 
@@ -178,8 +135,8 @@ except Exception as e:
 Here's a complete example showing how to use ConcurrentWorkflow for a comprehensive market analysis:
 
 ```python
-import os
-from swarms import Agent, ConcurrentWorkflow
+from swarms import Agent
+from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 
 # Initialize specialized agents
 market_analyst = Agent(
@@ -190,8 +147,9 @@ market_analyst = Agent(
     3. Market opportunities
     4. Industry dynamics
     5. Growth potential""",
-    model_name="gpt-4o",
+    model_name="claude-3-sonnet-20240229",
     max_loops=1,
+    temperature=0.7,
 )
 
 financial_analyst = Agent(
@@ -202,8 +160,9 @@ financial_analyst = Agent(
     3. Cash flow analysis
     4. Valuation metrics
     5. Risk assessment""",
-    model_name="gpt-4o",
+    model_name="claude-3-sonnet-20240229",
     max_loops=1,
+    temperature=0.7,
 )
 
 risk_analyst = Agent(
@@ -214,19 +173,19 @@ risk_analyst = Agent(
     3. Financial risks
     4. Regulatory risks
     5. Strategic risks""",
-    model_name="gpt-4o",
+    model_name="claude-3-sonnet-20240229",
     max_loops=1,
+    temperature=0.7,
 )
 
-# Create the concurrent workflow
+# Create the concurrent workflow with dashboard
 workflow = ConcurrentWorkflow(
     name="comprehensive-analysis-workflow",
     agents=[market_analyst, financial_analyst, risk_analyst],
     max_loops=1,
-    verbose=True,
+    show_dashboard=True,  # Enable real-time monitoring
 )
 
-# Run the analysis
 try:
     result = workflow.run(
         """Provide a comprehensive analysis of Apple Inc. (AAPL) including:
@@ -236,13 +195,15 @@ try:
     )
     
     # Process and display results
-    for agent_result in result:
-        print(f"\nAnalysis from {agent_result['agent']}:")
-        print(agent_result['output'])
-        print("-" * 50)
+    print("\nAnalysis Results:")
+    print("=" * 50)
+    for agent_output in result:
+        print(f"\nAnalysis from {agent_output['agent']}:")
+        print("-" * 40)
+        print(agent_output['output'])
         
 except Exception as e:
     print(f"Error during analysis: {str(e)}")
 ```
 
-This comprehensive guide demonstrates how to effectively use the ConcurrentWorkflow architecture for parallel processing of complex tasks using multiple specialized agents. 
+This guide demonstrates how to effectively use the ConcurrentWorkflow architecture with its new dashboard feature for parallel processing of complex tasks using multiple specialized agents. 

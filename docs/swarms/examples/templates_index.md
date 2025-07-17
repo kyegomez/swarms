@@ -68,5 +68,6 @@ The Swarms Index is a comprehensive catalog of repositories under The Swarm Corp
 | medical-problems | A repository for medical problems to create Swarms applications for. | [https://github.com/The-Swarm-Corporation/medical-problems](https://github.com/The-Swarm-Corporation/medical-problems) |
 | swarm-ecosystem | An overview of the Swarm Ecosystem and its components. | [https://github.com/The-Swarm-Corporation/swarm-ecosystem](https://github.com/The-Swarm-Corporation/swarm-ecosystem) |
 | swarms_ecosystem_md | MDX documentation for the Swarm Ecosystem. | [https://github.com/The-Swarm-Corporation/swarms_ecosystem_md](https://github.com/The-Swarm-Corporation/swarms_ecosystem_md) |
+| Hierarchical Swarm Examples | Simple, practical examples of HierarchicalSwarm usage for various real-world scenarios. | [Documentation](hierarchical_swarm_example.md) |
 
 

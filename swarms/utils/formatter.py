@@ -5,9 +5,27 @@ from typing import Any, Callable, Dict, List, Optional
 from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import (
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+)
 from rich.table import Table
 from rich.text import Text
+from rich.spinner import Spinner
+
+# Global lock to ensure only a single Rich Live context is active at any moment.
+# Rich's Live render is **not** thread-safe; concurrent Live contexts on the same
+# console raise runtime errors. Using a module-level lock serialises access and
+# prevents crashes when multiple agents stream simultaneously in different
+# threads (e.g., in ConcurrentWorkflow).
+live_render_lock = threading.Lock()
+
+# Global Live display for the dashboard
+dashboard_live = None
+
+# Create a spinner for loading animation
+spinner = Spinner("dots", style="yellow")
 
 # Global lock to ensure only a single Rich Live context is active at any moment.
 # Rich's Live render is **not** thread-safe; concurrent Live contexts on the same
@@ -43,6 +61,53 @@ class Formatter:
         Initializes the Formatter with a Rich Console instance.
         """
         self.console = Console()
+        self._dashboard_live = None
+        self._spinner_frames = [
+            "⠋",
+            "⠙",
+            "⠹",
+            "⠸",
+            "⠼",
+            "⠴",
+            "⠦",
+            "⠧",
+            "⠇",
+            "⠏",
+        ]
+        self._spinner_idx = 0
+
+    def _get_status_with_loading(self, status: str) -> Text:
+        """
+        Creates a status text with loading animation for running status.
+        """
+        if status.lower() == "running":
+            # Create loading bar effect
+            self._spinner_idx = (self._spinner_idx + 1) % len(
+                self._spinner_frames
+            )
+            spinner_char = self._spinner_frames[self._spinner_idx]
+            progress_bar = "█" * (self._spinner_idx % 5) + "░" * (
+                4 - (self._spinner_idx % 5)
+            )
+            return Text(
+                f"{spinner_char} {status} {progress_bar}",
+                style="bold yellow",
+            )
+
+        # Style other statuses
+        status_style = {
+            "completed": "bold green",
+            "pending": "bold red",
+            "error": "bold red",
+        }.get(status.lower(), "white")
+
+        status_symbol = {
+            "completed": "✓",
+            "pending": "○",
+            "error": "✗",
+        }.get(status.lower(), "•")
+
+        return Text(f"{status_symbol} {status}", style=status_style)
 
     def _print_panel(
         self, content: str, title: str = "", style: str = "bold blue"
@@ -68,12 +133,27 @@ class Formatter:
         title: str = "",
         style: str = "bold blue",
     ) -> None:
-        process_thread = threading.Thread(
-            target=self._print_panel,
-            args=(content, title, style),
-            daemon=True,
-        )
-        process_thread.start()
+        """Print content in a panel with a title and style.
+
+        Args:
+            content (str): The content to display in the panel
+            title (str): The title of the panel
+            style (str): The style to apply to the panel
+        """
+        # Handle None content
+        if content is None:
+            content = "No content to display"
+
+        # Convert non-string content to string
+        if not isinstance(content, str):
+            content = str(content)
+
+        try:
+            self._print_panel(content, title, style)
+        except Exception:
+            # Fallback to basic printing if panel fails
+            print(f"\n{title}:")
+            print(content)
 
     def print_table(
         self, title: str, data: Dict[str, List[str]]
@@ -234,7 +314,10 @@ class Formatter:
                         ):
                             # Add ONLY the new chunk to the Text object with random color style
                             chunk = part.choices[0].delta.content
-                            streaming_text.append(chunk, style=text_style)
+                            
+                            streaming_text.append(
+                                chunk, style=text_style
+                            )
                             complete_response += chunk
 
                             # Collect chunks if requested
@@ -271,6 +354,97 @@ class Formatter:
                     )
 
         return complete_response
+
+    def _create_dashboard_table(
+        self, agents_data: List[Dict[str, Any]], title: str
+    ) -> Panel:
+        """
+        Creates the dashboard table with the current agent statuses.
+        """
+        # Create main table
+        table = Table(
+            show_header=True,
+            header_style="bold magenta",
+            expand=True,
+            title=title,
+            title_style="bold cyan",
+            border_style="bright_blue",
+            show_lines=True,  # Add lines between rows
+        )
+
+        # Add columns with adjusted widths
+        table.add_column(
+            "Agent Name", style="cyan", width=30, no_wrap=True
+        )
+        table.add_column(
+            "Status", style="green", width=20, no_wrap=True
+        )  # Increased width for loading animation
+        table.add_column(
+            "Output", style="white", width=100, overflow="fold"
+        )  # Allow text to wrap
+
+        # Add rows for each agent
+        for agent in agents_data:
+            name = Text(agent["name"], style="bold cyan")
+            status = self._get_status_with_loading(agent["status"])
+            output = Text(str(agent["output"]))
+            table.add_row(name, status, output)
+
+        # Create a panel to wrap the table
+        dashboard_panel = Panel(
+            table,
+            border_style="bright_blue",
+            padding=(1, 2),
+            title=f"[bold cyan]{title}[/bold cyan] - Total Agents: [bold green]{len(agents_data)}[/bold green]",
+            expand=True,  # Make panel expand to full width
+        )
+
+        return dashboard_panel
+
+    def print_agent_dashboard(
+        self,
+        agents_data: List[Dict[str, Any]],
+        title: str = "🤖 Agent Dashboard",
+        is_final: bool = False,
+    ) -> None:
+        """
+        Displays a beautiful dashboard showing agent information in a panel-like spreadsheet format.
+        Updates in place instead of printing multiple times.
+
+        Args:
+            agents_data (List[Dict[str, Any]]): List of dictionaries containing agent information.
+                Each dict should have: name, status, output
+            title (str): The title of the dashboard.
+            is_final (bool): Whether this is the final update of the dashboard.
+        """
+        with live_render_lock:
+            if self._dashboard_live is None:
+                # Create new Live display if none exists
+                self._dashboard_live = Live(
+                    self._create_dashboard_table(agents_data, title),
+                    console=self.console,
+                    refresh_per_second=10,  # Increased refresh rate
+                    transient=False,  # Make display persistent
+                )
+                self._dashboard_live.start()
+            else:
+                # Update existing Live display
+                self._dashboard_live.update(
+                    self._create_dashboard_table(agents_data, title)
+                )
+
+            # If this is the final update, add a newline to separate from future output
+            if is_final:
+                self.console.print()  # Add blank line after final display
+
+    def stop_dashboard(self):
+        """
+        Stops and cleans up the dashboard display.
+        """
+        if self._dashboard_live is not None:
+            self._dashboard_live.stop()
+            self.console.print()  # Add blank line after stopping
+            self._dashboard_live = None
 
 
 formatter = Formatter()
