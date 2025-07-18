@@ -41,7 +41,7 @@ jobs:
     # Step 4: Cache dependencies to speed up subsequent runs.
     - name: Load cached venv
       id: cached-poetry-dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: .venv
         key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
@@ -83,7 +83,7 @@ jobs:
     # This happens even if the previous steps fail, allowing you to debug.
     - name: Upload Test Report
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-report-${{ matrix.python-version }}
         path: test_runs/

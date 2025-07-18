@@ -1,5 +1,4 @@
-from swarms import Agent
-from swarms.structs.concurrent_workflow import ConcurrentWorkflow
+from swarms import Agent, ConcurrentWorkflow
 
 # Initialize market research agent
 market_researcher = Agent(

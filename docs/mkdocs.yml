@@ -207,6 +207,7 @@ nav:
         - Various Execution Methods: "swarms/structs/various_execution_methods.md"
         - Deep Research Swarm: "swarms/structs/deep_research_swarm.md"
         - Council of Judges: "swarms/structs/council_of_judges.md"
+        - Heavy Swarm: "swarms/structs/heavy_swarm.md"
 
 
         - Hiearchical Architectures:
@@ -264,6 +265,10 @@ nav:
       - Deploy your agents on Google Cloud Run: "swarms_cloud/cloud_run.md"
       - Deploy your agents on Phala: "swarms_cloud/phala_deploy.md"
       # - Deploy your agents on FastAPI:
+
+    - More About Us:
+      - Swarms Ecosystem: "swarms/ecosystem.md"
+      - Technical Support: "swarms/support.md"
 
     
   - Examples:
@@ -368,6 +373,7 @@ nav:
           - Finance Swarm: "swarms/examples/swarms_api_finance.md"
 
     - Clients:
+      - Overview: "swarms_cloud/api_clients.md"
       - Python Client: "swarms_cloud/python_client.md"
       - Rust Client: "swarms_cloud/rust_client.md"
 

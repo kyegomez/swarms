@@ -1,223 +1,251 @@
-# Agent Judge
+# AgentJudge
 
-The AgentJudge is a specialized agent designed to evaluate and judge outputs from other agents or systems. It acts as a quality control mechanism, providing objective assessments and feedback on various types of content, decisions, or outputs. This implementation is based on the research paper "Agents as Judges: Using LLMs to Evaluate LLMs".
+A specialized agent for evaluating and judging outputs from other agents or systems. Acts as a quality control mechanism providing objective assessments and feedback.
 
-## Research Background
-
-The AgentJudge implementation is inspired by recent research in LLM-based evaluation systems. Key findings from the research include:
-
-- LLMs can effectively evaluate other LLM outputs with high accuracy
-
-- Multi-agent evaluation systems can provide more reliable assessments
-
-- Structured evaluation criteria improve consistency
-
-- Context-aware evaluation leads to better results
+Based on the research paper: **"Agent-as-a-Judge: Evaluate Agents with Agents"** - [arXiv:2410.10934](https://arxiv.org/abs/2410.10934)
 
 ## Overview
 
-The AgentJudge serves as an impartial evaluator that can:
+The AgentJudge is designed to evaluate and critique outputs from other AI agents, providing structured feedback on quality, accuracy, and areas for improvement. It supports both single-shot evaluations and iterative refinement through multiple evaluation loops with context building.
 
+Key capabilities:
 
-- Assess the quality and correctness of agent outputs
+- **Quality Assessment**: Evaluates correctness, clarity, and completeness of agent outputs
 
-- Provide structured feedback and scoring
+- **Structured Feedback**: Provides detailed critiques with strengths, weaknesses, and suggestions
 
-- Maintain context across multiple evaluations
+- **Multimodal Support**: Can evaluate text outputs alongside images
 
-- Generate detailed analysis reports
+- **Context Building**: Maintains evaluation context across multiple iterations
 
+- **Batch Processing**: Efficiently processes multiple evaluations
 
 ## Architecture
 
 ```mermaid
 graph TD
-   A[Input Tasks] --> B[AgentJudge]
-   B --> C[Agent Core]
-   C --> D[LLM Model]
-   D --> E[Response Generation]
-   E --> F[Context Management]
-   F --> G[Output]
-   
-   subgraph "Evaluation Flow"
-   H[Task Analysis] --> I[Quality Assessment]
-   I --> J[Feedback Generation]
-   J --> K[Score Assignment]
-   end
-   
-   B --> H
-   K --> G
+    A[Input Task] --> B[AgentJudge]
+    B --> C{Evaluation Mode}
+
+    C -->|step()| D[Single Eval]
+    C -->|run()| E[Iterative Eval]
+    C -->|run_batched()| F[Batch Eval]
+
+    D --> G[Agent Core]
+    E --> G
+    F --> G
+
+    G --> H[LLM Model]
+    H --> I[Quality Analysis]
+    I --> J[Feedback & Output]
+
+    subgraph "Feedback Details"
+        N[Strengths]
+        O[Weaknesses]
+        P[Improvements]
+        Q[Accuracy Check]
+    end
+
+    J --> N
+    J --> O
+    J --> P
+    J --> Q
+
 ```
 
-## Configuration
+## Class Reference
 
-### Parameters
+### Constructor
+
+```python
+AgentJudge(
+    id: str = str(uuid.uuid4()),
+    agent_name: str = "Agent Judge",
+    description: str = "You're an expert AI agent judge...",
+    system_prompt: str = AGENT_JUDGE_PROMPT,
+    model_name: str = "openai/o1",
+    max_loops: int = 1,
+    verbose: bool = False,
+    *args,
+    **kwargs
+)
+```
+
+#### Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `agent_name` | str | "agent-judge-01" | Unique identifier for the judge agent |
-| `system_prompt` | str | AGENT_JUDGE_PROMPT | System instructions for the agent |
-| `model_name` | str | "openai/o1" | LLM model to use for evaluation |
-| `max_loops` | int | 1 | Maximum number of evaluation iterations |
+| `id` | `str` | `str(uuid.uuid4())` | Unique identifier for the judge instance |
+| `agent_name` | `str` | `"Agent Judge"` | Name of the agent judge |
+| `description` | `str` | `"You're an expert AI agent judge..."` | Description of the agent's role |
+| `system_prompt` | `str` | `AGENT_JUDGE_PROMPT` | System instructions for evaluation |
+| `model_name` | `str` | `"openai/o1"` | LLM model for evaluation |
+| `max_loops` | `int` | `1` | Maximum evaluation iterations |
+| `verbose` | `bool` | `False` | Enable verbose logging |
 
 ### Methods
 
-| Method | Description | Parameters | Returns |
-|--------|-------------|------------|---------|
-| `step()` | Processes a single batch of tasks | `tasks: List[str]` | `str` |
-| `run()` | Executes multiple evaluation iterations | `tasks: List[str]` | `List[str]` |
+#### step()
 
-## Usage
+```python
+step(
+    task: str = None,
+    tasks: Optional[List[str]] = None,
+    img: Optional[str] = None
+) -> str
+```
 
-### Basic Example
+Processes a single task or list of tasks and returns evaluation.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `task` | `str` | `None` | Single task/output to evaluate |
+| `tasks` | `List[str]` | `None` | List of tasks/outputs to evaluate |
+| `img` | `str` | `None` | Path to image for multimodal evaluation |
+
+**Returns:** `str` - Detailed evaluation response
+
+#### run()
+
+```python
+run(
+    task: str = None,
+    tasks: Optional[List[str]] = None,
+    img: Optional[str] = None
+) -> List[str]
+```
+
+Executes evaluation in multiple iterations with context building.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `task` | `str` | `None` | Single task/output to evaluate |
+| `tasks` | `List[str]` | `None` | List of tasks/outputs to evaluate |
+| `img` | `str` | `None` | Path to image for multimodal evaluation |
+
+**Returns:** `List[str]` - List of evaluation responses from each iteration
+
+#### run_batched()
+
+```python
+run_batched(
+    tasks: Optional[List[str]] = None,
+    imgs: Optional[List[str]] = None
+) -> List[List[str]]
+```
+
+Executes batch evaluation of multiple tasks with corresponding images.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `tasks` | `List[str]` | `None` | List of tasks/outputs to evaluate |
+| `imgs` | `List[str]` | `None` | List of image paths (same length as tasks) |
+
+**Returns:** `List[List[str]]` - Evaluation responses for each task
+
+## Examples
+
+### Basic Usage
 
 ```python
 from swarms import AgentJudge
 
-# Initialize the judge
+# Initialize with default settings
+judge = AgentJudge()
+
+# Single task evaluation
+result = judge.step(task="The capital of France is Paris.")
+print(result)
+```
+
+### Custom Configuration
+
+```python
+from swarms import AgentJudge
+
+# Custom judge configuration
 judge = AgentJudge(
-    model_name="gpt-4o",
-    max_loops=1
+    agent_name="content-evaluator",
+    model_name="gpt-4",
+    max_loops=3,
+    verbose=True
 )
 
-# Example outputs to evaluate
+# Evaluate multiple outputs
 outputs = [
-   "1. Agent CalculusMaster: After careful evaluation, I have computed the integral of the polynomial function. The result is ∫(x^2 + 3x + 2)dx = (1/3)x^3 + (3/2)x^2 + 5, where I applied the power rule for integration and added the constant of integration.",
-   "2. Agent DerivativeDynamo: In my analysis of the function sin(x), I have derived it with respect to x. The derivative is d/dx (sin(x)) = cos(x). However, I must note that the additional term '+ 2' is not applicable in this context as it does not pertain to the derivative of sin(x).",
-   "3. Agent LimitWizard: Upon evaluating the limit as x approaches 0 for the function (sin(x)/x), I conclude that lim (x -> 0) (sin(x)/x) = 1. The additional '+ 3' is incorrect and should be disregarded as it does not relate to the limit calculation.",
+    "Agent CalculusMaster: The integral of x^2 + 3x + 2 is (1/3)x^3 + (3/2)x^2 + 2x + C",
+    "Agent DerivativeDynamo: The derivative of sin(x) is cos(x)",
+    "Agent LimitWizard: The limit of sin(x)/x as x approaches 0 is 1"
 ]
 
-# Run evaluation
-results = judge.run(outputs)
-print(results)
+evaluation = judge.step(tasks=outputs)
+print(evaluation)
 ```
 
-## Applications
-
-### Code Review Automation
-
-!!! success "Features"
-    - Evaluate code quality
-    - Check for best practices
-    - Assess documentation completeness
-
-### Content Quality Control
-
-!!! info "Use Cases"
-    - Review marketing copy
-    - Validate technical documentation
-    - Assess user support responses
-
-### Decision Validation
-
-!!! warning "Applications"
-    - Evaluate business decisions
-    - Assess risk assessments
-    - Review compliance reports
-
-### Performance Assessment
-
-!!! tip "Metrics"
-    - Evaluate agent performance
-    - Assess system outputs
-    - Review automated processes
-
-## Best Practices
-
-### Task Formulation
-
-1. Provide clear, specific evaluation criteria
-2. Include context when necessary
-3. Structure tasks for consistent evaluation
-
-### System Configuration
-
-1. Use appropriate model for task complexity
-2. Adjust max_loops based on evaluation depth needed
-3. Customize system prompt for specific use cases
-
-### Output Management
-
-1. Store evaluation results systematically
-2. Track evaluation patterns over time
-3. Use results for continuous improvement
-
-### Integration Tips
-
-1. Implement as part of CI/CD pipelines
-2. Use for automated quality gates
-3. Integrate with monitoring systems
-
-## Implementation Guide
-
-### Step 1: Setup
+### Iterative Evaluation with Context
 
 ```python
 from swarms import AgentJudge
 
-# Initialize with custom parameters
-judge = AgentJudge(
-    agent_name="custom-judge",
-    model_name="gpt-4",
-    max_loops=3
+# Multiple iterations with context building
+judge = AgentJudge(max_loops=3)
+
+# Each iteration builds on previous context
+evaluations = judge.run(task="Agent output: 2+2=5")
+for i, eval_result in enumerate(evaluations):
+    print(f"Iteration {i+1}: {eval_result}\n")
+```
+
+### Multimodal Evaluation
+
+```python
+from swarms import AgentJudge
+
+judge = AgentJudge()
+
+# Evaluate with image
+evaluation = judge.step(
+    task="Describe what you see in this image",
+    img="path/to/image.jpg"
 )
+print(evaluation)
 ```
 
-### Step 2: Configure Evaluation Criteria
+### Batch Processing
 
 ```python
-# Define evaluation criteria
-criteria = {
-    "accuracy": 0.4,
-    "completeness": 0.3,
-    "clarity": 0.3
-}
+from swarms import AgentJudge
 
-# Set criteria
-judge.set_evaluation_criteria(criteria)
+judge = AgentJudge()
+
+# Batch evaluation with images
+tasks = [
+    "Describe this chart",
+    "What's the main trend?",
+    "Any anomalies?"
+]
+images = [
+    "chart1.png",
+    "chart2.png", 
+    "chart3.png"
+]
+
+# Each task evaluated independently
+evaluations = judge.run_batched(tasks=tasks, imgs=images)
+for i, task_evals in enumerate(evaluations):
+    print(f"Task {i+1} evaluations: {task_evals}")
 ```
 
-### Step 3: Run Evaluations
-
-```python
-# Single task evaluation
-result = judge.step(task)
-
-# Batch evaluation
-results = judge.run(tasks)
-```
-
-## Troubleshooting
-
-### Common Issues
-
-??? question "Evaluation Inconsistencies"
-   If you notice inconsistent evaluations:
-   
-   1. Check the evaluation criteria
-   2. Verify the model configuration
-   3. Review the input format
-
-??? question "Performance Issues"
-   For slow evaluations:
-   
-   1. Reduce max_loops
-   2. Optimize batch size
-   3. Consider model selection
-
-
-## References
-
-### "Agent-as-a-Judge: Evaluate Agents with Agents" - [Paper Link](https://arxiv.org/abs/2410.10934)
+## Reference
 
 ```bibtex
 @misc{zhuge2024agentasajudgeevaluateagentsagents,
-   title={Agent-as-a-Judge: Evaluate Agents with Agents}, 
-   author={Mingchen Zhuge and Changsheng Zhao and Dylan Ashley and Wenyi Wang and Dmitrii Khizbullin and Yunyang Xiong and Zechun Liu and Ernie Chang and Raghuraman Krishnamoorthi and Yuandong Tian and Yangyang Shi and Vikas Chandra and Jürgen Schmidhuber},
-   year={2024},
-   eprint={2410.10934},
-   archivePrefix={arXiv},
-   primaryClass={cs.AI},
-   url={https://arxiv.org/abs/2410.10934}, 
+    title={Agent-as-a-Judge: Evaluate Agents with Agents}, 
+    author={Mingchen Zhuge and Changsheng Zhao and Dylan Ashley and Wenyi Wang and Dmitrii Khizbullin and Yunyang Xiong and Zechun Liu and Ernie Chang and Raghuraman Krishnamoorthi and Yuandong Tian and Yangyang Shi and Vikas Chandra and Jürgen Schmidhuber},
+    year={2024},
+    eprint={2410.10934},
+    archivePrefix={arXiv},
+    primaryClass={cs.AI},
+    url={https://arxiv.org/abs/2410.10934}
 }
 ```

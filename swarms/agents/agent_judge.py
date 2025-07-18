@@ -1,5 +1,7 @@
 import traceback
+
 from typing import List, Optional, Union, Dict
+
 import uuid
 
 from swarms.prompts.agent_judge_prompt import AGENT_JUDGE_PROMPT
@@ -7,16 +9,20 @@ from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.any_to_str import any_to_str
 
+
 class AgentJudgeInitializationError(Exception):
     """
     Exception raised when there is an error initializing the AgentJudge.
     """
+
     pass
 
 class AgentJudgeExecutionError(Exception):
     """
     Exception raised when there is an error executing the AgentJudge.
     """
+
+
     pass
 
 class AgentJudgeFeedbackCycleError(Exception):
@@ -28,9 +34,11 @@ class AgentJudgeFeedbackCycleError(Exception):
 class AgentJudge:
     """
     A specialized agent designed to evaluate and judge outputs from other agents or systems.
+
     The AgentJudge acts as a quality control mechanism, providing objective assessments
     and feedback on various types of content, decisions, or outputs. It's based on research
     in LLM-based evaluation systems and can maintain context across multiple evaluations.
+
     This implementation supports both single task evaluation and batch processing with
     iterative refinement capabilities.
 
@@ -43,6 +51,7 @@ class AgentJudge:
         max_loops (int): The maximum number of evaluation iterations to run.
         verbose (bool): Whether to enable verbose logging.
         agent (Agent): An instance of the Agent class that performs the evaluation execution.
+
         evaluation_criteria (Dict[str, float]): Dictionary of evaluation criteria and their weights.
 
     Example:
@@ -76,6 +85,7 @@ class AgentJudge:
             Processes a single task or list of tasks and returns the agent's evaluation.
         run(task: str = None, tasks: List[str] = None, img: str = None) -> List[str]:
             Executes evaluation in a loop with context building, collecting responses.
+
         run_batched(tasks: List[str] = None, imgs: List[str] = None) -> List[str]:
             Executes batch evaluation of tasks with corresponding images.
     """
@@ -89,7 +99,9 @@ class AgentJudge:
         model_name: str = "openai/o1",
         max_loops: int = 1,
         verbose: bool = False,
+
         evaluation_criteria: Optional[Dict[str, float]] = None,
+
         *args,
         **kwargs,
     ):
@@ -100,6 +112,7 @@ class AgentJudge:
         self.conversation = Conversation(time_enabled=False)
         self.max_loops = max_loops
         self.verbose = verbose
+
         self.evaluation_criteria = evaluation_criteria or {}
         
         # Enhance system prompt with evaluation criteria if provided
@@ -110,10 +123,13 @@ class AgentJudge:
                 criteria_str += f"- {criterion}: weight = {weight}\n"
             enhanced_prompt += criteria_str
 
+
         self.agent = Agent(
             agent_name=agent_name,
             agent_description=description,
+
             system_prompt=enhanced_prompt,
+
             model_name=model_name,
             max_loops=1,
             *args,
@@ -183,6 +199,7 @@ class AgentJudge:
     ) -> str:
         """
         Processes a single task or list of tasks and returns the agent's evaluation.
+
         This method performs a one-shot evaluation of the provided content. It takes
         either a single task string or a list of tasks and generates a comprehensive
         evaluation with strengths, weaknesses, and improvement suggestions.
@@ -206,6 +223,7 @@ class AgentJudge:
             ```python
             # Single task evaluation
             evaluation = judge.step(task="The answer is 42.")
+
 
             # Multiple tasks evaluation
             evaluation = judge.step(tasks=[
@@ -274,6 +292,7 @@ class AgentJudge:
     ):
         """
         Executes evaluation in multiple iterations with context building and refinement.
+
         This method runs the evaluation process for the specified number of max_loops,
         where each iteration builds upon the previous context. This allows for iterative
         refinement of evaluations and deeper analysis over multiple passes.
@@ -363,10 +382,12 @@ class AgentJudge:
     ):
         """
         Executes batch evaluation of multiple tasks with corresponding images.
+
         This method processes multiple task-image pairs independently, where each
         task can be evaluated with its corresponding image. Unlike the run() method,
         this doesn't build context between different tasks - each is evaluated
         independently.
+
 
         Args:
             tasks (List[str], optional): A list of tasks/outputs to be evaluated.
@@ -377,6 +398,7 @@ class AgentJudge:
             List[List[str]]: A list of evaluation responses for each task. Each inner
                            list contains the responses from all iterations (max_loops)
                            for that particular task.
+
 
         Example:
             ```python
@@ -402,6 +424,7 @@ class AgentJudge:
             ])
             ```
 
+
         Note:
             - Each task is processed independently
             - If imgs is provided, it must have the same length as tasks
@@ -412,4 +435,6 @@ class AgentJudge:
         for task, img in zip(tasks, imgs):
             response = self.run(task=task, img=img)
             responses.append(response)
+
         return responses
+
