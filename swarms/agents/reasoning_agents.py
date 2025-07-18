@@ -36,11 +36,6 @@ import traceback
 from typing import (
     List,
     Literal,
-    Dict,
-    Callable,
-    Any,
-    Tuple,
-    Hashable,
     Optional,
 )
 
@@ -53,7 +48,6 @@ from swarms.agents.i_agent import (
 from swarms.agents.reasoning_duo import ReasoningDuo
 from swarms.utils.output_types import OutputType
 from swarms.agents.agent_judge import AgentJudge
-from functools import lru_cache
 
 #: Supported agent type literals for ReasoningAgentRouter
 agent_types = Literal[
@@ -112,6 +106,7 @@ class ReasoningAgentRouter:
         >>> result = router.run("Explain quantum entanglement.")
         >>> print(result)
     """
+
     def __init__(
         self,
         agent_name: str = "reasoning_agent",
@@ -127,7 +122,9 @@ class ReasoningAgentRouter:
         eval: bool = False,
         random_models_on: bool = False,
         majority_voting_prompt: Optional[str] = None,
-        reasoning_model_name: Optional[str] = "claude-3-5-sonnet-20240620",
+        reasoning_model_name: Optional[
+            str
+        ] = "claude-3-5-sonnet-20240620",
     ):
         """
         Initialize the ReasoningAgentRouter with the specified configuration.

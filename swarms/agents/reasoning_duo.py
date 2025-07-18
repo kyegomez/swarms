@@ -151,7 +151,7 @@ class ReasoningDuo:
             list: A list of outputs from the main agent for each task.
         """
         outputs = []
-        
+
         # Handle case where imgs is None
         if imgs is None:
             imgs = [None] * len(tasks)
