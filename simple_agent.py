@@ -6,13 +6,12 @@ agent = Agent(
     model_name="groq/moonshotai/kimi-k2-instruct",
     verbose=True,
     streaming_on=True,
+    max_loops=2,
+    interactive=True,
 )
 
 out = agent.run(
-    "Create a detailed report on the best AI research papers for multi-agent collaboration. "
-    "Include paper titles, authors, publication venues, years, and a brief summary of each paper's key contributions. "
-    "Highlight recent advances and foundational works. Only include papers from 2024 and 2025."
-    "Provie their links as well"
+    "What are the best AI wechat groups in hangzhou and beijing? give me the links"
 )
 
 print(out)

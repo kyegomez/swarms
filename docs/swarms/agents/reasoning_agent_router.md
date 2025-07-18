@@ -44,6 +44,7 @@ graph TD
     | `eval` | bool | False | Enable evaluation mode for self-consistency |
     | `random_models_on` | bool | False | Enable random model selection for diversity |
     | `majority_voting_prompt` | Optional[str] | None | Custom prompt for majority voting |
+    | `reasoning_model_name` | Optional[str] | "claude-3-5-sonnet-20240620" | Model to use for reasoning in ReasoningDuo |
 
 ### Available Agent Types
 
@@ -74,12 +75,15 @@ graph TD
     
     **Required Parameters**
     
-    - model_name (list of 2)
+    - model_name
     - system_prompt
     
     **Optional Parameters**
     
     - output_type
+    - reasoning_model_name (default: "claude-3-5-sonnet-20240620")
+    - max_loops
+    - img (for image input support)
 
 === "Self Consistency"
     **Key Features**
@@ -210,8 +214,39 @@ graph TD
     | Method | Description |
     |--------|-------------|
     | `select_swarm()` | Selects and initializes the appropriate reasoning swarm based on specified type |
-    | `run(task: str)` | Executes the selected swarm's reasoning process on the given task |
-    | `batched_run(tasks: List[str])` | Executes the reasoning process on a batch of tasks |
+    | `run(task: str, img: Optional[str] = None, **kwargs)` | Executes the selected swarm's reasoning process on the given task |
+    | `batched_run(tasks: List[str], imgs: Optional[List[str]] = None, **kwargs)` | Executes the reasoning process on a batch of tasks |
+
+### Image Support
+
+!!! info "Multi-modal Capabilities"
+    The ReasoningAgentRouter supports image inputs for compatible agent types:
+
+    **Supported Parameters:**
+    
+    - `img` (str, optional): Path or URL to a single image file for single task execution
+    - `imgs` (List[str], optional): List of image paths/URLs for batch task execution
+
+    **Compatible Agent Types:**
+    
+    - `reasoning-duo` / `reasoning-agent`: Full image support for both reasoning and execution phases
+    - Other agent types may have varying levels of image support depending on their underlying implementation
+
+    **Usage Example:**
+    ```python
+    # Single image with task
+    router = ReasoningAgentRouter(swarm_type="reasoning-duo")
+    result = router.run(
+        task="Describe what you see in this image",
+        img="path/to/image.jpg"
+    )
+
+    # Batch processing with images
+    results = router.batched_run(
+        tasks=["Analyze this chart", "Describe this photo"],
+        imgs=["chart.png", "photo.jpg"]
+    )
+    ```
 
 ### Code Examples
 
@@ -235,6 +270,12 @@ graph TD
 
     # Run a single task
     result = router.run("What is the best approach to solve this problem?")
+    
+    # Run with image input
+    result_with_image = router.run(
+        "Analyze this image and provide insights",
+        img="path/to/image.jpg"
+    )
     ```
 
 === "Self-Consistency Examples"
@@ -279,6 +320,29 @@ graph TD
         swarm_type="GKPAgent",
         model_name="gpt-4o-mini",
         num_knowledge_items=6
+    )
+    ```
+
+=== "ReasoningDuo Examples"
+    ```python
+    # Basic ReasoningDuo
+    router = ReasoningAgentRouter(
+        swarm_type="reasoning-duo",
+        model_name="gpt-4o-mini",
+        reasoning_model_name="claude-3-5-sonnet-20240620"
+    )
+    
+    # ReasoningDuo with image support
+    router = ReasoningAgentRouter(
+        swarm_type="reasoning-duo",
+        model_name="gpt-4o-mini",
+        reasoning_model_name="gpt-4-vision-preview",
+        max_loops=2
+    )
+    
+    result = router.run(
+        "Analyze this image and explain the patterns you see",
+        img="data_visualization.png"
     )
     ```
 
@@ -327,6 +391,15 @@ graph TD
         - Customize majority_voting_prompt for domain-specific aggregation
         
         - Consider random_models_on for diverse model perspectives
+
+    5. **Multi-modal and Reasoning Configuration**
+        - Use vision-capable models when processing images (e.g., "gpt-4-vision-preview")
+        
+        - For ReasoningDuo, set different models for reasoning vs execution via reasoning_model_name
+        
+        - Ensure image paths are accessible and in supported formats (JPG, PNG, etc.)
+        
+        - Consider using reasoning_model_name with specialized reasoning models for complex tasks
 
 ## Limitations
 

@@ -30,12 +30,9 @@ Example usage:
     >>> results = router.batched_run(["2+2?", "3+3?"])
     >>> print(results)
 
-See also:
-    - docs/swarms/agents/reasoning_agent_router.md for detailed documentation and architecture diagrams.
-    - consistency_example.py for a usage example with SelfConsistencyAgent.
-
 """
 
+import traceback
 from typing import (
     List,
     Literal,
@@ -56,6 +53,7 @@ from swarms.agents.i_agent import (
 from swarms.agents.reasoning_duo import ReasoningDuo
 from swarms.utils.output_types import OutputType
 from swarms.agents.agent_judge import AgentJudge
+from functools import lru_cache
 
 #: Supported agent type literals for ReasoningAgentRouter
 agent_types = Literal[
@@ -69,6 +67,22 @@ agent_types = Literal[
     "GKPAgent",
     "AgentJudge",
 ]
+
+
+class ReasoningAgentExecutorError(Exception):
+    """
+    Exception raised when an error occurs during the execution of a reasoning agent.
+    """
+
+    pass
+
+
+class ReasoningAgentInitializationError(Exception):
+    """
+    Exception raised when an error occurs during the initialization of a reasoning agent.
+    """
+
+    pass
 
 
 class ReasoningAgentRouter:
@@ -98,10 +112,6 @@ class ReasoningAgentRouter:
         >>> result = router.run("Explain quantum entanglement.")
         >>> print(result)
     """
-
-    # Class variable to store cached agent instances
-    _agent_cache: Dict[Tuple[Hashable, ...], Any] = {}
-
     def __init__(
         self,
         agent_name: str = "reasoning_agent",
@@ -117,6 +127,7 @@ class ReasoningAgentRouter:
         eval: bool = False,
         random_models_on: bool = False,
         majority_voting_prompt: Optional[str] = None,
+        reasoning_model_name: Optional[str] = "claude-3-5-sonnet-20240620",
     ):
         """
         Initialize the ReasoningAgentRouter with the specified configuration.
@@ -136,9 +147,29 @@ class ReasoningAgentRouter:
         self.eval = eval
         self.random_models_on = random_models_on
         self.majority_voting_prompt = majority_voting_prompt
+        self.reasoning_model_name = reasoning_model_name
+
+        self.reliability_check()
+
+    def reliability_check(self):
+
+        if self.max_loops == 0:
+            raise ReasoningAgentInitializationError(
+                "ReasoningAgentRouter Error: Max loops must be greater than 0"
+            )
+
+        if self.model_name == "" or self.model_name is None:
+            raise ReasoningAgentInitializationError(
+                "ReasoningAgentRouter Error: Model name must be provided"
+            )
+
+        if self.swarm_type == "" or self.swarm_type is None:
+            raise ReasoningAgentInitializationError(
+                "ReasoningAgentRouter Error: Swarm type must be provided. This is the type of reasoning agent you want to use. For example, 'reasoning-duo' for a reasoning duo agent, 'self-consistency' for a self-consistency agent, 'ire' for an iterative reflective expansion agent, 'reasoning-agent' for a reasoning agent, 'consistency-agent' for a consistency agent, 'ire-agent' for an iterative reflective expansion agent, 'ReflexionAgent' for a reflexion agent, 'GKPAgent' for a generated knowledge prompting agent, 'AgentJudge' for an agent judge."
+            )
 
         # Initialize the factory mapping dictionary
-        self._initialize_agent_factories()
+        self.agent_factories = self._initialize_agent_factories()
 
     def _initialize_agent_factories(self) -> None:
         """
@@ -146,46 +177,19 @@ class ReasoningAgentRouter:
 
         This method replaces the original if-elif chain, making the code more maintainable and extensible.
         """
-        self.agent_factories: Dict[str, Callable[[], Any]] = {
-            # ReasoningDuo factory method
+        agent_factories = {
             "reasoning-duo": self._create_reasoning_duo,
             "reasoning-agent": self._create_reasoning_duo,
-            # SelfConsistencyAgent factory methods
             "self-consistency": self._create_consistency_agent,
             "consistency-agent": self._create_consistency_agent,
-            # IREAgent factory methods
             "ire": self._create_ire_agent,
             "ire-agent": self._create_ire_agent,
-            # Other agent type factory methods
             "AgentJudge": self._create_agent_judge,
             "ReflexionAgent": self._create_reflexion_agent,
             "GKPAgent": self._create_gkp_agent,
         }
 
-    def _get_cache_key(self) -> Tuple[Hashable, ...]:
-        """
-        Generate a unique key for cache lookup.
-
-        The key is based on all relevant configuration parameters of the agent.
-
-        Returns:
-            Tuple[Hashable, ...]: A hashable tuple to serve as the cache key.
-        """
-        return (
-            self.swarm_type,
-            self.agent_name,
-            self.description,
-            self.model_name,
-            self.system_prompt,
-            self.max_loops,
-            self.num_samples,
-            self.output_type,
-            self.num_knowledge_items,
-            self.memory_capacity,
-            self.eval,
-            self.random_models_on,
-            self.majority_voting_prompt,
-        )
+        return agent_factories
 
     def _create_reasoning_duo(self):
         """
@@ -200,6 +204,8 @@ class ReasoningAgentRouter:
             model_name=[self.model_name, self.model_name],
             system_prompt=self.system_prompt,
             output_type=self.output_type,
+            reasoning_model_name=self.reasoning_model_name,
+            max_loops=self.max_loops,
         )
 
     def _create_consistency_agent(self):
@@ -285,32 +291,23 @@ class ReasoningAgentRouter:
         """
         Select and initialize the appropriate reasoning swarm based on the specified swarm type.
 
-        Uses a caching mechanism to return a cached instance if an agent with the same configuration already exists.
-
         Returns:
             The selected reasoning swarm instance.
 
         Raises:
             ValueError: If the specified swarm type is invalid.
         """
-        # Generate cache key
-        cache_key = self._get_cache_key()
-
-        # Check if an instance with the same configuration already exists in the cache
-        if cache_key in self.__class__._agent_cache:
-            return self.__class__._agent_cache[cache_key]
-
         try:
-            # Use the factory method to create a new instance
-            agent = self.agent_factories[self.swarm_type]()
-
-            # Add the newly created instance to the cache
-            self.__class__._agent_cache[cache_key] = agent
-
-            return agent
-        except KeyError:
-            # Keep the same error handling as the original code
-            raise ValueError(f"Invalid swarm type: {self.swarm_type}")
+            if self.swarm_type in self.agent_factories:
+                return self.agent_factories[self.swarm_type]()
+            else:
+                raise ReasoningAgentInitializationError(
+                    f"ReasoningAgentRouter Error: Invalid swarm type: {self.swarm_type}"
+                )
+        except Exception as e:
+            raise ReasoningAgentInitializationError(
+                f"ReasoningAgentRouter Error: {e} Traceback: {traceback.format_exc()} If the error persists, please check the agent's configuration and try again. If you would like support book a call with our team at https://cal.com/swarms"
+            )
 
     def run(self, task: str, *args, **kwargs):
         """
@@ -324,8 +321,13 @@ class ReasoningAgentRouter:
         Returns:
             The result of the reasoning process (format depends on agent and output_type).
         """
-        swarm = self.select_swarm()
-        return swarm.run(task=task, *args, **kwargs)
+        try:
+            swarm = self.select_swarm()
+            return swarm.run(task=task, *args, **kwargs)
+        except Exception as e:
+            raise ReasoningAgentExecutorError(
+                f"ReasoningAgentRouter Error: {e} Traceback: {traceback.format_exc()} If the error persists, please check the agent's configuration and try again. If you would like support book a call with our team at https://cal.com/swarms"
+            )
 
     def batched_run(self, tasks: List[str], *args, **kwargs):
         """
@@ -343,12 +345,3 @@ class ReasoningAgentRouter:
         for task in tasks:
             results.append(self.run(task, *args, **kwargs))
         return results
-
-    @classmethod
-    def clear_cache(cls):
-        """
-        Clear the agent instance cache.
-
-        Use this when you need to free memory or force the creation of new instances.
-        """
-        cls._agent_cache.clear()

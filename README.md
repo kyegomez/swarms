@@ -237,20 +237,26 @@ A `SequentialWorkflow` executes tasks in a strict order, forming a pipeline wher
 ```python
 from swarms import Agent, SequentialWorkflow
 
-# Initialize agents for a 3-step process
-# 1. Generate an idea
-idea_generator = Agent(agent_name="IdeaGenerator", system_prompt="Generate a unique startup idea.", model_name="gpt-4o-mini")
-# 2. Validate the idea
-validator = Agent(agent_name="Validator", system_prompt="Take this startup idea and analyze its market viability.", model_name="gpt-4o-mini")
-# 3. Create a pitch
-pitch_creator = Agent(agent_name="PitchCreator", system_prompt="Write a 3-sentence elevator pitch for this validated startup idea.", model_name="gpt-4o-mini")
+# Agent 1: The Researcher
+researcher = Agent(
+    agent_name="Researcher",
+    system_prompt="Your job is to research the provided topic and provide a detailed summary.",
+    model_name="gpt-4o-mini",
+)
 
-# Create the sequential workflow
-workflow = SequentialWorkflow(agents=[idea_generator, validator, pitch_creator])
+# Agent 2: The Writer
+writer = Agent(
+    agent_name="Writer",
+    system_prompt="Your job is to take the research summary and write a beautiful, engaging blog post about it.",
+    model_name="gpt-4o-mini",
+)
 
-# Run the workflow
-elevator_pitch = workflow.run()
-print(elevator_pitch)
+# Create a sequential workflow where the researcher's output feeds into the writer's input
+workflow = SequentialWorkflow(agents=[researcher, writer])
+
+# Run the workflow on a task
+final_post = workflow.run("The history and future of artificial intelligence")
+print(final_post)
 ```
 
 -----
@@ -313,9 +319,7 @@ rearrange_system = AgentRearrange(
     flow=flow,
 )
 
-# Run the system
-# The researcher will generate content, and then both the writer and editor
-# will process that content in parallel.
+# Run the swarm
 outputs = rearrange_system.run("Analyze the impact of AI on modern cinema.")
 print(outputs)
 ```
