@@ -50,11 +50,12 @@ Use GitHub Issues for:
 
 4. **Include the following information**:
 
-```markdown
 ## Bug Description
+
 A clear description of what the bug is.
 
 ## Environment
+
 - Swarms version: [e.g., 5.9.2]
 
 - Python version: [e.g., 3.9.0]
@@ -65,17 +66,21 @@ A clear description of what the bug is.
 
 
 ## Steps to Reproduce
+
 1. Step one
 2. Step two
 3. Step three
 
 ## Expected Behavior
+
 What you expected to happen.
 
 ## Actual Behavior
+
 What actually happened.
 
 ## Code Sample
+
 ```python
 # Minimal code that reproduces the issue
 from swarms import Agent
@@ -85,11 +90,12 @@ result = agent.run("Your task here")
 ```
 
 ## Error Messages
-```
+
 Paste any error messages or stack traces here
-```
+
 
 ## Additional Context
+
 Any other context, screenshots, or logs that might help.
 
 ### **Issue Templates Available**
@@ -109,6 +115,7 @@ Any other context, screenshots, or logs that might help.
 ### **When to Book a Private Support Call**
 
 Book a private consultation for:
+
 - Security vulnerabilities or concerns
 
 - Enterprise deployment guidance
@@ -164,6 +171,7 @@ Book a private consultation for:
 Get instant help from our active community of developers and core team members.
 
 **Discord Benefits:**
+
 - **24/7 availability** - Someone is always online
 
 - **Instant responses** - Get help in real-time
