@@ -2185,6 +2185,7 @@ class BaseTool(BaseModel):
         sequential: bool = False,
         max_workers: int = 4,
         return_as_string: bool = True,
+        is_streaming: bool = False,
     ) -> Union[List[Any], List[str]]:
         """
         Automatically detect and execute function calls from OpenAI or Anthropic API responses.
@@ -2196,12 +2197,14 @@ class BaseTool(BaseModel):
         - Pydantic BaseModel objects from Anthropic responses
         - Parallel function execution with concurrent.futures or sequential execution
         - Multiple function calls in a single response
+        - Streaming responses with partial JSON chunks
 
         Args:
             api_response (Union[Dict[str, Any], str, List[Any]]): The API response containing function calls
             sequential (bool): If True, execute functions sequentially. If False, execute in parallel (default)
             max_workers (int): Maximum number of worker threads for parallel execution (default: 4)
             return_as_string (bool): If True, return results as formatted strings (default: True)
+            is_streaming (bool): If True, handle partial/incomplete streaming responses gracefully (default: False)
 
         Returns:
             Union[List[Any], List[str]]: List of results from executed functions
@@ -2222,6 +2225,9 @@ class BaseTool(BaseModel):
             >>> # Direct tool calls list (including BaseModel objects)
             >>> tool_calls = [ChatCompletionMessageToolCall(...), ...]
             >>> results = tool.execute_function_calls_from_api_response(tool_calls)
+            
+            >>> # Streaming response handling
+            >>> results = tool.execute_function_calls_from_api_response(partial_response, is_streaming=True)
         """
         # Handle None API response gracefully by returning empty results
         if api_response is None:
@@ -2230,6 +2236,26 @@ class BaseTool(BaseModel):
                 "API response is None, returning empty results. This may indicate the LLM did not return a valid response.",
             )
             return [] if not return_as_string else []
+        
+        # Handle streaming mode with empty or partial responses
+        if is_streaming:
+            # For streaming, we may get empty strings or partial JSON - handle gracefully
+            if isinstance(api_response, str) and api_response.strip() == "":
+                self._log_if_verbose(
+                    "debug",
+                    "Empty streaming response, returning empty results",
+                )
+                return [] if not return_as_string else []
+            
+            # If it's a string that looks like incomplete JSON, return empty results
+            if isinstance(api_response, str):
+                stripped_response = api_response.strip()
+                if stripped_response and not self._is_likely_complete_json(stripped_response):
+                    self._log_if_verbose(
+                        "debug",
+                        f"Incomplete streaming JSON detected: '{stripped_response[:50]}...', returning empty results",
+                    )
+                    return [] if not return_as_string else []
 
         # Handle direct list of tool call objects (e.g., from OpenAI ChatCompletionMessageToolCall or Anthropic BaseModels)
         if isinstance(api_response, list):
@@ -2261,11 +2287,19 @@ class BaseTool(BaseModel):
                 try:
                     api_response = json.loads(api_response)
                 except json.JSONDecodeError as e:
-                    self._log_if_verbose(
-                        "error",
-                        f"Failed to parse JSON from API response: {e}. Response: '{api_response[:100]}...'",
-                    )
-                    return []
+                    # In streaming mode, this is expected for partial responses
+                    if is_streaming:
+                        self._log_if_verbose(
+                            "debug",
+                            f"JSON parsing failed in streaming mode (expected for partial responses): {e}. Response: '{api_response[:100]}...'",
+                        )
+                        return [] if not return_as_string else []
+                    else:
+                        self._log_if_verbose(
+                            "error",
+                            f"Failed to parse JSON from API response: {e}. Response: '{api_response[:100]}...'",
+                        )
+                        return []
 
             if not isinstance(api_response, dict):
                 self._log_if_verbose(
@@ -2965,6 +2999,65 @@ class BaseTool(BaseModel):
             )
 
         return function_calls
+
+    def _is_likely_complete_json(self, json_str: str) -> bool:
+        """
+        Check if a JSON string appears to be complete by examining its structure.
+        
+        This is a heuristic method for streaming responses to avoid parsing incomplete JSON.
+        
+        Args:
+            json_str (str): JSON string to check
+            
+        Returns:
+            bool: True if the JSON appears complete, False otherwise
+        """
+        if not json_str or not isinstance(json_str, str):
+            return False
+            
+        json_str = json_str.strip()
+        if not json_str:
+            return False
+        
+        try:
+            # Try to parse - if it succeeds, it's complete
+            json.loads(json_str)
+            return True
+        except json.JSONDecodeError:
+            # If parsing fails, use heuristics to check if it might be incomplete
+            
+            # Check for basic structural completeness
+            if json_str.startswith('{'):
+                # Count braces to see if they're balanced
+                open_braces = json_str.count('{')
+                close_braces = json_str.count('}')
+                if open_braces > close_braces:
+                    return False  # Likely incomplete
+                    
+            elif json_str.startswith('['):
+                # Count brackets to see if they're balanced
+                open_brackets = json_str.count('[')
+                close_brackets = json_str.count(']')
+                if open_brackets > close_brackets:
+                    return False  # Likely incomplete
+            
+            # Check for incomplete strings (odd number of unescaped quotes)
+            quote_count = 0
+            escaped = False
+            for char in json_str:
+                if char == '\\' and not escaped:
+                    escaped = True
+                elif char == '"' and not escaped:
+                    quote_count += 1
+                else:
+                    escaped = False
+            
+            if quote_count % 2 != 0:
+                return False  # Incomplete string
+            
+            # If we get here, the JSON might be malformed but not necessarily incomplete
+            # Return False to be safe
+            return False
 
     def _format_results_as_strings(
         self, results: List[Any], function_calls: List[Dict[str, Any]]
