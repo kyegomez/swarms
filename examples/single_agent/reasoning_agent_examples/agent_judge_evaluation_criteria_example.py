@@ -2,12 +2,11 @@
 Agent Judge with Evaluation Criteria Example
 
 This example demonstrates how to use the AgentJudge with custom evaluation criteria.
-The evaluation_criteria parameter allows specifying different criteria with weights 
+The evaluation_criteria parameter allows specifying different criteria with weights
 for more targeted and customizable evaluation of agent outputs.
 """
 
 from swarms.agents.agent_judge import AgentJudge
-import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,9 +19,9 @@ judge = AgentJudge(
     model_name="claude-3-7-sonnet-20250219",  # Use any available model
     evaluation_criteria={
         "correctness": 0.5,
-        "problem_solving_approach": 0.3, 
-        "explanation_clarity": 0.2
-    }
+        "problem_solving_approach": 0.3,
+        "explanation_clarity": 0.2,
+    },
 )
 
 # Sample output to evaluate
@@ -39,7 +38,9 @@ evaluation = judge.run(task_response)
 print(evaluation[0])
 
 # Example 2: Specialized criteria for code evaluation
-print("\n=== Example 2: Code Evaluation with Specialized Criteria ===\n")
+print(
+    "\n=== Example 2: Code Evaluation with Specialized Criteria ===\n"
+)
 
 code_judge = AgentJudge(
     model_name="claude-3-7-sonnet-20250219",
@@ -47,8 +48,8 @@ code_judge = AgentJudge(
     evaluation_criteria={
         "code_correctness": 0.4,
         "code_efficiency": 0.3,
-        "code_readability": 0.3
-    }
+        "code_readability": 0.3,
+    },
 )
 
 # Sample code to evaluate
@@ -76,25 +77,23 @@ print("\n=== Example 3: Comparing Multiple Agent Responses ===\n")
 
 comparison_judge = AgentJudge(
     model_name="claude-3-7-sonnet-20250219",
-    evaluation_criteria={
-        "accuracy": 0.6,
-        "completeness": 0.4
-    }
+    evaluation_criteria={"accuracy": 0.6, "completeness": 0.4},
 )
 
-multiple_responses = comparison_judge.run([
-    "Task: Explain the CAP theorem in distributed systems.\n\n"
-    "Agent A response: CAP theorem states that a distributed system cannot simultaneously "
-    "provide Consistency, Availability, and Partition tolerance. In practice, you must "
-    "choose two out of these three properties.",
-    
-    "Task: Explain the CAP theorem in distributed systems.\n\n"
-    "Agent B response: The CAP theorem, formulated by Eric Brewer, states that in a "
-    "distributed data store, you can only guarantee two of the following three properties: "
-    "Consistency (all nodes see the same data at the same time), Availability (every request "
-    "receives a response), and Partition tolerance (the system continues to operate despite "
-    "network failures). Most modern distributed systems choose to sacrifice consistency in "
-    "favor of availability and partition tolerance, implementing eventual consistency models instead."
-])
+multiple_responses = comparison_judge.run(
+    [
+        "Task: Explain the CAP theorem in distributed systems.\n\n"
+        "Agent A response: CAP theorem states that a distributed system cannot simultaneously "
+        "provide Consistency, Availability, and Partition tolerance. In practice, you must "
+        "choose two out of these three properties.",
+        "Task: Explain the CAP theorem in distributed systems.\n\n"
+        "Agent B response: The CAP theorem, formulated by Eric Brewer, states that in a "
+        "distributed data store, you can only guarantee two of the following three properties: "
+        "Consistency (all nodes see the same data at the same time), Availability (every request "
+        "receives a response), and Partition tolerance (the system continues to operate despite "
+        "network failures). Most modern distributed systems choose to sacrifice consistency in "
+        "favor of availability and partition tolerance, implementing eventual consistency models instead.",
+    ]
+)
 
 print(multiple_responses[0])

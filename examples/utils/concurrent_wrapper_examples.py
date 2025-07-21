@@ -25,7 +25,6 @@ from swarms.utils.concurrent_wrapper import (
 @concurrent(
     name="data_processor",
     description="Process data concurrently",
-    max_workers=4,
     timeout=30,
     retry_on_failure=True,
     max_retries=2,

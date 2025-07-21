@@ -1,3 +1,4 @@
+import os
 import asyncio
 import concurrent.futures
 import inspect
@@ -155,6 +156,9 @@ def concurrent(
     Returns:
         Callable: Decorated function that can execute concurrently
     """
+
+    if max_workers is None:
+        max_workers = os.cpu_count()
 
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         config = ConcurrentConfig(

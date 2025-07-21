@@ -10,7 +10,7 @@ agent = Agent(
 )
 
 out = agent.run(
-   "What are the best arbitrage trading strategies for altcoins? Give me research papers and articles on the topic."
+    "What are the best arbitrage trading strategies for altcoins? Give me research papers and articles on the topic."
 )
 
 print(out)
