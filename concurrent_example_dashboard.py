@@ -1,5 +1,5 @@
-from swarms import Agent
-from swarms.structs.concurrent_workflow import ConcurrentWorkflow
+# Get your packages
+from swarms import Agent, ConcurrentWorkflow
 
 # Initialize market research agent
 market_researcher = Agent(
@@ -12,7 +12,7 @@ market_researcher = Agent(
     5. Providing actionable market insights""",
     model_name="claude-3-sonnet-20240229",
     max_loops=1,
-    temperature=0.7,
+    dynamic_temperature_enabled=True,
     # streaming_on=True,
 )
 
@@ -25,10 +25,9 @@ financial_analyst = Agent(
     3. Assessing risk factors
     4. Providing financial forecasts
     5. Recommending financial strategies""",
-    model_name="claude-3-sonnet-20240229",
+    model_name="gpt-4.1",
     max_loops=1,
-    # streaming_on=True,
-    temperature=0.7,
+    dynamic_temperature_enabled=True,
 )
 
 # Initialize technical analyst agent
@@ -52,14 +51,15 @@ agents = [market_researcher, financial_analyst, technical_analyst]
 
 router = ConcurrentWorkflow(
     name="market-analysis-router",
+    description="This concurrent workflow is used to analyze the market, financial, and technical aspects of a stock.",
     agents=agents,
     max_loops=1,
-    # output_type="all",
+    output_type="all",
     show_dashboard=True,
 )
 
 result = router.run(
-    "Analyze Tesla (TSLA) stock from market, financial, and technical perspectives"
+    task="What are the best 3 ETFS for energy sector in the US?"
 )
 
 print(result)

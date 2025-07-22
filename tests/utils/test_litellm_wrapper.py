@@ -292,7 +292,7 @@ def run_test_suite():
         assert isinstance(is_url_direct, bool)
         assert isinstance(is_local_direct, bool)
         assert (
-            is_local_direct == False
+            is_local_direct is False
         )  # Local files should never use direct URL
 
         log_test_result("Local vs URL Detection", True)

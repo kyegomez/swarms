@@ -226,6 +226,7 @@ print(final_post)
 | **[ForestSwarm](https://docs.swarms.world/en/latest/swarms/structs/forest_swarm/)** | Dynamically selects the most suitable agent or tree of agents for a given task. | Task routing, optimizing for expertise, complex decision-making trees. |
 | **[SpreadSheetSwarm](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)** | Manages thousands of agents concurrently, tracking tasks and outputs in a structured format. | Massive-scale parallel operations, large-scale data generation and analysis. |
 | **[HierarchicalSwarm](https://docs.swarms.world/en/latest/swarms/structs/hiearchical_swarm/)** | Orchestrates agents with a director that creates plans and distributes tasks to specialized worker agents. | Complex project management, team coordination, hierarchical decision-making with feedback loops. |
+| **[HeavySwarm](https://docs.swarms.world/en/latest/swarms/structs/heavy_swarm/)** | Implements a 5-phase workflow with specialized agents (Research, Analysis, Alternatives, Verification) for comprehensive task analysis. | Complex research and analysis tasks, financial analysis, strategic planning, comprehensive reporting. |
 | **[SwarmRouter](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)** | Universal orchestrator that provides a single interface to run any type of swarm with dynamic selection. | Simplifying complex workflows, switching between swarm strategies, unified multi-agent management. |
 
 -----
@@ -237,20 +238,26 @@ A `SequentialWorkflow` executes tasks in a strict order, forming a pipeline wher
 ```python
 from swarms import Agent, SequentialWorkflow
 
-# Initialize agents for a 3-step process
-# 1. Generate an idea
-idea_generator = Agent(agent_name="IdeaGenerator", system_prompt="Generate a unique startup idea.", model_name="gpt-4o-mini")
-# 2. Validate the idea
-validator = Agent(agent_name="Validator", system_prompt="Take this startup idea and analyze its market viability.", model_name="gpt-4o-mini")
-# 3. Create a pitch
-pitch_creator = Agent(agent_name="PitchCreator", system_prompt="Write a 3-sentence elevator pitch for this validated startup idea.", model_name="gpt-4o-mini")
+# Agent 1: The Researcher
+researcher = Agent(
+    agent_name="Researcher",
+    system_prompt="Your job is to research the provided topic and provide a detailed summary.",
+    model_name="gpt-4o-mini",
+)
 
-# Create the sequential workflow
-workflow = SequentialWorkflow(agents=[idea_generator, validator, pitch_creator])
+# Agent 2: The Writer
+writer = Agent(
+    agent_name="Writer",
+    system_prompt="Your job is to take the research summary and write a beautiful, engaging blog post about it.",
+    model_name="gpt-4o-mini",
+)
 
-# Run the workflow
-elevator_pitch = workflow.run()
-print(elevator_pitch)
+# Create a sequential workflow where the researcher's output feeds into the writer's input
+workflow = SequentialWorkflow(agents=[researcher, writer])
+
+# Run the workflow on a task
+final_post = workflow.run("The history and future of artificial intelligence")
+print(final_post)
 ```
 
 -----
@@ -313,9 +320,7 @@ rearrange_system = AgentRearrange(
     flow=flow,
 )
 
-# Run the system
-# The researcher will generate content, and then both the writer and editor
-# will process that content in parallel.
+# Run the swarm
 outputs = rearrange_system.run("Analyze the impact of AI on modern cinema.")
 print(outputs)
 ```
@@ -530,6 +535,49 @@ The `HierarchicalSwarm` excels at:
 - **Team Coordination**: Ensuring all agents work toward unified goals
 - **Quality Control**: Director provides feedback and refinement loops
 - **Scalable Workflows**: Easy to add new specialized agents as needed
+
+---
+
+### HeavySwarm
+
+`HeavySwarm` implements a sophisticated 5-phase workflow inspired by X.AI's Grok heavy implementation. It uses specialized agents (Research, Analysis, Alternatives, Verification) to provide comprehensive task analysis through intelligent question generation, parallel execution, and synthesis. This architecture excels at complex research and analysis tasks requiring thorough investigation and multiple perspectives.
+
+```python
+from swarms import HeavySwarm
+
+# Initialize the HeavySwarm with configuration
+swarm = HeavySwarm(
+    worker_model_name="gpt-4o-mini",  # Model for worker agents
+    question_agent_model_name="gpt-4o-mini",  # Model for question generation
+    loops_per_agent=1,  # Number of loops per agent
+    show_dashboard=True,  # Enable real-time dashboard
+)
+
+# Run complex analysis task
+result = swarm.run(
+    "Provide 3 publicly traded biotech companies that are currently trading below their cash value. "
+    "For each company identified, provide available data or projections for the next 6 months, "
+    "including any relevant financial metrics, upcoming catalysts, or events that could impact valuation. "
+    "Present your findings in a clear, structured format with ticker symbols, current prices, "
+    "cash values, and percentage differences."
+)
+
+print(result)
+```
+
+The `HeavySwarm` provides:
+
+- **5-Phase Analysis**: Question generation, research, analysis, alternatives, and verification
+
+- **Specialized Agents**: Each phase uses purpose-built agents for optimal results
+
+- **Comprehensive Coverage**: Multiple perspectives and thorough investigation
+
+- **Real-time Dashboard**: Optional visualization of the analysis process
+
+- **Structured Output**: Well-organized and actionable results
+
+This architecture is perfect for financial analysis, strategic planning, research reports, and any task requiring deep, multi-faceted analysis. [Learn more about HeavySwarm](https://docs.swarms.world/en/latest/swarms/structs/heavy_swarm/)
 
 ---
 
