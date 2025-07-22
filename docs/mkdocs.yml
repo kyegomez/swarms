@@ -158,7 +158,7 @@ nav:
     - Agents:
       - Overview: "swarms/agents/index.md"
       - Architecture: "swarms/framework/agents_explained.md"
-      - Agent Class Reference: "swarms/structs/agent.md"
+      - Reference: "swarms/structs/agent.md"
       - LLM Providers: "swarms/models/agent_and_models.md"
       - Tools and MCP: "swarms/tools/tools_examples.md"
       - Multi-Agent Helpers: "swarms/structs/agent_multi_agent_communication.md"
