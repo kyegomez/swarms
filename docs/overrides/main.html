@@ -9,51 +9,55 @@
 {% endblock %}
 
 {% block footer %}
-  <!-- Custom Footer with organized links -->
   <footer class="md-footer">
-    <div class="md-footer-meta md-typeset">
-      <div class="md-footer__inner md-grid">
-        <!-- Footer Links Section -->
+    <!-- Custom Footer Links Section -->
+    <div class="md-footer-custom">
+      <div class="md-footer-custom__inner md-grid">
         <div class="md-footer-links">
-          <div class="md-footer-links__grid">
-            {% for section_name, links in config.extra.footer_links.items() %}
-              <div class="md-footer-links__section">
-                <h4 class="md-footer-links__title">{{ section_name }}</h4>
-                <ul class="md-footer-links__list">
-                  {% for link in links %}
-                    <li class="md-footer-links__item">
-                      <a href="{{ link.url }}" class="md-footer-links__link">
-                        {{ link.title }}
-                      </a>
-                    </li>
-                  {% endfor %}
-                </ul>
-              </div>
-            {% endfor %}
-          </div>
+          {% for section_name, links in config.extra.footer_links.items() %}
+            <div class="md-footer-links__section">
+              <h4 class="md-footer-links__title">{{ section_name }}</h4>
+              <ul class="md-footer-links__list">
+                {% for link in links %}
+                  <li class="md-footer-links__item">
+                    <a href="{{ link.url }}" class="md-footer-links__link">
+                      {{ link.title }}
+                    </a>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endfor %}
         </div>
-        
-        <!-- Original Footer Content -->
-        {{ super() }}
       </div>
     </div>
+    
+    <!-- Original Material Footer -->
+    {{ super() }}
   </footer>
 {% endblock %}
 
 {% block styles %}
   {{ super() }}
   <style>
-    .md-footer-links {
-      margin-bottom: 2rem;
-      border-bottom: 1px solid var(--md-default-fg-color--lightest);
-      padding-bottom: 2rem;
+    /* Custom Footer Styling */
+    .md-footer-custom {
+      background: var(--md-footer-bg-color);
+      border-top: 0.05rem solid var(--md-default-fg-color--lightest);
+      padding: 2.4rem 0 1.2rem;
     }
     
-    .md-footer-links__grid {
+    .md-footer-custom__inner {
+      margin: 0 auto;
+      padding: 0 1.2rem;
+    }
+    
+    .md-footer-links {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 2rem;
-      margin-bottom: 1rem;
+      max-width: 1220px;
+      margin: 0 auto;
     }
     
     .md-footer-links__section {
@@ -62,11 +66,13 @@
     
     .md-footer-links__title {
       color: var(--md-default-fg-color);
-      font-size: .64rem;
+      font-size: 0.64rem;
       font-weight: 700;
-      margin: 0 0 .5rem;
+      margin: 0 0 1rem;
       text-transform: uppercase;
       letter-spacing: 0.1em;
+      border-bottom: 0.05rem solid var(--md-default-fg-color--lightest);
+      padding-bottom: 0.4rem;
     }
     
     .md-footer-links__list {
@@ -77,33 +83,65 @@
     
     .md-footer-links__item {
       margin: 0;
-      padding: 0.2rem 0;
+      line-height: 1.8;
     }
     
     .md-footer-links__link {
       color: var(--md-default-fg-color--light);
       text-decoration: none;
-      font-size: .64rem;
-      transition: color 0.2s ease;
+      font-size: 0.7rem;
+      display: block;
+      padding: 0.1rem 0;
+      transition: color 125ms;
+      border-radius: 0.1rem;
     }
     
-    .md-footer-links__link:hover {
+    .md-footer-links__link:hover,
+    .md-footer-links__link:focus {
       color: var(--md-accent-fg-color);
-      text-decoration: underline;
     }
     
+    /* Responsive Design */
     @media screen and (max-width: 76.1875em) {
-      .md-footer-links__grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      .md-footer-links {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+      }
+      
+      .md-footer-custom {
+        padding: 2rem 0 1rem;
+      }
+    }
+    
+    @media screen and (max-width: 59.9375em) {
+      .md-footer-links {
+        grid-template-columns: repeat(2, 1fr);
         gap: 1.5rem;
       }
     }
     
     @media screen and (max-width: 44.9375em) {
-      .md-footer-links__grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
+      .md-footer-links {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
       }
+      
+      .md-footer-custom {
+        padding: 1.5rem 0 0.8rem;
+      }
+      
+      .md-footer-custom__inner {
+        padding: 0 1rem;
+      }
+    }
+    
+    /* Dark mode adjustments */
+    [data-md-color-scheme="slate"] .md-footer-custom {
+      background: var(--md-footer-bg-color);
+    }
+    
+    [data-md-color-scheme="slate"] .md-footer-links__title {
+      border-bottom-color: var(--md-default-fg-color--lightest);
     }
   </style>
 {% endblock %}
