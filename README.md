@@ -303,9 +303,7 @@ results = concurrent_workflow.run(
     "Analyze the potential impact of AI technology on the healthcare industry"
 )
 
-# Each agent's output is available in the results
-for agent_name, output in results.items():
-    print(f"{agent_name}: {output}")
+print(results)
 ```
 
 ---
