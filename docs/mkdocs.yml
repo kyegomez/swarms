@@ -54,6 +54,69 @@ extra:
     - icon: fontawesome/brands/linkedin
       link: https://www.linkedin.com/company/swarms-corp/
 
+  footer_links:
+    "Getting Started":
+      - title: "Installation"
+        url: "/swarms/install/install/"
+      - title: "Quickstart"
+        url: "/quickstart/"
+      - title: "Environment Setup"
+        url: "/swarms/install/env/"
+      - title: "Basic Agent Example"
+        url: "/swarms/examples/basic_agent/"
+    
+    "Documentation":
+      - title: "Agents"
+        url: "/swarms/agents/index/"
+      - title: "Multi-Agent Architectures"
+        url: "/swarms/structs/index/"
+      - title: "Tools"
+        url: "/swarms/tools/main/"
+      - title: "Models"
+        url: "/swarms/models/agent_and_models/"
+    
+    "Core Capabilities":
+      - title: "Sequential Workflow"
+        url: "/swarms/structs/sequential_workflow/"
+      - title: "Concurrent Workflow"
+        url: "/swarms/structs/concurrentworkflow/"
+      - title: "Hierarchical Swarm"
+        url: "/swarms/structs/hierarchical_swarm/"
+      - title: "Swarm Router"
+        url: "/swarms/structs/swarm_router/"
+    
+    "Examples & Tutorials":
+      - title: "Examples Overview"
+        url: "/examples/index/"
+      - title: "Cookbook"
+        url: "/examples/cookbook_index/"
+      - title: "Templates"
+        url: "/examples/templates/"
+      - title: "Paper Implementations"
+        url: "/examples/paper_implementations/"
+    
+    "API & Cloud":
+      - title: "Swarms Cloud API"
+        url: "/swarms_cloud/swarms_api/"
+      - title: "API Quickstart"
+        url: "/swarms_cloud/quickstart/"
+      - title: "Python Client"
+        url: "/swarms_cloud/python_client/"
+      - title: "Pricing"
+        url: "/swarms_cloud/api_pricing/"
+    
+    "Community":
+      - title: "Contributing"
+        url: "/contributors/main/"
+      - title: "Code Style Guide"
+        url: "/swarms/framework/code_cleanliness/"
+      - title: "Adding Documentation"
+        url: "/contributors/docs/"
+      - title: "Bounty Program"
+        url: "/corporate/bounty_program/"
+      - title: "Support"
+        url: "/swarms/support/"
+
   analytics:
     provider: google
     property: G-MPE9C65596

@@ -7,3 +7,103 @@
     <a href="https://github.com/kyegomez/swarms">Star and contribute</a> to Swarms on GitHub!
   </div>
 {% endblock %}
+
+{% block footer %}
+  <!-- Custom Footer with organized links -->
+  <footer class="md-footer">
+    <div class="md-footer-meta md-typeset">
+      <div class="md-footer__inner md-grid">
+        <!-- Footer Links Section -->
+        <div class="md-footer-links">
+          <div class="md-footer-links__grid">
+            {% for section_name, links in config.extra.footer_links.items() %}
+              <div class="md-footer-links__section">
+                <h4 class="md-footer-links__title">{{ section_name }}</h4>
+                <ul class="md-footer-links__list">
+                  {% for link in links %}
+                    <li class="md-footer-links__item">
+                      <a href="{{ link.url }}" class="md-footer-links__link">
+                        {{ link.title }}
+                      </a>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        
+        <!-- Original Footer Content -->
+        {{ super() }}
+      </div>
+    </div>
+  </footer>
+{% endblock %}
+
+{% block styles %}
+  {{ super() }}
+  <style>
+    .md-footer-links {
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--md-default-fg-color--lightest);
+      padding-bottom: 2rem;
+    }
+    
+    .md-footer-links__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 2rem;
+      margin-bottom: 1rem;
+    }
+    
+    .md-footer-links__section {
+      min-width: 0;
+    }
+    
+    .md-footer-links__title {
+      color: var(--md-default-fg-color);
+      font-size: .64rem;
+      font-weight: 700;
+      margin: 0 0 .5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    
+    .md-footer-links__list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .md-footer-links__item {
+      margin: 0;
+      padding: 0.2rem 0;
+    }
+    
+    .md-footer-links__link {
+      color: var(--md-default-fg-color--light);
+      text-decoration: none;
+      font-size: .64rem;
+      transition: color 0.2s ease;
+    }
+    
+    .md-footer-links__link:hover {
+      color: var(--md-accent-fg-color);
+      text-decoration: underline;
+    }
+    
+    @media screen and (max-width: 76.1875em) {
+      .md-footer-links__grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1.5rem;
+      }
+    }
+    
+    @media screen and (max-width: 44.9375em) {
+      .md-footer-links__grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+    }
+  </style>
+{% endblock %}
