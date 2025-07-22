@@ -91,6 +91,18 @@ class SwarmRouterConfig(BaseModel):
         arbitrary_types_allowed = True
 
 
+class SwarmRouterRunError(Exception):
+    """Exception raised when an error occurs during task execution."""
+
+    pass
+
+
+class SwarmRouterConfigError(Exception):
+    """Exception raised when an error occurs during task execution."""
+
+    pass
+
+
 class SwarmRouter:
     """
     A class that dynamically routes tasks to different swarm types based on user selection or automatic matching.
@@ -189,6 +201,8 @@ class SwarmRouter:
         heavy_swarm_question_agent_model_name: str = "gpt-4.1",
         heavy_swarm_worker_model_name: str = "claude-3-5-sonnet-20240620",
         telemetry_enabled: bool = False,
+        council_judge_model_name: str = "gpt-4o-mini",  # Add missing model_name attribute
+        verbose: bool = False,
         *args,
         **kwargs,
     ):
@@ -224,17 +238,73 @@ class SwarmRouter:
             heavy_swarm_worker_model_name
         )
         self.telemetry_enabled = telemetry_enabled
+        self.council_judge_model_name = council_judge_model_name  # Add missing model_name attribute
+        self.verbose = verbose
+
+        # Initialize swarm factory for O(1) lookup performance
+        self._swarm_factory = self._initialize_swarm_factory()
+        self._swarm_cache = {}  # Cache for created swarms
 
         # Reliability check
         self.reliability_check()
 
-        # Load agents from CSV
-        if self.load_agents_from_csv:
-            self.agents = AgentLoader(
-                csv_path=self.csv_file_path
-            ).load_agents()
+    def reliability_check(self):
+        """Perform reliability checks on swarm configuration.
 
-        self.agent_config = self.agent_config()
+        Validates essential swarm parameters and configuration before execution.
+        Handles special case for CouncilAsAJudge which may not require agents.
+        """
+        try:
+
+            if self.verbose:
+                logger.info(
+                    f"[SwarmRouter Reliability Check] Initializing SwarmRouter '{self.name}'. "
+                    "Validating required parameters for robust operation.\n"
+                    "For detailed documentation on SwarmRouter configuration, usage, and available swarm types, "
+                    "please visit: https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
+                )
+
+            # Check swarm type first since it affects other validations
+            if self.swarm_type is None:
+                raise SwarmRouterConfigError(
+                    "SwarmRouter: Swarm type cannot be 'none'. Check the docs for all the swarm types available. https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
+                )
+
+            if self.agents is None:
+                raise SwarmRouterConfigError(
+                    "SwarmRouter: No agents provided for the swarm. Check the docs to learn of required parameters. https://docs.swarms.world/en/latest/swarms/structs/agent/"
+                )
+
+            if (
+                self.swarm_type == "AgentRearrange"
+                and self.rearrange_flow is None
+            ):
+                raise SwarmRouterConfigError(
+                    "SwarmRouter: rearrange_flow cannot be 'none' when using AgentRearrange. Check the SwarmRouter docs to learn of required parameters. https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/"
+                )
+
+            # Validate max_loops
+            if self.max_loops == 0:
+                raise SwarmRouterConfigError(
+                    "SwarmRouter: max_loops cannot be 0. Check the docs for all the max_loops available. https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
+                )
+
+            self.setup()
+
+            # Load agents from CSV
+            if self.load_agents_from_csv:
+                self.agents = AgentLoader(
+                    csv_path=self.csv_file_path
+                ).load_agents()
+
+            if self.telemetry_enabled:
+                self.agent_config = self.agent_config()
+
+        except SwarmRouterConfigError as e:
+            logger.error(
+                f"SwarmRouterConfigError: {str(e)} Full Traceback: {traceback.format_exc()}"
+            )
+            raise e
 
     def setup(self):
         if self.auto_generate_prompts is True:
@@ -253,6 +323,17 @@ class SwarmRouter:
 
         if self.list_all_agents is True:
             self.list_agents_to_eachother()
+
+    def fetch_message_history_as_string(self):
+        try:
+            return (
+                self.swarm.conversation.return_all_except_first_string()
+            )
+        except Exception as e:
+            logger.error(
+                f"Error fetching message history as string: {str(e)}"
+            )
+            return None
 
     def activate_shared_memory(self):
         logger.info("Activating shared memory with all agents ")
@@ -296,41 +377,203 @@ class SwarmRouter:
             )
             raise RuntimeError(error_msg) from e
 
-    def reliability_check(self):
-        """Perform reliability checks on swarm configuration.
-
-        Validates essential swarm parameters and configuration before execution.
-        Handles special case for CouncilAsAJudge which may not require agents.
+    def _initialize_swarm_factory(self) -> Dict[str, Callable]:
         """
+        Initialize the swarm factory with O(1) lookup performance.
 
-        logger.info(
-            f"Initializing SwarmRouter: {self.name} Reliability Check..."
+        Returns:
+            Dict[str, Callable]: Dictionary mapping swarm types to their factory functions.
+        """
+        return {
+            "HeavySwarm": self._create_heavy_swarm,
+            "AgentRearrange": self._create_agent_rearrange,
+            "MALT": self._create_malt,
+            "CouncilAsAJudge": self._create_council_as_judge,
+            "InteractiveGroupChat": self._create_interactive_group_chat,
+            "DeepResearchSwarm": self._create_deep_research_swarm,
+            "HiearchicalSwarm": self._create_hierarchical_swarm,
+            "MixtureOfAgents": self._create_mixture_of_agents,
+            "MajorityVoting": self._create_majority_voting,
+            "GroupChat": self._create_group_chat,
+            "MultiAgentRouter": self._create_multi_agent_router,
+            "SpreadSheetSwarm": self._create_spreadsheet_swarm,
+            "SequentialWorkflow": self._create_sequential_workflow,
+            "ConcurrentWorkflow": self._create_concurrent_workflow,
+        }
+
+    def _create_heavy_swarm(self, *args, **kwargs):
+        """Factory function for HeavySwarm."""
+        return HeavySwarm(
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
+            max_loops=self.max_loops,
+            output_type=self.output_type,
+            loops_per_agent=self.heavy_swarm_loops_per_agent,
+            question_agent_model_name=self.heavy_swarm_question_agent_model_name,
+            worker_model_name=self.heavy_swarm_worker_model_name,
         )
 
-        # Check swarm type first since it affects other validations
-        if self.swarm_type is None:
-            raise ValueError(
-                "SwarmRouter: Swarm type cannot be 'none'."
-            )
+    def _create_agent_rearrange(self, *args, **kwargs):
+        """Factory function for AgentRearrange."""
+        return AgentRearrange(
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
+            max_loops=self.max_loops,
+            flow=self.rearrange_flow,
+            return_json=self.return_json,
+            output_type=self.output_type,
+            return_entire_history=self.return_entire_history,
+            *args,
+            **kwargs,
+        )
 
-        if self.agents is None:
-            raise ValueError(
-                "SwarmRouter: No agents provided for the swarm."
-            )
+    def _create_malt(self, *args, **kwargs):
+        """Factory function for MALT."""
+        return MALT(
+            name=self.name,
+            description=self.description,
+            max_loops=self.max_loops,
+            return_dict=True,
+            preset_agents=True,
+        )
 
-        # Validate max_loops
-        if self.max_loops == 0:
-            raise ValueError("SwarmRouter: max_loops cannot be 0.")
+    def _create_council_as_judge(self, *args, **kwargs):
+        """Factory function for CouncilAsAJudge."""
+        return CouncilAsAJudge(
+            name=self.name,
+            description=self.description,
+            model_name=self.council_judge_model_name,
+            output_type=self.output_type,
+            base_agent=self.agents[0] if self.agents else None,
+        )
 
-        self.setup()
+    def _create_interactive_group_chat(self, *args, **kwargs):
+        """Factory function for InteractiveGroupChat."""
+        return InteractiveGroupChat(
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
+            max_loops=self.max_loops,
+            output_type=self.output_type,
+            speaker_function=self.speaker_function,
+        )
 
-        logger.info(
-            f"Reliability check for parameters and configurations are complete. SwarmRouter: {self.name} is ready to run!"
+    def _create_deep_research_swarm(self, *args, **kwargs):
+        """Factory function for DeepResearchSwarm."""
+        return DeepResearchSwarm(
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
+            max_loops=self.max_loops,
+            output_type=self.output_type,
+        )
+
+    def _create_hierarchical_swarm(self, *args, **kwargs):
+        """Factory function for HierarchicalSwarm."""
+        return HierarchicalSwarm(
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
+            max_loops=self.max_loops,
+            return_all_history=self.return_entire_history,
+            output_type=self.output_type,
+            *args,
+            **kwargs,
+        )
+
+    def _create_mixture_of_agents(self, *args, **kwargs):
+        """Factory function for MixtureOfAgents."""
+        return MixtureOfAgents(
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
+            aggregator_agent=self.agents[-1],
+            layers=self.max_loops,
+            output_type=self.output_type,
+            *args,
+            **kwargs,
+        )
+
+    def _create_majority_voting(self, *args, **kwargs):
+        """Factory function for MajorityVoting."""
+        return MajorityVoting(
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
+            consensus_agent=self.agents[-1],
+            *args,
+            **kwargs,
+        )
+
+    def _create_group_chat(self, *args, **kwargs):
+        """Factory function for GroupChat."""
+        return GroupChat(
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
+            max_loops=self.max_loops,
+            speaker_fn=self.speaker_fn,
+            *args,
+            **kwargs,
+        )
+
+    def _create_multi_agent_router(self, *args, **kwargs):
+        """Factory function for MultiAgentRouter."""
+        return MultiAgentRouter(
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
+            shared_memory_system=self.shared_memory_system,
+            output_type=self.output_type,
+        )
+
+    def _create_spreadsheet_swarm(self, *args, **kwargs):
+        """Factory function for SpreadSheetSwarm."""
+        return SpreadSheetSwarm(
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
+            max_loops=self.max_loops,
+            autosave_on=self.autosave,
+            *args,
+            **kwargs,
+        )
+
+    def _create_sequential_workflow(self, *args, **kwargs):
+        """Factory function for SequentialWorkflow."""
+        return SequentialWorkflow(
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
+            max_loops=self.max_loops,
+            shared_memory_system=self.shared_memory_system,
+            output_type=self.output_type,
+            return_json=self.return_json,
+            return_entire_history=self.return_entire_history,
+            *args,
+            **kwargs,
+        )
+
+    def _create_concurrent_workflow(self, *args, **kwargs):
+        """Factory function for ConcurrentWorkflow."""
+        return ConcurrentWorkflow(
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
+            max_loops=self.max_loops,
+            auto_save=self.autosave,
+            return_str_on=self.return_entire_history,
+            output_type=self.output_type,
+            *args,
+            **kwargs,
         )
 
     def _create_swarm(self, task: str = None, *args, **kwargs):
         """
-        Dynamically create and return the specified swarm type or automatically match the best swarm type for a given task.
+        Dynamically create and return the specified swarm type with O(1) lookup performance.
+        Uses factory pattern with caching for optimal performance.
 
         Args:
             task (str, optional): The task to be executed by the swarm. Defaults to None.
@@ -344,165 +587,56 @@ class SwarmRouter:
         Raises:
             ValueError: If an invalid swarm type is provided.
         """
+        # Handle auto swarm type selection
         if self.swarm_type == "auto":
-            self.swarm_type = str(swarm_matcher(task))
+            try:
+                matched_swarm_type = str(swarm_matcher(task))
+                self.swarm_type = matched_swarm_type
+                logger.info(
+                    f"Auto-selected swarm type: {matched_swarm_type}"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Auto-selection failed: {e}, falling back to SequentialWorkflow"
+                )
+                self.swarm_type = "SequentialWorkflow"
 
-            self._create_swarm(self.swarm_type)
+        # Check cache first for better performance
+        cache_key = (
+            f"{self.swarm_type}_{hash(str(args) + str(kwargs))}"
+        )
+        if cache_key in self._swarm_cache:
+            logger.debug(f"Using cached swarm: {self.swarm_type}")
+            return self._swarm_cache[cache_key]
 
-        elif self.swarm_type == "HeavySwarm":
-            return HeavySwarm(
-                name=self.name,
-                description=self.description,
-                agents=self.agents,
-                max_loops=self.max_loops,
-                output_type=self.output_type,
-                loops_per_agent=self.heavy_swarm_loops_per_agent,
-                question_agent_model_name=self.heavy_swarm_question_agent_model_name,
-                worker_model_name=self.heavy_swarm_worker_model_name,
-            )
-
-        elif self.swarm_type == "AgentRearrange":
-            return AgentRearrange(
-                name=self.name,
-                description=self.description,
-                agents=self.agents,
-                max_loops=self.max_loops,
-                flow=self.rearrange_flow,
-                return_json=self.return_json,
-                output_type=self.output_type,
-                return_entire_history=self.return_entire_history,
-                *args,
-                **kwargs,
-            )
-
-        elif self.swarm_type == "MALT":
-            return MALT(
-                name=self.name,
-                description=self.description,
-                max_loops=self.max_loops,
-                return_dict=True,
-                preset_agents=True,
-            )
-
-        elif self.swarm_type == "CouncilAsAJudge":
-            return CouncilAsAJudge(
-                name=self.name,
-                description=self.description,
-                model_name=self.model_name,
-                output_type=self.output_type,
-                base_agent=self.agents[0] if self.agents else None,
-            )
-
-        elif self.swarm_type == "InteractiveGroupChat":
-            return InteractiveGroupChat(
-                name=self.name,
-                description=self.description,
-                agents=self.agents,
-                max_loops=self.max_loops,
-                output_type=self.output_type,
-                speaker_function=self.speaker_function,
-            )
-
-        elif self.swarm_type == "DeepResearchSwarm":
-            return DeepResearchSwarm(
-                name=self.name,
-                description=self.description,
-                agents=self.agents,
-                max_loops=self.max_loops,
-                output_type=self.output_type,
-            )
-
-        elif self.swarm_type == "HiearchicalSwarm":
-            return HierarchicalSwarm(
-                name=self.name,
-                description=self.description,
-                # director=self.agents[0],
-                agents=self.agents,
-                max_loops=self.max_loops,
-                return_all_history=self.return_entire_history,
-                output_type=self.output_type,
-                *args,
-                **kwargs,
-            )
-        elif self.swarm_type == "MixtureOfAgents":
-            return MixtureOfAgents(
-                name=self.name,
-                description=self.description,
-                agents=self.agents,
-                aggregator_agent=self.agents[-1],
-                layers=self.max_loops,
-                output_type=self.output_type,
-                *args,
-                **kwargs,
-            )
-
-        elif self.swarm_type == "MajorityVoting":
-            return MajorityVoting(
-                name=self.name,
-                description=self.description,
-                agents=self.agents,
-                consensus_agent=self.agents[-1],
-                *args,
-                **kwargs,
-            )
-        elif self.swarm_type == "GroupChat":
-            return GroupChat(
-                name=self.name,
-                description=self.description,
-                agents=self.agents,
-                max_loops=self.max_loops,
-                speaker_fn=self.speaker_fn,
-                *args,
-                **kwargs,
-            )
-
-        elif self.swarm_type == "MultiAgentRouter":
-            return MultiAgentRouter(
-                name=self.name,
-                description=self.description,
-                agents=self.agents,
-                shared_memory_system=self.shared_memory_system,
-                output_type=self.output_type,
-            )
-        elif self.swarm_type == "SpreadSheetSwarm":
-            return SpreadSheetSwarm(
-                name=self.name,
-                description=self.description,
-                agents=self.agents,
-                max_loops=self.max_loops,
-                autosave_on=self.autosave,
-                *args,
-                **kwargs,
-            )
-        elif self.swarm_type == "SequentialWorkflow":
-            return SequentialWorkflow(
-                name=self.name,
-                description=self.description,
-                agents=self.agents,
-                max_loops=self.max_loops,
-                shared_memory_system=self.shared_memory_system,
-                output_type=self.output_type,
-                return_json=self.return_json,
-                return_entire_history=self.return_entire_history,
-                *args,
-                **kwargs,
-            )
-        elif self.swarm_type == "ConcurrentWorkflow":
-            return ConcurrentWorkflow(
-                name=self.name,
-                description=self.description,
-                agents=self.agents,
-                max_loops=self.max_loops,
-                auto_save=self.autosave,
-                return_str_on=self.return_entire_history,
-                output_type=self.output_type,
-                *args,
-                **kwargs,
-            )
-        else:
+        # Use factory pattern for O(1) lookup
+        factory_func = self._swarm_factory.get(self.swarm_type)
+        if factory_func is None:
+            valid_types = list(self._swarm_factory.keys())
             raise ValueError(
-                f"Invalid swarm type: {self.swarm_type} try again with a valid swarm type such as 'SequentialWorkflow' or 'ConcurrentWorkflow' or 'auto' or 'AgentRearrange' or 'MixtureOfAgents' or 'SpreadSheetSwarm'"
+                f"Invalid swarm type: {self.swarm_type}. "
+                f"Valid types are: {', '.join(valid_types)}"
             )
+
+        # Create the swarm using the factory function
+        try:
+            swarm = factory_func(*args, **kwargs)
+
+            # Cache the created swarm for future use
+            self._swarm_cache[cache_key] = swarm
+
+            logger.info(
+                f"Successfully created swarm: {self.swarm_type}"
+            )
+            return swarm
+
+        except Exception as e:
+            logger.error(
+                f"Failed to create swarm {self.swarm_type}: {str(e)}"
+            )
+            raise RuntimeError(
+                f"Failed to create swarm {self.swarm_type}: {str(e)}"
+            ) from e
 
     def update_system_prompt_for_agent_in_swarm(self):
         # Use list comprehension for faster iteration
@@ -591,10 +725,19 @@ class SwarmRouter:
             )
 
             return result
-        except Exception as e:
-            raise RuntimeError(
-                f"SwarmRouter: Error executing task on swarm: {str(e)} Traceback: {traceback.format_exc()}. Try reconfiguring the SwarmRouter Settings and or make sure the individual agents are configured correctly."
+        except SwarmRouterRunError as e:
+            logger.error(
+                f"\n[SwarmRouter ERROR] '{self.name}' failed to execute the task on the selected swarm.\n"
+                f"Reason: {str(e)}\n"
+                f"Traceback:\n{traceback.format_exc()}\n\n"
+                "Troubleshooting steps:\n"
+                "  - Double-check your SwarmRouter configuration (swarm_type, agents, parameters).\n"
+                "  - Ensure all individual agents are properly configured and initialized.\n"
+                "  - Review the error message and traceback above for clues.\n\n"
+                "For detailed documentation on SwarmRouter configuration, usage, and available swarm types, please visit:\n"
+                "  https://docs.swarms.world/en/latest/swarms/structs/swarm_router/\n"
             )
+            raise e
 
     def run(
         self,
@@ -631,10 +774,19 @@ class SwarmRouter:
                 *args,
                 **kwargs,
             )
-        except Exception as e:
-            raise RuntimeError(
-                f"SwarmRouter: Error executing task on swarm: {str(e)} Traceback: {traceback.format_exc()}"
+        except SwarmRouterRunError as e:
+            logger.error(
+                f"\n[SwarmRouter ERROR] '{self.name}' failed to execute the task on the selected swarm.\n"
+                f"Reason: {str(e)}\n"
+                f"Traceback:\n{traceback.format_exc()}\n\n"
+                "Troubleshooting steps:\n"
+                "  - Double-check your SwarmRouter configuration (swarm_type, agents, parameters).\n"
+                "  - Ensure all individual agents are properly configured and initialized.\n"
+                "  - Review the error message and traceback above for clues.\n\n"
+                "For detailed documentation on SwarmRouter configuration, usage, and available swarm types, please visit:\n"
+                "  https://docs.swarms.world/en/latest/swarms/structs/swarm_router/\n"
             )
+            raise e
 
     def __call__(
         self,
