@@ -1261,12 +1261,6 @@ class Agent:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        is_last: bool = False,
-        device: str = "cpu",  # gpu
-        device_id: int = 1,
-        all_cores: bool = True,
-        do_not_use_cluster_ops: bool = True,
-        all_gpus: bool = False,
         *args,
         **kwargs,
     ) -> Any:
@@ -1336,37 +1330,6 @@ class Agent:
             "Please process this message and respond appropriately."
         )
         return self.run(task=improved_prompt, *args, **kwargs)
-
-    # def parse_and_execute_tools(self, response: str, *args, **kwargs):
-    #     max_retries = 3  # Maximum number of retries
-    #     retries = 0
-    #     while retries < max_retries:
-    #         try:
-    #             logger.info("Executing tool...")
-
-    #             # try to Execute the tool and return a string
-    #             out = parse_and_execute_json(
-    #                 functions=self.tools,
-    #                 json_string=response,
-    #                 parse_md=True,
-    #                 *args,
-    #                 **kwargs,
-    #             )
-    #             logger.info(f"Tool Output: {out}")
-    #             # Add the output to the memory
-    #             # self.short_memory.add(
-    #             #     role="Tool Executor",
-    #             #     content=out,
-    #             # )
-    #             return out
-    #         except Exception as error:
-    #             retries += 1
-    #             logger.error(
-    #                 f"Attempt {retries}: Error executing tool: {error}"
-    #             )
-    #             if retries == max_retries:
-    #                 raise error
-    #             time.sleep(1)  # Wait for a bit before retrying
 
     def add_memory(self, message: str):
         """Add a memory to the agent
@@ -3241,7 +3204,7 @@ class Agent:
                     f"Agent '{self.agent_name}' received None response from LLM in loop {loop_count}. "
                     f"This may indicate an issue with the model or prompt. Skipping tool execution."
                 )
-        except Exception as e:
+        except AgentToolExecutionError as e:
             logger.error(
                 f"Agent '{self.agent_name}' encountered error during tool execution in loop {loop_count}: {str(e)}. "
                 f"Full traceback: {traceback.format_exc()}. "

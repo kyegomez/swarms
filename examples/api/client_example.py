@@ -35,6 +35,6 @@ agent_spec = AgentSpecParam(
 
 print(json.dumps(client.models.list_available(), indent=4))
 print(json.dumps(client.health.check(), indent=4))
-print(json.dumps(client.client.get_logs(), indent=4))
+print(json.dumps(client.swarms.get_logs(), indent=4))
 print(json.dumps(client.client.rate.get_limits(), indent=4))
 print(json.dumps(client.swarms.check_available(), indent=4))

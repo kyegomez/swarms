@@ -259,7 +259,7 @@ class AgentJudge:
 
             # 在任务说明中添加评估标准
             if self.evaluation_criteria:
-                criteria_names = list(self.evaluation_criteria.keys())
+                list(self.evaluation_criteria.keys())
                 task_instruction += "\nPlease use these specific evaluation criteria with their respective weights:\n"
                 for (
                     criterion,
