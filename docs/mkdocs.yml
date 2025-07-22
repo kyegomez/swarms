@@ -189,17 +189,15 @@ nav:
       - Reasoning Agent Router: "swarms/agents/reasoning_agent_router.md"
     
     - Multi-Agent Architectures:
-      - Introduction to Multi-Agent Collaboration: "swarms/concept/why.md"
-      
-      - Concepts:
-        - Introduction to Multi Agent Architectures: "swarms/concept/swarm_architectures.md"
-        - How to Choose the Right Multi Agent Architecture: "swarms/concept/how_to_choose_swarms.md"
-        - How to Build Custom Swarms: "swarms/structs/custom_swarm.md"
-        - How to Create New Multi Agent Architectures: "swarms/structs/create_new_swarm.md"
-        - Introduction to Hiearchical Multi Agent Architectures: "swarms/structs/multi_swarm_orchestration.md"
+      - Overview: "swarms/concept/swarm_architectures.md"
+      - Benefits: "swarms/concept/why.md"
+      - Choosing Multi Agent Architecture: "swarms/concept/how_to_choose_swarms.md"
 
-      - Multi-Agent Architectures Documentation:
+      - Documentation:
         - Overview: "swarms/structs/overview.md"
+        - Custom Multi Agent Architectures: "swarms/structs/custom_swarm.md"
+
+
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
         - Mixture of Agents: "swarms/structs/moa.md"
@@ -213,6 +211,7 @@ nav:
 
 
         - Hiearchical Architectures:
+          - Overview: "swarms/structs/multi_swarm_orchestration.md"
           - HierarchicalSwarm: "swarms/structs/hierarchical_swarm.md"
           - Auto Agent Builder: "swarms/structs/auto_agent_builder.md"
           - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
@@ -221,9 +220,6 @@ nav:
 
         - Multi-Agent Multi-Modal Structures:
           - ImageAgentBatchProcessor: "swarms/structs/image_batch_agent.md"
-
-        - Storage:
-          - AgentRegistry: "swarms/structs/agent_registry.md"
 
         - Routers:
           - SwarmRouter: "swarms/structs/swarm_router.md"
@@ -243,6 +239,9 @@ nav:
           - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
           - GraphWorkflow: "swarms/structs/graph_workflow.md"
 
+        - Storage:
+          - AgentRegistry: "swarms/structs/agent_registry.md"
+
         - Communication Structure: "swarms/structs/conversation.md"
     
     - Tools:
@@ -256,17 +255,17 @@ nav:
         - Social Media:
           - Twitter: "swarms_tools/twitter.md"
 
-    - Memory:
-      - Overview: "swarms_memory/index.md"
-      - Memory Systems:
-        - ChromaDB: "swarms_memory/chromadb.md"
-        - Pinecone: "swarms_memory/pinecone.md"
-        - Faiss: "swarms_memory/faiss.md"
+    # - Memory:
+    #   - Overview: "swarms_memory/index.md"
+    #   - Memory Systems:
+    #     - ChromaDB: "swarms_memory/chromadb.md"
+    #     - Pinecone: "swarms_memory/pinecone.md"
+    #     - Faiss: "swarms_memory/faiss.md"
 
     - Deployment Solutions:
-      - Deploy your agents on Google Cloud Run: "swarms_cloud/cloud_run.md"
-      - Deploy your agents on Phala: "swarms_cloud/phala_deploy.md"
-      # - Deploy your agents on FastAPI:
+      - Deploy on Google Cloud Run: "swarms_cloud/cloud_run.md"
+      - Deploy on Phala: "swarms_cloud/phala_deploy.md"
+      # - Deploy on FastAPI: "swarms_cloud/fastapi_deploy.md"
 
     - More About Us:
       - Swarms Ecosystem: "swarms/ecosystem.md"
