@@ -162,7 +162,7 @@ nav:
       - LLM Providers: "swarms/models/agent_and_models.md"
       - Tools and MCP: "swarms/tools/tools_examples.md"
       - Multi-Agent Helpers: "swarms/structs/agent_multi_agent_communication.md"
-      - Build, Run, and Manage Agents With YAML: "swarms/agents/create_agents_yaml.md"
+      - Running Agents with YAML: "swarms/agents/create_agents_yaml.md"
         
       
       - Additional Capabilities:
@@ -179,7 +179,7 @@ nav:
       - OpenAI Assistant: "swarms/agents/openai_assistant.md"
       - Integrating External Agents from Griptape, Langchain, etc: "swarms/agents/external_party_agents.md"
     
-    - Specialized Reasoning Agents:
+    - Reasoning Agents:
       - Self Consistency Agent: "swarms/agents/consistency_agent.md"
       - IRE Agent: "swarms/agents/iterative_agent.md"
       - Reasoning Duo: "swarms/agents/reasoning_duo.md"
@@ -218,8 +218,8 @@ nav:
           - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
           - Swarm Matcher: "swarms/structs/swarm_matcher.md"
 
-        - Multi-Agent Multi-Modal Structures:
-          - ImageAgentBatchProcessor: "swarms/structs/image_batch_agent.md"
+        # - Multi-Agent Multi-Modal Structures:
+        #   - ImageAgentBatchProcessor: "swarms/structs/image_batch_agent.md"
 
         - Routers:
           - SwarmRouter: "swarms/structs/swarm_router.md"
