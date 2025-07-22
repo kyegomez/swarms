@@ -65,17 +65,14 @@ extra:
       - title: "Basic Agent Example"
         url: "https://docs.swarms.world/en/latest/swarms/examples/basic_agent/"
     
-    "Documentation":
-      - title: "Agents"
-        url: "https://docs.swarms.world/en/latest/swarms/agents/index/"
-      - title: "Multi-Agent Architectures"
-        url: "https://docs.swarms.world/en/latest/swarms/structs/index/"
-      - title: "Tools"
-        url: "https://docs.swarms.world/en/latest/swarms/tools/main/"
-      - title: "Models"
-        url: "https://docs.swarms.world/en/latest/swarms/models/agent_and_models/"
     
     "Core Capabilities":
+      - title: "Agents"
+        url: "https://docs.swarms.world/en/latest/swarms/structs/agent/"
+      - title: "Tools and MCP"
+        url: "https://docs.swarms.world/en/latest/swarms/tools/tools_examples/"
+      - title: "Multi-Agent Architectures"
+        url: "https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/"
       - title: "Sequential Workflow"
         url: "https://docs.swarms.world/en/latest/swarms/structs/sequential_workflow/"
       - title: "Concurrent Workflow"
@@ -84,8 +81,9 @@ extra:
         url: "https://docs.swarms.world/en/latest/swarms/structs/hierarchical_swarm/"
       - title: "Swarm Router"
         url: "https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
+
     
-    "Examples & Tutorials":
+    "Templates & Applications":
       - title: "Examples Overview"
         url: "https://docs.swarms.world/en/latest/examples/index/"
       - title: "Cookbook"
@@ -94,16 +92,7 @@ extra:
         url: "https://docs.swarms.world/en/latest/examples/templates/"
       - title: "Paper Implementations"
         url: "https://docs.swarms.world/en/latest/examples/paper_implementations/"
-    
-    "API & Cloud":
-      - title: "Swarms Cloud API"
-        url: "https://docs.swarms.world/en/latest/swarms_cloud/swarms_api/"
-      - title: "API Quickstart"
-        url: "https://docs.swarms.world/en/latest/swarms_cloud/quickstart/"
-      - title: "Python Client"
-        url: "https://docs.swarms.world/en/latest/swarms_cloud/python_client/"
-      - title: "Pricing"
-        url: "https://docs.swarms.world/en/latest/swarms_cloud/api_pricing/"
+  
     
     "Community":
       - title: "Contributing"
