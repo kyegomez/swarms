@@ -40,11 +40,10 @@
 {% block styles %}
   {{ super() }}
   <style>
-    /* Custom Footer Styling */
+    /* Custom Footer Styling - Base */
     .md-footer-custom {
-      background: var(--md-footer-bg-color);
-      border-top: 0.05rem solid var(--md-default-fg-color--lightest);
       padding: 2.4rem 0 1.2rem;
+      border-top: 0.05rem solid var(--md-default-fg-color--lightest);
     }
     
     .md-footer-custom__inner {
@@ -65,13 +64,11 @@
     }
     
     .md-footer-links__title {
-      color: var(--md-default-fg-color);
       font-size: 0.64rem;
       font-weight: 700;
       margin: 0 0 1rem;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      border-bottom: 0.05rem solid var(--md-default-fg-color--lightest);
       padding-bottom: 0.4rem;
     }
     
@@ -87,7 +84,6 @@
     }
     
     .md-footer-links__link {
-      color: var(--md-default-fg-color--light);
       text-decoration: none;
       font-size: 0.7rem;
       display: block;
@@ -99,6 +95,46 @@
     .md-footer-links__link:hover,
     .md-footer-links__link:focus {
       color: var(--md-accent-fg-color);
+    }
+    
+    /* Light Mode (Default) */
+    [data-md-color-scheme="default"] .md-footer-custom {
+      background: #ffffff;
+      border-top-color: #e1e5e9;
+    }
+    
+    [data-md-color-scheme="default"] .md-footer-links__title {
+      color: #2e3440;
+      border-bottom: 0.05rem solid #e1e5e9;
+    }
+    
+    [data-md-color-scheme="default"] .md-footer-links__link {
+      color: #636c76;
+    }
+    
+    [data-md-color-scheme="default"] .md-footer-links__link:hover,
+    [data-md-color-scheme="default"] .md-footer-links__link:focus {
+      color: #1976d2;
+    }
+    
+    /* Dark Mode (Slate) */
+    [data-md-color-scheme="slate"] .md-footer-custom {
+      background: #212529;
+      border-top-color: #404040;
+    }
+    
+    [data-md-color-scheme="slate"] .md-footer-links__title {
+      color: #ffffff;
+      border-bottom: 0.05rem solid #404040;
+    }
+    
+    [data-md-color-scheme="slate"] .md-footer-links__link {
+      color: #9ca3af;
+    }
+    
+    [data-md-color-scheme="slate"] .md-footer-links__link:hover,
+    [data-md-color-scheme="slate"] .md-footer-links__link:focus {
+      color: #42a5f5;
     }
     
     /* Responsive Design */
@@ -133,15 +169,6 @@
       .md-footer-custom__inner {
         padding: 0 1rem;
       }
-    }
-    
-    /* Dark mode adjustments */
-    [data-md-color-scheme="slate"] .md-footer-custom {
-      background: var(--md-footer-bg-color);
-    }
-    
-    [data-md-color-scheme="slate"] .md-footer-links__title {
-      border-bottom-color: var(--md-default-fg-color--lightest);
     }
   </style>
 {% endblock %}

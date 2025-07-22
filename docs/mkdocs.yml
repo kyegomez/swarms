@@ -94,7 +94,7 @@ extra:
         url: "https://docs.swarms.world/en/latest/examples/paper_implementations/"
   
     
-    "Community":
+    "Contributors":
       - title: "Contributing"
         url: "https://docs.swarms.world/en/latest/contributors/main/"
       - title: "Code Style Guide"
@@ -105,6 +105,24 @@ extra:
         url: "https://docs.swarms.world/en/latest/corporate/bounty_program/"
       - title: "Support"
         url: "https://docs.swarms.world/en/latest/swarms/support/"
+
+    "Community":
+      - title: "Twitter"
+        url: "https://twitter.com/swarms_corp"
+      - title: "Discord"
+        url: "https://discord.gg/jM3Z6M9uMq"
+      - title: "YouTube"
+        url: "https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ"
+      - title: "LinkedIn"
+        url: "https://www.linkedin.com/company/the-swarm-corporation"
+      - title: "Blog"
+        url: "https://medium.com/@kyeg"
+      - title: "Events"
+        url: "https://lu.ma/5p2jnc2v"
+      - title: "Onboarding Session"
+        url: "https://cal.com/swarms/swarms-onboarding-session"
+
+        
 
   analytics:
     provider: google
