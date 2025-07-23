@@ -226,8 +226,8 @@ nav:
       - Multi-Agent Architectures: "swarms/structs/index.md"
       - Feature Set: "swarms/features.md"
     - Agents:
-      - Overview: "swarms/agents/index.md"
-      - Architecture: "swarms/framework/agents_explained.md"
+      - Overview: "swarms/framework/agents_explained.md"
+      - Quickstart: "swarms/agents/index.md"
       - Reference: "swarms/structs/agent.md"
       - LLM Providers: "swarms/models/agent_and_models.md"
       - Tools and MCP: "swarms/tools/tools_examples.md"
