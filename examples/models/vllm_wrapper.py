@@ -1,6 +1,7 @@
-import os
 import concurrent.futures
-from typing import List, Optional, Dict, Any
+import os
+from typing import Any
+
 from loguru import logger
 
 try:
@@ -26,12 +27,12 @@ class VLLMWrapper:
     def __init__(
         self,
         model_name: str = "meta-llama/Llama-2-7b-chat-hf",
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         stream: bool = False,
         temperature: float = 0.5,
         max_tokens: int = 4000,
         max_completion_tokens: int = 4000,
-        tools_list_dictionary: Optional[List[Dict[str, Any]]] = None,
+        tools_list_dictionary: list[dict[str, Any]] | None = None,
         tool_choice: str = "auto",
         parallel_tool_calls: bool = False,
         *args,
@@ -121,8 +122,8 @@ class VLLMWrapper:
         return self.run(task, *args, **kwargs)
 
     def batched_run(
-        self, tasks: List[str], batch_size: int = 10
-    ) -> List[str]:
+        self, tasks: list[str], batch_size: int = 10
+    ) -> list[str]:
         """
         Run the model for multiple tasks in batches.
 
