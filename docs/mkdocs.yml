@@ -451,7 +451,6 @@ nav:
 
     - Pricing:
       - Pricing: "swarms_cloud/api_pricing.md"
-      - Pricing in Chinese: "swarms_cloud/chinese_api_pricing.md"
       - Subscription Tiers: "swarms_cloud/subscription_tiers.md"
 
   - Swarms Marketplace:
@@ -471,20 +470,20 @@ nav:
 
   - Contributors:
     - Overview: "contributors/main.md"
+    - Environment Setup: "contributors/environment_setup.md"
     - Bounty Program: "corporate/bounty_program.md"
-    - Links & Resources: "governance/main.md"
-    - Swarms Vision: "swarms/concept/vision.md"
-    - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
-    - Swarms Products: "swarms/products.md"
-    - Learn More:
-      - Understanding Swarms Architecture: "swarms/concept/framework_architecture.md"
+    
+    - Development Guides:
       - Code Style Guide & Best Practices: "swarms/framework/code_cleanliness.md"
-      - Our Development Philosophy & Principles: "swarms/concept/philosophy.md"
-    - Contributing: 
-      - Writing and Adding Tests: "swarms/framework/test.md"
-      - Creating Custom Tools & Plugins: "contributors/tools.md"
-      - Writing Documentation: "contributors/docs.md"
-    - Changelog:
-      - Swarms 5.6.8: "swarms/changelog/5_6_8.md"
-      - Swarms 5.8.1: "swarms/changelog/5_8_1.md"
-      - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
+      - Adding Tests: "swarms/framework/test.md"
+      - Adding Documentation: "contributors/docs.md"
+      - New Tools & Plugins: "contributors/tools.md"
+    
+    - Architecture & Design:
+      - Understanding Swarms Architecture: "swarms/concept/framework_architecture.md"
+      - Development Philosophy & Principles: "swarms/concept/philosophy.md"
+
+  - About Swarms:
+    - Vision & Mission: "swarms/concept/vision.md"
+    - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
+    - Products: "swarms/products.md"
