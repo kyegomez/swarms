@@ -152,6 +152,8 @@ theme:
     - navigation.sections
     # - navigation.expand
     - navigation.top
+    - navigation.footer
+    - navigation.path
     - announce.dismiss
   font:
     text: "Fira Sans"      # Clean and readable text
