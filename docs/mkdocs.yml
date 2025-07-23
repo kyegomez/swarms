@@ -8,22 +8,10 @@ repo_url: https://github.com/kyegomez/swarms
 edit_uri: https://github.com/kyegomez/swarms/tree/main/docs
 copyright: TGSC Corp 2024. All rights reserved.
 
-
 plugins:
-  - search:
-      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
   # - glightbox
+  - search
   - git-authors
-  - minify:
-      minify_html: true
-      minify_js: true
-      minify_css: true
-      htmlmin_opts:
-        remove_comments: true
-  - social:
-      cards: true
-      cards_layout_options:
-        font_family: Fira Sans
   - mkdocs-jupyter:
         kernel_name: python3
         execute: false
@@ -160,22 +148,11 @@ theme:
   features:
     - content.code.copy
     - content.code.annotate
-    - content.tabs.link
-    - content.tooltips
     - navigation.tabs
-    - navigation.tabs.sticky
     - navigation.sections
-    - navigation.path
-    - navigation.indexes
-    - navigation.instant
-    - navigation.instant.prefetch
-    - navigation.tracking
     # - navigation.expand
     - navigation.top
     - navigation.footer
-    - search.highlight
-    - search.share
-    - search.suggest
     - announce.dismiss
   font:
     text: "Fira Sans"      # Clean and readable text
@@ -190,16 +167,8 @@ markdown_extensions:
   - def_list
   - footnotes
   - md_in_html
-  - tables
-  - pymdownx.critic
-  - pymdownx.snippets:
-      auto_append:
-        - includes/mkdocs.md
-      check_paths: true
   - toc:
       permalink: true
-      title: "On this page"
-      permalink_title: "Anchor link to this section"
   - pymdownx.arithmatex:
       generic: true
   - pymdownx.betterem:
@@ -222,6 +191,9 @@ markdown_extensions:
       repo: mkdocs-material
   - pymdownx.mark
   - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      auto_append:
+        - includes/mkdocs.md
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
