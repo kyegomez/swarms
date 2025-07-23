@@ -19,6 +19,7 @@ These agents are inspired by cognitive science and human reasoning processes, in
 
 
 
+
 ## Available Reasoning Agents
 
 | Agent Name | Type | Research Paper | Key Features | Best Use Cases | Implementation | Documentation |
@@ -38,10 +39,15 @@ These agents are inspired by cognitive science and human reasoning processes, in
 **Description**: Implements multiple independent reasoning paths with consensus-building to improve response reliability and accuracy through majority voting mechanisms.
 
 **Key Features**:
+
 - Concurrent execution of multiple reasoning instances
+
 - AI-powered aggregation and consensus analysis
+
 - Validation mode for answer verification
+
 - Configurable sample sizes and output formats
+
 
 **Architecture Diagram**:
 
@@ -78,10 +84,15 @@ graph TD
 **Description**: Dual-agent collaborative system that separates reasoning and execution phases, enabling specialized analysis and task completion through coordinated agent interaction.
 
 **Key Features**:
+
 - Separate reasoning and execution agents
+
 - Collaborative problem decomposition
+
 - Cross-validation between agents
+
 - Configurable model selection for each agent
+
 
 **Architecture Diagram**:
 
@@ -115,10 +126,15 @@ graph TD
 **Description**: Sophisticated reasoning framework employing iterative hypothesis generation, simulation, and refinement through continuous cycles of testing and meta-cognitive reflection.
 
 **Key Features**:
+
 - Hypothesis generation and testing
+
 - Path simulation and evaluation
+
 - Meta-cognitive reflection capabilities
+
 - Dynamic strategy revision based on feedback
+
 
 **Architecture Diagram**:
 
@@ -153,10 +169,15 @@ graph TD
 **Description**: Advanced self-reflective system implementing actor-evaluator-reflector architecture for continuous improvement through experience-based learning and memory integration.
 
 **Key Features**:
+
 - Actor-evaluator-reflector sub-agent architecture
+
 - Self-evaluation and quality assessment
+
 - Experience memory and learning capabilities
+
 - Adaptive improvement through reflection
+
 
 **Architecture Diagram**:
 
@@ -195,10 +216,15 @@ graph TD
 **Description**: Knowledge-driven reasoning system that generates relevant information before answering queries, implementing multi-perspective analysis through coordinated knowledge synthesis.
 
 **Key Features**:
+
 - Dynamic knowledge generation
+
 - Multi-perspective reasoning coordination
+
 - Information synthesis and integration
+
 - Configurable knowledge item generation
+
 
 **Architecture Diagram**:
 
@@ -237,10 +263,15 @@ graph TD
 **Description**: Specialized evaluation system for assessing agent outputs and system performance, providing structured feedback and quality metrics through comprehensive assessment frameworks.
 
 **Key Features**:
+
 - Structured evaluation methodology
+
 - Quality assessment and scoring
+
 - Performance metrics generation
+
 - Configurable evaluation criteria
+
 
 **Architecture Diagram**:
 
@@ -273,10 +304,15 @@ graph TD
 **Description**: Action-oriented reasoning system implementing iterative reason-act-observe cycles with memory integration for interactive task completion and environmental adaptation.
 
 **Key Features**:
+
 - Reason-Act-Observe cycle implementation
+
 - Memory integration and experience building
+
 - Action planning and execution
+
 - Environmental state observation
+
 
 **Architecture Diagram**:
 
@@ -382,6 +418,7 @@ For comprehensive technical documentation on each reasoning agent implementation
 - [Agent Judge](agent_judge.md)
 
 - [Reasoning Agent Router](reasoning_agent_router.md)
+
 
 
 ---
