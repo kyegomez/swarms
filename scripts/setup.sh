@@ -88,17 +88,6 @@ print_success "All dependencies installed successfully"
 # Activate virtual environment and run additional setup
 print_status "Setting up development tools..."
 
-# Setup pre-commit hooks
-print_status "Installing pre-commit hooks..."
-poetry run pre-commit install
-poetry run pre-commit install --hook-type commit-msg
-
-print_success "Pre-commit hooks installed"
-
-# Run pre-commit on all files to ensure everything is set up correctly
-print_status "Running pre-commit on all files (this may take a while on first run)..."
-poetry run pre-commit run --all-files || print_warning "Some pre-commit checks failed - this is normal on first setup"
-
 # Create .env file if it doesn't exist
 if [ ! -f ".env" ]; then
     print_status "Creating .env file template..."
@@ -150,6 +139,5 @@ print_status "Useful commands:"
 echo "  - poetry shell                    # Activate virtual environment"
 echo "  - poetry run python <script>      # Run Python scripts"
 echo "  - poetry run pytest               # Run tests"
-echo "  - poetry run pre-commit run       # Run pre-commit hooks manually"
 echo "  - poetry add <package>            # Add new dependencies"
 echo "  - poetry update                   # Update dependencies"
