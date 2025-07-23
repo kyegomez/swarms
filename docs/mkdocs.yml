@@ -250,6 +250,7 @@ nav:
       - Integrating External Agents from Griptape, Langchain, etc: "swarms/agents/external_party_agents.md"
     
     - Reasoning Agents:
+      - Overview: "swarms/agents/reasoning_agents_overview.md"
       - Self Consistency Agent: "swarms/agents/consistency_agent.md"
       - IRE Agent: "swarms/agents/iterative_agent.md"
       - Reasoning Duo: "swarms/agents/reasoning_duo.md"
