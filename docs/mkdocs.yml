@@ -55,16 +55,6 @@ extra:
       link: https://www.linkedin.com/company/swarms-corp/
 
   footer_links:
-    "Getting Started":
-      - title: "Installation"
-        url: "https://docs.swarms.world/en/latest/swarms/install/install/"
-      - title: "Quickstart"
-        url: "https://docs.swarms.world/en/latest/quickstart/"
-      - title: "Environment Setup"
-        url: "https://docs.swarms.world/en/latest/swarms/install/env/"
-      - title: "Basic Agent Example"
-        url: "https://docs.swarms.world/en/latest/swarms/examples/basic_agent/"
-    
     
     "Core Capabilities":
       - title: "Agents"
@@ -82,29 +72,67 @@ extra:
       - title: "Swarm Router"
         url: "https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
 
-    
-    "Templates & Applications":
-      - title: "Examples Overview"
-        url: "https://docs.swarms.world/en/latest/examples/index/"
-      - title: "Cookbook"
-        url: "https://docs.swarms.world/en/latest/examples/cookbook_index/"
-      - title: "Templates"
-        url: "https://docs.swarms.world/en/latest/examples/templates/"
-      - title: "Paper Implementations"
-        url: "https://docs.swarms.world/en/latest/examples/paper_implementations/"
+    "Popular Multi-Agent Patterns":
+      - title: "Mixture of Agents (MoA)"
+        url: "https://docs.swarms.world/en/latest/swarms/structs/moa/"
+      - title: "Sequential Workflow"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/sequential_example/"
+      - title: "Concurrent Workflow"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/concurrent_workflow/"
+      - title: "Hierarchical Swarm"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/hierarchical_swarm_example/"
+      - title: "Group Chat"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/groupchat_example/"
+      - title: "Agent Rearrange"
+        url: "https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/"
+      - title: "Deep Research Swarm"
+        url: "https://docs.swarms.world/en/latest/swarms/structs/deep_research_swarm/"
+      - title: "MALT Framework"
+        url: "https://docs.swarms.world/en/latest/swarms/structs/malt/"
+
+    "Popular Tools & Integrations":
+      - title: "MCP (Model Context Protocol)"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/agent_with_mcp/"
+      - title: "OpenAI Tools & Function Calling"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/agent_structured_outputs/"
+      - title: "Web Search (Exa, Serper)"
+        url: "https://docs.swarms.world/en/latest/swarms_tools/search/"
+      - title: "Browser Automation"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/swarms_of_browser_agents/"
+      - title: "Vision & Image Processing"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/vision_processing/"
+      - title: "Crypto APIs (CoinGecko, HTX)"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/agent_with_tools/"
+      - title: "Yahoo Finance"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/yahoo_finance/"
+      - title: "Structured Outputs"
+        url: "https://docs.swarms.world/en/latest/swarms/agents/structured_outputs/"
   
-    
-    "Contributors":
-      - title: "Contributing"
-        url: "https://docs.swarms.world/en/latest/contributors/main/"
-      - title: "Code Style Guide"
-        url: "https://docs.swarms.world/en/latest/swarms/framework/code_cleanliness/"
-      - title: "Adding Documentation"
-        url: "https://docs.swarms.world/en/latest/contributors/docs/"
-      - title: "Bounty Program"
-        url: "https://docs.swarms.world/en/latest/corporate/bounty_program/"
-      - title: "Support"
-        url: "https://docs.swarms.world/en/latest/swarms/support/"
+    "Paper Implementations":
+      - title: "Paper Implementations Overview"
+        url: "https://docs.swarms.world/en/latest/examples/paper_implementations/"
+      - title: "MALT (Multi-Agent Learning Task)"
+        url: "https://github.com/kyegomez/swarms/blob/master/examples/single_agent/reasoning_agent_examples/malt_example.py"
+      - title: "MAI-DxO (Medical AI Diagnosis)"
+        url: "https://github.com/The-Swarm-Corporation/Open-MAI-Dx-Orchestrator"
+      - title: "AI-CoScientist Research Framework"
+        url: "https://github.com/The-Swarm-Corporation/AI-CoScientist"
+      - title: "Mixture of Agents (MoA)"
+        url: "https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/mixture_of_agents_example.py"
+      - title: "Agent-as-a-Judge Evaluation"
+        url: "https://github.com/kyegomez/swarms/blob/master/examples/single_agent/reasoning_agent_examples/agent_judge_example.py"
+      - title: "Swarms of Browser Agents"
+        url: "https://docs.swarms.world/en/latest/examples/swarms_of_browser_agents/"
+      - title: "Swarms DAO Governance"
+        url: "https://docs.swarms.world/en/latest/examples/swarms_dao/"
+      - title: "Deep Research Swarm Examples"
+        url: "https://github.com/kyegomez/swarms/tree/master/examples/multi_agent/deep_research_examples"
+      - title: "Hierarchical Swarm Examples"
+        url: "https://github.com/kyegomez/swarms/tree/master/examples/multi_agent/hiearchical_swarm"
+      - title: "All Examples Repository"
+        url: "https://github.com/kyegomez/swarms/tree/master/examples"
+      - title: "Research Papers Collection"
+        url: "https://github.com/kyegomez/awesome-multi-agent-papers"
 
     "Community":
       - title: "Twitter"
@@ -121,8 +149,6 @@ extra:
         url: "https://lu.ma/5p2jnc2v"
       - title: "Onboarding Session"
         url: "https://cal.com/swarms/swarms-onboarding-session"
-
-        
 
   analytics:
     provider: google
