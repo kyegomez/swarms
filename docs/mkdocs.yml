@@ -343,8 +343,8 @@ nav:
         - Communication Structure: "swarms/structs/conversation.md"
 
     - Protocol:
-      - Overview: "swarms/protocol/overview.md"
-      - SIPs: "swarms/protocol/sip.md"
+      - Overview: "protocol/overview.md"
+      - SIPs: "protocol/sip.md"
     
     - Tools:
       - Overview: "swarms_tools/overview.md"
