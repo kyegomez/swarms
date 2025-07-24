@@ -1,23 +1,11 @@
 import os
-import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from typing import List
 
-from loguru import logger
 from pydantic import BaseModel
 
 
-try:
-    from openai import OpenAI
-except ImportError:
-    logger.error(
-        "OpenAI library not found. Please install the OpenAI library by running 'pip install openai'"
-    )
-    import sys
-
-    subprocess.run([sys.executable, "-m", "pip", "install", "openai"])
-    from openai import OpenAI
-
+from openai import OpenAI
 
 SUPPORTED_MODELS = [
     "o3-mini-2025-1-31",

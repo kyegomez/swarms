@@ -78,6 +78,7 @@ litellm = "*"
 torch = "*"
 httpx = "*"
 mcp = "*"
+openai = "*"
 aiohttp = "*"
 
 [tool.poetry.scripts]
