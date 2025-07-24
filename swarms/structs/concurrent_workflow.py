@@ -1,5 +1,6 @@
 import concurrent.futures
 import os
+import time
 from typing import Callable, List, Optional, Union
 
 from swarms.structs.agent import Agent
@@ -450,8 +451,25 @@ class ConcurrentWorkflow(BaseSwarm):
                     if self.show_dashboard:
                         self.display_agent_dashboard()
 
-                    # Run the agent
-                    output = agent.run(task=task, img=img, imgs=imgs)
+                    # Create a streaming callback for this agent with throttling
+                    last_update_time = [0]  # Use list to allow modification in nested function
+                    update_interval = 0.1  # Update dashboard every 100ms for smooth streaming
+                    
+                    def streaming_callback(chunk: str):
+                        """Update dashboard with streaming content"""
+                        if self.show_dashboard:
+                            # Append the chunk to the agent's current output
+                            current_output = self.agent_statuses[agent.agent_name]["output"]
+                            self.agent_statuses[agent.agent_name]["output"] = current_output + chunk
+                            
+                            # Throttle dashboard updates for better performance
+                            current_time = time.time()
+                            if current_time - last_update_time[0] >= update_interval:
+                                self.display_agent_dashboard()
+                                last_update_time[0] = current_time
+
+                    # Run the agent with streaming callback
+                    output = agent.run(task=task, img=img, imgs=imgs, streaming_callback=streaming_callback)
 
                     # Update status to completed
                     self.agent_statuses[agent.agent_name][
