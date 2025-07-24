@@ -79,8 +79,8 @@
     
     .md-footer-links {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 2rem;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1.2rem;
       max-width: 1220px;
       margin: 0 auto;
     }
@@ -90,12 +90,12 @@
     }
     
     .md-footer-links__title {
-      font-size: 0.64rem;
+      font-size: 0.6rem;
       font-weight: 700;
-      margin: 0 0 1rem;
+      margin: 0 0 0.8rem;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      padding-bottom: 0.4rem;
+      padding-bottom: 0.3rem;
     }
     
     .md-footer-links__list {
@@ -106,14 +106,14 @@
     
     .md-footer-links__item {
       margin: 0;
-      line-height: 1.8;
+      line-height: 1.6;
     }
     
     .md-footer-links__link {
       text-decoration: none;
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       display: block;
-      padding: 0.1rem 0;
+      padding: 0.08rem 0;
       transition: color 125ms;
       border-radius: 0.1rem;
     }
@@ -132,15 +132,15 @@
     .md-footer-links__toggle {
       background: none;
       border: 0.05rem solid;
-      border-radius: 0.2rem;
+      border-radius: 0.15rem;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 0.3rem;
-      font-size: 0.64rem;
+      gap: 0.25rem;
+      font-size: 0.58rem;
       font-weight: 500;
-      margin-top: 0.8rem;
-      padding: 0.4rem 0.8rem;
+      margin-top: 0.6rem;
+      padding: 0.3rem 0.6rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       transition: all 150ms ease;
@@ -153,7 +153,7 @@
     }
     
     .md-footer-links__toggle-icon {
-      font-size: 0.5rem;
+      font-size: 0.45rem;
       transition: transform 200ms ease;
       line-height: 1;
     }
@@ -312,28 +312,45 @@
     }
     
     /* Responsive Design */
+    @media screen and (min-width: 90em) {
+      .md-footer-links {
+        max-width: 1400px;
+        gap: 1.5rem;
+      }
+    }
+    
     @media screen and (max-width: 76.1875em) {
       .md-footer-links {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.5rem;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
       }
       
       .md-footer-custom {
-        padding: 2rem 0 1rem;
+        padding: 1.8rem 0 1rem;
       }
     }
     
     @media screen and (max-width: 59.9375em) {
       .md-footer-links {
         grid-template-columns: repeat(2, 1fr);
-        gap: 1.5rem;
+        gap: 1rem;
+      }
+      
+      .md-footer-links__title {
+        font-size: 0.62rem;
+        margin: 0 0 0.9rem;
+      }
+      
+      .md-footer-links__link {
+        font-size: 0.68rem;
+        padding: 0.1rem 0;
       }
     }
     
     @media screen and (max-width: 44.9375em) {
       .md-footer-links {
         grid-template-columns: 1fr;
-        gap: 1.5rem;
+        gap: 1.2rem;
       }
       
       .md-footer-custom {
@@ -342,6 +359,16 @@
       
       .md-footer-custom__inner {
         padding: 0 1rem;
+      }
+      
+      .md-footer-links__title {
+        font-size: 0.65rem;
+        margin: 0 0 1rem;
+      }
+      
+      .md-footer-links__link {
+        font-size: 0.7rem;
+        padding: 0.12rem 0;
       }
       
       /* Company section mobile styles */
