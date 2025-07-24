@@ -315,6 +315,10 @@ nav:
           - AgentRegistry: "swarms/structs/agent_registry.md"
 
         - Communication Structure: "swarms/structs/conversation.md"
+
+    - Protocol:
+      - Overview: "swarms/protocol/overview.md"
+      - SIPs: "swarms/protocol/sip.md"
     
     - Tools:
       - Overview: "swarms_tools/overview.md"
