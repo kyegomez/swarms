@@ -951,6 +951,30 @@ Remember: You are part of a team. Your response should reflect that you've read,
         for agent_name in speaking_order:
             self._get_agent_response(agent_name, img, imgs)
 
+    def _process_random_speaker(
+        self,
+        mentioned_agents: List[str],
+        img: Optional[str],
+        imgs: Optional[List[str]],
+    ) -> None:
+        """
+        Process responses using the random speaker function.
+        This function randomly selects a single agent from the mentioned agents
+        to respond to the user query.
+        """
+        # Filter out invalid agents
+        valid_agents = [name for name in mentioned_agents if name in self.agent_map]
+        
+        if not valid_agents:
+            raise AgentNotFoundError("No valid agents found in the conversation")
+        
+        # Randomly select exactly one agent to respond
+        random_agent = random.choice(valid_agents)
+        logger.info(f"Random speaker selected: {random_agent}")
+        
+        # Get response from the randomly selected agent
+        self._get_agent_response(random_agent, img, imgs)
+
     def run(
         self,
         task: str,
@@ -987,6 +1011,11 @@ Remember: You are part of a team. Your response should reflect that you've read,
                 self._process_dynamic_speakers(
                     mentioned_agents, img, imgs
                 )
+            elif self.speaker_function == random_speaker:
+                # Use the specialized function for random_speaker
+                self._process_random_speaker(
+                    mentioned_agents, img, imgs
+                )    
             else:
                 self._process_static_speakers(
                     mentioned_agents, img, imgs
