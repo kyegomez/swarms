@@ -963,15 +963,21 @@ Remember: You are part of a team. Your response should reflect that you've read,
         to respond to the user query.
         """
         # Filter out invalid agents
-        valid_agents = [name for name in mentioned_agents if name in self.agent_map]
-        
+        valid_agents = [
+            name
+            for name in mentioned_agents
+            if name in self.agent_map
+        ]
+
         if not valid_agents:
-            raise AgentNotFoundError("No valid agents found in the conversation")
-        
+            raise AgentNotFoundError(
+                "No valid agents found in the conversation"
+            )
+
         # Randomly select exactly one agent to respond
         random_agent = random.choice(valid_agents)
         logger.info(f"Random speaker selected: {random_agent}")
-        
+
         # Get response from the randomly selected agent
         self._get_agent_response(random_agent, img, imgs)
 
@@ -1015,7 +1021,7 @@ Remember: You are part of a team. Your response should reflect that you've read,
                 # Use the specialized function for random_speaker
                 self._process_random_speaker(
                     mentioned_agents, img, imgs
-                )    
+                )
             else:
                 self._process_static_speakers(
                     mentioned_agents, img, imgs
