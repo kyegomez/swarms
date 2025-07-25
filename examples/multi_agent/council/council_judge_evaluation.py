@@ -329,7 +329,8 @@ class CouncilJudgeEvaluator:
                     return (
                         final_answer.group(1) == correct_answer_lower
                     )
-            except:
+            except Exception as e:
+                logger.error(f"Error checking answer: {str(e)}")
                 pass
 
         # For other datasets, check if the correct answer is contained in the evaluation

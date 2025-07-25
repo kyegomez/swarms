@@ -2,9 +2,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Callable, List, Optional, Union
 
 from swarms.structs.agent import Agent
-from swarms.utils.output_types import OutputType
 from swarms.structs.rearrange import AgentRearrange
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.output_types import OutputType
 
 logger = initialize_logger(log_folder="sequential_workflow")
 
@@ -29,6 +29,7 @@ class SequentialWorkflow:
 
     def __init__(
         self,
+        id: str = "sequential_workflow",
         name: str = "SequentialWorkflow",
         description: str = "Sequential Workflow, where agents are executed in a sequence.",
         agents: List[Union[Agent, Callable]] = [],
@@ -38,6 +39,7 @@ class SequentialWorkflow:
         *args,
         **kwargs,
     ):
+        self.id = id
         self.name = name
         self.description = description
         self.agents = agents

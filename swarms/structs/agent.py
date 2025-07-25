@@ -1349,12 +1349,6 @@ class Agent:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        is_last: bool = False,
-        device: str = "cpu",  # gpu
-        device_id: int = 1,
-        all_cores: bool = True,
-        do_not_use_cluster_ops: bool = True,
-        all_gpus: bool = False,
         *args,
         **kwargs,
     ) -> Any:
@@ -3315,4 +3309,6 @@ class Agent:
                 f"Agent '{self.agent_name}' encountered error during tool execution in loop {loop_count}: {str(e)}. "
                 f"Full traceback: {traceback.format_exc()}. "
                 f"Attempting to retry tool execution with 3 attempts"
+
             )
+
