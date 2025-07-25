@@ -996,6 +996,7 @@ class Agent:
         self,
         task: Optional[Union[str, Any]] = None,
         img: Optional[str] = None,
+        streaming_callback: Optional[Callable[[str], None]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -1077,6 +1078,7 @@ class Agent:
                                 task=task_prompt,
                                 img=img,
                                 current_loop=loop_count,
+                                streaming_callback=streaming_callback,
                                 *args,
                                 **kwargs,
                             )
@@ -1084,6 +1086,7 @@ class Agent:
                             response = self.call_llm(
                                 task=task_prompt,
                                 current_loop=loop_count,
+                                streaming_callback=streaming_callback,
                                 *args,
                                 **kwargs,
                             )
@@ -2470,6 +2473,7 @@ class Agent:
         task: str,
         img: Optional[str] = None,
         current_loop: int = 0,
+        streaming_callback: Optional[Callable[[str], None]] = None,
         *args,
         **kwargs,
     ) -> str:
@@ -2480,6 +2484,7 @@ class Agent:
             task (str): The task to be performed by the `llm` object.
             img (str, optional): Path or URL to an image file.
             audio (str, optional): Path or URL to an audio file.
+            streaming_callback (Optional[Callable[[str], None]]): Callback function to receive streaming tokens in real-time.
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
 
@@ -2515,8 +2520,24 @@ class Agent:
                 if hasattr(
                     streaming_response, "__iter__"
                 ) and not isinstance(streaming_response, str):
+                    # Check if streaming_callback is provided (for ConcurrentWorkflow dashboard integration)
+                    if streaming_callback is not None:
+                        # Real-time callback streaming for dashboard integration
+                        chunks = []
+                        for chunk in streaming_response:
+                            if (
+                                hasattr(chunk, "choices")
+                                and chunk.choices[0].delta.content
+                            ):
+                                content = chunk.choices[
+                                    0
+                                ].delta.content
+                                chunks.append(content)
+                                # Call the streaming callback with the new chunk
+                                streaming_callback(content)
+                        complete_response = "".join(chunks)
                     # Check print_on parameter for different streaming behaviors
-                    if self.print_on is False:
+                    elif self.print_on is False:
                         # Silent streaming - no printing, just collect chunks
                         chunks = []
                         for chunk in streaming_response:
@@ -2599,6 +2620,7 @@ class Agent:
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
         correct_answer: Optional[str] = None,
+        streaming_callback: Optional[Callable[[str], None]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -2613,6 +2635,7 @@ class Agent:
             task (Optional[str], optional): The task to be executed. Defaults to None.
             img (Optional[str], optional): The image to be processed. Defaults to None.
             imgs (Optional[List[str]], optional): The list of images to be processed. Defaults to None.
+            streaming_callback (Optional[Callable[[str], None]], optional): Callback function to receive streaming tokens in real-time. Defaults to None.
             *args: Additional positional arguments to be passed to the execution method.
             **kwargs: Additional keyword arguments to be passed to the execution method.
 
@@ -2644,6 +2667,7 @@ class Agent:
                 output = self._run(
                     task=task,
                     img=img,
+                    streaming_callback=streaming_callback,
                     *args,
                     **kwargs,
                 )

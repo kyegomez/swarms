@@ -228,7 +228,15 @@ nav:
       - Quickstart: "quickstart.md"
       - Agents: "swarms/agents/index.md"
       - Multi-Agent Architectures: "swarms/structs/index.md"
+    
+    - Protocol:
+      - Overview: "protocol/overview.md"
+      - SIPs: "protocol/sip.md"
       - Feature Set: "swarms/features.md"
+      - Swarms Ecosystem: "swarms/ecosystem.md"
+      - Technical Support: "swarms/support.md"
+    
+    
     - Agents:
       - Overview: "swarms/framework/agents_explained.md"
       - Quickstart: "swarms/agents/index.md"
@@ -319,10 +327,6 @@ nav:
 
         - Communication Structure: "swarms/structs/conversation.md"
 
-    - Protocol:
-      - Overview: "protocol/overview.md"
-      - SIPs: "protocol/sip.md"
-    
     - Tools:
       - Overview: "swarms_tools/overview.md"
       - BaseTool Reference: "swarms/tools/base_tool.md"
@@ -345,10 +349,6 @@ nav:
       - Deploy on Google Cloud Run: "swarms_cloud/cloud_run.md"
       - Deploy on Phala: "swarms_cloud/phala_deploy.md"
       # - Deploy on FastAPI: "swarms_cloud/fastapi_deploy.md"
-
-    - More About Us:
-      - Swarms Ecosystem: "swarms/ecosystem.md"
-      - Technical Support: "swarms/support.md"
 
     
   - Examples:
@@ -491,7 +491,7 @@ nav:
       - Understanding Swarms Architecture: "swarms/concept/framework_architecture.md"
       - Development Philosophy & Principles: "swarms/concept/philosophy.md"
 
-  - About Swarms:
-    - Vision & Mission: "swarms/concept/vision.md"
-    - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
-    - Products: "swarms/products.md"
+  # - About Swarms:
+  #   - Vision & Mission: "swarms/concept/vision.md"
+  #   - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
+  #   - Products: "swarms/products.md"
