@@ -1,54 +1,70 @@
-# Swarm Architectures
-### What is a Swarm?
+# Multi-Agent Architectures
 
-A swarm refers to a group of more than two agents working collaboratively to achieve a common goal. These agents can be software entities, such as llms that interact with each other to perform complex tasks. The concept of a swarm is inspired by natural systems like ant colonies or bird flocks, where simple individual behaviors lead to complex group dynamics and problem-solving capabilities.
+### What is a Multi-Agent Architecture?
 
-### How Swarm Architectures Facilitate Communication
+A multi-agent architecture refers to a group of more than two agents working collaboratively to achieve a common goal. These agents can be software entities, such as LLMs that interact with each other to perform complex tasks. The concept of multi-agent architectures is inspired by how humans communicate and work together in teams, organizations, and communities, where individual contributions combine to create sophisticated collaborative problem-solving capabilities.
 
-Swarm architectures are designed to establish and manage communication between agents within a swarm. These architectures define how agents interact, share information, and coordinate their actions to achieve the desired outcomes. Here are some key aspects of swarm architectures:
+### How Multi-Agent Architectures Facilitate Communication
 
-1. **Hierarchical Communication**: In hierarchical swarms, communication flows from higher-level agents to lower-level agents. Higher-level agents act as coordinators, distributing tasks and aggregating results. This structure is efficient for tasks that require top-down control and decision-making.
+Multi-agent architectures are designed to establish and manage communication between agents within a system. These architectures define how agents interact, share information, and coordinate their actions to achieve the desired outcomes. Here are some key aspects of multi-agent architectures:
 
-2. **Parallel Communication**: In parallel swarms, agents operate independently and communicate with each other as needed. This architecture is suitable for tasks that can be processed concurrently without dependencies, allowing for faster execution and scalability.
+1. **Hierarchical Communication**: In hierarchical architectures, communication flows from higher-level agents to lower-level agents. Higher-level agents act as coordinators, distributing tasks and aggregating results. This structure is efficient for tasks that require top-down control and decision-making.
 
-3. **Sequential Communication**: Sequential swarms process tasks in a linear order, where each agent's output becomes the input for the next agent. This ensures that tasks with dependencies are handled in the correct sequence, maintaining the integrity of the workflow.
+2. **Concurrent Communication**: In concurrent architectures, agents operate independently and simultaneously on different tasks. This architecture is suitable for tasks that can be processed concurrently without dependencies, allowing for faster execution and scalability.
 
-4. **Mesh Communication**: In mesh swarms, agents are fully connected, allowing any agent to communicate with any other agent. This setup provides high flexibility and redundancy, making it ideal for complex systems requiring dynamic interactions.
+3. **Sequential Communication**: Sequential architectures process tasks in a linear order, where each agent's output becomes the input for the next agent. This ensures that tasks with dependencies are handled in the correct sequence, maintaining the integrity of the workflow.
 
-5. **Federated Communication**: Federated swarms involve multiple independent swarms that collaborate by sharing information and results. Each swarm operates autonomously but can contribute to a larger task, enabling distributed problem-solving across different nodes.
+4. **Mesh Communication**: In mesh architectures, agents are fully connected, allowing any agent to communicate with any other agent. This setup provides high flexibility and redundancy, making it ideal for complex systems requiring dynamic interactions.
 
-Swarm architectures leverage these communication patterns to ensure that agents work together efficiently, adapting to the specific requirements of the task at hand. By defining clear communication protocols and interaction models, swarm architectures enable the seamless orchestration of multiple agents, leading to enhanced performance and problem-solving capabilities.
+5. **Federated Communication**: Federated architectures involve multiple independent systems that collaborate by sharing information and results. Each system operates autonomously but can contribute to a larger task, enabling distributed problem-solving across different nodes.
 
+Multi-agent architectures leverage these communication patterns to ensure that agents work together efficiently, adapting to the specific requirements of the task at hand. By defining clear communication protocols and interaction models, multi-agent architectures enable the seamless orchestration of multiple agents, leading to enhanced performance and problem-solving capabilities.
 
-| **Name**                      | **Description**                                                                                                                                                         | **Code Link**                                                                                      | **Use Cases**                                                                                     |
-|-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| Hierarchical Swarms           | A system where agents are organized in a hierarchy, with higher-level agents coordinating lower-level agents to achieve complex tasks.                                   | [Code Link](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/#hierarchical-swarm) | Manufacturing process optimization, multi-level sales management, healthcare resource coordination |
-| Agent Rearrange               | A setup where agents rearrange themselves dynamically based on the task requirements and environmental conditions.                                                       | [Code Link](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)                   | Adaptive manufacturing lines, dynamic sales territory realignment, flexible healthcare staffing  |
-| Concurrent Workflows          | Agents perform different tasks simultaneously, coordinating to complete a larger goal.                                                                                  | [Code Link](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/#concurrent-workflows) | Concurrent production lines, parallel sales operations, simultaneous patient care processes       |
-| Sequential Coordination       | Agents perform tasks in a specific sequence, where the completion of one task triggers the start of the next.                                                           | [Code Link](https://docs.swarms.world/en/latest/swarms/structs/sequential_workflow/)               | Step-by-step assembly lines, sequential sales processes, stepwise patient treatment workflows     |
-| Parallel Processing           | Agents work on different parts of a task simultaneously to speed up the overall process.                                                                                | [Code Link](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/#parallel-processing) | Parallel data processing in manufacturing, simultaneous sales analytics, concurrent medical tests  |
-| Mixture of Agents             | A heterogeneous swarm where agents with different capabilities are combined to solve complex problems.                                                                  | [Code Link](https://docs.swarms.world/en/latest/swarms/structs/moa/)                               | Financial forecasting, complex problem-solving requiring diverse skills                           |
-| Graph Workflow                | Agents collaborate in a directed acyclic graph (DAG) format to manage dependencies and parallel tasks.                                                                  | [Code Link](https://docs.swarms.world/en/latest/swarms/structs/graph_workflow/)                    | AI-driven software development pipelines, complex project management                              |
-| Group Chat                    | Agents engage in a chat-like interaction to reach decisions collaboratively.                                                                                           | [Code Link](https://docs.swarms.world/en/latest/swarms/structs/group_chat/)                        | Real-time collaborative decision-making, contract negotiations                                    |
-| Agent Registry                | A centralized registry where agents are stored, retrieved, and invoked dynamically.                                                                                     | [Code Link](https://docs.swarms.world/en/latest/swarms/structs/agent_registry/)                    | Dynamic agent management, evolving recommendation engines                                         |
-| Spreadsheet Swarm             | Manages tasks at scale, tracking agent outputs in a structured format like CSV files.                                                                                   | [Code Link](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)                 | Large-scale marketing analytics, financial audits                                                 |
-| Forest Swarm                  | A swarm structure that organizes agents in a tree-like hierarchy for complex decision-making processes.                                                                 | [Code Link](https://docs.swarms.world/en/latest/swarms/structs/forest_swarm/)                      | Multi-stage workflows, hierarchical reinforcement learning                                        |
-| Swarm Router                  | Routes and chooses the swarm architecture based on the task requirements and available agents.                                                                        | [Code Link](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)                       | Dynamic task routing, adaptive swarm architecture selection, optimized agent allocation            |
-| MultiAgentRouter              | Boss agent selects the best agent for each task. | [Minimal Example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/mar/multi_agent_router_minimal.py) | Task-specific agent routing |
+## Core Multi-Agent Architectures
 
+| **Name**                          | **Description**                                                                                                                                                         | **Documentation**                                                                                      | **Use Cases**                                                                                     |
+|-----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| Hierarchical Architecture         | A system where agents are organized in a hierarchy, with higher-level agents coordinating lower-level agents to achieve complex tasks.                                   | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/hierarchical_swarm/)                | Manufacturing process optimization, multi-level sales management, healthcare resource coordination |
+| Agent Rearrange                   | A setup where agents rearrange themselves dynamically based on the task requirements and environmental conditions.                                                       | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)                   | Adaptive manufacturing lines, dynamic sales territory realignment, flexible healthcare staffing  |
+| Concurrent Workflows              | Agents perform different tasks simultaneously, coordinating to complete a larger goal.                                                                                  | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/concurrentworkflow/)               | Concurrent production lines, parallel sales operations, simultaneous patient care processes       |
+| Sequential Coordination           | Agents perform tasks in a specific sequence, where the completion of one task triggers the start of the next.                                                           | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/sequential_workflow/)               | Step-by-step assembly lines, sequential sales processes, stepwise patient treatment workflows     |
+| Mixture of Agents                 | A heterogeneous architecture where agents with different capabilities are combined to solve complex problems.                                                           | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/moa/)                               | Financial forecasting, complex problem-solving requiring diverse skills                           |
+| Graph Workflow                    | Agents collaborate in a directed acyclic graph (DAG) format to manage dependencies and parallel tasks.                                                                  | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/graph_workflow/)                    | AI-driven software development pipelines, complex project management                              |
+| Group Chat                        | Agents engage in a chat-like interaction to reach decisions collaboratively.                                                                                           | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/group_chat/)                        | Real-time collaborative decision-making, contract negotiations                                    |
+| Interactive Group Chat           | Enhanced group chat with dynamic speaker selection and interaction patterns.                                                                                           | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/interactive_groupchat/)             | Advanced collaborative decision-making, dynamic team coordination                                 |
+| Agent Registry                    | A centralized registry where agents are stored, retrieved, and invoked dynamically.                                                                                     | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/agent_registry/)                    | Dynamic agent management, evolving recommendation engines                                         |
+| SpreadSheet                       | Manages tasks at scale, tracking agent outputs in a structured format like CSV files.                                                                                   | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)                 | Large-scale marketing analytics, financial audits                                                 |
+| Router                            | Routes and chooses the architecture based on the task requirements and available agents.                                                                               | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)                       | Dynamic task routing, adaptive architecture selection, optimized agent allocation                 |
+| Heavy                             | High-performance architecture for handling intensive computational tasks with multiple agents.                                                                         | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/heavy_swarm/)                       | Large-scale data processing, intensive computational workflows                                    |
+| Deep Research                     | Specialized architecture for conducting in-depth research tasks across multiple domains.                                                                               | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/deep_research_swarm/)               | Academic research, market analysis, comprehensive data investigation                              |
+| De-Hallucination                  | Architecture designed to reduce and eliminate hallucinations in AI outputs through consensus.                                                                          | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/de_hallucination_swarm/)            | Fact-checking, content verification, reliable information generation                              |
+| Council as Judge                  | Multiple agents act as a council to evaluate and judge outputs or decisions.                                                                                           | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/council_of_judges/)                     | Quality assessment, decision validation, peer review processes                                    |
+| MALT                              | Specialized architecture for complex language processing tasks across multiple agents.                                                                                | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/malt/)                              | Natural language processing, translation, content generation                                      |
+| Majority Voting                   | Agents vote on decisions with the majority determining the final outcome.                                                                                              | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/majorityvoting/)                   | Democratic decision-making, consensus building, error reduction                                   |
+| Round Robin                       | Tasks are distributed cyclically among agents in a rotating order.                                                                                                     | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/round_robin_swarm/)                       | Load balancing, fair task distribution, resource optimization                                     |
+| Auto-Builder                      | Automatically constructs and configures multi-agent systems based on requirements.                                                                                    | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/auto_swarm_builder/)                | Dynamic system creation, adaptive architectures, rapid prototyping                               |
+| Hybrid Hierarchical Cluster      | Combines hierarchical and peer-to-peer communication patterns for complex workflows.                                                                                   | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/hhcs/)     | Complex enterprise workflows, multi-department coordination                                       |
+| Election                          | Agents participate in democratic voting processes to select leaders or make collective decisions.                                                                      | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/election_swarm/)                    | Democratic governance, consensus building, leadership selection                                   |
+| Dynamic Conversational           | Adaptive conversation management with dynamic agent selection and interaction patterns.                                                                              | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/dynamic_conversational_swarm/)      | Adaptive chatbots, dynamic customer service, contextual conversations                            |
+| Tree                              | Hierarchical tree structure for organizing agents in parent-child relationships.                                                                                      | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/tree_swarm/)                        | Organizational hierarchies, decision trees, taxonomic classification                             |
 
+---
 
+## Architectural Patterns
 
-### Hierarchical Swarm
+### Hierarchical Architecture
 
 **Overview:**
-A Hierarchical Swarm architecture organizes the agents in a tree-like structure. Higher-level agents delegate tasks to lower-level agents, which can further divide tasks among themselves. This structure allows for efficient task distribution and scalability.
+Organizes agents in a tree-like structure. Higher-level agents delegate tasks to lower-level agents, which can further divide tasks among themselves. This structure allows for efficient task distribution and scalability.
 
-**Use-Cases:**
+**Use Cases:**
 
-- Complex decision-making processes where tasks can be broken down into subtasks.
+- Complex decision-making processes where tasks can be broken down into subtasks
 
-- Multi-stage workflows such as data processing pipelines or hierarchical reinforcement learning.
+- Multi-stage workflows such as data processing pipelines or hierarchical reinforcement learning
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/hierarchical_swarm/)**
 
 ```mermaid
 graph TD
@@ -62,548 +78,776 @@ graph TD
 
 ---
 
-### Parallel Swarm
+### Agent Rearrange
 
 **Overview:**
-In a Parallel Swarm architecture, multiple agents operate independently and simultaneously on different tasks. Each agent works on its own task without dependencies on the others. [Learn more here in the docs:](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)
+A dynamic architecture where agents rearrange themselves based on task requirements and environmental conditions. Agents can adapt their roles, positions, and relationships to optimize performance for different scenarios.
+
+**Use Cases:**
+- Adaptive manufacturing lines that reconfigure based on product requirements
+
+- Dynamic sales territory realignment based on market conditions
+
+- Flexible healthcare staffing that adjusts to patient needs
 
 
-**Use-Cases:**
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)**
 
-- Tasks that can be processed independently, such as parallel data analysis.
+```mermaid
+graph TD
+    A[Task Requirements] --> B[Configuration Analyzer]
+    B --> C[Optimization Engine]
+    
+    C --> D[Agent Pool]
+    D --> E[Agent 1]
+    D --> F[Agent 2]
+    D --> G[Agent 3]
+    D --> H[Agent N]
+    
+    C --> I[Rearrangement Logic]
+    I --> J[New Configuration]
+    J --> K[Role Assignment]
+    K --> L[Execution Phase]
+    
+    L --> M[Performance Monitor]
+    M --> N{Optimization Needed?}
+    N -->|Yes| C
+    N -->|No| O[Continue Execution]
+```
 
-- Large-scale simulations where multiple scenarios are run in parallel.
+---
+
+### Concurrent Architecture
+
+**Overview:**
+Multiple agents operate independently and simultaneously on different tasks. Each agent works on its own task without dependencies on the others.
+
+**Use Cases:**
+- Tasks that can be processed independently, such as parallel data analysis
+
+- Large-scale simulations where multiple scenarios are run simultaneously
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/concurrentworkflow/)**
 
 ```mermaid
 graph LR
-    A[Task] --> B1[Sub-Agent 1]
-    A --> B2[Sub-Agent 2]
-    A --> B3[Sub-Agent 3]
-    A --> B4[Sub-Agent 4]
+    A[Task Input] --> B1[Agent 1]
+    A --> B2[Agent 2]
+    A --> B3[Agent 3]
+    A --> B4[Agent 4]
+    B1 --> C1[Output 1]
+    B2 --> C2[Output 2]
+    B3 --> C3[Output 3]
+    B4 --> C4[Output 4]
 ```
 
 ---
 
-### Sequential Swarm
+### Sequential Architecture
 
 **Overview:**
-A Sequential Swarm architecture processes tasks in a linear sequence. Each agent completes its task before passing the result to the next agent in the chain. This architecture ensures orderly processing and is useful when tasks have dependencies. [Learn more here in the docs:](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)
+Processes tasks in a linear sequence. Each agent completes its task before passing the result to the next agent in the chain. Ensures orderly processing and is useful when tasks have dependencies.
 
-**Use-Cases:**
+**Use Cases:**
 
-- Workflows where each step depends on the previous one, such as assembly lines or sequential data processing.
+- Workflows where each step depends on the previous one, such as assembly lines or sequential data processing
 
-- Scenarios requiring strict order of operations.
+- Scenarios requiring strict order of operations
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/sequential_workflow/)**
 
 ```mermaid
 graph TD
-    A[First Agent] --> B[Second Agent]
-    B --> C[Third Agent]
-    C --> D[Fourth Agent]
+    A[Input] --> B[Agent 1]
+    B --> C[Agent 2]
+    C --> D[Agent 3]
+    D --> E[Agent 4]
+    E --> F[Final Output]
 ```
 
 ---
 
-### Round Robin Swarm
+### Round Robin Architecture
 
 **Overview:**
-In a Round Robin Swarm architecture, tasks are distributed cyclically among a set of agents. Each agent takes turns handling tasks in a rotating order, ensuring even distribution of workload.
+Tasks are distributed cyclically among a set of agents. Each agent takes turns handling tasks in a rotating order, ensuring even distribution of workload.
 
-**Use-Cases:**
+**Use Cases:**
 
-- Load balancing in distributed systems.
+- Load balancing in distributed systems
 
-- Scenarios requiring fair distribution of tasks to avoid overloading any single agent.
+- Scenarios requiring fair distribution of tasks to avoid overloading any single agent
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/round_robin_swarm/)**
 
 ```mermaid
 graph TD
-    A[Coordinator Agent] --> B1[Sub-Agent 1]
-    A --> B2[Sub-Agent 2]
-    A --> B3[Sub-Agent 3]
-    A --> B4[Sub-Agent 4]
-    B1 --> A
-    B2 --> A
-    B3 --> A
-    B4 --> A
+    A[Task Distributor] --> B1[Agent 1]
+    A --> B2[Agent 2]
+    A --> B3[Agent 3]
+    A --> B4[Agent 4]
+    B1 --> C[Task Queue]
+    B2 --> C
+    B3 --> C
+    B4 --> C
+    C --> A
 ```
 
+---
 
-
-### SpreadSheet Swarm
+### SpreadSheet Architecture
 
 **Overview:**
-The SpreadSheet Swarm makes it easy to manage thousands of agents all in one place: a csv file. You can initialize any number of agents and then there is a loop parameter to run the loop of agents on the task. Learn more in the [docs here](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)
+Makes it easy to manage thousands of agents in one place: a CSV file. Initialize any number of agents and run loops of agents on tasks.
 
-**Use-Cases:**
-
-- Multi-threaded execution: Execution agents on multiple threads 
+**Use Cases:**
+- Multi-threaded execution: Execute agents on multiple threads
 
 - Save agent outputs into CSV file
 
 - One place to analyze agent outputs
 
 
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)**
+
 ```mermaid
-
 graph TD
-    A[Initialize SpreadSheetSwarm] --> B[Initialize Agents]
+    A[Initialize SpreadSheet System] --> B[Initialize Agents]
     B --> C[Load Task Queue]
-    C --> D[Run Task]
+    C --> D[Distribute Tasks]
 
-    subgraph Agents
+    subgraph Agent_Pool[Agent Pool]
         D --> E1[Agent 1]
         D --> E2[Agent 2]
         D --> E3[Agent 3]
+        D --> E4[Agent N]
     end
 
     E1 --> F1[Process Task]
     E2 --> F2[Process Task]
     E3 --> F3[Process Task]
+    E4 --> F4[Process Task]
 
-    F1 --> G1[Track Output]
-    F2 --> G2[Track Output]
-    F3 --> G3[Track Output]
+    F1 --> G[Collect Results]
+    F2 --> G
+    F3 --> G
+    F4 --> G
 
-    subgraph Save Outputs
-        G1 --> H[Save to CSV]
-        G2 --> H[Save to CSV]
-        G3 --> H[Save to CSV]
-    end
-
-    H --> I{Autosave Enabled?}
-    I --> |Yes| J[Export Metadata to JSON]
-    I --> |No| K[End Swarm Run]
+    G --> H[Save to CSV]
+    H --> I[Generate Analytics]
 ```
 
+---
+
+### Mixture of Agents
+
+**Overview:**
+Combines multiple agents with different capabilities and expertise to solve complex problems that require diverse skill sets.
+
+**Use Cases:**
+- Financial forecasting requiring different analytical approaches
+
+- Complex problem-solving needing diverse expertise
+
+- Multi-domain analysis tasks
 
 
-### Mixture of Agents Architecture
-
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/moa/)**
 
 ```mermaid
-
 graph TD
     A[Task Input] --> B[Layer 1: Reference Agents]
+    B --> C[Specialist Agent 1]
+    B --> D[Specialist Agent 2]
+    B --> E[Specialist Agent N]
+
+    C --> F[Response 1]
+    D --> G[Response 2]
+    E --> H[Response N]
+
+    F --> I[Layer 2: Aggregator Agent]
+    G --> I
+    H --> I
+    I --> J[Synthesized Output]
+```
+
+---
+
+### Graph Workflow
+
+**Overview:**
+Organizes agents in a directed acyclic graph (DAG) format, enabling complex dependencies and parallel execution paths.
+
+**Use Cases:**
+- AI-driven software development pipelines
+
+- Complex project management with dependencies
+
+- Multi-step data processing workflows
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/graph_workflow/)**
+
+```mermaid
+graph TD
+    A[Start Node] --> B[Agent 1]
+    A --> C[Agent 2]
+    B --> D[Agent 3]
+    C --> D
+    B --> E[Agent 4]
+    D --> F[Agent 5]
+    E --> F
+    F --> G[End Node]
+```
+
+---
+
+### Group Chat
+
+**Overview:**
+Enables agents to engage in chat-like interactions to reach decisions collaboratively through discussion and consensus building.
+
+**Use Cases:**
+- Real-time collaborative decision-making
+
+- Contract negotiations
+
+- Brainstorming sessions
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/group_chat/)**
+
+```mermaid
+graph TD
+    A[Discussion Topic] --> B[Chat Environment]
     B --> C[Agent 1]
     B --> D[Agent 2]
-    B --> E[Agent N]
-
-    C --> F[Agent 1 Response]
-    D --> G[Agent 2 Response]
-    E --> H[Agent N Response]
-
-    F & G & H --> I[Layer 2: Aggregator Agent]
-    I --> J[Aggregate All Responses]
-    J --> K[Final Output]
+    B --> E[Agent 3]
+    B --> F[Agent N]
+    
+    C --> G[Message Exchange]
+    D --> G
+    E --> G
+    F --> G
+    
+    G --> H[Consensus Building]
+    H --> I[Final Decision]
 ```
 
+---
 
-## Alternative Experimental Architectures
+### Interactive Group Chat
 
-### **1. Circular Swarm**
+**Overview:**
+Enhanced version of Group Chat with dynamic speaker selection, priority-based communication, and advanced interaction patterns.
 
-#### Input Arguments:
-- **name** (str): Name of the swarm.
-- **description** (str): Description of the swarm.
-- **goal** (str): Goal of the swarm.
-- **agents** (AgentListType): List of agents involved.
-- **tasks** (List[str]): List of tasks for the agents.
-- **return_full_history** (bool): Whether to return the full conversation history.
+**Use Cases:**
+- Advanced collaborative decision-making
 
-#### Functionality:
-Agents pass tasks in a circular manner, where each agent works on the next task in the list.
+- Dynamic team coordination
+
+- Adaptive conversation management
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/interactive_groupchat/)**
 
 ```mermaid
 graph TD
-    Task1 --> Agent1
-    Agent1 --> Agent2
-    Agent2 --> Agent3
-    Agent3 --> Task2
-    Task2 --> Agent1
+    A[Conversation Manager] --> B[Speaker Selection Logic]
+    B --> C[Priority Speaker]
+    B --> D[Random Speaker]
+    B --> E[Round Robin Speaker]
+    
+    C --> F[Active Discussion]
+    D --> F
+    E --> F
+    
+    F --> G[Agent Pool]
+    G --> H[Agent 1]
+    G --> I[Agent 2]
+    G --> J[Agent N]
+    
+    H --> K[Dynamic Response]
+    I --> K
+    J --> K
+    K --> A
 ```
 
 ---
 
-### **2. Linear Swarm**
+### Agent Registry
 
-#### Input Arguments:
-- **name** (str): Name of the swarm.
-- **description** (str): Description of the swarm.
-- **agents** (AgentListType): List of agents involved.
-- **tasks** (List[str]): List of tasks for the agents.
-- **conversation** (Conversation): Conversation object.
-- **return_full_history** (bool): Whether to return the full conversation history.
+**Overview:**
+A centralized registry system where agents are stored, retrieved, and invoked dynamically. The registry maintains metadata about agent capabilities, availability, and performance metrics, enabling intelligent agent selection and management.
 
-#### Functionality:
-Agents pass tasks in a linear fashion, each agent working on one task sequentially.
+**Use Cases:**
+- Dynamic agent management in large-scale systems
 
-```mermaid
-graph LR
-    Task1 --> Agent1
-    Agent1 --> Agent2
-    Agent2 --> Agent3
-    Agent3 --> Task2
-```
+- Evolving recommendation engines that adapt agent selection
 
----
+- Service discovery in distributed agent systems
 
-### **3. Star Swarm**
 
-#### Input Arguments:
-- **agents** (AgentListType): List of agents involved.
-- **tasks** (List[str]): List of tasks for the agents.
-
-#### Functionality:
-A central agent (Agent 1) executes the tasks first, followed by the other agents working in parallel.
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/agent_registry/)**
 
 ```mermaid
 graph TD
-    Task1 --> Agent1
-    Agent1 --> Agent2
-    Agent1 --> Agent3
-    Agent1 --> Agent4
+    A[Agent Registration] --> B[Registry Database]
+    B --> C[Agent Metadata]
+    C --> D[Capabilities]
+    C --> E[Performance Metrics]
+    C --> F[Availability Status]
+    
+    G[Task Request] --> H[Registry Query Engine]
+    H --> I[Agent Discovery]
+    I --> J[Capability Matching]
+    J --> K[Agent Selection]
+    
+    K --> L[Agent Invocation]
+    L --> M[Task Execution]
+    M --> N[Performance Tracking]
+    N --> O[Registry Update]
+    O --> B
 ```
 
 ---
 
-### **4. Mesh Swarm**
+### Router Architecture
 
-#### Input Arguments:
-- **agents** (AgentListType): List of agents involved.
-- **tasks** (List[str]): List of tasks for the agents.
+**Overview:**
+Intelligently routes tasks to the most appropriate agents or architectures based on task requirements and agent capabilities.
 
-#### Functionality:
-Each agent works on tasks randomly from a task queue, until the task queue is empty.
+**Use Cases:**
+- Dynamic task routing
+
+- Adaptive architecture selection
+
+- Optimized agent allocation
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)**
 
 ```mermaid
 graph TD
-    Task1 --> Agent1
-    Task2 --> Agent2
-    Task3 --> Agent3
-    Task4 --> Agent4
-    Task5 --> Agent1
-    Task6 --> Agent2
+    A[Incoming Task] --> B[Router Analysis]
+    B --> C[Task Classification]
+    C --> D[Agent Capability Matching]
+    
+    D --> E[Route to Sequential]
+    D --> F[Route to Concurrent]
+    D --> G[Route to Hierarchical]
+    D --> H[Route to Specialist Agent]
+    
+    E --> I[Execute Architecture]
+    F --> I
+    G --> I
+    H --> I
+    
+    I --> J[Collect Results]
+    J --> K[Return Output]
 ```
 
 ---
 
-### **5. Grid Swarm**
+### Heavy Architecture
 
-#### Input Arguments:
-- **agents** (AgentListType): List of agents involved.
-- **tasks** (List[str]): List of tasks for the agents.
+**Overview:**
+High-performance architecture designed for handling intensive computational tasks with multiple agents working on resource-heavy operations.
 
-#### Functionality:
-Agents are structured in a grid, and tasks are distributed accordingly.
+**Use Cases:**
+- Large-scale data processing
+
+- Intensive computational workflows
+
+- High-throughput task execution
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/heavy_swarm/)**
 
 ```mermaid
 graph TD
-    Task1 --> Agent1
-    Task2 --> Agent2
-    Task3 --> Agent3
-    Task4 --> Agent4
+    A[Resource Manager] --> B[Load Balancer]
+    B --> C[Heavy Agent Pool]
+    
+    C --> D[Compute Agent 1]
+    C --> E[Compute Agent 2]
+    C --> F[Compute Agent N]
+    
+    D --> G[Resource Monitor]
+    E --> G
+    F --> G
+    
+    G --> H[Performance Optimizer]
+    H --> I[Result Aggregator]
+    I --> J[Final Output]
 ```
 
 ---
 
-### **6. Pyramid Swarm**
+### Deep Research Architecture
 
-#### Input Arguments:
-- **agents** (AgentListType): List of agents involved.
-- **tasks** (List[str]): List of tasks for the agents.
+**Overview:**
+Specialized architecture for conducting comprehensive research tasks across multiple domains with iterative refinement and cross-validation.
 
-#### Functionality:
-Agents are arranged in a pyramid structure. Each level of agents works in sequence.
+**Use Cases:**
+- Academic research projects
+
+- Market analysis and intelligence
+
+- Comprehensive data investigation
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/deep_research_swarm/)**
 
 ```mermaid
 graph TD
-    Task1 --> Agent1
-    Agent1 --> Agent2
-    Agent2 --> Agent3
-    Agent3 --> Task2
+    A[Research Query] --> B[Research Planner]
+    B --> C[Domain Analysis]
+    C --> D[Research Agent 1]
+    C --> E[Research Agent 2]
+    C --> F[Research Agent N]
+    
+    D --> G[Initial Findings]
+    E --> G
+    F --> G
+    
+    G --> H[Cross-Validation]
+    H --> I[Refinement Loop]
+    I --> J[Synthesis Agent]
+    J --> K[Comprehensive Report]
 ```
 
 ---
 
-### **7. Fibonacci Swarm**
+### De-Hallucination Architecture
 
-#### Input Arguments:
-- **agents** (AgentListType): List of agents involved.
-- **tasks** (List[str]): List of tasks for the agents.
+**Overview:**
+Architecture specifically designed to reduce and eliminate hallucinations in AI outputs through consensus mechanisms and fact-checking protocols.
 
-#### Functionality:
-Agents work according to the Fibonacci sequence, where the number of agents working on tasks follows this progression.
+**Use Cases:**
+- Fact-checking and verification
+
+- Content validation
+
+- Reliable information generation
+
 
 ```mermaid
 graph TD
-    Task1 --> Agent1
-    Agent1 --> Agent2
-    Agent2 --> Agent3
-    Task2 --> Agent5
-    Agent5 --> Agent8
+    A[Input Query] --> B[Primary Agent]
+    B --> C[Initial Response]
+    C --> D[Validation Layer]
+    
+    D --> E[Fact-Check Agent 1]
+    D --> F[Fact-Check Agent 2]
+    D --> G[Fact-Check Agent 3]
+    
+    E --> H[Consensus Engine]
+    F --> H
+    G --> H
+    
+    H --> I[Confidence Score]
+    I --> J{Score > Threshold?}
+    J -->|Yes| K[Validated Output]
+    J -->|No| L[Request Refinement]
+    L --> B
 ```
 
 ---
 
-### **8. Prime Swarm**
+### Council as Judge
 
-#### Input Arguments:
-- **agents** (AgentListType): List of agents involved.
-- **tasks** (List[str]): List of tasks for the agents.
+**Overview:**
+Multiple agents act as a council to evaluate, judge, and validate outputs or decisions through collaborative assessment.
 
-#### Functionality:
-Agents are assigned tasks based on prime number indices in the list of agents.
+**Use Cases:**
+- Quality assessment and validation
+
+- Decision validation processes
+
+- Peer review systems
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/council_of_judges/)**
 
 ```mermaid
 graph TD
-    Task1 --> Agent2
-    Task2 --> Agent3
-    Task3 --> Agent5
-    Task4 --> Agent7
+    A[Submission] --> B[Council Formation]
+    B --> C[Judge Agent 1]
+    B --> D[Judge Agent 2]
+    B --> E[Judge Agent 3]
+    B --> F[Judge Agent N]
+    
+    C --> G[Individual Assessment]
+    D --> G
+    E --> G
+    F --> G
+    
+    G --> H[Scoring System]
+    H --> I[Weighted Voting]
+    I --> J[Final Judgment]
+    J --> K[Feedback & Recommendations]
 ```
 
 ---
 
-### **9. Power Swarm**
+### MALT Architecture
 
-#### Input Arguments:
-- **agents** (AgentListType): List of agents involved.
-- **tasks** (List[str]): List of tasks for the agents.
+**Overview:**
+Specialized architecture for complex language processing tasks that require coordination between multiple language-focused agents.
 
-#### Functionality:
-Agents work on tasks following powers of two.
+**Use Cases:**
+- Natural language processing pipelines
+
+- Translation and localization
+
+- Content generation and editing
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/malt/)**
 
 ```mermaid
 graph TD
-    Task1 --> Agent1
-    Task2 --> Agent2
-    Task3 --> Agent4
-    Task4 --> Agent8
+    A[Language Task] --> B[Task Analyzer]
+    B --> C[Language Router]
+    
+    C --> D[Grammar Agent]
+    C --> E[Semantics Agent]
+    C --> F[Style Agent]
+    C --> G[Context Agent]
+    
+    D --> H[Language Processor]
+    E --> H
+    F --> H
+    G --> H
+    
+    H --> I[Quality Controller]
+    I --> J[Output Formatter]
+    J --> K[Final Language Output]
 ```
 
 ---
 
-### **10. Sigmoid Swarm**
+### Majority Voting
 
-#### Input Arguments:
-- **agents** (AgentListType): List of agents involved.
-- **tasks** (List[str]): List of tasks for the agents.
+**Overview:**
+Agents vote on decisions with the majority determining the final outcome, providing democratic decision-making and error reduction through consensus.
 
-#### Functionality:
-Agents are selected based on the sigmoid function, with higher-indexed agents handling more complex tasks.
+**Use Cases:**
+- Democratic decision-making processes
+
+- Consensus building
+
+- Error reduction through voting
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/majorityvoting/)**
 
 ```mermaid
 graph TD
-    Task1 --> Agent1
-    Task2 --> Agent2
-    Task3 --> Agent3
-    Task4 --> Agent4
+    A[Decision Request] --> B[Voting Coordinator]
+    B --> C[Voting Pool]
+    
+    C --> D[Voter Agent 1]
+    C --> E[Voter Agent 2]
+    C --> F[Voter Agent 3]
+    C --> G[Voter Agent N]
+    
+    D --> H[Vote Collection]
+    E --> H
+    F --> H
+    G --> H
+    
+    H --> I[Vote Counter]
+    I --> J[Majority Calculator]
+    J --> K[Final Decision]
+    K --> L[Decision Rationale]
 ```
 
 ---
 
-### **11. Sinusoidal Swarm**
+### Auto-Builder
 
-#### Input Arguments:
-- **agents** (AgentListType): List of agents involved.
-- **task** (str): Task for the agents to work on.
+**Overview:**
+Automatically constructs and configures multi-agent systems based on requirements, enabling dynamic system creation and adaptation.
 
-#### Functionality:
-Agents are assigned tasks based on a sinusoidal pattern.
+**Use Cases:**
+- Dynamic system creation
+
+- Adaptive architectures
+
+- Rapid prototyping of multi-agent systems
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/auto_swarm_builder/)**
 
 ```mermaid
 graph TD
-    Task --> Agent1
-    Agent1 --> Agent2
-    Agent2 --> Agent3
-    Agent3 --> Task2
+    A[Requirements Input] --> B[System Analyzer]
+    B --> C[Architecture Selector]
+    C --> D[Agent Configuration]
+    
+    D --> E[Agent Builder 1]
+    D --> F[Agent Builder 2]
+    D --> G[Agent Builder N]
+    
+    E --> H[System Assembler]
+    F --> H
+    G --> H
+    
+    H --> I[Configuration Validator]
+    I --> J[System Deployment]
+    J --> K[Performance Monitor]
+    K --> L[Adaptive Optimizer]
 ```
 
 ---
 
-Each of these swarm architectures enables different task distribution and agent coordination strategies, making it possible to select the right architecture for specific types of agent-based problem-solving scenarios.
+### Hybrid Hierarchical Cluster
+
+**Overview:**
+Combines hierarchical and peer-to-peer communication patterns for complex workflows that require both centralized coordination and distributed collaboration.
+
+**Use Cases:**
+- Complex enterprise workflows
+
+- Multi-department coordination
+
+- Hybrid organizational structures
 
 
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/hhcs/)**
 
-## Examples
+```mermaid
+graph TD
+    A[Central Coordinator] --> B[Cluster 1 Leader]
+    A --> C[Cluster 2 Leader]
+    A --> D[Cluster 3 Leader]
+    
+    B --> E[Peer Agent 1.1]
+    B --> F[Peer Agent 1.2]
+    E <--> F
+    
+    C --> G[Peer Agent 2.1]
+    C --> H[Peer Agent 2.2]
+    G <--> H
+    
+    D --> I[Peer Agent 3.1]
+    D --> J[Peer Agent 3.2]
+    I <--> J
+    
+    E --> K[Inter-Cluster Communication]
+    G --> K
+    I --> K
+    K --> A
+```
 
-```python
+---
 
-import asyncio
-import os
+### Election Architecture
 
-from dotenv import load_dotenv
-from loguru import logger
-from swarm_models import OpenAIChat
-from tickr_agent.main import TickrAgent
+**Overview:**
+Agents participate in democratic voting processes to select leaders or make collective decisions.
 
-from swarms.structs.swarming_architectures import (
-    circular_swarm,
-    linear_swarm,
-    mesh_swarm,
-    pyramid_swarm,
-    star_swarm,
-)
+**Use Cases:**
+- Democratic governance
 
-# Load environment variables (API keys)
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
+- Consensus building
 
-# Initialize the OpenAI model
-model = OpenAIChat(
-    openai_api_key=api_key, model_name="gpt-4", temperature=0.1
-)
-
-# Custom Financial Agent System Prompts
-STOCK_ANALYSIS_PROMPT = """
-You are an expert financial analyst. Your task is to analyze stock market data for a company 
-and provide insights on whether to buy, hold, or sell. Analyze trends, financial ratios, and market conditions.
-"""
-
-NEWS_SUMMARIZATION_PROMPT = """
-You are a financial news expert. Summarize the latest news related to a company and provide insights on 
-how it could impact its stock price. Be concise and focus on the key takeaways.
-"""
-
-RATIO_CALCULATION_PROMPT = """
-You are a financial ratio analyst. Your task is to calculate key financial ratios for a company 
-based on the available data, such as P/E ratio, debt-to-equity ratio, and return on equity. 
-Explain what each ratio means for investors.
-"""
-
-# Example Usage
-# Define stock tickers
-stocks = ["AAPL", "TSLA"]
+- Leadership selection
 
 
-# Initialize Financial Analysis Agents
-stock_analysis_agent = TickrAgent(
-    agent_name="Stock-Analysis-Agent",
-    system_prompt=STOCK_ANALYSIS_PROMPT,
-    stocks=stocks,
-)
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/election_swarm/)**
 
-news_summarization_agent = TickrAgent(
-    agent_name="News-Summarization-Agent",
-    system_prompt=NEWS_SUMMARIZATION_PROMPT,
-    stocks=stocks,
+```mermaid
+graph TD
+    A[Voting Process] --> B[Candidate Agents]
+    B --> C[Voting Mechanism]
+    
+    C --> D[Voter Agent 1]
+    C --> E[Voter Agent 2]
+    C --> F[Voter Agent N]
+    
+    D --> G[Vote Collection]
+    E --> G
+    F --> G
+    
+    G --> H[Vote Counting]
+    H --> I[Majority Check]
+    I --> J{Majority?}
+    J -->|Yes| K[Leader Selected]
+    J -->|No| L[Continue Voting]
+    L --> B
+```
 
-)
-
-ratio_calculation_agent = TickrAgent(
-    agent_name="Ratio-Calculation-Agent",
-    system_prompt=RATIO_CALCULATION_PROMPT,
-    stocks=stocks,
-
-)
-# Create a list of agents for swarming
-agents = [
-    stock_analysis_agent,
-    news_summarization_agent,
-    ratio_calculation_agent,
-]
-
-# Define financial analysis tasks
-tasks = [
-    "Analyze the stock performance of Apple (AAPL) in the last 6 months.",
-    "Summarize the latest financial news on Tesla (TSLA).",
-    "Calculate the P/E ratio and debt-to-equity ratio for Amazon (AMZN).",
-]
-
-# -------------------------------# Showcase Circular Swarm
-# -------------------------------
-logger.info("Starting Circular Swarm for financial analysis.")
-circular_result = circular_swarm(agents, tasks)
-logger.info(f"Circular Swarm Result:\n{circular_result}\n")
+---
 
 
-# -------------------------------
-# Showcase Linear Swarm
-# -------------------------------
-logger.info("Starting Linear Swarm for financial analysis.")
-linear_result = linear_swarm(agents, tasks)
-logger.info(f"Linear Swarm Result:\n{linear_result}\n")
+---
+
+### Dynamic Conversational Architecture
+
+**Overview:**
+Adaptive conversation management with dynamic agent selection and interaction patterns.
+
+**Use Cases:**
+- Adaptive chatbots
+
+- Dynamic customer service
+
+- Contextual conversations
 
 
-# -------------------------------
-# Showcase Star Swarm
-# -------------------------------
-logger.info("Starting Star Swarm for financial analysis.")
-star_result = star_swarm(agents, tasks)
-logger.info(f"Star Swarm Result:\n{star_result}\n")
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/dynamic_conversational_swarm/)**
+
+```mermaid
+graph TD
+    A[Conversation Manager] --> B[Speaker Selection Logic]
+    B --> C[Priority Speaker]
+    B --> D[Random Speaker]
+    B --> E[Round Robin Speaker]
+    
+    C --> F[Active Discussion]
+    D --> F
+    E --> F
+    
+    F --> G[Agent Pool]
+    G --> H[Agent 1]
+    G --> I[Agent 2]
+    G --> J[Agent N]
+    
+    H --> K[Dynamic Response]
+    I --> K
+    J --> K
+    K --> A
+```
+
+---
+
+### Tree Architecture
+
+**Overview:**
+Hierarchical tree structure for organizing agents in parent-child relationships.
+
+**Use Cases:**
+- Organizational hierarchies
+
+- Decision trees
+
+- Taxonomic classification
 
 
-# -------------------------------
-# Showcase Mesh Swarm
-# -------------------------------
-logger.info("Starting Mesh Swarm for financial analysis.")
-mesh_result = mesh_swarm(agents, tasks)
-logger.info(f"Mesh Swarm Result:\n{mesh_result}\n")
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/tree_swarm/)**
 
-
-# -------------------------------
-# Showcase Pyramid Swarm
-# -------------------------------
-logger.info("Starting Pyramid Swarm for financial analysis.")
-pyramid_result = pyramid_swarm(agents, tasks)
-logger.info(f"Pyramid Swarm Result:\n{pyramid_result}\n")
-
-
-# -------------------------------
-# Example: One-to-One Communication between Agents
-# -------------------------------
-logger.info(
-    "Starting One-to-One communication between Stock and News agents."
-)
-one_to_one_result = stock_analysis_agent.run(
-    "Analyze Apple stock performance, and then send the result to the News Summarization Agent"
-)
-news_summary_result = news_summarization_agent.run(one_to_one_result)
-logger.info(
-    f"One-to-One Communication Result:\n{news_summary_result}\n"
-)
-
-
-# -------------------------------
-# Example: Broadcasting to all agents
-# -------------------------------
-async def broadcast_task():
-    logger.info("Broadcasting task to all agents.")
-    task = "Summarize the overall stock market performance today."
-    await asyncio.gather(*[agent.run(task) for agent in agents])
-
-
-asyncio.run(broadcast_task())
-
-
-# -------------------------------
-# Deep Comments & Explanations
-# -------------------------------
-
-"""
-Explanation of Key Components:
-
-1. **Agents**:
-   - We created three specialized agents for financial analysis: Stock Analysis, News Summarization, and Ratio Calculation.
-   - Each agent is provided with a custom system prompt that defines their unique task in analyzing stock data.
-
-2. **Swarm Examples**:
-   - **Circular Swarm**: Agents take turns processing tasks in a circular manner.
-   - **Linear Swarm**: Tasks are processed sequentially by each agent.
-   - **Star Swarm**: The first agent (Stock Analysis) processes all tasks before distributing them to other agents.
-   - **Mesh Swarm**: Agents work on random tasks from the task queue.
-   - **Pyramid Swarm**: Agents are arranged in a pyramid structure, processing tasks layer by layer.
-
-3. **One-to-One Communication**:
-   - This showcases how one agent can pass its result to another agent for further processing, useful for complex workflows where agents depend on each other.
-
-4. **Broadcasting**:
-   - The broadcasting function demonstrates how a single task can be sent to all agents simultaneously. This can be useful for situations like summarizing daily stock market performance across multiple agents.
-
-5. **Logging with Loguru**:
-   - We use `loguru` for detailed logging throughout the swarms. This helps to track the flow of information and responses from each agent.
-"""
-
-
-
+```mermaid
+graph TD
+    A[Root] --> B[Child 1]
+    A --> C[Child 2]
+    B --> D[Grandchild 1]
+    B --> E[Grandchild 2]
+    C --> F[Grandchild 3]
+    C --> G[Grandchild 4]
 ```

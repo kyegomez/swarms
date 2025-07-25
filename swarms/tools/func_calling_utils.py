@@ -120,11 +120,11 @@ def prepare_output_for_output_model(
         Union[BaseModel, str]: The prepared output.
 
     """
-    if output_type == BaseModel:
+    if output_type is BaseModel:
         return str_to_pydantic_model(output, output_type)
-    elif output_type == dict:
+    elif output_type is dict:
         return dict_to_json_str(output)
-    elif output_type == str:
+    elif output_type is str:
         return output
     else:
         return output

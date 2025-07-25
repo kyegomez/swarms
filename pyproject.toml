@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "7.9.7"
+version = "8.0.1"
 description = "Swarms - TGSC"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -78,6 +78,7 @@ litellm = "*"
 torch = "*"
 httpx = "*"
 mcp = "*"
+openai = "*"
 aiohttp = "*"
 
 [tool.poetry.scripts]
@@ -95,6 +96,12 @@ mypy-protobuf = "^3.0.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.1.1"
+
+[tool.poetry.group.dev.dependencies]
+black = "*"
+ruff = "*"
+pytest = "*"
+# pre-commit = "*"
 
 [tool.ruff]
 line-length = 70

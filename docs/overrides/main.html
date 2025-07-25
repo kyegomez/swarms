@@ -7,3 +7,289 @@
     <a href="https://github.com/kyegomez/swarms">Star and contribute</a> to Swarms on GitHub!
   </div>
 {% endblock %}
+
+{% block footer %}
+  <footer class="md-footer">
+    <!-- Custom Footer Links Section -->
+    <div class="md-footer-custom">
+      <div class="md-footer-custom__inner md-grid">
+        <div class="md-footer-links">
+          {% for section_name, links in config.extra.footer_links.items() %}
+            <div class="md-footer-links__section">
+              <h4 class="md-footer-links__title">{{ section_name }}</h4>
+              <ul class="md-footer-links__list">
+                {% for link in links %}
+                  <li class="md-footer-links__item">
+                    <a href="{{ link.url }}" class="md-footer-links__link">
+                      {{ link.title }}
+                    </a>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Company Information Section -->
+    <div class="md-footer-company">
+      <div class="md-footer-company__inner md-grid">
+        <div class="md-footer-company__content">
+          <div class="md-footer-company__brand">
+            <h3 class="md-footer-company__name">Swarms</h3>
+            <p class="md-footer-company__description">
+              Automating the world economy with multi-agent collaboration
+            </p>
+          </div>
+          <div class="md-footer-company__copyright">
+            <p>&copy; 2024 Swarms. All rights reserved.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Original Material Footer -->
+    {{ super() }}
+  </footer>
+{% endblock %}
+
+{% block styles %}
+  {{ super() }}
+  <style>
+    /* Custom Footer Styling - Base */
+    .md-footer-custom {
+      padding: 2.4rem 0 1.2rem;
+      border-top: 0.05rem solid var(--md-default-fg-color--lightest);
+    }
+    
+    .md-footer-custom__inner {
+      margin: 0 auto;
+      padding: 0 1.2rem;
+    }
+    
+    .md-footer-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 2rem;
+      max-width: 1220px;
+      margin: 0 auto;
+    }
+    
+    .md-footer-links__section {
+      min-width: 0;
+    }
+    
+    .md-footer-links__title {
+      font-size: 0.64rem;
+      font-weight: 700;
+      margin: 0 0 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding-bottom: 0.4rem;
+    }
+    
+    .md-footer-links__list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .md-footer-links__item {
+      margin: 0;
+      line-height: 1.8;
+    }
+    
+    .md-footer-links__link {
+      text-decoration: none;
+      font-size: 0.7rem;
+      display: block;
+      padding: 0.1rem 0;
+      transition: color 125ms;
+      border-radius: 0.1rem;
+    }
+    
+    .md-footer-links__link:hover,
+    .md-footer-links__link:focus {
+      color: var(--md-accent-fg-color);
+    }
+    
+    /* Light Mode (Default) */
+    [data-md-color-scheme="default"] .md-footer-custom {
+      background: #ffffff;
+      border-top-color: #e1e5e9;
+    }
+    
+    [data-md-color-scheme="default"] .md-footer-links__title {
+      color: #2e3440;
+      border-bottom: 0.05rem solid #e1e5e9;
+    }
+    
+    [data-md-color-scheme="default"] .md-footer-links__link {
+      color: #636c76;
+    }
+    
+    [data-md-color-scheme="default"] .md-footer-links__link:hover,
+    [data-md-color-scheme="default"] .md-footer-links__link:focus {
+      color: #1976d2;
+    }
+    
+    /* Dark Mode (Slate) */
+    [data-md-color-scheme="slate"] .md-footer-custom {
+      background: #1F2129;
+      border-top-color: #404040;
+    }
+    
+    [data-md-color-scheme="slate"] .md-footer-links__title {
+      color: #ffffff;
+      border-bottom: 0.05rem solid #404040;
+    }
+    
+    [data-md-color-scheme="slate"] .md-footer-links__link {
+      color: #9ca3af;
+    }
+    
+    [data-md-color-scheme="slate"] .md-footer-links__link:hover,
+    [data-md-color-scheme="slate"] .md-footer-links__link:focus {
+      color: #42a5f5;
+    }
+    
+    /* Company Information Section - Base */
+    .md-footer-company {
+      padding: 1.5rem 0;
+      border-top: 0.05rem solid var(--md-default-fg-color--lightest);
+    }
+    
+    .md-footer-company__inner {
+      margin: 0 auto;
+      padding: 0 1.2rem;
+      max-width: 1220px;
+    }
+    
+    .md-footer-company__content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    
+    .md-footer-company__brand {
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    .md-footer-company__name {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    
+    .md-footer-company__description {
+      margin: 0;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      font-style: italic;
+    }
+    
+    .md-footer-company__copyright {
+      text-align: right;
+    }
+    
+    .md-footer-company__copyright p {
+      margin: 0;
+      font-size: 0.7rem;
+      opacity: 0.8;
+    }
+    
+    /* Company Section - Light Mode */
+    [data-md-color-scheme="default"] .md-footer-company {
+      background: #f8f9fa;
+      border-top-color: #e1e5e9;
+    }
+    
+    [data-md-color-scheme="default"] .md-footer-company__name {
+      color: #DC143C;
+    }
+    
+    [data-md-color-scheme="default"] .md-footer-company__description {
+      color: #495057;
+    }
+    
+    [data-md-color-scheme="default"] .md-footer-company__copyright p {
+      color: #6c757d;
+    }
+    
+    /* Company Section - Dark Mode */
+    [data-md-color-scheme="slate"] .md-footer-company {
+      background: #1F2129;
+      border-top-color: #404040;
+    }
+    
+    [data-md-color-scheme="slate"] .md-footer-company__name {
+      color: #DC143C;
+    }
+    
+    [data-md-color-scheme="slate"] .md-footer-company__description {
+      color: #d1d5db;
+    }
+    
+    [data-md-color-scheme="slate"] .md-footer-company__copyright p {
+      color: #9ca3af;
+    }
+    
+    /* Responsive Design */
+    @media screen and (max-width: 76.1875em) {
+      .md-footer-links {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+      }
+      
+      .md-footer-custom {
+        padding: 2rem 0 1rem;
+      }
+    }
+    
+    @media screen and (max-width: 59.9375em) {
+      .md-footer-links {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+      }
+    }
+    
+    @media screen and (max-width: 44.9375em) {
+      .md-footer-links {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+      
+      .md-footer-custom {
+        padding: 1.5rem 0 0.8rem;
+      }
+      
+      .md-footer-custom__inner {
+        padding: 0 1rem;
+      }
+      
+      /* Company section mobile styles */
+      .md-footer-company__content {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+      }
+      
+      .md-footer-company__brand {
+        min-width: auto;
+      }
+      
+      .md-footer-company__copyright {
+        text-align: center;
+      }
+      
+      .md-footer-company__inner {
+        padding: 0 1rem;
+      }
+    }
+  </style>
+{% endblock %}

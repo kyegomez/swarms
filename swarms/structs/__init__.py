@@ -3,7 +3,6 @@ from swarms.structs.agent_builder import AgentsBuilder
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
-from swarms.structs.base_workflow import BaseWorkflow
 from swarms.structs.batch_agent_execution import batch_agent_execution
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
@@ -92,12 +91,12 @@ from swarms.structs.interactive_groupchat import (
 )
 
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.heavy_swarm import HeavySwarm
 
 __all__ = [
     "Agent",
     "BaseStructure",
     "BaseSwarm",
-    "BaseWorkflow",
     "ConcurrentWorkflow",
     "Conversation",
     "GroupChat",
@@ -169,4 +168,5 @@ __all__ = [
     "priority_speaker",
     "random_dynamic_speaker",
     "HierarchicalSwarm",
+    "HeavySwarm",
 ]
