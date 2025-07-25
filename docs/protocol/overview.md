@@ -24,29 +24,24 @@ The Swarms protocol is organized into several key layers, each responsible for a
     (stateful, with memory and reasoning capabilities).
     
     - Agents can be specialized for different tasks (e.g., reasoning agents, tool agents, judge agents, etc.).
-
     
     - Example: A `ReasoningAgent` that can analyze data and make decisions, or a `ToolAgent` that wraps external APIs.
-
     
     - [Quickstart for Agents](https://docs.swarms.world/en/latest/swarms/agents/)
-
     
     - [Agent API Reference](https://docs.swarms.world/en/latest/swarms/structs/agent/)
-
 
 2. **Tools with Memory (`swarms/tools`, `swarms/utils`)**
     - Tools are modular components that agents use to interact with the outside world, perform computations, or access resources (APIs, 
     databases, files, etc.).
 
     - Memory modules and utility functions allow agents to retain context, cache results, and manage state across interactions.
-
+    
     - Example: A tool for calling an LLM API, a memory cache for conversation history, or a utility for parsing and formatting data.
-
+    
     - [Tools Overview](https://docs.swarms.world/en/latest/swarms_tools/overview/)
-
+    
     - [BaseTool Reference](https://docs.swarms.world/en/latest/swarms/tools/base_tool/)
-
 
 3. **Reasoning & Specialized Agents (`swarms/agents`)**
     - These agents build on the base agent class, adding advanced reasoning, self-consistency, and specialized logic for tasks like 
@@ -58,11 +53,10 @@ The Swarms protocol is organized into several key layers, each responsible for a
     agents.
 
     - [Reasoning Agents Overview](https://docs.swarms.world/en/latest/swarms/agents/reasoning_agents_overview/)
-
+    
     - [Self Consistency Agent](https://docs.swarms.world/en/latest/swarms/agents/consistency_agent/)
-
+    
     - [Agent Judge](https://docs.swarms.world/en/latest/swarms/agents/agent_judge/)
-
 
 4. **Multi-Agent Structures (`swarms/structs`)**
     - Agents are composed into higher-order structures for collaboration, voting, parallelism, and workflow orchestration.
@@ -73,15 +67,14 @@ The Swarms protocol is organized into several key layers, each responsible for a
     sub-agents.
 
     - [Multi-Agent Architectures Overview](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/)
-
+    
     - [MajorityVotingSwarm](https://docs.swarms.world/en/latest/swarms/structs/majorityvoting/)
-
+    
     - [HierarchicalSwarm](https://docs.swarms.world/en/latest/swarms/structs/hierarchical_swarm/)
-
+    
     - [Sequential Workflow](https://docs.swarms.world/en/latest/swarms/structs/sequential_workflow/)
-
+    
     - [Concurrent Workflow](https://docs.swarms.world/en/latest/swarms/structs/concurrentworkflow/)
-
 
 5. **Supporting Components**
 
@@ -95,12 +88,40 @@ The Swarms protocol is organized into several key layers, each responsible for a
     [Prompts Management](https://docs.swarms.world/en/latest/swarms/prompts/main/)
     
     - **Telemetry (`swarms/telemetry`)**: Handles logging, monitoring, and bootup routines for observability and debugging.
-
+    
     - **Schemas (`swarms/schemas`)**: Defines data schemas for agents, tools, completions, and communication protocols, ensuring type 
     safety and consistency.
     
     - **CLI (`swarms/cli`)**: Provides command-line utilities for agent creation, management, and orchestration. See [CLI Documentation]
     (https://docs.swarms.world/en/latest/swarms/cli/main/)
+
+---
+
+## Proposing Large Improvements or Enhancements: Swarms Improvement Proposals (SIPs)
+
+For significant changes, new agent architectures, or radical new features, Swarms uses a formal process called **Swarms Improvement Proposals (SIPs)**. SIPs are design documents that describe new features, enhancements, or changes to the Swarms framework. They ensure that major changes are well-documented, discussed, and reviewed by the community before implementation.
+
+**When to use a SIP:**
+
+- Proposing new agent types, swarm patterns, or coordination mechanisms
+
+- Core framework changes or breaking changes
+
+- New integrations (LLM providers, tools, external services)
+
+- Any complex or multi-component feature
+
+**SIP Process Overview:**
+
+1. Discuss your idea in [GitHub Discussions](https://github.com/kyegomez/swarms/discussions)
+
+2. Submit a SIP as a GitHub Issue using the SIP template
+
+3. Engage with the community and iterate on your proposal
+
+4. Undergo review and, if accepted, proceed to implementation
+
+**Learn more:** See the full [SIP Guidelines and Template](https://docs.swarms.world/en/latest/protocol/sip/)
 
 ---
 
@@ -408,6 +429,8 @@ For more on the philosophy and architecture, see [Development Philosophy & Princ
 - [Development Philosophy & Principles](https://docs.swarms.world/en/latest/swarms/concept/philosophy/)
 
 - [Understanding Swarms Architecture](https://docs.swarms.world/en/latest/swarms/concept/framework_architecture/)
+
+- [SIP Guidelines and Template](https://docs.swarms.world/en/latest/protocol/sip/)
 
 
 # Conclusion
