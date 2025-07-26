@@ -153,6 +153,134 @@ class LiteLLM:
 
         litellm.drop_params = True
 
+    def _collect_streaming_response(self, streaming_response):
+        """
+        Parse and yield individual content chunks from a streaming response.
+        
+        Args:
+            streaming_response: The streaming response object from litellm
+            
+        Yields:
+            str: Individual content chunks as they arrive
+        """
+        try:
+            for chunk in streaming_response:
+                content = None
+                
+                # Handle different chunk formats
+                if hasattr(chunk, 'choices') and chunk.choices:
+                    choice = chunk.choices[0]
+                    
+                    # OpenAI-style chunks
+                    if hasattr(choice, 'delta') and choice.delta:
+                        if hasattr(choice.delta, 'content') and choice.delta.content:
+                            content = choice.delta.content
+                    
+                    # Alternative chunk format
+                    elif hasattr(choice, 'message') and choice.message:
+                        if hasattr(choice.message, 'content') and choice.message.content:
+                            content = choice.message.content
+                
+                # Anthropic-style chunks
+                elif hasattr(chunk, 'type'):
+                    if chunk.type == 'content_block_delta' and hasattr(chunk, 'delta'):
+                        if chunk.delta.type == 'text_delta':
+                            content = chunk.delta.text
+                
+                # Handle direct content chunks
+                elif hasattr(chunk, 'content'):
+                    content = chunk.content
+                
+                # Yield content chunk if we found any
+                if content:
+                    yield content
+                    
+        except Exception as e:
+            logger.error(f"Error parsing streaming chunks: {e}")
+            return
+
+    async def _collect_streaming_response_async(self, streaming_response):
+        """
+        Parse and yield individual content chunks from an async streaming response.
+        
+        Args:
+            streaming_response: The async streaming response object from litellm
+            
+        Yields:
+            str: Individual content chunks as they arrive
+        """
+        try:
+            async for chunk in streaming_response:
+                content = None
+                
+                # Handle different chunk formats
+                if hasattr(chunk, 'choices') and chunk.choices:
+                    choice = chunk.choices[0]
+                    
+                    # OpenAI-style chunks
+                    if hasattr(choice, 'delta') and choice.delta:
+                        if hasattr(choice.delta, 'content') and choice.delta.content:
+                            content = choice.delta.content
+                    
+                    # Alternative chunk format
+                    elif hasattr(choice, 'message') and choice.message:
+                        if hasattr(choice.message, 'content') and choice.message.content:
+                            content = choice.message.content
+                
+                # Anthropic-style chunks
+                elif hasattr(chunk, 'type'):
+                    if chunk.type == 'content_block_delta' and hasattr(chunk, 'delta'):
+                        if chunk.delta.type == 'text_delta':
+                            content = chunk.delta.text
+                
+                # Handle direct content chunks
+                elif hasattr(chunk, 'content'):
+                    content = chunk.content
+                
+                # Yield content chunk if we found any
+                if content:
+                    yield content
+                    
+        except Exception as e:
+            logger.error(f"Error parsing async streaming chunks: {e}")
+            return
+
+    def collect_all_chunks(self, streaming_response):
+        """
+        Helper method to collect all chunks from a streaming response into a complete text.
+        This provides backward compatibility for code that expects a complete response.
+        
+        Args:
+            streaming_response: The streaming response object from litellm
+            
+        Returns:
+            str: The complete response text collected from all chunks
+        """
+        chunks = []
+        for chunk in self._collect_streaming_response(streaming_response):
+            chunks.append(chunk)
+        complete_response = "".join(chunks)
+        logger.info(f"Collected complete streaming response: {len(complete_response)} characters")
+        return complete_response
+
+    async def collect_all_chunks_async(self, streaming_response):
+        """
+        Helper method to collect all chunks from an async streaming response into a complete text.
+        This provides backward compatibility for code that expects a complete response.
+        
+        Args:
+            streaming_response: The async streaming response object from litellm
+            
+        Returns:
+            str: The complete response text collected from all chunks
+        """
+        chunks = []
+        async for chunk in self._collect_streaming_response_async(streaming_response):
+            chunks.append(chunk)
+        complete_response = "".join(chunks)
+        logger.info(f"Collected complete async streaming response: {len(complete_response)} characters")
+        return complete_response
+
     def output_for_tools(self, response: any):
         if self.mcp_call is True:
             out = response.choices[0].message.tool_calls[0].function
@@ -471,7 +599,9 @@ class LiteLLM:
             **kwargs: Additional keyword arguments.
 
         Returns:
-            str: The content of the response from the model.
+            str or generator: When streaming is disabled, returns the complete response content.
+                            When streaming is enabled, returns a generator that yields content chunks.
+                            Use collect_all_chunks() to get complete response from the generator.
 
         Raises:
             Exception: If there is an error in processing the request.
@@ -525,7 +655,7 @@ class LiteLLM:
 
             # Handle streaming response
             if self.stream:
-                return response  # Return the streaming generator directly
+                return response
 
             # Handle tool-based response
             elif self.tools_list_dictionary is not None:
@@ -574,7 +704,9 @@ class LiteLLM:
             **kwargs: Additional keyword arguments.
 
         Returns:
-            str: The content of the response from the model.
+            str or async generator: When streaming is disabled, returns the complete response content.
+                                  When streaming is enabled, returns an async generator that yields content chunks.
+                                  Use collect_all_chunks_async() to get complete response from the generator.
         """
         try:
             messages = self._prepare_messages(task)
@@ -607,6 +739,10 @@ class LiteLLM:
 
             # Standard completion
             response = await acompletion(**completion_params)
+
+            # Handle streaming response for async
+            if self.stream:
+                return self._collect_streaming_response_async(response)
 
             print(response)
             return response
