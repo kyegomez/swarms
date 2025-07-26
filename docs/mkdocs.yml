@@ -1,4 +1,4 @@
-docs_dir: '.'  # replace with the correct path if your documentation files are not in the same directory as mkdocs.yml
+docs_dir: 'docs_content'  # replace with the correct path if your documentation files are not in the same directory as mkdocs.yml
 site_name: Swarms
 site_url: https://docs.swarms.world
 site_author: Swarms
@@ -264,6 +264,11 @@ nav:
       - Overview: "swarms/concept/swarm_architectures.md"
       - Benefits: "swarms/concept/why.md"
       - Choosing Multi Agent Architecture: "swarms/concept/how_to_choose_swarms.md"
+      - Board of Directors:
+         - BoardOfDirectorsSwarm: "swarms/structs/board_of_directors/board_of_directors_swarm.md"
+         - Workflow: "swarms/structs/board_of_directors/board_of_directors_workflow.md"
+         - Roles & Responsibilities: "swarms/structs/board_of_directors/board_of_directors_roles.md"
+         - Decision Making: "swarms/structs/board_of_directors/board_of_directors_decision_making.md"
 
       - Documentation:
         - Overview: "swarms/structs/overview.md"
@@ -297,6 +302,9 @@ nav:
           - SwarmRouter: "swarms/structs/swarm_router.md"
           - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
           - ModelRouter: "swarms/structs/model_router.md"
+
+        - Configuration:
+          - Board of Directors Configuration: "swarms/config/board_config.md"
 
         - Rearrangers:
           - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
@@ -391,6 +399,7 @@ nav:
     - Advanced Examples:
       - Multi-Agent Architectures:
         - HierarchicalSwarm Examples: "swarms/examples/hierarchical_swarm_example.md"
+        - Board of Directors Example: "swarms/examples/board_of_directors_example.md"
         - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
         - Group Chat Example: "swarms/examples/groupchat_example.md"
         - Sequential Workflow Example: "swarms/examples/sequential_example.md"
