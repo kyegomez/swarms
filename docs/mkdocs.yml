@@ -277,7 +277,7 @@ nav:
         - Overview: "swarms/structs/overview.md"
         - Custom Multi Agent Architectures: "swarms/structs/custom_swarm.md"
 
-
+        - Board of Directors: "swarms/structs/BoardOfDirectors.md"
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
         - Mixture of Agents: "swarms/structs/moa.md"
