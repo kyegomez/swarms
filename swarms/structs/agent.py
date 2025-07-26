@@ -1360,9 +1360,39 @@ class Agent:
                                 final_summary_response = temp_llm.run(
                                     task=f"Please analyze and summarize the following tool execution output:\n\n{format_data_structure(tool_results)}"
                                 )
+                                
+                                # Handle streaming for final tool summary in real-time execution
+                                if self.streaming_on and hasattr(final_summary_response, "__iter__") and not isinstance(final_summary_response, str):
+                                    # Collect chunks for conversation saving
+                                    collected_chunks = []
+
+                                    def on_chunk_received(chunk: str):
+                                        """Callback to collect chunks as they arrive"""
+                                        collected_chunks.append(chunk)
+                                        if self.verbose:
+                                            logger.debug(f"Real-time tool summary streaming chunk: {chunk[:50]}...")
+
+                                    # Use the streaming panel to display and collect the response
+                                    complete_response = formatter.print_streaming_panel(
+                                        final_summary_response,
+                                        title=f"🤖 Agent: {self.agent_name} - Tool Summary (Real-time)",
+                                        style="green",
+                                        collect_chunks=True,
+                                        on_chunk_callback=on_chunk_received,
+                                    )
+                                    
+                                    final_summary_response = complete_response
+                                    
+                                elif self.streaming_on and isinstance(final_summary_response, str):
+                                    # If streaming is on but we got a string response, display it streamed
+                                    if self.print_on:
+                                        self.stream_response(final_summary_response, delay=0.01)
+                                
                                 response = self.parse_llm_output(final_summary_response)
                                 self.short_memory.add(role=self.agent_name, content=response)
-                                if self.print_on:
+                                
+                                # Only pretty_print if streaming is off (to avoid double printing)
+                                if self.print_on and not self.streaming_on:
                                     self.pretty_print(response, loop_count)
                             else:
                                 response = f"Tool execution completed: {format_data_structure(tool_results)}"
@@ -3169,6 +3199,34 @@ class Agent:
                 summary = temp_llm.run(
                     task=self.short_memory.get_str()
                 )
+                
+                # Handle streaming MCP tool summary response
+                if self.streaming_on and hasattr(summary, "__iter__") and not isinstance(summary, str):
+                    # Collect chunks for conversation saving
+                    collected_chunks = []
+
+                    def on_chunk_received(chunk: str):
+                        """Callback to collect chunks as they arrive"""
+                        collected_chunks.append(chunk)
+                        if self.verbose:
+                            logger.debug(f"MCP tool summary streaming chunk received: {chunk[:50]}...")
+
+                    # Use the streaming panel to display and collect the response
+                    complete_response = formatter.print_streaming_panel(
+                        summary,
+                        title=f"🤖 Agent: {self.agent_name} - MCP Tool Summary",
+                        style="cyan",
+                        collect_chunks=True,
+                        on_chunk_callback=on_chunk_received,
+                    )
+                    
+                    summary = complete_response
+                    
+                elif self.streaming_on and isinstance(summary, str):
+                    # If streaming is on but we got a string response, display it streamed
+                    if self.print_on:
+                        self.stream_response(summary, delay=0.01)
+                        
             except Exception as e:
                 logger.error(
                     f"Error calling LLM after MCP tool execution: {e}"
@@ -3176,7 +3234,8 @@ class Agent:
                 # Fallback: provide a default summary
                 summary = "I successfully executed the MCP tool and retrieved the information above."
 
-            if self.print_on is True:
+            # Only pretty_print if streaming is off (to avoid double printing)
+            if self.print_on and not self.streaming_on:
                 self.pretty_print(summary, loop_count=current_loop)
 
             # Add to the memory
@@ -3193,7 +3252,7 @@ class Agent:
             temperature=self.temperature,
             max_tokens=self.max_tokens,
             system_prompt=self.system_prompt,
-            stream=False,  # Always disable streaming for tool summaries
+            stream=self.streaming_on,
             tools_list_dictionary=None,
             parallel_tool_calls=False,
             base_url=self.llm_base_url,
@@ -3239,26 +3298,55 @@ class Agent:
         if self.tool_call_summary is True:
             temp_llm = self.temp_llm_instance_for_tool_summary()
 
-            tool_response = temp_llm.run(
-                f"""
-                Please analyze and summarize the following tool execution output in a clear and concise way. 
-                Focus on the key information and insights that would be most relevant to the user's original request.
-                If there are any errors or issues, highlight them prominently.
-                
-                The user's original request was:
-                {self.task}
-                
-                Tool Output:
-                {output}
-                """
-            )
+            tool_summary_prompt = f"""
+            Please analyze and summarize the following tool execution output in a clear and concise way. 
+            Focus on the key information and insights that would be most relevant to the user's original request.
+            If there are any errors or issues, highlight them prominently.
+            
+            The user's original request was:
+            {self.task}
+            
+            Tool Output:
+            {output}
+            """
 
+            tool_response = temp_llm.run(tool_summary_prompt)
+
+            # Handle streaming tool response
+            if self.streaming_on and hasattr(tool_response, "__iter__") and not isinstance(tool_response, str):
+                # Collect chunks for conversation saving
+                collected_chunks = []
+
+                def on_chunk_received(chunk: str):
+                    """Callback to collect chunks as they arrive"""
+                    collected_chunks.append(chunk)
+                    if self.verbose:
+                        logger.debug(f"Tool response streaming chunk received: {chunk[:50]}...")
+
+                # Use the streaming panel to display and collect the response
+                complete_response = formatter.print_streaming_panel(
+                    tool_response,
+                    title=f"🤖 Agent: {self.agent_name} - Tool Summary",
+                    style="blue",
+                    collect_chunks=True,
+                    on_chunk_callback=on_chunk_received,
+                )
+                
+                tool_response = complete_response
+                
+            elif self.streaming_on and isinstance(tool_response, str):
+                # If streaming is on but we got a string response, display it streamed
+                if self.print_on:
+                    self.stream_response(tool_response, delay=0.01)
+                    
+            # Add the tool response to memory
             self.short_memory.add(
                 role=self.agent_name,
                 content=tool_response,
             )
 
-            if self.print_on is True:
+            # Only pretty_print if streaming is off (to avoid double printing)
+            if self.print_on and not self.streaming_on:
                 self.pretty_print(
                     tool_response,
                     loop_count,
