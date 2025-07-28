@@ -27,3 +27,4 @@ aiohttp
 mcp
 numpy
 openai
+schedule

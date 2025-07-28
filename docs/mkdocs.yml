@@ -289,7 +289,6 @@ nav:
         - Council of Judges: "swarms/structs/council_of_judges.md"
         - Heavy Swarm: "swarms/structs/heavy_swarm.md"
 
-
         - Hiearchical Architectures:
           - Overview: "swarms/structs/multi_swarm_orchestration.md"
           - HierarchicalSwarm: "swarms/structs/hierarchical_swarm.md"
@@ -345,6 +344,7 @@ nav:
     - Deployment Solutions:
       - Deploy on Google Cloud Run: "swarms_cloud/cloud_run.md"
       - Deploy on Phala: "swarms_cloud/phala_deploy.md"
+      - CronJob: "swarms/structs/cron_job.md"
       # - Deploy on FastAPI: "swarms_cloud/fastapi_deploy.md"
 
     

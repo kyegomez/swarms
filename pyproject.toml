@@ -80,6 +80,7 @@ httpx = "*"
 mcp = "*"
 openai = "*"
 aiohttp = "*"
+schedule = "*"
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"

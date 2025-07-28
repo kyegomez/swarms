@@ -92,6 +92,7 @@ from swarms.structs.interactive_groupchat import (
 
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 from swarms.structs.heavy_swarm import HeavySwarm
+from swarms.structs.cron_job import CronJob
 
 __all__ = [
     "Agent",
@@ -169,4 +170,5 @@ __all__ = [
     "random_dynamic_speaker",
     "HierarchicalSwarm",
     "HeavySwarm",
+    "CronJob",
 ]

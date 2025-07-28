@@ -1,4 +1,4 @@
-from swarms import Agent, ConcurrentWorkflow, SwarmRouter
+from swarms import Agent, ConcurrentWorkflow
 
 # Initialize market research agent
 market_researcher = Agent(
