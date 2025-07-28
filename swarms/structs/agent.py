@@ -30,6 +30,7 @@ from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
+from swarms.tools.mcp_client_call import aget_mcp_tools
 from swarms.prompts.tools import tool_sop_prompt
 from swarms.schemas.agent_mcp_errors import (
     AgentMCPConnectionError,
@@ -433,6 +434,7 @@ class Agent:
         summarize_multiple_images: bool = False,
         tool_retry_attempts: int = 3,
         speed_mode: str = None,
+        lazy_init_mcp: bool = False,
         *args,
         **kwargs,
     ):
@@ -621,6 +623,37 @@ class Agent:
             self.print_dashboard()
 
         self.reliability_check()
+        self.lazy_init_mcp = lazy_init_mcp
+        self._mcp_tools_loaded = False
+
+    @classmethod
+    async def create(cls, **kwargs):
+        """
+        Asynchronously creates an Agent instance.
+        
+        This is the preferred way to create an Agent that uses MCP tools
+        when running in an async context (like inside FastAPI, Quart, etc.)
+        
+        Args:
+            **kwargs: All parameters accepted by Agent.__init__
+            
+        Returns:
+            An initialized Agent instance with MCP tools loaded
+        """
+        # 创建带有延迟初始化标志的实例
+        instance = cls(lazy_init_mcp=True, **kwargs)
+        
+        # 异步加载 MCP 工具（如果配置了）
+        if exists(instance.mcp_url) or exists(instance.mcp_urls) or exists(instance.mcp_config):
+            await instance.async_init_mcp_tools()
+        
+        # 完成初始化 LLM
+        if instance.llm is None:
+            # 使用异步转换方式运行同步函数
+            instance.llm = await asyncio.to_thread(instance.llm_handling)
+        
+        return instance
+
 
     def rag_setup_handling(self):
         return AgentRAGHandler(
@@ -774,22 +807,21 @@ class Agent:
 
         This function checks for either a single MCP URL or multiple MCP URLs and adds the available tools
         to the agent's memory. The tools are listed in JSON format.
-
-        Raises:
-            Exception: If there's an error accessing the MCP tools
         """
+        # 如果工具已经加载过且处于懒加载模式，直接返回已缓存的工具
+        if hasattr(self, '_mcp_tools_loaded') and self._mcp_tools_loaded and self.tools_list_dictionary is not None:
+            return self.tools_list_dictionary
+            
         try:
             if exists(self.mcp_url):
                 tools = get_mcp_tools_sync(server_path=self.mcp_url)
             elif exists(self.mcp_config):
                 tools = get_mcp_tools_sync(connection=self.mcp_config)
-                # logger.info(f"Tools: {tools}")
             elif exists(self.mcp_urls):
                 tools = get_tools_for_multiple_mcp_servers(
                     urls=self.mcp_urls,
                     output_type="str",
                 )
-                # print(f"Tools: {tools} for {self.mcp_urls}")
             else:
                 raise AgentMCPConnectionError(
                     "mcp_url must be either a string URL or MCPConnection object"
@@ -799,17 +831,70 @@ class Agent:
                 exists(self.mcp_url)
                 or exists(self.mcp_urls)
                 or exists(self.mcp_config)
-            ):
-                if self.print_on is True:
-                    self.pretty_print(
-                        f"✨ [SYSTEM] Successfully integrated {len(tools)} MCP tools into agent: {self.agent_name} | Status: ONLINE | Time: {time.strftime('%H:%M:%S')} ✨",
-                        loop_count=0,
-                    )
+            ) and self.print_on is True:
+                self.pretty_print(
+                    f"✨ [SYSTEM] Successfully integrated {len(tools)} MCP tools into agent: {self.agent_name} | Status: ONLINE | Time: {time.strftime('%H:%M:%S')} ✨",
+                    loop_count=0,
+                )
 
+            # 标记工具已加载并保存
+            self._mcp_tools_loaded = True
+            self.tools_list_dictionary = tools
             return tools
         except AgentMCPConnectionError as e:
             logger.error(f"Error in MCP connection: {e}")
             raise e
+
+    async def async_init_mcp_tools(self):
+        """
+        Asynchronously initialize MCP tools.
+        
+        This method should be used when the agent is created in an async context
+        to avoid event loop conflicts.
+        
+        Returns:
+            The list of MCP tools
+        """
+        # 如果工具已加载，直接返回
+        if hasattr(self, '_mcp_tools_loaded') and self._mcp_tools_loaded and self.tools_list_dictionary is not None:
+            return self.tools_list_dictionary
+            
+        try:
+            if exists(self.mcp_url):
+                tools = await aget_mcp_tools(server_path=self.mcp_url, format="openai")
+            elif exists(self.mcp_config):
+                tools = await aget_mcp_tools(connection=self.mcp_config, format="openai")
+            elif exists(self.mcp_urls):
+                # 使用异步转换方式运行同步函数
+                tools = await asyncio.to_thread(
+                    get_tools_for_multiple_mcp_servers,
+                    urls=self.mcp_urls,
+                    output_type="str"
+                )
+            else:
+                raise AgentMCPConnectionError(
+                    "mcp_url must be either a string URL or MCPConnection object"
+                )
+
+            if (
+                exists(self.mcp_url)
+                or exists(self.mcp_urls)
+                or exists(self.mcp_config)
+            ) and self.print_on is True:
+                # 使用异步转换方式运行同步函数
+                await asyncio.to_thread(
+                    self.pretty_print,
+                    f"✨ [SYSTEM] Successfully integrated {len(tools)} MCP tools into agent: {self.agent_name} | Status: ONLINE | Time: {time.strftime('%H:%M:%S')} ✨",
+                    loop_count=0
+                )
+
+            # 标记工具已加载并保存
+            self._mcp_tools_loaded = True
+            self.tools_list_dictionary = tools
+            return tools
+        except Exception as e:
+            logger.error(f"Error in async MCP tools initialization: {e}")
+            raise AgentMCPConnectionError(f"Failed to initialize MCP tools: {str(e)}")
 
     def setup_config(self):
         # The max_loops will be set dynamically if the dynamic_loop
@@ -1269,26 +1354,19 @@ class Agent:
     ) -> Any:
         """
         Asynchronously runs the agent with the specified parameters.
-
-        Args:
-            task (Optional[str]): The task to be performed. Defaults to None.
-            img (Optional[str]): The image to be processed. Defaults to None.
-            is_last (bool): Indicates if this is the last task. Defaults to False.
-            device (str): The device to use for execution. Defaults to "cpu".
-            device_id (int): The ID of the GPU to use if device is set to "gpu". Defaults to 1.
-            all_cores (bool): If True, uses all available CPU cores. Defaults to True.
-            do_not_use_cluster_ops (bool): If True, does not use cluster operations. Defaults to True.
-            all_gpus (bool): If True, uses all available GPUs. Defaults to False.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            Any: The result of the asynchronous operation.
-
-        Raises:
-            Exception: If an error occurs during the asynchronous operation.
+        
+        Enhanced to support proper async initialization of MCP tools if needed.
         """
         try:
+            # 如果需要且尚未加载 MCP 工具，先进行异步初始化
+            if (exists(self.mcp_url) or exists(self.mcp_urls) or exists(self.mcp_config)) and \
+            not (hasattr(self, '_mcp_tools_loaded') and self._mcp_tools_loaded):
+                await self.async_init_mcp_tools()
+                # 确保 LLM 已初始化并加载了工具
+                if self.llm is None:
+                    self.llm = await asyncio.to_thread(self.llm_handling)
+            
+            # 使用原来的方式调用同步 run 函数
             return await asyncio.to_thread(
                 self.run,
                 task=task,
@@ -1297,9 +1375,7 @@ class Agent:
                 **kwargs,
             )
         except Exception as error:
-            await self._handle_run_error(
-                error
-            )  # Ensure this is also async if needed
+            await self._handle_run_error(error)
 
     def __call__(
         self,
@@ -3233,4 +3309,6 @@ class Agent:
                 f"Agent '{self.agent_name}' encountered error during tool execution in loop {loop_count}: {str(e)}. "
                 f"Full traceback: {traceback.format_exc()}. "
                 f"Attempting to retry tool execution with 3 attempts"
+
             )
+
