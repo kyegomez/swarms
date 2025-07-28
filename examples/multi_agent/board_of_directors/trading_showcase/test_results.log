@@ -1,0 +1,7 @@
+2025-07-25 16:33:37 | INFO     | __main__:run_all_tests:380 - 🚀 Starting Comprehensive Test Suite
+2025-07-25 16:33:37 | INFO     | __main__:test_ollama_installation:67 - 🔍 Testing Ollama Installation
+2025-07-25 16:33:37 | INFO     | __main__:run_command:35 - Running command: ollama --version
+2025-07-25 16:33:37 | INFO     | __main__:run_command:35 - Running command: ollama list
+2025-07-25 16:33:37 | INFO     | __main__:run_command:35 - Running command: ollama list
+2025-07-25 16:33:37 | INFO     | __main__:test_python_dependencies:86 - 🐍 Testing Python Dependencies
+2025-07-25 16:33:37 | INFO     | __main__:run_command:35 - Running command: C:\Users\arona\scoop\apps\python\current\python.exe -m pip list
