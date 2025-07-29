@@ -4,34 +4,20 @@ Swarms provides a comprehensive suite of orchestration methods for coordinating 
 
 ## Overview
 
-The orchestration methods provide structured frameworks for:
-- Turn-based debates between two agents
-- Expert panel discussions with a moderator
-- Round table discussions with multiple participants
-- Structured interviews with follow-up questions
-- Academic peer review processes
-- Mediation sessions for conflict resolution
-- Brainstorming sessions for idea generation
-- Trial simulations with legal roles
-- Council meetings with voting procedures
-- Mentorship sessions with feedback loops
-- Complex negotiations between parties
 
-## Methods Overview
-
-| Method | Description | Use Case |
-|--------|-------------|----------|
-| OneOnOneDebate | Turn-based debate between two agents | Philosophical discussions, arguments |
-| ExpertPanelDiscussion | Moderated panel with multiple experts | Professional discussions, expert opinions |
-| RoundTableDiscussion | Facilitated round table with participants | Group discussions, brainstorming |
-| InterviewSeries | Structured interview with follow-ups | Q&A sessions, information gathering |
-| PeerReviewProcess | Academic peer review simulation | Research review, feedback processes |
-| MediationSession | Conflict resolution mediation | Dispute resolution, negotiations |
-| BrainstormingSession | Creative idea generation session | Innovation, problem solving |
-| TrialSimulation | Legal trial simulation | Legal proceedings, case analysis |
-| CouncilMeeting | Decision-making council meeting | Governance, voting processes |
-| MentorshipSession | Structured mentorship interaction | Learning, guidance |
-| NegotiationSession | Multi-party negotiation | Business deals, agreements |
+| Method                   | Orchestration Description                                                                 | Use Case                                   |
+|--------------------------|------------------------------------------------------------------------------------------|--------------------------------------------|
+| OneOnOneDebate           | Turn-based debates between two agents. Structured debates where two agents alternate turns presenting arguments. | Philosophical discussions, arguments       |
+| ExpertPanelDiscussion    | Expert panel discussions with a moderator. Multiple experts discuss topics, guided by a moderator. | Professional discussions, expert opinions  |
+| RoundTableDiscussion     | Round table discussions with multiple participants. Open discussions among several agents, each contributing equally. | Group discussions, brainstorming           |
+| InterviewSeries          | Structured interviews with follow-up questions. One agent interviews another, with dynamic follow-up questions. | Q&A sessions, information gathering        |
+| PeerReviewProcess        | Academic peer review processes. Simulated academic review, where agents critique and provide feedback. | Research review, feedback processes        |
+| MediationSession         | Mediation sessions for conflict resolution. Agents participate in sessions to resolve disputes, often with a mediator. | Dispute resolution, negotiations           |
+| BrainstormingSession     | Brainstorming sessions for idea generation. Collaborative sessions focused on generating new ideas. | Innovation, problem solving                |
+| TrialSimulation          | Trial simulations with legal roles. Agents assume legal roles to simulate a courtroom trial. | Legal proceedings, case analysis           |
+| CouncilMeeting           | Council meetings with voting procedures. Decision-making meetings where agents vote on proposals. | Governance, voting processes               |
+| MentorshipSession        | Mentorship sessions with feedback loops. One or more agents mentor others, providing feedback and guidance. | Learning, guidance                         |
+| NegotiationSession       | Complex negotiations between parties. Multi-party negotiations to reach agreements or resolve conflicts. | Business deals, agreements                 |
 
 ## OneOnOneDebate
 
