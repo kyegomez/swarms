@@ -1,4 +1,3 @@
-import asyncio
 import json
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -282,7 +281,6 @@ class AgentRearrange(BaseSwarm):
                 )
 
                 for task_idx, task in enumerate(tasks):
-                    is_last = task == tasks[-1]
                     agent_names = [
                         name.strip() for name in task.split(",")
                     ]
@@ -298,7 +296,6 @@ class AgentRearrange(BaseSwarm):
                             result = agent.run(
                                 task=self.conversation.get_str(),
                                 img=img,
-                                is_last=is_last,
                                 *args,
                                 **kwargs,
                             )
@@ -327,7 +324,6 @@ class AgentRearrange(BaseSwarm):
                         current_task = agent.run(
                             task=self.conversation.get_str(),
                             img=img,
-                            is_last=is_last,
                             *args,
                             **kwargs,
                         )
@@ -344,7 +340,8 @@ class AgentRearrange(BaseSwarm):
             logger.info("Task execution completed")
 
             return history_output_formatter(
-                self.conversation, self.output_type
+                conversation=self.conversation,
+                type=self.output_type,
             )
 
         except Exception as e:
@@ -364,11 +361,6 @@ class AgentRearrange(BaseSwarm):
         self,
         task: str = None,
         img: str = None,
-        device: str = "cpu",
-        device_id: int = 2,
-        all_cores: bool = True,
-        all_gpus: bool = False,
-        no_use_clusterops: bool = True,
         *args,
         **kwargs,
     ):
@@ -481,58 +473,11 @@ class AgentRearrange(BaseSwarm):
         except Exception as e:
             self._catch_error(e)
 
-    async def abatch_run(
-        self,
-        tasks: List[str],
-        img: Optional[List[str]] = None,
-        batch_size: int = 10,
-        *args,
-        **kwargs,
-    ) -> List[str]:
-        """
-        Asynchronously process multiple tasks in batches.
-
-        Args:
-            tasks: List of tasks to process
-            img: Optional list of images corresponding to tasks
-            batch_size: Number of tasks to process simultaneously
-
-        Returns:
-            List of results corresponding to input tasks
-        """
-        try:
-            results = []
-            for i in range(0, len(tasks), batch_size):
-                batch_tasks = tasks[i : i + batch_size]
-                batch_imgs = (
-                    img[i : i + batch_size]
-                    if img
-                    else [None] * len(batch_tasks)
-                )
-
-                # Process batch using asyncio.gather
-                batch_coros = [
-                    self.astream(
-                        task=task, img=img_path, *args, **kwargs
-                    )
-                    for task, img_path in zip(batch_tasks, batch_imgs)
-                ]
-                batch_results = await asyncio.gather(*batch_coros)
-                results.extend(batch_results)
-
-            return results
-        except Exception as e:
-            self._catch_error(e)
-
     def concurrent_run(
         self,
         tasks: List[str],
         img: Optional[List[str]] = None,
         max_workers: Optional[int] = None,
-        device: str = "cpu",
-        device_id: int = None,
-        all_cores: bool = True,
-        all_gpus: bool = False,
         *args,
         **kwargs,
     ) -> List[str]:
@@ -561,10 +506,6 @@ class AgentRearrange(BaseSwarm):
                         self.run,
                         task=task,
                         img=img_path,
-                        device=device,
-                        device_id=device_id,
-                        all_cores=all_cores,
-                        all_gpus=all_gpus,
                         *args,
                         **kwargs,
                     )

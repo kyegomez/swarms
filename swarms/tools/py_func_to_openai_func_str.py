@@ -492,7 +492,6 @@ def convert_multiple_functions_to_openai_function_schema(
     # ]
     # Use 40% of cpu cores
     max_workers = int(os.cpu_count() * 0.8)
-    print(f"max_workers: {max_workers}")
 
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=max_workers

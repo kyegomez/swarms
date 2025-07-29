@@ -1,4 +1,3 @@
-import time
 from swarms import Agent
 
 # Initialize the agent
@@ -34,14 +33,15 @@ agent = Agent(
     - Performance attribution
     
     You communicate in precise, technical terms while maintaining clarity for stakeholders.""",
-    max_loops=1,
-    model_name="gpt-4o-mini",
+    model_name="gemini-2.5-flash",
     dynamic_temperature_enabled=True,
-    output_type="all",
-    safety_prompt_on=True,
+    output_type="str-all-except-first",
+    streaming_on=False,
+    max_loops="auto",
+    interactive=True,
+    no_reasoning_prompt=True,
+    # dashboard=True
 )
 
 out = agent.run("What are the best top 3 etfs for gold coverage?")
-
-time.sleep(10)
 print(out)

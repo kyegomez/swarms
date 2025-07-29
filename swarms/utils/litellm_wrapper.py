@@ -151,6 +151,8 @@ class LiteLLM:
             retries  # Add retries for better reliability
         )
 
+        litellm.drop_params = True
+
     def output_for_tools(self, response: any):
         if self.mcp_call is True:
             out = response.choices[0].message.tool_calls[0].function
@@ -210,44 +212,62 @@ class LiteLLM:
         Process vision input specifically for Anthropic models.
         Handles Anthropic's specific image format requirements.
         """
-        # Get base64 encoded image
-        image_url = get_image_base64(image)
-
-        # Extract mime type from the data URI or use default
-        mime_type = "image/jpeg"  # default
-        if "data:" in image_url and ";base64," in image_url:
-            mime_type = image_url.split(";base64,")[0].split("data:")[
-                1
-            ]
-
-        # Ensure mime type is one of the supported formats
-        supported_formats = [
-            "image/jpeg",
-            "image/png",
-            "image/gif",
-            "image/webp",
-        ]
-        if mime_type not in supported_formats:
-            mime_type = (
-                "image/jpeg"  # fallback to jpeg if unsupported
-            )
-
-        # Construct Anthropic vision message
-        messages.append(
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": task},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": image_url,
-                            "format": mime_type,
+        # Check if we can use direct URL
+        if self._should_use_direct_url(image):
+            # Use direct URL without base64 conversion
+            messages.append(
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": task},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": image,
+                            },
                         },
-                    },
-                ],
-            }
-        )
+                    ],
+                }
+            )
+        else:
+            # Fall back to base64 conversion for local files
+            image_url = get_image_base64(image)
+
+            # Extract mime type from the data URI or use default
+            mime_type = "image/jpeg"  # default
+            if "data:" in image_url and ";base64," in image_url:
+                mime_type = image_url.split(";base64,")[0].split(
+                    "data:"
+                )[1]
+
+            # Ensure mime type is one of the supported formats
+            supported_formats = [
+                "image/jpeg",
+                "image/png",
+                "image/gif",
+                "image/webp",
+            ]
+            if mime_type not in supported_formats:
+                mime_type = (
+                    "image/jpeg"  # fallback to jpeg if unsupported
+                )
+
+            # Construct Anthropic vision message with base64
+            messages.append(
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": task},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": image_url,
+                                "format": mime_type,
+                            },
+                        },
+                    ],
+                }
+            )
 
         return messages
 
@@ -258,21 +278,31 @@ class LiteLLM:
         Process vision input specifically for OpenAI models.
         Handles OpenAI's specific image format requirements.
         """
-        # Get base64 encoded image with proper format
-        image_url = get_image_base64(image)
+        # Check if we can use direct URL
+        if self._should_use_direct_url(image):
+            # Use direct URL without base64 conversion
+            vision_message = {
+                "type": "image_url",
+                "image_url": {"url": image},
+            }
+        else:
+            # Fall back to base64 conversion for local files
+            image_url = get_image_base64(image)
 
-        # Prepare vision message
-        vision_message = {
-            "type": "image_url",
-            "image_url": {"url": image_url},
-        }
+            # Prepare vision message with base64
+            vision_message = {
+                "type": "image_url",
+                "image_url": {"url": image_url},
+            }
 
-        # Add format for specific models
-        extension = Path(image).suffix.lower()
-        mime_type = (
-            f"image/{extension[1:]}" if extension else "image/jpeg"
-        )
-        vision_message["image_url"]["format"] = mime_type
+            # Add format for specific models
+            extension = Path(image).suffix.lower()
+            mime_type = (
+                f"image/{extension[1:]}"
+                if extension
+                else "image/jpeg"
+            )
+            vision_message["image_url"]["format"] = mime_type
 
         # Append vision message
         messages.append(
@@ -287,44 +317,79 @@ class LiteLLM:
 
         return messages
 
+    def _should_use_direct_url(self, image: str) -> bool:
+        """
+        Determine if we should use direct URL passing instead of base64 conversion.
+
+        Args:
+            image (str): The image source (URL or file path)
+
+        Returns:
+            bool: True if we should use direct URL, False if we need base64 conversion
+        """
+        # Only use direct URL for HTTP/HTTPS URLs
+        if not image.startswith(("http://", "https://")):
+            return False
+
+        # Check for local/custom models that might not support direct URLs
+        model_lower = self.model_name.lower()
+        local_indicators = [
+            "localhost",
+            "127.0.0.1",
+            "local",
+            "custom",
+            "ollama",
+            "llama-cpp",
+        ]
+
+        is_local = any(
+            indicator in model_lower for indicator in local_indicators
+        ) or (
+            self.base_url is not None
+            and any(
+                indicator in self.base_url.lower()
+                for indicator in local_indicators
+            )
+        )
+
+        if is_local:
+            return False
+
+        # Use LiteLLM's supports_vision to check if model supports vision and direct URLs
+        try:
+            return supports_vision(model=self.model_name)
+        except Exception:
+            return False
+
     def vision_processing(
         self, task: str, image: str, messages: Optional[list] = None
     ):
         """
         Process the image for the given task.
         Handles different image formats and model requirements.
+
+        This method now intelligently chooses between:
+        1. Direct URL passing (when model supports it and image is a URL)
+        2. Base64 conversion (for local files or unsupported models)
+
+        This approach reduces server load and improves performance by avoiding
+        unnecessary image downloads and base64 conversions when possible.
         """
-        # # # Handle Anthropic models separately
-        # # if "anthropic" in self.model_name.lower() or "claude" in self.model_name.lower():
-        # #     messages = self.anthropic_vision_processing(task, image, messages)
-        # #     return messages
+        logger.info(f"Processing image for model: {self.model_name}")
 
-        # # Get base64 encoded image with proper format
-        # image_url = get_image_base64(image)
+        # Log whether we're using direct URL or base64 conversion
+        if self._should_use_direct_url(image):
+            logger.info(
+                f"Using direct URL passing for image: {image[:100]}..."
+            )
+        else:
+            if image.startswith(("http://", "https://")):
+                logger.info(
+                    "Converting URL image to base64 (model doesn't support direct URLs)"
+                )
+            else:
+                logger.info("Converting local file to base64")
 
-        # # Prepare vision message
-        # vision_message = {
-        #     "type": "image_url",
-        #     "image_url": {"url": image_url},
-        # }
-
-        # # Add format for specific models
-        # extension = Path(image).suffix.lower()
-        # mime_type = f"image/{extension[1:]}" if extension else "image/jpeg"
-        # vision_message["image_url"]["format"] = mime_type
-
-        # # Append vision message
-        # messages.append(
-        #     {
-        #         "role": "user",
-        #         "content": [
-        #             {"type": "text", "text": task},
-        #             vision_message,
-        #         ],
-        #     }
-        # )
-
-        # return messages
         if (
             "anthropic" in self.model_name.lower()
             or "claude" in self.model_name.lower()
@@ -368,7 +433,16 @@ class LiteLLM:
 
     def check_if_model_supports_vision(self, img: str = None):
         """
-        Check if the model supports vision.
+        Check if the model supports vision capabilities.
+
+        This method uses LiteLLM's built-in supports_vision function to verify
+        that the model can handle image inputs before processing.
+
+        Args:
+            img (str, optional): Image path/URL to validate against model capabilities
+
+        Raises:
+            ValueError: If the model doesn't support vision and an image is provided
         """
         if img is not None:
             out = supports_vision(model=self.model_name)
@@ -449,8 +523,12 @@ class LiteLLM:
             # Make the completion call
             response = completion(**completion_params)
 
+            # Handle streaming response
+            if self.stream:
+                return response  # Return the streaming generator directly
+
             # Handle tool-based response
-            if self.tools_list_dictionary is not None:
+            elif self.tools_list_dictionary is not None:
                 return self.output_for_tools(response)
             elif self.return_all is True:
                 return response.model_dump()

@@ -23,6 +23,8 @@ def history_output_formatter(
         return yaml.safe_dump(conversation.to_dict(), sort_keys=False)
     elif type == "dict-all-except-first":
         return conversation.return_all_except_first()
+    elif type == "list-final":
+        return conversation.return_list_final()
     elif type == "str-all-except-first":
         return conversation.return_all_except_first_string()
     elif type == "dict-final":

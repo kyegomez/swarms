@@ -1,5 +1,15 @@
 # Contribution Guidelines
 
+<div align="center">
+  <a href="https://swarms.world">
+    <img src="https://github.com/kyegomez/swarms/blob/master/images/swarmslogobanner.png" style="margin: 15px; max-width: 500px" width="50%" alt="Swarms Logo">
+  </a>
+</div>
+
+<p align="center">
+  <em>The Enterprise-Grade Production-Ready Multi-Agent Orchestration Framework</em>
+</p>
+
 ---
 
 ## Table of Contents
@@ -7,10 +17,12 @@
 - [Project Overview](#project-overview)
 - [Getting Started](#getting-started)
   - [Installation](#installation)
+  - [Environment Configuration](#environment-configuration)
   - [Project Structure](#project-structure)
 - [How to Contribute](#how-to-contribute)
   - [Reporting Issues](#reporting-issues)
   - [Submitting Pull Requests](#submitting-pull-requests)
+  - [Good First Issues](#good-first-issues)
 - [Coding Standards](#coding-standards)
   - [Type Annotations](#type-annotations)
   - [Docstrings and Documentation](#docstrings-and-documentation)
@@ -19,7 +31,13 @@
 - [Areas Needing Contributions](#areas-needing-contributions)
   - [Writing Tests](#writing-tests)
   - [Improving Documentation](#improving-documentation)
-  - [Creating Training Scripts](#creating-training-scripts)
+  - [Adding New Swarm Architectures](#adding-new-swarm-architectures)
+  - [Enhancing Agent Capabilities](#enhancing-agent-capabilities)
+  - [Removing Defunct Code](#removing-defunct-code)
+- [Development Resources](#development-resources)
+  - [Documentation](#documentation)
+  - [Examples and Tutorials](#examples-and-tutorials)
+  - [API Reference](#api-reference)
 - [Community and Support](#community-and-support)
 - [License](#license)
 
@@ -27,16 +45,24 @@
 
 ## Project Overview
 
-**swarms** is a library focused on making it simple to orchestrate agents to automate real-world activities. The goal is to automate the world economy with these swarms of agents.
+**Swarms** is an enterprise-grade, production-ready multi-agent orchestration framework focused on making it simple to orchestrate agents to automate real-world activities. The goal is to automate the world economy with these swarms of agents.
 
-We need your help to:
+### Key Features
 
-- **Write Tests**: Ensure the reliability and correctness of the codebase.
-- **Improve Documentation**: Maintain clear and comprehensive documentation.
+| Category | Features | Benefits |
+|----------|----------|-----------|
+| 🏢 Enterprise Architecture | • Production-Ready Infrastructure<br>• High Reliability Systems<br>• Modular Design<br>• Comprehensive Logging | • Reduced downtime<br>• Easier maintenance<br>• Better debugging<br>• Enhanced monitoring |
+| 🤖 Agent Orchestration | • Hierarchical Swarms<br>• Parallel Processing<br>• Sequential Workflows<br>• Graph-based Workflows<br>• Dynamic Agent Rearrangement | • Complex task handling<br>• Improved performance<br>• Flexible workflows<br>• Optimized execution |
+| 🔄 Integration Capabilities | • Multi-Model Support<br>• Custom Agent Creation<br>• Extensive Tool Library<br>• Multiple Memory Systems | • Provider flexibility<br>• Custom solutions<br>• Extended functionality<br>• Enhanced memory management |
+
+### We Need Your Help To:
+
+- **Write Tests**: Ensure the reliability and correctness of the codebase
+- **Improve Documentation**: Maintain clear and comprehensive documentation
 - **Add New Orchestration Methods**: Add multi-agent orchestration methods
-- **Removing Defunct Code**: Removing bad code
-
-
+- **Remove Defunct Code**: Clean up and remove bad code
+- **Enhance Agent Capabilities**: Improve existing agents and add new ones
+- **Optimize Performance**: Improve speed and efficiency of swarm operations
 
 Your contributions will help us push the boundaries of AI and make this library a valuable resource for the community.
 
@@ -46,24 +72,65 @@ Your contributions will help us push the boundaries of AI and make this library 
 
 ### Installation
 
-You can install swarms using `pip`:
-
+#### Using pip
 ```bash
-pip3 install swarms
+pip3 install -U swarms
 ```
 
-Alternatively, you can clone the repository:
+#### Using uv (Recommended)
+[uv](https://github.com/astral-sh/uv) is a fast Python package installer and resolver, written in Rust.
 
 ```bash
-git clone https://github.com/kyegomez/swarms
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install swarms using uv
+uv pip install swarms
 ```
+
+#### Using poetry
+```bash
+# Install poetry if you haven't already
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Add swarms to your project
+poetry add swarms
+```
+
+#### From source
+```bash
+# Clone the repository
+git clone https://github.com/kyegomez/swarms.git
+cd swarms
+
+# Install with pip
+pip install -e .
+```
+
+### Environment Configuration
+
+Create a `.env` file in your project root with the following variables:
+
+```bash
+OPENAI_API_KEY=""
+WORKSPACE_DIR="agent_workspace"
+ANTHROPIC_API_KEY=""
+GROQ_API_KEY=""
+```
+
+- [Learn more about environment configuration here](https://docs.swarms.world/en/latest/swarms/install/env/)
 
 ### Project Structure
 
-- **`swarms/`**: Contains all the source code for the library.
-- **`examples/`**: Includes example scripts and notebooks demonstrating how to use the library.
-- **`tests/`**: (To be created) Will contain unit tests for the library.
-- **`docs/`**: (To be maintained) Contains documentation files.
+- **`swarms/`**: Contains all the source code for the library
+  - **`agents/`**: Agent implementations and base classes
+  - **`structs/`**: Swarm orchestration structures (SequentialWorkflow, AgentRearrange, etc.)
+  - **`tools/`**: Tool implementations and base classes
+  - **`prompts/`**: System prompts and prompt templates
+  - **`utils/`**: Utility functions and helpers
+- **`examples/`**: Includes example scripts and notebooks demonstrating how to use the library
+- **`tests/`**: Unit tests for the library
+- **`docs/`**: Documentation files and guides
 
 ---
 
@@ -79,6 +146,10 @@ If you find any bugs, inconsistencies, or have suggestions for enhancements, ple
    - **Description**: Detailed description, steps to reproduce, expected behavior, and any relevant logs or screenshots.
 3. **Label Appropriately**: Use labels to categorize the issue (e.g., bug, enhancement, documentation).
 
+**Issue Templates**: Use our issue templates for bug reports and feature requests:
+- [Bug Report](https://github.com/kyegomez/swarms/issues/new?template=bug_report.md)
+- [Feature Request](https://github.com/kyegomez/swarms/issues/new?template=feature_request.md)
+
 ### Submitting Pull Requests
 
 We welcome pull requests (PRs) for bug fixes, improvements, and new features. Please follow these guidelines:
@@ -88,6 +159,7 @@ We welcome pull requests (PRs) for bug fixes, improvements, and new features. Pl
 
    ```bash
    git clone https://github.com/kyegomez/swarms.git
+   cd swarms
    ```
 
 3. **Create a New Branch**: Use a descriptive branch name.
@@ -120,6 +192,13 @@ We welcome pull requests (PRs) for bug fixes, improvements, and new features. Pl
 9. **Respond to Feedback**: Be prepared to make changes based on code reviews.
 
 **Note**: It's recommended to create small and focused PRs for easier review and faster integration.
+
+### Good First Issues
+
+The easiest way to contribute is to pick any issue with the `good first issue` tag 💪. These are specifically designed for new contributors:
+
+- [Good First Issues](https://github.com/kyegomez/swarms/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
+- [Contributing Board](https://github.com/users/kyegomez/projects/1) - Participate in Roadmap discussions!
 
 ---
 
@@ -204,6 +283,7 @@ We have several areas where contributions are particularly welcome.
   - Write unit tests for existing code in `swarms/`.
   - Identify edge cases and potential failure points.
   - Ensure tests are repeatable and independent.
+  - Add integration tests for swarm orchestration methods.
 
 ### Improving Documentation
 
@@ -212,27 +292,113 @@ We have several areas where contributions are particularly welcome.
   - Update docstrings to reflect any changes.
   - Add examples and tutorials in the `examples/` directory.
   - Improve or expand the content in the `docs/` directory.
+  - Create video tutorials and walkthroughs.
 
-### Creating Multi-Agent Orchestration Methods
+### Adding New Swarm Architectures
 
-- **Goal**: Provide new multi-agent orchestration methods
+- **Goal**: Provide new multi-agent orchestration methods.
+- **Current Architectures**:
+  - [SequentialWorkflow](https://docs.swarms.world/en/latest/swarms/structs/sequential_workflow/)
+  - [AgentRearrange](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)
+  - [MixtureOfAgents](https://docs.swarms.world/en/latest/swarms/structs/moa/)
+  - [SpreadSheetSwarm](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)
+  - [ForestSwarm](https://docs.swarms.world/en/latest/swarms/structs/forest_swarm/)
+  - [GraphWorkflow](https://docs.swarms.world/en/latest/swarms/structs/graph_swarm/)
+  - [GroupChat](https://docs.swarms.world/en/latest/swarms/structs/group_chat/)
+  - [SwarmRouter](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)
+
+### Enhancing Agent Capabilities
+
+- **Goal**: Improve existing agents and add new specialized agents.
+- **Areas of Focus**:
+  - Financial analysis agents
+  - Medical diagnosis agents
+  - Code generation and review agents
+  - Research and analysis agents
+  - Creative content generation agents
+
+### Removing Defunct Code
+
+- **Goal**: Clean up and remove bad code to improve maintainability.
+- **Tasks**:
+  - Identify unused or deprecated code.
+  - Remove duplicate implementations.
+  - Simplify complex functions.
+  - Update outdated dependencies.
+
+---
+
+## Development Resources
+
+### Documentation
+
+- **Official Documentation**: [docs.swarms.world](https://docs.swarms.world)
+- **Installation Guide**: [Installation](https://docs.swarms.world/en/latest/swarms/install/install/)
+- **Quickstart Guide**: [Get Started](https://docs.swarms.world/en/latest/swarms/install/quickstart/)
+- **Agent Architecture**: [Agent Internal Mechanisms](https://docs.swarms.world/en/latest/swarms/framework/agents_explained/)
+- **Agent API**: [Agent API](https://docs.swarms.world/en/latest/swarms/structs/agent/)
+
+### Examples and Tutorials
+
+- **Basic Examples**: [examples/](https://github.com/kyegomez/swarms/tree/master/examples)
+- **Agent Examples**: [examples/single_agent/](https://github.com/kyegomez/swarms/tree/master/examples/single_agent)
+- **Multi-Agent Examples**: [examples/multi_agent/](https://github.com/kyegomez/swarms/tree/master/examples/multi_agent)
+- **Tool Examples**: [examples/tools/](https://github.com/kyegomez/swarms/tree/master/examples/tools)
+
+### API Reference
+
+- **Core Classes**: [swarms/structs/](https://github.com/kyegomez/swarms/tree/master/swarms/structs)
+- **Agent Implementations**: [swarms/agents/](https://github.com/kyegomez/swarms/tree/master/swarms/agents)
+- **Tool Implementations**: [swarms/tools/](https://github.com/kyegomez/swarms/tree/master/swarms/tools)
+- **Utility Functions**: [swarms/utils/](https://github.com/kyegomez/swarms/tree/master/swarms/utils)
 
 ---
 
 ## Community and Support
 
+### Connect With Us
+
+| Platform | Link | Description |
+|----------|------|-------------|
+| 📚 Documentation | [docs.swarms.world](https://docs.swarms.world) | Official documentation and guides |
+| 📝 Blog | [Medium](https://medium.com/@kyeg) | Latest updates and technical articles |
+| 💬 Discord | [Join Discord](https://discord.gg/EamjgSaEQf) | Live chat and community support |
+| 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
+| 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
+| 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
+| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
+
+### Onboarding Session
+
+Get onboarded with the creator and lead maintainer of Swarms, Kye Gomez, who will show you how to get started with the installation, usage examples, and starting to build your custom use case! [CLICK HERE](https://cal.com/swarms/swarms-onboarding-session)
+
+### Community Guidelines
+
 - **Communication**: Engage with the community by participating in discussions on issues and pull requests.
 - **Respect**: Maintain a respectful and inclusive environment.
 - **Feedback**: Be open to receiving and providing constructive feedback.
+- **Collaboration**: Work together to improve the project for everyone.
 
 ---
 
 ## License
 
-By contributing to swarms, you agree that your contributions will be licensed under the [MIT License](LICENSE).
+By contributing to swarms, you agree that your contributions will be licensed under the [Apache License](LICENSE).
+
+---
+
+## Citation
+
+If you use **swarms** in your research, please cite the project by referencing the metadata in [CITATION.cff](./CITATION.cff).
 
 ---
 
 Thank you for contributing to swarms! Your efforts help make this project better for everyone.
 
-If you have any questions or need assistance, please feel free to open an issue or reach out to the maintainers.
+If you have any questions or need assistance, please feel free to:
+- Open an issue on GitHub
+- Join our Discord community
+- Reach out to the maintainers
+- Schedule an onboarding session
+
+**Happy contributing! 🚀**

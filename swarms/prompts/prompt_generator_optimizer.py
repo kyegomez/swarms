@@ -1,6 +1,3 @@
-from swarms.prompts.prompt import Prompt
-
-
 OPENAI_PROMPT_GENERATOR_SYS_PROMPT = """
 
 Given a task description or existing prompt, produce a detailed system prompt to guide a language model in completing the task effectively.
@@ -51,9 +48,5 @@ The final prompt you output should adhere to the following structure below. Do n
 
 """
 
-prompt_generator_sys_prompt = Prompt(
-    name="openai-prompt-generator-optimizer-prompt",
-    description="Generate and or optimize existing prompts",
-    content=OPENAI_PROMPT_GENERATOR_SYS_PROMPT,
-    autosave=True,
-)
+
+prompt_generator_sys_prompt = OPENAI_PROMPT_GENERATOR_SYS_PROMPT
