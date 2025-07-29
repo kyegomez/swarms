@@ -6,7 +6,7 @@ from typing import Any, Callable, List, Optional, Union
 import schedule
 from loguru import logger
 
-from swarms import Agent
+from swarms.structs.agent import Agent
 
 
 class CronJobError(Exception):
