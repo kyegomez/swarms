@@ -33,14 +33,13 @@ agent = Agent(
     - Performance attribution
     
     You communicate in precise, technical terms while maintaining clarity for stakeholders.""",
-    model_name="claude-3-sonnet-20240229",
+    model_name="gemini-2.5-flash",
     dynamic_temperature_enabled=True,
     output_type="str-all-except-first",
-    streaming_on=True,
+    streaming_on=False,
     max_loops="auto",
-    print_on=True,
-    telemetry_enable=False,
-    # event_listeners=[],
+    interactive=True,
+    no_reasoning_prompt=True,
     # dashboard=True
 )
 

@@ -6,7 +6,7 @@ from typing import Any, Callable, List, Optional, Union
 import schedule
 from loguru import logger
 
-from swarms import Agent
+# from swarms import Agent
 
 
 class CronJobError(Exception):
@@ -49,7 +49,7 @@ class CronJob:
 
     def __init__(
         self,
-        agent: Optional[Union[Agent, Callable]] = None,
+        agent: Optional[Union[Any, Callable]] = None,
         interval: Optional[str] = None,
         job_id: Optional[str] = None,
     ):
@@ -238,7 +238,7 @@ class CronJob:
         """
         try:
             logger.debug(f"Executing task for job {self.job_id}")
-            if isinstance(self.agent, Agent):
+            if isinstance(self.agent, Callable):
                 return self.agent.run(task=task, **kwargs)
             else:
                 return self.agent(task, **kwargs)
