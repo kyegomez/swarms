@@ -17,7 +17,7 @@
 <p align="center">
     <a href="https://twitter.com/swarms_corp/">🐦 Twitter</a>
     <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-    <a href="https://discord.gg/jM3Z6M9uMq">📢 Discord</a>
+    <a href="https://discord.gg/EamjgSaEQf">📢 Discord</a>
     <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
     <a href="https://swarms.ai">Swarms Website</a>
     <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
@@ -224,8 +224,9 @@ print(final_post)
 | **[MixtureOfAgents (MoA)](https://docs.swarms.world/en/latest/swarms/structs/moa/)** | Utilizes multiple expert agents in parallel and synthesizes their outputs. | Complex problem-solving, achieving state-of-the-art performance through collaboration. |
 | **[GroupChat](https://docs.swarms.world/en/latest/swarms/structs/group_chat/)** | Agents collaborate and make decisions through a conversational interface. | Real-time collaborative decision-making, negotiations, brainstorming. |
 | **[ForestSwarm](https://docs.swarms.world/en/latest/swarms/structs/forest_swarm/)** | Dynamically selects the most suitable agent or tree of agents for a given task. | Task routing, optimizing for expertise, complex decision-making trees. |
-| **[SpreadSheetSwarm](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)** | Manages thousands of agents concurrently, tracking tasks and outputs in a structured format. | Massive-scale parallel operations, large-scale data generation and analysis. |
+
 | **[HierarchicalSwarm](https://docs.swarms.world/en/latest/swarms/structs/hiearchical_swarm/)** | Orchestrates agents with a director that creates plans and distributes tasks to specialized worker agents. | Complex project management, team coordination, hierarchical decision-making with feedback loops. |
+| **[HeavySwarm](https://docs.swarms.world/en/latest/swarms/structs/heavy_swarm/)** | Implements a 5-phase workflow with specialized agents (Research, Analysis, Alternatives, Verification) for comprehensive task analysis. | Complex research and analysis tasks, financial analysis, strategic planning, comprehensive reporting. |
 | **[SwarmRouter](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)** | Universal orchestrator that provides a single interface to run any type of swarm with dynamic selection. | Simplifying complex workflows, switching between swarm strategies, unified multi-agent management. |
 
 -----
@@ -237,56 +238,72 @@ A `SequentialWorkflow` executes tasks in a strict order, forming a pipeline wher
 ```python
 from swarms import Agent, SequentialWorkflow
 
-# Initialize agents for a 3-step process
-# 1. Generate an idea
-idea_generator = Agent(agent_name="IdeaGenerator", system_prompt="Generate a unique startup idea.", model_name="gpt-4o-mini")
-# 2. Validate the idea
-validator = Agent(agent_name="Validator", system_prompt="Take this startup idea and analyze its market viability.", model_name="gpt-4o-mini")
-# 3. Create a pitch
-pitch_creator = Agent(agent_name="PitchCreator", system_prompt="Write a 3-sentence elevator pitch for this validated startup idea.", model_name="gpt-4o-mini")
+# Agent 1: The Researcher
+researcher = Agent(
+    agent_name="Researcher",
+    system_prompt="Your job is to research the provided topic and provide a detailed summary.",
+    model_name="gpt-4o-mini",
+)
 
-# Create the sequential workflow
-workflow = SequentialWorkflow(agents=[idea_generator, validator, pitch_creator])
+# Agent 2: The Writer
+writer = Agent(
+    agent_name="Writer",
+    system_prompt="Your job is to take the research summary and write a beautiful, engaging blog post about it.",
+    model_name="gpt-4o-mini",
+)
 
-# Run the workflow
-elevator_pitch = workflow.run()
-print(elevator_pitch)
+# Create a sequential workflow where the researcher's output feeds into the writer's input
+workflow = SequentialWorkflow(agents=[researcher, writer])
+
+# Run the workflow on a task
+final_post = workflow.run("The history and future of artificial intelligence")
+print(final_post)
 ```
 
 -----
 
 
-### ConcurrentWorkflow (with `SpreadSheetSwarm`)
+### ConcurrentWorkflow
 
-A concurrent workflow runs multiple agents simultaneously. `SpreadSheetSwarm` is a powerful implementation that can manage thousands of concurrent agents and log their outputs to a CSV file. Use this architecture for high-throughput tasks that can be performed in parallel, drastically reducing execution time.
+A `ConcurrentWorkflow` runs multiple agents simultaneously, allowing for parallel execution of tasks. This architecture drastically reduces execution time for tasks that can be performed in parallel, making it ideal for high-throughput scenarios where agents work on similar tasks concurrently.
 
 ```python
-from swarms import Agent, SpreadSheetSwarm
+from swarms import Agent, ConcurrentWorkflow
 
-# Define a list of tasks (e.g., social media posts to generate)
-platforms = ["Twitter", "LinkedIn", "Instagram"]
-
-# Create an agent for each task
-agents = [
-    Agent(
-        agent_name=f"{platform}-Marketer",
-        system_prompt=f"Generate a real estate marketing post for {platform}.",
-        model_name="gpt-4o-mini",
-    )
-    for platform in platforms
-]
-
-# Initialize the swarm to run these agents concurrently
-swarm = SpreadSheetSwarm(
-    agents=agents,
-    autosave_on=True,
-    save_file_path="marketing_posts.csv",
+# Create agents for different analysis tasks
+market_analyst = Agent(
+    agent_name="Market-Analyst",
+    system_prompt="Analyze market trends and provide insights on the given topic.",
+    model_name="gpt-4o-mini",
+    max_loops=1,
 )
 
-# Run the swarm with a single, shared task description
-property_description = "A beautiful 3-bedroom house in sunny California."
-swarm.run(task=f"Generate a post about: {property_description}")
-# Check marketing_posts.csv for the results!
+financial_analyst = Agent(
+    agent_name="Financial-Analyst", 
+    system_prompt="Provide financial analysis and recommendations on the given topic.",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+)
+
+risk_analyst = Agent(
+    agent_name="Risk-Analyst",
+    system_prompt="Assess risks and provide risk management strategies for the given topic.",
+    model_name="gpt-4o-mini", 
+    max_loops=1,
+)
+
+# Create concurrent workflow
+concurrent_workflow = ConcurrentWorkflow(
+    agents=[market_analyst, financial_analyst, risk_analyst],
+    max_loops=1,
+)
+
+# Run all agents concurrently on the same task
+results = concurrent_workflow.run(
+    "Analyze the potential impact of AI technology on the healthcare industry"
+)
+
+print(results)
 ```
 
 ---
@@ -313,9 +330,7 @@ rearrange_system = AgentRearrange(
     flow=flow,
 )
 
-# Run the system
-# The researcher will generate content, and then both the writer and editor
-# will process that content in parallel.
+# Run the swarm
 outputs = rearrange_system.run("Analyze the impact of AI on modern cinema.")
 print(outputs)
 ```
@@ -533,6 +548,49 @@ The `HierarchicalSwarm` excels at:
 
 ---
 
+### HeavySwarm
+
+`HeavySwarm` implements a sophisticated 5-phase workflow inspired by X.AI's Grok heavy implementation. It uses specialized agents (Research, Analysis, Alternatives, Verification) to provide comprehensive task analysis through intelligent question generation, parallel execution, and synthesis. This architecture excels at complex research and analysis tasks requiring thorough investigation and multiple perspectives.
+
+```python
+from swarms import HeavySwarm
+
+# Initialize the HeavySwarm with configuration
+swarm = HeavySwarm(
+    worker_model_name="gpt-4o-mini",  # Model for worker agents
+    question_agent_model_name="gpt-4o-mini",  # Model for question generation
+    loops_per_agent=1,  # Number of loops per agent
+    show_dashboard=True,  # Enable real-time dashboard
+)
+
+# Run complex analysis task
+result = swarm.run(
+    "Provide 3 publicly traded biotech companies that are currently trading below their cash value. "
+    "For each company identified, provide available data or projections for the next 6 months, "
+    "including any relevant financial metrics, upcoming catalysts, or events that could impact valuation. "
+    "Present your findings in a clear, structured format with ticker symbols, current prices, "
+    "cash values, and percentage differences."
+)
+
+print(result)
+```
+
+The `HeavySwarm` provides:
+
+- **5-Phase Analysis**: Question generation, research, analysis, alternatives, and verification
+
+- **Specialized Agents**: Each phase uses purpose-built agents for optimal results
+
+- **Comprehensive Coverage**: Multiple perspectives and thorough investigation
+
+- **Real-time Dashboard**: Optional visualization of the analysis process
+
+- **Structured Output**: Well-organized and actionable results
+
+This architecture is perfect for financial analysis, strategic planning, research reports, and any task requiring deep, multi-faceted analysis. [Learn more about HeavySwarm](https://docs.swarms.world/en/latest/swarms/structs/heavy_swarm/)
+
+---
+
 ## Documentation
 
 Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
@@ -643,7 +701,7 @@ We've made it easy to start contributing. Here's how you can help:
 
 3. **Understand Our Workflow and Standards:** Before submitting your work, please review our complete [**Contribution Guidelines**](https://github.com/kyegomez/swarms/blob/master/CONTRIBUTING.md). To help maintain code quality, we also encourage you to read our guide on [**Code Cleanliness**](https://docs.swarms.world/en/latest/swarms/framework/code_cleanliness/).
 
-4. **Join the Discussion:** To participate in roadmap discussions and connect with other developers, join our community on [**Discord**](https://discord.gg/jM3Z6M9uMq).
+4. **Join the Discussion:** To participate in roadmap discussions and connect with other developers, join our community on [**Discord**](https://discord.gg/EamjgSaEQf).
 
 
 ### ✨ Our Valued Contributors
@@ -664,8 +722,8 @@ Join our community of agent engineers and researchers for technical support, cut
 |----------|-------------|------|
 | 📚 Documentation | Official documentation and guides | [docs.swarms.world](https://docs.swarms.world) |
 | 📝 Blog | Latest updates and technical articles | [Medium](https://medium.com/@kyeg) |
-| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/jM3Z6M9uMq) |
-| 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
+| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/EamjgSaEQf) |
+| 🐦 Twitter | Latest news and announcements | [@swarms_corp](https://twitter.com/swarms_corp) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
 | 🎫 Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |

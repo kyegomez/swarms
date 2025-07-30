@@ -40914,7 +40914,6 @@ Runs agents with system resource monitoring and adaptive batch sizing.
 
 ## Performance Considerations
 
-- All functions are decorated with `@profile_func` for performance monitoring
 - Default batch sizes and worker counts are optimized based on CPU cores
 - Resource monitoring helps prevent system overload
 - Using `uvloop` provides better performance than standard `asyncio`

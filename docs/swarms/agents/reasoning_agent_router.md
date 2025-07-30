@@ -38,9 +38,13 @@ graph TD
     | `max_loops` | int | 1 | Maximum number of reasoning loops |
     | `swarm_type` | agent_types | "reasoning_duo" | Type of reasoning swarm to use |
     | `num_samples` | int | 1 | Number of samples for self-consistency |
-    | `output_type` | OutputType | "dict" | Format of the output |
+    | `output_type` | OutputType | "dict-all-except-first" | Format of the output |
     | `num_knowledge_items` | int | 6 | Number of knowledge items for GKP agent |
     | `memory_capacity` | int | 6 | Memory capacity for agents that support it |
+    | `eval` | bool | False | Enable evaluation mode for self-consistency |
+    | `random_models_on` | bool | False | Enable random model selection for diversity |
+    | `majority_voting_prompt` | Optional[str] | None | Custom prompt for majority voting |
+    | `reasoning_model_name` | Optional[str] | "claude-3-5-sonnet-20240620" | Model to use for reasoning in ReasoningDuo |
 
 ### Available Agent Types
 
@@ -71,12 +75,15 @@ graph TD
     
     **Required Parameters**
     
-    - model_name (list of 2)
+    - model_name
     - system_prompt
     
     **Optional Parameters**
     
     - output_type
+    - reasoning_model_name (default: "claude-3-5-sonnet-20240620")
+    - max_loops
+    - img (for image input support)
 
 === "Self Consistency"
     **Key Features**
@@ -84,12 +91,16 @@ graph TD
     - Multiple solution generation
     - Consensus building
     - Solution verification
+    - Concurrent execution
+    - AI-powered aggregation
     
     **Best Use Cases**
     
     - Tasks requiring high reliability
     - Problems with multiple approaches
     - Validation-heavy tasks
+    - Mathematical problem solving
+    - Decision making scenarios
     
     **Required Parameters**
     
@@ -98,9 +109,12 @@ graph TD
     
     **Optional Parameters**
     
-    - num_samples
-    - max_loops
-    - output_type
+    - num_samples (default: 5)
+    - max_loops (default: 1)
+    - output_type (default: "dict")
+    - eval (default: False) - Enable answer validation
+    - random_models_on (default: False) - Enable model diversity
+    - majority_voting_prompt (default: None) - Custom aggregation prompt
 
 === "IRE"
     **Key Features**
@@ -200,8 +214,39 @@ graph TD
     | Method | Description |
     |--------|-------------|
     | `select_swarm()` | Selects and initializes the appropriate reasoning swarm based on specified type |
-    | `run(task: str)` | Executes the selected swarm's reasoning process on the given task |
-    | `batched_run(tasks: List[str])` | Executes the reasoning process on a batch of tasks |
+    | `run(task: str, img: Optional[str] = None, **kwargs)` | Executes the selected swarm's reasoning process on the given task |
+    | `batched_run(tasks: List[str], imgs: Optional[List[str]] = None, **kwargs)` | Executes the reasoning process on a batch of tasks |
+
+### Image Support
+
+!!! info "Multi-modal Capabilities"
+    The ReasoningAgentRouter supports image inputs for compatible agent types:
+
+    **Supported Parameters:**
+    
+    - `img` (str, optional): Path or URL to a single image file for single task execution
+    - `imgs` (List[str], optional): List of image paths/URLs for batch task execution
+
+    **Compatible Agent Types:**
+    
+    - `reasoning-duo` / `reasoning-agent`: Full image support for both reasoning and execution phases
+    - Other agent types may have varying levels of image support depending on their underlying implementation
+
+    **Usage Example:**
+    ```python
+    # Single image with task
+    router = ReasoningAgentRouter(swarm_type="reasoning-duo")
+    result = router.run(
+        task="Describe what you see in this image",
+        img="path/to/image.jpg"
+    )
+
+    # Batch processing with images
+    results = router.batched_run(
+        tasks=["Analyze this chart", "Describe this photo"],
+        imgs=["chart.png", "photo.jpg"]
+    )
+    ```
 
 ### Code Examples
 
@@ -217,12 +262,47 @@ graph TD
         system_prompt="You are a helpful assistant that can answer questions and help with tasks.",
         max_loops=1,
         swarm_type="self-consistency",
-        num_samples=1,
-        output_type="list"
+        num_samples=3,
+        eval=False,
+        random_models_on=False,
+        majority_voting_prompt=None
     )
 
     # Run a single task
     result = router.run("What is the best approach to solve this problem?")
+    
+    # Run with image input
+    result_with_image = router.run(
+        "Analyze this image and provide insights",
+        img="path/to/image.jpg"
+    )
+    ```
+
+=== "Self-Consistency Examples"
+    ```python
+    # Basic self-consistency
+    router = ReasoningAgentRouter(
+        swarm_type="self-consistency",
+        num_samples=3,
+        model_name="gpt-4o-mini"
+    )
+    
+    # Self-consistency with evaluation mode
+    router = ReasoningAgentRouter(
+        swarm_type="self-consistency",
+        num_samples=5,
+        model_name="gpt-4o-mini",
+        eval=True,
+        random_models_on=True
+    )
+    
+    # Self-consistency with custom majority voting
+    router = ReasoningAgentRouter(
+        swarm_type="self-consistency",
+        num_samples=3,
+        model_name="gpt-4o-mini",
+        majority_voting_prompt="Analyze the responses and provide the most accurate answer."
+    )
     ```
 
 === "ReflexionAgent"
@@ -240,6 +320,29 @@ graph TD
         swarm_type="GKPAgent",
         model_name="gpt-4o-mini",
         num_knowledge_items=6
+    )
+    ```
+
+=== "ReasoningDuo Examples"
+    ```python
+    # Basic ReasoningDuo
+    router = ReasoningAgentRouter(
+        swarm_type="reasoning-duo",
+        model_name="gpt-4o-mini",
+        reasoning_model_name="claude-3-5-sonnet-20240620"
+    )
+    
+    # ReasoningDuo with image support
+    router = ReasoningAgentRouter(
+        swarm_type="reasoning-duo",
+        model_name="gpt-4o-mini",
+        reasoning_model_name="gpt-4-vision-preview",
+        max_loops=2
+    )
+    
+    result = router.run(
+        "Analyze this image and explain the patterns you see",
+        img="data_visualization.png"
     )
     ```
 
@@ -265,9 +368,13 @@ graph TD
     2. **Performance Optimization**
         - Adjust max_loops based on task complexity
         
-        - Increase num_samples for higher reliability
+        - Increase num_samples for higher reliability (3-7 for most tasks)
         
         - Choose appropriate model_name based on task requirements
+        
+        - Enable random_models_on for diverse reasoning approaches
+        
+        - Use eval mode for validation tasks with known answers
 
     3. **Output Handling**
         - Use appropriate output_type for your needs
@@ -275,6 +382,24 @@ graph TD
         - Process batched results appropriately
         
         - Handle errors gracefully
+        
+    4. **Self-Consistency Specific**
+        - Use 3-5 samples for most tasks, 7+ for critical decisions
+        
+        - Enable eval mode when you have expected answers for validation
+        
+        - Customize majority_voting_prompt for domain-specific aggregation
+        
+        - Consider random_models_on for diverse model perspectives
+
+    5. **Multi-modal and Reasoning Configuration**
+        - Use vision-capable models when processing images (e.g., "gpt-4-vision-preview")
+        
+        - For ReasoningDuo, set different models for reasoning vs execution via reasoning_model_name
+        
+        - Ensure image paths are accessible and in supported formats (JPG, PNG, etc.)
+        
+        - Consider using reasoning_model_name with specialized reasoning models for complex tasks
 
 ## Limitations
 
