@@ -286,13 +286,13 @@ class Agent:
 
     Examples:
     >>> from swarms import Agent
-    >>> agent = Agent(llm=llm, max_loops=1, model_name="gpt-4o")
+    >>> agent = Agent(model_name="gpt-4o", max_loops=1)
     >>> response = agent.run("Generate a report on the financials.")
     >>> print(response)
     >>> # Generate a report on the financials.
 
     >>> # Real-time streaming example
-    >>> agent = Agent(llm=llm, max_loops=1, streaming_on=True)
+    >>> agent = Agent(model_name="gpt-4o", max_loops=1, streaming_on=True)
     >>> response = agent.run("Tell me a long story.")  # Will stream in real-time
     >>> print(response)  # Final complete response
 
