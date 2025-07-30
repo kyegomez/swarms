@@ -817,7 +817,7 @@ class Agent:
             return self.llm
         except AgentLLMInitializationError as e:
             logger.error(
-                f"Error in llm_handling: {e} Your current configuration is not supported. Please check the configuration and parameters."
+                f"AgentLLMInitializationError: Agent Name: {self.agent_name} Error in llm_handling: {e} Your current configuration is not supported. Please check the configuration and parameters."
             )
             return None
 
