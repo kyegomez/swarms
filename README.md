@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/kyegomez-swarms-badge.png)](https://mseep.ai/app/kyegomez-swarms)
+
 <div align="center">
   <a href="https://swarms.world">
     <img src="https://github.com/kyegomez/swarms/blob/master/images/swarmslogobanner.png" style="margin: 15px; max-width: 700px" width="100%" alt="Logo">
