@@ -33,7 +33,7 @@ agent = Agent(
     - Performance attribution
     
     You communicate in precise, technical terms while maintaining clarity for stakeholders.""",
-    model_name="gemini-2.5-pro",
+    model_name="azure/gpt-4.1",
     dynamic_temperature_enabled=True,
     output_type="str-all-except-first",
     max_loops="auto",

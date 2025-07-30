@@ -285,10 +285,8 @@ class Agent:
 
 
     Examples:
-    >>> from swarm_models import OpenAIChat
-    >>> from swarms.structs import Agent
-    >>> llm = OpenAIChat()
-    >>> agent = Agent(llm=llm, max_loops=1)
+    >>> from swarms import Agent
+    >>> agent = Agent(llm=llm, max_loops=1, model_name="gpt-4o")
     >>> response = agent.run("Generate a report on the financials.")
     >>> print(response)
     >>> # Generate a report on the financials.

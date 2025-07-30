@@ -590,7 +590,7 @@ def test_run_execution(results: TestResults):
         results.add_pass(f"{test_name} - Basic Execution")
 
         # Test execution with custom task
-        results_dict2 = workflow.run(task="Custom task")
+        workflow.run(task="Custom task")
         assert workflow.task == "Custom task"
         results.add_pass(f"{test_name} - Custom Task")
 
