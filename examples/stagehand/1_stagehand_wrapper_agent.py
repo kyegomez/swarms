@@ -12,7 +12,7 @@ and implements browser automation through natural language commands.
 import asyncio
 import json
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
 from loguru import logger
@@ -75,7 +75,8 @@ class StagehandAgent(SwarmsAgent):
             project_id=browserbase_project_id
             or os.getenv("BROWSERBASE_PROJECT_ID"),
             model_name=model_name,
-            model_api_key=model_api_key or os.getenv("OPENAI_API_KEY"),
+            model_api_key=model_api_key
+            or os.getenv("OPENAI_API_KEY"),
         )
         self.stagehand = None
         self._initialized = False
@@ -86,7 +87,9 @@ class StagehandAgent(SwarmsAgent):
             self.stagehand = Stagehand(self.stagehand_config)
             await self.stagehand.init()
             self._initialized = True
-            logger.info(f"Stagehand initialized for {self.agent_name}")
+            logger.info(
+                f"Stagehand initialized for {self.agent_name}"
+            )
 
     async def _close_stagehand(self):
         """Close Stagehand instance."""
@@ -112,9 +115,7 @@ class StagehandAgent(SwarmsAgent):
         """
         return asyncio.run(self._async_run(task, *args, **kwargs))
 
-    async def _async_run(
-        self, task: str, *args, **kwargs
-    ) -> str:
+    async def _async_run(self, task: str, *args, **kwargs) -> str:
         """Async implementation of run method."""
         try:
             await self._init_stagehand()
@@ -183,9 +184,13 @@ class StagehandAgent(SwarmsAgent):
 
         elif "search" in task.lower():
             # Perform search action
-            search_query = task.split("search for")[-1].strip().strip("'\"")
+            search_query = (
+                task.split("search for")[-1].strip().strip("'\"")
+            )
             # First, find the search box
-            search_box = await page.observe("find the search input field")
+            search_box = await page.observe(
+                "find the search input field"
+            )
             if search_box:
                 # Click on search box and type
                 await page.act(f"click on {search_box[0]}")
@@ -198,7 +203,10 @@ class StagehandAgent(SwarmsAgent):
             # Perform observation
             observation = await page.observe(task)
             result["data"]["observation"] = [
-                {"description": obs.description, "selector": obs.selector}
+                {
+                    "description": obs.description,
+                    "selector": obs.selector,
+                }
                 for obs in observation
             ]
             result["action"] = "observe"

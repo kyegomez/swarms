@@ -3,7 +3,7 @@ Stagehand Tools for Swarms Agent
 =================================
 
 This example demonstrates how to create Stagehand browser automation tools
-that can be used by a standard Swarms Agent. Each Stagehand method (act, 
+that can be used by a standard Swarms Agent. Each Stagehand method (act,
 extract, observe) becomes a separate tool that the agent can use.
 
 This approach gives the agent more fine-grained control over browser
@@ -13,11 +13,10 @@ automation tasks.
 import asyncio
 import json
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Optional
 
 from dotenv import load_dotenv
 from loguru import logger
-from pydantic import BaseModel, Field
 
 from swarms import Agent
 from swarms.tools.base_tool import BaseTool
@@ -51,9 +50,11 @@ class BrowserState:
             config = StagehandConfig(
                 env=env,
                 api_key=api_key or os.getenv("BROWSERBASE_API_KEY"),
-                project_id=project_id or os.getenv("BROWSERBASE_PROJECT_ID"),
+                project_id=project_id
+                or os.getenv("BROWSERBASE_PROJECT_ID"),
                 model_name=model_name,
-                model_api_key=model_api_key or os.getenv("OPENAI_API_KEY"),
+                model_api_key=model_api_key
+                or os.getenv("OPENAI_API_KEY"),
             )
             self._stagehand = Stagehand(config)
             await self._stagehand.init()
@@ -63,7 +64,9 @@ class BrowserState:
     async def get_page(self):
         """Get the current page instance."""
         if not self._initialized:
-            raise RuntimeError("Browser not initialized. Call init_browser first.")
+            raise RuntimeError(
+                "Browser not initialized. Call init_browser first."
+            )
         return self._stagehand.page
 
     async def close(self):
@@ -96,11 +99,11 @@ class NavigateTool(BaseTool):
         try:
             await browser_state.init_browser()
             page = await browser_state.get_page()
-            
+
             # Ensure URL has protocol
             if not url.startswith(("http://", "https://")):
                 url = f"https://{url}"
-            
+
             await page.goto(url)
             return f"Successfully navigated to {url}"
         except Exception as e:
@@ -130,7 +133,7 @@ class ActTool(BaseTool):
         try:
             await browser_state.init_browser()
             page = await browser_state.get_page()
-            
+
             result = await page.act(action)
             return f"Action performed: {action}. Result: {result}"
         except Exception as e:
@@ -160,9 +163,9 @@ class ExtractTool(BaseTool):
         try:
             await browser_state.init_browser()
             page = await browser_state.get_page()
-            
+
             extracted = await page.extract(query)
-            
+
             # Convert to JSON string for agent consumption
             if isinstance(extracted, (dict, list)):
                 return json.dumps(extracted, indent=2)
@@ -196,18 +199,20 @@ class ObserveTool(BaseTool):
         try:
             await browser_state.init_browser()
             page = await browser_state.get_page()
-            
+
             observations = await page.observe(query)
-            
+
             # Format observations for readability
             result = []
             for obs in observations:
-                result.append({
-                    "description": obs.description,
-                    "selector": obs.selector,
-                    "method": obs.method
-                })
-            
+                result.append(
+                    {
+                        "description": obs.description,
+                        "selector": obs.selector,
+                        "method": obs.method,
+                    }
+                )
+
             return json.dumps(result, indent=2)
         except Exception as e:
             logger.error(f"Observation error: {str(e)}")
@@ -232,15 +237,15 @@ class ScreenshotTool(BaseTool):
         try:
             await browser_state.init_browser()
             page = await browser_state.get_page()
-            
+
             # Ensure .png extension
             if not filename.endswith(".png"):
                 filename += ".png"
-            
+
             # Get the underlying Playwright page
             playwright_page = page.page
             await playwright_page.screenshot(path=filename)
-            
+
             return f"Screenshot saved to {filename}"
         except Exception as e:
             logger.error(f"Screenshot error: {str(e)}")
