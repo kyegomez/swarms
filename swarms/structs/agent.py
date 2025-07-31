@@ -615,7 +615,7 @@ class Agent:
             self.tool_handling()
 
         if self.llm is None:
-            self.llm = self.llm_handling(*args, **kwargs)
+            self.llm = self.llm_handling()
 
         if self.random_models_on is True:
             self.model_name = set_random_models_for_agents()
