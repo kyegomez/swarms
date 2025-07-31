@@ -102,7 +102,7 @@ extra:
       - title: "Adding Documentation"
         url: "https://docs.swarms.world/en/latest/contributors/docs/"
       - title: "Bounty Program"
-        url: "https://docs.swarms.world/en/latest/corporate/bounty_program/"
+        url: "https://docs.swarms.world/en/latest/governance/bounty_program/"
       - title: "Support"
         url: "https://docs.swarms.world/en/latest/swarms/support/"
 
@@ -378,6 +378,7 @@ nav:
           - Ollama: "swarms/examples/ollama.md"
           - OpenRouter: "swarms/examples/openrouter.md"
           - XAI: "swarms/examples/xai.md"
+          - Azure OpenAI: "swarms/examples/azure.md"
           - VLLM: "swarms/examples/vllm_integration.md"
           - Llama4: "swarms/examples/llama4.md"
 
@@ -476,7 +477,7 @@ nav:
   - Contributors:
     - Overview: "contributors/main.md"
     - Environment Setup: "contributors/environment_setup.md"
-    - Bounty Program: "corporate/bounty_program.md"
+    - Bounty Program: "governance/bounty_program.md"
     
     - Development Guides:
       - Code Style Guide & Best Practices: "swarms/framework/code_cleanliness.md"

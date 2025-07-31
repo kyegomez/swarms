@@ -108,6 +108,7 @@ class LiteLLM:
         return_all: bool = False,
         base_url: str = None,
         api_key: str = None,
+        api_version: str = None,
         *args,
         **kwargs,
     ):
@@ -120,6 +121,27 @@ class LiteLLM:
             stream (bool, optional): Whether to stream the output. Defaults to False.
             temperature (float, optional): The temperature for the model. Defaults to 0.5.
             max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 4000.
+            ssl_verify (bool, optional): Whether to verify SSL certificates. Defaults to False.
+            max_completion_tokens (int, optional): Maximum completion tokens. Defaults to 4000.
+            tools_list_dictionary (List[dict], optional): List of tool definitions. Defaults to None.
+            tool_choice (str, optional): Tool choice strategy. Defaults to "auto".
+            parallel_tool_calls (bool, optional): Whether to enable parallel tool calls. Defaults to False.
+            audio (str, optional): Audio input path. Defaults to None.
+            retries (int, optional): Number of retries. Defaults to 0.
+            verbose (bool, optional): Whether to enable verbose logging. Defaults to False.
+            caching (bool, optional): Whether to enable caching. Defaults to False.
+            mcp_call (bool, optional): Whether this is an MCP call. Defaults to False.
+            top_p (float, optional): Top-p sampling parameter. Defaults to 1.0.
+            functions (List[dict], optional): Function definitions. Defaults to None.
+            return_all (bool, optional): Whether to return all response data. Defaults to False.
+            base_url (str, optional): Base URL for the API. Defaults to None.
+            api_key (str, optional): API key. Defaults to None.
+            api_version (str, optional): API version. Defaults to None.
+            *args: Additional positional arguments that will be stored and used in run method.
+                  If a single dictionary is passed, it will be merged into completion parameters.
+            **kwargs: Additional keyword arguments that will be stored and used in run method.
+                     These will be merged into completion parameters with lower priority than
+                     runtime kwargs passed to the run method.
         """
         self.model_name = model_name
         self.system_prompt = system_prompt
@@ -139,6 +161,7 @@ class LiteLLM:
         self.return_all = return_all
         self.base_url = base_url
         self.api_key = api_key
+        self.api_version = api_version
         self.modalities = []
         self.messages = []  # Initialize messages list
 
@@ -152,6 +175,42 @@ class LiteLLM:
         )
 
         litellm.drop_params = True
+
+        # Store additional args and kwargs for use in run method
+        self.init_args = args
+        self.init_kwargs = kwargs
+
+    def _process_additional_args(
+        self, completion_params: dict, runtime_args: tuple
+    ):
+        """
+        Process additional arguments from both initialization and runtime.
+
+        Args:
+            completion_params (dict): The completion parameters dictionary to update
+            runtime_args (tuple): Runtime positional arguments
+        """
+        # Process initialization args
+        if self.init_args:
+            if len(self.init_args) == 1 and isinstance(
+                self.init_args[0], dict
+            ):
+                # If init_args contains a single dictionary, merge it
+                completion_params.update(self.init_args[0])
+            else:
+                # Store other types of init_args for debugging
+                completion_params["init_args"] = self.init_args
+
+        # Process runtime args
+        if runtime_args:
+            if len(runtime_args) == 1 and isinstance(
+                runtime_args[0], dict
+            ):
+                # If runtime_args contains a single dictionary, merge it (highest priority)
+                completion_params.update(runtime_args[0])
+            else:
+                # Store other types of runtime_args for debugging
+                completion_params["runtime_args"] = runtime_args
 
     def output_for_tools(self, response: any):
         if self.mcp_call is True:
@@ -467,14 +526,24 @@ class LiteLLM:
             task (str): The task to run the model for.
             audio (str, optional): Audio input if any. Defaults to None.
             img (str, optional): Image input if any. Defaults to None.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
+            *args: Additional positional arguments. If a single dictionary is passed,
+                  it will be merged into completion parameters with highest priority.
+            **kwargs: Additional keyword arguments that will be merged into completion
+                     parameters with highest priority (overrides init kwargs).
 
         Returns:
             str: The content of the response from the model.
 
         Raises:
             Exception: If there is an error in processing the request.
+
+        Note:
+            Parameter priority order (highest to lowest):
+            1. Runtime kwargs (passed to run method)
+            2. Runtime args (if dictionary, passed to run method)
+            3. Init kwargs (passed to __init__)
+            4. Init args (if dictionary, passed to __init__)
+            5. Default parameters
         """
         try:
             messages = self._prepare_messages(task=task, img=img)
@@ -488,8 +557,18 @@ class LiteLLM:
                 "caching": self.caching,
                 "temperature": self.temperature,
                 "top_p": self.top_p,
-                **kwargs,
             }
+
+            # Merge initialization kwargs first (lower priority)
+            if self.init_kwargs:
+                completion_params.update(self.init_kwargs)
+
+            # Merge runtime kwargs (higher priority - overrides init kwargs)
+            if kwargs:
+                completion_params.update(kwargs)
+
+            if self.api_version is not None:
+                completion_params["api_version"] = self.api_version
 
             # Add temperature for non-o4/o3 models
             if self.model_name not in [
@@ -519,6 +598,9 @@ class LiteLLM:
             # Add modalities if needed
             if self.modalities and len(self.modalities) >= 2:
                 completion_params["modalities"] = self.modalities
+
+            # Process additional args if any
+            self._process_additional_args(completion_params, args)
 
             # Make the completion call
             response = completion(**completion_params)
@@ -586,8 +668,15 @@ class LiteLLM:
                 "stream": self.stream,
                 "temperature": self.temperature,
                 "max_tokens": self.max_tokens,
-                **kwargs,
             }
+
+            # Merge initialization kwargs first (lower priority)
+            if self.init_kwargs:
+                completion_params.update(self.init_kwargs)
+
+            # Merge runtime kwargs (higher priority - overrides init kwargs)
+            if kwargs:
+                completion_params.update(kwargs)
 
             # Handle tool-based completion
             if self.tools_list_dictionary is not None:
@@ -598,15 +687,20 @@ class LiteLLM:
                         "parallel_tool_calls": self.parallel_tool_calls,
                     }
                 )
-                response = await acompletion(**completion_params)
+
+            # Process additional args if any
+            self._process_additional_args(completion_params, args)
+
+            # Make the completion call
+            response = await acompletion(**completion_params)
+
+            # Handle tool-based response
+            if self.tools_list_dictionary is not None:
                 return (
                     response.choices[0]
                     .message.tool_calls[0]
                     .function.arguments
                 )
-
-            # Standard completion
-            response = await acompletion(**completion_params)
 
             print(response)
             return response

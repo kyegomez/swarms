@@ -72,15 +72,25 @@ class CronJob:
 
         logger.info(f"Initializing CronJob with ID: {self.job_id}")
 
+        self.reliability_check()
+
+    def reliability_check(self):
+        if self.agent is None:
+            raise CronJobConfigError(
+                "Agent must be provided during initialization"
+            )
+
         # Parse interval if provided
-        if interval:
+        if self.interval:
             try:
-                self._parse_interval(interval)
+                self._parse_interval(self.interval)
                 logger.info(
-                    f"Successfully configured interval: {interval}"
+                    f"CronJob {self.job_id}: Successfully configured interval: {self.interval}"
                 )
             except ValueError as e:
-                logger.error(f"Failed to parse interval: {interval}")
+                logger.error(
+                    f"CronJob {self.job_id}: Failed to parse interval: {self.interval}"
+                )
                 raise CronJobConfigError(
                     f"Invalid interval format: {str(e)}"
                 )

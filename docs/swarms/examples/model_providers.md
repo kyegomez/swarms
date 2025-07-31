@@ -16,6 +16,7 @@ Swarms supports a vast array of model providers, giving you the flexibility to c
 | **XAI** | xAI's Grok models offering unique capabilities for research, analysis, and creative tasks with advanced reasoning abilities. | [XAI Integration](xai.md) |
 | **vLLM** | High-performance inference library for serving large language models with optimized memory usage and throughput. | [vLLM Integration](vllm_integration.md) |
 | **Llama4** | Meta's latest open-source language models including Llama-4-Maverick and Llama-4-Scout variants with expert routing capabilities. | [Llama4 Integration](llama4.md) |
+| **Azure OpenAI** | Enterprise-grade OpenAI models through Microsoft's cloud infrastructure with enhanced security, compliance, and enterprise features. | [Azure Integration](azure.md) |
 
 ## Quick Start
 
@@ -97,6 +98,11 @@ OPENROUTER_API_KEY=your_openrouter_key
 
 # XAI
 XAI_API_KEY=your_xai_key
+
+# Azure OpenAI
+AZURE_API_KEY=your_azure_openai_api_key
+AZURE_API_BASE=https://your-resource-name.openai.azure.com/
+AZURE_API_VERSION=2024-02-15-preview
 ```
 
 !!! note "No API Key Required"

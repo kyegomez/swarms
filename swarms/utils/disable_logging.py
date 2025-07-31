@@ -2,7 +2,6 @@ import concurrent.futures
 import logging
 import os
 import warnings
-from threading import Thread
 
 
 def disable_logging():
@@ -75,12 +74,3 @@ def set_logger_level(logger_name: str) -> None:
     """
     logger = logging.getLogger(logger_name)
     logger.setLevel(logging.CRITICAL)
-
-
-def start_disable_logging_in_thread():
-    """
-    Starts the disable_logging function in a separate thread to avoid blocking the main thread.
-    """
-    thread = Thread(target=disable_logging)
-    thread.start()
-    return thread

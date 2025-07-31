@@ -285,10 +285,8 @@ class Agent:
 
 
     Examples:
-    >>> from swarm_models import OpenAIChat
-    >>> from swarms.structs import Agent
-    >>> llm = OpenAIChat()
-    >>> agent = Agent(llm=llm, max_loops=1)
+    >>> from swarms import Agent
+    >>> agent = Agent(llm=llm, max_loops=1, model_name="gpt-4o")
     >>> response = agent.run("Generate a report on the financials.")
     >>> print(response)
     >>> # Generate a report on the financials.
@@ -617,7 +615,7 @@ class Agent:
             self.tool_handling()
 
         if self.llm is None:
-            self.llm = self.llm_handling()
+            self.llm = self.llm_handling(*args, **kwargs)
 
         if self.random_models_on is True:
             self.model_name = set_random_models_for_agents()
@@ -717,7 +715,22 @@ class Agent:
             dynamic_temperature_enabled=self.dynamic_temperature_enabled,
         )
 
-    def llm_handling(self):
+    def llm_handling(self, *args, **kwargs):
+        """Initialize the LiteLLM instance with combined configuration from all sources.
+
+        This method combines llm_args, tools_list_dictionary, MCP tools, and any additional
+        arguments passed to this method into a single unified configuration.
+
+        Args:
+            *args: Positional arguments that can be used for additional configuration.
+                  If a single dictionary is passed, it will be merged into the configuration.
+                  Other types of args will be stored under 'additional_args' key.
+            **kwargs: Keyword arguments that will be merged into the LiteLLM configuration.
+                     These take precedence over existing configuration.
+
+        Returns:
+            LiteLLM: The initialized LiteLLM instance
+        """
         # Use cached instance if available
         if self.llm is not None:
             return self.llm
@@ -725,6 +738,7 @@ class Agent:
         if self.model_name is None:
             self.model_name = "gpt-4o-mini"
 
+        # Determine if parallel tool calls should be enabled
         if exists(self.tools) and len(self.tools) >= 2:
             parallel_tool_calls = True
         elif exists(self.mcp_url) or exists(self.mcp_urls):
@@ -735,44 +749,75 @@ class Agent:
             parallel_tool_calls = False
 
         try:
-            # Simplify initialization logic
+            # Base configuration that's always included
             common_args = {
                 "model_name": self.model_name,
                 "temperature": self.temperature,
                 "max_tokens": self.max_tokens,
                 "system_prompt": self.system_prompt,
+                "stream": self.streaming_on,
             }
 
+            # Initialize tools_list_dictionary, if applicable
+            tools_list = []
+
+            # Append tools from different sources
+            if self.tools_list_dictionary is not None:
+                tools_list.extend(self.tools_list_dictionary)
+
+            if exists(self.mcp_url) or exists(self.mcp_urls):
+                tools_list.extend(self.add_mcp_tools_to_memory())
+
+            # Additional arguments for LiteLLM initialization
+            additional_args = {}
+
             if self.llm_args is not None:
-                self.llm = LiteLLM(**{**common_args, **self.llm_args})
-            elif self.tools_list_dictionary is not None:
-                self.llm = LiteLLM(
-                    **common_args,
-                    tools_list_dictionary=self.tools_list_dictionary,
-                    tool_choice="auto",
-                    parallel_tool_calls=parallel_tool_calls,
+                additional_args.update(self.llm_args)
+
+            if tools_list:
+                additional_args.update(
+                    {
+                        "tools_list_dictionary": tools_list,
+                        "tool_choice": "auto",
+                        "parallel_tool_calls": parallel_tool_calls,
+                    }
                 )
 
-            elif exists(self.mcp_url) or exists(self.mcp_urls):
-                self.llm = LiteLLM(
-                    **common_args,
-                    tools_list_dictionary=self.add_mcp_tools_to_memory(),
-                    tool_choice="auto",
-                    parallel_tool_calls=parallel_tool_calls,
-                    mcp_call=True,
-                )
-            else:
-                # common_args.update(self.aditional_llm_config.model_dump())
+            if exists(self.mcp_url) or exists(self.mcp_urls):
+                additional_args.update({"mcp_call": True})
 
-                self.llm = LiteLLM(
-                    **common_args,
-                    stream=self.streaming_on,
-                )
+            # if args or kwargs are provided, then update the additional_args
+            if args or kwargs:
+                # Handle keyword arguments first
+                if kwargs:
+                    additional_args.update(kwargs)
+
+                # Handle positional arguments (args)
+                # These could be additional configuration parameters
+                # that should be merged into the additional_args
+                if args:
+                    # If args contains a dictionary, merge it directly
+                    if len(args) == 1 and isinstance(args[0], dict):
+                        additional_args.update(args[0])
+                    else:
+                        # For other types of args, log them for debugging
+                        # and potentially handle them based on their type
+                        logger.debug(
+                            f"Received positional args in llm_handling: {args}"
+                        )
+                        # You can add specific handling for different arg types here
+                        # For now, we'll add them as additional configuration
+                        additional_args.update(
+                            {"additional_args": args}
+                        )
+
+            # Final LiteLLM initialization with combined arguments
+            self.llm = LiteLLM(**{**common_args, **additional_args})
 
             return self.llm
         except AgentLLMInitializationError as e:
             logger.error(
-                f"Error in llm_handling: {e} Your current configuration is not supported. Please check the configuration and parameters."
+                f"AgentLLMInitializationError: Agent Name: {self.agent_name} Error in llm_handling: {e} Your current configuration is not supported. Please check the configuration and parameters."
             )
             return None
 
