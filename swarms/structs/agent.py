@@ -305,7 +305,7 @@ class Agent:
         id: Optional[str] = agent_id(),
         llm: Optional[Any] = None,
         template: Optional[str] = None,
-        max_loops: Optional[int] = 1,
+        max_loops: Optional[Union[int, str]] = 1,
         stopping_condition: Optional[Callable[[str], bool]] = None,
         loop_interval: Optional[int] = 0,
         retry_attempts: Optional[int] = 3,
@@ -433,6 +433,7 @@ class Agent:
         summarize_multiple_images: bool = False,
         tool_retry_attempts: int = 3,
         speed_mode: str = None,
+        reasoning_prompt_on: bool = True,
         *args,
         **kwargs,
     ):
@@ -574,6 +575,7 @@ class Agent:
         self.summarize_multiple_images = summarize_multiple_images
         self.tool_retry_attempts = tool_retry_attempts
         self.speed_mode = speed_mode
+        self.reasoning_prompt_on = reasoning_prompt_on
 
         # Initialize the feedback
         self.feedback = []
@@ -592,7 +594,13 @@ class Agent:
         if exists(self.sop) or exists(self.sop_list):
             self.handle_sop_ops()
 
-        if self.max_loops >= 2:
+        if self.interactive is True:
+            self.reasoning_prompt_on = False
+
+        if self.reasoning_prompt_on is True and (
+            (isinstance(self.max_loops, int) and self.max_loops >= 2)
+            or self.max_loops == "auto"
+        ):
             self.system_prompt += generate_reasoning_prompt(
                 self.max_loops
             )
@@ -1045,18 +1053,27 @@ class Agent:
             ):
                 loop_count += 1
 
-                if self.max_loops >= 2:
-                    self.short_memory.add(
-                        role=self.agent_name,
-                        content=f"Current Internal Reasoning Loop: {loop_count}/{self.max_loops}",
-                    )
+                if (
+                    isinstance(self.max_loops, int)
+                    and self.max_loops >= 2
+                ):
+                    if self.reasoning_prompt_on is True:
+                        self.short_memory.add(
+                            role=self.agent_name,
+                            content=f"Current Internal Reasoning Loop: {loop_count}/{self.max_loops}",
+                        )
 
                 # If it is the final loop, then add the final loop message
-                if loop_count >= 2 and loop_count == self.max_loops:
-                    self.short_memory.add(
-                        role=self.agent_name,
-                        content=f"🎉 Final Internal Reasoning Loop: {loop_count}/{self.max_loops} Prepare your comprehensive response.",
-                    )
+                if (
+                    loop_count >= 2
+                    and isinstance(self.max_loops, int)
+                    and loop_count == self.max_loops
+                ):
+                    if self.reasoning_prompt_on is True:
+                        self.short_memory.add(
+                            role=self.agent_name,
+                            content=f"🎉 Final Internal Reasoning Loop: {loop_count}/{self.max_loops} Prepare your comprehensive response.",
+                        )
 
                 # Dynamic temperature
                 if self.dynamic_temperature_enabled is True:
@@ -1191,6 +1208,7 @@ class Agent:
                     break
 
                 if self.interactive:
+
                     # logger.info("Interactive mode enabled.")
                     user_input = input("You: ")
 
@@ -1943,7 +1961,7 @@ class Agent:
         """Upddate the system message"""
         self.system_prompt = system_prompt
 
-    def update_max_loops(self, max_loops: int):
+    def update_max_loops(self, max_loops: Union[int, str]):
         """Update the max loops"""
         self.max_loops = max_loops
 
