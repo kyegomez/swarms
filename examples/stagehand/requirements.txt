@@ -1,0 +1,13 @@
+# Requirements for Stagehand integration examples
+swarms>=8.0.0
+stagehand>=0.1.0
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+loguru>=0.7.0
+
+# For MCP server examples (optional)
+httpx>=0.24.0
+
+# For testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
