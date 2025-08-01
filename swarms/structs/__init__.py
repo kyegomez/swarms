@@ -7,6 +7,7 @@ from swarms.structs.batch_agent_execution import batch_agent_execution
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.council_judge import CouncilAsAJudge
+from swarms.structs.cron_job import CronJob
 from swarms.structs.de_hallucination_swarm import DeHallucinationSwarm
 from swarms.structs.deep_research_swarm import DeepResearchSwarm
 from swarms.structs.graph_workflow import (
@@ -19,8 +20,17 @@ from swarms.structs.groupchat import (
     GroupChat,
     expertise_based,
 )
+from swarms.structs.heavy_swarm import HeavySwarm
+from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 from swarms.structs.hybrid_hiearchical_peer_swarm import (
     HybridHierarchicalClusterSwarm,
+)
+from swarms.structs.interactive_groupchat import (
+    InteractiveGroupChat,
+    priority_speaker,
+    random_dynamic_speaker,
+    random_speaker,
+    round_robin_speaker,
 )
 from swarms.structs.ma_blocks import (
     aggregate,
@@ -82,16 +92,6 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
-from swarms.structs.interactive_groupchat import (
-    InteractiveGroupChat,
-    round_robin_speaker,
-    random_speaker,
-    priority_speaker,
-    random_dynamic_speaker,
-)
-
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
-from swarms.structs.heavy_swarm import HeavySwarm
 
 __all__ = [
     "Agent",
@@ -169,4 +169,5 @@ __all__ = [
     "random_dynamic_speaker",
     "HierarchicalSwarm",
     "HeavySwarm",
+    "CronJob",
 ]

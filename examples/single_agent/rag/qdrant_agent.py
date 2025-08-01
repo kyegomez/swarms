@@ -6,7 +6,6 @@ from typing import Dict, List, Optional
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from qdrant_client.http.models import Distance, VectorParams
-from swarm_models import Anthropic
 
 from swarms import Agent
 
@@ -172,14 +171,14 @@ memory = QdrantMemory(
 )
 
 # Model
-model = Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"))
+# model = Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 # Initialize the agent with Qdrant memory
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
     system_prompt="Agent system prompt here",
     agent_description="Agent performs financial analysis.",
-    llm=model,
+    model_name="gpt-4o-mini",
     long_term_memory=memory,
 )
 

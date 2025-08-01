@@ -33,15 +33,17 @@ agent = Agent(
     - Performance attribution
     
     You communicate in precise, technical terms while maintaining clarity for stakeholders.""",
-    max_loops=1,
-    model_name="claude-3-sonnet-20240229",
+    model_name="gpt-4.1",
     dynamic_temperature_enabled=True,
     output_type="str-all-except-first",
+    max_loops="auto",
+    interactive=True,
+    no_reasoning_prompt=True,
     streaming_on=True,
-    print_on=True,
-    telemetry_enable=False,
     # dashboard=True
 )
 
-out = agent.run("What are the best top 3 etfs for gold coverage?")
+out = agent.run(
+    task="What are the best top 3 etfs for gold coverage?"
+)
 print(out)
