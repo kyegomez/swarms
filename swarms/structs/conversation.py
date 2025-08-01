@@ -184,7 +184,6 @@ class Conversation:
         system_prompt: Optional[str] = None,
         time_enabled: bool = False,
         autosave: bool = False,  # Changed default to False
-        save_enabled: bool = False,  # New parameter to control if saving is enabled
         save_filepath: str = None,
         load_filepath: str = None,  # New parameter to specify which file to load from
         context_length: int = 8192,
@@ -223,7 +222,6 @@ class Conversation:
         self.system_prompt = system_prompt
         self.time_enabled = time_enabled
         self.autosave = autosave
-        self.save_enabled = save_enabled
         self.conversations_dir = conversations_dir
         self.tokenizer_model_name = tokenizer_model_name
         self.message_id_on = message_id_on
@@ -1021,13 +1019,6 @@ class Conversation:
                 )
                 return
 
-            # Don't save if saving is disabled (你的PR代码)
-            if not self.save_enabled:
-                logger.warning(
-                    "An attempt to save the conversation failed: save_enabled is False."
-                    "Please set save_enabled=True when creating a Conversation object to enable saving."
-                )
-                return
             # Get the full data including metadata and conversation history
             data = self.get_init_params()
 
@@ -1284,7 +1275,7 @@ class Conversation:
         Returns:
             None
         """
-        from swarms.utils.litellm_tokenizer import count_tokens
+        
         
         total_tokens = 0
         truncated_history = []
@@ -1350,7 +1341,7 @@ class Conversation:
         Returns:
             str: Truncated text with token count not exceeding target_tokens
         """
-        from swarms.utils.litellm_tokenizer import count_tokens
+        
         
         # If text is empty or target tokens is 0, return empty string
         if not text or target_tokens <= 0:
@@ -1390,7 +1381,7 @@ class Conversation:
                     return truncated_at_sentence
         
         return best_text
-
+    
     def clear(self):
         """Clear the conversation history."""
         if self.backend_instance:
