@@ -1,6 +1,6 @@
 from swarms.structs.conversation import Conversation
 from dotenv import load_dotenv
-
+from swarms.utils.litellm_tokenizer import count_tokens
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,7 +22,7 @@ def demonstrate_truncation():
     conversation.add("user", short_message)
     
     # Display token count
-    from swarms.utils.litellm_tokenizer import count_tokens
+    
     tokens = count_tokens(short_message, conversation.tokenizer_model_name)
     print(f"Short message token count: {tokens}")
     
