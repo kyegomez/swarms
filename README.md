@@ -162,7 +162,7 @@ $ docker run -it --rm -v $(pwd):/app kyegomez/swarms:latest bash
 $ docker-compose up -d
 ```
 
-For more Docker options and advanced usage, see our [Docker documentation](DOCKER.md).
+For more Docker options and advanced usage, see our [Docker documentation](/scripts/docker/DOCKER.md).
 
 ---
 
