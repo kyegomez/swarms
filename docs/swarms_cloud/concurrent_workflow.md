@@ -147,40 +147,56 @@ Key features:
 **Example Response**:
 ```json
 {
-  "status": "success",
-  "swarm_name": "market-research-concurrent",
-  "swarm_type": "ConcurrentWorkflow",
-  "task": "Research and analyze market opportunities in AI, healthcare, fintech, and e-commerce sectors",
-  "output": {
-    "ai_market_analysis": {
-      "market_size": "$150B by 2025",
-      "growth_rate": "25% CAGR",
-      "key_opportunities": ["Generative AI", "Edge AI", "AI Infrastructure"]
-    },
-    "healthcare_analysis": {
-      "market_size": "$350B by 2025",
-      "growth_rate": "12% CAGR", 
-      "key_opportunities": ["Telemedicine", "AI Diagnostics", "Digital Therapeutics"]
-    },
-    "fintech_analysis": {
-      "market_size": "$200B by 2025",
-      "growth_rate": "18% CAGR",
-      "key_opportunities": ["DeFi", "Digital Banking", "Payment Infrastructure"]
-    },
-    "ecommerce_analysis": {
-      "market_size": "$8T by 2025",
-      "growth_rate": "14% CAGR",
-      "key_opportunities": ["Social Commerce", "B2B Marketplaces", "Sustainable Commerce"]
+    "job_id": "swarms-S17nZFDesmLHxCRoeyF3NVYvPaXk",
+    "status": "success",
+    "swarm_name": "Market Research Concurrent",
+    "description": "Parallel market research across different sectors",
+    "swarm_type": "ConcurrentWorkflow",
+    "output": [
+        {
+            "role": "E-commerce Market Analyst",
+            "content": "To analyze market opportunities in the AI, healthcare, fintech, and e-commerce sectors, we can break down each sector's current trends, consumer behavior, and emerging platforms. Here's an overview of each sector with a focus on e-commerce....."
+        },
+        {
+            "role": "AI Market Analyst",
+            "content": "The artificial intelligence (AI) landscape presents numerous opportunities across various sectors, particularly in healthcare, fintech, and e-commerce. Here's a detailed analysis of each sector:\n\n### Healthcare....."
+        },
+        {
+            "role": "Healthcare Market Analyst",
+            "content": "As a Healthcare Market Analyst, I will focus on analyzing market opportunities within the healthcare sector, particularly in the realm of AI and digital health. The intersection of healthcare with fintech and e-commerce also presents unique opportunities. Here's an overview of key trends and growth areas:...."
+        },
+        {
+            "role": "Fintech Market Analyst",
+            "content": "Certainly! Let's break down the market opportunities in the fintech sector, focusing on financial technology trends, digital payment systems, blockchain opportunities, and regulatory developments:\n\n### 1. Financial Technology Trends....."
+        }
+    ],
+    "number_of_agents": 4,
+    "service_tier": "standard",
+    "execution_time": 23.360230922698975,
+    "usage": {
+        "input_tokens": 35,
+        "output_tokens": 2787,
+        "total_tokens": 2822,
+        "billing_info": {
+            "cost_breakdown": {
+                "agent_cost": 0.04,
+                "input_token_cost": 0.000105,
+                "output_token_cost": 0.041805,
+                "token_counts": {
+                    "total_input_tokens": 35,
+                    "total_output_tokens": 2787,
+                    "total_tokens": 2822
+                },
+                "num_agents": 4,
+                "service_tier": "standard",
+                "night_time_discount_applied": true
+            },
+            "total_cost": 0.08191,
+            "discount_active": true,
+            "discount_type": "night_time",
+            "discount_percentage": 75
+        }
     }
-  },
-  "metadata": {
-    "parallel_execution": true,
-    "agents_completed_simultaneously": 4,
-    "execution_time_seconds": 12.8,
-    "billing_info": {
-      "total_cost": 0.052
-    }
-  }
 }
 ```
 

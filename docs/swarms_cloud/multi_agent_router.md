@@ -148,65 +148,52 @@ Key features:
 **Example Response**:
 ```json
 {
-  "status": "success",
-  "swarm_name": "customer-support-router",
-  "swarm_type": "MultiAgentRouter",
-  "task": "Handle multiple customer inquiries: 1) Billing question about overcharge, 2) Technical issue with mobile app login, 3) Product recommendation for enterprise client, 4) Return policy question",
-  "output": {
-    "inquiry_1_billing": {
-      "routed_to": "Billing Specialist",
-      "response": "I understand your concern about the overcharge. Let me review your account and identify the issue. I can see the duplicate charge and will process a refund within 3-5 business days...",
-      "resolution_status": "Resolved - Refund processed"
-    },
-    "inquiry_2_technical": {
-      "routed_to": "Technical Support",
-      "response": "Let's troubleshoot the mobile app login issue. Please try these steps: 1) Clear app cache, 2) Update to latest version, 3) Reset password if needed...",
-      "resolution_status": "In Progress - Troubleshooting steps provided"
-    },
-    "inquiry_3_sales": {
-      "routed_to": "Sales Consultant", 
-      "response": "For enterprise clients, I recommend our Professional tier with advanced analytics, dedicated support, and custom integrations. This includes...",
-      "resolution_status": "Proposal sent - Follow-up scheduled"
-    },
-    "inquiry_4_policy": {
-      "routed_to": "Policy Advisor",
-      "response": "Our return policy allows returns within 30 days of purchase for full refund. Items must be in original condition. Here's the complete process...",
-      "resolution_status": "Information provided - Customer satisfied"
-    }
-  },
-  "metadata": {
-    "routing_decisions": [
-      {
-        "inquiry": "Billing question about overcharge",
-        "routed_to": "Billing Specialist",
-        "confidence": 0.95,
-        "reasoning": "Billing-related inquiry requires specialized financial expertise"
-      },
-      {
-        "inquiry": "Technical issue with mobile app login",
-        "routed_to": "Technical Support",
-        "confidence": 0.98,
-        "reasoning": "Technical troubleshooting requires technical specialist"
-      },
-      {
-        "inquiry": "Product recommendation for enterprise client",
-        "routed_to": "Sales Consultant",
-        "confidence": 0.92,
-        "reasoning": "Enterprise sales requires specialized sales expertise"
-      },
-      {
-        "inquiry": "Return policy question",
-        "routed_to": "Policy Advisor",
-        "confidence": 0.97,
-        "reasoning": "Policy questions require policy specialist knowledge"
-      }
+    "job_id": "swarms-OvOZHubprE3thzLmRdNBZAxA6om4",
+    "status": "success",
+    "swarm_name": "Customer Support Router",
+    "description": "Route customer inquiries to specialized support agents",
+    "swarm_type": "MultiAgentRouter",
+    "output": [
+        {
+            "role": "user",
+            "content": "Handle multiple customer inquiries: 1) Billing question about overcharge, 2) Technical issue with mobile app login, 3) Product recommendation for enterprise client, 4) Return policy question"
+        },
+        {
+            "role": "Agent Router",
+            "content": "selected_agent='Billing Specialist' reasoning='The task involves multiple inquiries, but the first one is about a billing question regarding an overcharge. Billing issues often require immediate attention to ensure customer satisfaction and prevent further complications. Therefore, the Billing Specialist is the most appropriate agent to handle this task. They can address the billing question directly and potentially coordinate with other agents for the remaining inquiries.' modified_task='Billing question about overcharge'"
+        },
+        {
+            "role": "Billing Specialist",
+            "content": "Of course, I'd be happy to help you with your billing question regarding an overcharge. Could you please provide me with more details about the charge in question, such as the date it occurred and the amount? This information will help me look into your account and resolve the issue as quickly as possible."
+        }
     ],
-    "routing_efficiency": "100% - All inquiries routed to optimal agents",
-    "execution_time_seconds": 16.4,
-    "billing_info": {
-      "total_cost": 0.042
+    "number_of_agents": 4,
+    "service_tier": "standard",
+    "execution_time": 7.800086975097656,
+    "usage": {
+        "input_tokens": 28,
+        "output_tokens": 221,
+        "total_tokens": 249,
+        "billing_info": {
+            "cost_breakdown": {
+                "agent_cost": 0.04,
+                "input_token_cost": 0.000084,
+                "output_token_cost": 0.003315,
+                "token_counts": {
+                    "total_input_tokens": 28,
+                    "total_output_tokens": 221,
+                    "total_tokens": 249
+                },
+                "num_agents": 4,
+                "service_tier": "standard",
+                "night_time_discount_applied": true
+            },
+            "total_cost": 0.043399,
+            "discount_active": true,
+            "discount_type": "night_time",
+            "discount_percentage": 75
+        }
     }
-  }
 }
 ```
 

@@ -147,34 +147,56 @@ Key features:
 **Example Response**:
 ```json
 {
-  "status": "success",
-  "swarm_name": "content-creation-pipeline",
-  "swarm_type": "SequentialWorkflow",
-  "task": "Create a comprehensive blog post about the future of renewable energy",
-  "output": {
-    "research_findings": "Comprehensive research on renewable energy trends...",
-    "draft_content": "Initial blog post draft...",
-    "edited_content": "Polished and refined article...",
-    "final_seo_optimized": "SEO-optimized final blog post ready for publication..."
-  },
-  "metadata": {
-    "execution_sequence": [
-      "Research Specialist",
-      "Content Writer", 
-      "Editor",
-      "SEO Optimizer"
+    "job_id": "swarms-pbM8wqUwxq8afGeROV2A4xAcncd1",
+    "status": "success",
+    "swarm_name": "Content Creation Pipeline",
+    "description": "Sequential content creation from research to final output",
+    "swarm_type": "SequentialWorkflow",
+    "output": [
+        {
+            "role": "Research Specialist",
+            "content": "\"**Title: The Future of Renewable Energy: Charting a Sustainable Path Forward**\n\nAs we navigate the complexities of the 21st century, the transition to renewable energy stands out as a critical endeavor to ensure a sustainable future......"
+        },
+        {
+            "role": "SEO Optimizer",
+            "content": "\"**Title: The Future of Renewable Energy: Charting a Sustainable Path Forward**\n\nThe transition to renewable energy is crucial as we face the challenges of the 21st century, including climate change and dwindling fossil fuel resources......."
+        },
+        {
+            "role": "Editor",
+            "content": "\"**Title: The Future of Renewable Energy: Charting a Sustainable Path Forward**\n\nAs we confront the challenges of the 21st century, transitioning to renewable energy is essential for a sustainable future. With climate change concerns escalating and fossil fuel reserves depleting, renewable energy is not just an option but a necessity...."
+        },
+        {
+            "role": "Content Writer",
+            "content": "\"**Title: The Future of Renewable Energy: Charting a Sustainable Path Forward**\n\nAs we face the multifaceted challenges of the 21st century, transitioning to renewable energy emerges as not just an option but an essential step toward a sustainable future...."
+        }
     ],
-    "step_outputs": {
-      "step_1": "Research findings and data",
-      "step_2": "Draft article content",
-      "step_3": "Edited and refined content",
-      "step_4": "SEO-optimized final version"
-    },
-    "execution_time_seconds": 45.3,
-    "billing_info": {
-      "total_cost": 0.089
+    "number_of_agents": 4,
+    "service_tier": "standard",
+    "execution_time": 72.23084282875061,
+    "usage": {
+        "input_tokens": 28,
+        "output_tokens": 3012,
+        "total_tokens": 3040,
+        "billing_info": {
+            "cost_breakdown": {
+                "agent_cost": 0.04,
+                "input_token_cost": 0.000084,
+                "output_token_cost": 0.04518,
+                "token_counts": {
+                    "total_input_tokens": 28,
+                    "total_output_tokens": 3012,
+                    "total_tokens": 3040
+                },
+                "num_agents": 4,
+                "service_tier": "standard",
+                "night_time_discount_applied": true
+            },
+            "total_cost": 0.085264,
+            "discount_active": true,
+            "discount_type": "night_time",
+            "discount_percentage": 75
+        }
     }
-  }
 }
 ```
 

@@ -61,7 +61,7 @@ Key features:
             "temperature": 0.4
           }
         ],
-        "rearrange_flow": "Optimize agent sequence based on document complexity and required output quality",
+        "rearrange_flow": "Summarizer -> Legal Expert -> Document Analyzer",
         "max_loops": 1
       }'
     ```
@@ -110,7 +110,7 @@ Key features:
                 "temperature": 0.4
             }
         ],
-        "rearrange_flow": "Optimize agent sequence based on document complexity and required output quality",
+        "rearrange_flow": "Summarizer -> Legal Expert -> Document Analyzer",
         "max_loops": 1
     }
     
@@ -133,24 +133,52 @@ Key features:
 **Example Response**:
 ```json
 {
-  "status": "success",
-  "swarm_name": "document-processing-rearrange",
-  "swarm_type": "AgentRearrange",
-  "task": "Analyze this legal document and extract key insights, then summarize findings and identify action items",
-  "output": {
-    "analysis": "Document analysis results...",
-    "legal_insights": "Legal implications and risks...",
-    "summary": "Concise summary of findings...",
-    "action_items": ["Action 1", "Action 2", "Action 3"]
-  },
-  "metadata": {
-    "agent_sequence": ["Legal Expert", "Document Analyzer", "Summarizer"],
-    "rearrangement_reason": "Optimized for legal document analysis workflow",
-    "execution_time_seconds": 18.2,
-    "billing_info": {
-      "total_cost": 0.045
+    "job_id": "swarms-Uc8R7UcepLmNNPwcU7JC6YPy5wiI",
+    "status": "success",
+    "swarm_name": "Document Processing Rearrange",
+    "description": "Process documents with dynamic agent reorganization",
+    "swarm_type": "AgentRearrange",
+    "output": [
+        {
+            "role": "Summarizer",
+            "content": "\"Of course! Please provide the legal document you would like me to analyze, and I'll help extract key insights, summarize findings, and identify any action items.\""
+        },
+        {
+            "role": "Legal Expert",
+            "content": "\"\"Absolutely! Please upload or describe the legal document you need assistance with, and I'll provide an analysis that highlights key insights, summarizes the findings, and identifies any action items that may be necessary.\"\""
+        },
+        {
+            "role": "Document Analyzer",
+            "content": "\"Of course! Please provide the legal document you would like me to analyze, and I'll help extract key insights, summarize findings, and identify any action items.\""
+        }
+    ],
+    "number_of_agents": 3,
+    "service_tier": "standard",
+    "execution_time": 7.898931264877319,
+    "usage": {
+        "input_tokens": 22,
+        "output_tokens": 144,
+        "total_tokens": 166,
+        "billing_info": {
+            "cost_breakdown": {
+                "agent_cost": 0.03,
+                "input_token_cost": 0.000066,
+                "output_token_cost": 0.00216,
+                "token_counts": {
+                    "total_input_tokens": 22,
+                    "total_output_tokens": 144,
+                    "total_tokens": 166
+                },
+                "num_agents": 3,
+                "service_tier": "standard",
+                "night_time_discount_applied": true
+            },
+            "total_cost": 0.032226,
+            "discount_active": true,
+            "discount_type": "night_time",
+            "discount_percentage": 75
+        }
     }
-  }
 }
 ```
 

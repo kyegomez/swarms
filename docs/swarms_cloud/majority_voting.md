@@ -164,65 +164,74 @@ Key features:
 **Example Response**:
 ```json
 {
-  "status": "success",
-  "swarm_name": "investment-decision-voting",
-  "swarm_type": "MajorityVoting",
-  "task": "Evaluate whether to invest $1M in a renewable energy startup. Consider market potential, financial projections, team strength, and competitive landscape.",
-  "output": {
-    "individual_recommendations": [
-      {
-        "agent": "Growth Investor",
-        "recommendation": "INVEST",
-        "confidence": 0.8,
-        "reasoning": "Strong market growth potential in renewable energy sector, scalable technology platform"
-      },
-      {
-        "agent": "Financial Analyst", 
-        "recommendation": "INVEST",
-        "confidence": 0.7,
-        "reasoning": "Solid financial projections, reasonable burn rate, clear path to profitability"
-      },
-      {
-        "agent": "Technical Due Diligence",
-        "recommendation": "INVEST",
-        "confidence": 0.75,
-        "reasoning": "Innovative technology with strong IP portfolio, experienced technical team"
-      },
-      {
-        "agent": "Market Analyst",
-        "recommendation": "WAIT",
-        "confidence": 0.6,
-        "reasoning": "Highly competitive market, regulatory uncertainties may impact timeline"
-      },
-      {
-        "agent": "Risk Assessor",
-        "recommendation": "INVEST",
-        "confidence": 0.65,
-        "reasoning": "Manageable risks with strong mitigation strategies, experienced leadership team"
-      }
+    "job_id": "swarms-1WFsSJU2KcvY11lxRMjdQNWFHArI",
+    "status": "success",
+    "swarm_name": "Investment Decision Voting",
+    "description": "Multiple financial experts vote on investment recommendations",
+    "swarm_type": "MajorityVoting",
+    "output": [
+        {
+            "role": "Financial Analyst",
+            "content": [
+                "To evaluate the potential investment in a renewable energy startup, we will assess the technology viability, intellectual property, product-market fit, and technical risks, along with the additional factors of market ....."
+            ]
+        },
+        {
+            "role": "Technical Due Diligence",
+            "content": [
+                "To evaluate the potential investment in a renewable energy startup, we will analyze the relevant market dynamics, competitive landscape, regulatory environment, and market timing. Here's the breakdown of the assessment......."
+            ]
+        },
+        {
+            "role": "Market Analyst",
+            "content": [
+                "To evaluate the potential investment in a renewable energy startup, let's break down the key factors:\n\n1. **Market Potential........"
+            ]
+        },
+        {
+            "role": "Growth Investor",
+            "content": [
+                "To evaluate the potential investment in a renewable energy startup, we need to assess various risk factors and mitigation strategies across several key areas: market potential, financial projections, team strength, and competitive landscape.\n\n### 1. Market Potential\n**Risks:**\n- **Regulatory Changes................"
+            ]
+        },
+        {
+            "role": "Risk Assessor",
+            "content": [
+                "To provide a comprehensive evaluation of whether to invest $1M in the renewable energy startup, let's break down the key areas.........."
+            ]
+        },
+        {
+            "role": "Risk Assessor",
+            "content": "To evaluate the potential investment in a renewable energy startup, we need to assess various risk factors and mitigation strategies across several key areas....."
+        }
     ],
-    "consensus_decision": "INVEST",
-    "consensus_confidence": 0.72,
-    "consensus_reasoning": "4 out of 5 experts recommend investment with strong market potential and solid fundamentals, despite some market uncertainties"
-  },
-  "metadata": {
-    "vote_breakdown": {
-      "INVEST": 4,
-      "WAIT": 1,
-      "REJECT": 0
-    },
-    "vote_percentage": {
-      "INVEST": "80%",
-      "WAIT": "20%",
-      "REJECT": "0%"
-    },
-    "average_confidence": 0.70,
-    "consensus_threshold": "Simple majority (50%+)",
-    "execution_time_seconds": 25.8,
-    "billing_info": {
-      "total_cost": 0.063
+    "number_of_agents": 5,
+    "service_tier": "standard",
+    "execution_time": 61.74853563308716,
+    "usage": {
+        "input_tokens": 39,
+        "output_tokens": 8468,
+        "total_tokens": 8507,
+        "billing_info": {
+            "cost_breakdown": {
+                "agent_cost": 0.05,
+                "input_token_cost": 0.000117,
+                "output_token_cost": 0.12702,
+                "token_counts": {
+                    "total_input_tokens": 39,
+                    "total_output_tokens": 8468,
+                    "total_tokens": 8507
+                },
+                "num_agents": 5,
+                "service_tier": "standard",
+                "night_time_discount_applied": false
+            },
+            "total_cost": 0.177137,
+            "discount_active": false,
+            "discount_type": "none",
+            "discount_percentage": 0
+        }
     }
-  }
 }
 ```
 

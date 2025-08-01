@@ -147,29 +147,64 @@ Key features:
 **Example Response**:
 ```json
 {
-  "status": "success",
-  "swarm_name": "business-strategy-mixture",
-  "swarm_type": "MixtureOfAgents",
-  "task": "Develop a comprehensive market entry strategy for a new AI product in the healthcare sector",
-  "output": {
-    "market_analysis": "Detailed market research findings...",
-    "financial_assessment": "Financial projections and ROI analysis...",
-    "regulatory_compliance": "Regulatory requirements and pathways...",
-    "technology_strategy": "Technical implementation roadmap...",
-    "integrated_strategy": "Comprehensive market entry strategy combining all perspectives..."
-  },
-  "metadata": {
-    "agent_contributions": {
-      "Market Research Analyst": "Market size: $2.3B, Growth rate: 15% CAGR",
-      "Financial Analyst": "Break-even: 18 months, ROI: 35%",
-      "Regulatory Expert": "FDA pathway: 510(k), Timeline: 8-12 months",
-      "Technology Strategist": "MVP timeline: 6 months, Scalability: High"
-    },
-    "execution_time_seconds": 22.1,
-    "billing_info": {
-      "total_cost": 0.067
+    "job_id": "swarms-kBZaJg1uGTkRbLCAsGztL2jrp5Mj",
+    "status": "success",
+    "swarm_name": "Business Strategy Mixture",
+    "description": "Diverse team analyzing business strategy from multiple perspectives",
+    "swarm_type": "MixtureOfAgents",
+    "output": [
+        {
+            "role": "System",
+            "content": "Team Name: Business Strategy Mixture\nTeam Description: Diverse team analyzing business strategy from multiple perspectives\nThese are the agents in your team. Each agent has a specific role and expertise to contribute to the team's objectives.\nTotal Agents: 4\n\nBelow is a summary of your team members and their primary responsibilities:\n| Agent Name | Description |\n|------------|-------------|\n| Market Research Analyst | Analyzes market trends and opportunities |\n| Financial Analyst | Evaluates financial viability and projections |\n| Regulatory Expert | Analyzes compliance and regulatory requirements |\n| Technology Strategist | Evaluates technical feasibility and strategy |\n\nEach agent is designed to handle tasks within their area of expertise. Collaborate effectively by assigning tasks according to these roles."
+        },
+        {
+            "role": "Market Research Analyst",
+            "content": "To develop a comprehensive market entry strategy for a new AI product in the healthcare sector, we will leverage the expertise of each team member to cover all critical aspects of the strategy. Here's how each agent will contribute......."
+        },
+        {
+            "role": "Technology Strategist",
+            "content": "To develop a comprehensive market entry strategy for a new AI product in the healthcare sector, we'll need to collaborate effectively with the team, leveraging each member's expertise. Here's how each agent can contribute to the strategy, along with a focus on the technical requirements, implementation challenges, and scalability from the technology strategist's perspective....."
+        },
+        {
+            "role": "Financial Analyst",
+            "content": "Developing a comprehensive market entry strategy for a new AI product in the healthcare sector involves a multidisciplinary approach. Each agent in the Business Strategy Mixture team will play a crucial role in ensuring a successful market entry. Here's how the team can collaborate........"
+        },
+        {
+            "role": "Regulatory Expert",
+            "content": "To develop a comprehensive market entry strategy for a new AI product in the healthcare sector, we need to leverage the expertise of each agent in the Business Strategy Mixture team. Below is an outline of how each team member can contribute to this strategy......"
+        },
+        {
+            "role": "Aggregator Agent",
+            "content": "As the Aggregator Agent, I've observed and analyzed the responses from the Business Strategy Mixture team regarding the development of a comprehensive market entry strategy for a new AI product in the healthcare sector. Here's a summary of the key points ......"
+        }
+    ],
+    "number_of_agents": 4,
+    "service_tier": "standard",
+    "execution_time": 30.230480670928955,
+    "usage": {
+        "input_tokens": 30,
+        "output_tokens": 3401,
+        "total_tokens": 3431,
+        "billing_info": {
+            "cost_breakdown": {
+                "agent_cost": 0.04,
+                "input_token_cost": 0.00009,
+                "output_token_cost": 0.051015,
+                "token_counts": {
+                    "total_input_tokens": 30,
+                    "total_output_tokens": 3401,
+                    "total_tokens": 3431
+                },
+                "num_agents": 4,
+                "service_tier": "standard",
+                "night_time_discount_applied": true
+            },
+            "total_cost": 0.091105,
+            "discount_active": true,
+            "discount_type": "night_time",
+            "discount_percentage": 75
+        }
     }
-  }
 }
 ```
 
