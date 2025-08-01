@@ -452,7 +452,7 @@ nav:
           # - SpreadSheetSwarm: "swarms_cloud/spreadsheet_swarm.md"
           - SequentialWorkflow: "swarms_cloud/sequential_workflow.md"
           - ConcurrentWorkflow: "swarms_cloud/concurrent_workflow.md"
-          # - GroupChat: "swarms_cloud/group_chat.md"
+          - GroupChat: "swarms_cloud/group_chat.md"
           - MultiAgentRouter: "swarms_cloud/multi_agent_router.md"
           # - AutoSwarmBuilder: "swarms_cloud/auto_swarm_builder.md"
           # - HierarchicalSwarm: "swarms_cloud/hierarchical_swarm.md"
