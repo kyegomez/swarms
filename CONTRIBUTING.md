@@ -362,7 +362,7 @@ We have several areas where contributions are particularly welcome.
 |----------|------|-------------|
 | 📚 Documentation | [docs.swarms.world](https://docs.swarms.world) | Official documentation and guides |
 | 📝 Blog | [Medium](https://medium.com/@kyeg) | Latest updates and technical articles |
-| 💬 Discord | [Join Discord](https://discord.gg/jM3Z6M9uMq) | Live chat and community support |
+| 💬 Discord | [Join Discord](https://discord.gg/EamjgSaEQf) | Live chat and community support |
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |

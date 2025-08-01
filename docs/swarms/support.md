@@ -15,7 +15,8 @@ The Swarms team is committed to providing exceptional technical support to help 
 | **Support Type** | **Best For** | **Response Time** | **Channel** |
 |------------------|--------------|-------------------|-------------|
 | **Bug Reports** | Code issues, errors, unexpected behavior | < 24 hours | [GitHub Issues](https://github.com/kyegomez/swarms/issues) |
-| **Feature Requests** | New capabilities, enhancements | < 48 hours | [Email kye@swarms.world](mailto:kye@swarms.world) |
+| **Major Features (SIPs)** | New agent types, core changes, integrations | 1-2 weeks | [SIP Guidelines](protocol/sip.md) |
+| **Minor Features** | Small enhancements, straightforward additions | < 48 hours | [GitHub Issues](https://github.com/kyegomez/swarms/issues) |
 | **Private Issues** | Security concerns, enterprise consulting | < 4 hours | [Book Support Call](https://cal.com/swarms/swarms-technical-support?overlayCalendar=true) |
 | **Real-time Help** | Quick questions, community discussions | Immediate | [Discord Community](https://discord.gg/jM3Z6M9uMq) |
 | **Documentation** | Usage guides, examples, tutorials | Self-service | [docs.swarms.world](https://docs.swarms.world) |
@@ -219,58 +220,40 @@ Get instant help from our active community of developers and core team members.
 
 ## **Feature Requests & Enhancement Suggestions**
 
-### **When to Email for Feature Requests**
+### **Swarms Improvement Proposals (SIPs)**
 
-Contact us directly for:
+The primary way to propose new features and significant enhancements to the Swarms framework is through the **Swarms Improvement Proposal (SIP)** process. SIPs are design documents that describe new features, enhancements, or changes to the framework.
 
-- Major new framework capabilities
+**When to Submit a SIP:**
 
-- Architecture enhancements
+- New agent types or behaviors
+- Core framework changes
+- New integrations with external services
+- Breaking changes
+- Complex features requiring community discussion
 
-- New model provider integrations
+**SIP Process Overview:**
 
-- Enterprise-specific features
+1. **Discuss First**: Share your idea in [GitHub Discussions](https://github.com/kyegomez/swarms/discussions)
+2. **Create SIP**: Submit as GitHub Issue with `SIP` and `proposal` labels
+3. **Community Review**: Engage with feedback and iterate on the proposal
+4. **Implementation**: Once accepted, work on the implementation
 
-- Analytics and monitoring tools
+For detailed guidelines on creating and submitting SIPs, visit our [SIP Guidelines](protocol/sip.md).
 
-- UI/UX improvements
+### **Other Feature Requests**
 
+For smaller enhancements or straightforward additions that don't require a full SIP, you can:
 
-### **How to Submit Feature Requests**
+**Use GitHub Issues:**
+- Visit [GitHub Issues](https://github.com/kyegomez/swarms/issues)
+- Select the "Feature Request" template
+- Provide detailed description and use cases
 
-**Email**: [kye@swarms.world](mailto:kye@swarms.world)
-
-**Subject Format**: `[FEATURE REQUEST] Brief description`
-
-**Include in your email**:
-
-```markdown
-## Feature Description
-Clear description of the proposed feature
-
-## Use Case
-Why this feature is needed and how it would be used
-
-## Business Impact
-How this would benefit the Swarms ecosystem
-
-## Technical Requirements
-Any specific technical considerations
-
-## Priority Level
-- Low: Nice to have
-
-- Medium: Would significantly improve workflow
-
-- High: Critical for adoption/production use
-
-
-## Alternatives Considered
-Other solutions you've explored
-
-## Implementation Ideas
-Any thoughts on how this could be implemented
-```
+**Contact Direct Support:**
+For enterprise-specific features or private discussions:
+- **Email**: [kye@swarms.world](mailto:kye@swarms.world)
+- **Subject Format**: `[FEATURE REQUEST] Brief description`
 
 ### **Feature Request Process**
 
@@ -387,6 +370,7 @@ Help improve support for everyone:
 | **Emergency** | [Book Immediate Call](https://cal.com/swarms/swarms-technical-support?overlayCalendar=true) |
 | **Urgent** | [Discord #technical-support](https://discord.gg/jM3Z6M9uMq) |
 | **Standard** | [GitHub Issues](https://github.com/kyegomez/swarms/issues) |
-| **Feature Ideas** | [Email kye@swarms.world](mailto:kye@swarms.world) |
+| **Major Features** | [SIP Guidelines](protocol/sip.md) |
+| **Minor Features** | [GitHub Issues](https://github.com/kyegomez/swarms/issues) |
 
 **We're here to help you succeed with Swarms.**

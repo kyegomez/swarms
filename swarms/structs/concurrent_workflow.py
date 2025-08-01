@@ -1,11 +1,11 @@
 import concurrent.futures
-import os
 import time
 from typing import Callable, List, Optional, Union
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.conversation import Conversation
+from swarms.utils.get_cpu_cores import get_cpu_cores
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -436,7 +436,7 @@ class ConcurrentWorkflow(BaseSwarm):
                 self.display_agent_dashboard()
 
             # Use 95% of available CPU cores for optimal performance
-            max_workers = int(os.cpu_count() * 0.95)
+            max_workers = int(get_cpu_cores() * 0.95)
 
             # Create a list to store all futures and their results
             futures = []
@@ -452,24 +452,38 @@ class ConcurrentWorkflow(BaseSwarm):
                         self.display_agent_dashboard()
 
                     # Create a streaming callback for this agent with throttling
-                    last_update_time = [0]  # Use list to allow modification in nested function
+                    last_update_time = [
+                        0
+                    ]  # Use list to allow modification in nested function
                     update_interval = 0.1  # Update dashboard every 100ms for smooth streaming
-                    
+
                     def streaming_callback(chunk: str):
                         """Update dashboard with streaming content"""
                         if self.show_dashboard:
                             # Append the chunk to the agent's current output
-                            current_output = self.agent_statuses[agent.agent_name]["output"]
-                            self.agent_statuses[agent.agent_name]["output"] = current_output + chunk
-                            
+                            current_output = self.agent_statuses[
+                                agent.agent_name
+                            ]["output"]
+                            self.agent_statuses[agent.agent_name][
+                                "output"
+                            ] = (current_output + chunk)
+
                             # Throttle dashboard updates for better performance
                             current_time = time.time()
-                            if current_time - last_update_time[0] >= update_interval:
+                            if (
+                                current_time - last_update_time[0]
+                                >= update_interval
+                            ):
                                 self.display_agent_dashboard()
                                 last_update_time[0] = current_time
 
                     # Run the agent with streaming callback
-                    output = agent.run(task=task, img=img, imgs=imgs, streaming_callback=streaming_callback)
+                    output = agent.run(
+                        task=task,
+                        img=img,
+                        imgs=imgs,
+                        streaming_callback=streaming_callback,
+                    )
 
                     # Update status to completed
                     self.agent_statuses[agent.agent_name][
@@ -610,7 +624,7 @@ class ConcurrentWorkflow(BaseSwarm):
         self.conversation.add(role="User", content=task)
 
         # Use 95% of available CPU cores for optimal performance
-        max_workers = int(os.cpu_count() * 0.95)
+        max_workers = int(get_cpu_cores() * 0.95)
 
         # Run agents concurrently using ThreadPoolExecutor
         with concurrent.futures.ThreadPoolExecutor(
