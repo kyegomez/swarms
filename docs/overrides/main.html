@@ -19,13 +19,22 @@
               <h4 class="md-footer-links__title">{{ section_name }}</h4>
               <ul class="md-footer-links__list">
                 {% for link in links %}
-                  <li class="md-footer-links__item">
+                  <li class="md-footer-links__item{% if loop.index > 4 %} md-footer-links__item--hidden{% endif %}">
                     <a href="{{ link.url }}" class="md-footer-links__link">
                       {{ link.title }}
                     </a>
                   </li>
                 {% endfor %}
               </ul>
+              {% if links|length > 4 %}
+                <button type="button" class="md-footer-links__toggle" 
+                        onclick="toggleFooterLinks(this)"
+                        data-text-more="Show {{ links|length - 4 }} more"
+                        data-text-less="Show less">
+                  <span class="md-footer-links__toggle-text">Show {{ links|length - 4 }} more</span>
+                  <span class="md-footer-links__toggle-icon">▼</span>
+                </button>
+              {% endif %}
             </div>
           {% endfor %}
         </div>
@@ -70,8 +79,8 @@
     
     .md-footer-links {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 2rem;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1.2rem;
       max-width: 1220px;
       margin: 0 auto;
     }
@@ -81,12 +90,12 @@
     }
     
     .md-footer-links__title {
-      font-size: 0.64rem;
+      font-size: 0.6rem;
       font-weight: 700;
-      margin: 0 0 1rem;
+      margin: 0 0 0.8rem;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      padding-bottom: 0.4rem;
+      padding-bottom: 0.3rem;
     }
     
     .md-footer-links__list {
@@ -97,14 +106,14 @@
     
     .md-footer-links__item {
       margin: 0;
-      line-height: 1.8;
+      line-height: 1.6;
     }
     
     .md-footer-links__link {
       text-decoration: none;
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       display: block;
-      padding: 0.1rem 0;
+      padding: 0.08rem 0;
       transition: color 125ms;
       border-radius: 0.1rem;
     }
@@ -112,6 +121,45 @@
     .md-footer-links__link:hover,
     .md-footer-links__link:focus {
       color: var(--md-accent-fg-color);
+    }
+    
+    /* Hidden footer items */
+    .md-footer-links__item--hidden {
+      display: none;
+    }
+    
+    /* Toggle button styles */
+    .md-footer-links__toggle {
+      background: none;
+      border: 0.05rem solid;
+      border-radius: 0.15rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.58rem;
+      font-weight: 500;
+      margin-top: 0.6rem;
+      padding: 0.3rem 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: all 150ms ease;
+      width: auto;
+      min-width: fit-content;
+    }
+    
+    .md-footer-links__toggle:hover {
+      transform: translateY(-1px);
+    }
+    
+    .md-footer-links__toggle-icon {
+      font-size: 0.45rem;
+      transition: transform 200ms ease;
+      line-height: 1;
+    }
+    
+    .md-footer-links__toggle--expanded .md-footer-links__toggle-icon {
+      transform: rotate(180deg);
     }
     
     /* Light Mode (Default) */
@@ -134,6 +182,18 @@
       color: #1976d2;
     }
     
+    [data-md-color-scheme="default"] .md-footer-links__toggle {
+      border-color: #e1e5e9;
+      color: #636c76;
+      background: #ffffff;
+    }
+    
+    [data-md-color-scheme="default"] .md-footer-links__toggle:hover {
+      border-color: #1976d2;
+      color: #1976d2;
+      background: #f8f9fa;
+    }
+    
     /* Dark Mode (Slate) */
     [data-md-color-scheme="slate"] .md-footer-custom {
       background: #1F2129;
@@ -152,6 +212,18 @@
     [data-md-color-scheme="slate"] .md-footer-links__link:hover,
     [data-md-color-scheme="slate"] .md-footer-links__link:focus {
       color: #42a5f5;
+    }
+    
+    [data-md-color-scheme="slate"] .md-footer-links__toggle {
+      border-color: #404040;
+      color: #9ca3af;
+      background: #1F2129;
+    }
+    
+    [data-md-color-scheme="slate"] .md-footer-links__toggle:hover {
+      border-color: #42a5f5;
+      color: #42a5f5;
+      background: #2a2d38;
     }
     
     /* Company Information Section - Base */
@@ -240,28 +312,45 @@
     }
     
     /* Responsive Design */
+    @media screen and (min-width: 90em) {
+      .md-footer-links {
+        max-width: 1400px;
+        gap: 1.5rem;
+      }
+    }
+    
     @media screen and (max-width: 76.1875em) {
       .md-footer-links {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.5rem;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
       }
       
       .md-footer-custom {
-        padding: 2rem 0 1rem;
+        padding: 1.8rem 0 1rem;
       }
     }
     
     @media screen and (max-width: 59.9375em) {
       .md-footer-links {
         grid-template-columns: repeat(2, 1fr);
-        gap: 1.5rem;
+        gap: 1rem;
+      }
+      
+      .md-footer-links__title {
+        font-size: 0.62rem;
+        margin: 0 0 0.9rem;
+      }
+      
+      .md-footer-links__link {
+        font-size: 0.68rem;
+        padding: 0.1rem 0;
       }
     }
     
     @media screen and (max-width: 44.9375em) {
       .md-footer-links {
         grid-template-columns: 1fr;
-        gap: 1.5rem;
+        gap: 1.2rem;
       }
       
       .md-footer-custom {
@@ -270,6 +359,16 @@
       
       .md-footer-custom__inner {
         padding: 0 1rem;
+      }
+      
+      .md-footer-links__title {
+        font-size: 0.65rem;
+        margin: 0 0 1rem;
+      }
+      
+      .md-footer-links__link {
+        font-size: 0.7rem;
+        padding: 0.12rem 0;
       }
       
       /* Company section mobile styles */
@@ -292,4 +391,30 @@
       }
     }
   </style>
+  
+  <script>
+    function toggleFooterLinks(button) {
+      // Find the parent section
+      const section = button.closest('.md-footer-links__section');
+      const hiddenItems = section.querySelectorAll('.md-footer-links__item--hidden');
+      const toggleText = button.querySelector('.md-footer-links__toggle-text');
+      const isExpanded = button.classList.contains('md-footer-links__toggle--expanded');
+      
+      if (isExpanded) {
+        // Hide items
+        hiddenItems.forEach(item => {
+          item.style.display = 'none';
+        });
+        toggleText.textContent = button.getAttribute('data-text-more');
+        button.classList.remove('md-footer-links__toggle--expanded');
+      } else {
+        // Show items
+        hiddenItems.forEach(item => {
+          item.style.display = 'block';
+        });
+        toggleText.textContent = button.getAttribute('data-text-less');
+        button.classList.add('md-footer-links__toggle--expanded');
+      }
+    }
+  </script>
 {% endblock %}
