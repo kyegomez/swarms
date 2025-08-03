@@ -6,11 +6,11 @@ each with detailed backgrounds, political positions, and comprehensive system pr
 that reflect their real-world characteristics, voting patterns, and policy priorities.
 """
 
+import random
+from typing import Dict, List, Optional, Union
+
 from swarms import Agent
 from swarms.structs.multi_agent_exec import run_agents_concurrently
-from typing import Dict, List, Optional, Union
-import json
-import random
 
 
 class SenatorSimulation:
@@ -3490,159 +3490,159 @@ class SenatorSimulation:
         }
 
 
-# Example usage and demonstration
-def main():
-    """
-    Demonstrate the Senate simulation with various scenarios.
-    """
-    print("🏛️  US Senate Simulation Initializing...")
+# # Example usage and demonstration
+# def main():
+#     """
+#     Demonstrate the Senate simulation with various scenarios.
+#     """
+#     print("🏛️  US Senate Simulation Initializing...")
 
-    # Create the simulation
-    senate = SenatorSimulation()
+#     # Create the simulation
+#     senate = SenatorSimulation()
 
-    print("\n📊 Senate Composition:")
-    composition = senate.get_senate_composition()
-    print(json.dumps(composition, indent=2))
+#     print("\n📊 Senate Composition:")
+#     composition = senate.get_senate_composition()
+#     print(json.dumps(composition, indent=2))
 
-    print(f"\n🎭 Available Senators ({len(senate.senators)}):")
-    for name in senate.senators.keys():
-        party = senate._get_senator_party(name)
-        print(f"  - {name} ({party})")
+#     print(f"\n🎭 Available Senators ({len(senate.senators)}):")
+#     for name in senate.senators.keys():
+#         party = senate._get_senator_party(name)
+#         print(f"  - {name} ({party})")
 
-    # Example 1: Individual senator response
-    print("\n🗣️  Example: Senator Response")
-    senator = senate.get_senator("Katie Britt")
-    response = senator.run(
-        "What is your position on infrastructure spending and how would you pay for it?"
-    )
-    print(f"Senator Katie Britt: {response}")
+#     # Example 1: Individual senator response
+#     print("\n🗣️  Example: Senator Response")
+#     senator = senate.get_senator("Katie Britt")
+#     response = senator.run(
+#         "What is your position on infrastructure spending and how would you pay for it?"
+#     )
+#     print(f"Senator Katie Britt: {response}")
 
-    # Example 2: Simulate a debate
-    print("\n💬 Example: Senate Debate on Climate Change")
-    debate = senate.simulate_debate(
-        "Climate change legislation and carbon pricing",
-        [
-            "Katie Britt",
-            "Mark Kelly",
-            "Lisa Murkowski",
-            "Alex Padilla",
-        ],
-    )
+#     # Example 2: Simulate a debate
+#     print("\n💬 Example: Senate Debate on Climate Change")
+#     debate = senate.simulate_debate(
+#         "Climate change legislation and carbon pricing",
+#         [
+#             "Katie Britt",
+#             "Mark Kelly",
+#             "Lisa Murkowski",
+#             "Alex Padilla",
+#         ],
+#     )
 
-    for entry in debate["transcript"]:
-        print(f"\n{entry['senator']} ({entry['party']}):")
-        print(f"  {entry['position'][:200]}...")
+#     for entry in debate["transcript"]:
+#         print(f"\n{entry['senator']} ({entry['party']}):")
+#         print(f"  {entry['position'][:200]}...")
 
-    # Example 3: Simulate a vote
-    print("\n🗳️  Example: Senate Vote on Infrastructure Bill")
-    vote = senate.simulate_vote(
-        "A $1.2 trillion infrastructure bill including roads, bridges, broadband, and clean energy projects",
-        [
-            "Katie Britt",
-            "Mark Kelly",
-            "Lisa Murkowski",
-            "Alex Padilla",
-            "Tom Cotton",
-        ],
-    )
+#     # Example 3: Simulate a vote
+#     print("\n🗳️  Example: Senate Vote on Infrastructure Bill")
+#     vote = senate.simulate_vote(
+#         "A $1.2 trillion infrastructure bill including roads, bridges, broadband, and clean energy projects",
+#         [
+#             "Katie Britt",
+#             "Mark Kelly",
+#             "Lisa Murkowski",
+#             "Alex Padilla",
+#             "Tom Cotton",
+#         ],
+#     )
 
-    print("Vote Results:")
-    for senator, vote_choice in vote["votes"].items():
-        print(f"  {senator}: {vote_choice}")
+#     print("Vote Results:")
+#     for senator, vote_choice in vote["votes"].items():
+#         print(f"  {senator}: {vote_choice}")
 
-    print(f"\nFinal Result: {vote['results']['outcome']}")
-    print(
-        f"YEA: {vote['results']['yea']}, NAY: {vote['results']['nay']}, PRESENT: {vote['results']['present']}"
-    )
+#     print(f"\nFinal Result: {vote['results']['outcome']}")
+#     print(
+#         f"YEA: {vote['results']['yea']}, NAY: {vote['results']['nay']}, PRESENT: {vote['results']['present']}"
+#     )
 
-    # Example 4: Committee hearing
-    print("\n🏛️  Example: Committee Hearing")
-    hearing = senate.run_committee_hearing(
-        "Armed Services",
-        "Military readiness and defense spending",
-        ["Secretary of Defense", "Joint Chiefs Chairman"],
-    )
+#     # Example 4: Committee hearing
+#     print("\n🏛️  Example: Committee Hearing")
+#     hearing = senate.run_committee_hearing(
+#         "Armed Services",
+#         "Military readiness and defense spending",
+#         ["Secretary of Defense", "Joint Chiefs Chairman"],
+#     )
 
-    print("Armed Services Committee Hearing on Military Readiness")
-    for entry in hearing["transcript"][:3]:  # Show first 3 entries
-        print(
-            f"\n{entry['type'].title()}: {entry['senator'] if 'senator' in entry else entry['witness']}"
-        )
-        print(f"  {entry['content'][:150]}...")
+#     print("Armed Services Committee Hearing on Military Readiness")
+#     for entry in hearing["transcript"][:3]:  # Show first 3 entries
+#         print(
+#             f"\n{entry['type'].title()}: {entry['senator'] if 'senator' in entry else entry['witness']}"
+#         )
+#         print(f"  {entry['content'][:150]}...")
 
-    # Example 5: Run all senators concurrently on a single task
-    print("\n🚀 Example: All Senators Concurrent Response")
-    all_senators_results = senate.run(
-        "What is your position on federal student loan forgiveness and how should we address the student debt crisis?"
-    )
+#     # Example 5: Run all senators concurrently on a single task
+#     print("\n🚀 Example: All Senators Concurrent Response")
+#     all_senators_results = senate.run(
+#         "What is your position on federal student loan forgiveness and how should we address the student debt crisis?"
+#     )
 
-    print(f"\nTask: {all_senators_results['task']}")
-    print(
-        f"Selection Method: {all_senators_results['selection_method']}"
-    )
-    print(
-        f"Total Participants: {all_senators_results['total_participants']}"
-    )
+#     print(f"\nTask: {all_senators_results['task']}")
+#     print(
+#         f"Selection Method: {all_senators_results['selection_method']}"
+#     )
+#     print(
+#         f"Total Participants: {all_senators_results['total_participants']}"
+#     )
 
-    print("\n📊 Party Breakdown:")
-    for party, senators in all_senators_results[
-        "party_breakdown"
-    ].items():
-        if senators:
-            print(f"\n{party} ({len(senators)} senators):")
-            for senator_data in senators:
-                print(f"  - {senator_data['senator']}")
+#     print("\n📊 Party Breakdown:")
+#     for party, senators in all_senators_results[
+#         "party_breakdown"
+#     ].items():
+#         if senators:
+#             print(f"\n{party} ({len(senators)} senators):")
+#             for senator_data in senators:
+#                 print(f"  - {senator_data['senator']}")
 
-    # Example 6: Run 50% of senators randomly
-    print("\n🎲 Example: Random 50% of Senators")
-    random_results = senate.run(
-        "What is your position on climate change legislation and carbon pricing?",
-        participants=0.5,  # 50% of all senators
-    )
+#     # Example 6: Run 50% of senators randomly
+#     print("\n🎲 Example: Random 50% of Senators")
+#     random_results = senate.run(
+#         "What is your position on climate change legislation and carbon pricing?",
+#         participants=0.5,  # 50% of all senators
+#     )
 
-    print(f"\nTask: {random_results['task']}")
-    print(f"Selection Method: {random_results['selection_method']}")
-    print(
-        f"Total Participants: {random_results['total_participants']}"
-    )
+#     print(f"\nTask: {random_results['task']}")
+#     print(f"Selection Method: {random_results['selection_method']}")
+#     print(
+#         f"Total Participants: {random_results['total_participants']}"
+#     )
 
-    print("\n📋 Selected Senators:")
-    for senator in random_results["participants"]:
-        party = senate._get_senator_party(senator)
-        print(f"  - {senator} ({party})")
+#     print("\n📋 Selected Senators:")
+#     for senator in random_results["participants"]:
+#         party = senate._get_senator_party(senator)
+#         print(f"  - {senator} ({party})")
 
-    print("\n📊 Party Breakdown:")
-    for party, senators in random_results["party_breakdown"].items():
-        if senators:
-            print(f"\n{party} ({len(senators)} senators):")
-            for senator_data in senators:
-                print(f"  - {senator_data['senator']}")
+#     print("\n📊 Party Breakdown:")
+#     for party, senators in random_results["party_breakdown"].items():
+#         if senators:
+#             print(f"\n{party} ({len(senators)} senators):")
+#             for senator_data in senators:
+#                 print(f"  - {senator_data['senator']}")
 
-    # Example 7: Run specific senators
-    print("\n🎯 Example: Specific Senators")
-    specific_results = senate.run(
-        "What is your position on military spending and defense policy?",
-        participants=[
-            "Katie Britt",
-            "Mark Kelly",
-            "Lisa Murkowski",
-            "Alex Padilla",
-            "Tom Cotton",
-        ],
-    )
+#     # Example 7: Run specific senators
+#     print("\n🎯 Example: Specific Senators")
+#     specific_results = senate.run(
+#         "What is your position on military spending and defense policy?",
+#         participants=[
+#             "Katie Britt",
+#             "Mark Kelly",
+#             "Lisa Murkowski",
+#             "Alex Padilla",
+#             "Tom Cotton",
+#         ],
+#     )
 
-    print(f"\nTask: {specific_results['task']}")
-    print(f"Selection Method: {specific_results['selection_method']}")
-    print(
-        f"Total Participants: {specific_results['total_participants']}"
-    )
+#     print(f"\nTask: {specific_results['task']}")
+#     print(f"Selection Method: {specific_results['selection_method']}")
+#     print(
+#         f"Total Participants: {specific_results['total_participants']}"
+#     )
 
-    print("\n📋 Responses by Senator:")
-    for senator, response in specific_results["responses"].items():
-        party = senate._get_senator_party(senator)
-        print(f"\n{senator} ({party}):")
-        print(f"  {response[:200]}...")
+#     print("\n📋 Responses by Senator:")
+#     for senator, response in specific_results["responses"].items():
+#         party = senate._get_senator_party(senator)
+#         print(f"\n{senator} ({party}):")
+#         print(f"  {response[:200]}...")
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

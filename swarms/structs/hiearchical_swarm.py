@@ -1,6 +1,10 @@
 """
-Flow:
+Hierarchical Swarm Implementation
 
+This module provides a hierarchical swarm architecture where a director agent coordinates
+multiple worker agents to execute complex tasks through a structured workflow.
+
+Flow:
 1. User provides a task
 2. Director creates a plan
 3. Director distributes orders to agents individually or multiple tasks at once
@@ -8,10 +12,21 @@ Flow:
 5. Director evaluates results and issues new orders if needed (up to max_loops)
 6. All context and conversation history is preserved throughout the process
 
+Todo
+
+- Add layers of management -- a list of list of agents that act as departments
+- Auto build agents from input prompt - and then add them to the swarm
+- Create an interactive and dynamic UI like we did with heavy swarm
+- Make it faster and more high performance
+
+Classes:
+    HierarchicalOrder: Represents a single task assignment to a specific agent
+    SwarmSpec: Contains the overall plan and list of orders for the swarm
+    HierarchicalSwarm: Main swarm orchestrator that manages director and worker agents
 """
 
 import traceback
-from typing import Any, Callable, List, Literal, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -19,7 +34,6 @@ from swarms.prompts.hiearchical_system_prompt import (
     HIEARCHICAL_SWARM_SYSTEM_PROMPT,
 )
 from swarms.structs.agent import Agent
-from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import list_all_agents
 from swarms.tools.base_tool import BaseTool
@@ -33,6 +47,20 @@ logger = initialize_logger(log_folder="hierarchical_swarm")
 
 
 class HierarchicalOrder(BaseModel):
+    """
+    Represents a single task assignment within the hierarchical swarm.
+
+    This class defines the structure for individual task orders that the director
+    distributes to worker agents. Each order specifies which agent should execute
+    what specific task.
+
+    Attributes:
+        agent_name (str): The name of the agent assigned to execute the task.
+                         Must match an existing agent in the swarm.
+        task (str): The specific task description to be executed by the assigned agent.
+                   Should be clear and actionable.
+    """
+
     agent_name: str = Field(
         ...,
         description="Specifies the name of the agent to which the task is assigned. This is a crucial element in the hierarchical structure of the swarm, as it determines the specific agent responsible for the task execution.",
@@ -44,6 +72,20 @@ class HierarchicalOrder(BaseModel):
 
 
 class SwarmSpec(BaseModel):
+    """
+    Defines the complete specification for a hierarchical swarm execution.
+
+    This class contains the overall plan and all individual orders that the director
+    creates to coordinate the swarm's activities. It serves as the structured output
+    format for the director agent.
+
+    Attributes:
+        plan (str): A comprehensive plan outlining the sequence of actions and strategy
+                   for the entire swarm to accomplish the given task.
+        orders (List[HierarchicalOrder]): A list of specific task assignments to
+                                         individual agents within the swarm.
+    """
+
     plan: str = Field(
         ...,
         description="Outlines the sequence of actions to be taken by the swarm. This plan is a detailed roadmap that guides the swarm's behavior and decision-making.",
@@ -54,50 +96,34 @@ class SwarmSpec(BaseModel):
     )
 
 
-SwarmType = Literal[
-    "AgentRearrange",
-    "MixtureOfAgents",
-    "SpreadSheetSwarm",
-    "SequentialWorkflow",
-    "ConcurrentWorkflow",
-    "GroupChat",
-    "MultiAgentRouter",
-    "AutoSwarmBuilder",
-    "HiearchicalSwarm",
-    "auto",
-    "MajorityVoting",
-    "MALT",
-    "DeepResearchSwarm",
-    "CouncilAsAJudge",
-    "InteractiveGroupChat",
-]
-
-
-class SwarmRouterCall(BaseModel):
-    goal: str = Field(
-        ...,
-        description="The goal of the swarm router call. This is the goal that the swarm router will use to determine the best swarm to use.",
-    )
-    swarm_type: SwarmType = Field(
-        ...,
-        description="The type of swarm to use. This is the type of swarm that the swarm router will use to determine the best swarm to use.",
-    )
-
-    task: str = Field(
-        ...,
-        description="The task to be executed by the swarm router. This is the task that the swarm router will use to determine the best swarm to use.",
-    )
-
-
-class HierarchicalSwarm(BaseSwarm):
+class HierarchicalSwarm:
     """
-    _Representer a hierarchical swarm of agents, with a director that orchestrates tasks among the agents.
-    The workflow follows a hierarchical pattern:
-    1. Task is received and sent to the director
-    2. Director creates a plan and distributes orders to agents
-    3. Agents execute tasks and report back to the director
-    4. Director evaluates results and issues new orders if needed (up to max_loops)
-    5. All context and conversation history is preserved throughout the process
+    A hierarchical swarm orchestrator that coordinates multiple agents through a director.
+
+    This class implements a hierarchical architecture where a director agent creates
+    plans and distributes tasks to worker agents. The director can provide feedback
+    and iterate on results through multiple loops to achieve the desired outcome.
+
+    The swarm maintains conversation history throughout the process, allowing for
+    context-aware decision making and iterative refinement of results.
+
+    Attributes:
+        name (str): The name identifier for this swarm instance.
+        description (str): A description of the swarm's purpose and capabilities.
+        director (Optional[Union[Agent, Callable, Any]]): The director agent that
+                                                         coordinates the swarm.
+        agents (List[Union[Agent, Callable, Any]]): List of worker agents available
+                                                   for task execution.
+        max_loops (int): Maximum number of feedback loops the swarm can perform.
+        output_type (OutputType): Format for the final output of the swarm.
+        feedback_director_model_name (str): Model name for the feedback director.
+        director_name (str): Name identifier for the director agent.
+        director_model_name (str): Model name for the main director agent.
+        verbose (bool): Whether to enable detailed logging and progress tracking.
+        add_collaboration_prompt (bool): Whether to add collaboration prompts to agents.
+        planning_director_agent (Optional[Union[Agent, Callable, Any]]): Optional
+                                                                        planning agent.
+        director_feedback_on (bool): Whether director feedback is enabled.
     """
 
     def __init__(
@@ -121,22 +147,33 @@ class HierarchicalSwarm(BaseSwarm):
         **kwargs,
     ):
         """
-        Initializes the HierarchicalSwarm with the given parameters.
+        Initialize a new HierarchicalSwarm instance.
 
-        :param name: The name of the swarm.
-        :param description: A description of the swarm.
-        :param director: The director agent that orchestrates tasks.
-        :param agents: A list of agents within the swarm.
-        :param max_loops: The maximum number of feedback loops between the director and agents.
-        :param output_type: The format in which to return the output (dict, str, or list).
-        :param verbose: Enable detailed logging with loguru.
+        Args:
+            name (str): The name identifier for this swarm instance.
+            description (str): A description of the swarm's purpose.
+            director (Optional[Union[Agent, Callable, Any]]): The director agent.
+                                                             If None, a default director will be created.
+            agents (List[Union[Agent, Callable, Any]]): List of worker agents.
+                                                       Must not be empty.
+            max_loops (int): Maximum number of feedback loops (must be > 0).
+            output_type (OutputType): Format for the final output.
+            feedback_director_model_name (str): Model name for feedback director.
+            director_name (str): Name identifier for the director agent.
+            director_model_name (str): Model name for the main director agent.
+            verbose (bool): Whether to enable detailed logging.
+            add_collaboration_prompt (bool): Whether to add collaboration prompts.
+            planning_director_agent (Optional[Union[Agent, Callable, Any]]):
+                Optional planning agent for enhanced planning capabilities.
+            director_feedback_on (bool): Whether director feedback is enabled.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Raises:
+            ValueError: If no agents are provided or max_loops is invalid.
         """
-        super().__init__(
-            name=name,
-            description=description,
-            agents=agents,
-        )
         self.name = name
+        self.description = description
         self.director = director
         self.agents = agents
         self.max_loops = max_loops
@@ -155,15 +192,21 @@ class HierarchicalSwarm(BaseSwarm):
 
     def init_swarm(self):
         """
-        Initializes the swarm.
+        Initialize the swarm with proper configuration and validation.
+
+        This method performs the following initialization steps:
+        1. Sets up logging if verbose mode is enabled
+        2. Creates a conversation instance for history tracking
+        3. Performs reliability checks on the configuration
+        4. Adds agent context to the director
+
+        Raises:
+            ValueError: If the swarm configuration is invalid.
         """
         # Initialize logger only if verbose is enabled
         if self.verbose:
             logger.info(
                 f"🚀 Initializing HierarchicalSwarm: {self.name}"
-            )
-            logger.info(
-                f"📊 Configuration - Max loops: {self.max_loops}"
             )
 
         self.conversation = Conversation(time_enabled=False)
@@ -171,17 +214,25 @@ class HierarchicalSwarm(BaseSwarm):
         # Reliability checks
         self.reliability_checks()
 
-        self.director = self.setup_director()
-
         self.add_context_to_director()
 
         if self.verbose:
             logger.success(
-                f"✅ HierarchicalSwarm initialized successfully: Name {self.name}"
+                f"✅ HierarchicalSwarm: {self.name} initialized successfully."
             )
 
     def add_context_to_director(self):
-        """Add agent context to the director's conversation."""
+        """
+        Add agent context and collaboration information to the director's conversation.
+
+        This method ensures that the director has complete information about all
+        available agents, their capabilities, and how they can collaborate. This
+        context is essential for the director to make informed decisions about
+        task distribution.
+
+        Raises:
+            Exception: If adding context fails due to agent configuration issues.
+        """
         try:
             if self.verbose:
                 logger.info("📝 Adding agent context to director")
@@ -207,7 +258,18 @@ class HierarchicalSwarm(BaseSwarm):
             )
 
     def setup_director(self):
-        """Set up the director agent with proper configuration."""
+        """
+        Set up the director agent with proper configuration and tools.
+
+        Creates a new director agent with the SwarmSpec schema for structured
+        output, enabling it to create plans and distribute orders effectively.
+
+        Returns:
+            Agent: A configured director agent ready to coordinate the swarm.
+
+        Raises:
+            Exception: If director setup fails due to configuration issues.
+        """
         try:
             if self.verbose:
                 logger.info("🎯 Setting up director agent")
@@ -217,17 +279,6 @@ class HierarchicalSwarm(BaseSwarm):
             if self.verbose:
                 logger.debug(f"📋 Director schema: {schema}")
 
-            # if self.director is not None:
-            #     # if litellm_check_for_tools(self.director.model_name) is True:
-            #     self.director.add_tool_schema([schema])
-
-            #     if self.verbose:
-            #         logger.success(
-            #             "✅ Director agent setup completed successfully"
-            #         )
-
-            #     return self.director
-            # else:
             return Agent(
                 agent_name=self.director_name,
                 agent_description="A director agent that can create a plan and distribute orders to agents",
@@ -244,13 +295,20 @@ class HierarchicalSwarm(BaseSwarm):
 
     def reliability_checks(self):
         """
-        Checks if there are any agents and a director set for the swarm.
-        Raises ValueError if either condition is not met.
+        Perform validation checks to ensure the swarm is properly configured.
+
+        This method validates:
+        1. That at least one agent is provided
+        2. That max_loops is greater than 0
+        3. That a director is available (creates default if needed)
+
+        Raises:
+            ValueError: If the swarm configuration is invalid.
         """
         try:
             if self.verbose:
                 logger.info(
-                    f"🔍 Running reliability checks for swarm: {self.name}"
+                    f"Hiearchical Swarm: {self.name} Reliability checks in progress..."
                 )
 
             if not self.agents or len(self.agents) == 0:
@@ -263,17 +321,12 @@ class HierarchicalSwarm(BaseSwarm):
                     "Max loops must be greater than 0. Please set a valid number of loops."
                 )
 
-            if not self.director:
-                raise ValueError(
-                    "Director not set for the swarm. A director agent is required to coordinate and orchestrate tasks among the agents."
-                )
+            if self.director is None:
+                self.director = self.setup_director()
 
             if self.verbose:
                 logger.success(
-                    f"✅ Reliability checks passed for swarm: {self.name}"
-                )
-                logger.info(
-                    f"📊 Swarm stats - Agents: {len(self.agents)}, Max loops: {self.max_loops}"
+                    f"Hiearchical Swarm: {self.name} Reliability checks passed..."
                 )
 
         except Exception as e:
@@ -286,11 +339,22 @@ class HierarchicalSwarm(BaseSwarm):
         img: str = None,
     ) -> SwarmSpec:
         """
-        Runs a task through the director agent with the current conversation context.
+        Execute the director agent with the given task and conversation context.
 
-        :param task: The task to be executed by the director.
-        :param img: Optional image to be used with the task.
-        :return: The SwarmSpec containing the director's orders.
+        This method runs the director agent to create a plan and distribute orders
+        based on the current task and conversation history. If a planning director
+        agent is configured, it will first create a detailed plan before the main
+        director processes the task.
+
+        Args:
+            task (str): The task to be executed by the director.
+            img (str, optional): Optional image input for the task.
+
+        Returns:
+            SwarmSpec: The director's output containing the plan and orders.
+
+        Raises:
+            Exception: If director execution fails.
         """
         try:
             if self.verbose:
@@ -330,7 +394,25 @@ class HierarchicalSwarm(BaseSwarm):
 
     def step(self, task: str, img: str = None, *args, **kwargs):
         """
-        Runs a single step of the hierarchical swarm.
+        Execute a single step of the hierarchical swarm workflow.
+
+        This method performs one complete iteration of the swarm's workflow:
+        1. Run the director to create a plan and orders
+        2. Parse the director's output to extract plan and orders
+        3. Execute all orders by calling the appropriate agents
+        4. Optionally generate director feedback on the results
+
+        Args:
+            task (str): The task to be processed in this step.
+            img (str, optional): Optional image input for the task.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            Any: The results from this step, either agent outputs or director feedback.
+
+        Raises:
+            Exception: If step execution fails.
         """
         try:
             if self.verbose:
@@ -370,13 +452,27 @@ class HierarchicalSwarm(BaseSwarm):
 
     def run(self, task: str, img: str = None, *args, **kwargs):
         """
-        Executes the hierarchical swarm for a specified number of feedback loops.
+        Execute the hierarchical swarm for the specified number of feedback loops.
 
-        :param task: The initial task to be processed by the swarm.
-        :param img: Optional image input for the agents.
-        :param args: Additional positional arguments.
-        :param kwargs: Additional keyword arguments.
-        :return: The formatted conversation history as output.
+        This method orchestrates the complete swarm execution, performing multiple
+        iterations based on the max_loops configuration. Each iteration builds upon
+        the previous results, allowing for iterative refinement and improvement.
+
+        The method maintains conversation history throughout all loops and provides
+        context from previous iterations to subsequent ones.
+
+        Args:
+            task (str): The initial task to be processed by the swarm.
+            img (str, optional): Optional image input for the agents.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            Any: The formatted conversation history as output, formatted according
+                 to the output_type configuration.
+
+        Raises:
+            Exception: If swarm execution fails.
         """
         try:
             current_loop = 0
@@ -448,7 +544,23 @@ class HierarchicalSwarm(BaseSwarm):
             logger.error(error_msg)
 
     def feedback_director(self, outputs: list):
-        """Provide feedback from the director based on agent outputs."""
+        """
+        Generate feedback from the director based on agent outputs.
+
+        This method creates a feedback director agent that analyzes the results
+        from worker agents and provides specific, actionable feedback for improvement.
+        The feedback is added to the conversation history and can be used in
+        subsequent iterations.
+
+        Args:
+            outputs (list): List of outputs from worker agents that need feedback.
+
+        Returns:
+            str: The director's feedback on the agent outputs.
+
+        Raises:
+            Exception: If feedback generation fails.
+        """
         try:
             if self.verbose:
                 logger.info("📝 Generating director feedback")
@@ -491,7 +603,24 @@ class HierarchicalSwarm(BaseSwarm):
         self, agent_name: str, task: str, *args, **kwargs
     ):
         """
-        Calls a single agent with the given task.
+        Call a single agent by name to execute a specific task.
+
+        This method locates an agent by name and executes the given task with
+        the current conversation context. The agent's output is added to the
+        conversation history for future reference.
+
+        Args:
+            agent_name (str): The name of the agent to call.
+            task (str): The task to be executed by the agent.
+            *args: Additional positional arguments for the agent.
+            **kwargs: Additional keyword arguments for the agent.
+
+        Returns:
+            Any: The output from the agent's execution.
+
+        Raises:
+            ValueError: If the specified agent is not found in the swarm.
+            Exception: If agent execution fails.
         """
         try:
             if self.verbose:
@@ -537,7 +666,22 @@ class HierarchicalSwarm(BaseSwarm):
 
     def parse_orders(self, output):
         """
-        Parses the orders from the director's output.
+        Parse the director's output to extract plan and orders.
+
+        This method handles various output formats from the director agent and
+        extracts the plan and hierarchical orders. It supports both direct
+        dictionary formats and function call formats with JSON arguments.
+
+        Args:
+            output: The raw output from the director agent.
+
+        Returns:
+            tuple: A tuple containing (plan, orders) where plan is a string
+                   and orders is a list of HierarchicalOrder objects.
+
+        Raises:
+            ValueError: If the output format is unexpected or cannot be parsed.
+            Exception: If parsing fails due to other errors.
         """
         try:
             if self.verbose:
@@ -666,7 +810,20 @@ class HierarchicalSwarm(BaseSwarm):
 
     def execute_orders(self, orders: list):
         """
-        Executes the orders from the director's output.
+        Execute all orders from the director's output.
+
+        This method iterates through all hierarchical orders and calls the
+        appropriate agents to execute their assigned tasks. Each agent's
+        output is collected and returned as a list.
+
+        Args:
+            orders (list): List of HierarchicalOrder objects to execute.
+
+        Returns:
+            list: List of outputs from all executed orders.
+
+        Raises:
+            Exception: If order execution fails.
         """
         try:
             if self.verbose:
@@ -699,7 +856,23 @@ class HierarchicalSwarm(BaseSwarm):
         self, tasks: List[str], img: str = None, *args, **kwargs
     ):
         """
-        Executes the hierarchical swarm for a list of tasks.
+        Execute the hierarchical swarm for multiple tasks in sequence.
+
+        This method processes a list of tasks sequentially, running the complete
+        swarm workflow for each task. Each task is processed independently with
+        its own conversation context and results.
+
+        Args:
+            tasks (List[str]): List of tasks to be processed by the swarm.
+            img (str, optional): Optional image input for the tasks.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            list: List of results for each processed task.
+
+        Raises:
+            Exception: If batched execution fails.
         """
         try:
             if self.verbose:
