@@ -277,7 +277,6 @@ nav:
         - Overview: "swarms/structs/overview.md"
         - Custom Multi Agent Architectures: "swarms/structs/custom_swarm.md"
         - Debate Multi-Agent Architectures: "swarms/structs/orchestration_methods.md"
-
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
         - Mixture of Agents: "swarms/structs/moa.md"
@@ -296,6 +295,7 @@ nav:
           - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
           - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
           - Swarm Matcher: "swarms/structs/swarm_matcher.md"
+          - Board of Directors: "swarms/structs/BoardOfDirectors.md"
 
         # - Multi-Agent Multi-Modal Structures:
         #   - ImageAgentBatchProcessor: "swarms/structs/image_batch_agent.md"
