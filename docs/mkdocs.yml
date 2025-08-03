@@ -102,7 +102,7 @@ extra:
       - title: "Adding Documentation"
         url: "https://docs.swarms.world/en/latest/contributors/docs/"
       - title: "Bounty Program"
-        url: "https://docs.swarms.world/en/latest/corporate/bounty_program/"
+        url: "https://docs.swarms.world/en/latest/governance/bounty_program/"
       - title: "Support"
         url: "https://docs.swarms.world/en/latest/swarms/support/"
 
@@ -276,8 +276,7 @@ nav:
       - Documentation:
         - Overview: "swarms/structs/overview.md"
         - Custom Multi Agent Architectures: "swarms/structs/custom_swarm.md"
-
-        - Board of Directors: "swarms/structs/BoardOfDirectors.md"
+        - Debate Multi-Agent Architectures: "swarms/structs/orchestration_methods.md"
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
         - Mixture of Agents: "swarms/structs/moa.md"
@@ -289,7 +288,6 @@ nav:
         - Council of Judges: "swarms/structs/council_of_judges.md"
         - Heavy Swarm: "swarms/structs/heavy_swarm.md"
 
-
         - Hiearchical Architectures:
           - Overview: "swarms/structs/multi_swarm_orchestration.md"
           - HierarchicalSwarm: "swarms/structs/hierarchical_swarm.md"
@@ -297,6 +295,7 @@ nav:
           - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
           - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
           - Swarm Matcher: "swarms/structs/swarm_matcher.md"
+          - Board of Directors: "swarms/structs/BoardOfDirectors.md"
 
         # - Multi-Agent Multi-Modal Structures:
         #   - ImageAgentBatchProcessor: "swarms/structs/image_batch_agent.md"
@@ -345,6 +344,7 @@ nav:
     - Deployment Solutions:
       - Deploy on Google Cloud Run: "swarms_cloud/cloud_run.md"
       - Deploy on Phala: "swarms_cloud/phala_deploy.md"
+      - CronJob: "swarms/structs/cron_job.md"
       # - Deploy on FastAPI: "swarms_cloud/fastapi_deploy.md"
 
     
@@ -378,6 +378,7 @@ nav:
           - Ollama: "swarms/examples/ollama.md"
           - OpenRouter: "swarms/examples/openrouter.md"
           - XAI: "swarms/examples/xai.md"
+          - Azure OpenAI: "swarms/examples/azure.md"
           - VLLM: "swarms/examples/vllm_integration.md"
           - Llama4: "swarms/examples/llama4.md"
 
@@ -445,6 +446,17 @@ nav:
         - Tools: "swarms_cloud/swarms_api_tools.md"
       - Multi-Agent:
         - Multi Agent Architectures Available: "swarms_cloud/swarm_types.md"
+        - Swarm Types:
+          - AgentRearrange: "swarms_cloud/agent_rearrange.md"
+          - MixtureOfAgents: "swarms_cloud/mixture_of_agents.md"
+          - SequentialWorkflow: "swarms_cloud/sequential_workflow.md"
+          - ConcurrentWorkflow: "swarms_cloud/concurrent_workflow.md"
+          - GroupChat: "swarms_cloud/group_chat.md"
+          - MultiAgentRouter: "swarms_cloud/multi_agent_router.md"
+          - HierarchicalSwarm: "swarms_cloud/hierarchical_swarm.md"
+          - MajorityVoting: "swarms_cloud/majority_voting.md"
+          # - AutoSwarmBuilder: "swarms_cloud/auto_swarm_builder.md"
+          # - Auto: "swarms_cloud/auto.md"
         - Examples:
           - Medical Swarm: "swarms/examples/swarms_api_medical.md"
           - Finance Swarm: "swarms/examples/swarms_api_finance.md"
@@ -476,7 +488,7 @@ nav:
   - Contributors:
     - Overview: "contributors/main.md"
     - Environment Setup: "contributors/environment_setup.md"
-    - Bounty Program: "corporate/bounty_program.md"
+    - Bounty Program: "governance/bounty_program.md"
     
     - Development Guides:
       - Code Style Guide & Best Practices: "swarms/framework/code_cleanliness.md"

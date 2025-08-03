@@ -51,14 +51,11 @@ Runs the swarm by having agents pick up tasks from the queue.
 - **Usage Example:**
   ```python
   from swarms import Agent, TaskQueueSwarm
-  from swarms_models import OpenAIChat
 
-  # Initialize the language model
-  llm = OpenAIChat()
 
   # Initialize agents
-  agent1 = Agent(agent_name="Agent1", llm=llm)
-  agent2 = Agent(agent_name="Agent2", llm=llm)
+  agent1 = Agent(agent_name="Agent1", model_name="gpt-4o")
+  agent2 = Agent(agent_name="Agent2", model_name="gpt-4o")
 
   # Create the TaskQueueSwarm
   swarm = TaskQueueSwarm(agents=[agent1, agent2], max_loops=5)

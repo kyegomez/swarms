@@ -19,6 +19,8 @@ except ImportError:
         "streamablehttp_client is not available. Please ensure the MCP SDK is up to date with pip3 install -U mcp"
     )
 
+from urllib.parse import urlparse
+
 from mcp.types import (
     CallToolRequestParams as MCPCallToolRequestParams,
 )
@@ -33,7 +35,6 @@ from swarms.schemas.mcp_schemas import (
     MCPConnection,
 )
 from swarms.utils.index import exists
-from urllib.parse import urlparse
 
 
 class MCPError(Exception):
