@@ -89,7 +89,7 @@ extra:
         url: "https://github.com/kyegomez/awesome-multi-agent-papers"
 
 
-    "Tools Use Case":
+    "Tools":
       - title: "Tools and MCP"
         url: "https://docs.swarms.world/en/latest/swarms/tools/tools_examples/"
       - title: "MCP (Model Context Protocol)"
