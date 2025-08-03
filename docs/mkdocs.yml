@@ -107,7 +107,7 @@ extra:
       - title: "Yahoo Finance"
         url: "https://docs.swarms.world/en/latest/swarms/examples/yahoo_finance/"
 
-    "Use Case":
+    "Use Cases":
       - title: "Examples Overview"
         url: "https://docs.swarms.world/en/latest/examples/index/"
       - title: "Templates & Applications"
