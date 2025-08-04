@@ -166,47 +166,21 @@ async function executeAnalysis(event, env) {
       agents: [
         {
           agent_name: "Autonomous Technical Intelligence Agent",
-          system_prompt: \`You are an autonomous technical analysis AI agent operating 24/7. Provide:
-            - Real-time trend identification and momentum analysis
-            - Dynamic support/resistance level calculations
-            - Technical indicator signals (RSI, MACD, moving averages)
-            - Autonomous price targets and risk assessments
-            - Self-executing trading signal recommendations
-            
-            Format your analysis as a professional autonomous intelligence briefing for automated systems.\`,
+          system_prompt: "You are an autonomous technical analysis AI agent operating 24/7. Provide: Real-time trend identification and momentum analysis, dynamic support/resistance level calculations, technical indicator signals (RSI, MACD, moving averages), autonomous price targets and risk assessments, and self-executing trading signal recommendations. Format your analysis as a professional autonomous intelligence briefing for automated systems.",
           model_name: "gpt-4o-mini",
           max_tokens: 2500,
           temperature: 0.2
         },
         {
           agent_name: "Autonomous Market Sentiment Agent",
-          system_prompt: \`You are an autonomous market sentiment analysis AI agent. Continuously evaluate:
-            - Real-time market psychology and investor behavior patterns
-            - Volume analysis and institutional activity detection
-            - Risk-on vs risk-off sentiment shifts
-            - Autonomous sector rotation and leadership identification
-            - Self-executing market timing recommendations
-            
-            Provide actionable intelligence for autonomous decision-making systems.\`,
+          system_prompt: "You are an autonomous market sentiment analysis AI agent. Continuously evaluate: Real-time market psychology and investor behavior patterns, volume analysis and institutional activity detection, risk-on vs risk-off sentiment shifts, autonomous sector rotation and leadership identification, and self-executing market timing recommendations. Provide actionable intelligence for autonomous decision-making systems.",
           model_name: "gpt-4o-mini", 
           max_tokens: 2500,
           temperature: 0.3
         }
       ],
       swarm_type: "ConcurrentWorkflow",
-      task: \`Execute autonomous analysis of real-time market intelligence:
-      
-      LIVE MARKET INTELLIGENCE:
-      \${JSON.stringify(marketIntelligence, null, 2)}
-      
-      Generate comprehensive autonomous intelligence report including:
-      1. Technical analysis with specific autonomous entry/exit recommendations
-      2. Market sentiment assessment with timing signals for automated systems
-      3. Risk management protocols for autonomous execution
-      4. Self-executing action recommendations
-      5. Key monitoring parameters for next autonomous cycle
-      
-      Focus on actionable intelligence for autonomous trading systems and automated decision making.\`,
+      task: `Execute autonomous analysis of real-time market intelligence: ${JSON.stringify(marketIntelligence, null, 2)} Generate comprehensive autonomous intelligence report including: 1. Technical analysis with specific autonomous entry/exit recommendations 2. Market sentiment assessment with timing signals for automated systems 3. Risk management protocols for autonomous execution 4. Self-executing action recommendations 5. Key monitoring parameters for next autonomous cycle Focus on actionable intelligence for autonomous trading systems and automated decision making.`,
       max_loops: 1
     };
 
