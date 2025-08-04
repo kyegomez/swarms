@@ -1,44 +1,59 @@
-# Cloudflare Workers with Swarms: Production AI Agents
+# Deploy Autonomous Cron Agents with Swarms API on Cloudflare Workers
 
-Deploy AI agents on Cloudflare's edge network with automatic cron scheduling and real-time data integration. This guide shows a production-ready implementation with both HTTP endpoints and scheduled triggers.
+Deploy intelligent, self-executing AI agents powered by Swarms API on Cloudflare's global edge network. Build production-ready autonomous agents that run on automated schedules, fetch real-time data, perform sophisticated analysis using Swarms AI, and take automated actions across 330+ cities worldwide.
+
+## What Are Autonomous Cron Agents?
+
+Autonomous cron agents combine **Swarms API intelligence** with **Cloudflare Workers edge computing** to create AI-powered systems that:
+- **Execute automatically** on predefined schedules without human intervention
+- **Fetch real-time data** from external sources (APIs, databases, IoT sensors)
+- **Perform intelligent analysis** using specialized Swarms AI agents
+- **Take automated actions** based on analysis findings (alerts, reports, decisions)
+- **Scale globally** on Cloudflare's edge network with sub-100ms response times worldwide
 
 ## Architecture Overview
 
-The Cloudflare Workers pattern uses two main handlers:
-- **`fetch()`**: HTTP requests for testing and manual triggers
-- **`scheduled()`**: Cron jobs for automated execution
-
-```javascript
-export default {
-  // HTTP handler for manual testing
-  async fetch(request, env, ctx) {
-    // Handle web interface and API endpoints
-  },
-  
-  // Cron handler for scheduled execution
-  async scheduled(event, env, ctx) {
-    ctx.waitUntil(handleStockAnalysis(event, env));
-  }
-};
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Cloudflare      │    │  Data Sources   │    │   Swarms API    │
+│ Workers Cron    │    │                 │    │                 │
+│ "0 */3 * * *"   │───▶│ Yahoo Finance   │───▶│ Multi-Agent     │
+│                 │    │ Medical APIs    │    │ Intelligence    │
+│ scheduled()     │    │ News Feeds      │    │ Autonomous      │
+│ Global Edge     │    │ IoT Sensors     │    │ Actions         │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## Quick Setup
+**Key Benefits:**
+- **24/7 Autonomous Operation**: Zero human intervention required
+- **Global Edge Deployment**: Cloudflare's 330+ city network for ultra-low latency
+- **Swarms AI Intelligence**: Live data analysis with specialized AI agents
+- **Automated Decision Making**: Smart actions based on Swarms agent insights
+- **Enterprise Reliability**: Production-grade error handling and monitoring
 
-### 1. Create Worker Project
+## Quick Start: Deploy Autonomous Stock Analysis Agent
+
+Create your first autonomous financial intelligence agent powered by Swarms API and deployed on Cloudflare Workers edge network.
+
+### 1. Cloudflare Workers Project Setup
 
 ```bash
-npm create cloudflare@latest stock-agent
-cd stock-agent
+# Create new Cloudflare Workers project
+npm create cloudflare@latest autonomous-stock-agent
+cd autonomous-stock-agent
+
+# Install dependencies for Swarms API integration
+npm run start
 ```
 
-### 2. Configure Cron Schedule
+### 2. Configure Cloudflare Workers Cron Schedule
 
-Edit `wrangler.jsonc`:
+Edit `wrangler.jsonc` to set up autonomous execution:
 
 ```jsonc
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "stock-agent",
+  "name": "autonomous-stock-agent",
   "main": "src/index.js",
   "compatibility_date": "2025-08-03",
   "observability": {
@@ -46,58 +61,116 @@ Edit `wrangler.jsonc`:
   },
   "triggers": {
     "crons": [
-      "0 */3 * * *"  // Every 3 hours
+      "0 */3 * * *"  // Cloudflare Workers cron: autonomous analysis every 3 hours
     ]
   },
   "vars": {
-    "SWARMS_API_KEY": "your-api-key"
+    "SWARMS_API_KEY": "your-swarms-api-key"  // Your Swarms API key
   }
 }
 ```
 
-## Complete Minimal Implementation
+### 3. Cloudflare Workers + Swarms API Implementation
 
 Create `src/index.js`:
 
 ```javascript
 export default {
-  // HTTP handler - provides web interface and manual triggers
+  // Cloudflare Workers fetch handler - Web interface for monitoring
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     
-    // Web interface for testing
     if (url.pathname === '/') {
       return new Response(`
         <!DOCTYPE html>
         <html>
           <head>
-            <title>Stock Analysis Agent</title>
+            <title>Autonomous Stock Intelligence Agent</title>
             <style>
-              body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
-              .btn { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
-              .status { background: #f0f8f0; padding: 10px; border-left: 3px solid #28a745; margin: 20px 0; }
-              .result { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; white-space: pre-wrap; }
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 1000px; margin: 40px auto; padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+              .container { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+              .header { text-align: center; margin-bottom: 40px; color: #333; }
+              .btn { padding: 15px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.3s ease; }
+              .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3); }
+              .status { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; padding: 20px; border-radius: 10px; margin: 25px 0; text-align: center; font-weight: 600; }
+              .result { background: #f8f9fa; padding: 25px; border-radius: 10px; margin: 25px 0; white-space: pre-wrap; border-left: 5px solid #667eea; }
+              .loading { display: none; text-align: center; margin: 30px 0; }
+              .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+              @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+              .badge { display: inline-block; background: #667eea; color: white; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin: 5px; }
             </style>
           </head>
           <body>
-            <h1>📈 Stock Analysis Agent</h1>
-            <div class="status">Status: Online ✅</div>
-            
-            <button class="btn" onclick="triggerAnalysis()">🔥 Start Analysis</button>
-            <div id="result"></div>
+            <div class="container">
+              <div class="header">
+                <h1>🤖 Autonomous Stock Intelligence Agent</h1>
+                <p>Powered by Swarms API • Running on Cloudflare Workers</p>
+                <div>
+                  <span class="badge">Swarms AI</span>
+                  <span class="badge">Cloudflare Edge</span>
+                  <span class="badge">Real-time</span>
+                  <span class="badge">Autonomous</span>
+                </div>
+              </div>
+              
+              <div class="status">
+                <strong>🚀 Status:</strong> Swarms AI agents active on Cloudflare edge, monitoring markets 24/7
+              </div>
+              
+              <div style="text-align: center;">
+                <button class="btn" onclick="executeAnalysis()">⚡ Execute Analysis Now</button>
+              </div>
+              
+              <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p><strong>Swarms AI agents analyzing live market data on Cloudflare edge...</strong></p>
+              </div>
+              
+              <div id="result"></div>
+            </div>
             
             <script>
-              async function triggerAnalysis() {
-                document.getElementById('result').innerHTML = 'Running analysis...';
+              async function executeAnalysis() {
+                const loadingDiv = document.getElementById('loading');
+                const resultDiv = document.getElementById('result');
+                
+                loadingDiv.style.display = 'block';
+                resultDiv.innerHTML = '';
+                
                 try {
-                  const response = await fetch('/trigger');
+                  const response = await fetch('/execute');
                   const data = await response.json();
-                  document.getElementById('result').innerHTML = 
-                    data.result?.success ? 
-                    \`✅ Success\\n\\nAnalysis: \\${data.result.analysis}\` :
-                    \`❌ Error: \\${data.result?.error || data.error}\`;
+                  
+                  loadingDiv.style.display = 'none';
+                  
+                  if (data.result?.success) {
+                    resultDiv.innerHTML = \`
+                      <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 25px;">
+                        <h3>✅ Autonomous Analysis Completed</h3>
+                        <p><strong>Symbols Analyzed:</strong> \${data.result.symbolsAnalyzed} | <strong>Execution Cost:</strong> $\${data.result.cost || 'N/A'}</p>
+                        <p><strong>Next Autonomous Execution:</strong> \${data.result.nextExecution || 'Scheduled'}</p>
+                      </div>
+                      <div class="result">
+                        <h3>🧠 Autonomous AI Intelligence Report:</h3>
+                        <pre>\${data.result.analysis || 'No analysis available'}</pre>
+                      </div>
+                    \`;
+                  } else {
+                    resultDiv.innerHTML = \`
+                      <div style="background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%); color: white; padding: 20px; border-radius: 10px;">
+                        <h3>⚠️ Autonomous Execution Failed</h3>
+                        <p>\${data.result?.error || data.error || 'Unknown error in autonomous system'}</p>
+                      </div>
+                    \`;
+                  }
                 } catch (error) {
-                  document.getElementById('result').innerHTML = \`❌ Failed: \\${error.message}\`;
+                  loadingDiv.style.display = 'none';
+                  resultDiv.innerHTML = \`
+                    <div style="background: #ff6b6b; color: white; padding: 20px; border-radius: 10px;">
+                      <h3>❌ Autonomous System Error</h3>
+                      <p>\${error.message}</p>
+                    </div>
+                  \`;
                 }
               }
             </script>
@@ -108,12 +181,11 @@ export default {
       });
     }
     
-    // Manual trigger endpoint
-    if (url.pathname === '/trigger') {
+    if (url.pathname === '/execute') {
       try {
-        const result = await handleStockAnalysis(null, env);
+        const result = await executeAutonomousAnalysis(null, env);
         return new Response(JSON.stringify({ 
-          message: 'Analysis triggered',
+          message: 'Autonomous analysis executed successfully',
           timestamp: new Date().toISOString(),
           result 
         }), {
@@ -121,7 +193,9 @@ export default {
         });
       } catch (error) {
         return new Response(JSON.stringify({ 
-          error: error.message 
+          error: error.message,
+          timestamp: new Date().toISOString(),
+          system: 'autonomous-agent'
         }), {
           status: 500,
           headers: { 'Content-Type': 'application/json' }
@@ -129,48 +203,546 @@ export default {
       }
     }
     
-    return new Response('Not Found', { status: 404 });
+    return new Response('Autonomous Agent Endpoint Not Found', { status: 404 });
   },
 
-  // Cron handler - runs automatically on schedule
+  // Cloudflare Workers cron handler - triggered by scheduled events
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(handleStockAnalysis(event, env));
+    console.log('🚀 Cloudflare Workers cron triggered - executing Swarms AI analysis');
+    ctx.waitUntil(executeAutonomousAnalysis(event, env));
   }
 };
 
-// Main analysis function used by both HTTP and cron triggers
-async function handleStockAnalysis(event, env) {
-  console.log('🚀 Starting stock analysis...');
+// Core function combining Cloudflare Workers execution with Swarms API intelligence
+async function executeAutonomousAnalysis(event, env) {
+  console.log('🤖 Cloudflare Workers executing Swarms AI stock intelligence analysis...');
   
   try {
-    // Step 1: Fetch real market data (using Yahoo Finance - no API key needed)
-    const marketData = await fetchMarketData();
+    // Step 1: Autonomous data collection from multiple sources
+    console.log('📊 Executing autonomous data collection...');
+    const marketIntelligence = await collectMarketIntelligence();
     
-    // Check if we got valid data
-    const validSymbols = Object.keys(marketData).filter(symbol => !marketData[symbol].error);
-    if (validSymbols.length === 0) {
-      throw new Error('No valid market data retrieved');
+    const validData = Object.keys(marketIntelligence).filter(symbol => !marketIntelligence[symbol].error);
+    if (validData.length === 0) {
+      throw new Error('Autonomous data collection failed - no valid market intelligence gathered');
     }
     
-    // Step 2: Send to Swarms AI agents
-    const swarmConfig = {
-      name: "Stock Analysis",
-      description: "Real-time market analysis",
+    console.log(\`✅ Autonomous data collection successful: \${validData.length} sources\`);
+    
+    // Step 2: Deploy Swarms AI agents for autonomous analysis
+    console.log('🧠 Deploying Swarms AI agents for autonomous intelligence generation...');
+    const swarmConfiguration = {
+      name: "Autonomous Market Intelligence Swarm",
+      description: "Self-executing financial analysis and decision support system",
       agents: [
         {
-          agent_name: "Technical Analyst",
-          system_prompt: \`Analyze the provided stock data:
-            - Identify trends and key levels
-            - Provide trading signals
-            - Calculate technical indicators
-            Format analysis professionally.\`,
+          agent_name: "Autonomous Technical Intelligence Agent",
+          system_prompt: \`You are an autonomous technical analysis AI agent operating 24/7. Provide:
+            - Real-time trend identification and momentum analysis
+            - Dynamic support/resistance level calculations
+            - Technical indicator signals (RSI, MACD, moving averages)
+            - Autonomous price targets and risk assessments
+            - Self-executing trading signal recommendations
+            
+            Format your analysis as a professional autonomous intelligence briefing for automated systems.\`,
           model_name: "gpt-4o-mini",
-          max_tokens: 1500,
+          max_tokens: 2500,
           temperature: 0.2
+        },
+        {
+          agent_name: "Autonomous Market Sentiment Agent",
+          system_prompt: \`You are an autonomous market sentiment analysis AI agent. Continuously evaluate:
+            - Real-time market psychology and investor behavior patterns
+            - Volume analysis and institutional activity detection
+            - Risk-on vs risk-off sentiment shifts
+            - Autonomous sector rotation and leadership identification
+            - Self-executing market timing recommendations
+            
+            Provide actionable intelligence for autonomous decision-making systems.\`,
+          model_name: "gpt-4o-mini", 
+          max_tokens: 2500,
+          temperature: 0.3
         }
       ],
-      swarm_type: "SequentialWorkflow",
-      task: \`Analyze this market data: \\${JSON.stringify(marketData, null, 2)}\`,
+      swarm_type: "ConcurrentWorkflow",
+      task: \`Execute autonomous analysis of real-time market intelligence:
+      
+      LIVE MARKET INTELLIGENCE:
+      \${JSON.stringify(marketIntelligence, null, 2)}
+      
+      Generate comprehensive autonomous intelligence report including:
+      1. Technical analysis with specific autonomous entry/exit recommendations
+      2. Market sentiment assessment with timing signals for automated systems
+      3. Risk management protocols for autonomous execution
+      4. Self-executing action recommendations
+      5. Key monitoring parameters for next autonomous cycle
+      
+      Focus on actionable intelligence for autonomous trading systems and automated decision making.\`,
+      max_loops: 1
+    };
+
+    // Execute Swarms API call from Cloudflare Workers edge
+    const response = await fetch('https://api.swarms.world/v1/swarm/completions', {
+      method: 'POST',
+      headers: {
+        'x-api-key': env.SWARMS_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(swarmConfiguration)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(\`Swarms API autonomous execution failed: \${response.status} - \${errorText}\`);
+    }
+
+    const analysisResult = await response.json();
+    const intelligenceReport = analysisResult.output;
+    
+    console.log('✅ Autonomous Swarms AI analysis completed successfully');
+    console.log(\`💰 Autonomous execution cost: \${analysisResult.usage?.billing_info?.total_cost || 'N/A'}\`);
+    
+    // Step 3: Execute autonomous actions based on intelligence
+    if (env.AUTONOMOUS_ALERTS_EMAIL) {
+      console.log('📧 Executing autonomous alert system...');
+      await executeAutonomousAlerts(env, intelligenceReport, marketIntelligence);
+    }
+
+    return {
+      success: true,
+      analysis: intelligenceReport,
+      symbolsAnalyzed: validData.length,
+      cost: analysisResult.usage?.billing_info?.total_cost || analysisResult.metadata?.billing_info?.total_cost,
+      executionTime: new Date().toISOString(),
+      nextExecution: 'Scheduled for next autonomous cron trigger',
+      autonomousSystem: 'Swarms AI Agents'
+    };
+
+  } catch (error) {
+    console.error('❌ Autonomous analysis execution failed:', error.message);
+    return {
+      success: false,
+      error: error.message,
+      executionTime: new Date().toISOString(),
+      autonomousSystem: 'Error in autonomous pipeline'
+    };
+  }
+}
+
+// Autonomous market intelligence collection
+async function collectMarketIntelligence() {
+  const targetSymbols = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'NVDA', 'TSLA'];
+  const marketIntelligence = {};
+
+  console.log('🎯 Executing autonomous multi-source data collection...');
+
+  const dataCollectionPromises = targetSymbols.map(async (symbol) => {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      
+      // Autonomous data collection from Yahoo Finance API
+      const response = await fetch(
+        \`https://query1.finance.yahoo.com/v8/finance/chart/\${symbol}\`,
+        { 
+          signal: controller.signal,
+          headers: { 
+            'User-Agent': 'Mozilla/5.0 (autonomous-swarms-agent) AppleWebKit/537.36'
+          }
+        }
+      );
+      clearTimeout(timeout);
+      
+      if (!response.ok) {
+        throw new Error(\`Autonomous data collection failed: HTTP \${response.status}\`);
+      }
+      
+      const data = await response.json();
+      const chartResult = data.chart.result[0];
+      const meta = chartResult.meta;
+      
+      if (!meta) {
+        throw new Error('Invalid market intelligence structure received');
+      }
+      
+      const currentPrice = meta.regularMarketPrice;
+      const previousClose = meta.previousClose;
+      const dayChange = currentPrice - previousClose;
+      const changePercent = ((dayChange / previousClose) * 100).toFixed(2);
+      
+      console.log(\`📈 \${symbol}: $\${currentPrice} (\${changePercent}%) - Autonomous collection successful\`);
+
+      return [symbol, {
+        price: currentPrice,
+        change: dayChange,
+        change_percent: changePercent,
+        volume: meta.regularMarketVolume || 0,
+        market_cap: meta.marketCap || 0,
+        pe_ratio: meta.trailingPE || 0,
+        day_high: meta.regularMarketDayHigh,
+        day_low: meta.regularMarketDayLow,
+        fifty_two_week_high: meta.fiftyTwoWeekHigh,
+        fifty_two_week_low: meta.fiftyTwoWeekLow,
+        currency: meta.currency || 'USD',
+        market_state: meta.marketState,
+        autonomous_collection_time: new Date().toISOString(),
+        data_quality: 'high'
+      }];
+
+    } catch (error) {
+      console.error(\`❌ Autonomous collection failed for \${symbol}:\`, error.message);
+      return [symbol, { 
+        error: \`Autonomous collection failed: \${error.message}\`,
+        autonomous_collection_time: new Date().toISOString(),
+        data_quality: 'failed'
+      }];
+    }
+  });
+
+  const results = await Promise.allSettled(dataCollectionPromises);
+  results.forEach((result) => {
+    if (result.status === 'fulfilled' && result.value) {
+      const [symbol, data] = result.value;
+      marketIntelligence[symbol] = data;
+    }
+  });
+
+  const successfulCollections = Object.keys(marketIntelligence).filter(k => !marketIntelligence[k]?.error).length;
+  console.log(\`📊 Autonomous intelligence collection completed: \${successfulCollections}/\${targetSymbols.length} successful\`);
+
+  return marketIntelligence;
+}
+
+// Autonomous alert and notification system
+async function executeAutonomousAlerts(env, intelligenceReport, marketIntelligence) {
+  if (!env.MAILGUN_API_KEY || !env.MAILGUN_DOMAIN || !env.AUTONOMOUS_ALERTS_EMAIL) {
+    console.log('⚠️ Autonomous alert system not configured - skipping notifications');
+    return;
+  }
+
+  try {
+    // Autonomous detection of significant market movements
+    const significantMovements = Object.entries(marketIntelligence)
+      .filter(([symbol, data]) => data.change_percent && Math.abs(parseFloat(data.change_percent)) > 3)
+      .map(([symbol, data]) => \`\${symbol}: \${data.change_percent}%\`)
+      .join(', ');
+
+    const alertSubject = \`🤖 Autonomous Market Intelligence Alert - \${new Date().toLocaleDateString()}\`;
+    
+    const alertBody = \`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 1000px; margin: 0 auto; background: #f8f9fa; }
+          .container { background: white; margin: 20px; border-radius: 15px; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; text-align: center; }
+          .content { padding: 40px; }
+          .autonomous-badge { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; padding: 20px; border-radius: 10px; margin: 25px 0; text-align: center; }
+          .intelligence-section { background: #f8f9fa; padding: 30px; border-radius: 10px; margin: 25px 0; border-left: 5px solid #667eea; }
+          .market-data { margin: 25px 0; }
+          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+          th { background: #f8f9fa; font-weight: 600; color: #333; }
+          .positive { color: #28a745; font-weight: bold; }
+          .negative { color: #dc3545; font-weight: bold; }
+          .footer { background: #f8f9fa; padding: 25px; text-align: center; color: #666; font-size: 14px; }
+          .badge { display: inline-block; background: #667eea; color: white; padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: 600; margin: 3px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🤖 Autonomous Market Intelligence</h1>
+            <p>AI-Powered Autonomous Financial Analysis • Swarms API</p>
+            <div>
+              <span class="badge">Autonomous</span>
+              <span class="badge">Real-time</span>
+              <span class="badge">AI-Powered</span>
+              <span class="badge">Global Edge</span>
+            </div>
+            <p><strong>Generated:</strong> \${new Date().toLocaleString()}</p>
+          </div>
+          
+          <div class="content">
+            <div class="autonomous-badge">
+              <h3>🚀 Autonomous Analysis Execution Complete</h3>
+              <p><strong>Significant Market Movements Detected:</strong> \${significantMovements || 'Market within normal volatility parameters'}</p>
+              <p><strong>Next Autonomous Cycle:</strong> Scheduled automatically</p>
+            </div>
+            
+            <div class="intelligence-section">
+              <h2>🧠 Autonomous AI Intelligence Report</h2>
+              <p><em>Generated by autonomous Swarms AI agents with real-time market intelligence:</em></p>
+              <pre style="white-space: pre-wrap; font-family: 'Courier New', monospace; background: white; padding: 25px; border-radius: 8px; font-size: 13px; line-height: 1.6; border: 1px solid #eee;">\${intelligenceReport}</pre>
+            </div>
+            
+            <div class="market-data">
+              <h2>📊 Real-Time Market Intelligence</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Symbol</th>
+                    <th>Price</th>
+                    <th>Change</th>
+                    <th>Volume</th>
+                    <th>Market State</th>
+                    <th>Data Quality</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  \${Object.entries(marketIntelligence)
+                    .filter(([symbol, data]) => !data.error)
+                    .map(([symbol, data]) => \`
+                    <tr>
+                      <td><strong>\${symbol}</strong></td>
+                      <td>$\${data.price?.toFixed(2) || 'N/A'}</td>
+                      <td class="\${parseFloat(data.change_percent) >= 0 ? 'positive' : 'negative'}">
+                        \${parseFloat(data.change_percent) >= 0 ? '+' : ''}\${data.change_percent}%
+                      </td>
+                      <td>\${data.volume?.toLocaleString() || 'N/A'}</td>
+                      <td>\${data.market_state || 'N/A'}</td>
+                      <td>\${data.data_quality || 'N/A'}</td>
+                    </tr>
+                  \`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <p><strong>🤖 Powered by Autonomous Swarms AI Agents</strong></p>
+            <p>This intelligence report was generated automatically by our autonomous market analysis system</p>
+            <p><em>Next autonomous analysis will execute automatically on schedule</em></p>
+            <p>Swarms API • Autonomous Intelligence • Edge Computing</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    \`;
+
+    const formData = new FormData();
+    formData.append('from', \`Autonomous Market Intelligence <intelligence@\${env.MAILGUN_DOMAIN}>\`);
+    formData.append('to', env.AUTONOMOUS_ALERTS_EMAIL);
+    formData.append('subject', alertSubject);
+    formData.append('html', alertBody);
+
+    const response = await fetch(\`https://api.mailgun.net/v3/\${env.MAILGUN_DOMAIN}/messages\`, {
+      method: 'POST',
+      headers: {
+        'Authorization': \`Basic \${btoa(\`api:\${env.MAILGUN_API_KEY}\`)}\`
+      },
+      body: formData
+    });
+
+    if (response.ok) {
+      console.log('✅ Autonomous alert system executed successfully');
+    } else {
+      console.error('❌ Autonomous alert system execution failed:', await response.text());
+    }
+    
+  } catch (error) {
+    console.error('❌ Autonomous alert system error:', error.message);
+  }
+}
+```
+
+## Autonomous Healthcare Intelligence Agent
+
+Deploy autonomous healthcare agents that provide 24/7 patient monitoring with intelligent analysis:
+
+```javascript
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    
+    if (url.pathname === '/') {
+      return new Response(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Autonomous Healthcare Intelligence</title>
+            <style>
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 1200px; margin: 30px auto; padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+              .container { background: white; padding: 50px; border-radius: 20px; box-shadow: 0 25px 50px rgba(0,0,0,0.2); }
+              .header { text-align: center; margin-bottom: 50px; }
+              .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin: 40px 0; }
+              .status-card { padding: 25px; border-radius: 15px; text-align: center; color: white; box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+              .normal { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+              .warning { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+              .critical { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); }
+              .btn { padding: 18px 35px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: 600; margin: 15px; transition: all 0.3s ease; }
+              .btn:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4); }
+              .result { background: #f8f9fa; padding: 30px; border-radius: 12px; margin: 30px 0; border-left: 6px solid #667eea; }
+              .badge { display: inline-block; background: #667eea; color: white; padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; margin: 3px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🏥 Autonomous Healthcare Intelligence</h1>
+                <p>AI-Powered 24/7 Patient Monitoring • Autonomous Medical Analysis</p>
+                <div>
+                  <span class="badge">Autonomous</span>
+                  <span class="badge">24/7 Monitoring</span>
+                  <span class="badge">AI-Powered</span>
+                  <span class="badge">Real-time</span>
+                </div>
+              </div>
+              
+              <div class="status-grid">
+                <div class="status-card normal">
+                  <h3>✅ Normal Status</h3>
+                  <p><strong>Patients: 15</strong></p>
+                  <p>Stable vital signs</p>
+                  <p>Autonomous monitoring active</p>
+                </div>
+                <div class="status-card warning">
+                  <h3>⚠️ Monitoring Required</h3>
+                  <p><strong>Patients: 3</strong></p>
+                  <p>Elevated parameters</p>
+                  <p>Enhanced surveillance</p>
+                </div>
+                <div class="status-card critical">
+                  <h3>🚨 Critical Alert</h3>
+                  <p><strong>Patients: 1</strong></p>
+                  <p>Immediate intervention</p>
+                  <p>Emergency protocols active</p>
+                </div>
+              </div>
+              
+              <div style="text-align: center;">
+                <button class="btn" onclick="executeHealthIntelligence()">🔍 Execute Health Intelligence Analysis</button>
+              </div>
+              
+              <div id="result"></div>
+            </div>
+            
+            <script>
+              async function executeHealthIntelligence() {
+                document.getElementById('result').innerHTML = '<div style="text-align: center; padding: 30px;"><div style="border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto;"></div><p><strong>Autonomous health intelligence agents analyzing patient data...</strong></p></div>';
+                
+                try {
+                  const response = await fetch('/health-intelligence');
+                  const data = await response.json();
+                  
+                  const severity = data.result?.severity || 'normal';
+                  const severityColors = {
+                    critical: '#ff416c',
+                    warning: '#f093fb', 
+                    normal: '#11998e'
+                  };
+                  
+                  document.getElementById('result').innerHTML = \`
+                    <div class="result" style="border-left-color: \${severityColors[severity]};">
+                      <h3 style="color: \${severityColors[severity]};">
+                        \${severity === 'critical' ? '🚨 CRITICAL AUTONOMOUS ALERT' : severity === 'warning' ? '⚠️ AUTONOMOUS MONITORING REQUIRED' : '✅ AUTONOMOUS SYSTEMS NORMAL'}
+                      </h3>
+                      <p><strong>Autonomous Analysis Time:</strong> \${new Date(data.timestamp).toLocaleString()}</p>
+                      <p><strong>Patients Under Surveillance:</strong> \${data.result?.patientsAnalyzed || 'N/A'}</p>
+                      <p><strong>Next Autonomous Cycle:</strong> Scheduled automatically</p>
+                      <h4>🤖 Autonomous Health Intelligence Report:</h4>
+                      <pre style="background: white; padding: 25px; border-radius: 10px; white-space: pre-wrap; border: 1px solid #eee;">\${data.result?.analysis || data.error}</pre>
+                    </div>
+                  \`;
+                } catch (error) {
+                  document.getElementById('result').innerHTML = \`<div class="result" style="border-left-color: #ff416c;"><h3 style="color: #ff416c;">❌ Autonomous System Error</h3><p>\${error.message}</p></div>\`;
+                }
+              }
+            </script>
+          </body>
+        </html>
+      `, {
+        headers: { 'Content-Type': 'text/html' }
+      });
+    }
+    
+    if (url.pathname === '/health-intelligence') {
+      try {
+        const result = await executeAutonomousHealthIntelligence(null, env);
+        return new Response(JSON.stringify({ 
+          message: 'Autonomous health intelligence analysis executed',
+          timestamp: new Date().toISOString(),
+          result 
+        }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({ 
+          error: error.message,
+          system: 'autonomous-healthcare-intelligence'
+        }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+    
+    return new Response('Autonomous Healthcare Intelligence Endpoint Not Found', { status: 404 });
+  },
+
+  // Autonomous healthcare monitoring - every 30 minutes
+  async scheduled(event, env, ctx) {
+    console.log('🏥 Autonomous healthcare intelligence system triggered');
+    ctx.waitUntil(executeAutonomousHealthIntelligence(event, env));
+  }
+};
+
+async function executeAutonomousHealthIntelligence(event, env) {
+  console.log('🏥 Autonomous healthcare intelligence system executing...');
+  
+  try {
+    // Autonomous patient data collection
+    const patientIntelligence = await collectPatientIntelligence();
+    
+    // Deploy autonomous Swarms healthcare AI agents
+    const healthIntelligenceConfig = {
+      name: "Autonomous Healthcare Intelligence Swarm",
+      description: "24/7 autonomous patient monitoring and medical analysis system",
+      agents: [
+        {
+          agent_name: "Autonomous Vital Signs Intelligence Agent",
+          system_prompt: \`You are an autonomous healthcare AI agent providing 24/7 patient monitoring. Analyze:
+            - Continuous heart rate monitoring and arrhythmia detection (Normal: 60-100 bpm)
+            - Autonomous blood pressure trend analysis (Normal: <140/90 mmHg)  
+            - Real-time oxygen saturation monitoring (Normal: >95%)
+            - Continuous temperature surveillance (Normal: 97-99°F)
+            
+            Classify each patient autonomously as: NORMAL_MONITORING, ENHANCED_SURVEILLANCE, or CRITICAL_INTERVENTION
+            For critical findings, trigger autonomous emergency protocols.\`,
+          model_name: "gpt-4o-mini",
+          max_tokens: 2500,
+          temperature: 0.05
+        },
+        {
+          agent_name: "Autonomous Medical Risk Assessment Agent",
+          system_prompt: \`You are an autonomous medical AI providing continuous risk assessment. Monitor:
+            - Autonomous drug interaction analysis and medication safety
+            - Real-time disease progression and complication detection
+            - Continuous fall risk and mobility assessment
+            - Autonomous emergency intervention requirements
+            
+            Provide autonomous risk stratification and intervention priorities.
+            Focus on predictive analytics and early autonomous warning systems.\`,
+          model_name: "gpt-4o-mini",
+          max_tokens: 2500,
+          temperature: 0.05
+        }
+      ],
+      swarm_type: "ConcurrentWorkflow",
+      task: \`Execute autonomous 24/7 healthcare intelligence analysis:
+      
+      PATIENT INTELLIGENCE DATA:
+      \${JSON.stringify(patientIntelligence, null, 2)}
+      
+      Generate autonomous healthcare intelligence including:
+      1. Individual patient autonomous risk assessment and monitoring status
+      2. Critical autonomous intervention requirements and emergency protocols
+      3. Autonomous alert recommendations and escalation procedures
+      4. Predictive health analytics and preventive care suggestions
+      5. Next autonomous monitoring cycle parameters and priorities
+      
+      Focus on autonomous decision support for medical staff and emergency response systems.\`,
       max_loops: 1
     };
 
@@ -180,156 +752,211 @@ async function handleStockAnalysis(event, env) {
         'x-api-key': env.SWARMS_API_KEY,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(swarmConfig)
+      body: JSON.stringify(healthIntelligenceConfig)
     });
 
     if (!response.ok) {
-      throw new Error(\`Swarms API error: \\${response.status}\`);
+      throw new Error(\`Autonomous healthcare intelligence failed: \${response.status}\`);
     }
 
     const result = await response.json();
-    console.log('✅ Analysis completed');
+    const healthIntelligence = result.output;
+    
+    // Autonomous severity assessment
+    const severity = assessAutonomousHealthSeverity(healthIntelligence);
+    
+    console.log(\`✅ Autonomous healthcare intelligence completed - Severity: \${severity}\`);
+    
+    // Autonomous emergency response system
+    if (severity === 'critical' && env.HEALTHCARE_EMERGENCY_EMAIL) {
+      console.log('🚨 Executing autonomous emergency response protocol...');
+      await executeAutonomousEmergencyResponse(env, healthIntelligence, patientIntelligence);
+    }
 
     return {
       success: true,
-      analysis: result.output,
-      symbolsAnalyzed: validSymbols.length,
-      cost: result.usage?.billing_info?.total_cost
+      analysis: healthIntelligence,
+      severity: severity,
+      patientsAnalyzed: Object.keys(patientIntelligence).length,
+      executionTime: new Date().toISOString(),
+      nextAutonomousMonitoring: 'Scheduled for next autonomous cycle',
+      autonomousSystem: 'Swarms Healthcare AI'
     };
 
   } catch (error) {
-    console.error('❌ Analysis failed:', error.message);
+    console.error('❌ Autonomous healthcare intelligence failed:', error.message);
     return {
       success: false,
-      error: error.message
+      error: error.message,
+      severity: 'autonomous_system_error',
+      executionTime: new Date().toISOString()
     };
   }
 }
 
-// Fetch market data from Yahoo Finance (free, no API key required)
-async function fetchMarketData() {
-  const symbols = ['SPY', 'AAPL', 'MSFT', 'TSLA'];
-  const marketData = {};
-
-  const promises = symbols.map(async (symbol) => {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
-      
-      const response = await fetch(
-        \`https://query1.finance.yahoo.com/v8/finance/chart/\\${symbol}\`,
-        { 
-          signal: controller.signal,
-          headers: { 'User-Agent': 'Mozilla/5.0' }
-        }
-      );
-      clearTimeout(timeout);
-      
-      if (!response.ok) throw new Error(\`HTTP \\${response.status}\`);
-      
-      const data = await response.json();
-      const result = data.chart.result[0];
-      const meta = result.meta;
-      
-      const currentPrice = meta.regularMarketPrice;
-      const previousClose = meta.previousClose;
-      const change = currentPrice - previousClose;
-      const changePercent = ((change / previousClose) * 100).toFixed(2);
-
-      return [symbol, {
-        price: currentPrice,
-        change: change,
-        change_percent: changePercent,
-        volume: meta.regularMarketVolume,
-        currency: meta.currency
-      }];
-
-    } catch (error) {
-      return [symbol, { error: error.message }];
+// Autonomous patient intelligence collection
+async function collectPatientIntelligence() {
+  // In production, connect to EMR systems, IoT devices, and medical databases
+  return {
+    "ICU_Autonomous_001": {
+      name: "Sarah Johnson",
+      age: 68,
+      room: "ICU-205",
+      condition: "Post-cardiac surgery - autonomous monitoring",
+      vitals: {
+        heart_rate: 95,
+        blood_pressure_systolic: 135,
+        blood_pressure_diastolic: 88,
+        oxygen_saturation: 97,
+        temperature: 98.8,
+        respiratory_rate: 16
+      },
+      medications: ["Metoprolol", "Warfarin", "Furosemide"],
+      risk_factors: ["Diabetes", "Hypertension", "Previous MI"],
+      autonomous_monitoring_level: "enhanced",
+      last_updated: new Date().toISOString()
+    },
+    "Ward_Autonomous_002": {
+      name: "Michael Chen", 
+      age: 45,
+      room: "Ward-301",
+      condition: "Pneumonia recovery - autonomous surveillance",
+      vitals: {
+        heart_rate: 88,
+        blood_pressure_systolic: 128,
+        blood_pressure_diastolic: 82,
+        oxygen_saturation: 94, // Slightly low - autonomous flag
+        temperature: 100.1, // Mild fever - autonomous flag
+        respiratory_rate: 20
+      },
+      medications: ["Azithromycin", "Albuterol"],
+      risk_factors: ["Asthma", "Smoking history"],
+      autonomous_monitoring_level: "standard",
+      last_updated: new Date().toISOString()
+    },
+    "Critical_Autonomous_003": {
+      name: "Elena Rodriguez",
+      age: 72,
+      room: "ICU-208", 
+      condition: "Sepsis - autonomous critical monitoring",
+      vitals: {
+        heart_rate: 115, // Elevated - autonomous critical flag
+        blood_pressure_systolic: 85, // Low - autonomous critical flag
+        blood_pressure_diastolic: 55, // Low - autonomous critical flag
+        oxygen_saturation: 89, // Critical - autonomous emergency flag
+        temperature: 103.2, // High fever - autonomous critical flag
+        respiratory_rate: 28 // Elevated - autonomous critical flag
+      },
+      medications: ["Vancomycin", "Norepinephrine", "Hydrocortisone"],
+      risk_factors: ["Sepsis", "Multi-organ dysfunction", "Advanced age"],
+      autonomous_monitoring_level: "critical",
+      last_updated: new Date().toISOString()
     }
-  });
+  };
+}
 
-  const results = await Promise.allSettled(promises);
-  results.forEach((result) => {
-    if (result.status === 'fulfilled' && result.value) {
-      const [symbol, data] = result.value;
-      marketData[symbol] = data;
-    }
-  });
+function assessAutonomousHealthSeverity(intelligenceReport) {
+  const reportText = typeof intelligenceReport === 'string' ? intelligenceReport : JSON.stringify(intelligenceReport);
+  
+  if (reportText.includes('CRITICAL_INTERVENTION') || 
+      reportText.includes('EMERGENCY') || 
+      reportText.includes('IMMEDIATE_ACTION') ||
+      reportText.includes('SEPSIS') ||
+      reportText.includes('CARDIAC_ARREST') ||
+      reportText.includes('RESPIRATORY_FAILURE')) {
+    return 'critical';
+  } else if (reportText.includes('ENHANCED_SURVEILLANCE') || 
+             reportText.includes('ELEVATED') || 
+             reportText.includes('CONCERNING') ||
+             reportText.includes('ABNORMAL') ||
+             reportText.includes('MONITORING_REQUIRED')) {
+    return 'warning';
+  }
+  return 'normal';
+}
 
-  return marketData;
+async function executeAutonomousEmergencyResponse(env, intelligenceReport, patientIntelligence) {
+  console.log('🚨 Autonomous emergency response protocol executing...');
+  
+  // Autonomous emergency response would include:
+  // - Immediate medical team notifications
+  // - Automated equipment preparation alerts
+  // - Emergency response coordination
+  // - Real-time escalation to on-call physicians
+  // - Integration with hospital emergency systems
 }
 ```
 
-## Key Features Explained
+## Deployment & Configuration
 
-### 1. **Dual Handler Pattern**
-- **`fetch()`**: Handles HTTP requests, provides web UI for testing
-- **`scheduled()`**: Executes on cron schedule automatically
-- **Shared Logic**: Both use the same `handleStockAnalysis()` function
+### Environment Variables
 
-### 2. **Cron Configuration**
-```jsonc
-"triggers": {
-  "crons": [
-    "0 */3 * * *"    // Every 3 hours
-    "0 9 * * MON-FRI" // Weekdays at 9 AM
-  ]
-}
-```
-
-### 3. **Real Data Integration**
-- **Yahoo Finance API**: Free, no API key required
-- **Error Handling**: Timeout management, fallback responses
-- **Parallel Processing**: Fetch multiple symbols simultaneously
-
-### 4. **Production Features**
-- **Web Interface**: Test manually via browser
-- **Structured Responses**: Consistent JSON format
-- **Error Recovery**: Graceful failure handling
-- **Logging**: Console output for debugging
-
-## Deployment
-
-```bash
-# Deploy to Cloudflare
-wrangler deploy
-
-# View logs
-wrangler tail
-
-# Test cron manually
-wrangler triggers cron "0 */3 * * *"
-```
-
-## Environment Variables
-
-Add to `wrangler.jsonc`:
+Configure your Cloudflare Workers deployment with Swarms API:
 
 ```jsonc
 {
   "vars": {
     "SWARMS_API_KEY": "your-swarms-api-key",
-    "MAILGUN_API_KEY": "optional-for-emails", 
-    "MAILGUN_DOMAIN": "your-domain.com",
-    "RECIPIENT_EMAIL": "alerts@company.com"
+    "AUTONOMOUS_ALERTS_EMAIL": "intelligence@yourcompany.com",
+    "HEALTHCARE_EMERGENCY_EMAIL": "emergency@hospital.com",
+    "MAILGUN_API_KEY": "your-mailgun-key",
+    "MAILGUN_DOMAIN": "intelligence.yourcompany.com"
   }
 }
 ```
 
-## Testing
+### Cloudflare Workers Cron Scheduling Patterns
 
-1. **Deploy**: `wrangler deploy`
-2. **Visit URL**: Open your worker URL to see the web interface
-3. **Manual Test**: Click "Start Analysis" button
-4. **Cron Test**: `wrangler triggers cron "0 */3 * * *"`
+```jsonc
+{
+  "triggers": {
+    "crons": [
+      "0 */3 * * *",        // Financial Swarms agents every 3 hours
+      "*/30 * * * *",       // Healthcare Swarms monitoring every 30 minutes  
+      "0 9,15,21 * * *",    // Daily Swarms intelligence briefings
+      "*/5 * * * *"         // Critical Swarms systems every 5 minutes
+    ]
+  }
+}
+```
 
-## Production Tips
+### Cloudflare Workers Deployment Commands
 
-- **Error Handling**: Always wrap API calls in try-catch
-- **Timeouts**: Use AbortController for external API calls
-- **Logging**: Use console.log for debugging in Cloudflare dashboard
-- **Rate Limits**: Yahoo Finance is free but has rate limits
-- **Cost Control**: Set appropriate `max_tokens` in agent config
+```bash
+# Deploy Swarms AI agents to Cloudflare Workers
+wrangler deploy
 
-This minimal implementation provides a solid foundation for production AI agents on Cloudflare Workers with automated scheduling and real-time data integration.
+# Monitor Cloudflare Workers execution logs
+wrangler tail
+
+# Test Cloudflare Workers cron triggers manually
+wrangler triggers cron "0 */3 * * *"
+
+```
+
+## Production Best Practices
+
+### 1. **Cloudflare Workers + Swarms API Integration**
+- Implement comprehensive error handling for both platforms
+- Use Cloudflare Workers KV for caching Swarms API responses
+- Leverage Cloudflare Workers analytics for monitoring
+
+### 2. **Cost Optimization** 
+- Monitor Swarms API usage and costs
+- Use Cloudflare Workers free tier (100K requests/day)
+- Implement intelligent batching for Swarms API efficiency
+- Use cost-effective Swarms models (gpt-4o-mini recommended)
+
+### 3. **Security & Compliance**
+- Secure Swarms API keys in Cloudflare Workers environment variables
+- Use Cloudflare Workers secrets for sensitive data
+- Audit AI decisions and maintain compliance logs
+- HIPAA compliance for healthcare applications
+
+### 4. **Monitoring & Observability**
+- Track Cloudflare Workers performance metrics
+- Monitor Swarms API response times and success rates
+- Use Cloudflare Workers analytics dashboard
+- Set up alerts for system failures and anomalies
+
+This deployment architecture combines **Swarms API's advanced multi-agent intelligence** with **Cloudflare Workers' global edge infrastructure**, enabling truly intelligent, self-executing AI agents that operate continuously across 330+ cities worldwide, providing real-time intelligence and automated decision-making capabilities with ultra-low latency.
