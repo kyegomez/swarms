@@ -28,7 +28,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import asynccontextmanager
 from functools import wraps
-from typing import Any, Dict, List, Literal, Optional, Union, AsyncGenerator
+from typing import Any, Dict, List, Literal, Optional, Union, AsyncGenerator, Callable
 from urllib.parse import urlparse
 
 from loguru import logger
@@ -139,6 +139,11 @@ class UnifiedTransportConfig(BaseModel):
     streaming_timeout: Optional[int] = Field(
         default=None,
         description="Timeout for streaming operations"
+    )
+    
+    streaming_callback: Optional[Callable[[str], None]] = Field(
+        default=None,
+        description="Optional callback function for streaming chunks"
     )
 
 
