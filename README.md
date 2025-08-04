@@ -217,17 +217,16 @@ print(final_post)
 
 | **Architecture** | **Description** | **Best For** |
 |---|---|---|
-| **[SequentialWorkflow](https://docs.swarms.world/en/latest/swarms/structs/sequential_workflow/)** | Agents execute tasks in a linear chain; one agent's output is the next one's input. | Step-by-step processes like data transformation pipelines, report generation. |
-| **[ConcurrentWorkflow](https://docs.swarms.world/en/latest/swarms/structs/concurrent_workflow/)** | Agents run tasks simultaneously for maximum efficiency. | High-throughput tasks like batch processing, parallel data analysis. |
-| **[AgentRearrange](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)** | Dynamically maps complex relationships (e.g., `a -> b, c`) between agents. | Flexible and adaptive workflows, task distribution, dynamic routing. |
-| **[GraphWorkflow](https://docs.swarms.world/en/latest/swarms/structs/graph_workflow/)** | Orchestrates agents as nodes in a Directed Acyclic Graph (DAG). | Complex projects with intricate dependencies, like software builds. |
-| **[MixtureOfAgents (MoA)](https://docs.swarms.world/en/latest/swarms/structs/moa/)** | Utilizes multiple expert agents in parallel and synthesizes their outputs. | Complex problem-solving, achieving state-of-the-art performance through collaboration. |
-| **[GroupChat](https://docs.swarms.world/en/latest/swarms/structs/group_chat/)** | Agents collaborate and make decisions through a conversational interface. | Real-time collaborative decision-making, negotiations, brainstorming. |
-| **[ForestSwarm](https://docs.swarms.world/en/latest/swarms/structs/forest_swarm/)** | Dynamically selects the most suitable agent or tree of agents for a given task. | Task routing, optimizing for expertise, complex decision-making trees. |
-
-| **[HierarchicalSwarm](https://docs.swarms.world/en/latest/swarms/structs/hiearchical_swarm/)** | Orchestrates agents with a director that creates plans and distributes tasks to specialized worker agents. | Complex project management, team coordination, hierarchical decision-making with feedback loops. |
-| **[HeavySwarm](https://docs.swarms.world/en/latest/swarms/structs/heavy_swarm/)** | Implements a 5-phase workflow with specialized agents (Research, Analysis, Alternatives, Verification) for comprehensive task analysis. | Complex research and analysis tasks, financial analysis, strategic planning, comprehensive reporting. |
-| **[SwarmRouter](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)** | Universal orchestrator that provides a single interface to run any type of swarm with dynamic selection. | Simplifying complex workflows, switching between swarm strategies, unified multi-agent management. |
+| **[SequentialWorkflow](https://docs.swarms.world/en/latest/swarms/structs/sequential_workflow/)** | Agents execute tasks in a linear chain; the output of one agent becomes the input for the next. | Step-by-step processes such as data transformation pipelines and report generation. |
+| **[ConcurrentWorkflow](https://docs.swarms.world/en/latest/swarms/structs/concurrent_workflow/)** | Agents run tasks simultaneously for maximum efficiency. | High-throughput tasks such as batch processing and parallel data analysis. |
+| **[AgentRearrange](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)** | Dynamically maps complex relationships (e.g., `a -> b, c`) between agents. | Flexible and adaptive workflows, task distribution, and dynamic routing. |
+| **[GraphWorkflow](https://docs.swarms.world/en/latest/swarms/structs/graph_workflow/)** | Orchestrates agents as nodes in a Directed Acyclic Graph (DAG). | Complex projects with intricate dependencies, such as software builds. |
+| **[MixtureOfAgents (MoA)](https://docs.swarms.world/en/latest/swarms/structs/moa/)** | Utilizes multiple expert agents in parallel and synthesizes their outputs. | Complex problem-solving and achieving state-of-the-art performance through collaboration. |
+| **[GroupChat](https://docs.swarms.world/en/latest/swarms/structs/group_chat/)** | Agents collaborate and make decisions through a conversational interface. | Real-time collaborative decision-making, negotiations, and brainstorming. |
+| **[ForestSwarm](https://docs.swarms.world/en/latest/swarms/structs/forest_swarm/)** | Dynamically selects the most suitable agent or tree of agents for a given task. | Task routing, optimizing for expertise, and complex decision-making trees. |
+| **[HierarchicalSwarm](https://docs.swarms.world/en/latest/swarms/structs/hiearchical_swarm/)** | Orchestrates agents with a director who creates plans and distributes tasks to specialized worker agents. | Complex project management, team coordination, and hierarchical decision-making with feedback loops. |
+| **[HeavySwarm](https://docs.swarms.world/en/latest/swarms/structs/heavy_swarm/)** | Implements a five-phase workflow with specialized agents (Research, Analysis, Alternatives, Verification) for comprehensive task analysis. | Complex research and analysis tasks, financial analysis, strategic planning, and comprehensive reporting. |
+| **[SwarmRouter](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)** | A universal orchestrator that provides a single interface to run any type of swarm with dynamic selection. | Simplifying complex workflows, switching between swarm strategies, and unified multi-agent management. |
 
 -----
 
