@@ -1,581 +1,487 @@
-# Cloudflare Workers Deployment with Swarms API
+# Cloudflare Workers with Swarms: Automated Cron Job Agents
 
-Deploy intelligent agent swarms on Cloudflare's edge network for maximum performance, global availability, and automatic scaling. This guide covers deploying both API endpoints and scheduled cron job agents using the Swarms API.
+Deploy scheduled AI agents on Cloudflare's global edge network for automated stock analysis and healthcare monitoring. This guide focuses on cron job agents that run automatically at scheduled intervals.
 
 ## Overview
 
-Cloudflare Workers provide a serverless execution environment that runs on Cloudflare's global network, offering:
+Cloudflare Workers with cron triggers enable automated agent execution for:
+- **Stock Market Analysis**: Daily market reports and trading insights
+- **Healthcare Monitoring**: Patient data analysis and alerts
+- **Automated Reporting**: Scheduled business intelligence
+- **Global Deployment**: Edge computing with zero cold starts
 
-- **Edge Computing**: Deploy agents close to users worldwide
-- **Automatic Scaling**: Handle traffic spikes without configuration
-- **Zero Cold Starts**: Instant response times
-- **Cost Effective**: Pay only for what you use
-- **Built-in Cron Jobs**: Schedule automated agent tasks
+## Quick Setup
 
-Perfect for deploying AI agents that need global reach, low latency, and scheduled execution capabilities.
-
-## Prerequisites
-
-!!! info "Requirements"
-
-    - Cloudflare account (free tier available)
-    - Wrangler CLI installed (`npm install -g wrangler`)
-    - Swarms API key from [Swarms Platform](https://swarms.world/platform/api-keys)
-    - Node.js 16+ for local development
-
-## Quick Start
-
-### 1. Project Setup
+### 1. Create Worker Project
 
 ```bash
-# Create new Cloudflare Worker
-npx create-cloudflare my-swarms-worker worker
-
-# Navigate to project
-cd my-swarms-worker
-
-# Install dependencies
-npm install
+npx create-cloudflare stock-agent worker
+cd stock-agent
 ```
 
-### 2. Configure Environment Variables
+### 2. Configure Cron Schedule
 
-Add your Swarms API key to `wrangler.toml`:
+Edit `wrangler.toml`:
 
 ```toml
-name = "my-swarms-worker"
+name = "stock-analysis-agent"
 main = "src/index.js"
 compatibility_date = "2024-01-01"
 
 [env.production.vars]
 SWARMS_API_KEY = "your-api-key-here"
+SLACK_WEBHOOK_URL = "optional-slack-webhook"
 
-[env.production]
-# For scheduled agents
+# Stock market analysis - after market close
 [[env.production.triggers.crons]]
-cron = "0 9 * * MON-FRI"  # Weekdays at 9 AM UTC
+cron = "0 21 * * MON-FRI"  # 9 PM UTC (4 PM EST)
+
+# Healthcare monitoring - every 4 hours
+[[env.production.triggers.crons]]
+cron = "0 */4 * * *"
 ```
 
-### 3. Basic Agent Worker
+## Stock Market Analysis Agent
 
-=== "JavaScript"
+Automated daily stock analysis after market close:
 
-    ```javascript
-    export default {
-      async fetch(request, env, ctx) {
-        // Handle CORS preflight
-        if (request.method === 'OPTIONS') {
-          return handleCORS();
+```javascript
+export default {
+  // Cron job handler - runs automatically
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(handleStockAnalysis(event, env));
+  }
+};
+
+async function handleStockAnalysis(event, env) {
+  try {
+    // Step 1: Fetch real market data from multiple sources
+    const marketData = await fetchMarketData(env);
+    
+    // Step 2: Get market news
+    const marketNews = await fetchMarketNews(env);
+    
+    // Step 3: Send real data to Swarms agents for analysis
+    const swarmConfig = {
+      name: "Real-Time Stock Analysis",
+      description: "Live market data analysis with AI agents",
+      agents: [
+        {
+          agent_name: "Technical Analyst",
+          system_prompt: `You are a professional technical analyst. Analyze the provided real market data:
+            - Calculate key technical indicators (RSI, MACD, Moving Averages)
+            - Identify support and resistance levels
+            - Determine market trends and momentum
+            - Provide trading signals and price targets
+            Format your analysis professionally with specific price levels.`,
+          model_name: "gpt-4o-mini",
+          max_tokens: 3000,
+          temperature: 0.2
+        },
+        {
+          agent_name: "Fundamental Analyst",
+          system_prompt: `You are a fundamental market analyst. Using the provided market news and data:
+            - Analyze earnings impact and company fundamentals
+            - Evaluate economic indicators and Fed policy effects
+            - Assess sector rotation and market sentiment
+            - Identify value opportunities and risks
+            Provide investment recommendations with risk assessment.`,
+          model_name: "gpt-4o-mini",
+          max_tokens: 3000,
+          temperature: 0.3
         }
+      ],
+      swarm_type: "ConcurrentWorkflow",
+      task: `Analyze the following real market data and news:
 
-        try {
-          const { pathname } = new URL(request.url);
-          
-          if (pathname === '/api/agent' && request.method === 'POST') {
-            return await handleAgentRequest(request, env);
-          }
-          
-          if (pathname === '/api/health' && request.method === 'GET') {
-            return new Response(JSON.stringify({ 
-              status: 'healthy', 
-              service: 'Swarms Agent API',
-              version: '1.0.0'
-            }), {
-              status: 200,
-              headers: { 
-                'Content-Type': 'application/json',
-                ...getCORSHeaders()
-              }
-            });
-          }
-          
-          return new Response('Not Found', { status: 404 });
-        } catch (error) {
-          console.error('Worker error:', error);
-          return new Response(JSON.stringify({ 
-            error: error.message 
-          }), {
-            status: 500,
-            headers: { 
-              'Content-Type': 'application/json',
-              ...getCORSHeaders()
-            }
-          });
-        }
-      },
+MARKET DATA:
+${JSON.stringify(marketData, null, 2)}
 
-      // Scheduled event handler for cron jobs
-      async scheduled(event, env, ctx) {
-        ctx.waitUntil(handleScheduledEvent(event, env));
-      }
+MARKET NEWS:
+${marketNews}
+
+Provide comprehensive analysis with:
+1. Technical analysis with key levels
+2. Fundamental analysis with catalysts
+3. Trading recommendations
+4. Risk assessment
+5. Tomorrow's key levels to watch`,
+      max_loops: 1
     };
 
-    async function handleAgentRequest(request, env) {
-      const requestData = await request.json();
-      
-      const agentConfig = {
-        agent_config: {
-          agent_name: requestData.agent_name || "CloudflareAgent",
-          description: requestData.description || "Agent running on Cloudflare Workers",
-          system_prompt: requestData.system_prompt || "You are a helpful AI assistant.",
-          model_name: requestData.model_name || "gpt-4o-mini",
-          max_tokens: requestData.max_tokens || 2000,
-          temperature: requestData.temperature || 0.7
-        },
-        task: requestData.task
-      };
-
-      const response = await fetch('https://api.swarms.world/v1/agent/completions', {
-        method: 'POST',
-        headers: {
-          'x-api-key': env.SWARMS_API_KEY,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(agentConfig)
-      });
-
-      const result = await response.json();
-      
-      return new Response(JSON.stringify(result), {
-        status: response.status,
-        headers: {
-          'Content-Type': 'application/json',
-          ...getCORSHeaders()
-        }
-      });
-    }
-
-    function getCORSHeaders() {
-      return {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      };
-    }
-
-    function handleCORS() {
-      return new Response(null, {
-        status: 200,
-        headers: getCORSHeaders()
-      });
-    }
-    ```
-
-=== "TypeScript"
-
-    ```typescript
-    interface AgentRequest {
-      agent_name?: string;
-      description?: string;
-      system_prompt?: string;
-      model_name?: string;
-      max_tokens?: number;
-      temperature?: number;
-      task: string;
-    }
-
-    interface AgentConfig {
-      agent_config: {
-        agent_name: string;
-        description: string;
-        system_prompt: string;
-        model_name: string;
-        max_tokens: number;
-        temperature: number;
-      };
-      task: string;
-    }
-
-    interface Env {
-      SWARMS_API_KEY: string;
-    }
-
-    export interface ScheduledEvent {
-      scheduledTime: number;
-      cron: string;
-    }
-
-    export default {
-      async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-        if (request.method === 'OPTIONS') {
-          return handleCORS();
-        }
-
-        try {
-          const { pathname } = new URL(request.url);
-          
-          if (pathname === '/api/agent' && request.method === 'POST') {
-            return await handleAgentRequest(request, env);
-          }
-          
-          if (pathname === '/api/health' && request.method === 'GET') {
-            return new Response(JSON.stringify({ 
-              status: 'healthy', 
-              service: 'Swarms Agent API',
-              version: '1.0.0'
-            }), {
-              status: 200,
-              headers: { 
-                'Content-Type': 'application/json',
-                ...getCORSHeaders()
-              }
-            });
-          }
-          
-          return new Response('Not Found', { status: 404 });
-        } catch (error) {
-          console.error('Worker error:', error);
-          return new Response(JSON.stringify({ 
-            error: (error as Error).message 
-          }), {
-            status: 500,
-            headers: { 
-              'Content-Type': 'application/json',
-              ...getCORSHeaders()
-            }
-          });
-        }
+    const response = await fetch('https://api.swarms.world/v1/swarm/completions', {
+      method: 'POST',
+      headers: {
+        'x-api-key': env.SWARMS_API_KEY,
+        'Content-Type': 'application/json'
       },
+      body: JSON.stringify(swarmConfig)
+    });
 
-      async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-        ctx.waitUntil(handleScheduledEvent(event, env));
+    const result = await response.json();
+    
+    if (response.ok) {
+      console.log('✅ Real-time stock analysis completed');
+      console.log('💰 Cost:', result.metadata?.billing_info?.total_cost);
+      
+      // Send email directly
+      await sendEmailReport(env, result.output, marketData);
+    }
+  } catch (error) {
+    console.error('❌ Real-time stock analysis failed:', error);
+  }
+}
+
+// Fetch real market data from Alpha Vantage API
+async function fetchMarketData(env) {
+  const symbols = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'TSLA', 'NVDA'];
+  const marketData = {};
+
+  for (const symbol of symbols) {
+    try {
+      // Get daily prices
+      const priceResponse = await fetch(
+        `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${env.STOCK_API_KEY}`
+      );
+      const priceData = await priceResponse.json();
+      
+      // Get technical indicators (RSI)
+      const rsiResponse = await fetch(
+        `https://www.alphavantage.co/query?function=RSI&symbol=${symbol}&interval=daily&time_period=14&series_type=close&apikey=${env.STOCK_API_KEY}`
+      );
+      const rsiData = await rsiResponse.json();
+
+      if (priceData['Time Series (Daily)'] && rsiData['Technical Analysis: RSI']) {
+        const latestDate = Object.keys(priceData['Time Series (Daily)'])[0];
+        const latestPrice = priceData['Time Series (Daily)'][latestDate];
+        const latestRSI = Object.values(rsiData['Technical Analysis: RSI'])[0];
+
+        marketData[symbol] = {
+          price: parseFloat(latestPrice['4. close']),
+          open: parseFloat(latestPrice['1. open']),
+          high: parseFloat(latestPrice['2. high']),
+          low: parseFloat(latestPrice['3. low']),
+          volume: parseInt(latestPrice['5. volume']),
+          change: parseFloat(latestPrice['4. close']) - parseFloat(latestPrice['1. open']),
+          change_percent: ((parseFloat(latestPrice['4. close']) - parseFloat(latestPrice['1. open'])) / parseFloat(latestPrice['1. open']) * 100).toFixed(2),
+          rsi: parseFloat(latestRSI?.RSI || 50),
+          date: latestDate
+        };
       }
-    };
-
-    async function handleAgentRequest(request: Request, env: Env): Promise<Response> {
-      const requestData: AgentRequest = await request.json();
       
-      const agentConfig: AgentConfig = {
-        agent_config: {
-          agent_name: requestData.agent_name || "CloudflareAgent",
-          description: requestData.description || "Agent running on Cloudflare Workers",
-          system_prompt: requestData.system_prompt || "You are a helpful AI assistant.",
-          model_name: requestData.model_name || "gpt-4o-mini",
-          max_tokens: requestData.max_tokens || 2000,
-          temperature: requestData.temperature || 0.7
-        },
-        task: requestData.task
-      };
-
-      const response = await fetch('https://api.swarms.world/v1/agent/completions', {
-        method: 'POST',
-        headers: {
-          'x-api-key': env.SWARMS_API_KEY,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(agentConfig)
-      });
-
-      const result = await response.json();
+      // Rate limiting - Alpha Vantage allows 5 requests per minute on free tier
+      await new Promise(resolve => setTimeout(resolve, 12000));
       
-      return new Response(JSON.stringify(result), {
-        status: response.status,
-        headers: {
-          'Content-Type': 'application/json',
-          ...getCORSHeaders()
+    } catch (error) {
+      console.error(`Error fetching data for ${symbol}:`, error);
+      marketData[symbol] = { error: 'Failed to fetch data' };
+    }
+  }
+
+  return marketData;
+}
+
+// Fetch market news from Financial Modeling Prep (free tier available)
+async function fetchMarketNews(env) {
+  try {
+    const newsResponse = await fetch(
+      `https://financialmodelingprep.com/api/v3/stock_news?tickers=AAPL,MSFT,TSLA,NVDA&limit=10&apikey=${env.FMP_API_KEY || 'demo'}`
+    );
+    const newsData = await newsResponse.json();
+    
+    if (Array.isArray(newsData)) {
+      return newsData.slice(0, 5).map(article => ({
+        title: article.title,
+        text: article.text?.substring(0, 300) + '...',
+        publishedDate: article.publishedDate,
+        symbol: article.symbol,
+        url: article.url
+      }));
+    }
+  } catch (error) {
+    console.error('Error fetching news:', error);
+  }
+  
+  return "Market news temporarily unavailable";
+}
+
+// Send email report using Mailgun API
+async function sendEmailReport(env, analysis, marketData) {
+  // Extract key market movers for email subject
+  const movers = Object.entries(marketData)
+    .filter(([symbol, data]) => data.change_percent && Math.abs(parseFloat(data.change_percent)) > 2)
+    .map(([symbol, data]) => `${symbol}: ${data.change_percent}%`)
+    .join(', ');
+
+  const emailSubject = `📊 Daily Stock Analysis - ${new Date().toLocaleDateString()}`;
+  const emailBody = `
+    <h2>Daily Market Analysis Report</h2>
+    <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+    <p><strong>Key Market Movers:</strong> ${movers || 'Market stable'}</p>
+    
+    <h3>AI Agent Analysis:</h3>
+    <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px;">
+      <pre style="white-space: pre-wrap;">${analysis}</pre>
+    </div>
+    
+    <h3>Market Data Summary:</h3>
+    <table border="1" style="border-collapse: collapse; width: 100%;">
+      <tr style="background-color: #e0e0e0;">
+        <th>Symbol</th><th>Price</th><th>Change %</th><th>Volume</th><th>RSI</th>
+      </tr>
+      ${Object.entries(marketData).map(([symbol, data]) => `
+        <tr>
+          <td>${symbol}</td>
+          <td>$${data.price?.toFixed(2) || 'N/A'}</td>
+          <td style="color: ${parseFloat(data.change_percent) >= 0 ? 'green' : 'red'}">
+            ${data.change_percent}%
+          </td>
+          <td>${data.volume?.toLocaleString() || 'N/A'}</td>
+          <td>${data.rsi?.toFixed(1) || 'N/A'}</td>
+        </tr>
+      `).join('')}
+    </table>
+    
+    <p><em>Generated by Swarms AI Agent System</em></p>
+  `;
+
+  // Send via Mailgun
+  const formData = new FormData();
+  formData.append('from', `Stock Analysis Agent <noreply@${env.MAILGUN_DOMAIN}>`);
+  formData.append('to', env.RECIPIENT_EMAIL);
+  formData.append('subject', emailSubject);
+  formData.append('html', emailBody);
+
+  try {
+    const response = await fetch(`https://api.mailgun.net/v3/${env.MAILGUN_DOMAIN}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${btoa(`api:${env.MAILGUN_API_KEY}`)}`
+      },
+      body: formData
+    });
+
+    if (response.ok) {
+      console.log('✅ Email report sent successfully');
+    } else {
+      console.error('❌ Failed to send email:', await response.text());
+    }
+  } catch (error) {
+    console.error('❌ Email sending error:', error);
+  }
+}
+
+async function sendSlackNotification(webhookUrl, analysis) {
+  await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      text: "📈 Daily Stock Market Analysis",
+      blocks: [{
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `*Market Analysis Complete*\n\`\`\`${analysis.substring(0, 500)}...\`\`\``
         }
-      });
-    }
+      }]
+    })
+  });
+}
+```
 
-    function getCORSHeaders(): Record<string, string> {
-      return {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      };
-    }
+## Healthcare Monitoring Agent
 
-    function handleCORS(): Response {
-      return new Response(null, {
-        status: 200,
-        headers: getCORSHeaders()
-      });
-    }
-    ```
+Automated patient monitoring and health alerts:
 
-### 4. Deploy Your Worker
+```javascript
+export default {
+  async scheduled(event, env, ctx) {
+    // Determine which agent to run based on cron schedule
+    const hour = new Date().getHours();
+    
+    if (hour % 4 === 0) {
+      // Every 4 hours - patient monitoring
+      ctx.waitUntil(handlePatientMonitoring(event, env));
+    }
+  }
+};
+
+async function handlePatientMonitoring(event, env) {
+  const healthcareSwarm = {
+    name: "Patient Monitoring System",
+    description: "Automated patient health analysis and alerting",
+    agents: [
+      {
+        agent_name: "Vital Signs Analyst",
+        system_prompt: `Analyze patient vital signs data for abnormalities:
+          - Heart rate patterns and irregularities
+          - Blood pressure trends
+          - Oxygen saturation levels
+          - Temperature variations
+          Flag critical conditions requiring immediate attention.`,
+        model_name: "gpt-4o-mini",
+        max_tokens: 2000,
+        temperature: 0.1
+      },
+      {
+        agent_name: "Risk Assessment Specialist",
+        system_prompt: `Evaluate patient risk factors and health trends:
+          - Medication interactions
+          - Chronic condition management
+          - Recovery progress assessment
+          - Early warning signs detection
+          Prioritize patients needing urgent care.`,
+        model_name: "gpt-4o-mini", 
+        max_tokens: 2000,
+        temperature: 0.2
+      }
+    ],
+    swarm_type: "ConcurrentWorkflow",
+    task: "Analyze current patient monitoring data and generate health status alerts for medical staff.",
+    max_loops: 1
+  };
+
+  try {
+    const response = await fetch('https://api.swarms.world/v1/swarm/completions', {
+      method: 'POST',
+      headers: {
+        'x-api-key': env.SWARMS_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(healthcareSwarm)
+    });
+
+    const result = await response.json();
+    
+    if (response.ok) {
+      console.log('🏥 Health monitoring completed');
+      
+      // Send email alerts for all monitoring results
+      await sendHealthEmailAlert(env, result.output);
+    }
+  } catch (error) {
+    console.error('❌ Health monitoring failed:', error);
+  }
+}
+
+// Send healthcare email alerts
+async function sendHealthEmailAlert(env, analysis) {
+  const severity = extractSeverity(analysis);
+  const isUrgent = severity === 'critical' || severity === 'urgent';
+  
+  const emailSubject = `${isUrgent ? '🚨 URGENT' : '🏥'} Health Monitoring Alert - ${new Date().toLocaleString()}`;
+  const emailBody = `
+    <h2 style="color: ${isUrgent ? 'red' : 'blue'};">Patient Monitoring Report</h2>
+    <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
+    <p><strong>Severity Level:</strong> <span style="color: ${getSeverityColor(severity)}; font-weight: bold;">${severity.toUpperCase()}</span></p>
+    
+    <h3>AI Health Analysis:</h3>
+    <div style="background-color: ${isUrgent ? '#ffe6e6' : '#f0f8ff'}; padding: 20px; border-radius: 5px; border-left: 5px solid ${isUrgent ? 'red' : 'blue'};">
+      <pre style="white-space: pre-wrap; font-family: Arial, sans-serif;">${analysis}</pre>
+    </div>
+    
+    ${isUrgent ? '<p style="color: red; font-weight: bold;">⚠️ IMMEDIATE ATTENTION REQUIRED</p>' : ''}
+    
+    <p><em>Generated by Swarms Healthcare Monitoring Agent</em></p>
+  `;
+
+  // Send email using Mailgun
+  const formData = new FormData();
+  formData.append('from', `Healthcare Monitor <alerts@${env.MAILGUN_DOMAIN}>`);
+  formData.append('to', env.MEDICAL_TEAM_EMAIL);
+  formData.append('subject', emailSubject);
+  formData.append('html', emailBody);
+
+  try {
+    const response = await fetch(`https://api.mailgun.net/v3/${env.MAILGUN_DOMAIN}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${btoa(`api:${env.MAILGUN_API_KEY}`)}`
+      },
+      body: formData
+    });
+
+    if (response.ok) {
+      console.log('✅ Healthcare email alert sent successfully');
+    } else {
+      console.error('❌ Failed to send healthcare email:', await response.text());
+    }
+  } catch (error) {
+    console.error('❌ Healthcare email error:', error);
+  }
+}
+
+function extractSeverity(analysis) {
+  if (analysis.includes('CRITICAL')) return 'critical';
+  if (analysis.includes('URGENT')) return 'urgent';
+  if (analysis.includes('WARNING')) return 'warning';
+  return 'normal';
+}
+
+function getSeverityColor(severity) {
+  switch(severity) {
+    case 'critical': return 'red';
+    case 'urgent': return 'orange';
+    case 'warning': return 'yellow';
+    default: return 'green';
+  }
+}
+```
+
+## Deployment
 
 ```bash
-# Deploy to Cloudflare
+# Deploy your cron job agents
 wrangler deploy
 
-# View logs
+# Monitor logs
 wrangler tail
+
+# Test cron trigger manually
+wrangler triggers cron "0 21 * * MON-FRI"
 ```
 
-## Scheduled Cron Job Agents
+## Cost Optimization
 
-Cloudflare Workers support scheduled events (cron jobs) that can trigger agent tasks automatically. This is perfect for periodic analysis, monitoring, reporting, and automated decision-making.
+- Use `gpt-4o-mini` for cost-effective analysis
+- Set appropriate `max_tokens` limits 
+- Configure cron schedules to avoid unnecessary runs
+- Implement error handling to prevent API waste
 
-### Stock Market Analysis Agent
+## Environment Variables
 
-Deploy a cron job agent that analyzes stock market trends and generates daily reports:
+Add to `wrangler.toml`:
 
-=== "JavaScript"
+```toml
+[env.production.vars]
+SWARMS_API_KEY = "your-swarms-api-key"
 
-    ```javascript
-    // wrangler.toml configuration for stock market agent
-    /*
-    [[env.production.triggers.crons]]
-    cron = "0 16 * * MON-FRI"  # 4 PM UTC (after US market close)
-    */
+# Stock API Keys (get free keys from these providers)
+STOCK_API_KEY = "your-alpha-vantage-key"  # Free: https://www.alphavantage.co/support/#api-key
+FMP_API_KEY = "your-fmp-key"              # Free: https://financialmodelingprep.com/developer/docs
 
-    async function handleScheduledEvent(event, env) {
-      console.log('Stock market analysis triggered at:', new Date(event.scheduledTime));
-      
-      try {
-        // Stock analysis swarm configuration
-        const swarmConfig = {
-          name: "Stock Market Analysis Swarm",
-          description: "Daily stock market analysis and trading insights",
-          agents: [
-            {
-              agent_name: "Market Data Analyst",
-              description: "Analyzes market trends and price movements",
-              system_prompt: `You are an expert financial market analyst specializing in equity markets. 
-                Analyze market trends, volume patterns, and price movements. 
-                Provide technical analysis insights and identify key support/resistance levels.
-                Focus on major indices (S&P 500, NASDAQ, DOW) and sector performance.`,
-              model_name: "gpt-4o",
-              max_tokens: 3000,
-              temperature: 0.3,
-              role: "worker"
-            },
-            {
-              agent_name: "Economic News Analyzer",
-              description: "Analyzes economic news impact on markets",
-              system_prompt: `You are a financial news analyst with expertise in market sentiment analysis.
-                Analyze recent economic news, earnings reports, and market-moving events.
-                Assess their potential impact on stock prices and market sentiment.
-                Identify key catalysts and risk factors for the next trading day.`,
-              model_name: "gpt-4o",
-              max_tokens: 3000,
-              temperature: 0.3,
-              role: "worker"  
-            },
-            {
-              agent_name: "Trading Strategy Advisor",
-              description: "Provides trading recommendations and risk assessment",
-              system_prompt: `You are a quantitative trading strategist with expertise in risk management.
-                Based on technical analysis and market sentiment, provide actionable trading insights.
-                Include risk assessment, position sizing recommendations, and key levels to watch.
-                Focus on risk-adjusted returns and downside protection strategies.`,
-              model_name: "gpt-4o",
-              max_tokens: 3000,
-              temperature: 0.4,
-              role: "worker"
-            }
-          ],
-          swarm_type: "SequentialWorkflow",
-          max_loops: 1,
-          task: `Analyze today's stock market performance and provide insights for tomorrow's trading session. 
-            Include: 1) Market overview and key movers 2) Technical analysis of major indices 
-            3) Economic news impact assessment 4) Trading opportunities and risks 
-            5) Key levels to watch tomorrow. Format as a professional daily market report.`,
-          service_tier: "standard"
-        };
+# Email Configuration (Mailgun)
+MAILGUN_API_KEY = "your-mailgun-api-key"  # Free: https://www.mailgun.com/
+MAILGUN_DOMAIN = "your-domain.com"
+RECIPIENT_EMAIL = "investor@yourcompany.com"
+MEDICAL_TEAM_EMAIL = "medical-team@hospital.com"
+```
 
-        // Execute the swarm
-        const response = await fetch('https://api.swarms.world/v1/swarm/completions', {
-          method: 'POST',
-          headers: {
-            'x-api-key': env.SWARMS_API_KEY,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(swarmConfig)
-        });
+## API Endpoints Used
 
-        const result = await response.json();
-        
-        if (response.ok) {
-          console.log('Stock analysis completed successfully');
-          console.log('Cost:', result.metadata?.billing_info?.total_cost);
-          
-          // Store results in KV storage for retrieval
-          if (env.STOCK_REPORTS) {
-            const reportKey = `stock-report-${new Date().toISOString().split('T')[0]}`;
-            await env.STOCK_REPORTS.put(reportKey, JSON.stringify({
-              timestamp: new Date().toISOString(),
-              analysis: result.output,
-              cost: result.metadata?.billing_info?.total_cost
-            }));
-          }
-          
-          // Optional: Send to webhook, email, or notification service
-          await sendNotification(env, result.output);
-          
-        } else {
-          console.error('Stock analysis failed:', result);
-        }
-        
-      } catch (error) {
-        console.error('Error in scheduled stock analysis:', error);
-      }
-    }
+### Stock Data APIs
+- **Alpha Vantage**: Real-time stock prices, technical indicators (RSI, MACD)
+- **Financial Modeling Prep**: Market news, earnings data, company fundamentals
+- **Free Tier Limits**: Alpha Vantage (5 calls/min), FMP (250 calls/day)
 
-    async function sendNotification(env, analysis) {
-      // Example: Send to Slack webhook
-      if (env.SLACK_WEBHOOK_URL) {
-        try {
-          await fetch(env.SLACK_WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              text: "📈 Daily Stock Market Analysis Ready",
-              attachments: [{
-                color: "good",
-                text: typeof analysis === 'string' ? analysis.substring(0, 500) + '...' : 'Analysis completed',
-                footer: "Swarms Stock Analysis Agent"
-              }]
-            })
-          });
-        } catch (error) {
-          console.error('Failed to send Slack notification:', error);
-        }
-      }
-    }
+### Real Market Data Flow
+1. **Fetch Live Data**: Current prices, volume, technical indicators
+2. **Get Market News**: Recent earnings, economic events, analyst reports  
+3. **AI Analysis**: Swarms agents analyze real data for actionable insights
+4. **Email Reports**: Professional HTML emails with analysis and data tables
 
-    // API endpoint to retrieve stock reports
-    async function getStockReport(request, env) {
-      const url = new URL(request.url);
-      const date = url.searchParams.get('date') || new Date().toISOString().split('T')[0];
-      const reportKey = `stock-report-${date}`;
-      
-      if (env.STOCK_REPORTS) {
-        const report = await env.STOCK_REPORTS.get(reportKey);
-        if (report) {
-          return new Response(report, {
-            headers: { 'Content-Type': 'application/json' }
-          });
-        }
-      }
-      
-      return new Response(JSON.stringify({ error: 'Report not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    ```
-
-=== "TypeScript"
-
-    ```typescript
-    interface StockAnalysisResult {
-      timestamp: string;
-      analysis: any;
-      cost: number;
-    }
-
-    async function handleScheduledEvent(event: ScheduledEvent, env: Env): Promise<void> {
-      console.log('Stock market analysis triggered at:', new Date(event.scheduledTime));
-      
-      try {
-        const swarmConfig = {
-          name: "Stock Market Analysis Swarm",
-          description: "Daily stock market analysis and trading insights",
-          agents: [
-            {
-              agent_name: "Market Data Analyst",
-              description: "Analyzes market trends and price movements",
-              system_prompt: `You are an expert financial market analyst specializing in equity markets. 
-                Analyze market trends, volume patterns, and price movements. 
-                Provide technical analysis insights and identify key support/resistance levels.
-                Focus on major indices (S&P 500, NASDAQ, DOW) and sector performance.`,
-              model_name: "gpt-4o",
-              max_tokens: 3000,
-              temperature: 0.3,
-              role: "worker"
-            },
-            {
-              agent_name: "Economic News Analyzer", 
-              description: "Analyzes economic news impact on markets",
-              system_prompt: `You are a financial news analyst with expertise in market sentiment analysis.
-                Analyze recent economic news, earnings reports, and market-moving events.
-                Assess their potential impact on stock prices and market sentiment.
-                Identify key catalysts and risk factors for the next trading day.`,
-              model_name: "gpt-4o",
-              max_tokens: 3000,
-              temperature: 0.3,
-              role: "worker"
-            },
-            {
-              agent_name: "Trading Strategy Advisor",
-              description: "Provides trading recommendations and risk assessment", 
-              system_prompt: `You are a quantitative trading strategist with expertise in risk management.
-                Based on technical analysis and market sentiment, provide actionable trading insights.
-                Include risk assessment, position sizing recommendations, and key levels to watch.
-                Focus on risk-adjusted returns and downside protection strategies.`,
-              model_name: "gpt-4o",
-              max_tokens: 3000,
-              temperature: 0.4,
-              role: "worker"
-            }
-          ],
-          swarm_type: "SequentialWorkflow" as const,
-          max_loops: 1,
-          task: `Analyze today's stock market performance and provide insights for tomorrow's trading session. 
-            Include: 1) Market overview and key movers 2) Technical analysis of major indices 
-            3) Economic news impact assessment 4) Trading opportunities and risks 
-            5) Key levels to watch tomorrow. Format as a professional daily market report.`,
-          service_tier: "standard"
-        };
-
-        const response = await fetch('https://api.swarms.world/v1/swarm/completions', {
-          method: 'POST',
-          headers: {
-            'x-api-key': env.SWARMS_API_KEY,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(swarmConfig)
-        });
-
-        const result = await response.json();
-        
-        if (response.ok) {
-          console.log('Stock analysis completed successfully');
-          console.log('Cost:', result.metadata?.billing_info?.total_cost);
-          
-          if (env.STOCK_REPORTS) {
-            const reportKey = `stock-report-${new Date().toISOString().split('T')[0]}`;
-            const reportData: StockAnalysisResult = {
-              timestamp: new Date().toISOString(),
-              analysis: result.output,
-              cost: result.metadata?.billing_info?.total_cost
-            };
-            
-            await env.STOCK_REPORTS.put(reportKey, JSON.stringify(reportData));
-          }
-          
-          await sendNotification(env, result.output);
-          
-        } else {
-          console.error('Stock analysis failed:', result);
-        }
-        
-      } catch (error) {
-        console.error('Error in scheduled stock analysis:', error);
-      }
-    }
-
-    async function sendNotification(env: Env, analysis: any): Promise<void> {
-      if (env.SLACK_WEBHOOK_URL) {
-        try {
-          await fetch(env.SLACK_WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              text: "📈 Daily Stock Market Analysis Ready",
-              attachments: [{
-                color: "good",
-                text: typeof analysis === 'string' ? analysis.substring(0, 500) + '...' : 'Analysis completed',
-                footer: "Swarms Stock Analysis Agent"
-              }]
-            })
-          });
-        } catch (error) {
-          console.error('Failed to send Slack notification:', error);
-        }
-      }
-    }
-    ```
-
+### Email Features
+- **Stock Reports**: Daily market analysis with data tables and key movers
+- **Healthcare Alerts**: Color-coded severity levels with immediate attention flags
+- **HTML Formatting**: Professional email templates with styling
+- **Mailgun Integration**: Reliable email delivery service
