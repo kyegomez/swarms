@@ -96,10 +96,10 @@ export default {
                   const res = await fetch('/execute');
                   const data = await res.json();
                   document.getElementById('result').innerHTML = data.result?.success 
-                    ? \`✅ Success: \${data.result.analysis}\`
-                    : \`❌ Error: \${data.error}\`;
+                    ? '✅ Success: ' + data.result.analysis
+                    : '❌ Error: ' + data.error;
                 } catch (e) {
-                  document.getElementById('result').innerHTML = \`❌ Failed: \${e.message}\`;
+                  document.getElementById('result').innerHTML = '❌ Failed: ' + e.message;
                 }
               }
             </script>
@@ -156,7 +156,7 @@ async function executeAnalysis(event, env) {
       throw new Error('Autonomous data collection failed - no valid market intelligence gathered');
     }
     
-    console.log(\`✅ Autonomous data collection successful: \${validData.length} sources\`);
+    console.log('✅ Autonomous data collection successful: ' + validData.length + ' sources');
     
     // Step 2: Deploy Swarms AI agents for autonomous analysis
     console.log('🧠 Deploying Swarms AI agents for autonomous intelligence generation...');
@@ -222,14 +222,14 @@ async function executeAnalysis(event, env) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(\`Swarms API autonomous execution failed: \${response.status} - \${errorText}\`);
+      throw new Error('Swarms API autonomous execution failed: ' + response.status + ' - ' + errorText);
     }
 
     const analysisResult = await response.json();
     const intelligenceReport = analysisResult.output;
     
     console.log('✅ Autonomous Swarms AI analysis completed successfully');
-    console.log(\`💰 Autonomous execution cost: \${analysisResult.usage?.billing_info?.total_cost || 'N/A'}\`);
+    console.log('💰 Autonomous execution cost: ' + (analysisResult.usage?.billing_info?.total_cost || 'N/A'));
     
     // Step 3: Execute autonomous actions based on intelligence
     if (env.AUTONOMOUS_ALERTS_EMAIL) {
@@ -272,7 +272,7 @@ async function collectMarketIntelligence() {
       
       // Autonomous data collection from Yahoo Finance API
       const response = await fetch(
-        \`https://query1.finance.yahoo.com/v8/finance/chart/\${symbol}\`,
+        'https://query1.finance.yahoo.com/v8/finance/chart/' + symbol,
         { 
           signal: controller.signal,
           headers: { 
@@ -283,7 +283,7 @@ async function collectMarketIntelligence() {
       clearTimeout(timeout);
       
       if (!response.ok) {
-        throw new Error(\`Autonomous data collection failed: HTTP \${response.status}\`);
+        throw new Error('Autonomous data collection failed: HTTP ' + response.status);
       }
       
       const data = await response.json();
@@ -299,7 +299,7 @@ async function collectMarketIntelligence() {
       const dayChange = currentPrice - previousClose;
       const changePercent = ((dayChange / previousClose) * 100).toFixed(2);
       
-      console.log(\`📈 \${symbol}: $\${currentPrice} (\${changePercent}%) - Autonomous collection successful\`);
+      console.log('📈 ' + symbol + ': $' + currentPrice + ' (' + changePercent + '%) - Autonomous collection successful');
 
       return [symbol, {
         price: currentPrice,
@@ -319,9 +319,9 @@ async function collectMarketIntelligence() {
       }];
 
     } catch (error) {
-      console.error(\`❌ Autonomous collection failed for \${symbol}:\`, error.message);
+      console.error('❌ Autonomous collection failed for ' + symbol + ':', error.message);
       return [symbol, { 
-        error: \`Autonomous collection failed: \${error.message}\`,
+        error: 'Autonomous collection failed: ' + error.message,
         autonomous_collection_time: new Date().toISOString(),
         data_quality: 'failed'
       }];
@@ -337,7 +337,7 @@ async function collectMarketIntelligence() {
   });
 
   const successfulCollections = Object.keys(marketIntelligence).filter(k => !marketIntelligence[k]?.error).length;
-  console.log(\`📊 Autonomous intelligence collection completed: \${successfulCollections}/\${targetSymbols.length} successful\`);
+  console.log('📊 Autonomous intelligence collection completed: ' + successfulCollections + '/' + targetSymbols.length + ' successful');
 
   return marketIntelligence;
 }
@@ -353,113 +353,36 @@ async function executeAutonomousAlerts(env, intelligenceReport, marketIntelligen
     // Autonomous detection of significant market movements
     const significantMovements = Object.entries(marketIntelligence)
       .filter(([symbol, data]) => data.change_percent && Math.abs(parseFloat(data.change_percent)) > 3)
-      .map(([symbol, data]) => \`\${symbol}: \${data.change_percent}%\`)
+      .map(([symbol, data]) => symbol + ': ' + data.change_percent + '%')
       .join(', ');
 
-    const alertSubject = \`🤖 Autonomous Market Intelligence Alert - \${new Date().toLocaleDateString()}\`;
+    const alertSubject = '🤖 Autonomous Market Intelligence Alert - ' + new Date().toLocaleDateString();
     
-    const alertBody = \`
-      <!DOCTYPE html>
+    const alertBody = `
       <html>
-      <head>
-        <style>
-          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 1000px; margin: 0 auto; background: #f8f9fa; }
-          .container { background: white; margin: 20px; border-radius: 15px; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; text-align: center; }
-          .content { padding: 40px; }
-          .autonomous-badge { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; padding: 20px; border-radius: 10px; margin: 25px 0; text-align: center; }
-          .intelligence-section { background: #f8f9fa; padding: 30px; border-radius: 10px; margin: 25px 0; border-left: 5px solid #667eea; }
-          .market-data { margin: 25px 0; }
-          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-          th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
-          th { background: #f8f9fa; font-weight: 600; color: #333; }
-          .positive { color: #28a745; font-weight: bold; }
-          .negative { color: #dc3545; font-weight: bold; }
-          .footer { background: #f8f9fa; padding: 25px; text-align: center; color: #666; font-size: 14px; }
-          .badge { display: inline-block; background: #667eea; color: white; padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: 600; margin: 3px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>🤖 Autonomous Market Intelligence</h1>
-            <p>AI-Powered Autonomous Financial Analysis • Swarms API</p>
-            <div>
-              <span class="badge">Autonomous</span>
-              <span class="badge">Real-time</span>
-              <span class="badge">AI-Powered</span>
-              <span class="badge">Global Edge</span>
-            </div>
-            <p><strong>Generated:</strong> \${new Date().toLocaleString()}</p>
-          </div>
+        <body>
+          <h1>🤖 Market Intelligence Alert</h1>
+          <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+          <p><strong>Movements:</strong> ${significantMovements || 'Normal volatility'}</p>
           
-          <div class="content">
-            <div class="autonomous-badge">
-              <h3>🚀 Autonomous Analysis Execution Complete</h3>
-              <p><strong>Significant Market Movements Detected:</strong> \${significantMovements || 'Market within normal volatility parameters'}</p>
-              <p><strong>Next Autonomous Cycle:</strong> Scheduled automatically</p>
-            </div>
-            
-            <div class="intelligence-section">
-              <h2>🧠 Autonomous AI Intelligence Report</h2>
-              <p><em>Generated by autonomous Swarms AI agents with real-time market intelligence:</em></p>
-              <pre style="white-space: pre-wrap; font-family: 'Courier New', monospace; background: white; padding: 25px; border-radius: 8px; font-size: 13px; line-height: 1.6; border: 1px solid #eee;">\${intelligenceReport}</pre>
-            </div>
-            
-            <div class="market-data">
-              <h2>📊 Real-Time Market Intelligence</h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Symbol</th>
-                    <th>Price</th>
-                    <th>Change</th>
-                    <th>Volume</th>
-                    <th>Market State</th>
-                    <th>Data Quality</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  \${Object.entries(marketIntelligence)
-                    .filter(([symbol, data]) => !data.error)
-                    .map(([symbol, data]) => \`
-                    <tr>
-                      <td><strong>\${symbol}</strong></td>
-                      <td>$\${data.price?.toFixed(2) || 'N/A'}</td>
-                      <td class="\${parseFloat(data.change_percent) >= 0 ? 'positive' : 'negative'}">
-                        \${parseFloat(data.change_percent) >= 0 ? '+' : ''}\${data.change_percent}%
-                      </td>
-                      <td>\${data.volume?.toLocaleString() || 'N/A'}</td>
-                      <td>\${data.market_state || 'N/A'}</td>
-                      <td>\${data.data_quality || 'N/A'}</td>
-                    </tr>
-                  \`).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <h2>Analysis Report:</h2>
+          <pre>${intelligenceReport}</pre>
           
-          <div class="footer">
-            <p><strong>🤖 Powered by Autonomous Swarms AI Agents</strong></p>
-            <p>This intelligence report was generated automatically by our autonomous market analysis system</p>
-            <p><em>Next autonomous analysis will execute automatically on schedule</em></p>
-            <p>Swarms API • Autonomous Intelligence • Edge Computing</p>
-          </div>
-        </div>
-      </body>
+          <p>Powered by Swarms API</p>
+        </body>
       </html>
-    \`;
+    `;
 
     const formData = new FormData();
-    formData.append('from', \`Autonomous Market Intelligence <intelligence@\${env.MAILGUN_DOMAIN}>\`);
+    formData.append('from', 'Autonomous Market Intelligence <intelligence@' + env.MAILGUN_DOMAIN + '>');
     formData.append('to', env.AUTONOMOUS_ALERTS_EMAIL);
     formData.append('subject', alertSubject);
     formData.append('html', alertBody);
 
-    const response = await fetch(\`https://api.mailgun.net/v3/\${env.MAILGUN_DOMAIN}/messages\`, {
+    const response = await fetch('https://api.mailgun.net/v3/' + env.MAILGUN_DOMAIN + '/messages', {
       method: 'POST',
       headers: {
-        'Authorization': \`Basic \${btoa(\`api:\${env.MAILGUN_API_KEY}\`)}\`
+        'Authorization': 'Basic ' + btoa('api:' + env.MAILGUN_API_KEY)
       },
       body: formData
     });
