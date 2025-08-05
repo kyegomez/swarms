@@ -1,5 +1,5 @@
 import traceback
-from typing import Optional
+from typing import Optional, Callable
 import base64
 import requests
 from pathlib import Path
@@ -176,6 +176,134 @@ class LiteLLM:
 
         litellm.drop_params = True
 
+#     def _collect_streaming_response(self, streaming_response):
+#         """
+#         Parse and yield individual content chunks from a streaming response.
+        
+#         Args:
+#             streaming_response: The streaming response object from litellm
+            
+#         Yields:
+#             str: Individual content chunks as they arrive
+#         """
+#         try:
+#             for chunk in streaming_response:
+#                 content = None
+                
+#                 # Handle different chunk formats
+#                 if hasattr(chunk, 'choices') and chunk.choices:
+#                     choice = chunk.choices[0]
+                    
+#                     # OpenAI-style chunks
+#                     if hasattr(choice, 'delta') and choice.delta:
+#                         if hasattr(choice.delta, 'content') and choice.delta.content:
+#                             content = choice.delta.content
+                    
+#                     # Alternative chunk format
+#                     elif hasattr(choice, 'message') and choice.message:
+#                         if hasattr(choice.message, 'content') and choice.message.content:
+#                             content = choice.message.content
+                
+#                 # Anthropic-style chunks
+#                 elif hasattr(chunk, 'type'):
+#                     if chunk.type == 'content_block_delta' and hasattr(chunk, 'delta'):
+#                         if chunk.delta.type == 'text_delta':
+#                             content = chunk.delta.text
+                
+#                 # Handle direct content chunks
+#                 elif hasattr(chunk, 'content'):
+#                     content = chunk.content
+                
+#                 # Yield content chunk if we found any
+#                 if content:
+#                     yield content
+                    
+#         except Exception as e:
+#             logger.error(f"Error parsing streaming chunks: {e}")
+#             return
+
+#     async def _collect_streaming_response_async(self, streaming_response):
+#         """
+#         Parse and yield individual content chunks from an async streaming response.
+        
+#         Args:
+#             streaming_response: The async streaming response object from litellm
+            
+#         Yields:
+#             str: Individual content chunks as they arrive
+#         """
+#         try:
+#             async for chunk in streaming_response:
+#                 content = None
+                
+#                 # Handle different chunk formats
+#                 if hasattr(chunk, 'choices') and chunk.choices:
+#                     choice = chunk.choices[0]
+                    
+#                     # OpenAI-style chunks
+#                     if hasattr(choice, 'delta') and choice.delta:
+#                         if hasattr(choice.delta, 'content') and choice.delta.content:
+#                             content = choice.delta.content
+                    
+#                     # Alternative chunk format
+#                     elif hasattr(choice, 'message') and choice.message:
+#                         if hasattr(choice.message, 'content') and choice.message.content:
+#                             content = choice.message.content
+                
+#                 # Anthropic-style chunks
+#                 elif hasattr(chunk, 'type'):
+#                     if chunk.type == 'content_block_delta' and hasattr(chunk, 'delta'):
+#                         if chunk.delta.type == 'text_delta':
+#                             content = chunk.delta.text
+                
+#                 # Handle direct content chunks
+#                 elif hasattr(chunk, 'content'):
+#                     content = chunk.content
+                
+#                 # Yield content chunk if we found any
+#                 if content:
+#                     yield content
+                    
+#         except Exception as e:
+#             logger.error(f"Error parsing async streaming chunks: {e}")
+#             return
+
+#     def collect_all_chunks(self, streaming_response):
+#         """
+#         Helper method to collect all chunks from a streaming response into a complete text.
+#         This provides backward compatibility for code that expects a complete response.
+        
+#         Args:
+#             streaming_response: The streaming response object from litellm
+            
+#         Returns:
+#             str: The complete response text collected from all chunks
+#         """
+#         chunks = []
+#         for chunk in self._collect_streaming_response(streaming_response):
+#             chunks.append(chunk)
+#         complete_response = "".join(chunks)
+#         logger.info(f"Collected complete streaming response: {len(complete_response)} characters")
+#         return complete_response
+
+#     async def collect_all_chunks_async(self, streaming_response):
+#         """
+#         Helper method to collect all chunks from an async streaming response into a complete text.
+#         This provides backward compatibility for code that expects a complete response.
+        
+#         Args:
+#             streaming_response: The async streaming response object from litellm
+            
+#         Returns:
+#             str: The complete response text collected from all chunks
+#         """
+#         chunks = []
+#         async for chunk in self._collect_streaming_response_async(streaming_response):
+#             chunks.append(chunk)
+#         complete_response = "".join(chunks)
+#         logger.info(f"Collected complete async streaming response: {len(complete_response)} characters")
+#         return complete_response
+
         # Store additional args and kwargs for use in run method
         self.init_args = args
         self.init_kwargs = kwargs
@@ -211,6 +339,7 @@ class LiteLLM:
             else:
                 # Store other types of runtime_args for debugging
                 completion_params["runtime_args"] = runtime_args
+
 
     def output_for_tools(self, response: any):
         if self.mcp_call is True:
@@ -511,6 +640,185 @@ class LiteLLM:
                     f"Model {self.model_name} does not support vision"
                 )
 
+    def _handle_streaming_response(
+        self,
+        streaming_response,
+        title: str = "🤖 LLM Response",
+        style: Optional[str] = None,
+        streaming_callback: Optional[Callable[[str], None]] = None,
+        print_on: bool = True,
+        verbose: bool = False,
+    ) -> str:
+        """
+        Centralized streaming response handler for all streaming scenarios.
+        
+        Args:
+            streaming_response: The streaming response object
+            title: Title for the streaming panel
+            style: Style for the panel (optional)
+            streaming_callback: Callback for real-time streaming
+            print_on: Whether to print the streaming output
+            verbose: Whether to enable verbose logging
+            
+        Returns:
+            str: The complete response string
+        """
+        from swarms.utils.formatter import formatter
+        import json
+        from loguru import logger
+        
+        if hasattr(streaming_response, "__iter__") and not isinstance(streaming_response, str):
+            if streaming_callback is not None:
+                # Real-time callback streaming for dashboard integration
+                chunks = []
+                for chunk in streaming_response:
+                    if hasattr(chunk, "choices") and chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        chunks.append(content)
+                        streaming_callback(content)
+                return "".join(chunks)
+            elif not print_on:
+                # Silent streaming - no printing, just collect chunks
+                chunks = []
+                for chunk in streaming_response:
+                    if hasattr(chunk, "choices") and chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        chunks.append(content)
+                return "".join(chunks)
+            else:
+                # Collect chunks for conversation saving
+                collected_chunks = []
+
+                def on_chunk_received(chunk: str):
+                    """Callback to collect chunks as they arrive"""
+                    collected_chunks.append(chunk)
+                    if verbose:
+                        logger.debug(f"Streaming chunk received: {chunk[:50]}...")
+
+                # Use the streaming panel to display and collect the response
+                complete_response = formatter.print_streaming_panel(
+                    streaming_response,
+                    title=title,
+                    style=style,
+                    collect_chunks=True,
+                    on_chunk_callback=on_chunk_received,
+                )
+                return complete_response
+        else:
+            # Non-streaming response or string response
+            return streaming_response
+
+    def run_with_streaming(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        audio: Optional[str] = None,
+        streaming_callback: Optional[Callable[[str], None]] = None,
+        title: str = "🤖 LLM Response",
+        style: Optional[str] = None,
+        print_on: bool = True,
+        verbose: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """
+        Run LLM with centralized streaming handling.
+        
+        Args:
+            task: The task/prompt to send to the LLM
+            img: Optional image input
+            audio: Optional audio input
+            streaming_callback: Callback for real-time streaming
+            title: Title for streaming panel
+            style: Style for streaming panel
+            print_on: Whether to print streaming output
+            verbose: Whether to enable verbose logging
+            
+        Returns:
+            str: The complete response
+        """
+        # Enable streaming if not already set
+        original_stream = self.stream
+        self.stream = True
+        
+        try:
+            # Call the LLM
+            if img is not None:
+                response = self.run(task=task, img=img, audio=audio, *args, **kwargs)
+            elif audio is not None:
+                response = self.run(task=task, audio=audio, *args, **kwargs)
+            else:
+                response = self.run(task=task, *args, **kwargs)
+            
+            # Handle the streaming response
+            return self._handle_streaming_response(
+                response,
+                title=title,
+                style=style,
+                streaming_callback=streaming_callback,
+                print_on=print_on,
+                verbose=verbose,
+            )
+        finally:
+            # Restore original stream setting
+            self.stream = original_stream
+
+    def run_tool_summary_with_streaming(
+        self,
+        tool_results: str,
+        agent_name: str = "Agent",
+        print_on: bool = True,
+        verbose: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """
+        Run tool summary with streaming support.
+        
+        Args:
+            tool_results: The tool execution results to summarize
+            agent_name: Name of the agent for the panel title
+            print_on: Whether to print streaming output
+            verbose: Whether to enable verbose logging
+            
+        Returns:
+            str: The complete summary response
+        """
+        summary_task = f"Please analyze and summarize the following tool execution output:\n\n{tool_results}"
+        
+        return self.run_with_streaming(
+            task=summary_task,
+            title=f"🤖 Agent: {agent_name} - Tool Summary",
+            style="green",
+            print_on=print_on,
+            verbose=verbose,
+            *args,
+            **kwargs,
+        )
+
+    def handle_string_streaming(
+        self,
+        response: str,
+        print_on: bool = True,
+        delay: float = 0.01,
+    ) -> None:
+        """
+        Handle streaming for string responses by simulating streaming output.
+        
+        Args:
+            response: The string response to stream
+            print_on: Whether to print the streaming output
+            delay: Delay between characters for streaming effect
+        """
+        if print_on and response:
+            # Simple character-by-character streaming for string responses
+            for char in response:
+                print(char, end="", flush=True)
+                if delay > 0:
+                    import time
+                    time.sleep(delay)
+            print()  # Newline at the end
+
     def run(
         self,
         task: str,
@@ -701,6 +1009,9 @@ class LiteLLM:
                     .message.tool_calls[0]
                     .function.arguments
                 )
+
+            # Standard completion
+            response = await acompletion(**completion_params)
 
             print(response)
             return response
