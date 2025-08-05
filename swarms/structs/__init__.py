@@ -4,28 +4,7 @@ from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.batch_agent_execution import batch_agent_execution
-from swarms.structs.board_of_directors_swarm import (
-    BoardConfig,
-    BoardConfigModel,
-    BoardDecision,
-    BoardDecisionType,
-    BoardFeatureStatus,
-    BoardMember,
-    BoardMemberRole,
-    BoardOfDirectorsSwarm,
-    BoardOrder,
-    BoardSpec,
-    create_default_config_file,
-    disable_board_feature,
-    disable_verbose_logging,
-    enable_board_feature,
-    enable_verbose_logging,
-    get_board_config,
-    is_board_feature_enabled,
-    set_board_model,
-    set_board_size,
-    set_decision_threshold,
-)
+from swarms.structs.board_of_directors_swarm import BoardOfDirectorsSwarm
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.council_judge import CouncilAsAJudge
@@ -115,37 +94,11 @@ from swarms.structs.swarming_architectures import (
     star_swarm,
 )
 
-# Standalone function for getting default board templates
-def get_default_board_template(template_name: str = "standard") -> dict:
-    """
-    Get a default board template.
-    
-    This function provides predefined board templates for common use cases.
-    Templates are cached for improved performance.
-    
-    Args:
-        template_name: Name of the template to retrieve
-        
-    Returns:
-        dict: Board template configuration
-    """
-    config = get_board_config()
-    return config.get_default_board_template(template_name)
-
 __all__ = [
     "Agent",
     "BaseStructure",
     "BaseSwarm",
-    "BoardConfig",
-    "BoardConfigModel",
-    "BoardDecision",
-    "BoardDecisionType",
-    "BoardFeatureStatus",
-    "BoardMember",
-    "BoardMemberRole",
     "BoardOfDirectorsSwarm",
-    "BoardOrder",
-    "BoardSpec",
     "ConcurrentWorkflow",
     "Conversation",
     "GroupChat",
@@ -219,15 +172,4 @@ __all__ = [
     "HierarchicalSwarm",
     "HeavySwarm",
     "CronJob",
-    "create_default_config_file",
-    "disable_board_feature",
-    "disable_verbose_logging",
-    "enable_board_feature",
-    "enable_verbose_logging",
-    "get_board_config",
-    "get_default_board_template",
-    "is_board_feature_enabled",
-    "set_board_model",
-    "set_board_size",
-    "set_decision_threshold",
 ]
