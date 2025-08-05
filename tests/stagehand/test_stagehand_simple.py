@@ -55,12 +55,10 @@ class TestStagehandIntegrationStructure:
             content = f.read()
 
         # Check for required imports
-        assert (
-            "from swarms.tools.base_tool import BaseTool" in content
-        )
-        assert "class NavigateTool" in content
-        assert "class ActTool" in content
-        assert "class ExtractTool" in content
+        assert "from swarms import Agent" in content
+        assert "def navigate_browser" in content
+        assert "def browser_act" in content
+        assert "def browser_extract" in content
 
     def test_mcp_agent_imports(self):
         """Test that MCP agent has correct imports."""
@@ -194,7 +192,7 @@ class TestSwarmsPatternsCompliance:
         assert "return" in content
 
     def test_tools_pattern(self):
-        """Test that tools follow Swarms BaseTool pattern."""
+        """Test that tools follow Swarms function-based pattern."""
 
         # Read the tools agent file
         with open(
@@ -202,11 +200,11 @@ class TestSwarmsPatternsCompliance:
         ) as f:
             content = f.read()
 
-        # Check tool pattern
-        assert "class NavigateTool(BaseTool):" in content
-        assert "def run(self," in content
-        assert "name=" in content
-        assert "description=" in content
+        # Check function-based tool pattern
+        assert "def navigate_browser(url: str) -> str:" in content
+        assert "def browser_act(action: str) -> str:" in content
+        assert "def browser_extract(query: str) -> str:" in content
+        assert "def browser_observe(query: str) -> str:" in content
 
     def test_mcp_integration_pattern(self):
         """Test MCP integration follows Swarms pattern."""
