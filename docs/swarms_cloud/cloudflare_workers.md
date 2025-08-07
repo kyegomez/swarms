@@ -1,405 +1,275 @@
-# Deploy Cron Agents with Swarms API on Cloudflare Workers
+# Deploy AI Agents with Swarms API on Cloudflare Workers
 
-Deploy intelligent, self-executing AI agents powered by Swarms API on Cloudflare's global edge network. Build production-ready cron agents that run on automated schedules, fetch real-time data, perform sophisticated analysis using Swarms AI, and take automated actions across 330+ cities worldwide.
+Deploy intelligent AI agents powered by Swarms API on Cloudflare Workers edge network. Build production-ready cron agents that run automatically, fetch real-time data, perform AI analysis, and execute actions across 330+ cities worldwide.
 
-## What Are Cron Agents?
+## Demo Video
 
-Cron agents combine **Swarms API intelligence** with **Cloudflare Workers edge computing** to create AI-powered systems that:
+Watch the stock agent in action:
 
-* **Execute automatically** on predefined schedules without human intervention
-* **Fetch real-time data** from external sources (APIs, databases, IoT sensors)
-* **Perform intelligent analysis** using specialized Swarms AI agents
-* **Take automated actions** based on analysis findings (alerts, reports, decisions)
-* **Scale globally** on Cloudflare's edge network with sub-100ms response times worldwide
+![Demo GIF](https://github.com/harshalmore31/Swarms-CloudFlare-Deployment/blob/main/stock-agent-demo.gif)
 
-## Architecture Overview
+> **Note**: The demo video shows the complete workflow from data fetching to AI analysis and report generation.
+
+## Overview
+
+This integration demonstrates how to combine **Swarms API multi-agent intelligence** with **Cloudflare Workers edge computing** to create autonomous AI systems that:
+
+- ⚡ **Execute automatically** on predefined schedules (cron jobs)
+- 📊 **Fetch real-time data** from external APIs (Yahoo Finance, news feeds)
+- 🤖 **Perform intelligent analysis** using specialized Swarms AI agents
+- 📧 **Take automated actions** (email alerts, reports, notifications)
+- 🌍 **Scale globally** on Cloudflare's edge network with sub-100ms latency
+
+## Repository & Complete Implementation
+
+For the **complete working implementation** with full source code, detailed setup instructions, and ready-to-deploy examples, visit:
+
+**🔗 [Swarms-CloudFlare-Deployment Repository](https://github.com/The-Swarm-Corporation/Swarms-CloudFlare-Deployment)**
+
+This repository provides:
+- **Two complete implementations**: JavaScript and Python
+- **Production-ready code** with error handling and monitoring
+- **Step-by-step deployment guides** for both local and production environments
+- **Real-world examples** including stock analysis agents
+- **Configuration templates** and environment setup
+
+## Available Implementations
+
+The repository provides **two complete implementations** of stock analysis agents:
+
+### 📂 `stock-agent/` - JavaScript Implementation
+The original implementation using **JavaScript/TypeScript** on Cloudflare Workers.
+
+### 📂 `python-stock-agent/` - Python Implementation  
+A **Python Workers** implementation using Cloudflare's beta Python runtime with Pyodide.
+
+## Stock Analysis Agent Features
+
+Both implementations demonstrate a complete system that:
+
+1. **Automated Analysis**: Runs stock analysis every 3 hours using Cloudflare Workers cron
+2. **Real-time Data**: Fetches market data from Yahoo Finance API (no API key needed)
+3. **News Integration**: Collects market news from Financial Modeling Prep API (optional)
+4. **Multi-Agent Analysis**: Deploys multiple Swarms AI agents for technical and fundamental analysis
+5. **Email Reports**: Sends comprehensive reports via Mailgun
+6. **Web Interface**: Provides monitoring dashboard for manual triggers and status tracking
+
+## Implementation Comparison
+
+| Feature | JavaScript (`stock-agent/`) | Python (`python-stock-agent/`) |
+|---------|----------------------------|--------------------------------|
+| **Runtime** | V8 JavaScript Engine | Pyodide Python Runtime |
+| **Language** | JavaScript/TypeScript | Python 3.x |
+| **Status** | Production Ready | Beta (Python Workers) |
+| **Performance** | Optimized V8 execution | Good, with Python stdlib support |
+| **Syntax** | `fetch()`, `JSON.stringify()` | `await fetch()`, `json.dumps()` |
+| **Error Handling** | `try/catch` | `try/except` |
+| **Libraries** | Built-in Web APIs | Python stdlib + select packages |
+| **Development** | Mature tooling | Growing ecosystem |
+
+## Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │ Cloudflare      │    │  Data Sources   │    │   Swarms API    │
-│ Workers Cron    │    │                 │    │                 │
-│ "0 */3 * * *"   │───▶│ Yahoo Finance   │───▶│ Multi-Agent     │
-│                 │    │ Medical APIs    │    │ Intelligence    │
-│ scheduled()     │    │ News Feeds      │    │ Autonomous      │
-│ Global Edge     │    │ IoT Sensors     │    │ Actions         │
+│ Workers Runtime │    │                 │    │                 │
+│ "0 */3 * * *"   │───▶│ Yahoo Finance   │───▶│ Technical Agent │
+│ JS | Python     │    │ News APIs       │    │ Fundamental     │
+│ scheduled()     │    │ Market Data     │    │ Agent Analysis  │
+│ Global Edge     │    │                 │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-**Key Benefits:**
+## Quick Start Guide
 
-* **24/7 Operation**: Zero human intervention required
-* **Global Edge Deployment**: Cloudflare's 330+ city network for ultra-low latency
-* **Swarms AI Intelligence**: Live data analysis with specialized AI agents
-* **Automated Decision Making**: Smart actions based on Swarms agent insights
-* **Enterprise Reliability**: Production-grade error handling and monitoring
+Choose your preferred implementation:
 
-## Quick Start: Deploy Stock Analysis Cron Agent
-
-Create your first financial intelligence cron agent powered by Swarms API and deployed on Cloudflare Workers edge network.
-
-### 1. Cloudflare Workers Project Setup
+### Option A: JavaScript Implementation
 
 ```bash
-# Create new Cloudflare Workers project
-npm create cloudflare@latest stock-cron-agent
-cd stock-cron-agent
+# Clone the repository
+git clone https://github.com/The-Swarm-Corporation/Swarms-CloudFlare-Deployment.git
+cd Swarms-CloudFlare-Deployment/stock-agent
 
-# Install dependencies for Swarms API integration
+# Install dependencies
 npm install
 ```
 
-### 2. Configure Cloudflare Workers Cron Schedule
+### Option B: Python Implementation
 
-Edit `wrangler.jsonc` to set up cron execution:
+```bash
+# Clone the repository
+git clone https://github.com/The-Swarm-Corporation/Swarms-CloudFlare-Deployment.git
+cd Swarms-CloudFlare-Deployment/python-stock-agent
+
+# Install dependencies (Wrangler CLI)
+npm install
+```
+
+### 2. Environment Configuration
+
+Create a `.dev.vars` file in your chosen directory:
+
+```env
+# Required: Swarms API key
+SWARMS_API_KEY=your-swarms-api-key-here
+
+# Optional: Market news (free tier available)
+FMP_API_KEY=your-fmp-api-key
+
+# Optional: Email notifications
+MAILGUN_API_KEY=your-mailgun-api-key
+MAILGUN_DOMAIN=your-domain.com
+RECIPIENT_EMAIL=your-email@example.com
+```
+
+### 3. Cron Schedule Configuration
+
+The cron schedule is configured in `wrangler.jsonc`:
 
 ```jsonc
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "stock-cron-agent",
-  "main": "src/index.js",
-  "compatibility_date": "2025-08-03",
-  "observability": {
-    "enabled": true
-  },
   "triggers": {
     "crons": [
-      "0 */3 * * *"  // Cloudflare Workers cron: analysis every 3 hours
+      "0 */3 * * *"  // Every 3 hours
     ]
-  },
-  "vars": {
-    "SWARMS_API_KEY": "your-swarms-api-key"  // Your Swarms API key
   }
 }
 ```
 
-### 3. Cloudflare Workers + Swarms API Implementation
+Common cron patterns:
+- `"0 9 * * 1-5"` - 9 AM weekdays only
+- `"0 */6 * * *"` - Every 6 hours  
+- `"0 0 * * *"` - Daily at midnight
 
-Create `src/index.js`:
+### 4. Local Development
+
+```bash
+# Start local development server
+npm run dev
+
+# Visit http://localhost:8787 to test
+```
+
+### 5. Deploy to Cloudflare Workers
+
+```bash
+# Deploy to production
+npm run deploy
+
+# Your agent will be live at: https://stock-agent.your-subdomain.workers.dev
+```
+
+## API Integration Details
+
+### Swarms API Agents
+
+The stock agent uses two specialized AI agents:
+
+1. **Technical Analyst Agent**:
+   - Calculates technical indicators (RSI, MACD, Moving Averages)
+   - Identifies support/resistance levels
+   - Provides trading signals and price targets
+
+2. **Fundamental Analyst Agent**:
+   - Analyzes market conditions and sentiment
+   - Evaluates news and economic indicators
+   - Provides investment recommendations
+
+### Data Sources
+
+- **Yahoo Finance API**: Free real-time stock data (no API key required)
+- **Financial Modeling Prep**: Market news and additional data (free tier: 250 requests/day)
+- **Mailgun**: Email delivery service (free tier: 5,000 emails/month)
+
+## Features
+
+### Web Interface
+- Real-time status monitoring
+- Manual analysis triggers
+- Progress tracking with visual feedback
+- Analysis results display
+
+### Automated Execution
+- Scheduled cron job execution
+- Error handling and recovery
+- Cost tracking and monitoring
+- Email report generation
+
+### Production Ready
+- Comprehensive error handling
+- Timeout protection
+- Rate limiting compliance
+- Security best practices
+
+## Configuration Examples
+
+### Custom Stock Symbols
+
+Edit the symbols array in `src/index.js`:
 
 ```javascript
-export default {
-  // Cloudflare Workers fetch handler - Web interface for monitoring
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    
-    if (url.pathname === '/') {
-      return new Response(`
-        <html>
-          <body>
-            <h1>Stock Cron Agent</h1>
-            <p>Status: Active | <button onclick="run()">Execute Now</button></p>
-            <div id="result"></div>
-            <script>
-              async function run() {
-                document.getElementById('result').innerHTML = 'Running...';
-                try {
-                  const res = await fetch('/execute');
-                  const data = await res.json();
-                  document.getElementById('result').innerHTML = data.result?.success 
-                    ? '✅ Success: ' + data.result.analysis
-                    : '❌ Error: ' + data.error;
-                } catch (e) {
-                  document.getElementById('result').innerHTML = '❌ Failed: ' + e.message;
-                }
-              }
-            </script>
-          </body>
-        </html>
-      `, {
-        headers: { 'Content-Type': 'text/html' }
-      });
-    }
-    
-    if (url.pathname === '/execute') {
-      try {
-        const result = await executeAnalysis(null, env);
-        return new Response(JSON.stringify({ 
-          message: 'Autonomous analysis executed successfully',
-          timestamp: new Date().toISOString(),
-          result 
-        }), {
-          headers: { 'Content-Type': 'application/json' }
-        });
-      } catch (error) {
-        return new Response(JSON.stringify({ 
-          error: error.message,
-          timestamp: new Date().toISOString(),
-          system: 'autonomous-agent'
-        }), {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-    }
-    
-    return new Response('Autonomous Agent Endpoint Not Found', { status: 404 });
-  },
-
-  // Cloudflare Workers cron handler - triggered by scheduled events
-  async scheduled(event, env, ctx) {
-    console.log('🚀 Cloudflare Workers cron triggered - executing Swarms AI analysis');
-    ctx.waitUntil(executeAnalysis(event, env));
-  }
-};
-
-// Core function combining Cloudflare Workers execution with Swarms API intelligence
-async function executeAnalysis(event, env) {
-  console.log('🤖 Cloudflare Workers executing Swarms AI analysis...');
-  
-  try {
-    // Step 1: Autonomous data collection from multiple sources
-    console.log('📊 Executing autonomous data collection...');
-    const marketIntelligence = await collectMarketIntelligence();
-    
-    const validData = Object.keys(marketIntelligence).filter(symbol => !marketIntelligence[symbol].error);
-    if (validData.length === 0) {
-      throw new Error('Autonomous data collection failed - no valid market intelligence gathered');
-    }
-    
-    console.log('✅ Autonomous data collection successful: ' + validData.length + ' sources');
-    
-    // Step 2: Deploy Swarms AI agents for autonomous analysis
-    console.log('🧠 Deploying Swarms AI agents for autonomous intelligence generation...');
-    const swarmConfiguration = {
-      name: "Autonomous Market Intelligence Swarm",
-      description: "Self-executing financial analysis and decision support system",
-      agents: [
-        {
-          agent_name: "Autonomous Technical Intelligence Agent",
-          system_prompt: "You are an autonomous technical analysis AI agent operating 24/7. Provide: Real-time trend identification and momentum analysis, dynamic support/resistance level calculations, technical indicator signals (RSI, MACD, moving averages), autonomous price targets and risk assessments, and self-executing trading signal recommendations. Format your analysis as a professional autonomous intelligence briefing for automated systems.",
-          model_name: "gpt-4o-mini",
-          max_tokens: 2500,
-          temperature: 0.2
-        },
-        {
-          agent_name: "Autonomous Market Sentiment Agent",
-          system_prompt: "You are an autonomous market sentiment analysis AI agent. Continuously evaluate: Real-time market psychology and investor behavior patterns, volume analysis and institutional activity detection, risk-on vs risk-off sentiment shifts, autonomous sector rotation and leadership identification, and self-executing market timing recommendations. Provide actionable intelligence for autonomous decision-making systems.",
-          model_name: "gpt-4o-mini", 
-          max_tokens: 2500,
-          temperature: 0.3
-        }
-      ],
-      swarm_type: "ConcurrentWorkflow",
-      task: `Execute autonomous analysis of real-time market intelligence: ${JSON.stringify(marketIntelligence, null, 2)} Generate comprehensive autonomous intelligence report including: 1. Technical analysis with specific autonomous entry/exit recommendations 2. Market sentiment assessment with timing signals for automated systems 3. Risk management protocols for autonomous execution 4. Self-executing action recommendations 5. Key monitoring parameters for next autonomous cycle Focus on actionable intelligence for autonomous trading systems and automated decision making.`,
-      max_loops: 1
-    };
-
-    // Execute Swarms API call from Cloudflare Workers edge
-    const response = await fetch('https://api.swarms.world/v1/swarm/completions', {
-      method: 'POST',
-      headers: {
-        'x-api-key': env.SWARMS_API_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(swarmConfiguration)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error('Swarms API autonomous execution failed: ' + response.status + ' - ' + errorText);
-    }
-
-    const analysisResult = await response.json();
-    const intelligenceReport = analysisResult.output;
-    
-    console.log('✅ Autonomous Swarms AI analysis completed successfully');
-    console.log('💰 Autonomous execution cost: ' + (analysisResult.usage?.billing_info?.total_cost || 'N/A'));
-    
-    // Step 3: Execute autonomous actions based on intelligence
-    if (env.AUTONOMOUS_ALERTS_EMAIL) {
-      console.log('📧 Executing autonomous alert system...');
-      await executeAutonomousAlerts(env, intelligenceReport, marketIntelligence);
-    }
-
-    return {
-      success: true,
-      analysis: intelligenceReport,
-      symbolsAnalyzed: validData.length,
-      cost: analysisResult.usage?.billing_info?.total_cost || analysisResult.metadata?.billing_info?.total_cost,
-      executionTime: new Date().toISOString(),
-      nextExecution: 'Scheduled for next autonomous cron trigger',
-      autonomousSystem: 'Swarms AI Agents'
-    };
-
-  } catch (error) {
-    console.error('❌ Autonomous analysis execution failed:', error.message);
-    return {
-      success: false,
-      error: error.message,
-      executionTime: new Date().toISOString(),
-      autonomousSystem: 'Error in autonomous pipeline'
-    };
-  }
-}
-
-// Autonomous market intelligence collection
-async function collectMarketIntelligence() {
-  const targetSymbols = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'NVDA', 'TSLA'];
-  const marketIntelligence = {};
-
-  console.log('🎯 Executing autonomous multi-source data collection...');
-
-  const dataCollectionPromises = targetSymbols.map(async (symbol) => {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
-      
-      // Autonomous data collection from Yahoo Finance API
-      const response = await fetch(
-        'https://query1.finance.yahoo.com/v8/finance/chart/' + symbol,
-        { 
-          signal: controller.signal,
-          headers: { 
-            'User-Agent': 'Mozilla/5.0 (autonomous-swarms-agent) AppleWebKit/537.36'
-          }
-        }
-      );
-      clearTimeout(timeout);
-      
-      if (!response.ok) {
-        throw new Error('Autonomous data collection failed: HTTP ' + response.status);
-      }
-      
-      const data = await response.json();
-      const chartResult = data.chart.result[0];
-      const meta = chartResult.meta;
-      
-      if (!meta) {
-        throw new Error('Invalid market intelligence structure received');
-      }
-      
-      const currentPrice = meta.regularMarketPrice;
-      const previousClose = meta.previousClose;
-      const dayChange = currentPrice - previousClose;
-      const changePercent = ((dayChange / previousClose) * 100).toFixed(2);
-      
-      console.log('📈 ' + symbol + ': $' + currentPrice + ' (' + changePercent + '%) - Autonomous collection successful');
-
-      return [symbol, {
-        price: currentPrice,
-        change: dayChange,
-        change_percent: changePercent,
-        volume: meta.regularMarketVolume || 0,
-        market_cap: meta.marketCap || 0,
-        pe_ratio: meta.trailingPE || 0,
-        day_high: meta.regularMarketDayHigh,
-        day_low: meta.regularMarketDayLow,
-        fifty_two_week_high: meta.fiftyTwoWeekHigh,
-        fifty_two_week_low: meta.fiftyTwoWeekLow,
-        currency: meta.currency || 'USD',
-        market_state: meta.marketState,
-        autonomous_collection_time: new Date().toISOString(),
-        data_quality: 'high'
-      }];
-
-    } catch (error) {
-      console.error('❌ Autonomous collection failed for ' + symbol + ':', error.message);
-      return [symbol, { 
-        error: 'Autonomous collection failed: ' + error.message,
-        autonomous_collection_time: new Date().toISOString(),
-        data_quality: 'failed'
-      }];
-    }
-  });
-
-  const results = await Promise.allSettled(dataCollectionPromises);
-  results.forEach((result) => {
-    if (result.status === 'fulfilled' && result.value) {
-      const [symbol, data] = result.value;
-      marketIntelligence[symbol] = data;
-    }
-  });
-
-  const successfulCollections = Object.keys(marketIntelligence).filter(k => !marketIntelligence[k]?.error).length;
-  console.log('📊 Autonomous intelligence collection completed: ' + successfulCollections + '/' + targetSymbols.length + ' successful');
-
-  return marketIntelligence;
-}
-
-// Autonomous alert and notification system
-async function executeAutonomousAlerts(env, intelligenceReport, marketIntelligence) {
-  if (!env.MAILGUN_API_KEY || !env.MAILGUN_DOMAIN || !env.AUTONOMOUS_ALERTS_EMAIL) {
-    console.log('⚠️ Autonomous alert system not configured - skipping notifications');
-    return;
-  }
-
-  try {
-    // Autonomous detection of significant market movements
-    const significantMovements = Object.entries(marketIntelligence)
-      .filter(([symbol, data]) => data.change_percent && Math.abs(parseFloat(data.change_percent)) > 3)
-      .map(([symbol, data]) => symbol + ': ' + data.change_percent + '%')
-      .join(', ');
-
-    const alertSubject = '🤖 Autonomous Market Intelligence Alert - ' + new Date().toLocaleDateString();
-    
-    const alertBody = `
-      <html>
-        <body>
-          <h1>🤖 Market Intelligence Alert</h1>
-          <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
-          <p><strong>Movements:</strong> ${significantMovements || 'Normal volatility'}</p>
-          
-          <h2>Analysis Report:</h2>
-          <pre>${intelligenceReport}</pre>
-          
-          <p>Powered by Swarms API</p>
-        </body>
-      </html>
-    `;
-
-    const formData = new FormData();
-    formData.append('from', 'Autonomous Market Intelligence <intelligence@' + env.MAILGUN_DOMAIN + '>');
-    formData.append('to', env.AUTONOMOUS_ALERTS_EMAIL);
-    formData.append('subject', alertSubject);
-    formData.append('html', alertBody);
-
-    const response = await fetch('https://api.mailgun.net/v3/' + env.MAILGUN_DOMAIN + '/messages', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Basic ' + btoa('api:' + env.MAILGUN_API_KEY)
-      },
-      body: formData
-    });
-
-    if (response.ok) {
-      console.log('✅ Autonomous alert system executed successfully');
-    } else {
-      console.error('❌ Autonomous alert system execution failed:', await response.text());
-    }
-    
-  } catch (error) {
-    console.error('❌ Autonomous alert system error:', error.message);
-  }
-}
+const symbols = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'TSLA', 'NVDA', 'AMZN', 'GOOGL'];
 ```
 
-## Production Best Practices
+### Custom Swarms Agents
 
-### 1. **Cloudflare Workers + Swarms API Integration**
+Modify the agent configuration:
 
-* Implement comprehensive error handling for both platforms
-* Use Cloudflare Workers KV for caching Swarms API responses
-* Leverage Cloudflare Workers analytics for monitoring
+```javascript
+const swarmConfig = {
+  agents: [
+    {
+      agent_name: "Risk Assessment Agent",
+      system_prompt: "Analyze portfolio risk and provide recommendations...",
+      model_name: "gpt-4o-mini",
+      max_tokens: 2000,  
+      temperature: 0.1
+    }
+  ]
+};
+```
 
-### 2. **Cost Optimization** 
+## Cost Optimization
 
-* Monitor Swarms API usage and costs
-* Use Cloudflare Workers free tier (100K requests/day)
-* Implement intelligent batching for Swarms API efficiency
-* Use cost-effective Swarms models (gpt-4o-mini recommended)
+- **Cloudflare Workers**: Free tier includes 100,000 requests/day
+- **Swarms API**: Monitor usage in dashboard, use gpt-4o-mini for cost efficiency
+- **External APIs**: Leverage free tiers and implement intelligent caching
 
-### 3. **Security & Compliance**
+## Security & Best Practices
 
-* Secure Swarms API keys in Cloudflare Workers environment variables
-* Use Cloudflare Workers secrets for sensitive data
-* Audit AI decisions and maintain compliance logs
-* HIPAA compliance for healthcare applications
+- Store API keys as Cloudflare Workers secrets
+- Implement request validation and rate limiting
+- Audit AI decisions and maintain compliance logs
+- Use HTTPS for all external API calls
 
-### 4. **Monitoring & Observability**
+## Monitoring & Observability
 
-* Track Cloudflare Workers performance metrics
-* Monitor Swarms API response times and success rates
-* Use Cloudflare Workers analytics dashboard
-* Set up alerts for system failures and anomalies
+- Cloudflare Workers analytics dashboard
+- Real-time performance metrics
+- Error tracking and alerting
+- Cost monitoring and optimization
 
-This deployment architecture combines **Swarms API's advanced multi-agent intelligence** with **Cloudflare Workers' global edge infrastructure**, enabling truly intelligent, self-executing AI agents that operate continuously across 330+ cities worldwide, providing real-time intelligence and automated decision-making capabilities with ultra-low latency.
+## Troubleshooting
+
+### Common Issues
+
+1. **API Key Errors**: Verify environment variables are set correctly
+2. **Cron Not Triggering**: Check cron syntax and Cloudflare Workers limits
+3. **Email Not Sending**: Verify Mailgun configuration and domain setup
+4. **Data Fetch Failures**: Check external API status and rate limits
+
+### Debug Mode
+
+Enable detailed logging by setting:
+```javascript
+console.log('Debug mode enabled');
+```
+
+## Additional Resources
+
+- [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
+- [Swarms API Documentation](https://docs.swarms.world/)
+- [Cron Expression Generator](https://crontab.guru/)
+- [Financial Modeling Prep API](https://financialmodelingprep.com/developer/docs)
+
