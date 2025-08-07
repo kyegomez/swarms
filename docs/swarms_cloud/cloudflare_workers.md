@@ -2,15 +2,17 @@
 
 Deploy intelligent AI agents powered by Swarms API on Cloudflare Workers edge network. Build production-ready cron agents that run automatically, fetch real-time data, perform AI analysis, and execute actions across 330+ cities worldwide.
 
-## Demo Video
+<!-- ## Demo Video
 
 Watch the stock agent in action:
 
-<video src="https://github.com/harshalmore31/Swarms-CloudFlare-Deployment/blob/main/stock-agent-demo.gif" controls width="800">
-  Your browser does not support the video tag.
-</video>
+<iframe width="800" height="450"
+    src="https://www.youtube.com/embed/YOUR_VIDEO_ID"
+    frameborder="0"
+    allowfullscreen>
+</iframe>
 
-> **Note**: The demo video shows the complete workflow from data fetching to AI analysis and report generation.
+> **Note**: The demo video shows the complete workflow from data fetching to AI analysis and report generation. -->
 
 ## Overview
 
