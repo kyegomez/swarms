@@ -6,11 +6,8 @@ swarm = AutoSwarmBuilder(
     description="A swarm of agents",
     verbose=True,
     max_loops=1,
-    # random_models=False,
-    # return_agents=True,
-    model_name="gpt-4o-mini",
-    # generate_router_config=True,
     return_agents=True,
+    model_name="gpt-4.1",
 )
 
 print(

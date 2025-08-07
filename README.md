@@ -211,6 +211,48 @@ print(final_post)
 
 -----
 
+### 🤖 AutoSwarmBuilder: Autonomous Agent Generation
+
+The `AutoSwarmBuilder` automatically generates specialized agents and their workflows based on your task description. Simply describe what you need, and it will create a complete multi-agent system with detailed prompts and optimal agent configurations. [Learn more about AutoSwarmBuilder](https://docs.swarms.world/en/latest/swarms/structs/auto_swarm_builder/)
+
+```python
+from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
+import json
+
+# Initialize the AutoSwarmBuilder
+swarm = AutoSwarmBuilder(
+    name="My Swarm",
+    description="A swarm of agents",
+    verbose=True,
+    max_loops=1,
+    return_agents=True,
+    model_name="gpt-4o-mini",
+)
+
+# Let the builder automatically create agents and workflows
+result = swarm.run(
+    task="Create an accounting team to analyze crypto transactions, "
+         "there must be 5 agents in the team with extremely extensive prompts. "
+         "Make the prompts extremely detailed and specific and long and comprehensive. "
+         "Make sure to include all the details of the task in the prompts."
+)
+
+# The result contains the generated agents and their configurations
+print(json.dumps(result, indent=4))
+```
+
+The `AutoSwarmBuilder` provides:
+
+- **Automatic Agent Generation**: Creates specialized agents based on task requirements
+- **Intelligent Prompt Engineering**: Generates comprehensive, detailed prompts for each agent
+- **Optimal Workflow Design**: Determines the best agent interactions and workflow structure
+- **Production-Ready Configurations**: Returns fully configured agents ready for deployment
+- **Flexible Architecture**: Supports various swarm types and agent specializations
+
+This feature is perfect for rapid prototyping, complex task decomposition, and creating specialized agent teams without manual configuration.
+
+-----
+
 ## 🏗️ Multi-Agent Architectures For Production Deployments
 
 `swarms` provides a variety of powerful, pre-built multi-agent architectures enabling you to orchestrate agents in various ways. Choose the right structure for your specific problem to build efficient and reliable production systems.

@@ -257,6 +257,7 @@ class AutoSwarmBuilder:
         model_name: str = "gpt-4.1",
         generate_router_config: bool = False,
         interactive: bool = False,
+        max_tokens: int = 8000,
     ):
         """Initialize the AutoSwarmBuilder.
 
@@ -276,6 +277,7 @@ class AutoSwarmBuilder:
         self.model_name = model_name
         self.generate_router_config = generate_router_config
         self.interactive = interactive
+        self.max_tokens = max_tokens
         self.conversation = Conversation()
 
         self.reliability_check()
@@ -412,7 +414,7 @@ class AutoSwarmBuilder:
             temperature=0.5,
             base_model=config,
             model_name=self.model_name,
-            max_tokens=8000,
+            max_tokens=self.max_tokens,
         )
 
     def create_agents(self, task: str):

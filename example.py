@@ -41,7 +41,7 @@ agent = Agent(
     no_reasoning_prompt=True,
     streaming_on=True,
     # dashboard=True
-    llm_base_url="https://api.openai.com/v1"
+    llm_base_url="https://api.openai.com/v1",
 )
 
 out = agent.run(
