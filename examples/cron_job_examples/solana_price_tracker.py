@@ -141,7 +141,7 @@ def analyze_solana_data(data: str) -> str:
         formatted_data = solana_data.get("formatted_data", {})
 
         # Extract key metrics
-        current_price = price_data.get("current_price_usd")
+        price_data.get("current_price_usd")
         price_change = price_data.get("price_change_24h_percent")
         volume_24h = price_data.get("volume_24h_usd")
         market_cap = price_data.get("market_cap_usd")

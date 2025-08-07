@@ -342,11 +342,12 @@ nav:
     #     - Faiss: "swarms_memory/faiss.md"
 
     - Deployment Solutions:
-      - Deploy on Google Cloud Run: "swarms_cloud/cloud_run.md"
-      - Deploy on Phala: "swarms_cloud/phala_deploy.md"
+      # - Overview: "swarms_cloud/overview.md"
       - CronJob: "swarms/structs/cron_job.md"
-      - Deploy on Cloudflare Workers: "swarms_cloud/cloudflare_workers.md"
-      # - Deploy on FastAPI: "swarms_cloud/fastapi_deploy.md"
+      - Providers:
+        - Deploy on Google Cloud Run: "swarms_cloud/cloud_run.md"
+        - Deploy on Phala: "swarms_cloud/phala_deploy.md"
+        - Deploy on Cloudflare Workers: "swarms_cloud/cloudflare_workers.md"
 
     
   - Examples:
