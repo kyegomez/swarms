@@ -6,7 +6,9 @@ Deploy intelligent AI agents powered by Swarms API on Cloudflare Workers edge ne
 
 Watch the stock agent in action:
 
-![Demo GIF](https://github.com/harshalmore31/Swarms-CloudFlare-Deployment/blob/main/stock-agent-demo.gif)
+<video src="https://github.com/harshalmore31/Swarms-CloudFlare-Deployment/blob/main/stock-agent-demo.gif" controls width="800">
+  Your browser does not support the video tag.
+</video>
 
 > **Note**: The demo video shows the complete workflow from data fetching to AI analysis and report generation.
 
