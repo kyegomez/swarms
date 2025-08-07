@@ -1,6 +1,7 @@
 from transformers import pipeline
 from swarms import Agent
 
+
 class GPTOSS:
     def __init__(
         self,
@@ -34,6 +35,7 @@ class GPTOSS:
         )
 
         return outputs[0]["generated_text"][-1]
+
 
 agent = Agent(
     name="GPT-OSS-Agent",

@@ -271,7 +271,7 @@ def browser_screenshot(filename: str = "screenshot.png") -> str:
 
     Args:
         filename (str, optional): The filename to save the screenshot to.
-                                 Defaults to "screenshot.png". 
+                                 Defaults to "screenshot.png".
                                  .png extension will be added automatically if not provided.
 
     Returns:

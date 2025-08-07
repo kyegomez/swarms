@@ -1,4 +1,4 @@
-import multiprocessing
+import os
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
@@ -117,7 +117,7 @@ def judge_system_prompt() -> str:
 
 @lru_cache(maxsize=128)
 def build_judge_prompt(
-    dimension_name: str, user_prompt: str, model_response: str
+    dimension_name: str, task: str, task_response: str
 ) -> str:
     """
     Builds a prompt for evaluating a specific dimension.
@@ -125,8 +125,8 @@ def build_judge_prompt(
 
     Args:
         dimension_name (str): Name of the evaluation dimension
-        user_prompt (str): The original user prompt
-        model_response (str): The model's response to evaluate
+        task (str): The task containing the response to evaluate
+        task_response (str): The response within the task to evaluate
 
     Returns:
         str: The formatted evaluation prompt
@@ -145,7 +145,7 @@ def build_judge_prompt(
 
     {evaluation_focus}
 
-    Your task is to provide a detailed, technical analysis of the model response focusing exclusively on the {dimension_name} dimension.
+    Your task is to provide a detailed, technical analysis of the response focusing exclusively on the {dimension_name} dimension.
 
     Guidelines:
     1. Be specific and reference exact parts of the response
@@ -154,16 +154,16 @@ def build_judge_prompt(
     4. Suggest specific improvements where applicable
     5. Maintain a technical, analytical tone
 
-    --- BEGIN USER PROMPT ---
-    {user_prompt}
-    --- END USER PROMPT ---
+    --- BEGIN TASK ---
+    {task}
+    --- END TASK ---
 
-    --- BEGIN MODEL RESPONSE ---
-    {model_response}
-    --- END MODEL RESPONSE ---
+    --- BEGIN RESPONSE ---
+    {task_response}
+    --- END RESPONSE ---
 
     ### Technical Analysis ({dimension_name.upper()} Dimension):
-    Provide a comprehensive analysis that would be valuable for model improvement.
+    Provide a comprehensive analysis that would be valuable for response improvement.
     """
 
 
@@ -176,7 +176,7 @@ def aggregator_system_prompt() -> str:
     Returns:
         str: The system prompt for the aggregator agent
     """
-    return """You are a senior AI evaluator responsible for synthesizing detailed technical feedback across multiple evaluation dimensions. Your role is to create a comprehensive analysis report that helps the development team understand and improve the model's performance.
+    return """You are a senior AI evaluator responsible for synthesizing detailed technical feedback across multiple evaluation dimensions. Your role is to create a comprehensive analysis report that helps understand and improve the response quality.
 
 Key Responsibilities:
 1. Identify patterns and correlations across different dimensions
@@ -225,10 +225,10 @@ def build_aggregation_prompt(rationales: Dict[str, str]) -> str:
 
 class CouncilAsAJudge:
     """
-    A council of AI agents that evaluates model responses across multiple dimensions.
+    A council of AI agents that evaluates task responses across multiple dimensions.
 
     This class implements a parallel evaluation system where multiple specialized agents
-    evaluate different aspects of a model's response, and their findings are aggregated
+    evaluate different aspects of a task response, and their findings are aggregated
     into a comprehensive report.
 
     Attributes:
@@ -247,15 +247,14 @@ class CouncilAsAJudge:
         self,
         id: str = swarm_id(),
         name: str = "CouncilAsAJudge",
-        description: str = "Evaluates the model's response across multiple dimensions",
+        description: str = "Evaluates task responses across multiple dimensions",
         model_name: str = "gpt-4o-mini",
-        output_type: str = "all",
+        output_type: str = "final",
         cache_size: int = 128,
-        max_workers: int = None,
-        base_agent: Optional[Agent] = None,
         random_model_name: bool = True,
         max_loops: int = 1,
         aggregation_model_name: str = "gpt-4o-mini",
+        judge_agent_model_name: Optional[str] = None,
     ):
         """
         Initialize the CouncilAsAJudge.
@@ -267,6 +266,10 @@ class CouncilAsAJudge:
             model_name (str): Name of the model to use for evaluations
             output_type (str): Type of output to return
             cache_size (int): Size of the LRU cache for prompts
+            max_workers (int): Maximum number of worker threads for parallel execution
+            random_model_name (bool): Whether to use random model names
+            max_loops (int): Maximum number of loops for agents
+            aggregation_model_name (str): Model name for the aggregator agent
         """
         self.id = id
         self.name = name
@@ -274,11 +277,11 @@ class CouncilAsAJudge:
         self.model_name = model_name
         self.output_type = output_type
         self.cache_size = cache_size
-        self.max_workers = max_workers
-        self.base_agent = base_agent
         self.random_model_name = random_model_name
         self.max_loops = max_loops
         self.aggregation_model_name = aggregation_model_name
+        self.judge_agent_model_name = judge_agent_model_name
+        self.max_workers = max(1, int(os.cpu_count() * 0.75))
 
         self.reliability_check()
 
@@ -303,12 +306,6 @@ class CouncilAsAJudge:
         self.concurrent_setup()
 
     def concurrent_setup(self):
-        # Calculate optimal number of workers (75% of available CPU cores)
-        total_cores = multiprocessing.cpu_count()
-        self.max_workers = max(1, int(total_cores * 0.75))
-        logger.info(
-            f"Using {self.max_workers} worker threads out of {total_cores} CPU cores"
-        )
 
         # Configure caching
         self._configure_caching(self.cache_size)
@@ -353,7 +350,7 @@ class CouncilAsAJudge:
                 dim: Agent(
                     agent_name=f"{dim}_judge",
                     system_prompt=judge_system_prompt(),
-                    model_name="gpt-4o-mini",
+                    model_name=self.judge_agent_model_name,
                     max_loops=1,
                     output_type="final",
                     dynamic_temperature_enabled=True,
@@ -393,17 +390,15 @@ class CouncilAsAJudge:
         self,
         dim: str,
         agent: Agent,
-        user_prompt: str,
-        model_response: str,
+        task: str,
     ) -> Tuple[str, str]:
         """
-        Evaluate a single dimension of the model response.
+        Evaluate a single dimension of the task response.
 
         Args:
             dim (str): Dimension to evaluate
             agent (Agent): Judge agent for this dimension
-            user_prompt (str): Original user prompt
-            model_response (str): Model's response to evaluate
+            task (str): Task containing the response to evaluate
 
         Returns:
             Tuple[str, str]: Tuple of (dimension name, evaluation result)
@@ -412,11 +407,9 @@ class CouncilAsAJudge:
             DimensionEvaluationError: If evaluation fails
         """
         try:
-            prompt = build_judge_prompt(
-                dim, user_prompt, model_response
-            )
+            prompt = build_judge_prompt(dim, task, task)
             result = agent.run(
-                f"{prompt} \n\n Evaluate the following agent {self.base_agent.agent_name} response for the {dim} dimension: {model_response}."
+                f"{prompt} \n\n Evaluate the following response for the {dim} dimension: {task}."
             )
 
             self.conversation.add(
@@ -430,25 +423,18 @@ class CouncilAsAJudge:
                 f"Failed to evaluate dimension {dim}: {str(e)}"
             )
 
-    def run(
-        self, task: str, model_response: Optional[str] = None
-    ) -> None:
+    def run(self, task: str) -> None:
         """
         Run the evaluation process using ThreadPoolExecutor.
 
         Args:
-            task (str): Original user prompt
-            model_response (str): Model's response to evaluate
+            task (str): Task containing the response to evaluate
 
         Raises:
             EvaluationError: If evaluation process fails
         """
 
         try:
-
-            # Run the base agent
-            if self.base_agent and model_response is None:
-                model_response = self.base_agent.run(task=task)
 
             self.conversation.add(
                 role="User",
@@ -457,7 +443,7 @@ class CouncilAsAJudge:
 
             # Create tasks for all dimensions
             tasks = [
-                (dim, agent, task, model_response)
+                (dim, agent, task)
                 for dim, agent in self.judge_agents.items()
             ]
 
@@ -472,9 +458,8 @@ class CouncilAsAJudge:
                         dim,
                         agent,
                         task,
-                        model_response,
                     ): dim
-                    for dim, agent, _, _ in tasks
+                    for dim, agent, _ in tasks
                 }
 
                 # Collect results as they complete
@@ -502,32 +487,6 @@ class CouncilAsAJudge:
 
             self.conversation.add(
                 role=self.aggregator_agent.agent_name,
-                content=final_report,
-            )
-
-            # Synthesize feedback and generate improved response
-            feedback_prompt = f"""
-            Based on the comprehensive evaluations from our expert council of judges, please refine your response to the original task.
-
-            Original Task:
-            {task}
-
-            Council Feedback:
-            {aggregation_prompt}
-
-            Please:
-            1. Carefully consider all feedback points
-            2. Address any identified weaknesses
-            3. Maintain or enhance existing strengths
-            4. Provide a refined, improved response that incorporates the council's insights
-
-            Your refined response:
-            """
-
-            final_report = self.base_agent.run(task=feedback_prompt)
-
-            self.conversation.add(
-                role=self.base_agent.agent_name,
                 content=final_report,
             )
 

@@ -12,6 +12,7 @@ import psutil
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
+from loguru import logger
 
 
 @dataclass
@@ -21,9 +22,11 @@ class ResourceMetrics:
     active_threads: int
 
 
-def run_single_agent(agent: AgentType, task: str) -> Any:
+def run_single_agent(
+    agent: AgentType, task: str, *args, **kwargs
+) -> Any:
     """Run a single agent synchronously"""
-    return agent.run(task)
+    return agent.run(task=task, *args, **kwargs)
 
 
 async def run_agent_async(
@@ -134,6 +137,35 @@ def run_agents_concurrently_multiprocess(
             run_agents_concurrently_async(batch, task)
         )
         results.extend(batch_results)
+
+    return results
+
+
+def batched_grid_agent_execution(
+    agents: List[AgentType],
+    tasks: List[str],
+    max_workers: int = None,
+) -> List[Any]:
+    """
+    Run multiple agents with different tasks concurrently.
+    """
+    logger.info(
+        f"Batch Grid Execution with {len(agents)} and number of tasks: {len(tasks)}"
+    )
+
+    if len(agents) != len(tasks):
+        raise ValueError(
+            "The number of agents must match the number of tasks."
+        )
+
+    if max_workers is None:
+        max_workers = os.cpu_count()
+
+    results = []
+
+    for agent, task in zip(agents, tasks):
+        result = run_single_agent(agent, task)
+        results.append(result)
 
     return results
 
