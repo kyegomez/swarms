@@ -95,6 +95,7 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
+from swarms.structs.hierarchical_structured_communication_swarm import HierarchicalStructuredCommSwarm
 
 
 __all__ = [
@@ -175,4 +176,5 @@ __all__ = [
     "HierarchicalSwarm",
     "HeavySwarm",
     "CronJob",
+    "TalkHierarchicalSwarm",
 ]
