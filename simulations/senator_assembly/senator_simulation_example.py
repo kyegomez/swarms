@@ -5,8 +5,8 @@ This script demonstrates various scenarios and use cases for the senator simulat
 including debates, votes, committee hearings, and individual senator interactions.
 """
 
-from simulations.senator_assembly.senator_simulation import (
-    SenatorSimulation,
+from swarms.sims.senator_assembly import (
+    SenatorAssembly,
 )
 import json
 import time
@@ -18,7 +18,7 @@ def demonstrate_individual_senators():
     print("🎭 INDIVIDUAL SENATOR DEMONSTRATIONS")
     print("=" * 80)
 
-    senate = SenatorSimulation()
+    senate = SenatorAssembly()
 
     # Test different types of senators with various questions
     test_senators = [
@@ -85,7 +85,7 @@ def demonstrate_senate_debates():
     print("💬 SENATE DEBATE SIMULATIONS")
     print("=" * 80)
 
-    senate = SenatorSimulation()
+    senate = SenatorAssembly()
 
     debate_topics = [
         {
@@ -153,7 +153,7 @@ def demonstrate_senate_votes():
     print("🗳️  SENATE VOTING SIMULATIONS")
     print("=" * 80)
 
-    senate = SenatorSimulation()
+    senate = SenatorAssembly()
 
     bills = [
         {
@@ -244,7 +244,7 @@ def demonstrate_committee_hearings():
     print("🏛️  COMMITTEE HEARING SIMULATIONS")
     print("=" * 80)
 
-    senate = SenatorSimulation()
+    senate = SenatorAssembly()
 
     hearings = [
         {
@@ -320,7 +320,7 @@ def demonstrate_party_analysis():
     print("📊 PARTY ANALYSIS AND COMPARISONS")
     print("=" * 80)
 
-    senate = SenatorSimulation()
+    senate = SenatorAssembly()
 
     # Get party breakdown
     composition = senate.get_senate_composition()
@@ -372,7 +372,7 @@ def demonstrate_interactive_scenarios():
     print("🎮 INTERACTIVE SCENARIOS")
     print("=" * 80)
 
-    senate = SenatorSimulation()
+    senate = SenatorAssembly()
 
     scenarios = [
         {
@@ -492,7 +492,7 @@ def main():
     print("• Party-based analysis and comparisons")
     print("• Interactive scenarios and what-if situations")
     print(
-        "\nYou can now use the SenatorSimulation class to create your own scenarios!"
+        "\nYou can now use the SenatorAssembly class to create your own scenarios!"
     )
 
 
