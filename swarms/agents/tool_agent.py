@@ -1,12 +1,12 @@
 from typing import List, Optional, Dict, Any, Callable
 from loguru import logger
 from swarms.agents.exceptions import (
-    ToolAgentError,
     ToolExecutionError,
     ToolValidationError,
     ToolNotFoundError,
-    ToolParameterError
+    ToolParameterError,
 )
+
 
 class ToolAgent:
     """
@@ -68,10 +68,12 @@ class ToolAgent:
             raise ToolExecutionError(
                 "model_initialization",
                 e,
-                {"model_name": model_name, "kwargs": kwargs}
+                {"model_name": model_name, "kwargs": kwargs},
             )
 
-    def _validate_tool(self, tool_name: str, parameters: Dict[str, Any]) -> None:
+    def _validate_tool(
+        self, tool_name: str, parameters: Dict[str, Any]
+    ) -> None:
         """
         Validate tool parameters before execution.
         Args:
@@ -84,19 +86,24 @@ class ToolAgent:
             raise ToolValidationError(
                 tool_name,
                 "parameters",
-                "No tools available for validation"
+                "No tools available for validation",
             )
 
         tool_spec = next(
-            (tool for tool in self.tools_list_dictionary if tool["name"] == tool_name),
-            None
+            (
+                tool
+                for tool in self.tools_list_dictionary
+                if tool["name"] == tool_name
+            ),
+            None,
         )
 
         if not tool_spec:
             raise ToolNotFoundError(tool_name)
 
         required_params = {
-            param["name"] for param in tool_spec["parameters"]
+            param["name"]
+            for param in tool_spec["parameters"]
             if param.get("required", True)
         }
 
@@ -104,10 +111,12 @@ class ToolAgent:
         if missing_params:
             raise ToolParameterError(
                 tool_name,
-                f"Missing required parameters: {', '.join(missing_params)}"
+                f"Missing required parameters: {', '.join(missing_params)}",
             )
 
-    def _execute_with_retry(self, func: Callable, *args, **kwargs) -> Any:
+    def _execute_with_retry(
+        self, func: Callable, *args, **kwargs
+    ) -> Any:
         """
         Execute a function with retry logic.
         Args:
@@ -134,7 +143,7 @@ class ToolAgent:
         raise ToolExecutionError(
             func.__name__,
             last_error,
-            {"attempts": self.retry_attempts}
+            {"attempts": self.retry_attempts},
         )
 
     def run(self, task: str, *args, **kwargs) -> str:
@@ -154,21 +163,19 @@ class ToolAgent:
                 raise ToolExecutionError(
                     "run",
                     Exception("LLM not initialized"),
-                    {"task": task}
+                    {"task": task},
                 )
 
             logger.info(f"Running task: {task}")
-            
+
             # Prepare the prompt
             prompt = self._prepare_prompt(task)
-            
+
             # Execute with retry logic
             outputs = self._execute_with_retry(
-                self.llm.generate,
-                prompt,
-                self.sampling_params
+                self.llm.generate, prompt, self.sampling_params
             )
-            
+
             response = outputs[0].outputs[0].text.strip()
             return response
 
@@ -177,7 +184,7 @@ class ToolAgent:
             raise ToolExecutionError(
                 "run",
                 error,
-                {"task": task, "args": args, "kwargs": kwargs}
+                {"task": task, "args": args, "kwargs": kwargs},
             )
 
     def _prepare_prompt(self, task: str) -> str:
@@ -204,7 +211,9 @@ class ToolAgent:
         """
         return self.run(task, *args, **kwargs)
 
-    def batched_run(self, tasks: List[str], batch_size: int = 10) -> List[str]:
+    def batched_run(
+        self, tasks: List[str], batch_size: int = 10
+    ) -> List[str]:
         """
         Run the model for multiple tasks in batches.
         Args:
@@ -215,19 +224,23 @@ class ToolAgent:
         Raises:
             ToolExecutionError: If an error occurs during batch execution.
         """
-        logger.info(f"Running tasks in batches of size {batch_size}. Total tasks: {len(tasks)}")
+        logger.info(
+            f"Running tasks in batches of size {batch_size}. Total tasks: {len(tasks)}"
+        )
         results = []
 
         try:
             for i in range(0, len(tasks), batch_size):
-                batch = tasks[i:i + batch_size]
+                batch = tasks[i : i + batch_size]
                 for task in batch:
                     logger.info(f"Running task: {task}")
                     try:
                         result = self.run(task)
                         results.append(result)
                     except ToolExecutionError as e:
-                        logger.error(f"Failed to execute task '{task}': {e}")
+                        logger.error(
+                            f"Failed to execute task '{task}': {e}"
+                        )
                         results.append(f"Error: {str(e)}")
                         continue
 
@@ -239,5 +252,5 @@ class ToolAgent:
             raise ToolExecutionError(
                 "batched_run",
                 error,
-                {"tasks": tasks, "batch_size": batch_size}
+                {"tasks": tasks, "batch_size": batch_size},
             )

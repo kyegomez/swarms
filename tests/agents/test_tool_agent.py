@@ -6,9 +6,8 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from swarms import ToolAgent
 from swarms.agents.exceptions import (
     ToolExecutionError,
-    ToolValidationError,
     ToolNotFoundError,
-    ToolParameterError
+    ToolParameterError,
 )
 
 
@@ -111,9 +110,7 @@ def test_tool_agent_init_with_kwargs():
 def test_tool_agent_initialization():
     """Test tool agent initialization with valid parameters."""
     agent = ToolAgent(
-        model_name="test-model",
-        temperature=0.7,
-        max_tokens=1000
+        model_name="test-model", temperature=0.7, max_tokens=1000
     )
     assert agent.model_name == "test-model"
     assert agent.temperature == 0.7
@@ -131,24 +128,26 @@ def test_tool_agent_initialization_error():
 
 def test_tool_validation():
     """Test tool parameter validation."""
-    tools_list = [{
-        "name": "test_tool",
-        "parameters": [
-            {"name": "required_param", "required": True},
-            {"name": "optional_param", "required": False}
-        ]
-    }]
-    
+    tools_list = [
+        {
+            "name": "test_tool",
+            "parameters": [
+                {"name": "required_param", "required": True},
+                {"name": "optional_param", "required": False},
+            ],
+        }
+    ]
+
     agent = ToolAgent(tools_list_dictionary=tools_list)
-    
+
     # Test missing required parameter
     with pytest.raises(ToolParameterError) as exc_info:
         agent._validate_tool("test_tool", {})
     assert "Missing required parameters" in str(exc_info.value)
-    
+
     # Test valid parameters
     agent._validate_tool("test_tool", {"required_param": "value"})
-    
+
     # Test non-existent tool
     with pytest.raises(ToolNotFoundError) as exc_info:
         agent._validate_tool("non_existent_tool", {})
@@ -161,17 +160,17 @@ def test_retry_mechanism():
     mock_llm.generate.side_effect = [
         Exception("First attempt failed"),
         Exception("Second attempt failed"),
-        Mock(outputs=[Mock(text="Success")])
+        Mock(outputs=[Mock(text="Success")]),
     ]
-    
+
     agent = ToolAgent(model_name="test-model")
     agent.llm = mock_llm
-    
+
     # Test successful retry
     result = agent.run("test task")
     assert result == "Success"
     assert mock_llm.generate.call_count == 3
-    
+
     # Test all retries failing
     mock_llm.generate.side_effect = Exception("All attempts failed")
     with pytest.raises(ToolExecutionError) as exc_info:
@@ -185,15 +184,15 @@ def test_batched_execution():
     mock_llm.generate.side_effect = [
         Mock(outputs=[Mock(text="Success 1")]),
         Exception("Task 2 failed"),
-        Mock(outputs=[Mock(text="Success 3")])
+        Mock(outputs=[Mock(text="Success 3")]),
     ]
-    
+
     agent = ToolAgent(model_name="test-model")
     agent.llm = mock_llm
-    
+
     tasks = ["Task 1", "Task 2", "Task 3"]
     results = agent.batched_run(tasks)
-    
+
     assert len(results) == 3
     assert results[0] == "Success 1"
     assert "Error" in results[1]
@@ -206,22 +205,25 @@ def test_prompt_preparation():
     agent = ToolAgent()
     prompt = agent._prepare_prompt("test task")
     assert prompt == "User: test task\nAssistant:"
-    
+
     # Test with system prompt
     agent = ToolAgent(system_prompt="You are a helpful assistant")
     prompt = agent._prepare_prompt("test task")
-    assert prompt == "You are a helpful assistant\n\nUser: test task\nAssistant:"
+    assert (
+        prompt
+        == "You are a helpful assistant\n\nUser: test task\nAssistant:"
+    )
 
 
 def test_tool_execution_error_handling():
     """Test error handling during tool execution."""
     agent = ToolAgent(model_name="test-model")
     agent.llm = None  # Simulate uninitialized LLM
-    
+
     with pytest.raises(ToolExecutionError) as exc_info:
         agent.run("test task")
     assert "LLM not initialized" in str(exc_info.value)
-    
+
     # Test with invalid parameters
     with pytest.raises(ToolExecutionError) as exc_info:
         agent.run("test task", invalid_param="value")
