@@ -41,15 +41,6 @@ class AgentRegistrySchema(BaseModel):
 class AgentRegistry:
     """
     A class for managing a registry of agents.
-
-    Attributes:
-        name (str): The name of the registry.
-        description (str): A description of the registry.
-        return_json (bool): Indicates whether to return data in JSON format.
-        auto_save (bool): Indicates whether to automatically save changes to the registry.
-        agents (Dict[str, Agent]): A dictionary of agents in the registry, keyed by agent name.
-        lock (Lock): A lock for thread-safe operations on the registry.
-        agent_registry (AgentRegistrySchema): The schema for the agent registry.
     """
 
     def __init__(
@@ -62,16 +53,6 @@ class AgentRegistry:
         *args,
         **kwargs,
     ):
-        """
-        Initializes the AgentRegistry.
-
-        Args:
-            name (str, optional): The name of the registry. Defaults to "Agent Registry".
-            description (str, optional): A description of the registry. Defaults to "A registry for managing agents.".
-            agents (Optional[List[Agent]], optional): A list of agents to initially add to the registry. Defaults to None.
-            return_json (bool, optional): Indicates whether to return data in JSON format. Defaults to True.
-            auto_save (bool, optional): Indicates whether to automatically save changes to the registry. Defaults to False.
-        """
         self.name = name
         self.description = description
         self.return_json = return_json
@@ -94,25 +75,23 @@ class AgentRegistry:
         """
         Adds a new agent to the registry.
 
-        Args:
-            agent (Agent): The agent to add.
-
         Raises:
-            ValueError: If the agent_name already exists in the registry.
+            ValueError: If the agent_name is invalid or already exists in the registry.
             ValidationError: If the input data is invalid.
         """
         name = agent.agent_name
+
+        # ✅ Validation for agent_name
+        if not isinstance(name, str) or not name.strip():
+            logger.error("Invalid agent_name. It must be a non-empty string.")
+            raise ValueError("Invalid agent_name. It must be a non-empty string.")
 
         self.agent_to_py_model(agent)
 
         with self.lock:
             if name in self.agents:
-                logger.error(
-                    f"Agent with name {name} already exists."
-                )
-                raise ValueError(
-                    f"Agent with name {name} already exists."
-                )
+                logger.error(f"Agent with name {name} already exists.")
+                raise ValueError(f"Agent with name {name} already exists.")
             try:
                 self.agents[name] = agent
                 logger.info(f"Agent {name} added successfully.")
@@ -123,19 +102,18 @@ class AgentRegistry:
     def add_many(self, agents: List[Agent]) -> None:
         """
         Adds multiple agents to the registry.
-
-        Args:
-            agents (List[Agent]): The list of agents to add.
-
-        Raises:
-            ValueError: If any of the agent_names already exist in the registry.
-            ValidationError: If the input data is invalid.
+        Stops immediately if any agent has an invalid name.
         """
+        # ✅ Pre-validation before threading
+        for agent in agents:
+            if not isinstance(agent.agent_name, str) or not agent.agent_name.strip():
+                logger.error(f"Invalid agent_name in batch: {agent.agent_name!r}")
+                raise ValueError(
+                    f"Invalid agent_name in batch: {agent.agent_name!r}"
+                )
+
         with ThreadPoolExecutor() as executor:
-            futures = {
-                executor.submit(self.add, agent): agent
-                for agent in agents
-            }
+            futures = {executor.submit(self.add, agent): agent for agent in agents}
             for future in as_completed(futures):
                 try:
                     future.result()
@@ -144,85 +122,37 @@ class AgentRegistry:
                     raise
 
     def delete(self, agent_name: str) -> None:
-        """
-        Deletes an agent from the registry.
-
-        Args:
-            agent_name (str): The name of the agent to delete.
-
-        Raises:
-            KeyError: If the agent_name does not exist in the registry.
-        """
         with self.lock:
             try:
                 del self.agents[agent_name]
-                logger.info(
-                    f"Agent {agent_name} deleted successfully."
-                )
+                logger.info(f"Agent {agent_name} deleted successfully.")
             except KeyError as e:
                 logger.error(f"Error: {e}")
                 raise
 
     def update_agent(self, agent_name: str, new_agent: Agent) -> None:
-        """
-        Updates an existing agent in the registry.
-
-        Args:
-            agent_name (str): The name of the agent to update.
-            new_agent (Agent): The new agent to replace the existing one.
-
-        Raises:
-            KeyError: If the agent_name does not exist in the registry.
-            ValidationError: If the input data is invalid.
-        """
         with self.lock:
             if agent_name not in self.agents:
-                logger.error(
-                    f"Agent with name {agent_name} does not exist."
-                )
-                raise KeyError(
-                    f"Agent with name {agent_name} does not exist."
-                )
+                logger.error(f"Agent with name {agent_name} does not exist.")
+                raise KeyError(f"Agent with name {agent_name} does not exist.")
             try:
                 self.agents[agent_name] = new_agent
-                logger.info(
-                    f"Agent {agent_name} updated successfully."
-                )
+                logger.info(f"Agent {agent_name} updated successfully.")
             except ValidationError as e:
                 logger.error(f"Validation error: {e}")
                 raise
 
     def get(self, agent_name: str) -> Agent:
-        """
-        Retrieves an agent from the registry.
-
-        Args:
-            agent_name (str): The name of the agent to retrieve.
-
-        Returns:
-            Agent: The agent associated with the given agent_name.
-
-        Raises:
-            KeyError: If the agent_name does not exist in the registry.
-        """
         with self.lock:
             try:
                 agent = self.agents[agent_name]
-                logger.info(
-                    f"Agent {agent_name} retrieved successfully."
-                )
+                logger.info(f"Agent {agent_name} retrieved successfully.")
                 return agent
             except KeyError as e:
                 logger.error(f"Error: {e}")
                 raise
 
     def list_agents(self) -> List[str]:
-        """
-        Lists all agent names in the registry.
-
-        Returns:
-            List[str]: A list of all agent names.
-        """
         try:
             with self.lock:
                 agent_names = list(self.agents.keys())
@@ -233,12 +163,6 @@ class AgentRegistry:
             raise e
 
     def return_all_agents(self) -> List[Agent]:
-        """
-        Returns all agents from the registry.
-
-        Returns:
-            List[Agent]: A list of all agents.
-        """
         try:
             with self.lock:
                 agents = list(self.agents.values())
@@ -248,31 +172,14 @@ class AgentRegistry:
             logger.error(f"Error: {e}")
             raise e
 
-    def query(
-        self, condition: Optional[Callable[[Agent], bool]] = None
-    ) -> List[Agent]:
-        """
-        Queries agents based on a condition.
-
-        Args:
-            condition (Optional[Callable[[Agent], bool]]): A function that takes an agent and returns a boolean indicating
-                                                           whether the agent meets the condition.
-
-        Returns:
-            List[Agent]: A list of agents that meet the condition.
-        """
+    def query(self, condition: Optional[Callable[[Agent], bool]] = None) -> List[Agent]:
         try:
             with self.lock:
                 if condition is None:
                     agents = list(self.agents.values())
                     logger.info("Querying all agents.")
                     return agents
-
-                agents = [
-                    agent
-                    for agent in self.agents.values()
-                    if condition(agent)
-                ]
+                agents = [agent for agent in self.agents.values() if condition(agent)]
                 logger.info("Querying agents with condition.")
                 return agents
         except Exception as e:
@@ -280,15 +187,6 @@ class AgentRegistry:
             raise e
 
     def find_agent_by_name(self, agent_name: str) -> Optional[Agent]:
-        """
-        Find an agent by its name.
-
-        Args:
-            agent_name (str): The name of the agent to find.
-
-        Returns:
-            Agent: The agent with the given name.
-        """
         try:
             with ThreadPoolExecutor() as executor:
                 futures = {
@@ -304,36 +202,16 @@ class AgentRegistry:
             raise e
 
     def find_agent_by_id(self, agent_id: str) -> Optional[Agent]:
-        """
-        Find an agent by its ID.
-        """
         return self.agents.get(agent_id)
 
     def agents_to_json(self) -> str:
-        """
-        Converts all agents in the registry to a JSON string.
-
-        Returns:
-            str: A JSON string representation of all agents, keyed by their names.
-        """
-        agents_dict = {
-            name: agent.to_dict()
-            for name, agent in self.agents.items()
-        }
+        agents_dict = {name: agent.to_dict() for name, agent in self.agents.items()}
         return json.dumps(agents_dict, indent=4)
 
     def agent_to_py_model(self, agent: Agent):
-        """
-        Converts an agent to a Pydantic model.
-
-        Args:
-            agent (Agent): The agent to convert.
-        """
         agent_name = agent.agent_name
         agent_description = (
-            agent.description
-            if agent.description
-            else "No description provided"
+            agent.description if agent.description else "No description provided"
         )
 
         schema = AgentConfigSchema(
@@ -343,10 +221,7 @@ class AgentRegistry:
             config=agent.to_dict(),
         )
 
-        logger.info(
-            f"Agent {agent_name} converted to Pydantic model."
-        )
-
+        logger.info(f"Agent {agent_name} converted to Pydantic model.")
         self.agent_registry.agents.append(schema)
 
 
