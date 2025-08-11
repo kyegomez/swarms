@@ -819,6 +819,126 @@ class LiteLLM:
                     time.sleep(delay)
             print()  # Newline at the end
 
+    def parse_streaming_chunks_with_tools(
+        self,
+        stream,
+        agent_name: str = "Agent",
+        print_on: bool = True,
+        verbose: bool = False,
+    ) -> tuple:
+        """
+        Parse streaming chunks and extract both text and tool calls.
+        
+        Args:
+            stream: The streaming response object
+            agent_name: Name of the agent for printing
+            print_on: Whether to print streaming output
+            verbose: Whether to enable verbose logging
+            
+        Returns:
+            tuple: (full_text_response, tool_calls_list)
+        """
+        import json
+        
+        full_text_response = ""
+        tool_calls_in_stream = []
+        current_tool_call = None
+        tool_call_buffer = ""
+
+        if print_on:
+            print(f"🤖 {agent_name}: ", end="", flush=True)
+
+        # Process streaming chunks in real-time
+        for chunk in stream:
+            if verbose:
+                logger.debug(f"Processing streaming chunk: {type(chunk)}")
+            
+            chunk_type = getattr(chunk, 'type', None)
+
+            # Anthropic-style stream parsing
+            if chunk_type == 'content_block_start' and hasattr(chunk, 'content_block') and chunk.content_block.type == 'tool_use':
+                tool_name = chunk.content_block.name
+                if print_on:
+                    print(f"\n🔧 Tool Call: {tool_name}...", flush=True)
+                current_tool_call = {"id": chunk.content_block.id, "name": tool_name, "input": ""}
+                tool_call_buffer = ""
+            
+            elif chunk_type == 'content_block_delta' and hasattr(chunk, 'delta'):
+                if chunk.delta.type == 'input_json_delta':
+                    tool_call_buffer += chunk.delta.partial_json
+                elif chunk.delta.type == 'text_delta':
+                    text_chunk = chunk.delta.text
+                    full_text_response += text_chunk
+                    if print_on:
+                        print(text_chunk, end="", flush=True)
+
+            elif chunk_type == 'content_block_stop' and current_tool_call:
+                try:
+                    tool_input = json.loads(tool_call_buffer)
+                    current_tool_call["input"] = tool_input
+                    tool_calls_in_stream.append(current_tool_call)
+                except json.JSONDecodeError:
+                    logger.error(f"Failed to parse tool arguments: {tool_call_buffer}")
+                current_tool_call = None
+                tool_call_buffer = ""
+
+            # OpenAI-style stream parsing
+            elif hasattr(chunk, 'choices') and chunk.choices:
+                choice = chunk.choices[0]
+                if hasattr(choice, 'delta') and choice.delta:
+                    delta = choice.delta
+                    
+                    # Handle text content
+                    if hasattr(delta, 'content') and delta.content:
+                        text_chunk = delta.content
+                        full_text_response += text_chunk
+                        if print_on:
+                            print(text_chunk, end="", flush=True)
+                    
+                    # Handle tool calls in streaming chunks
+                    if hasattr(delta, 'tool_calls') and delta.tool_calls:
+                        for tool_call in delta.tool_calls:
+                            tool_index = getattr(tool_call, 'index', 0)
+                            
+                            # Ensure we have enough slots in the list
+                            while len(tool_calls_in_stream) <= tool_index:
+                                tool_calls_in_stream.append(None)
+                            
+                            if hasattr(tool_call, 'function') and tool_call.function:
+                                func = tool_call.function
+                                
+                                # Create new tool call if slot is empty and we have a function name
+                                if tool_calls_in_stream[tool_index] is None and hasattr(func, 'name') and func.name:
+                                    if print_on:
+                                        print(f"\n🔧 Tool Call: {func.name}...", flush=True)
+                                    tool_calls_in_stream[tool_index] = {
+                                        "id": getattr(tool_call, 'id', f"call_{tool_index}"),
+                                        "name": func.name,
+                                        "arguments": ""
+                                    }
+                                
+                                # Accumulate arguments
+                                if tool_calls_in_stream[tool_index] and hasattr(func, 'arguments') and func.arguments is not None:
+                                    tool_calls_in_stream[tool_index]["arguments"] += func.arguments
+                                    
+                                    if verbose:
+                                        logger.debug(f"Accumulated arguments for {tool_calls_in_stream[tool_index].get('name', 'unknown')}: '{tool_calls_in_stream[tool_index]['arguments']}'")
+                                    
+                                    # Try to parse if we have complete JSON
+                                    try:
+                                        args_dict = json.loads(tool_calls_in_stream[tool_index]["arguments"])
+                                        tool_calls_in_stream[tool_index]["input"] = args_dict
+                                        tool_calls_in_stream[tool_index]["arguments_complete"] = True
+                                        if verbose:
+                                            logger.info(f"Complete tool call for {tool_calls_in_stream[tool_index]['name']} with args: {args_dict}")
+                                    except json.JSONDecodeError:
+                                        pass
+
+        if print_on:
+            print()  # Newline after streaming text
+
+        return full_text_response, tool_calls_in_stream
+
     def run(
         self,
         task: str,
