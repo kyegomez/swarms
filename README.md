@@ -112,31 +112,28 @@ Swarms delivers a comprehensive, enterprise-grade multi-agent infrastructure pla
 ## Install 💻
 
 ### Using pip
+
 ```bash
 $ pip3 install -U swarms
 ```
 
 ### Using uv (Recommended)
+
 [uv](https://github.com/astral-sh/uv) is a fast Python package installer and resolver, written in Rust.
 
 ```bash
-# Install uv
-$ curl -LsSf https://astral.sh/uv/install.sh | sh
-
 # Install swarms using uv
 $ uv pip install swarms
 ```
 
 ### Using poetry
-```bash
-# Install poetry if you haven't already
-$ curl -sSL https://install.python-poetry.org | python3 -
 
-# Add swarms to your project
+```bash
 $ poetry add swarms
 ```
 
 ### From source
+
 ```bash
 # Clone the repository
 $ git clone https://github.com/kyegomez/swarms.git
