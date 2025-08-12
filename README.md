@@ -21,19 +21,59 @@
 </p>
 
 <p align="center">
-  <a href="https://twitter.com/swarms_corp/">🐦 Twitter</a>
-  <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-  <a href="https://discord.gg/EamjgSaEQf">📢 Discord</a>
-  <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-  <a href="https://swarms.ai">Swarms Website</a>
-  <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-  <a href="https://docs.swarms.world">📙 Documentation</a>
-  <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-  <a href="https://swarms.world"> Swarms Marketplace</a>
+  <!-- Project Stats - Most Important First -->
+  <a href="https://github.com/kyegomez/swarms/stargazers">
+    <picture>
+      <source srcset="https://img.shields.io/github/stars/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/github/stars/kyegomez/swarms?style=for-the-badge" alt="GitHub stars">
+    </picture>
+  </a>
+  <a href="https://github.com/kyegomez/swarms/network">
+    <picture>
+      <source srcset="https://img.shields.io/github/forks/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/github/forks/kyegomez/swarms?style=for-the-badge" alt="GitHub forks">
+    </picture>
+  </a>
+  <a href="https://github.com/kyegomez/swarms/issues">
+    <picture>
+      <source srcset="https://img.shields.io/github/issues/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/github/issues/kyegomez/swarms?style=for-the-badge" alt="GitHub issues">
+    </picture>
+  </a>
+  <a href="https://github.com/kyegomez/swarms/blob/main/LICENSE">
+    <picture>
+      <source srcset="https://img.shields.io/github/license/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/github/license/kyegomez/swarms?style=for-the-badge" alt="GitHub license">
+    </picture>
+  </a>
+  <a href="https://pepy.tech/project/swarms">
+    <picture>
+      <source srcset="https://static.pepy.tech/badge/swarms/month" media="(prefers-color-scheme: dark)">
+      <img src="https://static.pepy.tech/badge/swarms/month" alt="Downloads">
+    </picture>
+  </a>
+  <a href="https://libraries.io/github/kyegomez/swarms">
+    <picture>
+      <source srcset="https://img.shields.io/librariesio/github/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/librariesio/github/kyegomez/swarms?style=for-the-badge" alt="Dependency Status">
+    </picture>
+  </a>
 </p>
 
 <p align="center">
   <!-- Social Media -->
+  <a href="https://twitter.com/swarms_corp/">
+    <picture>
+      <source srcset="https://img.shields.io/badge/Twitter-Follow-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/badge/Twitter-Follow-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" alt="Twitter">
+    </picture>
+  </a>
+  <a href="https://discord.gg/EamjgSaEQf">
+    <picture>
+      <source srcset="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
+    </picture>
+  </a>
   <a href="https://www.youtube.com/@kyegomez3242">
     <picture>
       <source srcset="https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white" media="(prefers-color-scheme: dark)">
@@ -55,43 +95,12 @@
 </p>
 
 <p align="center">
-  <!-- Project Stats -->
-  <a href="https://github.com/kyegomez/swarms/issues">
-    <picture>
-      <source srcset="https://img.shields.io/github/issues/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/github/issues/kyegomez/swarms?style=for-the-badge" alt="GitHub issues">
-    </picture>
-  </a>
-  <a href="https://github.com/kyegomez/swarms/network">
-    <picture>
-      <source srcset="https://img.shields.io/github/forks/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/github/forks/kyegomez/swarms?style=for-the-badge" alt="GitHub forks">
-    </picture>
-  </a>
-  <a href="https://github.com/kyegomez/swarms/stargazers">
-    <picture>
-      <source srcset="https://img.shields.io/github/stars/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/github/stars/kyegomez/swarms?style=for-the-badge" alt="GitHub stars">
-    </picture>
-  </a>
-  <a href="https://github.com/kyegomez/swarms/blob/main/LICENSE">
-    <picture>
-      <source srcset="https://img.shields.io/github/license/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/github/license/kyegomez/swarms?style=for-the-badge" alt="GitHub license">
-    </picture>
-  </a>
-  <a href="https://libraries.io/github/kyegomez/swarms">
-    <picture>
-      <source srcset="https://img.shields.io/librariesio/github/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/librariesio/github/kyegomez/swarms?style=for-the-badge" alt="Dependency Status">
-    </picture>
-  </a>
-  <a href="https://pepy.tech/project/swarms">
-    <picture>
-      <source srcset="https://static.pepy.tech/badge/swarms/month" media="(prefers-color-scheme: dark)">
-      <img src="https://static.pepy.tech/badge/swarms/month" alt="Downloads">
-    </picture>
-  </a>
+  <!-- Main Navigation Links -->
+  <a href="https://swarms.ai">🏠 Swarms Website</a>
+  <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+  <a href="https://docs.swarms.world">📙 Documentation</a>
+  <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+  <a href="https://swarms.world">🛒 Swarms Marketplace</a>
 </p>
 
 <p align="center">
