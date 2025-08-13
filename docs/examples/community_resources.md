@@ -19,6 +19,7 @@ These resources cover a wide range of topics, including building your first agen
 | **Automating Your Startup’s Financial Analysis Using AI Agents: A Comprehensive Guide** | Comprehensive guide to automating your startup’s financial analysis with AI agents using Swarms. | [Read Article](https://medium.com/@kyeg/automating-your-startups-financial-analysis-using-ai-agents-a-comprehensive-guide-b2fa0e2c09d5) |
 | **Managing Thousands of Agent Outputs at Scale with The Spreadsheet Swarm: All-New Multi-Agent Architecture** | Learn how to manage and scale thousands of agent outputs efficiently using the Spreadsheet Swarm architecture. | [Read Article](https://medium.com/@kyeg/managing-thousands-of-agent-outputs-at-scale-with-the-spreadsheet-swarm-all-new-multi-agent-f16f5f40fd5a) |
 | **Introducing GPT-4o Mini: The Future of Cost-Efficient AI Intelligence** | Discover the capabilities and advantages of GPT-4o Mini for building cost-effective, intelligent agents. | [Read Article](https://medium.com/@kyeg/introducing-gpt-4o-mini-the-future-of-cost-efficient-ai-intelligence-a3e3fe78d939) |
+| **Introducing Swarm's GraphWorkflow: A Faster, Simpler, and Superior Alternative to LangGraph** | Learn about Swarms' GraphWorkflow, a powerful alternative to LangGraph that offers improved performance and simplicity for building complex agent workflows. | [Read Article](https://medium.com/@kyeg/introducing-swarms-graphworkflow-a-faster-simpler-and-superior-alternative-to-langgraph-5c040225a4f1) |
 
 
 ### Swarms API

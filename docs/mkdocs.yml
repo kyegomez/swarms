@@ -415,6 +415,9 @@ nav:
           - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
           - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
 
+    - Apps:
+      - Smart Database: "examples/smart_database.md"
+
 
   # - Swarm Models:
   #   - Overview: "swarms/models/index.md"
