@@ -171,6 +171,7 @@ This index organizes **100+ production-ready examples** from our [Swarms Example
 ### Research and Deep Analysis
 | Category | Example | Description |
 |----------|---------|-------------|
+| Advanced Research | [Advanced Research System](https://github.com/The-Swarm-Corporation/AdvancedResearch) | Multi-agent research system inspired by Anthropic's research methodology with orchestrator-worker architecture |
 | Deep Research | [Deep Research Example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/deep_research_examples/deep_research_example.py) | Comprehensive research system with multiple specialized agents |
 | Deep Research Swarm | [Deep Research Swarm](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/deep_research_examples/deep_research_swarm_example.py) | Swarm-based deep research with collaborative analysis |
 | Scientific Agents | [Deep Research Swarm Example](https://github.com/kyegomez/swarms/blob/master/examples/demos/scient_agents/deep_research_swarm_example.py) | Scientific research swarm for academic and research applications |
