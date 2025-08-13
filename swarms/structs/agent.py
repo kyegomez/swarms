@@ -1154,49 +1154,12 @@ class Agent:
 
                         # Handle streaming response with tools
                         if self.streaming_on and exists(self.tools_list_dictionary) and hasattr(response, "__iter__") and not isinstance(response, str):
-                            if hasattr(self.llm, 'parse_streaming_chunks_with_tools'):
-                                full_text_response, tool_calls_in_stream = self.llm.parse_streaming_chunks_with_tools(
-                                    stream=response,
-                                    agent_name=self.agent_name,
-                                    print_on=self.print_on,
-                                    verbose=self.verbose,
-                                )
-                                
-                                if tool_calls_in_stream:
-                                    if full_text_response.strip():
-                                        self.short_memory.add(role=self.agent_name, content=full_text_response)
-                                    
-                                    import json
-                                    formatted_tool_calls = []
-                                    for tc in tool_calls_in_stream:
-                                        if tc and (tc.get("input") or tc.get("arguments_complete")):
-                                            args_to_use = tc.get("input") or json.loads(tc.get("arguments", "{}"))
-                                            formatted_tool_calls.append({
-                                                "type": "function",
-                                                "function": {"name": tc["name"], "arguments": json.dumps(args_to_use)},
-                                                "id": tc["id"]
-                                            })
-                                    
-                                    if formatted_tool_calls:
-                                        response = {"choices": [{"message": {"tool_calls": formatted_tool_calls}}]}
-                                    else:
-                                        response = full_text_response
-                                else:
-                                    response = full_text_response
-                                    if response.strip():
-                                        self.short_memory.add(role=self.agent_name, content=response)
-                            else:
-                                # Fallback for streaming without tool parsing
-                                text_chunks = []
-                                for chunk in response:
-                                    if hasattr(chunk, "choices") and chunk.choices and chunk.choices[0].delta.content:
-                                        content = chunk.choices[0].delta.content
-                                        text_chunks.append(content)
-                                        if self.print_on:
-                                            print(content, end="", flush=True)
-                                if self.print_on:
-                                    print()
-                                response = "".join(text_chunks)
+                            response = self.tool_struct.handle_streaming_with_tools(
+                                response=response,
+                                llm=self.llm,
+                                agent_name=self.agent_name,
+                                print_on=self.print_on
+                            )
                         else:
                             # Parse the response from the agent with the output type
                             if exists(self.tools_list_dictionary):

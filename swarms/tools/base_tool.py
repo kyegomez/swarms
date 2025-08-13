@@ -3063,3 +3063,63 @@ class BaseTool(BaseModel):
             )
 
         return function_calls
+
+    def handle_streaming_with_tools(
+        self, 
+        response: Any, 
+        llm: Any, 
+        agent_name: str = "agent",
+        print_on: bool = True
+    ) -> Union[str, Dict[str, Any]]:
+        """
+        Simplified streaming response handler with tool support.
+        
+        Args:
+            response: Streaming response object
+            llm: Language model instance
+            agent_name: Name of the agent
+            print_on: Whether to print streaming output
+            
+        Returns:
+            Union[str, Dict[str, Any]]: Processed response (text or tool calls)
+        """
+        if hasattr(llm, 'parse_streaming_chunks_with_tools'):
+            text_response, tool_calls = llm.parse_streaming_chunks_with_tools(
+                stream=response,
+                agent_name=agent_name,
+                print_on=print_on,
+                verbose=self.verbose
+            )
+            
+            if tool_calls:
+                formatted_calls = []
+                for tc in tool_calls:
+                    if tc and tc.get("name"):
+                        args = tc.get("input") or tc.get("arguments", {})
+                        if isinstance(args, str):
+                            try:
+                                args = json.loads(args)
+                            except json.JSONDecodeError:
+                                args = {}
+                        
+                        formatted_calls.append({
+                            "type": "function",
+                            "function": {"name": tc["name"], "arguments": json.dumps(args)},
+                            "id": tc.get("id")
+                        })
+                
+                return {"choices": [{"message": {"tool_calls": formatted_calls}}]} if formatted_calls else text_response
+            
+            return text_response
+        else:
+            # Simple fallback streaming
+            chunks = []
+            for chunk in response:
+                if hasattr(chunk, "choices") and chunk.choices and chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    chunks.append(content)
+                    if print_on:
+                        print(content, end="", flush=True)
+            if print_on and chunks:
+                print()
+            return "".join(chunks)
