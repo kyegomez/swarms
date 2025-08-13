@@ -4,6 +4,9 @@ from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.batch_agent_execution import batch_agent_execution
+from swarms.structs.board_of_directors_swarm import (
+    BoardOfDirectorsSwarm,
+)
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.council_judge import CouncilAsAJudge
@@ -93,10 +96,12 @@ from swarms.structs.swarming_architectures import (
     star_swarm,
 )
 
+
 __all__ = [
     "Agent",
     "BaseStructure",
     "BaseSwarm",
+    "BoardOfDirectorsSwarm",
     "ConcurrentWorkflow",
     "Conversation",
     "GroupChat",

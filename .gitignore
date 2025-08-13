@@ -18,6 +18,7 @@ next_swarms_update.txt
 runs
 Financial-Analysis-Agent_state.json
 conversations/
+models/
 evolved_gpt2_models/
 experimental
 ffn_alternatives

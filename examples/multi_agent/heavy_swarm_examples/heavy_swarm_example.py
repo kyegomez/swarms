@@ -1,16 +1,32 @@
-from swarms.structs.heavy_swarm import HeavySwarm
+from swarms import HeavySwarm
 
 
-swarm = HeavySwarm(
-    worker_model_name="claude-3-5-sonnet-20240620",
-    show_dashboard=True,
-    question_agent_model_name="gpt-4.1",
-    loops_per_agent=1,
-)
+def main():
+    """
+    Run a HeavySwarm query to find the best 3 gold ETFs.
+
+    This function initializes a HeavySwarm instance and queries it to provide
+    the top 3 gold exchange-traded funds (ETFs), requesting clear, structured results.
+    """
+    swarm = HeavySwarm(
+        name="Gold ETF Research Team",
+        description="A team of agents that research the best gold ETFs",
+        worker_model_name="claude-sonnet-4-latest",
+        show_dashboard=True,
+        question_agent_model_name="gpt-4.1",
+        loops_per_agent=1,
+    )
+
+    prompt = (
+        "Find the best 3 gold ETFs. For each ETF, provide the ticker symbol, "
+        "full name, current price, expense ratio, assets under management, and "
+        "a brief explanation of why it is considered among the best. Present the information "
+        "in a clear, structured format suitable for investors."
+    )
+
+    out = swarm.run(prompt)
+    print(out)
 
 
-out = swarm.run(
-    "Provide 3 publicly traded biotech companies that are currently trading below their cash value. For each company identified, provide available data or projections for the next 6 months, including any relevant financial metrics, upcoming catalysts, or events that could impact valuation. Present your findings in a clear, structured format. Be very specific and provide their ticker symbol, name, and the current price, cash value, and the percentage difference between the two."
-)
-
-print(out)
+if __name__ == "__main__":
+    main()

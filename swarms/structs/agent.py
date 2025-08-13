@@ -102,7 +102,7 @@ def parse_done_token(response: str) -> bool:
 # Agent ID generator
 def agent_id():
     """Generate an agent id"""
-    return uuid.uuid4().hex
+    return f"agent-{uuid.uuid4().hex}"
 
 
 # Agent output types
@@ -673,7 +673,7 @@ class Agent:
 
         # Initialize the short term memory
         memory = Conversation(
-            system_prompt=prompt,
+            name=f"{self.agent_name}_conversation",
             user=self.user_name,
             rules=self.rules,
             token_count=(
@@ -691,6 +691,12 @@ class Agent:
                 if self.conversation_schema
                 else False
             ),
+        )
+
+        # Add the system prompt to the conversation
+        memory.add(
+            role="System",
+            content=prompt,
         )
 
         return memory
@@ -861,7 +867,9 @@ class Agent:
 
             return tools
         except AgentMCPConnectionError as e:
-            logger.error(f"Error in MCP connection: {e}")
+            logger.error(
+                f"Error in MCP connection: {e} Traceback: {traceback.format_exc()}"
+            )
             raise e
 
     def setup_config(self):
@@ -1176,7 +1184,8 @@ class Agent:
                         if self.print_on is True:
                             if isinstance(response, list):
                                 self.pretty_print(
-                                    f"Structured Output - Attempting Function Call Execution [{time.strftime('%H:%M:%S')}] \n\n Output: {format_data_structure(response)} ",
+                                    # f"Structured Output - Attempting Function Call Execution [{time.strftime('%H:%M:%S')}] \n\n Output: {format_data_structure(response)} ",
+                                    f"[Structured Output] [Time: {time.strftime('%H:%M:%S')}] \n\n {json.dumps(response, indent=4)}",
                                     loop_count,
                                 )
                             elif self.streaming_on:
@@ -2464,6 +2473,10 @@ class Agent:
         Returns:
             Dict[str, Any]: A dictionary representation of the class attributes.
         """
+
+        # Remove the llm object from the dictionary
+        self.__dict__.pop("llm", None)
+
         return {
             attr_name: self._serialize_attr(attr_name, attr_value)
             for attr_name, attr_value in self.__dict__.items()
