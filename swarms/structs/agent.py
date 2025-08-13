@@ -1186,7 +1186,9 @@ class Agent:
 
                         # Check and execute callable tools
                         if exists(self.tools):
-                            self.tool_execution_retry(response, loop_count)
+                            self.tool_execution_retry(
+                                response, loop_count
+                            )
 
                         # Handle MCP tools
                         if (
@@ -1194,6 +1196,7 @@ class Agent:
                             or exists(self.mcp_config)
                             or exists(self.mcp_urls)
                         ):
+                            # Only handle MCP tools if response is not None
                             if response is not None:
                                 self.mcp_tool_handling(
                                     response=response,
@@ -2243,7 +2246,7 @@ class Agent:
 
         Example:
             response = "This is a sample response from the API."
-            agent.stream_response(response)
+            stream_response(response)
         """
         # Check for required inputs
         if not response:
