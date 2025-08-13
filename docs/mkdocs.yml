@@ -354,6 +354,7 @@ nav:
     - CookBook Index: "examples/cookbook_index.md"
     - Paper Implementations: "examples/paper_implementations.md"
     - Templates & Applications: "examples/templates.md"
+    - Community Resources: "examples/community_resources.md"
     - Basic Examples:
       - Individual Agents:
         - Basic Agent: "swarms/examples/basic_agent.md"

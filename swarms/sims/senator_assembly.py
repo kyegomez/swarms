@@ -6,13 +6,14 @@ each with detailed backgrounds, political positions, and comprehensive system pr
 that reflect their real-world characteristics, voting patterns, and policy priorities.
 """
 
+from functools import lru_cache
 from typing import Dict, List, Optional
 
-from swarms import Agent
-from swarms.structs.multi_agent_exec import run_agents_concurrently
-from functools import lru_cache
 from loguru import logger
+
+from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.multi_agent_exec import run_agents_concurrently
 
 
 @lru_cache(maxsize=1)

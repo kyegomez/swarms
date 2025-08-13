@@ -23,10 +23,6 @@ MAX_WORKERS = (
     os.cpu_count() * 2
 )  # Optimal number of workers based on CPU cores
 
-###############################################################################
-# 1. System Prompts for Each Scientist Agent
-###############################################################################
-
 
 def exa_search(query: str, **kwargs: Any) -> str:
     """Performs web search using Exa.ai API and returns formatted results."""
