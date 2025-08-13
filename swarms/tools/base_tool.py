@@ -3099,8 +3099,9 @@ class BaseTool(BaseModel):
                         if isinstance(args, str):
                             try:
                                 args = json.loads(args)
-                            except json.JSONDecodeError:
-                                args = {}
+                            except json.JSONDecodeError as e:
+                                print(f"Warning: Failed to parse tool arguments for {tc.get('name')}: {e}")
+                                args = {"error": f"JSON parse failed: {e}", "raw": args}
                         
                         formatted_calls.append({
                             "type": "function",

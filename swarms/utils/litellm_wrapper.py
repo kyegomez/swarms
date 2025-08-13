@@ -687,6 +687,8 @@ class LiteLLM:
     def _process_anthropic_chunk(self, chunk, current_tool_call, tool_call_buffer, tool_calls_in_stream, print_on, verbose):
         """Process Anthropic-style streaming chunks."""
         import json
+        from loguru import logger
+        
         chunk_type = getattr(chunk, 'type', None)
         full_text_response = ""
         
@@ -711,8 +713,11 @@ class LiteLLM:
                 tool_input = json.loads(tool_call_buffer)
                 current_tool_call["input"] = tool_input
                 tool_calls_in_stream.append(current_tool_call)
-            except json.JSONDecodeError:
-                logger.error(f"Failed to parse tool arguments: {tool_call_buffer}")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse tool arguments: {tool_call_buffer}. Error: {e}")
+                # Store the raw buffer for debugging
+                current_tool_call["input"] = {"raw_buffer": tool_call_buffer, "error": str(e)}
+                tool_calls_in_stream.append(current_tool_call)
             current_tool_call = None
             tool_call_buffer = ""
             
@@ -776,7 +781,9 @@ class LiteLLM:
                             if verbose:
                                 logger.info(f"Complete tool call for {tool_calls_in_stream[tool_index]['name']} with args: {args_dict}")
                         except json.JSONDecodeError:
-                            pass
+                            # Continue accumulating - JSON might be incomplete
+                            if verbose:
+                                logger.debug(f"Incomplete JSON for {tool_calls_in_stream[tool_index].get('name', 'unknown')}: {tool_calls_in_stream[tool_index]['arguments'][:100]}...")
                             
         return full_text_response
 
@@ -808,23 +815,29 @@ class LiteLLM:
             print(f"{agent_name}: ", end="", flush=True)
 
         # Process streaming chunks in real-time
-        for chunk in stream:
-            if verbose:
-                logger.debug(f"Processing streaming chunk: {type(chunk)}")
-            
-            # Try Anthropic-style processing first
-            anthropic_result = self._process_anthropic_chunk(
-                chunk, current_tool_call, tool_call_buffer, tool_calls_in_stream, print_on, verbose
-            )
-            if anthropic_result[0]:  # If text was processed
-                text_chunk, current_tool_call, tool_call_buffer = anthropic_result
-                full_text_response += text_chunk
-                continue
-            
-            # If not Anthropic, try OpenAI-style processing
-            openai_text = self._process_openai_chunk(chunk, tool_calls_in_stream, print_on, verbose)
-            if openai_text:
-                full_text_response += openai_text
+        try:
+            for chunk in stream:
+                if verbose:
+                    logger.debug(f"Processing streaming chunk: {type(chunk)}")
+                
+                # Try Anthropic-style processing first
+                anthropic_result = self._process_anthropic_chunk(
+                    chunk, current_tool_call, tool_call_buffer, tool_calls_in_stream, print_on, verbose
+                )
+                if anthropic_result[0]:  # If text was processed
+                    text_chunk, current_tool_call, tool_call_buffer = anthropic_result
+                    full_text_response += text_chunk
+                    continue
+                
+                # If not Anthropic, try OpenAI-style processing
+                openai_text = self._process_openai_chunk(chunk, tool_calls_in_stream, print_on, verbose)
+                if openai_text:
+                    full_text_response += openai_text
+        except Exception as e:
+            logger.error(f"Error processing streaming chunks: {e}")
+            if print_on:
+                print(f"\n[Streaming Error: {e}]")
+            return full_text_response, tool_calls_in_stream
 
         if print_on:
             print()  # Newline after streaming text
