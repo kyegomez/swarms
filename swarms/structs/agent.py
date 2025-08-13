@@ -1191,8 +1191,9 @@ class Agent:
                             elif self.streaming_on:
                                 pass
                             else:
-                                self.pretty_print(response, loop_count)
-
+                                self.pretty_print(
+                                    response, loop_count
+                                )
                         # Check and execute callable tools
                         if exists(self.tools):
                             self.tool_execution_retry(
