@@ -446,7 +446,6 @@ class SwarmRouter:
             description=self.description,
             model_name=self.council_judge_model_name,
             output_type=self.output_type,
-            base_agent=self.agents[0] if self.agents else None,
         )
 
     def _create_interactive_group_chat(self, *args, **kwargs):
@@ -704,17 +703,7 @@ class SwarmRouter:
         )
 
         try:
-            if self.swarm_type == "CouncilAsAJudge":
-                result = self.swarm.run(
-                    task=task,
-                    img=img,
-                    imgs=imgs,
-                    model_response=model_response,
-                    *args,
-                    **kwargs,
-                )
-            else:
-                result = self.swarm.run(task=task, *args, **kwargs)
+            result = self.swarm.run(task=task, *args, **kwargs)
 
             log_execution(
                 swarm_id=self.id,

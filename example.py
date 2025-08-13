@@ -33,14 +33,13 @@ agent = Agent(
     - Performance attribution
     
     You communicate in precise, technical terms while maintaining clarity for stakeholders.""",
-    model_name="gpt-4.1",
+    model_name="claude-sonnet-4-20250514",
     dynamic_temperature_enabled=True,
     output_type="str-all-except-first",
     max_loops="auto",
     interactive=True,
     no_reasoning_prompt=True,
     streaming_on=True,
-    # dashboard=True
 )
 
 out = agent.run(

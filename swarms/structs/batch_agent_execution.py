@@ -1,11 +1,16 @@
+import concurrent.futures
 from swarms.structs.agent import Agent
-from typing import List
+from typing import List, Union, Callable
+import os
 from swarms.utils.formatter import formatter
+from loguru import logger
+import traceback
 
 
 def batch_agent_execution(
-    agents: List[Agent],
-    tasks: List[str],
+    agents: List[Union[Agent, Callable]],
+    tasks: List[str] = None,
+    imgs: List[str] = None,
 ):
     """
     Execute a batch of agents on a list of tasks concurrently.
@@ -20,45 +25,58 @@ def batch_agent_execution(
     Raises:
         ValueError: If number of agents doesn't match number of tasks
     """
-    if len(agents) != len(tasks):
-        raise ValueError(
-            "Number of agents must match number of tasks"
+    try:
+
+        logger.info(
+            f"Executing {len(agents)} agents on {len(tasks)} tasks"
         )
 
-    import concurrent.futures
-    import multiprocessing
+        if len(agents) != len(tasks):
+            raise ValueError(
+                "Number of agents must match number of tasks"
+            )
 
-    results = []
+        results = []
 
-    # Calculate max workers as 90% of available CPU cores
-    max_workers = max(1, int(multiprocessing.cpu_count() * 0.9))
+        # Calculate max workers as 90% of available CPU cores
+        max_workers = max(1, int(os.cpu_count() * 0.9))
 
-    formatter.print_panel(
-        f"Executing {len(agents)} agents on {len(tasks)} tasks using {max_workers} workers"
-    )
+        formatter.print_panel(
+            f"Executing {len(agents)} agents on {len(tasks)} tasks using {max_workers} workers"
+        )
 
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=max_workers
-    ) as executor:
-        # Submit all tasks to the executor
-        future_to_task = {
-            executor.submit(agent.run, task): (agent, task)
-            for agent, task in zip(agents, tasks)
-        }
-
-        # Collect results as they complete
-        for future in concurrent.futures.as_completed(future_to_task):
-            agent, task = future_to_task[future]
-            try:
-                result = future.result()
-                results.append(result)
-            except Exception as e:
-                print(
-                    f"Task failed for agent {agent.agent_name}: {str(e)}"
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
+            # Submit all tasks to the executor
+            future_to_task = {
+                executor.submit(agent.run, task, imgs): (
+                    agent,
+                    task,
+                    imgs,
                 )
-                results.append(None)
+                for agent, task, imgs in zip(agents, tasks, imgs)
+            }
 
-        # Wait for all futures to complete before returning
-        concurrent.futures.wait(future_to_task.keys())
+            # Collect results as they complete
+            for future in concurrent.futures.as_completed(
+                future_to_task
+            ):
+                agent, task = future_to_task[future]
+                try:
+                    result = future.result()
+                    results.append(result)
+                except Exception as e:
+                    print(
+                        f"Task failed for agent {agent.agent_name}: {str(e)}"
+                    )
+                    results.append(None)
 
-    return results
+            # Wait for all futures to complete before returning
+            concurrent.futures.wait(future_to_task.keys())
+
+        return results
+    except Exception as e:
+        log = f"Batch agent execution failed Error: {str(e)} Traceback: {traceback.format_exc()}"
+        logger.error(log)
+        raise e

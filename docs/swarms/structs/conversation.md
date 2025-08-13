@@ -6,96 +6,33 @@ The `Conversation` class is a powerful and flexible tool for managing conversati
 
 ### Key Features
 
-- **Multiple Storage Backends**: Support for various storage solutions:
-  - In-memory: Fast, temporary storage for testing and development
-  - Supabase: PostgreSQL-based cloud storage with real-time capabilities
-  - Redis: High-performance caching and persistence
-  - SQLite: Local file-based storage
-  - DuckDB: Analytical workloads and columnar storage
-  - Pulsar: Event streaming for distributed systems
-  - Mem0: Memory-based storage with mem0 integration
-
-- **Token Management**:
-  - Built-in token counting with configurable models
-  - Automatic token tracking for input/output messages
-  - Token usage analytics and reporting
-  - Context length management
-
-- **Metadata and Categories**:
-  - Support for message metadata
-  - Message categorization (input/output)
-  - Role-based message tracking
-  - Custom message IDs
-
-- **Data Export/Import**:
-  - JSON and YAML export formats
-  - Automatic saving and loading
-  - Conversation history management
-  - Batch operations support
-
-- **Advanced Features**:
-  - Message search and filtering
-  - Conversation analytics
-  - Multi-agent support
-  - Error handling and fallbacks
-  - Type hints and validation
+| Feature Category            | Features / Description                                                                                      |
+|----------------------------|-------------------------------------------------------------------------------------------------------------|
+| **Multiple Storage Backends** | - In-memory: Fast, temporary storage for testing and development<br>- Supabase: PostgreSQL-based cloud storage with real-time capabilities<br>- Redis: High-performance caching and persistence<br>- SQLite: Local file-based storage<br>- DuckDB: Analytical workloads and columnar storage<br>- Pulsar: Event streaming for distributed systems<br>- Mem0: Memory-based storage with mem0 integration |
+| **Token Management**        | - Built-in token counting with configurable models<br>- Automatic token tracking for input/output messages<br>- Token usage analytics and reporting<br>- Context length management |
+| **Metadata and Categories** | - Support for message metadata<br>- Message categorization (input/output)<br>- Role-based message tracking<br>- Custom message IDs |
+| **Data Export/Import**      | - JSON and YAML export formats<br>- Automatic saving and loading<br>- Conversation history management<br>- Batch operations support |
+| **Advanced Features**       | - Message search and filtering<br>- Conversation analytics<br>- Multi-agent support<br>- Error handling and fallbacks<br>- Type hints and validation |
 
 ### Use Cases
 
-1. **Chatbot Development**:
-   - Store and manage conversation history
-   - Track token usage and context length
-   - Analyze conversation patterns
-
-2. **Multi-Agent Systems**:
-   - Coordinate multiple AI agents
-   - Track agent interactions
-   - Store agent outputs and metadata
-
-3. **Analytics Applications**:
-   - Track conversation metrics
-   - Generate usage reports
-   - Analyze user interactions
-
-4. **Production Systems**:
-   - Persistent storage with various backends
-   - Error handling and recovery
-   - Scalable conversation management
-
-5. **Development and Testing**:
-   - Fast in-memory storage
-   - Debugging support
-   - Easy export/import of test data
+| Use Case                   | Features / Description                                                                                  |
+|----------------------------|--------------------------------------------------------------------------------------------------------|
+| **Chatbot Development**    | - Store and manage conversation history<br>- Track token usage and context length<br>- Analyze conversation patterns |
+| **Multi-Agent Systems**    | - Coordinate multiple AI agents<br>- Track agent interactions<br>- Store agent outputs and metadata    |
+| **Analytics Applications** | - Track conversation metrics<br>- Generate usage reports<br>- Analyze user interactions                |
+| **Production Systems**     | - Persistent storage with various backends<br>- Error handling and recovery<br>- Scalable conversation management |
+| **Development and Testing**| - Fast in-memory storage<br>- Debugging support<br>- Easy export/import of test data                   |
 
 ### Best Practices
 
-1. **Storage Selection**:
-   - Use in-memory for testing and development
-   - Choose Supabase for multi-user cloud applications
-   - Use Redis for high-performance requirements
-   - Select SQLite for single-user local applications
-   - Pick DuckDB for analytical workloads
-   - Opt for Pulsar in distributed systems
-
-2. **Token Management**:
-   - Enable token counting for production use
-   - Set appropriate context lengths
-   - Monitor token usage with export_and_count_categories()
-
-3. **Error Handling**:
-   - Implement proper fallback mechanisms
-   - Use type hints for better code reliability
-   - Monitor and log errors appropriately
-
-4. **Data Management**:
-   - Use appropriate export formats (JSON/YAML)
-   - Implement regular backup strategies
-   - Clean up old conversations when needed
-
-5. **Security**:
-   - Use environment variables for sensitive credentials
-   - Implement proper access controls
-   - Validate input data
+| Category            | Best Practices                                                                                                         |
+|---------------------|------------------------------------------------------------------------------------------------------------------------|
+| **Storage Selection** | - Use in-memory for testing and development<br>- Choose Supabase for multi-user cloud applications<br>- Use Redis for high-performance requirements<br>- Select SQLite for single-user local applications<br>- Pick DuckDB for analytical workloads<br>- Opt for Pulsar in distributed systems |
+| **Token Management** | - Enable token counting for production use<br>- Set appropriate context lengths<br>- Monitor token usage with `export_and_count_categories()` |
+| **Error Handling**   | - Implement proper fallback mechanisms<br>- Use type hints for better code reliability<br>- Monitor and log errors appropriately |
+| **Data Management**  | - Use appropriate export formats (JSON/YAML)<br>- Implement regular backup strategies<br>- Clean up old conversations when needed |
+| **Security**         | - Use environment variables for sensitive credentials<br>- Implement proper access controls<br>- Validate input data    |
 
 ## Table of Contents
 
@@ -113,13 +50,15 @@ The `Conversation` class is designed to manage conversations by keeping track of
 
 **New in this version**: The class now supports multiple storage backends for persistent conversation storage:
 
-- **"in-memory"**: Default memory-based storage (no persistence)
-- **"mem0"**: Memory-based storage with mem0 integration (requires: `pip install mem0ai`)
-- **"supabase"**: PostgreSQL-based storage using Supabase (requires: `pip install supabase`)
-- **"redis"**: Redis-based storage (requires: `pip install redis`)
-- **"sqlite"**: SQLite-based storage (built-in to Python)
-- **"duckdb"**: DuckDB-based storage (requires: `pip install duckdb`)
-- **"pulsar"**: Apache Pulsar messaging backend (requires: `pip install pulsar-client`)
+| Backend      | Description                                                                                                 | Requirements                      |
+|--------------|-------------------------------------------------------------------------------------------------------------|------------------------------------|
+| **in-memory**| Default memory-based storage (no persistence)                                                               | None (built-in)                    |
+| **mem0**     | Memory-based storage with mem0 integration                                                                  | `pip install mem0ai`               |
+| **supabase** | PostgreSQL-based storage using Supabase                                                                     | `pip install supabase`             |
+| **redis**    | Redis-based storage                                                                                         | `pip install redis`                |
+| **sqlite**   | SQLite-based storage (local file)                                                                           | None (built-in)                    |
+| **duckdb**   | DuckDB-based storage (analytical workloads, columnar storage)                                               | `pip install duckdb`               |
+| **pulsar**   | Apache Pulsar messaging backend                                                                             | `pip install pulsar-client`        |
 
 All backends use **lazy loading** - database dependencies are only imported when the specific backend is instantiated. Each backend provides helpful error messages if required packages are not installed.
 
@@ -132,7 +71,6 @@ All backends use **lazy loading** - database dependencies are only imported when
 | system_prompt | Optional[str] | System prompt for the conversation |
 | time_enabled | bool | Flag to enable time tracking for messages |
 | autosave | bool | Flag to enable automatic saving |
-| save_enabled | bool | Flag to control if saving is enabled |
 | save_filepath | str | File path for saving conversation history |
 | load_filepath | str | File path for loading conversation history |
 | conversation_history | list | List storing conversation messages |

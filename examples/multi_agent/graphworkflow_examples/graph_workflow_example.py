@@ -1,5 +1,4 @@
-from swarms import Agent
-from swarms.structs.graph_workflow import GraphWorkflow
+from swarms import Agent, GraphWorkflow
 from swarms.prompts.multi_agent_collab_prompt import (
     MULTI_AGENT_COLLAB_PROMPT_TWO,
 )
@@ -11,6 +10,7 @@ agent1 = Agent(
     max_loops=1,
     system_prompt=MULTI_AGENT_COLLAB_PROMPT_TWO,  # Set collaboration prompt
 )
+
 agent2 = Agent(
     agent_name="ResearchAgent2",
     model_name="gpt-4.1",
@@ -19,7 +19,11 @@ agent2 = Agent(
 )
 
 # Build the workflow with only agents as nodes
-workflow = GraphWorkflow()
+workflow = GraphWorkflow(
+    name="Research Workflow",
+    description="A workflow for researching the best arbitrage trading strategies for altcoins",
+    auto_compile=True,
+)
 workflow.add_node(agent1)
 workflow.add_node(agent2)
 
@@ -27,27 +31,15 @@ workflow.add_node(agent2)
 workflow.add_edge(agent1.agent_name, agent2.agent_name)
 
 # Visualize the workflow using Graphviz
-print("\n📊 Creating workflow visualization...")
-try:
-    viz_output = workflow.visualize(
-        output_path="simple_workflow_graph",
-        format="png",
-        view=True,  # Auto-open the generated image
-        show_parallel_patterns=True,
-    )
-    print(f"✅ Workflow visualization saved to: {viz_output}")
-except Exception as e:
-    print(f"⚠️ Graphviz not available, using text visualization: {e}")
-    workflow.visualize()
+workflow.visualize()
+
+workflow.compile()
 
 # Export workflow to JSON
 workflow_json = workflow.to_json()
-print(
-    f"\n💾 Workflow exported to JSON ({len(workflow_json)} characters)"
-)
+print(workflow_json)
 
 # Run the workflow and print results
-print("\n🚀 Executing workflow...")
 results = workflow.run(
     task="What are the best arbitrage trading strategies for altcoins? Give me research papers and articles on the topic."
 )

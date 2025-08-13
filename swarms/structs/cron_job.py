@@ -10,7 +10,6 @@ from loguru import logger
 # from swarms import Agent
 
 
-
 class CronJobError(Exception):
     """Base exception class for CronJob errors."""
 
