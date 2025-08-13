@@ -1188,9 +1188,15 @@ class Agent:
                                     f"[Structured Output] [Time: {time.strftime('%H:%M:%S')}] \n\n {json.dumps(response, indent=4)}",
                                     loop_count,
                                 )
-                            elif self.streaming_on:
-                                pass
-                            else:
+                            elif self.streaming_on and isinstance(response, dict) and response.get("choices"):
+                                # Handle streaming tool calls structured output  
+                                tool_calls = response.get("choices", [{}])[0].get("message", {}).get("tool_calls", [])
+                                if tool_calls:
+                                    self.pretty_print(
+                                        f"[Structured Output] [Time: {time.strftime('%H:%M:%S')}] \n\n {json.dumps(tool_calls, indent=4)}",
+                                        loop_count,
+                                    )
+                            elif not self.streaming_on:
                                 self.pretty_print(
                                     response, loop_count
                                 )

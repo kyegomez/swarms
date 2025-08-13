@@ -3109,6 +3109,7 @@ class BaseTool(BaseModel):
                             "id": tc.get("id")
                         })
                 
+                
                 return {"choices": [{"message": {"tool_calls": formatted_calls}}]} if formatted_calls else text_response
             
             return text_response
