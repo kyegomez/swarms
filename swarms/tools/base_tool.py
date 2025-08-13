@@ -16,6 +16,7 @@ from swarms.tools.pydantic_to_json import (
 )
 from swarms.tools.tool_parse_exec import parse_and_execute_json
 from swarms.utils.loguru_logger import initialize_logger
+from loguru import logger as loguru_logger
 
 logger = initialize_logger(log_folder="base_tool")
 
@@ -3083,6 +3084,14 @@ class BaseTool(BaseModel):
         Returns:
             Union[str, Dict[str, Any]]: Processed response (text or tool calls)
         """
+        # Validate response
+        if not response:
+            logger.warning("Empty streaming response received")
+            return ""
+            
+        if not hasattr(response, "__iter__"):
+            logger.warning("Non-iterable response received for streaming")
+            return str(response) if response else ""
         if hasattr(llm, 'parse_streaming_chunks_with_tools'):
             text_response, tool_calls = llm.parse_streaming_chunks_with_tools(
                 stream=response,
@@ -3116,12 +3125,16 @@ class BaseTool(BaseModel):
         else:
             # Simple fallback streaming
             chunks = []
-            for chunk in response:
-                if hasattr(chunk, "choices") and chunk.choices and chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
-                    chunks.append(content)
-                    if print_on:
-                        print(content, end="", flush=True)
-            if print_on and chunks:
-                print()
-            return "".join(chunks)
+            try:
+                for chunk in response:
+                    if hasattr(chunk, "choices") and chunk.choices and chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        chunks.append(content)
+                        if print_on:
+                            print(content, end="", flush=True)
+                if print_on and chunks:
+                    print()
+                return "".join(chunks)
+            except Exception as e:
+                logger.error(f"Error in fallback streaming for agent {agent_name}: {e}")
+                return "".join(chunks) if chunks else ""

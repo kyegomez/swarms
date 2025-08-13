@@ -3103,7 +3103,9 @@ class Agent:
                     verbose=self.verbose,
                 )
             else:
-                tool_response = temp_llm.run(tool_response)
+                tool_response = temp_llm.run(
+                    f"Please analyze and summarize the following tool execution output:\n\n{output}"
+                )
                     
             # Add the tool response to memory
             self.short_memory.add(
