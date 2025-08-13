@@ -714,6 +714,7 @@ Explore comprehensive examples and tutorials to learn how to use Swarms effectiv
 
 | Application | Description | Link |
 |-------------|-------------|------|
+| Advanced Research System | Multi-agent research system inspired by Anthropic's research methodology | [AdvancedResearch](https://github.com/The-Swarm-Corporation/AdvancedResearch) |
 | Swarms DAO | Decentralized autonomous organization | [Swarms DAO](https://docs.swarms.world/en/latest/swarms/examples/swarms_dao/) |
 | Browser Agents | Web automation with agents | [Browser Agents](https://docs.swarms.world/en/latest/swarms/examples/swarms_of_browser_agents/) |
 | VLLM Agents | High-performance model serving | [VLLM Agents](https://docs.swarms.world/en/latest/swarms/examples/vllm/) |
