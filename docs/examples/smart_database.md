@@ -57,7 +57,7 @@ Database Director (Coordinator)
 ## Install
 
 ```bash
-pip3 install -U swarms sqlite3 loguru
+pip install -U swarms sqlite3 loguru
 ```
 
 ## ENV
@@ -69,6 +69,8 @@ OPENAI_API_KEY=""
 ```
 
 ## Code 
+
+- Make a file called `smart_database_swarm.py`
 
 ```python
 import sqlite3
@@ -1058,4 +1060,4 @@ if __name__ == "__main__":
 ```
 
 
-- [Full Example Code Link]()
+- Run the file with `smart_database_swarm.py`
