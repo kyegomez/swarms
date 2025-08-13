@@ -145,7 +145,7 @@ SWARMS_LOG_LEVEL=INFO
 
 | Community Channel           | Description                                                                           | Link                                                                                  |
 |-----------------------------|---------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
-| Discord Community           | Join our active developer community for real-time support and discussions             | [Join Discord](https://discord.gg/jM3Z6M9uMq)                                         |
+| Discord Community           | Join our active developer community for real-time support and discussions             | [Join Discord](https://discord.gg/EamjgSaEQf)                                         |
 | GitHub Discussions          | Ask questions and share ideas                                                         | [GitHub Discussions](https://github.com/The-Swarm-Corporation/swarms/discussions)     |
 | Twitter/X                   | Follow for updates and announcements                                                  | [Twitter/X](https://x.com/swarms_corp)                                                |
 

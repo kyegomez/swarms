@@ -5,7 +5,7 @@ Welcome to the Community Resources page! Here you'll find a curated collection o
 These resources cover a wide range of topics, including building your first agent, advanced multi-agent architectures, API integrations, and using Swarms with both Python and Rust. Whether you're a beginner or an experienced developer, these links will help you deepen your understanding and accelerate your development with the Swarms framework.
 
 
-## Python
+## Swarms Python
 
 | Title | Description | Link |
 |-------|-------------|------|
@@ -21,7 +21,7 @@ These resources cover a wide range of topics, including building your first agen
 | **Introducing GPT-4o Mini: The Future of Cost-Efficient AI Intelligence** | Discover the capabilities and advantages of GPT-4o Mini for building cost-effective, intelligent agents. | [Read Article](https://medium.com/@kyeg/introducing-gpt-4o-mini-the-future-of-cost-efficient-ai-intelligence-a3e3fe78d939) |
 
 
-### API
+### Swarms API
 
 | Title | Description | Link |
 |-------|-------------|------|
@@ -34,3 +34,8 @@ These resources cover a wide range of topics, including building your first agen
 |-------|-------------|------|
 | **Building Medical Multi-Agent Systems with Swarms Rust: A Comprehensive Tutorial** | Comprehensive tutorial for developing medical multi-agent systems using Swarms Rust. | [Read Article](https://medium.com/@kyeg/building-medical-multi-agent-systems-with-swarms-rust-a-comprehensive-tutorial-1e8e060601f9) |
 | **Building Production-Grade Agentic Applications with Swarms Rust: A Comprehensive Tutorial** | Learn to build robust, production-ready agentic applications with Swarms Rust. | [Read Article](https://medium.com/@kyeg/building-production-grade-agentic-applications-with-swarms-rust-a-comprehensive-tutorial-bb567c02340f) |
+
+
+### Youtube Videos
+
+- [Swarms Playlist by Swarms Founder Kye Gomez](https://www.youtube.com/watch?v=FzbBRbaqsG8&list=PLphplB7PcU1atnmrUl7lJ5bmGXR7R4lhA)
