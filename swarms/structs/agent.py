@@ -1134,6 +1134,7 @@ class Agent:
                 success = False
                 while attempt < self.retry_attempts and not success:
                     try:
+
                         if img is not None:
                             response = self.call_llm(
                                 task=task_prompt,
@@ -1203,8 +1204,12 @@ class Agent:
                                     f"LLM returned None response in loop {loop_count}, skipping MCP tool handling"
                                 )
 
-                        success = True
+                        # self.sentiment_and_evaluator(response)
+
+                        success = True  # Mark as successful to exit the retry loop
+
                     except Exception as e:
+
                         if self.autosave is True:
                             log_agent_data(self.to_dict())
                             self.save()
@@ -2226,11 +2231,11 @@ class Agent:
         self, response: str, delay: float = 0.001
     ) -> None:
         """
-        Streams the response token by token using centralized wrapper logic.
+        Streams the response token by token.
 
         Args:
             response (str): The response text to be streamed.
-            delay (float, optional): Delay in seconds between printing each token. Default is 0.001 seconds.
+            delay (float, optional): Delay in seconds between printing each token. Default is 0.1 seconds.
 
         Raises:
             ValueError: If the response is not provided.
