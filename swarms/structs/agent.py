@@ -826,7 +826,7 @@ class Agent:
                 additional_args.update(
                     {
                         "tools_list_dictionary": tools_list,
-                        "tool_choice": "auto",
+                        "tool_choice": "auto",  # Allow the model to choose whether to use tools
                         "parallel_tool_calls": parallel_tool_calls,
                     }
                 )
@@ -1242,15 +1242,21 @@ class Agent:
                             or exists(self.mcp_config)
                             or exists(self.mcp_urls)
                         ):
-                            # Only handle MCP tools if response is not None
-                            if response is not None:
-                                self.mcp_tool_handling(
-                                    response=response,
-                                    current_loop=loop_count,
-                                )
+                            # Only handle MCP tools if response is not None and not empty
+                            if response is not None and response != "":
+                                # Additional validation for response content
+                                if isinstance(response, str) and not response.strip():
+                                    logger.warning(
+                                        f"LLM returned empty string response in loop {loop_count}, skipping MCP tool handling"
+                                    )
+                                else:
+                                    self.mcp_tool_handling(
+                                        response=response,
+                                        current_loop=loop_count,
+                                    )
                             else:
                                 logger.warning(
-                                    f"LLM returned None response in loop {loop_count}, skipping MCP tool handling"
+                                    f"LLM returned None or empty response in loop {loop_count}, skipping MCP tool handling"
                                 )
 
                         # self.sentiment_and_evaluator(response)
@@ -3030,6 +3036,15 @@ class Agent:
             current_loop: The current iteration loop number for logging
         """
         try:
+            # Validate response before processing
+            if response is None or response == "":
+                logger.warning(f"Empty response received in loop {current_loop}, skipping MCP tool handling")
+                return
+            
+            if isinstance(response, str) and not response.strip():
+                logger.warning(f"Empty string response received in loop {current_loop}, skipping MCP tool handling")
+                return
+            
             # Check if streaming is enabled and available
             use_streaming = (
                 self.mcp_streaming_enabled 
