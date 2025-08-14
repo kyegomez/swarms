@@ -214,14 +214,32 @@ class LiteLLM:
 
     def output_for_tools(self, response: any):
         if self.mcp_call is True:
-            out = response.choices[0].message.tool_calls[0].function
-            output = {
-                "function": {
-                    "name": out.name,
-                    "arguments": out.arguments,
+            # Check if there are any tool calls in the response
+            if (hasattr(response, 'choices') and 
+                response.choices and 
+                hasattr(response.choices[0], 'message') and
+                hasattr(response.choices[0].message, 'tool_calls') and
+                response.choices[0].message.tool_calls):
+                
+                # Extract the first tool call
+                out = response.choices[0].message.tool_calls[0].function
+                output = {
+                    "function": {
+                        "name": out.name,
+                        "arguments": out.arguments,
+                    }
                 }
-            }
-            return output
+                return output
+            else:
+                # No tool calls present, return the regular content
+                if (hasattr(response, 'choices') and 
+                    response.choices and 
+                    hasattr(response.choices[0], 'message') and
+                    hasattr(response.choices[0].message, 'content')):
+                    return response.choices[0].message.content
+                else:
+                    # Fallback: return the response as is
+                    return response
         else:
             out = response.choices[0].message.tool_calls
 
