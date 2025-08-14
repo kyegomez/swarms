@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Dict, List, Any, Optional, Literal
+from typing import Dict, List, Any, Optional, Literal, Callable
 
 
 class MCPConnection(BaseModel):
@@ -68,6 +68,11 @@ class MCPConnection(BaseModel):
     streaming_timeout: Optional[int] = Field(
         default=None,
         description="Timeout for streaming operations in seconds"
+    )
+    
+    streaming_callback: Optional[Callable[[str], None]] = Field(
+        default=None,
+        description="Callback function for streaming chunks"
     )
     
     # Tool configurations
