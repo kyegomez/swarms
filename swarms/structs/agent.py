@@ -88,6 +88,22 @@ from swarms.utils.output_types import OutputType
 from swarms.utils.pdf_to_text import pdf_to_text
 
 
+class StreamingToolResponse:
+    """
+    Response wrapper that preserves both content and tool calls from streaming responses.
+    This enables tool execution when streaming is enabled.
+    """
+    def __init__(self, content: str, tool_calls: List[Any] = None):
+        self.content = content
+        self.tool_calls = tool_calls or []
+    
+    def __str__(self):
+        return self.content
+    
+    def __repr__(self):
+        return f"StreamingToolResponse(content='{self.content[:50]}...', tool_calls={len(self.tool_calls)} calls)"
+
+
 def stop_when_repeats(response: str) -> bool:
     # Stop if the word stop appears in the response
     return "stop" in response.lower()
@@ -2600,6 +2616,7 @@ class Agent:
                     if streaming_callback is not None:
                         # Real-time callback streaming for dashboard integration
                         chunks = []
+                        tool_calls = []
                         for chunk in streaming_response:
                             if (
                                 hasattr(chunk, "choices")
@@ -2611,11 +2628,25 @@ class Agent:
                                 chunks.append(content)
                                 # Call the streaming callback with the new chunk
                                 streaming_callback(content)
+                            # Preserve tool calls from streaming chunks
+                            try:
+                                if (hasattr(chunk, "choices") and 
+                                    len(chunk.choices) > 0 and
+                                    hasattr(chunk.choices[0], "delta") and
+                                    hasattr(chunk.choices[0].delta, "tool_calls") and 
+                                    chunk.choices[0].delta.tool_calls):
+                                    tool_calls.extend(chunk.choices[0].delta.tool_calls)
+                            except (AttributeError, IndexError) as e:
+                                logger.debug(f"Could not extract tool calls from chunk: {e}")
                         complete_response = "".join(chunks)
+                        # Store tool calls for later execution if they exist
+                        if tool_calls:
+                            complete_response = StreamingToolResponse(complete_response, tool_calls)
                     # Check print_on parameter for different streaming behaviors
                     elif self.print_on is False:
                         # Silent streaming - no printing, just collect chunks
                         chunks = []
+                        tool_calls = []
                         for chunk in streaming_response:
                             if (
                                 hasattr(chunk, "choices")
@@ -2625,10 +2656,24 @@ class Agent:
                                     0
                                 ].delta.content
                                 chunks.append(content)
+                            # Preserve tool calls from streaming chunks
+                            try:
+                                if (hasattr(chunk, "choices") and 
+                                    len(chunk.choices) > 0 and
+                                    hasattr(chunk.choices[0], "delta") and
+                                    hasattr(chunk.choices[0].delta, "tool_calls") and 
+                                    chunk.choices[0].delta.tool_calls):
+                                    tool_calls.extend(chunk.choices[0].delta.tool_calls)
+                            except (AttributeError, IndexError) as e:
+                                logger.debug(f"Could not extract tool calls from chunk: {e}")
                         complete_response = "".join(chunks)
+                        # Store tool calls for later execution if they exist
+                        if tool_calls:
+                            complete_response = StreamingToolResponse(complete_response, tool_calls)
                     else:
-                        # Collect chunks for conversation saving
+                        # Collect chunks for conversation saving and preserve tool calls
                         collected_chunks = []
+                        tool_calls = []
 
                         def on_chunk_received(chunk: str):
                             """Callback to collect chunks as they arrive"""
@@ -2640,14 +2685,33 @@ class Agent:
                                     f"Streaming chunk received: {chunk[:50]}..."
                                 )
 
+                        # Create a tool-aware streaming processor to preserve tool calls
+                        def tool_aware_streaming(stream_response):
+                            for chunk in stream_response:
+                                # Preserve tool calls from streaming chunks
+                                try:
+                                    if (hasattr(chunk, "choices") and 
+                                        len(chunk.choices) > 0 and
+                                        hasattr(chunk.choices[0], "delta") and
+                                        hasattr(chunk.choices[0].delta, "tool_calls") and 
+                                        chunk.choices[0].delta.tool_calls):
+                                        tool_calls.extend(chunk.choices[0].delta.tool_calls)
+                                except (AttributeError, IndexError) as e:
+                                    logger.debug(f"Could not extract tool calls from chunk: {e}")
+                                yield chunk
+
                         # Use the streaming panel to display and collect the response
                         complete_response = formatter.print_streaming_panel(
-                            streaming_response,
+                            tool_aware_streaming(streaming_response),
                             title=f"🤖 Agent: {self.agent_name} Loops: {current_loop}",
                             style=None,  # Use random color like non-streaming approach
                             collect_chunks=True,
                             on_chunk_callback=on_chunk_received,
                         )
+                        
+                        # Store tool calls for later execution if they exist
+                        if tool_calls:
+                            complete_response = StreamingToolResponse(complete_response, tool_calls)
 
                     # Restore original stream setting
                     self.llm.stream = original_stream
@@ -3080,19 +3144,31 @@ class Agent:
             )
             return
 
+        # Add tool execution logging
+        logger.info(f"Starting tool execution for agent '{self.agent_name}' in loop {loop_count}")
+        
         try:
             output = self.tool_struct.execute_function_calls_from_api_response(
                 response
             )
         except Exception as e:
+            # Log the initial attempt failure
+            logger.warning(f"First attempt at tool execution failed: {e}. Retrying...")
             # Retry the tool call
-            output = self.tool_struct.execute_function_calls_from_api_response(
-                response
-            )
+            try:
+                output = self.tool_struct.execute_function_calls_from_api_response(
+                    response
+                )
+            except Exception as retry_error:
+                logger.error(f"Tool execution failed after retry: {retry_error}")
+                if output is None:
+                    raise retry_error
 
-            if output is None:
-                logger.error(f"Error executing tools: {e}")
-                raise e
+        # Log successful tool execution
+        if output is not None:
+            logger.info(f"Tool execution successful for agent '{self.agent_name}' in loop {loop_count}. Output length: {len(str(output)) if output else 0}")
+        else:
+            logger.warning(f"Tool execution completed but returned None output for agent '{self.agent_name}' in loop {loop_count}")
 
         self.short_memory.add(
             role="Tool Executor",
