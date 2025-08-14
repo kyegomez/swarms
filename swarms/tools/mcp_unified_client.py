@@ -763,6 +763,27 @@ async def example_unified_usage():
         logger.error(f"Error getting tools: {e}")
 
 
+# Export constants for availability checking
+MCP_STREAMING_AVAILABLE = MCP_AVAILABLE and STREAMABLE_HTTP_AVAILABLE
+
+# Export all public functions and classes
+__all__ = [
+    "MCPUnifiedClient",
+    "UnifiedTransportConfig", 
+    "create_auto_config",
+    "create_http_config",
+    "create_streamable_http_config",
+    "create_stdio_config",
+    "create_sse_config",
+    "MCP_STREAMING_AVAILABLE",
+    "STREAMABLE_HTTP_AVAILABLE",
+    "HTTPX_AVAILABLE",
+    "MCP_AVAILABLE",
+    "call_tool_streaming_sync",
+    "execute_tool_call_streaming_unified",
+]
+
+
 if __name__ == "__main__":
     # Run example
     asyncio.run(example_unified_usage()) 
