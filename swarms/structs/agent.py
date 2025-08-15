@@ -85,6 +85,7 @@ try:
         UnifiedTransportConfig,
         call_tool_streaming,
         call_tool_streaming_sync,
+        call_tool_streaming_sync_advanced,
         execute_tool_call_streaming_unified,
     )
     MCP_STREAMING_AVAILABLE = True
@@ -3107,7 +3108,7 @@ class Agent:
                         style="blue"
                     )
                 
-                tool_response = call_tool_streaming_sync(
+                tool_response = call_tool_streaming_sync_advanced(
                     response=response,
                     server_path=self.mcp_url,
                     config=config
@@ -3122,21 +3123,64 @@ class Agent:
                         style="blue"
                     )
                 
-                tool_response = call_tool_streaming_sync(
+                tool_response = call_tool_streaming_sync_advanced(
                     response=response,
                     connection=self.mcp_config,
                     config=config
                 )
                 
             elif exists(self.mcp_urls):
-                # Multiple MCP URLs - use traditional method for now
-                # (streaming for multiple servers not yet implemented)
-                logger.warning("Streaming not yet supported for multiple MCP servers, falling back to traditional method")
-                tool_response = execute_multiple_tools_on_multiple_mcp_servers_sync(
-                    responses=response,
-                    urls=self.mcp_urls,
-                    output_type="json",
-                )
+                # Multiple MCP URLs - use advanced multiple server functionality
+                if self.print_on:
+                    formatter.print_panel(
+                        f"Executing MCP tools on multiple servers with streaming: {self.mcp_urls}",
+                        title="[MCP] Multi-Server Streaming Tool Execution",
+                        style="blue"
+                    )
+                
+                # Convert URLs to configs
+                server_configs = [
+                    UnifiedTransportConfig(
+                        url=url,
+                        transport_type="auto",
+                        auto_detect=True,
+                        enable_streaming=True,
+                        streaming_timeout=self.mcp_streaming_timeout,
+                        streaming_callback=self.mcp_streaming_callback
+                    ) for url in self.mcp_urls
+                ]
+                
+                # Extract tool calls from response
+                if isinstance(response, str):
+                    from swarms.tools.mcp_unified_client import _extract_tool_calls_from_response_advanced
+                    tool_calls = _extract_tool_calls_from_response_advanced(response)
+                else:
+                    tool_calls = [{"name": "default_tool", "arguments": {}}]
+                
+                # Execute on multiple servers
+                all_results = []
+                for tool_call in tool_calls:
+                    tool_name = tool_call.get("name", "default_tool")
+                    arguments = tool_call.get("arguments", {})
+                    
+                    try:
+                        from swarms.tools.mcp_unified_client import execute_tools_on_multiple_servers_unified_sync
+                        results = execute_tools_on_multiple_servers_unified_sync(
+                            server_configs=server_configs,
+                            tool_name=tool_name,
+                            arguments=arguments,
+                            max_concurrent=3
+                        )
+                        all_results.extend(results)
+                    except Exception as e:
+                        logger.error(f"Error executing tool {tool_name} on multiple servers: {e}")
+                        all_results.append({
+                            "error": str(e),
+                            "tool_name": tool_name,
+                            "arguments": arguments
+                        })
+                
+                tool_response = all_results
             else:
                 raise AgentMCPConnectionError(
                     "mcp_url must be either a string URL or MCPConnection object"
