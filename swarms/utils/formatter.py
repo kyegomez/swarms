@@ -27,12 +27,6 @@ dashboard_live = None
 # Create a spinner for loading animation
 spinner = Spinner("dots", style="yellow")
 
-# Global lock to ensure only a single Rich Live context is active at any moment.
-# Rich's Live render is **not** thread-safe; concurrent Live contexts on the same
-# console raise runtime errors. Using a module-level lock serialises access and
-# prevents crashes when multiple agents stream simultaneously in different
-# threads (e.g., in ConcurrentWorkflow).
-live_render_lock = threading.Lock()
 
 def choose_random_color():
     import random
@@ -314,7 +308,6 @@ class Formatter:
                         ):
                             # Add ONLY the new chunk to the Text object with random color style
                             chunk = part.choices[0].delta.content
-                            
                             streaming_text.append(
                                 chunk, style=text_style
                             )
