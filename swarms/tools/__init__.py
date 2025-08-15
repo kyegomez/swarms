@@ -40,6 +40,32 @@ from swarms.tools.tool_utils import (
     tool_find_by_name,
 )
 
+# MCP Streaming Support
+try:
+    from swarms.tools.mcp_unified_client import (
+        MCPUnifiedClient,
+        UnifiedTransportConfig,
+        create_auto_config,
+        create_http_config,
+        create_streamable_http_config,
+        create_stdio_config,
+        create_sse_config,
+    )
+    MCP_STREAMING_AVAILABLE = True
+    MCP_IMPORTS = [
+        "MCPUnifiedClient",
+        "UnifiedTransportConfig", 
+        "create_auto_config",
+        "create_http_config",
+        "create_streamable_http_config",
+        "create_stdio_config",
+        "create_sse_config",
+        "MCP_STREAMING_AVAILABLE",
+    ]
+except ImportError:
+    MCP_STREAMING_AVAILABLE = False
+    MCP_IMPORTS = []
+
 __all__ = [
     "scrape_tool_func_docs",
     "tool_find_by_name",
@@ -71,4 +97,4 @@ __all__ = [
     "_create_server_tool_mapping",
     "_create_server_tool_mapping_async",
     "_execute_tool_on_server",
-]
+] + MCP_IMPORTS
