@@ -723,7 +723,7 @@ graph TD
         - [Tutorials](https://docs.swarms.world/tutorials)
 
     === "💬 Community"
-        - [Discord Server](https://discord.gg/jM3Z6M9uMq)
+        - [Discord Server](https://discord.gg/EamjgSaEQf)
         - [GitHub Discussions](https://github.com/kyegomez/swarms/discussions)
 
     === "🔧 Development"
@@ -767,7 +767,7 @@ The MCP integration brings powerful external tool connectivity to Swarms agents,
 
 !!! tip "Stay Updated"
     
-    Join our [Discord community](https://discord.gg/jM3Z6M9uMq) to stay informed about new MCP features and connect with other developers building amazing agent applications.
+    Join our [Discord community](https://discord.gg/EamjgSaEQf) to stay informed about new MCP features and connect with other developers building amazing agent applications.
 
 ---
 

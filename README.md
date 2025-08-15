@@ -165,6 +165,24 @@ $ cd swarms
 $ pip install -e .
 ```
 
+### Using Docker
+
+The easiest way to get started with Swarms is using our pre-built Docker image:
+
+```bash
+# Pull and run the latest image
+$ docker pull kyegomez/swarms:latest
+$ docker run --rm kyegomez/swarms:latest python -c "import swarms; print('Swarms is ready!')"
+
+# Run interactively for development
+$ docker run -it --rm -v $(pwd):/app kyegomez/swarms:latest bash
+
+# Using docker-compose (recommended for development)
+$ docker-compose up -d
+```
+
+For more Docker options and advanced usage, see our [Docker documentation](/scripts/docker/DOCKER.md).
+
 ---
 
 ## Environment Configuration
@@ -714,6 +732,7 @@ Explore comprehensive examples and tutorials to learn how to use Swarms effectiv
 
 | Application | Description | Link |
 |-------------|-------------|------|
+| Advanced Research System | Multi-agent research system inspired by Anthropic's research methodology | [AdvancedResearch](https://github.com/The-Swarm-Corporation/AdvancedResearch) |
 | Swarms DAO | Decentralized autonomous organization | [Swarms DAO](https://docs.swarms.world/en/latest/swarms/examples/swarms_dao/) |
 | Browser Agents | Web automation with agents | [Browser Agents](https://docs.swarms.world/en/latest/swarms/examples/swarms_of_browser_agents/) |
 | VLLM Agents | High-performance model serving | [VLLM Agents](https://docs.swarms.world/en/latest/swarms/examples/vllm/) |

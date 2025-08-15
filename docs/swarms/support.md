@@ -18,7 +18,7 @@ The Swarms team is committed to providing exceptional technical support to help 
 | **Major Features (SIPs)** | New agent types, core changes, integrations | 1-2 weeks | [SIP Guidelines](protocol/sip.md) |
 | **Minor Features** | Small enhancements, straightforward additions | < 48 hours | [GitHub Issues](https://github.com/kyegomez/swarms/issues) |
 | **Private Issues** | Security concerns, enterprise consulting | < 4 hours | [Book Support Call](https://cal.com/swarms/swarms-technical-support?overlayCalendar=true) |
-| **Real-time Help** | Quick questions, community discussions | Immediate | [Discord Community](https://discord.gg/jM3Z6M9uMq) |
+| **Real-time Help** | Quick questions, community discussions | Immediate | [Discord Community](https://discord.gg/EamjgSaEQf) |
 | **Documentation** | Usage guides, examples, tutorials | Self-service | [docs.swarms.world](https://docs.swarms.world) |
 
 ---
@@ -197,7 +197,7 @@ Get instant help from our active community of developers and core team members.
 
 ### **Getting Help on Discord**
 
-1. **Join here**: [https://discord.gg/jM3Z6M9uMq](https://discord.gg/jM3Z6M9uMq)
+1. **Join here**: [https://discord.gg/EamjgSaEQf](https://discord.gg/EamjgSaEQf)
 
 2. **Read the rules** and introduce yourself in #general
 
@@ -368,7 +368,7 @@ Help improve support for everyone:
 | Urgency | Best Channel |
 |---------|-------------|
 | **Emergency** | [Book Immediate Call](https://cal.com/swarms/swarms-technical-support?overlayCalendar=true) |
-| **Urgent** | [Discord #technical-support](https://discord.gg/jM3Z6M9uMq) |
+| **Urgent** | [Discord #technical-support](https://discord.gg/EamjgSaEQf) |
 | **Standard** | [GitHub Issues](https://github.com/kyegomez/swarms/issues) |
 | **Major Features** | [SIP Guidelines](protocol/sip.md) |
 | **Minor Features** | [GitHub Issues](https://github.com/kyegomez/swarms/issues) |

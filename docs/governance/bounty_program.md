@@ -43,7 +43,7 @@ To ensure high-quality contributions and streamline the process, please adhere t
 ## Get Involved
 
 1. **Join the Community**:
-   - Become an active member of the Swarms community by joining our Discord server: [Join Now](https://discord.gg/jM3Z6M9uMq). The Discord server serves as a hub for discussions, updates, and support.
+   - Become an active member of the Swarms community by joining our Discord server: [Join Now](https://discord.gg/EamjgSaEQf). The Discord server serves as a hub for discussions, updates, and support.
 
 2. **Stay Updated**:
    - Keep track of the latest updates, announcements, and bounty opportunities by regularly checking the Discord channel and the GitHub repository.

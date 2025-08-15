@@ -96,7 +96,6 @@ from swarms.structs.swarming_architectures import (
     star_swarm,
 )
 
-
 __all__ = [
     "Agent",
     "BaseStructure",

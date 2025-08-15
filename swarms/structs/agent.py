@@ -27,9 +27,12 @@ from pydantic import BaseModel
 from swarms.agents.ape_agent import auto_generate_prompt
 from swarms.artifacts.main_artifact import Artifact
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
+from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
+from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
+from swarms.prompts.safety_prompt import SAFETY_PROMPT
 from swarms.prompts.tools import tool_sop_prompt
 from swarms.schemas.agent_mcp_errors import (
     AgentMCPConnectionError,
@@ -41,19 +44,30 @@ from swarms.schemas.base_schemas import (
     ChatCompletionResponseChoice,
     ChatMessageResponse,
 )
+from swarms.schemas.conversation_schema import ConversationSchema
 from swarms.schemas.llm_agent_schema import ModelConfigOrigin
+from swarms.schemas.mcp_schemas import (
+    MCPConnection,
+)
 from swarms.structs.agent_rag_handler import (
-    RAGConfig,
     AgentRAGHandler,
+    RAGConfig,
 )
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.conversation import Conversation
+from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
 )
 from swarms.telemetry.main import log_agent_data
 from swarms.tools.base_tool import BaseTool
+from swarms.tools.mcp_client_call import (
+    execute_multiple_tools_on_multiple_mcp_servers_sync,
+    execute_tool_call_simple,
+    get_mcp_tools_sync,
+    get_tools_for_multiple_mcp_servers,
+)
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
 )
@@ -64,28 +78,14 @@ from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
-from swarms.utils.litellm_tokenizer import count_tokens
-from swarms.utils.litellm_wrapper import LiteLLM
-from swarms.utils.pdf_to_text import pdf_to_text
-from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
-from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
-from swarms.prompts.safety_prompt import SAFETY_PROMPT
-from swarms.structs.ma_utils import set_random_models_for_agents
-from swarms.tools.mcp_client_call import (
-    execute_multiple_tools_on_multiple_mcp_servers_sync,
-    execute_tool_call_simple,
-    get_mcp_tools_sync,
-    get_tools_for_multiple_mcp_servers,
-)
-from swarms.schemas.mcp_schemas import (
-    MCPConnection,
-)
 from swarms.utils.index import (
     exists,
     format_data_structure,
 )
-from swarms.schemas.conversation_schema import ConversationSchema
+from swarms.utils.litellm_tokenizer import count_tokens
+from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
+from swarms.utils.pdf_to_text import pdf_to_text
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -899,9 +899,9 @@ class Agent:
             bool: True if model supports vision and image is provided, False otherwise.
         """
         from litellm.utils import (
-            supports_vision,
             supports_function_calling,
             supports_parallel_function_calling,
+            supports_vision,
         )
 
         # Only check vision support if an image is provided
@@ -1558,11 +1558,11 @@ class Agent:
             raise
 
     def reliability_check(self):
-        from litellm.utils import (
-            supports_function_calling,
-            get_max_tokens,
-        )
         from litellm import model_list
+        from litellm.utils import (
+            get_max_tokens,
+            supports_function_calling,
+        )
 
         if self.system_prompt is None:
             logger.warning(

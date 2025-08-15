@@ -48,7 +48,7 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/kyegomez/swarms
     - icon: fontawesome/brands/discord
-      link: https://discord.gg/jM3Z6M9uMq
+      link: https://discord.gg/EamjgSaEQf
     - icon: fontawesome/brands/youtube
       link: https://www.youtube.com/@kyegomez3242
     - icon: fontawesome/brands/linkedin
@@ -354,6 +354,7 @@ nav:
     - CookBook Index: "examples/cookbook_index.md"
     - Paper Implementations: "examples/paper_implementations.md"
     - Templates & Applications: "examples/templates.md"
+    - Community Resources: "examples/community_resources.md"
     - Basic Examples:
       - Individual Agents:
         - Basic Agent: "swarms/examples/basic_agent.md"
@@ -413,6 +414,9 @@ nav:
           - Swarms DAO: "swarms/examples/swarms_dao.md"
           - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
           - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
+
+    - Apps:
+      - Smart Database: "examples/smart_database.md"
 
 
   # - Swarm Models:

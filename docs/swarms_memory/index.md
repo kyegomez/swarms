@@ -161,7 +161,7 @@ print(result)
 We're excited to see how you leverage Swarms-Memory in your projects! Join our community on Discord to share your experiences, ask questions, and stay updated on the latest developments.
 
 - **🐦 Twitter**: [Follow us on Twitter](https://twitter.com/swarms_platform)
-- **📢 Discord**: [Join the Agora Discord](https://discord.gg/jM3Z6M9uMq)
+- **📢 Discord**: [Join the Agora Discord](https://discord.gg/EamjgSaEQf)
 - **Swarms Platform**: [Visit our website](https://swarms.ai)
 - **📙 Documentation**: [Read the Docs](https://docs.swarms.ai)
 
