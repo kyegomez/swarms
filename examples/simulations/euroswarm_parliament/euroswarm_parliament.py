@@ -17,6 +17,8 @@ import random
 import xml.etree.ElementTree as ET
 import time
 import hashlib
+import requests
+import re
 from typing import Dict, List, Optional, Union, Any, Set
 from dataclasses import dataclass, field
 from enum import Enum
@@ -138,6 +140,7 @@ class ParliamentaryMember:
         voting_weight: Weight of the MEP's vote (default: 1.0)
         agent: The AI agent representing this MEP (lazy loaded)
         is_loaded: Whether the agent has been instantiated
+        wikipedia_info: Wikipedia-scraped personality information (optional)
     """
     
     full_name: str
@@ -151,6 +154,7 @@ class ParliamentaryMember:
     voting_weight: float = 1.0
     agent: Optional[Agent] = None
     is_loaded: bool = False
+    wikipedia_info: Optional[Any] = None  # Wikipedia personality information
 
 
 @dataclass
@@ -385,7 +389,158 @@ class EuroSwarmParliament:
     
     def _load_mep_data(self) -> Dict[str, ParliamentaryMember]:
         """
-        Load MEP data from EU.xml file and create parliamentary members with lazy loading.
+        Load MEP data from official EU Parliament website and create parliamentary members with lazy loading.
+        Fetches real-time data from https://www.europarl.europa.eu/meps/en/full-list/xml
+        and scrapes Wikipedia information for each MEP.
+        
+        Returns:
+            Dict[str, ParliamentaryMember]: Dictionary of MEPs
+        """
+        meps = {}
+        
+        try:
+            # Fetch XML data from official EU Parliament website
+            import requests
+            import re
+            
+            eu_xml_url = "https://www.europarl.europa.eu/meps/en/full-list/xml"
+            
+            logger.info(f"Fetching MEP data from: {eu_xml_url}")
+            
+            # Fetch the XML content
+            response = requests.get(eu_xml_url, timeout=30)
+            response.raise_for_status()
+            content = response.text
+            
+            logger.info(f"Successfully fetched {len(content)} characters of MEP data")
+            
+            # Parse the XML content to extract MEP information
+            # The XML is properly formatted, so we can use ElementTree
+            try:
+                root = ET.fromstring(content)
+                mep_matches = []
+                
+                for mep_element in root.findall('mep'):
+                    full_name = mep_element.find('fullName').text.strip()
+                    country = mep_element.find('country').text.strip()
+                    political_group = mep_element.find('politicalGroup').text.strip()
+                    mep_id = mep_element.find('id').text.strip()
+                    national_party = mep_element.find('nationalPoliticalGroup').text.strip()
+                    
+                    mep_matches.append((full_name, country, political_group, mep_id, national_party))
+                
+                logger.info(f"Successfully parsed {len(mep_matches)} MEP entries from XML")
+                
+            except ET.ParseError as xml_error:
+                logger.warning(f"XML parsing failed: {xml_error}")
+                # Fallback to regex parsing for malformed XML
+                mep_pattern = r'<fullName>(.*?)</fullName>\s*<country>(.*?)</country>\s*<politicalGroup>(.*?)</politicalGroup>\s*<id>(.*?)</id>\s*<nationalPoliticalGroup>(.*?)</nationalPoliticalGroup>'
+                mep_matches = re.findall(mep_pattern, content, re.DOTALL)
+                logger.info(f"Fallback regex parsing found {len(mep_matches)} MEP entries")
+            
+            # Initialize Wikipedia scraper if available
+            wikipedia_scraper = None
+            if WIKIPEDIA_PERSONALITY_AVAILABLE:
+                try:
+                    wikipedia_scraper = WikipediaPersonalityScraper()
+                    logger.info("Wikipedia personality scraper initialized")
+                except Exception as e:
+                    logger.warning(f"Failed to initialize Wikipedia scraper: {e}")
+            
+            # Process each MEP
+            for i, mep_data in enumerate(mep_matches):
+                if len(mep_data) >= 5:  # full_name, country, political_group, mep_id, national_party
+                    full_name = mep_data[0].strip()
+                    country = mep_data[1].strip()
+                    political_group = mep_data[2].strip()
+                    mep_id = mep_data[3].strip()
+                    national_party = mep_data[4].strip()
+                    
+                    # Clean up political group name
+                    political_group = self._clean_political_group_name(political_group)
+                    
+                    # Scrape Wikipedia information if scraper is available
+                    wikipedia_info = None
+                    if wikipedia_scraper:
+                        try:
+                            # Create MEP data dictionary for the scraper
+                            mep_data = {
+                                'full_name': full_name,
+                                'country': country,
+                                'political_group': political_group,
+                                'national_party': national_party,
+                                'mep_id': mep_id
+                            }
+                            
+                            # Create personality profile
+                            personality_profile = wikipedia_scraper.create_personality_profile(mep_data)
+                            
+                            # Convert to dictionary format for storage
+                            wikipedia_info = {
+                                'personality_summary': personality_profile.summary,
+                                'political_views': personality_profile.political_views,
+                                'policy_focus': personality_profile.policy_focus,
+                                'achievements': personality_profile.achievements,
+                                'professional_background': personality_profile.professional_background,
+                                'political_career': personality_profile.political_career,
+                                'education': personality_profile.education,
+                                'wikipedia_url': personality_profile.wikipedia_url
+                            }
+                            
+                            if self.verbose:
+                                logger.info(f"Scraped Wikipedia info for {full_name}")
+                        except Exception as e:
+                            if self.verbose:
+                                logger.debug(f"Failed to scrape Wikipedia for {full_name}: {e}")
+                    
+                    # Create parliamentary member (without agent for lazy loading)
+                    mep = ParliamentaryMember(
+                        full_name=full_name,
+                        country=country,
+                        political_group=political_group,
+                        national_party=national_party,
+                        mep_id=mep_id,
+                        expertise_areas=self._generate_expertise_areas(political_group, country),
+                        committees=self._assign_committees(political_group),
+                        agent=None,  # Will be created on demand
+                        is_loaded=False,
+                        wikipedia_info=wikipedia_info  # Add Wikipedia information
+                    )
+                    
+                    meps[full_name] = mep
+                    
+                    # Limit processing for performance (can be adjusted)
+                    if len(meps) >= 705:  # Standard EU Parliament size
+                        break
+            
+            # Set parliament size to actual number of MEPs loaded
+            if self.parliament_size is None:
+                self.parliament_size = len(meps)
+            
+            logger.info(f"Successfully loaded {len(meps)} MEP profiles from official EU data (lazy loading enabled)")
+            if wikipedia_scraper:
+                logger.info(f"Wikipedia scraping completed for {len([m for m in meps.values() if m.wikipedia_info])} MEPs")
+            
+        except Exception as e:
+            logger.error(f"Error loading MEP data from official website: {e}")
+            logger.info("Falling back to local EU.xml file...")
+            
+            # Fallback to local file
+            try:
+                meps = self._load_mep_data_from_local_file()
+            except Exception as local_error:
+                logger.error(f"Error loading local MEP data: {local_error}")
+                # Create fallback MEPs if both methods fail
+                meps = self._create_fallback_meps()
+            
+            if self.parliament_size is None:
+                self.parliament_size = len(meps)
+        
+        return meps
+    
+    def _load_mep_data_from_local_file(self) -> Dict[str, ParliamentaryMember]:
+        """
+        Fallback method to load MEP data from local EU.xml file.
         
         Returns:
             Dict[str, ParliamentaryMember]: Dictionary of MEPs
@@ -432,20 +587,97 @@ class EuroSwarmParliament:
                 
                 meps[full_name] = mep
             
-            # Set parliament size to actual number of MEPs loaded if not specified
-            if self.parliament_size is None:
-                self.parliament_size = len(meps)
-            
-            logger.info(f"Loaded {len(meps)} MEP profiles from EU data (lazy loading enabled)")
+            logger.info(f"Loaded {len(meps)} MEP profiles from local EU.xml file (lazy loading enabled)")
             
         except Exception as e:
-            logger.error(f"Error loading MEP data: {e}")
-            # Create fallback MEPs if file loading fails
-            meps = self._create_fallback_meps()
-            if self.parliament_size is None:
-                self.parliament_size = len(meps)
+            logger.error(f"Error loading local MEP data: {e}")
+            raise
         
         return meps
+    
+    def _clean_political_group_name(self, political_group: str) -> str:
+        """
+        Clean and standardize political group names.
+        
+        Args:
+            political_group: Raw political group name
+            
+        Returns:
+            str: Cleaned political group name
+        """
+        # Map common variations to standard names
+        group_mapping = {
+            'EPP': 'Group of the European People\'s Party (Christian Democrats)',
+            'S&D': 'Group of the Progressive Alliance of Socialists and Democrats in the European Parliament',
+            'Renew': 'Renew Europe Group',
+            'Greens/EFA': 'Group of the Greens/European Free Alliance',
+            'ECR': 'European Conservatives and Reformists Group',
+            'ID': 'Identity and Democracy Group',
+            'GUE/NGL': 'The Left group in the European Parliament - GUE/NGL',
+            'Non-attached': 'Non-attached Members'
+        }
+        
+        # Check for exact matches first
+        for key, value in group_mapping.items():
+            if political_group.strip() == key:
+                return value
+        
+        # Check for partial matches
+        political_group_lower = political_group.lower()
+        for key, value in group_mapping.items():
+            if key.lower() in political_group_lower:
+                return value
+        
+        # Return original if no match found
+        return political_group.strip()
+    
+    def _generate_national_party(self, country: str, political_group: str) -> str:
+        """
+        Generate a realistic national party name based on country and political group.
+        
+        Args:
+            country: Country of the MEP
+            political_group: Political group affiliation
+            
+        Returns:
+            str: Generated national party name
+        """
+        # Map of countries to common parties for each political group
+        party_mapping = {
+            'Germany': {
+                'Group of the European People\'s Party (Christian Democrats)': 'Christlich Demokratische Union Deutschlands',
+                'Group of the Progressive Alliance of Socialists and Democrats in the European Parliament': 'Sozialdemokratische Partei Deutschlands',
+                'Renew Europe Group': 'Freie Demokratische Partei',
+                'Group of the Greens/European Free Alliance': 'Bündnis 90/Die Grünen',
+                'European Conservatives and Reformists Group': 'Alternative für Deutschland',
+                'Identity and Democracy Group': 'Alternative für Deutschland',
+                'The Left group in the European Parliament - GUE/NGL': 'Die Linke'
+            },
+            'France': {
+                'Group of the European People\'s Party (Christian Democrats)': 'Les Républicains',
+                'Group of the Progressive Alliance of Socialists and Democrats in the European Parliament': 'Parti Socialiste',
+                'Renew Europe Group': 'Renaissance',
+                'Group of the Greens/European Free Alliance': 'Europe Écologie Les Verts',
+                'European Conservatives and Reformists Group': 'Rassemblement National',
+                'Identity and Democracy Group': 'Rassemblement National',
+                'The Left group in the European Parliament - GUE/NGL': 'La France Insoumise'
+            },
+            'Italy': {
+                'Group of the European People\'s Party (Christian Democrats)': 'Forza Italia',
+                'Group of the Progressive Alliance of Socialists and Democrats in the European Parliament': 'Partito Democratico',
+                'Renew Europe Group': 'Italia Viva',
+                'Group of the Greens/European Free Alliance': 'Federazione dei Verdi',
+                'European Conservatives and Reformists Group': 'Fratelli d\'Italia',
+                'Identity and Democracy Group': 'Lega',
+                'The Left group in the European Parliament - GUE/NGL': 'Movimento 5 Stelle'
+            }
+        }
+        
+        # Return mapped party or generate a generic one
+        if country in party_mapping and political_group in party_mapping[country]:
+            return party_mapping[country][political_group]
+        else:
+            return f"{country} National Party"
     
     def _load_mep_agent(self, mep_name: str) -> Optional[Agent]:
         """
@@ -684,9 +916,6 @@ class EuroSwarmParliament:
             str: System prompt for the MEP agent
         """
         
-        # Get Wikipedia personality profile if available
-        personality_profile = self.get_mep_personality_profile(mep.full_name)
-        
         # Base prompt structure
         prompt = f"""You are {mep.full_name}, a Member of the European Parliament (MEP) representing {mep.country}.
 
@@ -700,16 +929,16 @@ POLITICAL BACKGROUND:
 """
         
         # Add Wikipedia personality data if available
-        if personality_profile and self.enable_wikipedia_personalities:
+        if mep.wikipedia_info and self.enable_wikipedia_personalities:
             prompt += f"""
 REAL PERSONALITY PROFILE (Based on Wikipedia data):
-{self.personality_scraper.get_personality_summary(personality_profile)}
+{mep.wikipedia_info.get('personality_summary', 'Based on parliamentary service and political alignment')}
 
 POLITICAL VIEWS AND POSITIONS:
-- Key Political Views: {personality_profile.political_views if personality_profile.political_views else 'Based on party alignment'}
-- Policy Focus Areas: {personality_profile.policy_focus if personality_profile.policy_focus else ', '.join(mep.expertise_areas)}
-- Notable Achievements: {personality_profile.achievements if personality_profile.achievements else 'Parliamentary service'}
-- Professional Background: {personality_profile.professional_background if personality_profile.professional_background else 'Political career'}
+- Key Political Views: {mep.wikipedia_info.get('political_views', 'Based on party alignment')}
+- Policy Focus Areas: {mep.wikipedia_info.get('policy_focus', ', '.join(mep.expertise_areas))}
+- Notable Achievements: {mep.wikipedia_info.get('achievements', 'Parliamentary service')}
+- Professional Background: {mep.wikipedia_info.get('professional_background', 'Political career')}
 
 """
         else:
@@ -753,11 +982,11 @@ COMMUNICATION STYLE:
 When responding to parliamentary matters, consider:
 1. How does this affect {mep.country} and your constituents?
 2. What is the position of {mep.political_group} on this issue?
-3. What are the implications for your areas of expertise?
-4. How can you contribute constructively to the discussion?
-5. What is the best outcome for European citizens?
+3. How does this align with your areas of expertise?
+4. What are the broader European implications?
+5. How can you best represent your constituents' interests?
 
-Remember: You are a democratically elected representative working for the benefit of European citizens while representing {mep.country}'s interests within the European Union framework.
+Remember: You are a real MEP with specific political views, expertise, and responsibilities. Act accordingly in all parliamentary interactions.
 """
         
         return prompt
