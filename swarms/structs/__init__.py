@@ -98,8 +98,6 @@ try:
     from swarms.tools.mcp_unified_client import (
         MCPUnifiedClient,
         UnifiedTransportConfig,
-        call_tool_streaming_sync,
-        execute_tool_call_streaming_unified,
         create_auto_config,
         create_http_config,
         create_streamable_http_config,
@@ -107,8 +105,19 @@ try:
         create_sse_config,
     )
     MCP_STREAMING_AVAILABLE = True
+    MCP_IMPORTS = [
+        "MCPUnifiedClient",
+        "UnifiedTransportConfig", 
+        "create_auto_config",
+        "create_http_config",
+        "create_streamable_http_config",
+        "create_stdio_config",
+        "create_sse_config",
+        "MCP_STREAMING_AVAILABLE",
+    ]
 except ImportError:
     MCP_STREAMING_AVAILABLE = False
+    MCP_IMPORTS = []
 
 __all__ = [
     "Agent",
@@ -187,15 +196,4 @@ __all__ = [
     "HierarchicalSwarm",
     "HeavySwarm",
     "CronJob",
-    # MCP Streaming Support
-    "MCPUnifiedClient",
-    "UnifiedTransportConfig", 
-    "call_tool_streaming_sync",
-    "execute_tool_call_streaming_unified",
-    "create_auto_config",
-    "create_http_config",
-    "create_streamable_http_config",
-    "create_stdio_config",
-    "create_sse_config",
-    "MCP_STREAMING_AVAILABLE",
-]
+] + MCP_IMPORTS
