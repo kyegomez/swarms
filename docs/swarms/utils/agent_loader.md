@@ -1,14 +1,14 @@
 # AgentLoader - Load Agents from Markdown Files
 
-The `AgentLoader` is a powerful utility for creating Swarms agents from markdown files. It supports both single and multiple markdown file loading, providing a flexible way to define and deploy agents using a structured markdown format.
+The `AgentLoader` is a powerful utility for creating Swarms agents from markdown files using the Claude Code sub-agent format. It supports both single and multiple markdown file loading, providing a flexible way to define and deploy agents using YAML frontmatter configuration.
 
 ## Overview
 
 The AgentLoader enables you to:
-- Load single agents from markdown files
+- Load single agents from markdown files with YAML frontmatter
 - Load multiple agents from directories or file lists
-- Parse structured markdown content into agent configurations
-- Maintain backwards compatibility with existing agent systems
+- Parse Claude Code sub-agent YAML frontmatter configurations
+- Extract system prompts from markdown content
 - Provide comprehensive error handling and validation
 
 ## Installation
@@ -21,32 +21,33 @@ from swarms.utils import AgentLoader, load_agent_from_markdown, load_agents_from
 
 ## Markdown Format
 
-The AgentLoader expects markdown files to follow a specific structure:
+The AgentLoader uses the Claude Code sub-agent YAML frontmatter format:
 
-### Required Table Header
 ```markdown
-| name | description | model |
-|------|-------------|-------|
-| agent-name | Brief description of the agent | gpt-4 |
+---
+name: your-sub-agent-name
+description: Description of when this subagent should be invoked
+model_name: gpt-4
+temperature: 0.3
+max_loops: 2
+mcp_url: http://example.com/mcp  # optional
+---
+
+Your subagent's system prompt goes here. This can be multiple paragraphs
+and should clearly define the subagent's role, capabilities, and approach
+to solving problems.
+
+Include specific instructions, best practices, and any constraints
+the subagent should follow.
 ```
 
-### Optional Sections
-```markdown
-## Focus Areas
-- Key responsibility area 1
-- Key responsibility area 2
-- Key responsibility area 3
-
-## Approach
-1. First step in methodology
-2. Second step in methodology
-3. Third step in methodology
-
-## Output
-- Expected deliverable 1
-- Expected deliverable 2
-- Expected deliverable 3
-```
+**Schema Fields:**
+- `name` (required): Your sub-agent name
+- `description` (required): Description of when this subagent should be invoked
+- `model_name` (optional): Name of model (defaults to random selection if not provided)
+- `temperature` (optional): Float value for model temperature (0.0-2.0)
+- `max_loops` (optional): Integer for maximum reasoning loops
+- `mcp_url` (optional): MCP server URL if needed
 
 ## Quick Start
 
@@ -55,13 +56,17 @@ The AgentLoader expects markdown files to follow a specific structure:
 ```python
 from swarms.utils import load_agent_from_markdown
 
-# Load agent from markdown file
+# Load Claude Code format agent (YAML frontmatter)
 agent = load_agent_from_markdown(
-    file_path="path/to/agent.md"
+    file_path="performance-engineer.md"  # Uses YAML frontmatter format
 )
 
-# Use the agent
-response = agent.run("What are your capabilities?")
+# The agent automatically gets configured with:
+# - Name, description from frontmatter
+# - Temperature, max_loops, model settings
+# - System prompt from content after frontmatter
+
+response = agent.run("Analyze application performance issues")
 print(response)
 ```
 
@@ -70,17 +75,23 @@ print(response)
 ```python
 from swarms.utils import load_agents_from_markdown
 
-# Load all agents from directory
+# Load all agents from directory (YAML frontmatter format)
 agents = load_agents_from_markdown(
-    file_paths="./agents_directory/"
+    file_paths="./agents_directory/"  # Directory with Claude Code format files
 )
 
 # Load agents from specific files
 agents = load_agents_from_markdown(
-    file_paths=["agent1.md", "agent2.md", "agent3.md"]
+    file_paths=[
+        "performance-engineer.md",  # Claude Code YAML format
+        "financial-analyst.md",     # Claude Code YAML format
+        "security-analyst.md"       # Claude Code YAML format
+    ]
 )
 
 print(f"Loaded {len(agents)} agents")
+for agent in agents:
+    print(f"- {agent.agent_name}: {getattr(agent, 'temperature', 'default temp')}")
 ```
 
 ## Class-Based Usage
@@ -139,61 +150,60 @@ agent = load_agent_from_markdown(
 
 ## Complete Example
 
-### Example Markdown File (performance-engineer.md)
+### Example: Claude Code Sub-Agent Format
+
+Create a file `performance-engineer.md`:
 
 ```markdown
-| name | description | model |
-|------|-------------|-------|
-| performance-engineer | Optimize application performance and identify bottlenecks | gpt-4 |
+---
+name: performance-engineer
+description: Optimize application performance and identify bottlenecks
+model_name: gpt-4
+temperature: 0.3
+max_loops: 2
+mcp_url: http://example.com/mcp
+---
 
-## Focus Areas
-- Application profiling and performance analysis
-- Database optimization and query tuning
-- Memory and CPU usage optimization
-- Load testing and capacity planning
-- Infrastructure scaling recommendations
+You are a Performance Engineer specializing in application optimization and scalability.
 
-## Approach
-1. Analyze application architecture and identify potential bottlenecks
-2. Implement comprehensive monitoring and logging systems
-3. Conduct performance testing under various load conditions
-4. Profile memory usage and optimize resource consumption
-5. Provide actionable recommendations with implementation guides
+Your role involves analyzing system performance, identifying bottlenecks, and implementing 
+solutions to improve efficiency and user experience.
 
-## Output
-- Detailed performance analysis reports with metrics
-- Optimized code recommendations and examples
-- Infrastructure scaling and architecture suggestions
-- Monitoring and alerting configuration guidelines
-- Load testing results and capacity planning documents
+Key responsibilities:
+- Profile applications to identify performance issues
+- Optimize database queries and caching strategies  
+- Implement load testing and monitoring solutions
+- Recommend infrastructure improvements
+- Provide actionable optimization recommendations
+
+Always provide specific, measurable recommendations with implementation details.
+Focus on both immediate wins and long-term architectural improvements.
 ```
 
 ### Loading and Using the Agent
 
 ```python
 from swarms.utils import load_agent_from_markdown
-from swarms.utils.litellm_wrapper import LiteLLM
 
-# Initialize model
-model = LiteLLM(model_name="gpt-4")
-
-# Load the performance engineer agent
-agent = load_agent_from_markdown(
-    file_path="performance-engineer.md",
-    model=model,
-    max_loops=3,
-    verbose=True
+# Load Claude Code format agent (YAML frontmatter)
+performance_agent = load_agent_from_markdown(
+    file_path="performance-engineer.md"
 )
 
-# Use the agent
+print(f"Agent: {performance_agent.agent_name}")
+print(f"Temperature: {getattr(performance_agent, 'temperature', 'default')}")
+print(f"Max loops: {performance_agent.max_loops}")
+print(f"System prompt preview: {performance_agent.system_prompt[:100]}...")
+
+# Use the performance agent
 task = """
 Analyze the performance of a web application that handles 10,000 concurrent users
 but is experiencing slow response times averaging 3 seconds. The application uses
 a PostgreSQL database and is deployed on AWS with 4 EC2 instances behind a load balancer.
 """
 
-analysis = agent.run(task)
-print(f"Performance Analysis:\n{analysis}")
+# Note: Actual agent.run() would make API calls
+print(f"\nTask for {performance_agent.agent_name}: {task[:100]}...")
 ```
 
 ## Error Handling
@@ -297,13 +307,6 @@ result = workflow.run("Conduct a comprehensive system audit")
 5. **Model Selection**: Choose appropriate models based on agent complexity
 6. **Configuration**: Override defaults when specific behavior is needed
 
-## Backwards Compatibility
-
-The AgentLoader maintains full backwards compatibility with:
-- Claude Code sub-agents markdown format
-- Existing swarms agent creation patterns
-- Legacy configuration systems
-- Current workflow orchestration
 
 ## API Reference
 
@@ -331,10 +334,13 @@ class MarkdownAgentConfig(BaseModel):
     name: str
     description: str
     model_name: Optional[str] = "gpt-4"
+    temperature: Optional[float] = 0.1  # Model temperature (0.0-2.0)
+    mcp_url: Optional[str] = None       # Optional MCP server URL
     system_prompt: str
-    focus_areas: Optional[List[str]] = []
-    approach: Optional[List[str]] = []
-    output: Optional[List[str]] = []
+    max_loops: int = 1
+    autosave: bool = False
+    dashboard: bool = False
+    verbose: bool = False
     # ... additional configuration fields
 ```
 

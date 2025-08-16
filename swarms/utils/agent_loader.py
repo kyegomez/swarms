@@ -1,5 +1,7 @@
 import os
 import re
+import random
+import yaml
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field, field_validator
@@ -9,14 +11,13 @@ from swarms.structs.agent import Agent
 
 
 class MarkdownAgentConfig(BaseModel):
-    """Configuration model for agents loaded from markdown files."""
+    """Configuration model for agents loaded from Claude Code markdown files."""
     name: str
     description: str
     model_name: Optional[str] = "gpt-4"
+    temperature: Optional[float] = Field(default=0.1, ge=0.0, le=2.0)
+    mcp_url: Optional[str] = None
     system_prompt: str
-    focus_areas: Optional[List[str]] = []
-    approach: Optional[List[str]] = []
-    output: Optional[List[str]] = []
     max_loops: int = Field(default=1, ge=1)
     autosave: bool = False
     dashboard: bool = False
@@ -43,16 +44,16 @@ class MarkdownAgentConfig(BaseModel):
 
 class AgentLoader:
     """
-    Loader for creating agents from markdown files.
+    Loader for creating agents from markdown files using Claude Code sub-agent format.
     
     Supports both single markdown file and multiple markdown files.
-    Maintains backwards compatibility with claude code sub agents markdown format.
+    Uses YAML frontmatter format for agent configuration.
     
     Features:
     - Single markdown file loading
     - Multiple markdown files loading (batch processing)
-    - Flexible markdown parsing
-    - Agent configuration extraction from markdown structure
+    - YAML frontmatter parsing
+    - Agent configuration extraction from YAML metadata
     - Error handling and validation
     """
     
@@ -62,124 +63,51 @@ class AgentLoader:
         """
         pass
         
-    def parse_markdown_table(self, content: str) -> Dict[str, str]:
+    def parse_yaml_frontmatter(self, content: str) -> Dict[str, Any]:
         """
-        Parse markdown table to extract agent metadata.
+        Parse YAML frontmatter from markdown content.
         
         Args:
-            content: Markdown content containing a table
+            content: Markdown content with potential YAML frontmatter
             
         Returns:
-            Dictionary with parsed table data
+            Dictionary with parsed YAML data and remaining content
         """
-        table_data = {}
-        
-        # Find markdown table pattern
-        table_pattern = r'\|([^|]+)\|([^|]+)\|([^|]+)\|'
         lines = content.split('\n')
         
-        header_found = False
-        for line in lines:
-            if '|' in line and not header_found:
-                # Skip header separator line
-                if '---' in line:
-                    header_found = True
-                    continue
-                    
-                # Parse header
-                if 'name' in line.lower() and 'description' in line.lower():
-                    continue
-                    
-            elif header_found and '|' in line:
-                # Parse data row
-                match = re.match(table_pattern, line)
-                if match:
-                    table_data['name'] = match.group(1).strip()
-                    table_data['description'] = match.group(2).strip()
-                    table_data['model_name'] = match.group(3).strip()
+        # Check if content starts with YAML frontmatter
+        if not lines[0].strip() == '---':
+            return {"frontmatter": {}, "content": content}
+        
+        # Find end of frontmatter
+        end_marker = -1
+        for i, line in enumerate(lines[1:], 1):
+            if line.strip() == '---':
+                end_marker = i
                 break
-                
-        return table_data
+        
+        if end_marker == -1:
+            return {"frontmatter": {}, "content": content}
+        
+        # Extract frontmatter and content
+        frontmatter_text = '\n'.join(lines[1:end_marker])
+        remaining_content = '\n'.join(lines[end_marker + 1:]).strip()
+        
+        try:
+            frontmatter_data = yaml.safe_load(frontmatter_text) or {}
+        except yaml.YAMLError as e:
+            logger.warning(f"Failed to parse YAML frontmatter: {e}")
+            return {"frontmatter": {}, "content": content}
+        
+        return {"frontmatter": frontmatter_data, "content": remaining_content}
+
     
-    def extract_sections(self, content: str) -> Dict[str, List[str]]:
-        """
-        Extract structured sections from markdown content.
-        
-        Args:
-            content: Markdown content
-            
-        Returns:
-            Dictionary with section names as keys and content lists as values
-        """
-        sections = {}
-        current_section = None
-        current_content = []
-        
-        lines = content.split('\n')
-        for line in lines:
-            # Check for headers (## Section Name)
-            if line.startswith('## '):
-                # Save previous section
-                if current_section:
-                    sections[current_section.lower()] = current_content
-                
-                # Start new section
-                current_section = line[3:].strip()
-                current_content = []
-                
-            elif current_section and line.strip():
-                # Add content to current section
-                # Remove markdown list markers
-                clean_line = re.sub(r'^[-*+]\s*', '', line.strip())
-                clean_line = re.sub(r'^\d+\.\s*', '', clean_line)
-                if clean_line:
-                    current_content.append(clean_line)
-        
-        # Save last section
-        if current_section:
-            sections[current_section.lower()] = current_content
-            
-        return sections
     
-    def build_system_prompt(self, config_data: Dict[str, Any]) -> str:
-        """
-        Build comprehensive system prompt from parsed markdown data.
-        
-        Args:
-            config_data: Dictionary containing parsed agent configuration
-            
-        Returns:
-            Complete system prompt string
-        """
-        prompt_parts = []
-        
-        # Add description
-        if config_data.get('description'):
-            prompt_parts.append(f"Role: {config_data['description']}")
-        
-        # Add focus areas
-        if config_data.get('focus_areas'):
-            prompt_parts.append("\nFocus Areas:")
-            for area in config_data['focus_areas']:
-                prompt_parts.append(f"- {area}")
-        
-        # Add approach
-        if config_data.get('approach'):
-            prompt_parts.append("\nApproach:")
-            for i, step in enumerate(config_data['approach'], 1):
-                prompt_parts.append(f"{i}. {step}")
-        
-        # Add expected output
-        if config_data.get('output'):
-            prompt_parts.append("\nExpected Output:")
-            for output in config_data['output']:
-                prompt_parts.append(f"- {output}")
-        
-        return '\n'.join(prompt_parts)
     
     def parse_markdown_file(self, file_path: str) -> MarkdownAgentConfig:
         """
         Parse a single markdown file to extract agent configuration.
+        Uses Claude Code sub-agent YAML frontmatter format.
         
         Args:
             file_path: Path to markdown file
@@ -189,7 +117,7 @@ class AgentLoader:
             
         Raises:
             FileNotFoundError: If file doesn't exist
-            ValueError: If parsing fails
+            ValueError: If parsing fails or no YAML frontmatter found
         """
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Markdown file {file_path} not found.")
@@ -198,25 +126,29 @@ class AgentLoader:
             with open(file_path, 'r', encoding='utf-8') as file:
                 content = file.read()
             
-            # Parse table for basic metadata
-            table_data = self.parse_markdown_table(content)
+            # Parse YAML frontmatter (Claude Code sub-agent format)
+            yaml_result = self.parse_yaml_frontmatter(content)
+            frontmatter = yaml_result["frontmatter"]
+            remaining_content = yaml_result["content"]
             
-            # Extract sections
-            sections = self.extract_sections(content)
+            if not frontmatter:
+                raise ValueError(f"No YAML frontmatter found in {file_path}. File must use Claude Code sub-agent format with YAML frontmatter.")
             
-            # Build configuration
+            # Use YAML frontmatter data
             config_data = {
-                'name': table_data.get('name', Path(file_path).stem),
-                'description': table_data.get('description', 'Agent loaded from markdown'),
-                'model_name': table_data.get('model_name', 'gpt-4'),
-                'focus_areas': sections.get('focus areas', []),
-                'approach': sections.get('approach', []),
-                'output': sections.get('output', []),
+                'name': frontmatter.get('name', Path(file_path).stem),
+                'description': frontmatter.get('description', 'Agent loaded from markdown'),
+                'model_name': frontmatter.get('model_name') or frontmatter.get('model', 'gpt-4'),
+                'temperature': frontmatter.get('temperature', 0.1),
+                'max_loops': frontmatter.get('max_loops', 1),
+                'mcp_url': frontmatter.get('mcp_url'),
+                'system_prompt': remaining_content.strip(),
             }
             
-            # Build system prompt
-            system_prompt = self.build_system_prompt(config_data)
-            config_data['system_prompt'] = system_prompt
+            # Generate random model if not specified
+            if not config_data['model_name'] or config_data['model_name'] == 'random':
+                models = ['gpt-4', 'gpt-4-turbo', 'claude-3-sonnet', 'claude-3-haiku']
+                config_data['model_name'] = random.choice(models)
             
             logger.info(f"Successfully parsed markdown file: {file_path}")
             return MarkdownAgentConfig(**config_data)
@@ -247,7 +179,7 @@ class AgentLoader:
             'agent_name': config_dict['name'],
             'system_prompt': config_dict['system_prompt'],
             'model_name': config_dict.get('model_name', 'gpt-4'),
-            # Don't pass llm explicitly - let Agent handle it internally
+            'temperature': config_dict.get('temperature', 0.1),
             'max_loops': config_dict['max_loops'],
             'autosave': config_dict['autosave'],
             'dashboard': config_dict['dashboard'],
@@ -321,10 +253,10 @@ class AgentLoader:
     def load_single_agent(self, file_path: str, **kwargs) -> Agent:
         """
         Convenience method for loading a single agent.
-        Backwards compatible with claude code sub agents markdown.
+        Uses Claude Code sub-agent YAML frontmatter format.
         
         Args:
-            file_path: Path to markdown file
+            file_path: Path to markdown file with YAML frontmatter
             **kwargs: Additional configuration overrides
             
         Returns:
@@ -335,10 +267,10 @@ class AgentLoader:
     def load_multiple_agents(self, file_paths: Union[str, List[str]], **kwargs) -> List[Agent]:
         """
         Convenience method for loading multiple agents.
-        Backwards compatible with claude code sub agents markdown.
+        Uses Claude Code sub-agent YAML frontmatter format.
         
         Args:
-            file_paths: Directory path or list of file paths
+            file_paths: Directory path or list of file paths with YAML frontmatter
             **kwargs: Additional configuration overrides
             
         Returns:
@@ -347,13 +279,13 @@ class AgentLoader:
         return self.load_agents_from_markdown(file_paths, **kwargs)
 
 
-# Convenience functions for backwards compatibility
+# Convenience functions
 def load_agent_from_markdown(file_path: str, **kwargs) -> Agent:
     """
-    Load a single agent from a markdown file.
+    Load a single agent from a markdown file with Claude Code YAML frontmatter format.
     
     Args:
-        file_path: Path to markdown file
+        file_path: Path to markdown file with YAML frontmatter
         **kwargs: Additional configuration overrides
         
     Returns:
@@ -365,10 +297,10 @@ def load_agent_from_markdown(file_path: str, **kwargs) -> Agent:
 
 def load_agents_from_markdown(file_paths: Union[str, List[str]], **kwargs) -> List[Agent]:
     """
-    Load multiple agents from markdown files.
+    Load multiple agents from markdown files with Claude Code YAML frontmatter format.
     
     Args:
-        file_paths: Directory path or list of file paths
+        file_paths: Directory path or list of file paths with YAML frontmatter
         **kwargs: Additional configuration overrides
         
     Returns:

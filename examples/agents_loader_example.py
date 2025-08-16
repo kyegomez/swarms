@@ -17,106 +17,154 @@ def main():
     
     print("=== AgentLoader Demo ===")
     
-    # Example 1: Create a sample markdown file for testing
-    sample_md = """| name | description | model |
-|------|-------------|-------|
-| performance-engineer | Optimize application performance and identify bottlenecks | gpt-4 |
+    # Example 1: Create sample markdown files for testing - Claude Code format
+    
+    # Performance Engineer agent
+    performance_md = """---
+name: performance-engineer
+description: Optimize application performance and identify bottlenecks
+model_name: gpt-4
+temperature: 0.3
+max_loops: 2
+mcp_url: http://example.com/mcp
+---
 
-## Focus Areas
-- Application profiling and performance analysis
-- Database optimization and query tuning
-- Memory and CPU usage optimization
-- Load testing and capacity planning
+You are a Performance Engineer specializing in application optimization and scalability.
 
-## Approach
-1. Analyze application architecture and identify potential bottlenecks
-2. Implement comprehensive monitoring and logging
-3. Conduct performance testing under various load conditions
-4. Optimize critical paths and resource usage
-5. Document findings and provide actionable recommendations
+Your role involves:
+- Analyzing application architecture and identifying potential bottlenecks
+- Implementing comprehensive monitoring and logging
+- Conducting performance testing under various load conditions
+- Optimizing critical paths and resource usage
+- Documenting findings and providing actionable recommendations
 
-## Output
+Expected output:
 - Performance analysis reports with specific metrics
 - Optimized code recommendations
 - Infrastructure scaling suggestions
 - Monitoring and alerting setup guidelines
 """
     
-    # Create sample markdown file
-    sample_file = "sample_agent.md"
-    with open(sample_file, 'w') as f:
-        f.write(sample_md)
+    # Data Analyst agent
+    data_analyst_md = """---
+name: data-analyst
+description: Analyze data and provide business insights
+model_name: gpt-4
+temperature: 0.2
+max_loops: 1
+---
+
+You are a Data Analyst specializing in extracting insights from complex datasets.
+
+Your responsibilities include:
+- Collecting and cleaning data from various sources
+- Performing exploratory data analysis and statistical modeling
+- Creating compelling visualizations and interactive dashboards
+- Applying statistical methods and machine learning techniques
+- Presenting findings and actionable business recommendations
+
+Focus on providing data-driven insights that support strategic decision making.
+"""
+    
+    # Create sample markdown files
+    performance_file = "performance_engineer.md"  
+    data_file = "data_analyst.md"
+    
+    with open(performance_file, 'w') as f:
+        f.write(performance_md)
+    
+    with open(data_file, 'w') as f:
+        f.write(data_analyst_md)
     
     try:
-        # Example 2: Load single agent using class method
-        print("\\n1. Loading single agent using AgentLoader class:")
-        agent = loader.load_single_agent(sample_file)
-        print(f"   Loaded agent: {agent.agent_name}")
-        print(f"   System prompt preview: {agent.system_prompt[:100]}...")
+        # Example 2: Load Performance Engineer agent
+        print("\\n1. Loading Performance Engineer agent (YAML frontmatter):")
+        perf_agent = loader.load_single_agent(performance_file)
+        print(f"   Loaded agent: {perf_agent.agent_name}")
+        print(f"   Model: {perf_agent.model_name}")
+        print(f"   Temperature: {getattr(perf_agent, 'temperature', 'Not set')}")
+        print(f"   Max loops: {perf_agent.max_loops}")
+        print(f"   System prompt preview: {perf_agent.system_prompt[:100]}...")
         
-        # Example 3: Load single agent using convenience function
-        print("\\n2. Loading single agent using convenience function:")
-        agent2 = load_agent_from_markdown(sample_file)
+        # Example 3: Load Data Analyst agent
+        print("\\n2. Loading Data Analyst agent:")
+        data_agent = loader.load_single_agent(data_file)
+        print(f"   Loaded agent: {data_agent.agent_name}")
+        print(f"   Temperature: {getattr(data_agent, 'temperature', 'Not set')}")
+        print(f"   System prompt preview: {data_agent.system_prompt[:100]}...")
+        
+        # Example 4: Load single agent using convenience function
+        print("\\n3. Loading single agent using convenience function:")
+        agent2 = load_agent_from_markdown(performance_file)
         print(f"   Loaded agent: {agent2.agent_name}")
         
-        # Example 4: Load multiple agents (from directory or list)
-        print("\\n3. Loading multiple agents:")
+        # Example 5: Load multiple agents (from directory or list)
+        print("\\n4. Loading multiple agents:")
         
-        # Create another sample file
-        sample_md2 = """| name | description | model |
-|------|-------------|-------|
-| security-analyst | Analyze and improve system security | gpt-4 |
+        # Create another sample file - Security Analyst
+        security_md = """---
+name: security-analyst
+description: Analyze and improve system security
+model_name: gpt-4
+temperature: 0.1
+max_loops: 3
+---
 
-## Focus Areas
-- Security vulnerability assessment
-- Code security review
-- Infrastructure hardening
+You are a Security Analyst specializing in cybersecurity assessment and protection.
 
-## Approach
-1. Conduct thorough security audits
-2. Identify potential vulnerabilities
-3. Recommend security improvements
+Your expertise includes:
+- Conducting comprehensive security vulnerability assessments
+- Performing detailed code security reviews and penetration testing
+- Implementing robust infrastructure hardening measures
+- Developing incident response and recovery procedures
 
-## Output
-- Security assessment reports
-- Vulnerability remediation plans
-- Security best practices documentation
+Key methodology:
+1. Conduct thorough security audits across all system components
+2. Identify and classify potential vulnerabilities and threats
+3. Recommend and implement security improvements and controls
+4. Develop comprehensive security policies and best practices
+5. Monitor and respond to security incidents
+
+Provide detailed security reports with specific remediation steps and risk assessments.
 """
         
-        sample_file2 = "security_agent.md"
-        with open(sample_file2, 'w') as f:
-            f.write(sample_md2)
+        security_file = "security_analyst.md"
+        with open(security_file, 'w') as f:
+            f.write(security_md)
         
         # Load multiple agents from list
-        agents = loader.load_multiple_agents([sample_file, sample_file2])
+        agents = loader.load_multiple_agents([performance_file, data_file, security_file])
         print(f"   Loaded {len(agents)} agents:")
         for agent in agents:
-            print(f"   - {agent.agent_name}")
+            temp_attr = getattr(agent, 'temperature', 'default')
+            print(f"   - {agent.agent_name} (temp: {temp_attr})")
         
-        # Example 5: Load agents from directory (current directory)
-        print("\\n4. Loading agents from current directory:")
+        # Example 6: Load agents from directory (current directory)
+        print("\\n5. Loading agents from current directory:")
         current_dir_agents = load_agents_from_markdown(".")
         print(f"   Found {len(current_dir_agents)} agents in current directory")
         
-        # Example 6: Demonstrate error handling
-        print("\\n5. Error handling demo:")
+        # Example 7: Demonstrate error handling
+        print("\\n6. Error handling demo:")
         try:
             loader.load_single_agent("nonexistent.md")
         except FileNotFoundError as e:
             print(f"   Caught expected error: {e}")
         
-        # Example 7: Test agent functionality
-        print("\\n6. Testing loaded agent functionality:")
+        # Example 8: Test agent functionality  
+        print("\\n7. Testing loaded agent functionality:")
         test_agent = agents[0]
-        response = test_agent.run("What are the key steps for performance optimization?")
-        print(f"   Agent response preview: {str(response)[:150]}...")
+        print(f"   Agent: {test_agent.agent_name}")
+        print(f"   Temperature: {getattr(test_agent, 'temperature', 'default')}")
+        print(f"   Max loops: {test_agent.max_loops}")
+        print(f"   Ready for task execution")
         
     except Exception as e:
         print(f"Error during demo: {e}")
     
     finally:
         # Cleanup sample files
-        for file in [sample_file, sample_file2]:
+        for file in [performance_file, data_file, security_file]:
             if os.path.exists(file):
                 os.remove(file)
         print("\\n   Cleaned up sample files")
