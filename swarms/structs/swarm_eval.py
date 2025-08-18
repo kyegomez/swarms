@@ -1,11 +1,12 @@
 import math
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple, List
 
 from datasets import Dataset, load_dataset
 from loguru import logger
 from tqdm import tqdm
+from swarms.security import SwarmShieldIntegration, ShieldConfig
 
 # -----------------------------------------------------------------------------
 # Logging configuration: log to console and file (rotating by size)
@@ -94,14 +95,106 @@ class SwarmEvaluator:
         print(results)
     """
 
-    def __init__(self, swarm: callable) -> None:
+    def __init__(
+        self, 
+        swarm: callable,
+        shield_config: Optional[ShieldConfig] = None,
+        enable_security: bool = True,
+        security_level: str = "standard",
+    ) -> None:
         """
         Initialize the evaluator with a given swarm.
 
         Args:
             swarm (Swarm): A swarm instance with a callable run(task: str) method.
+            shield_config (ShieldConfig, optional): Security configuration for SwarmShield integration. Defaults to None.
+            enable_security (bool, optional): Whether to enable SwarmShield security features. Defaults to True.
+            security_level (str, optional): Pre-defined security level. Options: "basic", "standard", "enhanced", "maximum". Defaults to "standard".
         """
         self.swarm = swarm
+
+        # Initialize SwarmShield integration
+        self._initialize_swarm_shield(shield_config, enable_security, security_level)
+
+    def _initialize_swarm_shield(
+        self, 
+        shield_config: Optional[ShieldConfig] = None,
+        enable_security: bool = True,
+        security_level: str = "standard"
+    ) -> None:
+        """Initialize SwarmShield integration for security features."""
+        self.enable_security = enable_security
+        self.security_level = security_level
+        
+        if enable_security:
+            if shield_config is None:
+                shield_config = ShieldConfig.get_security_level(security_level)
+            
+            self.swarm_shield = SwarmShieldIntegration(shield_config)
+        else:
+            self.swarm_shield = None
+
+    # Security methods
+    def validate_task_with_shield(self, task: str) -> str:
+        """Validate and sanitize task input using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.validate_and_protect_input(task)
+        return task
+
+    def validate_agent_config_with_shield(self, agent_config: dict) -> dict:
+        """Validate agent configuration using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.validate_and_protect_input(str(agent_config))
+        return agent_config
+
+    def process_agent_communication_with_shield(self, message: str, agent_name: str) -> str:
+        """Process agent communication through SwarmShield security."""
+        if self.swarm_shield:
+            return self.swarm_shield.process_agent_communication(message, agent_name)
+        return message
+
+    def check_rate_limit_with_shield(self, agent_name: str) -> bool:
+        """Check rate limits for an agent using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.check_rate_limit(agent_name)
+        return True
+
+    def add_secure_message(self, message: str, agent_name: str) -> None:
+        """Add a message to secure conversation history."""
+        if self.swarm_shield:
+            self.swarm_shield.add_secure_message(message, agent_name)
+
+    def get_secure_messages(self) -> List[dict]:
+        """Get secure conversation messages."""
+        if self.swarm_shield:
+            return self.swarm_shield.get_secure_messages()
+        return []
+
+    def get_security_stats(self) -> dict:
+        """Get security statistics and metrics."""
+        if self.swarm_shield:
+            return self.swarm_shield.get_security_stats()
+        return {"security_enabled": False}
+
+    def update_shield_config(self, new_config: ShieldConfig) -> None:
+        """Update SwarmShield configuration."""
+        if self.swarm_shield:
+            self.swarm_shield.update_config(new_config)
+
+    def enable_security(self) -> None:
+        """Enable SwarmShield security features."""
+        if not self.swarm_shield:
+            self._initialize_swarm_shield(enable_security=True, security_level=self.security_level)
+
+    def disable_security(self) -> None:
+        """Disable SwarmShield security features."""
+        self.swarm_shield = None
+        self.enable_security = False
+
+    def cleanup_security(self) -> None:
+        """Clean up SwarmShield resources."""
+        if self.swarm_shield:
+            self.swarm_shield.cleanup()
 
     def evaluate(
         self,
