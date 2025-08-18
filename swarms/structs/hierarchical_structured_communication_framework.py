@@ -27,6 +27,12 @@ from dataclasses import dataclass
 from enum import Enum
 
 from pydantic import BaseModel, Field
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
+from rich import print as rprint
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
@@ -34,6 +40,8 @@ from swarms.structs.conversation import Conversation
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 
+# Initialize rich console for enhanced output
+console = Console()
 logger = initialize_logger(log_folder="hierarchical_structured_communication_framework")
 
 
@@ -1058,6 +1066,13 @@ class HierarchicalStructuredCommunicationFramework(BaseSwarm):
     
     def init_swarm(self):
         """Initialize the swarm components"""
+        # Enhanced logging with rich formatting
+        console.print(Panel(
+            f"[bold blue]Initializing {self.name}[/bold blue]\n"
+            f"[dim]Framework: Talk Structurally, Act Hierarchically[/dim]",
+            title="Framework Initialization",
+            border_style="blue"
+        ))
         logger.info(f"Initializing {self.name}")
         
         # Setup supervisor if not provided
@@ -1077,6 +1092,19 @@ class HierarchicalStructuredCommunicationFramework(BaseSwarm):
         
         if not self.refiners:
             self.refiners = [self._create_default_refiner()]
+        
+        # Enhanced status display
+        table = Table(title="Framework Components")
+        table.add_column("Component", style="cyan", no_wrap=True)
+        table.add_column("Count", style="magenta")
+        table.add_column("Status", style="green")
+        
+        table.add_row("Generators", str(len(self.generators)), "Ready")
+        table.add_row("Evaluators", str(len(self.evaluators)), "Ready")
+        table.add_row("Refiners", str(len(self.refiners)), "Ready")
+        table.add_row("Supervisors", str(1 if self.supervisor else 0), "Ready")
+        
+        console.print(table)
         
         logger.info(f"Swarm initialized with {len(self.generators)} generators, "
                    f"{len(self.evaluators)} evaluators, {len(self.refiners)} refiners")
@@ -1316,6 +1344,15 @@ Always explain your refinements and how they address the evaluation feedback.
         self.conversation_history.append(structured_msg)
         
         if self.verbose:
+            # Enhanced structured message display
+            console.print(Panel(
+                f"[bold green]Message Sent[/bold green]\n"
+                f"[cyan]From:[/cyan] {sender}\n"
+                f"[cyan]To:[/cyan] {recipient}\n"
+                f"[cyan]Message:[/cyan] {message[:100]}{'...' if len(message) > 100 else ''}",
+                title="Structured Communication",
+                border_style="green"
+            ))
             logger.info(f"Structured message sent from {sender} to {recipient}")
             logger.info(f"Message: {message[:100]}...")
         
@@ -1547,33 +1584,64 @@ Please refine the content to address the feedback while maintaining its core str
         Returns:
             Final result
         """
+        # Enhanced workflow start display
+        console.print(Panel(
+            f"[bold yellow]Starting Hierarchical Structured Communication Workflow[/bold yellow]\n"
+            f"[cyan]Task:[/cyan] {task[:100]}{'...' if len(task) > 100 else ''}\n"
+            f"[cyan]Max Loops:[/cyan] {self.max_loops}",
+            title="Workflow Execution",
+            border_style="yellow"
+        ))
         logger.info(f"Running HierarchicalStructuredComm workflow for task: {task[:100]}...")
         
         current_result = None
         total_loops = 0
         
-        for loop in range(self.max_loops):
-            total_loops = loop + 1
-            logger.info(f"HierarchicalStructuredComm loop {total_loops}/{self.max_loops}")
+        # Rich progress tracking
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console
+        ) as progress:
+            task_progress = progress.add_task("Processing workflow...", total=self.max_loops)
             
-            # Execute step
-            step_result = self.step(task, img, *args, **kwargs)
-            
-            if "error" in step_result:
-                logger.error(f"Error in loop {total_loops}: {step_result['error']}")
-                break
-            
-            current_result = step_result["refined_result"]
-            
-            # Check if we should continue refining
-            if loop < self.max_loops - 1:
-                # Simple continuation logic - could be enhanced
-                evaluation_scores = [result.score for result in step_result["evaluation_results"]]
-                avg_score = sum(evaluation_scores) / len(evaluation_scores) if evaluation_scores else 0
+            for loop in range(self.max_loops):
+                total_loops = loop + 1
+                progress.update(task_progress, description=f"Loop {total_loops}/{self.max_loops}")
+                logger.info(f"HierarchicalStructuredComm loop {total_loops}/{self.max_loops}")
                 
-                if avg_score >= 8.0:  # High quality threshold
-                    logger.info(f"High quality achieved (avg score: {avg_score:.2f}), stopping refinement")
+                # Execute step
+                step_result = self.step(task, img, *args, **kwargs)
+                
+                if "error" in step_result:
+                    console.print(f"[bold red]Error in loop {total_loops}: {step_result['error']}[/bold red]")
+                    logger.error(f"Error in loop {total_loops}: {step_result['error']}")
                     break
+                
+                current_result = step_result["refined_result"]
+                
+                # Check if we should continue refining
+                if loop < self.max_loops - 1:
+                    # Simple continuation logic - could be enhanced
+                    evaluation_scores = [result.score for result in step_result["evaluation_results"]]
+                    avg_score = sum(evaluation_scores) / len(evaluation_scores) if evaluation_scores else 0
+                    
+                    if avg_score >= 8.0:  # High quality threshold
+                        console.print(f"[bold green]High quality achieved (avg score: {avg_score:.2f}), stopping refinement[/bold green]")
+                        logger.info(f"High quality achieved (avg score: {avg_score:.2f}), stopping refinement")
+                        break
+                
+                progress.advance(task_progress)
+        
+        # Enhanced completion display
+        console.print(Panel(
+            f"[bold green]Workflow Completed Successfully![/bold green]\n"
+            f"[cyan]Total Loops:[/cyan] {total_loops}\n"
+            f"[cyan]Conversation History:[/cyan] {len(self.conversation_history)} messages\n"
+            f"[cyan]Evaluation Results:[/cyan] {len(self.evaluation_results)} evaluations",
+            title="Workflow Summary",
+            border_style="green"
+        ))
         
         return {
             "final_result": current_result,
