@@ -20,6 +20,7 @@ from swarms.structs.agent import Agent  # noqa: F401
 from swarms.structs.conversation import Conversation
 from swarms.utils.get_cpu_cores import get_cpu_cores
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.security import SwarmShieldIntegration, ShieldConfig
 
 logger = initialize_logger(log_folder="graph_workflow")
 
@@ -174,6 +175,9 @@ class GraphWorkflow:
         task: Optional[str] = None,
         auto_compile: bool = True,
         verbose: bool = False,
+        shield_config: Optional[ShieldConfig] = None,
+        enable_security: bool = True,
+        security_level: str = "standard",
     ):
         self.id = id
         self.verbose = verbose
@@ -194,6 +198,9 @@ class GraphWorkflow:
         self.name = name
         self.description = description
         self.auto_compile = auto_compile
+
+        # Initialize SwarmShield integration
+        self._initialize_swarm_shield(shield_config, enable_security, security_level)
 
         # Private optimization attributes
         self._compiled = False
@@ -250,25 +257,111 @@ class GraphWorkflow:
                             f"Added edge: {edge.source} -> {edge.target}"
                         )
                 else:
-                    logger.warning(
-                        f"Skipping invalid edge: {edge.source} -> {edge.target} (nodes not found)"
-                    )
+                    if self.verbose:
+                        logger.warning(
+                            f"Skipping invalid edge: {edge.source} -> {edge.target}"
+                        )
 
             if self.verbose:
                 logger.info(
-                    f"Successfully added {valid_edges} valid edges"
+                    f"Added {valid_edges} valid edges to NetworkX graph"
                 )
 
-        # Auto-compile if requested and graph has nodes
-        if self.auto_compile and self.nodes:
-            if self.verbose:
-                logger.info("Auto-compiling GraphWorkflow")
+        # Auto-compile if enabled
+        if self.auto_compile:
             self.compile()
 
+    def _initialize_swarm_shield(
+        self, 
+        shield_config: Optional[ShieldConfig] = None,
+        enable_security: bool = True,
+        security_level: str = "standard"
+    ) -> None:
+        """Initialize SwarmShield integration for security features."""
+        self.enable_security = enable_security
+        self.security_level = security_level
+        
+        if enable_security:
+            if shield_config is None:
+                shield_config = ShieldConfig.get_security_level(security_level)
+            
+            self.swarm_shield = SwarmShieldIntegration(shield_config)
+            if self.verbose:
+                logger.info(f"SwarmShield initialized with {security_level} security level")
+        else:
+            self.swarm_shield = None
+            if self.verbose:
+                logger.info("SwarmShield security disabled")
+
+    # Security methods
+    def validate_task_with_shield(self, task: str) -> str:
+        """Validate and sanitize task input using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.validate_and_protect_input(task)
+        return task
+
+    def validate_agent_config_with_shield(self, agent_config: dict) -> dict:
+        """Validate agent configuration using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.validate_and_protect_input(str(agent_config))
+        return agent_config
+
+    def process_agent_communication_with_shield(self, message: str, agent_name: str) -> str:
+        """Process agent communication through SwarmShield security."""
+        if self.swarm_shield:
+            return self.swarm_shield.process_agent_communication(message, agent_name)
+        return message
+
+    def check_rate_limit_with_shield(self, agent_name: str) -> bool:
+        """Check rate limits for an agent using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.check_rate_limit(agent_name)
+        return True
+
+    def add_secure_message(self, message: str, agent_name: str) -> None:
+        """Add a message to secure conversation history."""
+        if self.swarm_shield:
+            self.swarm_shield.add_secure_message(message, agent_name)
+
+    def get_secure_messages(self) -> List[dict]:
+        """Get secure conversation messages."""
+        if self.swarm_shield:
+            return self.swarm_shield.get_secure_messages()
+        return []
+
+    def get_security_stats(self) -> dict:
+        """Get security statistics and metrics."""
+        if self.swarm_shield:
+            return self.swarm_shield.get_security_stats()
+        return {"security_enabled": False}
+
+    def update_shield_config(self, new_config: ShieldConfig) -> None:
+        """Update SwarmShield configuration."""
+        if self.swarm_shield:
+            self.swarm_shield.update_config(new_config)
+            if self.verbose:
+                logger.info("SwarmShield configuration updated")
+
+    def enable_security(self) -> None:
+        """Enable SwarmShield security features."""
+        if not self.swarm_shield:
+            self._initialize_swarm_shield(enable_security=True, security_level=self.security_level)
+            if self.verbose:
+                logger.info("SwarmShield security enabled")
+
+    def disable_security(self) -> None:
+        """Disable SwarmShield security features."""
+        self.swarm_shield = None
+        self.enable_security = False
         if self.verbose:
-            logger.success(
-                "GraphWorkflow initialization completed successfully"
-            )
+            logger.info("SwarmShield security disabled")
+
+    def cleanup_security(self) -> None:
+        """Clean up SwarmShield resources."""
+        if self.swarm_shield:
+            self.swarm_shield.cleanup()
+            if self.verbose:
+                logger.info("SwarmShield resources cleaned up")
 
     def _invalidate_compilation(self):
         """
@@ -279,7 +372,6 @@ class GraphWorkflow:
             logger.debug(
                 "Invalidating compilation cache due to graph structure change"
             )
-
         self._compiled = False
         self._sorted_layers = []
         self._compilation_timestamp = None

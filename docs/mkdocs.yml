@@ -271,6 +271,7 @@ nav:
       - Overview: "swarms/concept/swarm_architectures.md"
       - Benefits: "swarms/concept/why.md"
       - Choosing Multi Agent Architecture: "swarms/concept/how_to_choose_swarms.md"
+      - SwarmShield Security Integration: "guides/swarm_shield_integration.md"
 
       - Documentation:
         - Overview: "swarms/structs/overview.md"

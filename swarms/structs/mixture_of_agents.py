@@ -12,6 +12,7 @@ from swarms.utils.loguru_logger import initialize_logger
 import concurrent.futures
 from swarms.utils.output_types import OutputType
 from swarms.structs.conversation import Conversation
+from swarms.security import SwarmShieldIntegration, ShieldConfig
 
 
 logger = initialize_logger(log_folder="mixture_of_agents")
@@ -33,6 +34,9 @@ class MixtureOfAgents:
         max_loops: int = 1,
         output_type: OutputType = "final",
         aggregator_model_name: str = "claude-3-5-sonnet-20240620",
+        shield_config: Optional[ShieldConfig] = None,
+        enable_security: bool = True,
+        security_level: str = "standard",
     ) -> None:
         """
         Initialize the Mixture of Agents class with agents and configuration.
@@ -44,6 +48,9 @@ class MixtureOfAgents:
             aggregator_agent (Agent, optional): The aggregator agent to be used in the mixture. Defaults to None.
             aggregator_system_prompt (str, optional): The system prompt for the aggregator agent. Defaults to "".
             layers (int, optional): The number of layers to process in the mixture. Defaults to 3.
+            shield_config (ShieldConfig, optional): Security configuration for SwarmShield integration. Defaults to None.
+            enable_security (bool, optional): Whether to enable SwarmShield security features. Defaults to True.
+            security_level (str, optional): Pre-defined security level. Options: "basic", "standard", "enhanced", "maximum". Defaults to "standard".
         """
         self.name = name
         self.description = description
@@ -55,6 +62,9 @@ class MixtureOfAgents:
         self.output_type = output_type
         self.aggregator_model_name = aggregator_model_name
         self.aggregator_agent = self.aggregator_agent_setup()
+
+        # Initialize SwarmShield integration
+        self._initialize_swarm_shield(shield_config, enable_security, security_level)
 
         self.reliability_check()
 
@@ -203,3 +213,89 @@ class MixtureOfAgents:
                 future.result()
                 for future in concurrent.futures.as_completed(futures)
             ]
+
+    def _initialize_swarm_shield(
+        self, 
+        shield_config: Optional[ShieldConfig] = None,
+        enable_security: bool = True,
+        security_level: str = "standard"
+    ) -> None:
+        """Initialize SwarmShield integration for security features."""
+        self.enable_security = enable_security
+        self.security_level = security_level
+        
+        if enable_security:
+            if shield_config is None:
+                shield_config = ShieldConfig.get_security_level(security_level)
+            
+            self.swarm_shield = SwarmShieldIntegration(shield_config)
+            logger.info(f"SwarmShield initialized with {security_level} security level")
+        else:
+            self.swarm_shield = None
+            logger.info("SwarmShield security disabled")
+
+    # Security methods
+    def validate_task_with_shield(self, task: str) -> str:
+        """Validate and sanitize task input using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.validate_and_protect_input(task)
+        return task
+
+    def validate_agent_config_with_shield(self, agent_config: dict) -> dict:
+        """Validate agent configuration using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.validate_and_protect_input(str(agent_config))
+        return agent_config
+
+    def process_agent_communication_with_shield(self, message: str, agent_name: str) -> str:
+        """Process agent communication through SwarmShield security."""
+        if self.swarm_shield:
+            return self.swarm_shield.process_agent_communication(message, agent_name)
+        return message
+
+    def check_rate_limit_with_shield(self, agent_name: str) -> bool:
+        """Check rate limits for an agent using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.check_rate_limit(agent_name)
+        return True
+
+    def add_secure_message(self, message: str, agent_name: str) -> None:
+        """Add a message to secure conversation history."""
+        if self.swarm_shield:
+            self.swarm_shield.add_secure_message(message, agent_name)
+
+    def get_secure_messages(self) -> List[dict]:
+        """Get secure conversation messages."""
+        if self.swarm_shield:
+            return self.swarm_shield.get_secure_messages()
+        return []
+
+    def get_security_stats(self) -> dict:
+        """Get security statistics and metrics."""
+        if self.swarm_shield:
+            return self.swarm_shield.get_security_stats()
+        return {"security_enabled": False}
+
+    def update_shield_config(self, new_config: ShieldConfig) -> None:
+        """Update SwarmShield configuration."""
+        if self.swarm_shield:
+            self.swarm_shield.update_config(new_config)
+            logger.info("SwarmShield configuration updated")
+
+    def enable_security(self) -> None:
+        """Enable SwarmShield security features."""
+        if not self.swarm_shield:
+            self._initialize_swarm_shield(enable_security=True, security_level=self.security_level)
+            logger.info("SwarmShield security enabled")
+
+    def disable_security(self) -> None:
+        """Disable SwarmShield security features."""
+        self.swarm_shield = None
+        self.enable_security = False
+        logger.info("SwarmShield security disabled")
+
+    def cleanup_security(self) -> None:
+        """Clean up SwarmShield resources."""
+        if self.swarm_shield:
+            self.swarm_shield.cleanup()
+            logger.info("SwarmShield resources cleaned up")
