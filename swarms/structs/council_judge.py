@@ -2,7 +2,7 @@ import os
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, List
 
 from loguru import logger
 
@@ -12,6 +12,7 @@ from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
+from swarms.security import SwarmShieldIntegration, ShieldConfig
 
 
 class EvaluationError(Exception):
@@ -225,11 +226,12 @@ def build_aggregation_prompt(rationales: Dict[str, str]) -> str:
 
 class CouncilAsAJudge:
     """
-    A council of AI agents that evaluates task responses across multiple dimensions.
+    A council of specialized judge agents that evaluate task responses across multiple dimensions.
 
-    This class implements a parallel evaluation system where multiple specialized agents
-    evaluate different aspects of a task response, and their findings are aggregated
-    into a comprehensive report.
+    This class creates a system of expert evaluators, each focusing on a specific quality dimension
+    (accuracy, helpfulness, harmlessness, coherence, conciseness, instruction adherence). The judges
+    work in parallel to provide comprehensive assessments, which are then aggregated into a final
+    evaluation.
 
     Attributes:
         id (str): Unique identifier for the council
@@ -237,10 +239,15 @@ class CouncilAsAJudge:
         description (str): Description of the council's purpose
         model_name (str): Name of the model to use for evaluations
         output_type (str): Type of output to return
+        cache_size (int): Size of the LRU cache for prompts
+        random_model_name (bool): Whether to use random model names
+        max_loops (int): Maximum number of loops for agents
+        aggregation_model_name (str): Model name for the aggregator agent
+        judge_agent_model_name (Optional[str]): Model name for judge agents
+        max_workers (int): Maximum number of worker threads for parallel execution
         judge_agents (Dict[str, Agent]): Dictionary of dimension-specific judge agents
         aggregator_agent (Agent): Agent responsible for aggregating evaluations
         conversation (Conversation): Conversation history tracker
-        max_workers (int): Maximum number of worker threads for parallel execution
     """
 
     def __init__(
@@ -255,6 +262,9 @@ class CouncilAsAJudge:
         max_loops: int = 1,
         aggregation_model_name: str = "gpt-4o-mini",
         judge_agent_model_name: Optional[str] = None,
+        shield_config: Optional[ShieldConfig] = None,
+        enable_security: bool = True,
+        security_level: str = "standard",
     ):
         """
         Initialize the CouncilAsAJudge.
@@ -270,6 +280,10 @@ class CouncilAsAJudge:
             random_model_name (bool): Whether to use random model names
             max_loops (int): Maximum number of loops for agents
             aggregation_model_name (str): Model name for the aggregator agent
+            judge_agent_model_name (Optional[str]): Model name for judge agents
+            shield_config (ShieldConfig, optional): Security configuration for SwarmShield integration. Defaults to None.
+            enable_security (bool, optional): Whether to enable SwarmShield security features. Defaults to True.
+            security_level (str, optional): Pre-defined security level. Options: "basic", "standard", "enhanced", "maximum". Defaults to "standard".
         """
         self.id = id
         self.name = name
@@ -282,6 +296,9 @@ class CouncilAsAJudge:
         self.aggregation_model_name = aggregation_model_name
         self.judge_agent_model_name = judge_agent_model_name
         self.max_workers = max(1, int(os.cpu_count() * 0.75))
+
+        # Initialize SwarmShield integration
+        self._initialize_swarm_shield(shield_config, enable_security, security_level)
 
         self.reliability_check()
 
@@ -499,3 +516,89 @@ class CouncilAsAJudge:
             raise EvaluationError(
                 f"Evaluation process failed: {str(e)}"
             )
+
+    def _initialize_swarm_shield(
+        self, 
+        shield_config: Optional[ShieldConfig] = None,
+        enable_security: bool = True,
+        security_level: str = "standard"
+    ) -> None:
+        """Initialize SwarmShield integration for security features."""
+        self.enable_security = enable_security
+        self.security_level = security_level
+        
+        if enable_security:
+            if shield_config is None:
+                shield_config = ShieldConfig.get_security_level(security_level)
+            
+            self.swarm_shield = SwarmShieldIntegration(shield_config)
+            logger.info(f"SwarmShield initialized with {security_level} security level")
+        else:
+            self.swarm_shield = None
+            logger.info("SwarmShield security disabled")
+
+    # Security methods
+    def validate_task_with_shield(self, task: str) -> str:
+        """Validate and sanitize task input using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.validate_and_protect_input(task)
+        return task
+
+    def validate_agent_config_with_shield(self, agent_config: dict) -> dict:
+        """Validate agent configuration using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.validate_and_protect_input(str(agent_config))
+        return agent_config
+
+    def process_agent_communication_with_shield(self, message: str, agent_name: str) -> str:
+        """Process agent communication through SwarmShield security."""
+        if self.swarm_shield:
+            return self.swarm_shield.process_agent_communication(message, agent_name)
+        return message
+
+    def check_rate_limit_with_shield(self, agent_name: str) -> bool:
+        """Check rate limits for an agent using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.check_rate_limit(agent_name)
+        return True
+
+    def add_secure_message(self, message: str, agent_name: str) -> None:
+        """Add a message to secure conversation history."""
+        if self.swarm_shield:
+            self.swarm_shield.add_secure_message(message, agent_name)
+
+    def get_secure_messages(self) -> List[dict]:
+        """Get secure conversation messages."""
+        if self.swarm_shield:
+            return self.swarm_shield.get_secure_messages()
+        return []
+
+    def get_security_stats(self) -> dict:
+        """Get security statistics and metrics."""
+        if self.swarm_shield:
+            return self.swarm_shield.get_security_stats()
+        return {"security_enabled": False}
+
+    def update_shield_config(self, new_config: ShieldConfig) -> None:
+        """Update SwarmShield configuration."""
+        if self.swarm_shield:
+            self.swarm_shield.update_config(new_config)
+            logger.info("SwarmShield configuration updated")
+
+    def enable_security(self) -> None:
+        """Enable SwarmShield security features."""
+        if not self.swarm_shield:
+            self._initialize_swarm_shield(enable_security=True, security_level=self.security_level)
+            logger.info("SwarmShield security enabled")
+
+    def disable_security(self) -> None:
+        """Disable SwarmShield security features."""
+        self.swarm_shield = None
+        self.enable_security = False
+        logger.info("SwarmShield security disabled")
+
+    def cleanup_security(self) -> None:
+        """Clean up SwarmShield resources."""
+        if self.swarm_shield:
+            self.swarm_shield.cleanup()
+            logger.info("SwarmShield resources cleaned up")
