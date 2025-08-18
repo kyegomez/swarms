@@ -11,11 +11,16 @@ from swarms.agents.reasoning_agents import (
     agent_types,
 )
 from swarms.agents.reasoning_duo import ReasoningDuo
-from swarms.agents.hierarchical_structured_communication_agents import (
-    HierarchicalStructuredCommGenerator,
-    HierarchicalStructuredCommEvaluator,
-    HierarchicalStructuredCommRefiner,
-    HierarchicalStructuredCommSupervisor,
+from swarms.structs.hierarchical_structured_communication_framework import (
+    HierarchicalStructuredCommunicationGenerator as HierarchicalStructuredCommGenerator,
+    HierarchicalStructuredCommunicationEvaluator as HierarchicalStructuredCommEvaluator,
+    HierarchicalStructuredCommunicationRefiner as HierarchicalStructuredCommRefiner,
+    HierarchicalStructuredCommunicationSupervisor as HierarchicalStructuredCommSupervisor,
+    # Convenience aliases
+    TalkHierarchicalGenerator,
+    TalkHierarchicalEvaluator,
+    TalkHierarchicalRefiner,
+    TalkHierarchicalSupervisor,
 )
 from swarms.structs.stopping_conditions import (
     check_cancelled,
@@ -50,6 +55,10 @@ __all__ = [
     "ReflexionAgent",
     "GKPAgent",
     "AgentJudge",
+    "HierarchicalStructuredCommGenerator",
+    "HierarchicalStructuredCommEvaluator",
+    "HierarchicalStructuredCommRefiner",
+    "HierarchicalStructuredCommSupervisor",
     "TalkHierarchicalGenerator",
     "TalkHierarchicalEvaluator",
     "TalkHierarchicalRefiner",
