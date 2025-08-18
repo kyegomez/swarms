@@ -5,12 +5,12 @@ from typing import Callable, List, Optional, Union
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.conversation import Conversation
+from swarms.utils.formatter import formatter
 from swarms.utils.get_cpu_cores import get_cpu_cores
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.loguru_logger import initialize_logger
-from swarms.utils.formatter import formatter
 
 logger = initialize_logger(log_folder="concurrent_workflow")
 

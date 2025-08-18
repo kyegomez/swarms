@@ -192,7 +192,7 @@ Join our community of agent engineers and researchers for technical support, cut
 | 🌐 Website | Official project website | [swarms.ai](https://swarms.ai) |
 | 📚 Documentation | Official documentation and guides | [docs.swarms.world](https://docs.swarms.world) |
 | 📝 Blog | Latest updates and technical articles | [Medium](https://medium.com/@kyeg) |
-| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/jM3Z6M9uMq) |
+| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/EamjgSaEQf) |
 | 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |

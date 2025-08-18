@@ -27,9 +27,12 @@ from pydantic import BaseModel
 from swarms.agents.ape_agent import auto_generate_prompt
 from swarms.artifacts.main_artifact import Artifact
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
+from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
+from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
+from swarms.prompts.safety_prompt import SAFETY_PROMPT
 from swarms.prompts.tools import tool_sop_prompt
 from swarms.schemas.agent_mcp_errors import (
     AgentMCPConnectionError,
@@ -41,19 +44,30 @@ from swarms.schemas.base_schemas import (
     ChatCompletionResponseChoice,
     ChatMessageResponse,
 )
+from swarms.schemas.conversation_schema import ConversationSchema
 from swarms.schemas.llm_agent_schema import ModelConfigOrigin
+from swarms.schemas.mcp_schemas import (
+    MCPConnection,
+)
 from swarms.structs.agent_rag_handler import (
-    RAGConfig,
     AgentRAGHandler,
+    RAGConfig,
 )
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.conversation import Conversation
+from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
 )
 from swarms.telemetry.main import log_agent_data
 from swarms.tools.base_tool import BaseTool
+from swarms.tools.mcp_client_call import (
+    execute_multiple_tools_on_multiple_mcp_servers_sync,
+    execute_tool_call_simple,
+    get_mcp_tools_sync,
+    get_tools_for_multiple_mcp_servers,
+)
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
 )
@@ -64,28 +78,14 @@ from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
-from swarms.utils.litellm_tokenizer import count_tokens
-from swarms.utils.litellm_wrapper import LiteLLM
-from swarms.utils.pdf_to_text import pdf_to_text
-from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
-from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
-from swarms.prompts.safety_prompt import SAFETY_PROMPT
-from swarms.structs.ma_utils import set_random_models_for_agents
-from swarms.tools.mcp_client_call import (
-    execute_multiple_tools_on_multiple_mcp_servers_sync,
-    execute_tool_call_simple,
-    get_mcp_tools_sync,
-    get_tools_for_multiple_mcp_servers,
-)
-from swarms.schemas.mcp_schemas import (
-    MCPConnection,
-)
 from swarms.utils.index import (
     exists,
     format_data_structure,
 )
-from swarms.schemas.conversation_schema import ConversationSchema
+from swarms.utils.litellm_tokenizer import count_tokens
+from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
+from swarms.utils.pdf_to_text import pdf_to_text
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -102,7 +102,7 @@ def parse_done_token(response: str) -> bool:
 # Agent ID generator
 def agent_id():
     """Generate an agent id"""
-    return uuid.uuid4().hex
+    return f"agent-{uuid.uuid4().hex}"
 
 
 # Agent output types
@@ -673,7 +673,7 @@ class Agent:
 
         # Initialize the short term memory
         memory = Conversation(
-            system_prompt=prompt,
+            name=f"{self.agent_name}_conversation",
             user=self.user_name,
             rules=self.rules,
             token_count=(
@@ -691,6 +691,12 @@ class Agent:
                 if self.conversation_schema
                 else False
             ),
+        )
+
+        # Add the system prompt to the conversation
+        memory.add(
+            role="System",
+            content=prompt,
         )
 
         return memory
@@ -861,7 +867,9 @@ class Agent:
 
             return tools
         except AgentMCPConnectionError as e:
-            logger.error(f"Error in MCP connection: {e}")
+            logger.error(
+                f"Error in MCP connection: {e} Traceback: {traceback.format_exc()}"
+            )
             raise e
 
     def setup_config(self):
@@ -891,9 +899,9 @@ class Agent:
             bool: True if model supports vision and image is provided, False otherwise.
         """
         from litellm.utils import (
-            supports_vision,
             supports_function_calling,
             supports_parallel_function_calling,
+            supports_vision,
         )
 
         # Only check vision support if an image is provided
@@ -1172,7 +1180,8 @@ class Agent:
                         if self.print_on is True:
                             if isinstance(response, list):
                                 self.pretty_print(
-                                    f"Structured Output - Attempting Function Call Execution [{time.strftime('%H:%M:%S')}] \n\n Output: {format_data_structure(response)} ",
+                                    # f"Structured Output - Attempting Function Call Execution [{time.strftime('%H:%M:%S')}] \n\n Output: {format_data_structure(response)} ",
+                                    f"[Structured Output] [Time: {time.strftime('%H:%M:%S')}] \n\n {json.dumps(response, indent=4)}",
                                     loop_count,
                                 )
                             elif self.streaming_on:
@@ -1540,11 +1549,11 @@ class Agent:
             raise
 
     def reliability_check(self):
-        from litellm.utils import (
-            supports_function_calling,
-            get_max_tokens,
-        )
         from litellm import model_list
+        from litellm.utils import (
+            get_max_tokens,
+            supports_function_calling,
+        )
 
         if self.system_prompt is None:
             logger.warning(
@@ -2457,6 +2466,10 @@ class Agent:
         Returns:
             Dict[str, Any]: A dictionary representation of the class attributes.
         """
+
+        # Remove the llm object from the dictionary
+        self.__dict__.pop("llm", None)
+
         return {
             attr_name: self._serialize_attr(attr_name, attr_value)
             for attr_name, attr_value in self.__dict__.items()

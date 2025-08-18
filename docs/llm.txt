@@ -503,7 +503,7 @@ Schedule quarterly audits to refine structure and content across all repositorie
 Promote your contributions via:
 
 
-- **Swarms Discord**: https://discord.gg/jM3Z6M9uMq
+- **Swarms Discord**: https://discord.gg/EamjgSaEQf
 
 - **Swarms Telegram**: https://t.me/swarmsgroupchat
 
@@ -1180,7 +1180,7 @@ If you encounter issues:
 
 1. **Check the FAQ** in the main documentation
 2. **Search existing issues** on GitHub
-3. **Ask in the Discord community**: [discord.gg/jM3Z6M9uMq](https://discord.gg/jM3Z6M9uMq)
+3. **Ask in the Discord community**: [discord.gg/jM3Z6M9uMq](https://discord.gg/EamjgSaEQf)
 4. **Create a GitHub issue** with:
    - Your operating system
    - Python version
@@ -1804,7 +1804,7 @@ If you'd like technical support, join our Discord below and stay updated on our 
 |----------|------|-------------|
 | 📚 Documentation | [docs.swarms.world](https://docs.swarms.world) | Official documentation and guides |
 | 📝 Blog | [Medium](https://medium.com/@kyeg) | Latest updates and technical articles |
-| 💬 Discord | [Join Discord](https://discord.gg/jM3Z6M9uMq) | Live chat and community support |
+| 💬 Discord | [Join Discord](https://discord.gg/EamjgSaEQf) | Live chat and community support |
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
@@ -1861,7 +1861,7 @@ This index provides a categorized list of examples and tutorials for using the S
 |----------|------|-------------|
 | 📚 Documentation | [docs.swarms.world](https://docs.swarms.world) | Official documentation and guides |
 | 📝 Blog | [Medium](https://medium.com/@kyeg) | Latest updates and technical articles |
-| 💬 Discord | [Join Discord](https://discord.gg/jM3Z6M9uMq) | Live chat and community support |
+| 💬 Discord | [Join Discord](https://discord.gg/EamjgSaEQf) | Live chat and community support |
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
@@ -2294,7 +2294,7 @@ If you use any of these implementations in your research, please cite the origin
 
 Join our community to stay updated on the latest multi-agent research implementations:
 
-- **Discord**: [Join our community](https://discord.gg/jM3Z6M9uMq)
+- **Discord**: [Join our community](https://discord.gg/EamjgSaEQf)
 
 - **Documentation**: [docs.swarms.world](https://docs.swarms.world)
 
@@ -2503,7 +2503,7 @@ Join our community of agent engineers and researchers for technical support, cut
 | 🌐 Website | Official project website | [swarms.ai](https://swarms.ai) |
 | 📚 Documentation | Official documentation and guides | [docs.swarms.world](https://docs.swarms.world) |
 | 📝 Blog | Latest updates and technical articles | [Medium](https://medium.com/@kyeg) |
-| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/jM3Z6M9uMq) |
+| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/EamjgSaEQf) |
 | 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
@@ -2575,7 +2575,7 @@ To ensure high-quality contributions and streamline the process, please adhere t
 ## Get Involved
 
 1. **Join the Community**:
-   - Become an active member of the Swarms community by joining our Discord server: [Join Now](https://discord.gg/jM3Z6M9uMq). The Discord server serves as a hub for discussions, updates, and support.
+   - Become an active member of the Swarms community by joining our Discord server: [Join Now](https://discord.gg/EamjgSaEQf). The Discord server serves as a hub for discussions, updates, and support.
 
 2. **Stay Updated**:
    - Keep track of the latest updates, announcements, and bounty opportunities by regularly checking the Discord channel and the GitHub repository.
@@ -2657,7 +2657,7 @@ Welcome to the Swarms ecosystem. Click any tile below to explore our products, c
 
 <a class="resource-card" href="https://github.com/The-Swarm-Corporation/swarms-rs" target="_blank">🦀 GitHub: Swarms (Rust)</a>
 
-<a class="resource-card" href="https://discord.gg/jM3Z6M9uMq" target="_blank">💬 Join Our Discord</a>
+<a class="resource-card" href="https://discord.gg/EamjgSaEQf" target="_blank">💬 Join Our Discord</a>
 
 <a class="resource-card" href="https://t.me/swarmsgroupchat" target="_blank">📱 Telegram Group</a>
 
@@ -2679,7 +2679,7 @@ Welcome to the Swarms ecosystem. Click any tile below to explore our products, c
 | Chat UI      | [swarms.world/platform/chat](https://swarms.world/platform/chat)     |
 | Marketplace  | [swarms.world](https://swarms.world)                                 |
 | Startup App  | [Apply Here](https://www.swarms.xyz/programs/startups)               |
-| Discord      | [Join Now](https://discord.gg/jM3Z6M9uMq)                            |
+| Discord      | [Join Now](https://discord.gg/EamjgSaEQf)                            |
 | Telegram     | [Group Chat](https://t.me/swarmsgroupchat)                           |
 | Twitter/X    | [@swarms_corp](https://x.com/swarms_corp)                            |
 | Blog         | [medium.com/@kyeg](https://medium.com/@kyeg)                         |
@@ -2961,7 +2961,7 @@ Before we dive into the code, let's briefly introduce the Swarms framework. Swar
 For more information and to contribute to the project, visit the [Swarms GitHub repository](https://github.com/kyegomez/swarms). We highly recommend exploring the documentation for a deeper understanding of Swarms' capabilities.
 
 Additional resources:
-- [Swarms Discord](https://discord.gg/jM3Z6M9uMq) for community discussions
+- [Swarms Discord](https://discord.gg/EamjgSaEQf) for community discussions
 - [Swarms Twitter](https://x.com/swarms_corp) for updates
 - [Swarms Spotify](https://open.spotify.com/show/2HLiswhmUaMdjHC8AUHcCF?si=c831ef10c5ef4994) for podcasts
 - [Swarms Blog](https://medium.com/@kyeg) for in-depth articles
@@ -3414,7 +3414,7 @@ This system provides a powerful foundation for financial analysis, but there's a
 
 Remember, the Swarms framework is a powerful and flexible tool that can be adapted to a wide range of complex tasks beyond just financial analysis. We encourage you to explore the [Swarms GitHub repository](https://github.com/kyegomez/swarms) for more examples and inspiration.
 
-For more in-depth discussions and community support, consider joining the [Swarms Discord](https://discord.gg/jM3Z6M9uMq). You can also stay updated with the latest developments by following [Swarms on Twitter](https://x.com/swarms_corp).
+For more in-depth discussions and community support, consider joining the [Swarms Discord](https://discord.gg/EamjgSaEQf). You can also stay updated with the latest developments by following [Swarms on Twitter](https://x.com/swarms_corp).
 
 If you're interested in learning more about AI and its applications in various fields, check out the [Swarms Spotify podcast](https://open.spotify.com/show/2HLiswhmUaMdjHC8AUHcCF?si=c831ef10c5ef4994) and the [Swarms Blog](https://medium.com/@kyeg) for insightful articles and discussions.
 
@@ -3428,7 +3428,7 @@ By leveraging the power of multi-agent AI systems, you're well-equipped to navig
 
 
 * [Swarms Github](https://github.com/kyegomez/swarms)
-* [Swarms Discord](https://discord.gg/jM3Z6M9uMq)
+* [Swarms Discord](https://discord.gg/EamjgSaEQf)
 * [Swarms Twitter](https://x.com/swarms_corp)
 * [Swarms Spotify](https://open.spotify.com/show/2HLiswhmUaMdjHC8AUHcCF?si=c831ef10c5ef4994)
 * [Swarms Blog](https://medium.com/@kyeg)
@@ -4457,7 +4457,7 @@ The table below summarizes the estimated savings for each use case:
 
 - [book a call](https://cal.com/swarms) 
 
-- Swarms Discord: https://discord.gg/jM3Z6M9uMq
+- Swarms Discord: https://discord.gg/EamjgSaEQf
 
 - Swarms Twitter: https://x.com/swarms_corp
 
@@ -5349,7 +5349,7 @@ By leveraging expert guidance and peer insights, you can position your organizat
 
 # Welcome to Swarms Docs Home
 
-[![Join our Discord](https://img.shields.io/badge/Discord-Join%20our%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/jM3Z6M9uMq) [![Subscribe on YouTube](https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@kyegomez3242) [![Connect on LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/kye-g-38759a207/) [![Follow on X.com](https://img.shields.io/badge/X.com-Follow-1DA1F2?style=for-the-badge&logo=x&logoColor=white)](https://x.com/swarms_corp)
+[![Join our Discord](https://img.shields.io/badge/Discord-Join%20our%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/EamjgSaEQf) [![Subscribe on YouTube](https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@kyegomez3242) [![Connect on LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/kye-g-38759a207/) [![Follow on X.com](https://img.shields.io/badge/X.com-Follow-1DA1F2?style=for-the-badge&logo=x&logoColor=white)](https://x.com/swarms_corp)
 
 ## What is Swarms?
 
@@ -5428,7 +5428,7 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 |----------|------|-------------|
 | 📚 Documentation | [docs.swarms.world](https://docs.swarms.world) | Official documentation and guides |
 | 📝 Blog | [Medium](https://medium.com/@kyeg) | Latest updates and technical articles |
-| 💬 Discord | [Join Discord](https://discord.gg/jM3Z6M9uMq) | Live chat and community support |
+| 💬 Discord | [Join Discord](https://discord.gg/EamjgSaEQf) | Live chat and community support |
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
@@ -6056,7 +6056,7 @@ When creating your SIP, copy this template:
 
 # Welcome to Swarms Docs Home
 
-[![Join our Discord](https://img.shields.io/badge/Discord-Join%20our%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/jM3Z6M9uMq) [![Subscribe on YouTube](https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@kyegomez3242) [![Connect on LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/kye-g-38759a207/) [![Follow on X.com](https://img.shields.io/badge/X.com-Follow-1DA1F2?style=for-the-badge&logo=x&logoColor=white)](https://x.com/swarms_corp)
+[![Join our Discord](https://img.shields.io/badge/Discord-Join%20our%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/EamjgSaEQf) [![Subscribe on YouTube](https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@kyegomez3242) [![Connect on LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/kye-g-38759a207/) [![Follow on X.com](https://img.shields.io/badge/X.com-Follow-1DA1F2?style=for-the-badge&logo=x&logoColor=white)](https://x.com/swarms_corp)
 
 ## What is Swarms?
 
@@ -8804,7 +8804,7 @@ Join our community of agent engineers and researchers for technical support, cut
 |----------|-------------|------|
 | 📚 Documentation | Official documentation and guides | [docs.swarms.world](https://docs.swarms.world) |
 | 📝 Blog | Latest updates and technical articles | [Medium](https://medium.com/@kyeg) |
-| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/jM3Z6M9uMq) |
+| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/EamjgSaEQf) |
 | 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
@@ -12747,7 +12747,7 @@ By understanding the purpose and role of each folder in the Swarms framework, us
 
 
 - **Community Support**
-  - URL: [Submit issue](https://discord.gg/jM3Z6M9uMq)
+  - URL: [Submit issue](https://discord.gg/EamjgSaEQf)
   - Ask the community for support in real-time and or admin support
 
 --------------------------------------------------
@@ -15569,7 +15569,7 @@ If you have any questions or need assistance, please feel free to open an issue 
 
 | **Platform** | **Purpose** | **Join Link** | **Benefits** |
 |--------------|-------------|---------------|--------------|
-| **Discord Community** | Real-time support & discussions | [Join Discord](https://discord.gg/jM3Z6M9uMq) | • 24/7 developer support<br/>• Weekly community events<br/>• Direct access to core team<br/>• Beta feature previews |
+| **Discord Community** | Real-time support & discussions | [Join Discord](https://discord.gg/EamjgSaEQf) | • 24/7 developer support<br/>• Weekly community events<br/>• Direct access to core team<br/>• Beta feature previews |
 | **Twitter/X** | Latest updates & announcements | [Follow @swarms_corp](https://x.com/swarms_corp) | • Breaking news & updates<br/>• Community highlights<br/>• Technical insights<br/>• Industry partnerships |
 | **LinkedIn** | Professional network & updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | • Professional networking<br/>• Career opportunities<br/>• Enterprise partnerships<br/>• Industry insights |
 | **YouTube** | Tutorials & technical content | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | • In-depth tutorials<br/>• Live coding sessions<br/>• Architecture deep dives<br/>• Community showcases |
@@ -15629,7 +15629,7 @@ If you have any questions or need assistance, please feel free to open an issue 
 | **1** | [Install Swarms Python Framework](https://docs.swarms.world/en/latest/swarms/install/install/) | 5 minutes |
 | **2** | [Run Your First Agent](https://docs.swarms.world/en/latest/swarms/examples/basic_agent/) | 10 minutes |
 | **3** | [Try Multi-Agent Workflows](https://docs.swarms.world/en/latest/swarms/examples/sequential_example/) | 15 minutes |
-| **4** | [Join Our Discord Community](https://discord.gg/jM3Z6M9uMq) | 2 minutes |
+| **4** | [Join Our Discord Community](https://discord.gg/EamjgSaEQf) | 2 minutes |
 | **5** | [Explore Enterprise Features](https://docs.swarms.world/en/latest/swarms_cloud/swarms_api/) | 20 minutes |
 
 ---
@@ -18820,7 +18820,7 @@ Join our community of agent engineers and researchers for technical support, cut
 |----------|-------------|------|
 | 📚 Documentation | Official documentation and guides | [docs.swarms.world](https://docs.swarms.world) |
 | 📝 Blog | Latest updates and technical articles | [Medium](https://medium.com/@kyeg) |
-| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/jM3Z6M9uMq) |
+| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/EamjgSaEQf) |
 | 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
@@ -19611,7 +19611,7 @@ If you're facing issues or want to learn more, check out the following resources
 |----------|------|-------------|
 | 📚 Documentation | [docs.swarms.world](https://docs.swarms.world) | Official documentation and guides |
 | 📝 Blog | [Medium](https://medium.com/@kyeg) | Latest updates and technical articles |
-| 💬 Discord | [Join Discord](https://discord.gg/jM3Z6M9uMq) | Live chat and community support |
+| 💬 Discord | [Join Discord](https://discord.gg/EamjgSaEQf) | Live chat and community support |
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
@@ -19915,7 +19915,7 @@ If you're facing issues or want to learn more, check out the following resources
 |----------|------|-------------|
 | 📚 Documentation | [docs.swarms.world](https://docs.swarms.world) | Official documentation and guides |
 | 📝 Blog | [Medium](https://medium.com/@kyeg) | Latest updates and technical articles |
-| 💬 Discord | [Join Discord](https://discord.gg/jM3Z6M9uMq) | Live chat and community support |
+| 💬 Discord | [Join Discord](https://discord.gg/EamjgSaEQf) | Live chat and community support |
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
@@ -22379,7 +22379,7 @@ If you're facing issues or want to learn more, check out the following resources
 |----------|------|-------------|
 | 📚 Documentation | [docs.swarms.world](https://docs.swarms.world) | Official documentation and guides |
 | 📝 Blog | [Medium](https://medium.com/@kyeg) | Latest updates and technical articles |
-| 💬 Discord | [Join Discord](https://discord.gg/jM3Z6M9uMq) | Live chat and community support |
+| 💬 Discord | [Join Discord](https://discord.gg/EamjgSaEQf) | Live chat and community support |
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
@@ -27453,7 +27453,7 @@ Stay tuned for updates on the Swarm Exchange launch.
 
 - **Documentation:** [Swarms Documentation](https://docs.swarms.world)
 
-- **Support:** Contact us via our [Discord Community](https://discord.gg/jM3Z6M9uMq).
+- **Support:** Contact us via our [Discord Community](https://discord.gg/EamjgSaEQf).
 
 ---
 
@@ -30381,7 +30381,7 @@ graph TD
         - [Tutorials](https://docs.swarms.world/tutorials)
 
     === "💬 Community"
-        - [Discord Server](https://discord.gg/jM3Z6M9uMq)
+        - [Discord Server](https://discord.gg/EamjgSaEQf)
         - [GitHub Discussions](https://github.com/kyegomez/swarms/discussions)
 
     === "🔧 Development"
@@ -30425,7 +30425,7 @@ The MCP integration brings powerful external tool connectivity to Swarms agents,
 
 !!! tip "Stay Updated"
     
-    Join our [Discord community](https://discord.gg/jM3Z6M9uMq) to stay informed about new MCP features and connect with other developers building amazing agent applications.
+    Join our [Discord community](https://discord.gg/EamjgSaEQf) to stay informed about new MCP features and connect with other developers building amazing agent applications.
 
 ---
 
@@ -38385,7 +38385,7 @@ Join our community of agent engineers and researchers for technical support, cut
 |----------|-------------|------|
 | 📚 Documentation | Official documentation and guides | [docs.swarms.world](https://docs.swarms.world) |
 | 📝 Blog | Latest updates and technical articles | [Medium](https://medium.com/@kyeg) |
-| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/jM3Z6M9uMq) |
+| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/EamjgSaEQf) |
 | 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
@@ -46084,7 +46084,7 @@ The Swarms team is committed to providing exceptional technical support to help 
 | **Major Features (SIPs)** | New agent types, core changes, integrations | 1-2 weeks | [SIP Guidelines](protocol/sip.md) |
 | **Minor Features** | Small enhancements, straightforward additions | < 48 hours | [GitHub Issues](https://github.com/kyegomez/swarms/issues) |
 | **Private Issues** | Security concerns, enterprise consulting | < 4 hours | [Book Support Call](https://cal.com/swarms/swarms-technical-support?overlayCalendar=true) |
-| **Real-time Help** | Quick questions, community discussions | Immediate | [Discord Community](https://discord.gg/jM3Z6M9uMq) |
+| **Real-time Help** | Quick questions, community discussions | Immediate | [Discord Community](https://discord.gg/EamjgSaEQf) |
 | **Documentation** | Usage guides, examples, tutorials | Self-service | [docs.swarms.world](https://docs.swarms.world) |
 
 ---
@@ -46263,7 +46263,7 @@ Get instant help from our active community of developers and core team members.
 
 ### **Getting Help on Discord**
 
-1. **Join here**: [https://discord.gg/jM3Z6M9uMq](https://discord.gg/jM3Z6M9uMq)
+1. **Join here**: [https://discord.gg/EamjgSaEQf](https://discord.gg/EamjgSaEQf)
 
 2. **Read the rules** and introduce yourself in #general
 
@@ -46434,7 +46434,7 @@ Help improve support for everyone:
 | Urgency | Best Channel |
 |---------|-------------|
 | **Emergency** | [Book Immediate Call](https://cal.com/swarms/swarms-technical-support?overlayCalendar=true) |
-| **Urgent** | [Discord #technical-support](https://discord.gg/jM3Z6M9uMq) |
+| **Urgent** | [Discord #technical-support](https://discord.gg/EamjgSaEQf) |
 | **Standard** | [GitHub Issues](https://github.com/kyegomez/swarms/issues) |
 | **Major Features** | [SIP Guidelines](protocol/sip.md) |
 | **Minor Features** | [GitHub Issues](https://github.com/kyegomez/swarms/issues) |
@@ -50226,7 +50226,7 @@ agent_config = {
 [:material-file-document: Swarms.ai Documentation](https://docs.swarms.world){ .md-button }
 [:material-application: Swarms.ai Platform](https://swarms.world/platform){ .md-button }
 [:material-key: API Key Management](https://swarms.world/platform/api-keys){ .md-button }
-[:material-forum: Swarms.ai Community](https://discord.gg/jM3Z6M9uMq){ .md-button }
+[:material-forum: Swarms.ai Community](https://discord.gg/EamjgSaEQf){ .md-button }
 
 --------------------------------------------------
 
@@ -50379,7 +50379,7 @@ SWARMS_LOG_LEVEL=INFO
 
 | Community Channel           | Description                                                                           | Link                                                                                  |
 |-----------------------------|---------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
-| Discord Community           | Join our active developer community for real-time support and discussions             | [Join Discord](https://discord.gg/jM3Z6M9uMq)                                         |
+| Discord Community           | Join our active developer community for real-time support and discussions             | [Join Discord](https://discord.gg/EamjgSaEQf)                                         |
 | GitHub Discussions          | Ask questions and share ideas                                                         | [GitHub Discussions](https://github.com/The-Swarm-Corporation/swarms/discussions)     |
 | Twitter/X                   | Follow for updates and announcements                                                  | [Twitter/X](https://x.com/swarms_corp)                                                |
 
@@ -55111,7 +55111,7 @@ Join our community of agent engineers and researchers for technical support, cut
 |----------|-------------|------|
 | 📚 Documentation | Official documentation and guides | [docs.swarms.world](https://docs.swarms.world) |
 | 📝 Blog | Latest updates and technical articles | [Medium](https://medium.com/@kyeg) |
-| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/jM3Z6M9uMq) |
+| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/EamjgSaEQf) |
 | 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
@@ -57475,7 +57475,7 @@ Error responses include a detailed message explaining the issue:
 |--------------|---------------------|
 | Documentation | [https://docs.swarms.world](https://docs.swarms.world) |
 | Email | kye@swarms.world |
-| Community | [https://discord.gg/jM3Z6M9uMq](https://discord.gg/jM3Z6M9uMq) |
+| Community | [https://discord.gg/EamjgSaEQf](https://discord.gg/EamjgSaEQf) |
 | Marketplace | [https://swarms.world](https://swarms.world) |
 | Website | [https://swarms.ai](https://swarms.ai) |
 
@@ -58440,7 +58440,7 @@ print(result)
 We're excited to see how you leverage Swarms-Memory in your projects! Join our community on Discord to share your experiences, ask questions, and stay updated on the latest developments.
 
 - **🐦 Twitter**: [Follow us on Twitter](https://twitter.com/swarms_platform)
-- **📢 Discord**: [Join the Agora Discord](https://discord.gg/jM3Z6M9uMq)
+- **📢 Discord**: [Join the Agora Discord](https://discord.gg/EamjgSaEQf)
 - **Swarms Platform**: [Visit our website](https://swarms.ai)
 - **📙 Documentation**: [Read the Docs](https://docs.swarms.ai)
 
@@ -60129,9 +60129,9 @@ To further enhance your understanding and usage of the Swarms Platform, explore 
 ### Links
 
 - [API Documentation](https://docs.swarms.world)
-- [Community Forums](https://discord.gg/jM3Z6M9uMq)
+- [Community Forums](https://discord.gg/EamjgSaEQf)
 - [Tutorials and Guides](https://docs.swarms.world))
-- [Support](https://discord.gg/jM3Z6M9uMq)
+- [Support](https://discord.gg/EamjgSaEQf)
 
 ## Conclusion
 

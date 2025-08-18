@@ -68,7 +68,7 @@
 
 | **Platform** | **Purpose** | **Join Link** | **Benefits** |
 |--------------|-------------|---------------|--------------|
-| **Discord Community** | Real-time support & discussions | [Join Discord](https://discord.gg/jM3Z6M9uMq) | • 24/7 developer support<br/>• Weekly community events<br/>• Direct access to core team<br/>• Beta feature previews |
+| **Discord Community** | Real-time support & discussions | [Join Discord](https://discord.gg/EamjgSaEQf) | • 24/7 developer support<br/>• Weekly community events<br/>• Direct access to core team<br/>• Beta feature previews |
 | **Twitter/X** | Latest updates & announcements | [Follow @swarms_corp](https://x.com/swarms_corp) | • Breaking news & updates<br/>• Community highlights<br/>• Technical insights<br/>• Industry partnerships |
 | **LinkedIn** | Professional network & updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | • Professional networking<br/>• Career opportunities<br/>• Enterprise partnerships<br/>• Industry insights |
 | **YouTube** | Tutorials & technical content | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | • In-depth tutorials<br/>• Live coding sessions<br/>• Architecture deep dives<br/>• Community showcases |
@@ -128,7 +128,7 @@
 | **1** | [Install Swarms Python Framework](https://docs.swarms.world/en/latest/swarms/install/install/) | 5 minutes |
 | **2** | [Run Your First Agent](https://docs.swarms.world/en/latest/swarms/examples/basic_agent/) | 10 minutes |
 | **3** | [Try Multi-Agent Workflows](https://docs.swarms.world/en/latest/swarms/examples/sequential_example/) | 15 minutes |
-| **4** | [Join Our Discord Community](https://discord.gg/jM3Z6M9uMq) | 2 minutes |
+| **4** | [Join Our Discord Community](https://discord.gg/EamjgSaEQf) | 2 minutes |
 | **5** | [Explore Enterprise Features](https://docs.swarms.world/en/latest/swarms_cloud/swarms_api/) | 20 minutes |
 
 ---
