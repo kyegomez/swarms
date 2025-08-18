@@ -469,10 +469,19 @@ KEY INSIGHTS:
         insights = []
         sentences = response.split(".")
 
+        # Ensure relevance_keywords is not None
+        keywords = self.config.relevance_keywords or [
+            "important",
+            "key", 
+            "critical",
+            "summary",
+            "conclusion"
+        ]
+
         for sentence in sentences:
             if any(
                 keyword in sentence.lower()
-                for keyword in self.config.relevance_keywords[:5]
+                for keyword in keywords[:5]
             ):
                 insights.append(sentence.strip())
 
