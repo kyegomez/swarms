@@ -21,7 +21,7 @@ Whereas this implementation uses the models as is.
 
 """
 
-from typing import List
+from typing import List, Optional
 
 from loguru import logger
 
@@ -29,6 +29,7 @@ from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
 from swarms.utils.any_to_str import any_to_str
+from swarms.security import SwarmShieldIntegration, ShieldConfig
 
 # Agent 1: Proof Creator Agent
 proof_creator_prompt = """
@@ -144,9 +145,11 @@ Throughout your analysis, focus on uncovering clear patterns while being attenti
 
 class MALT:
     """
-    MALT (Mult-Agent Learning Task) orchestrates the interaction between multiple agents
-    to perform complex tasks through a structured conversation. It ensures reliability and
-    provides options for output formatting.
+    MALT (Multi-Agent Learning Task) orchestrator for complex task execution.
+
+    This class implements a multi-agent system that orchestrates the interaction between
+    multiple agents to perform complex tasks through a structured conversation. It ensures
+    reliability and provides options for output formatting.
 
     Attributes:
         main_agent (Agent): The primary agent responsible for executing the main task.
@@ -169,6 +172,9 @@ class MALT:
         return_dict: bool = False,
         agents: list[Agent] = [],
         preset_agents: bool = True,
+        shield_config: Optional[ShieldConfig] = None,
+        enable_security: bool = True,
+        security_level: str = "standard",
     ):
         logger.info(
             "Initializing MALT with provided agents and parameters."
@@ -180,6 +186,9 @@ class MALT:
         self.return_list = return_list
         self.return_dict = return_dict
         self.agents = agents
+
+        # Initialize SwarmShield integration
+        self._initialize_swarm_shield(shield_config, enable_security, security_level)
 
         self.conversation = Conversation()
         logger.debug("Conversation initialized.")
@@ -218,6 +227,92 @@ class MALT:
             self.verifier_agent = proof_verifier_agent
 
         self.reliability_check()
+
+    def _initialize_swarm_shield(
+        self, 
+        shield_config: Optional[ShieldConfig] = None,
+        enable_security: bool = True,
+        security_level: str = "standard"
+    ) -> None:
+        """Initialize SwarmShield integration for security features."""
+        self.enable_security = enable_security
+        self.security_level = security_level
+        
+        if enable_security:
+            if shield_config is None:
+                shield_config = ShieldConfig.get_security_level(security_level)
+            
+            self.swarm_shield = SwarmShieldIntegration(shield_config)
+            logger.info(f"SwarmShield initialized with {security_level} security level")
+        else:
+            self.swarm_shield = None
+            logger.info("SwarmShield security disabled")
+
+    # Security methods
+    def validate_task_with_shield(self, task: str) -> str:
+        """Validate and sanitize task input using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.validate_and_protect_input(task)
+        return task
+
+    def validate_agent_config_with_shield(self, agent_config: dict) -> dict:
+        """Validate agent configuration using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.validate_and_protect_input(str(agent_config))
+        return agent_config
+
+    def process_agent_communication_with_shield(self, message: str, agent_name: str) -> str:
+        """Process agent communication through SwarmShield security."""
+        if self.swarm_shield:
+            return self.swarm_shield.process_agent_communication(message, agent_name)
+        return message
+
+    def check_rate_limit_with_shield(self, agent_name: str) -> bool:
+        """Check rate limits for an agent using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.check_rate_limit(agent_name)
+        return True
+
+    def add_secure_message(self, message: str, agent_name: str) -> None:
+        """Add a message to secure conversation history."""
+        if self.swarm_shield:
+            self.swarm_shield.add_secure_message(message, agent_name)
+
+    def get_secure_messages(self) -> List[dict]:
+        """Get secure conversation messages."""
+        if self.swarm_shield:
+            return self.swarm_shield.get_secure_messages()
+        return []
+
+    def get_security_stats(self) -> dict:
+        """Get security statistics and metrics."""
+        if self.swarm_shield:
+            return self.swarm_shield.get_security_stats()
+        return {"security_enabled": False}
+
+    def update_shield_config(self, new_config: ShieldConfig) -> None:
+        """Update SwarmShield configuration."""
+        if self.swarm_shield:
+            self.swarm_shield.update_config(new_config)
+            logger.info("SwarmShield configuration updated")
+
+    def enable_security(self) -> None:
+        """Enable SwarmShield security features."""
+        if not self.swarm_shield:
+            self._initialize_swarm_shield(enable_security=True, security_level=self.security_level)
+            logger.info("SwarmShield security enabled")
+
+    def disable_security(self) -> None:
+        """Disable SwarmShield security features."""
+        self.swarm_shield = None
+        self.enable_security = False
+        logger.info("SwarmShield security disabled")
+
+    def cleanup_security(self) -> None:
+        """Clean up SwarmShield resources."""
+        if self.swarm_shield:
+            self.swarm_shield.cleanup()
+            logger.info("SwarmShield resources cleaned up")
 
     def reliability_check(self):
         """Checks the reliability of the provided agents and parameters."""
