@@ -49,6 +49,7 @@ from swarms.schemas.llm_agent_schema import ModelConfigOrigin
 from swarms.schemas.mcp_schemas import (
     MCPConnection,
 )
+from swarms.security import SwarmShieldIntegration, ShieldConfig
 from swarms.structs.agent_rag_handler import (
     AgentRAGHandler,
     RAGConfig,
@@ -432,6 +433,9 @@ class Agent:
         tool_retry_attempts: int = 3,
         speed_mode: str = None,
         reasoning_prompt_on: bool = True,
+        shield_config: Optional[ShieldConfig] = None,
+        enable_security: bool = True,
+        security_level: str = "standard",
         *args,
         **kwargs,
     ):
@@ -575,6 +579,9 @@ class Agent:
         self.speed_mode = speed_mode
         self.reasoning_prompt_on = reasoning_prompt_on
 
+        # Initialize SwarmShield integration
+        self._initialize_swarm_shield(shield_config, enable_security, security_level)
+
         # Initialize the feedback
         self.feedback = []
 
@@ -627,6 +634,92 @@ class Agent:
             self.print_dashboard()
 
         self.reliability_check()
+
+    def _initialize_swarm_shield(
+        self, 
+        shield_config: Optional[ShieldConfig] = None,
+        enable_security: bool = True,
+        security_level: str = "standard"
+    ) -> None:
+        """Initialize SwarmShield integration for security features."""
+        self.enable_security = enable_security
+        self.security_level = security_level
+        
+        if enable_security:
+            if shield_config is None:
+                shield_config = ShieldConfig.get_security_level(security_level)
+            
+            self.swarm_shield = SwarmShieldIntegration(shield_config)
+            logger.info(f"SwarmShield initialized with {security_level} security level")
+        else:
+            self.swarm_shield = None
+            logger.info("SwarmShield security disabled")
+
+    # Security methods
+    def validate_task_with_shield(self, task: str) -> str:
+        """Validate and sanitize task input using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.validate_and_protect_input(task)
+        return task
+
+    def validate_agent_config_with_shield(self, agent_config: dict) -> dict:
+        """Validate agent configuration using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.validate_and_protect_input(str(agent_config))
+        return agent_config
+
+    def process_agent_communication_with_shield(self, message: str, agent_name: str) -> str:
+        """Process agent communication through SwarmShield security."""
+        if self.swarm_shield:
+            return self.swarm_shield.process_agent_communication(message, agent_name)
+        return message
+
+    def check_rate_limit_with_shield(self, agent_name: str) -> bool:
+        """Check rate limits for an agent using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.check_rate_limit(agent_name)
+        return True
+
+    def add_secure_message(self, message: str, agent_name: str) -> None:
+        """Add a message to secure conversation history."""
+        if self.swarm_shield:
+            self.swarm_shield.add_secure_message(message, agent_name)
+
+    def get_secure_messages(self) -> List[dict]:
+        """Get secure conversation messages."""
+        if self.swarm_shield:
+            return self.swarm_shield.get_secure_messages()
+        return []
+
+    def get_security_stats(self) -> dict:
+        """Get security statistics and metrics."""
+        if self.swarm_shield:
+            return self.swarm_shield.get_security_stats()
+        return {"security_enabled": False}
+
+    def update_shield_config(self, new_config: ShieldConfig) -> None:
+        """Update SwarmShield configuration."""
+        if self.swarm_shield:
+            self.swarm_shield.update_config(new_config)
+            logger.info("SwarmShield configuration updated")
+
+    def enable_security(self) -> None:
+        """Enable SwarmShield security features."""
+        if not self.swarm_shield:
+            self._initialize_swarm_shield(enable_security=True, security_level=self.security_level)
+            logger.info("SwarmShield security enabled")
+
+    def disable_security(self) -> None:
+        """Disable SwarmShield security features."""
+        self.swarm_shield = None
+        self.enable_security = False
+        logger.info("SwarmShield security disabled")
+
+    def cleanup_security(self) -> None:
+        """Clean up SwarmShield resources."""
+        if self.swarm_shield:
+            self.swarm_shield.cleanup()
+            logger.info("SwarmShield resources cleaned up")
 
     def rag_setup_handling(self):
         return AgentRAGHandler(
