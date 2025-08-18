@@ -24,6 +24,7 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.security import SwarmShieldIntegration, ShieldConfig
 
 RESEARCH_AGENT_PROMPT = """
 You are an expert Research Agent with exceptional capabilities in:
@@ -482,6 +483,9 @@ class HeavySwarm:
         show_dashboard: bool = False,
         agent_prints_on: bool = False,
         output_type: str = "dict-all-except-first",
+        shield_config: Optional[ShieldConfig] = None,
+        enable_security: bool = True,
+        security_level: str = "standard",
     ):
         """
         Initialize the HeavySwarm with configuration parameters.
@@ -497,29 +501,25 @@ class HeavySwarm:
                 'synthesis' is supported. Defaults to "synthesis".
             loops_per_agent (int, optional): Number of execution loops each agent should perform.
                 Must be greater than 0. Defaults to 1.
-            question_agent_model_name (str, optional): Language model for question generation.
+            question_agent_model_name (str, optional): Model name for the question generation agent.
                 Defaults to "gpt-4o-mini".
-            worker_model_name (str, optional): Language model for specialized worker agents.
+            worker_model_name (str, optional): Model name for specialized worker agents.
                 Defaults to "gpt-4o-mini".
-            verbose (bool, optional): Enable detailed logging and debug output. Defaults to False.
-            max_workers (int, optional): Maximum concurrent workers for parallel execution.
-                Defaults to 90% of CPU count.
+            verbose (bool, optional): Enable detailed logging output. Defaults to False.
+            max_workers (int, optional): Maximum number of concurrent worker threads.
+                Defaults to 90% of CPU cores.
             show_dashboard (bool, optional): Enable rich dashboard with progress visualization.
                 Defaults to False.
             agent_prints_on (bool, optional): Enable individual agent output printing.
                 Defaults to False.
-
-        Raises:
-            ValueError: If loops_per_agent is 0 or negative
-            ValueError: If required model names are None
-
-        Note:
-            The swarm automatically performs reliability checks during initialization
-            to ensure all required parameters are properly configured.
+            output_type (str, optional): Output format type. Defaults to "dict-all-except-first".
+            shield_config (ShieldConfig, optional): Security configuration for SwarmShield integration. Defaults to None.
+            enable_security (bool, optional): Whether to enable SwarmShield security features. Defaults to True.
+            security_level (str, optional): Pre-defined security level. Options: "basic", "standard", "enhanced", "maximum". Defaults to "standard".
         """
         self.name = name
         self.description = description
-        self.agents = agents
+        self.agents = agents or []
         self.timeout = timeout
         self.aggregation_strategy = aggregation_strategy
         self.loops_per_agent = loops_per_agent
@@ -531,13 +531,113 @@ class HeavySwarm:
         self.agent_prints_on = agent_prints_on
         self.output_type = output_type
 
+        # Initialize SwarmShield integration
+        self._initialize_swarm_shield(shield_config, enable_security, security_level)
+
         self.conversation = Conversation()
         self.console = Console()
 
+        # Dashboard initialization
         if self.show_dashboard:
+            # Validate configuration
             self.show_swarm_info()
-
+        
         self.reliability_check()
+
+        if self.verbose:
+            logger.info(f"HeavySwarm '{self.name}' initialized successfully")
+
+    def _initialize_swarm_shield(
+        self, 
+        shield_config: Optional[ShieldConfig] = None,
+        enable_security: bool = True,
+        security_level: str = "standard"
+    ) -> None:
+        """Initialize SwarmShield integration for security features."""
+        self.enable_security = enable_security
+        self.security_level = security_level
+        
+        if enable_security:
+            if shield_config is None:
+                shield_config = ShieldConfig.get_security_level(security_level)
+            
+            self.swarm_shield = SwarmShieldIntegration(shield_config)
+            if self.verbose:
+                logger.info(f"SwarmShield initialized with {security_level} security level")
+        else:
+            self.swarm_shield = None
+            if self.verbose:
+                logger.info("SwarmShield security disabled")
+
+    # Security methods
+    def validate_task_with_shield(self, task: str) -> str:
+        """Validate and sanitize task input using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.validate_and_protect_input(task)
+        return task
+
+    def validate_agent_config_with_shield(self, agent_config: dict) -> dict:
+        """Validate agent configuration using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.validate_and_protect_input(str(agent_config))
+        return agent_config
+
+    def process_agent_communication_with_shield(self, message: str, agent_name: str) -> str:
+        """Process agent communication through SwarmShield security."""
+        if self.swarm_shield:
+            return self.swarm_shield.process_agent_communication(message, agent_name)
+        return message
+
+    def check_rate_limit_with_shield(self, agent_name: str) -> bool:
+        """Check rate limits for an agent using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.check_rate_limit(agent_name)
+        return True
+
+    def add_secure_message(self, message: str, agent_name: str) -> None:
+        """Add a message to secure conversation history."""
+        if self.swarm_shield:
+            self.swarm_shield.add_secure_message(message, agent_name)
+
+    def get_secure_messages(self) -> List[dict]:
+        """Get secure conversation messages."""
+        if self.swarm_shield:
+            return self.swarm_shield.get_secure_messages()
+        return []
+
+    def get_security_stats(self) -> dict:
+        """Get security statistics and metrics."""
+        if self.swarm_shield:
+            return self.swarm_shield.get_security_stats()
+        return {"security_enabled": False}
+
+    def update_shield_config(self, new_config: ShieldConfig) -> None:
+        """Update SwarmShield configuration."""
+        if self.swarm_shield:
+            self.swarm_shield.update_config(new_config)
+            if self.verbose:
+                logger.info("SwarmShield configuration updated")
+
+    def enable_security(self) -> None:
+        """Enable SwarmShield security features."""
+        if not self.swarm_shield:
+            self._initialize_swarm_shield(enable_security=True, security_level=self.security_level)
+            if self.verbose:
+                logger.info("SwarmShield security enabled")
+
+    def disable_security(self) -> None:
+        """Disable SwarmShield security features."""
+        self.swarm_shield = None
+        self.enable_security = False
+        if self.verbose:
+            logger.info("SwarmShield security disabled")
+
+    def cleanup_security(self) -> None:
+        """Clean up SwarmShield resources."""
+        if self.swarm_shield:
+            self.swarm_shield.cleanup()
+            if self.verbose:
+                logger.info("SwarmShield resources cleaned up")
 
     def show_swarm_info(self):
         """
