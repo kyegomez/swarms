@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 from swarms.utils.litellm_tokenizer import count_tokens
 from pydantic import BaseModel, Field, field_validator
+from swarms.security import SwarmShieldIntegration, ShieldConfig
 
 
 class RAGConfig(BaseModel):
@@ -98,34 +99,117 @@ class AgentRAGHandler:
         agent_name: str = "Unknown",
         max_context_length: int = 158_000,
         verbose: bool = False,
+        shield_config: Optional[ShieldConfig] = None,
+        enable_security: bool = True,
+        security_level: str = "standard",
     ):
         """
-        Initialize the RAG handler.
+        Initialize the AgentRAGHandler.
 
         Args:
-            long_term_memory: The long-term memory store (must implement add() and query() methods)
+            long_term_memory: Memory system for storing and retrieving information
             config: RAG configuration settings
             agent_name: Name of the agent using this handler
-            verbose: Enable verbose logging
+            max_context_length: Maximum context length for token counting
+            verbose: Whether to enable verbose logging
+            shield_config: Security configuration for SwarmShield integration
+            enable_security: Whether to enable SwarmShield security features
+            security_level: Pre-defined security level
         """
         self.long_term_memory = long_term_memory
         self.config = config or RAGConfig()
         self.agent_name = agent_name
-        self.verbose = verbose
         self.max_context_length = max_context_length
+        self.verbose = verbose
+        
+        # Initialize SwarmShield integration
+        self._initialize_swarm_shield(shield_config, enable_security, security_level)
 
-        self._loop_counter = 0
-        self._conversation_history = []
-        self._important_memories = []
+    def _initialize_swarm_shield(
+        self, 
+        shield_config: Optional[ShieldConfig] = None,
+        enable_security: bool = True,
+        security_level: str = "standard"
+    ) -> None:
+        """Initialize SwarmShield integration for security features."""
+        self.enable_security = enable_security
+        self.security_level = security_level
+        
+        if enable_security:
+            if shield_config is None:
+                shield_config = ShieldConfig.get_security_level(security_level)
+            
+            self.swarm_shield = SwarmShieldIntegration(shield_config)
+            logger.info(f"SwarmShield initialized with {security_level} security level")
+        else:
+            self.swarm_shield = None
+            logger.info("SwarmShield security disabled")
 
-        # Validate memory interface
-        if (
-            self.long_term_memory
-            and not self._validate_memory_interface()
-        ):
-            logger.warning(
-                "Long-term memory doesn't implement required interface"
-            )
+    # Security methods
+    def validate_task_with_shield(self, task: str) -> str:
+        """Validate and sanitize task input using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.validate_and_protect_input(task)
+        return task
+
+    def validate_agent_config_with_shield(self, agent_config: dict) -> dict:
+        """Validate agent configuration using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.validate_and_protect_input(str(agent_config))
+        return agent_config
+
+    def process_agent_communication_with_shield(self, message: str, agent_name: str) -> str:
+        """Process agent communication through SwarmShield security."""
+        if self.swarm_shield:
+            return self.swarm_shield.process_agent_communication(message, agent_name)
+        return message
+
+    def check_rate_limit_with_shield(self, agent_name: str) -> bool:
+        """Check rate limits for an agent using SwarmShield."""
+        if self.swarm_shield:
+            return self.swarm_shield.check_rate_limit(agent_name)
+        return True
+
+    def add_secure_message(self, message: str, agent_name: str) -> None:
+        """Add a message to secure conversation history."""
+        if self.swarm_shield:
+            self.swarm_shield.add_secure_message(message, agent_name)
+
+    def get_secure_messages(self) -> List[dict]:
+        """Get secure conversation messages."""
+        if self.swarm_shield:
+            return self.swarm_shield.get_secure_messages()
+        return []
+
+    def get_security_stats(self) -> dict:
+        """Get security statistics and metrics."""
+        if self.swarm_shield:
+            return self.swarm_shield.get_security_stats()
+        return {"security_enabled": False}
+
+    def update_shield_config(self, new_config: ShieldConfig) -> None:
+        """Update SwarmShield configuration."""
+        if self.swarm_shield:
+            self.swarm_shield.update_config(new_config)
+            logger.info("SwarmShield configuration updated")
+
+    def enable_security(self) -> None:
+        """Enable SwarmShield security features."""
+        if not self.swarm_shield:
+            self._initialize_swarm_shield(enable_security=True, security_level=self.security_level)
+            logger.info("SwarmShield security enabled")
+
+    def disable_security(self) -> None:
+        """Disable SwarmShield security features."""
+        self.swarm_shield = None
+        self.enable_security = False
+        logger.info("SwarmShield security disabled")
+
+    def cleanup_security(self) -> None:
+        """Clean up SwarmShield resources."""
+        if self.swarm_shield:
+            self.swarm_shield.cleanup()
+            logger.info("SwarmShield resources cleaned up")
 
     def _validate_memory_interface(self) -> bool:
         """Validate that the memory object has required methods"""
