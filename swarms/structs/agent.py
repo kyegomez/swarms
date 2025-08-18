@@ -21,6 +21,13 @@ from typing import (
 
 import toml
 import yaml
+from litellm import model_list
+from litellm.utils import (
+    get_max_tokens,
+    supports_function_calling,
+    supports_parallel_function_calling,
+    supports_vision,
+)
 from loguru import logger
 from pydantic import BaseModel
 
@@ -45,7 +52,6 @@ from swarms.schemas.base_schemas import (
     ChatMessageResponse,
 )
 from swarms.schemas.conversation_schema import ConversationSchema
-from swarms.schemas.llm_agent_schema import ModelConfigOrigin
 from swarms.schemas.mcp_schemas import (
     MCPConnection,
 )
@@ -422,7 +428,6 @@ class Agent:
         mcp_config: Optional[MCPConnection] = None,
         top_p: Optional[float] = 0.90,
         conversation_schema: Optional[ConversationSchema] = None,
-        aditional_llm_config: Optional[ModelConfigOrigin] = None,
         llm_base_url: Optional[str] = None,
         llm_api_key: Optional[str] = None,
         rag_config: Optional[RAGConfig] = None,
@@ -430,8 +435,8 @@ class Agent:
         output_raw_json_from_tool_call: bool = False,
         summarize_multiple_images: bool = False,
         tool_retry_attempts: int = 3,
-        speed_mode: str = None,
         reasoning_prompt_on: bool = True,
+        dynamic_context_window: bool = True,
         *args,
         **kwargs,
     ):
@@ -562,7 +567,6 @@ class Agent:
         self.mcp_config = mcp_config
         self.top_p = top_p
         self.conversation_schema = conversation_schema
-        self.aditional_llm_config = aditional_llm_config
         self.llm_base_url = llm_base_url
         self.llm_api_key = llm_api_key
         self.rag_config = rag_config
@@ -572,8 +576,8 @@ class Agent:
         )
         self.summarize_multiple_images = summarize_multiple_images
         self.tool_retry_attempts = tool_retry_attempts
-        self.speed_mode = speed_mode
         self.reasoning_prompt_on = reasoning_prompt_on
+        self.dynamic_context_window = dynamic_context_window
 
         # Initialize the feedback
         self.feedback = []
@@ -676,17 +680,15 @@ class Agent:
         # Initialize the short term memory
         memory = Conversation(
             name=f"{self.agent_name}_conversation",
+            system_prompt=prompt,
             user=self.user_name,
             rules=self.rules,
             token_count=False,
             message_id_on=False,
             time_enabled=True,
-        )
-
-        # Add the system prompt to the conversation
-        memory.add(
-            role="system",
-            content=prompt,
+            dynamic_context_window=self.dynamic_context_window,
+            tokenizer_model_name=self.model_name,
+            context_length=self.context_length,
         )
 
         return memory
@@ -888,11 +890,7 @@ class Agent:
         Returns:
             bool: True if model supports vision and image is provided, False otherwise.
         """
-        from litellm.utils import (
-            supports_function_calling,
-            supports_parallel_function_calling,
-            supports_vision,
-        )
+        
 
         # Only check vision support if an image is provided
         if img is not None:
@@ -1294,8 +1292,6 @@ class Agent:
             self._handle_run_error(error)
 
     def __handle_run_error(self, error: any):
-        import traceback
-
         if self.autosave is True:
             self.save()
             log_agent_data(self.to_dict())
@@ -1539,11 +1535,6 @@ class Agent:
             raise
 
     def reliability_check(self):
-        from litellm import model_list
-        from litellm.utils import (
-            get_max_tokens,
-            supports_function_calling,
-        )
 
         if self.system_prompt is None:
             logger.warning(

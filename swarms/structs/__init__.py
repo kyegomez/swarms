@@ -1,5 +1,6 @@
 from swarms.structs.agent import Agent
 from swarms.structs.agent_builder import AgentsBuilder
+from swarms.structs.agent_rearrange import AgentRearrange, rearrange
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
@@ -66,7 +67,6 @@ from swarms.structs.multi_agent_exec import (
     run_single_agent,
 )
 from swarms.structs.multi_agent_router import MultiAgentRouter
-from swarms.structs.agent_rearrange import AgentRearrange, rearrange
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
