@@ -46,7 +46,7 @@ technical_analyst = Agent(
 )
 
 # Create list of agents
-agents = [market_researcher, financial_analyst, technical_analyst]
+agents = [market_researcher, financial_analyst]
 
 # Initialize the concurrent workflow
 workflow = ConcurrentWorkflow(

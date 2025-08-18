@@ -9,7 +9,7 @@ from swarms.structs.board_of_directors_swarm import (
 )
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
-from swarms.structs.council_judge import CouncilAsAJudge
+from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.cron_job import CronJob
 from swarms.structs.de_hallucination_swarm import DeHallucinationSwarm
 from swarms.structs.deep_research_swarm import DeepResearchSwarm
@@ -66,11 +66,11 @@ from swarms.structs.multi_agent_exec import (
     run_single_agent,
 )
 from swarms.structs.multi_agent_router import MultiAgentRouter
-from swarms.structs.rearrange import AgentRearrange, rearrange
+from swarms.structs.agent_rearrange import AgentRearrange, rearrange
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
-from swarms.structs.swarm_arange import SwarmRearrange
+from swarms.structs.swarm_rearrange import SwarmRearrange
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmType,

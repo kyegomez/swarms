@@ -295,7 +295,7 @@ class ConcurrentWorkflow(BaseSwarm):
 
     def display_agent_dashboard(
         self,
-        title: str = "🤖 Agent Dashboard",
+        title: str = "ConcurrentWorkflow Dashboard",
         is_final: bool = False,
     ) -> None:
         """
@@ -307,7 +307,7 @@ class ConcurrentWorkflow(BaseSwarm):
 
         Args:
             title (str, optional): The dashboard title to display at the top.
-                Defaults to "🤖 Agent Dashboard".
+                Defaults to "🤖 ConcurrentWorkflow Dashboard".
             is_final (bool, optional): Whether this is the final dashboard display
                 after all agents have completed. Changes formatting and styling.
                 Defaults to False.
@@ -543,7 +543,8 @@ class ConcurrentWorkflow(BaseSwarm):
             # Display final dashboard if enabled
             if self.show_dashboard:
                 self.display_agent_dashboard(
-                    "🎉 Final Agent Dashboard", is_final=True
+                    "Final ConcurrentWorkflow Dashboard",
+                    is_final=True,
                 )
 
             return history_output_formatter(

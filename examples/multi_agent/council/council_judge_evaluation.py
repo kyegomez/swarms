@@ -8,7 +8,7 @@ from loguru import logger
 from tqdm import tqdm
 
 from swarms.structs.agent import Agent
-from swarms.structs.council_judge import CouncilAsAJudge
+from swarms.structs.council_as_judge import CouncilAsAJudge
 
 # Dataset configurations
 DATASET_CONFIGS = {

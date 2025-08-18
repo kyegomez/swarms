@@ -2,4 +2,4 @@ import uuid
 
 
 def generate_swarm_id():
-    return str(uuid.uuid4())
+    return f"swarm-{uuid.uuid4().hex}"

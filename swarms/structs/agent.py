@@ -660,11 +660,13 @@ class Agent:
 
         # Add agent name, description, and instructions to the prompt
         if self.agent_name is not None:
-            prompt += f"\n Name: {self.agent_name}"
+            prompt += f"\n Your Name: {self.agent_name} \n"
         elif self.agent_description is not None:
-            prompt += f"\n Description: {self.agent_description}"
+            prompt += (
+                f"\n Your Description: {self.agent_description} \n"
+            )
         elif self.system_prompt is not None:
-            prompt += f"\n Instructions: {self.system_prompt}"
+            prompt += f"\n Your Instructions: {self.system_prompt} \n"
         else:
             prompt = self.system_prompt
 
@@ -676,26 +678,14 @@ class Agent:
             name=f"{self.agent_name}_conversation",
             user=self.user_name,
             rules=self.rules,
-            token_count=(
-                self.conversation_schema.count_tokens
-                if self.conversation_schema
-                else False
-            ),
-            message_id_on=(
-                self.conversation_schema.message_id_on
-                if self.conversation_schema
-                else False
-            ),
-            time_enabled=(
-                self.conversation_schema.time_enabled
-                if self.conversation_schema
-                else False
-            ),
+            token_count=False,
+            message_id_on=False,
+            time_enabled=True,
         )
 
         # Add the system prompt to the conversation
         memory.add(
-            role="System",
+            role="system",
             content=prompt,
         )
 

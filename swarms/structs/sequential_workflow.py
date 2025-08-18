@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Callable, List, Optional, Union
 
 from swarms.structs.agent import Agent
-from swarms.structs.rearrange import AgentRearrange
+from swarms.structs.agent_rearrange import AgentRearrange
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 

@@ -23,6 +23,9 @@ from loguru import logger
 
 from swarms import Agent, HierarchicalSwarm
 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # =============================================================================
 # DATABASE TOOLS - Core Functions for Database Operations
@@ -901,6 +904,7 @@ smart_database_swarm = HierarchicalSwarm(
     description="A comprehensive database management system with specialized agents for creation, schema management, data operations, and querying, coordinated by a database director",
     director_model_name="gpt-4.1",
     agents=database_specialists,
+    director_reasoning_enabled=False,
     max_loops=1,
     verbose=True,
 )
@@ -917,7 +921,8 @@ if __name__ == "__main__":
     print("SMART DATABASE SWARM - E-COMMERCE SYSTEM EXAMPLE")
     print("=" * 80)
 
-    task1 = """Create a comprehensive e-commerce database system with the following requirements:
+    task1 = """
+    Create a comprehensive e-commerce database system with the following requirements:
     
     1. Create a database called 'ecommerce_db' 
     2. Create tables for:
