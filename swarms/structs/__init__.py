@@ -95,7 +95,10 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
-from swarms.structs.hierarchical_structured_communication_swarm import HierarchicalStructuredCommSwarm
+from swarms.structs.hierarchical_structured_communication_framework import (
+    HierarchicalStructuredCommunicationFramework as HierarchicalStructuredCommSwarm,
+    HierarchicalStructuredCommunicationFramework as TalkHierarchicalSwarm,
+)
 
 __all__ = [
     "Agent",
