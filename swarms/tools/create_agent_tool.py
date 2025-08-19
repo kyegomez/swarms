@@ -1,9 +1,11 @@
-from typing import Union
-from swarms.structs.agent import Agent
-from swarms.schemas.agent_class_schema import AgentConfiguration
-from functools import lru_cache
 import json
+from functools import lru_cache
+from typing import Union
+
 from pydantic import ValidationError
+
+from swarms.schemas.agent_class_schema import AgentConfiguration
+from swarms.structs.agent import Agent
 
 
 def validate_and_convert_config(

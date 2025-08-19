@@ -1,6 +1,8 @@
 # Multi-Agent Paper Implementations
 
-At Swarms, we are passionate about democratizing access to cutting-edge multi-agent research and making advanced AI collaboration accessible to everyone. Our mission is to bridge the gap between academic research and practical implementation by providing production-ready, open-source implementations of the most impactful multi-agent research papers.
+At Swarms, we are passionate about democratizing access to cutting-edge multi-agent research and making advanced agent collaboration accessible to everyone. 
+
+Our mission is to bridge the gap between academic research and practical implementation by providing production-ready, open-source implementations of the most impactful multi-agent research papers.
 
 ### Why Multi-Agent Research Matters
 
@@ -38,10 +40,6 @@ This documentation showcases our comprehensive collection of multi-agent researc
 
 Whether you're a researcher looking to validate findings, a developer building production systems, or a student learning about multi-agent AI, you'll find valuable resources here to advance your work.
 
-### Join the Multi-Agent Revolution
-
-We invite you to explore these implementations, contribute to our research efforts, and help shape the future of collaborative AI. Together, we can unlock the full potential of multi-agent systems and create AI that truly works as a team.
-
 ## Implemented Research Papers
 
 | Paper Name | Description | Original Paper | Implementation | Status | Key Features |
@@ -52,78 +50,11 @@ We invite you to explore these implementations, contribute to our research effor
 | **[Mixture of Agents (MoA)](https://arxiv.org/abs/2406.04692)** | A sophisticated multi-agent architecture that implements parallel processing with iterative refinement, combining diverse expert agents for comprehensive analysis. | Multi-agent collaboration concepts | [`swarms.structs.moa`](https://docs.swarms.world/en/latest/swarms/structs/moa/) | ✅ Complete | Parallel processing, expert agent combination, iterative refinement, state-of-the-art performance |
 | **Deep Research Swarm** | A production-grade research system that conducts comprehensive analysis across multiple domains using parallel processing and advanced AI agents. | Research methodology | [`swarms.structs.deep_research_swarm`](https://docs.swarms.world/en/latest/swarms/structs/deep_research_swarm/) | ✅ Complete | Parallel search processing, multi-agent coordination, information synthesis, concurrent execution |
 | **Agent-as-a-Judge** | An evaluation framework that uses agents to evaluate other agents, implementing the "Agent-as-a-Judge: Evaluate Agents with Agents" methodology. | [arXiv:2410.10934](https://arxiv.org/abs/2410.10934) | [`swarms.agents.agent_judge`](https://docs.swarms.world/en/latest/swarms/agents/agent_judge/) | ✅ Complete | Agent evaluation, quality assessment, automated judging, performance metrics |
-
-## Additional Research Resources
+| **Advanced Research System** | An enhanced implementation of the orchestrator-worker pattern from Anthropic's paper "How we built our multi-agent research system", featuring parallel execution, LLM-as-judge evaluation, and professional report generation. | [Anthropic Paper](https://www.anthropic.com/engineering/built-multi-agent-research-system) | [GitHub Repository](https://github.com/The-Swarm-Corporation/AdvancedResearch) | ✅ Complete | Orchestrator-worker architecture, parallel execution, Exa API integration, export capabilities |
 
 ### Multi-Agent Papers Compilation
 
 We maintain a comprehensive list of multi-agent research papers at: [awesome-multi-agent-papers](https://github.com/kyegomez/awesome-multi-agent-papers)
-
-### Research Lists
-
-Our research compilation includes:
-
-- **Projects**: ModelScope-Agent, Gorilla, BMTools, LMQL, Langchain, MetaGPT, AutoGPT, and more
-
-- **Research Papers**: BOLAA, ToolLLM, Communicative Agents, Mind2Web, Voyager, Tree of Thoughts, and many others
-
-- **Blog Articles**: Latest insights and developments in autonomous agents
-
-- **Talks**: Presentations from leading researchers like Geoffrey Hinton and Andrej Karpathy
-
-
-## Implementation Details
-
-### MALT Framework
-
-The MALT implementation provides:
-
-- **Three-Agent Architecture**: Creator, Verifier, and Refiner agents
-
-- **Structured Workflow**: Coordinated task execution with conversation history
-
-- **Reliability Features**: Error handling, validation, and quality assurance
-
-- **Extensibility**: Custom agent integration and configuration options
-
-
-### MAI-DxO System
-
-The MAI Diagnostic Orchestrator features:
-
-- **Virtual Physician Panel**: Multiple specialized medical agents
-
-- **Cost Optimization**: Efficient diagnostic workflows
-
-- **Iterative Refinement**: Continuous improvement of diagnoses
-
-- **Medical Expertise**: Domain-specific knowledge and reasoning
-
-
-### AI-CoScientist Framework
-
-The AI-CoScientist implementation includes:
-
-- **Tournament-Based Selection**: Elo rating system for hypothesis ranking
-
-- **Peer Review System**: Comprehensive evaluation of scientific proposals
-
-- **Hypothesis Evolution**: Iterative refinement based on feedback
-
-- **Diversity Control**: Proximity analysis to maintain hypothesis variety
-
-
-### Mixture of Agents (MoA)
-
-The MoA architecture provides:
-
-- **Parallel Processing**: Multiple agents working simultaneously
-
-- **Expert Specialization**: Domain-specific agent capabilities
-
-- **Iterative Refinement**: Continuous improvement through collaboration
-
-- **State-of-the-Art Performance**: Achieving superior results through collective intelligence
 
 
 
@@ -156,7 +87,7 @@ If you use any of these implementations in your research, please cite the origin
 
 Join our community to stay updated on the latest multi-agent research implementations:
 
-- **Discord**: [Join our community](https://discord.gg/jM3Z6M9uMq)
+- **Discord**: [Join our community](https://discord.gg/EamjgSaEQf)
 
 - **Documentation**: [docs.swarms.world](https://docs.swarms.world)
 

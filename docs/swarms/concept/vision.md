@@ -49,7 +49,7 @@ The following example showcases how to use the `AgentRearrange` class to manage 
 
 ```python
 from swarms.structs.agent import Agent
-from swarms.structs.rearrange import AgentRearrange  
+from swarms.structs.agent_rearrange import AgentRearrange  
 
 # Initialize the Director agent using Anthropic model via model_name
 director = Agent(

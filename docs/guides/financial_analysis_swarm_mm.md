@@ -7,7 +7,7 @@ Before we dive into the code, let's briefly introduce the Swarms framework. Swar
 For more information and to contribute to the project, visit the [Swarms GitHub repository](https://github.com/kyegomez/swarms). We highly recommend exploring the documentation for a deeper understanding of Swarms' capabilities.
 
 Additional resources:
-- [Swarms Discord](https://discord.gg/jM3Z6M9uMq) for community discussions
+- [Swarms Discord](https://discord.gg/EamjgSaEQf) for community discussions
 - [Swarms Twitter](https://x.com/swarms_corp) for updates
 - [Swarms Spotify](https://open.spotify.com/show/2HLiswhmUaMdjHC8AUHcCF?si=c831ef10c5ef4994) for podcasts
 - [Swarms Blog](https://medium.com/@kyeg) for in-depth articles
@@ -460,7 +460,7 @@ This system provides a powerful foundation for financial analysis, but there's a
 
 Remember, the Swarms framework is a powerful and flexible tool that can be adapted to a wide range of complex tasks beyond just financial analysis. We encourage you to explore the [Swarms GitHub repository](https://github.com/kyegomez/swarms) for more examples and inspiration.
 
-For more in-depth discussions and community support, consider joining the [Swarms Discord](https://discord.gg/jM3Z6M9uMq). You can also stay updated with the latest developments by following [Swarms on Twitter](https://x.com/swarms_corp).
+For more in-depth discussions and community support, consider joining the [Swarms Discord](https://discord.gg/EamjgSaEQf). You can also stay updated with the latest developments by following [Swarms on Twitter](https://x.com/swarms_corp).
 
 If you're interested in learning more about AI and its applications in various fields, check out the [Swarms Spotify podcast](https://open.spotify.com/show/2HLiswhmUaMdjHC8AUHcCF?si=c831ef10c5ef4994) and the [Swarms Blog](https://medium.com/@kyeg) for insightful articles and discussions.
 
@@ -474,7 +474,7 @@ By leveraging the power of multi-agent AI systems, you're well-equipped to navig
 
 
 * [Swarms Github](https://github.com/kyegomez/swarms)
-* [Swarms Discord](https://discord.gg/jM3Z6M9uMq)
+* [Swarms Discord](https://discord.gg/EamjgSaEQf)
 * [Swarms Twitter](https://x.com/swarms_corp)
 * [Swarms Spotify](https://open.spotify.com/show/2HLiswhmUaMdjHC8AUHcCF?si=c831ef10c5ef4994)
 * [Swarms Blog](https://medium.com/@kyeg)

@@ -318,7 +318,7 @@ Schedule quarterly audits to refine structure and content across all repositorie
 Promote your contributions via:
 
 
-- **Swarms Discord**: https://discord.gg/jM3Z6M9uMq
+- **Swarms Discord**: https://discord.gg/EamjgSaEQf
 
 - **Swarms Telegram**: https://t.me/swarmsgroupchat
 

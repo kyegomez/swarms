@@ -12,6 +12,7 @@ dataframe/
 target/
 Cargo.lock
 .pytest_cache
+databases
 static/generated
 conversations/
 next_swarms_update.txt

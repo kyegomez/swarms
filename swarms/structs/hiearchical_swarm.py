@@ -687,7 +687,7 @@ class HierarchicalSwarm:
         interactive: bool = False,
         director_system_prompt: str = HIEARCHICAL_SWARM_SYSTEM_PROMPT,
         director_reasoning_model_name: str = "o3-mini",
-        director_reasoning_enabled: bool = True,
+        director_reasoning_enabled: bool = False,
         multi_agent_prompt_improvements: bool = False,
         *args,
         **kwargs,

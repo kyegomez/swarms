@@ -26,9 +26,9 @@ Before you begin, ensure you have the following installed:
 
 === "pip (Recommended)"
 
-    #### Headless Installation
+    #### Simple Installation
 
-    The headless installation of `swarms` is designed for environments where graphical user interfaces (GUI) are not needed, making it more lightweight and suitable for server-side applications.
+    Simplest manner of installing swarms leverages using PIP. For faster installs and build times, we recommend using UV
 
     ```bash
     pip install swarms
@@ -63,6 +63,49 @@ Before you begin, ensure you have the following installed:
 
         ```bash
         uv pip install -e .[desktop]
+        ```
+
+=== "Poetry Installation"
+
+    Poetry is a modern dependency management and packaging tool for Python. It provides a more robust way to manage project dependencies and virtual environments.
+
+    === "Basic Installation"
+
+        ```bash
+        # Install Poetry first
+        curl -sSL https://install.python-poetry.org | python3 -
+
+        # Install swarms using Poetry
+        poetry add swarms
+        ```
+
+    === "Development Installation"
+
+        ```bash
+        # Clone the repository
+        git clone https://github.com/kyegomez/swarms.git
+        cd swarms
+
+        # Install in editable mode
+        poetry install
+        ```
+
+        For desktop installation with extras:
+
+        ```bash
+        poetry install --extras "desktop"
+        ```
+
+    === "Using Poetry with existing projects"
+
+        If you have an existing project with a `pyproject.toml` file:
+
+        ```bash
+        # Add swarms to your project dependencies
+        poetry add swarms
+
+        # Or add with specific extras
+        poetry add "swarms[desktop]"
         ```
 
 === "Development Installation"
