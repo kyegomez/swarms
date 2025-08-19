@@ -7,10 +7,15 @@ from loguru import logger
 import traceback
 
 
+class BatchAgentExecutionError(Exception):
+    pass
+
+
 def batch_agent_execution(
     agents: List[Union[Agent, Callable]],
     tasks: List[str] = None,
     imgs: List[str] = None,
+    max_workers: int = max(1, int(os.cpu_count() * 0.9)),
 ):
     """
     Execute a batch of agents on a list of tasks concurrently.
@@ -37,9 +42,6 @@ def batch_agent_execution(
             )
 
         results = []
-
-        # Calculate max workers as 90% of available CPU cores
-        max_workers = max(1, int(os.cpu_count() * 0.9))
 
         formatter.print_panel(
             f"Executing {len(agents)} agents on {len(tasks)} tasks using {max_workers} workers"
@@ -78,5 +80,7 @@ def batch_agent_execution(
         return results
     except Exception as e:
         log = f"Batch agent execution failed Error: {str(e)} Traceback: {traceback.format_exc()}"
+
         logger.error(log)
-        raise e
+
+        raise BatchAgentExecutionError(log)

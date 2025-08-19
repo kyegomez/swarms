@@ -7,7 +7,7 @@ from loguru import logger
 from swarm_models import OpenAIChat
 
 from swarms.structs.agent import Agent
-from swarms.structs.rearrange import AgentRearrange
+from swarms.structs.agent_rearrange import AgentRearrange
 
 
 class TestResult:

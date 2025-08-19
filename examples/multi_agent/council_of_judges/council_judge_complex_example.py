@@ -5,7 +5,7 @@ This example shows how to use the CouncilAsAJudge to evaluate various types
 of responses including technical explanations, creative writing, and problem-solving.
 """
 
-from swarms.structs.council_judge import CouncilAsAJudge
+from swarms.structs.council_as_judge import CouncilAsAJudge
 
 
 def evaluate_technical_response():

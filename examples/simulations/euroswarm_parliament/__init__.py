@@ -30,6 +30,7 @@ try:
         WikipediaPersonalityScraper,
         MEPPersonalityProfile,
     )
+
     WIKIPEDIA_PERSONALITY_AVAILABLE = True
 except ImportError:
     WIKIPEDIA_PERSONALITY_AVAILABLE = False
@@ -52,4 +53,4 @@ __all__ = [
     "WikipediaPersonalityScraper",
     "MEPPersonalityProfile",
     "WIKIPEDIA_PERSONALITY_AVAILABLE",
-] 
+]

@@ -1,8 +1,6 @@
 # Smart Database Powered by Hierarchical Multi-Agent Workflow
 
-This module implements a fully autonomous database management system using a hierarchical
-multi-agent architecture. The system includes specialized agents for different database
-operations coordinated by a Database Director agent.
+This module implements a fully autonomous database management system using a hierarchical multi-agent architecture. The system includes specialized agents for different database operations coordinated by a Database Director agent.
 
 ## Features
 

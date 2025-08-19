@@ -46,7 +46,7 @@ The flow pattern uses arrow notation (`->`) to define execution order:
 ### Basic Sequential Flow
 
 ```python
-from swarms.structs.swarm_arange import SwarmRearrange
+from swarms.structs.swarm_rearrange import SwarmRearrange
 import os
 from swarms import Agent, AgentRearrange
 from swarm_models import OpenAIChat

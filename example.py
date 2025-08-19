@@ -1,5 +1,10 @@
 from swarms import Agent
 
+import litellm
+
+litellm._turn_on_debug()  # 👈 this is the 1-line change you need to make
+
+
 # Initialize the agent
 agent = Agent(
     agent_name="Quantitative-Trading-Agent",

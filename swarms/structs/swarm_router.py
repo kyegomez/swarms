@@ -11,33 +11,31 @@ from swarms.prompts.multi_agent_collab_prompt import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
+from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.csv_to_agent import AgentLoader
+from swarms.structs.deep_research_swarm import DeepResearchSwarm
 from swarms.structs.groupchat import GroupChat
+from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.interactive_groupchat import InteractiveGroupChat
+from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.majority_voting import MajorityVoting
+from swarms.structs.malt import MALT
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.multi_agent_router import MultiAgentRouter
-from swarms.structs.rearrange import AgentRearrange
+from swarms.structs.agent_rearrange import AgentRearrange
 from swarms.structs.sequential_workflow import SequentialWorkflow
-from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.swarm_matcher import swarm_matcher
 from swarms.telemetry.log_executions import log_execution
-from swarms.utils.output_types import OutputType
-from swarms.utils.loguru_logger import initialize_logger
-from swarms.structs.malt import MALT
-from swarms.structs.deep_research_swarm import DeepResearchSwarm
-from swarms.structs.council_judge import CouncilAsAJudge
-from swarms.structs.interactive_groupchat import InteractiveGroupChat
-from swarms.structs.heavy_swarm import HeavySwarm
-from swarms.structs.ma_utils import list_all_agents
 from swarms.utils.generate_keys import generate_api_key
+from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.output_types import OutputType
 
 logger = initialize_logger(log_folder="swarm_router")
 
 SwarmType = Literal[
     "AgentRearrange",
     "MixtureOfAgents",
-    "SpreadSheetSwarm",
     "SequentialWorkflow",
     "ConcurrentWorkflow",
     "GroupChat",
@@ -146,7 +144,6 @@ class SwarmRouter:
     Available Swarm Types:
         - AgentRearrange: Optimizes agent arrangement for task execution
         - MixtureOfAgents: Combines multiple agent types for diverse tasks
-        - SpreadSheetSwarm: Uses spreadsheet-like operations for task management
         - SequentialWorkflow: Executes tasks sequentially
         - ConcurrentWorkflow: Executes tasks in parallel
         - "auto": Automatically selects best swarm type via embedding search
@@ -179,7 +176,7 @@ class SwarmRouter:
         description: str = "Routes your task to the desired swarm",
         max_loops: int = 1,
         agents: List[Union[Agent, Callable]] = [],
-        swarm_type: SwarmType = "SequentialWorkflow",  # "SpreadSheetSwarm" # "auto"
+        swarm_type: SwarmType = "SequentialWorkflow",  # "ConcurrentWorkflow" # "auto"
         autosave: bool = False,
         rearrange_flow: str = None,
         return_json: bool = False,
@@ -396,7 +393,6 @@ class SwarmRouter:
             "MajorityVoting": self._create_majority_voting,
             "GroupChat": self._create_group_chat,
             "MultiAgentRouter": self._create_multi_agent_router,
-            "SpreadSheetSwarm": self._create_spreadsheet_swarm,
             "SequentialWorkflow": self._create_sequential_workflow,
             "ConcurrentWorkflow": self._create_concurrent_workflow,
         }
@@ -528,18 +524,6 @@ class SwarmRouter:
             output_type=self.output_type,
         )
 
-    def _create_spreadsheet_swarm(self, *args, **kwargs):
-        """Factory function for SpreadSheetSwarm."""
-        return SpreadSheetSwarm(
-            name=self.name,
-            description=self.description,
-            agents=self.agents,
-            max_loops=self.max_loops,
-            autosave_on=self.autosave,
-            *args,
-            **kwargs,
-        )
-
     def _create_sequential_workflow(self, *args, **kwargs):
         """Factory function for SequentialWorkflow."""
         return SequentialWorkflow(
@@ -580,7 +564,7 @@ class SwarmRouter:
             **kwargs: Arbitrary keyword arguments.
 
         Returns:
-            Union[AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow]:
+            Union[AgentRearrange, MixtureOfAgents, SequentialWorkflow, ConcurrentWorkflow]:
                 The instantiated swarm object.
 
         Raises:
