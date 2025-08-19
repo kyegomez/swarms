@@ -3,14 +3,22 @@ from swarms.sims.senator_assembly import SenatorAssembly
 
 def main():
     """
-    Simulate a Senate vote on a bill to invade Cuba and claim it as the 51st state.
-
-    This function initializes the SenatorAssembly and runs a concurrent vote simulation
-    on the specified bill.
+    Runs a simulation of a Senate vote on a bill proposing significant tax cuts for all Americans.
+    The bill is described in realistic legislative terms, and the simulation uses a concurrent voting model.
     """
-    senator_simulation = SenatorAssembly()
+    senator_simulation = SenatorAssembly(
+        model_name="claude-sonnet-4-20250514"
+    )
     senator_simulation.simulate_vote_concurrent(
-        "A bill proposing to deregulate the IPO (Initial Public Offering) market in the United States as extensively as possible. The bill seeks to remove or significantly reduce existing regulatory requirements and oversight for companies seeking to go public, with the aim of increasing market efficiency and access to capital. Senators must consider the potential economic, legal, and ethical consequences of such broad deregulation, and cast their votes accordingly.",
+        (
+            "A bill proposing a significant reduction in federal income tax rates for all American citizens. "
+            "The legislation aims to lower tax brackets across the board, increase the standard deduction, "
+            "and provide additional tax relief for middle- and lower-income families. Proponents argue that "
+            "the bill will stimulate economic growth, increase disposable income, and enhance consumer spending. "
+            "Opponents raise concerns about the potential impact on the federal deficit, funding for public services, "
+            "and long-term fiscal responsibility. Senators must weigh the economic, social, and budgetary implications "
+            "before casting their votes."
+        ),
         batch_size=10,
     )
 

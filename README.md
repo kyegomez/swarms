@@ -8,92 +8,115 @@
 </p>
 
 <p align="center">
-    <a href="https://pypi.org/project/swarms/" target="_blank">
-        <img alt="Python" src="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54" />
-        <img alt="Version" src="https://img.shields.io/pypi/v/swarms?style=for-the-badge&color=3670A0">
-    </a>
+  <a href="https://pypi.org/project/swarms/" target="_blank">
+    <picture>
+      <source srcset="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54" media="(prefers-color-scheme: dark)">
+      <img alt="Python" src="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54" />
+    </picture>
+    <picture>
+      <source srcset="https://img.shields.io/pypi/v/swarms?style=for-the-badge&color=3670A0" media="(prefers-color-scheme: dark)">
+      <img alt="Version" src="https://img.shields.io/pypi/v/swarms?style=for-the-badge&color=3670A0">
+    </picture>
+  </a>
 </p>
 
 <p align="center">
-    <a href="https://twitter.com/swarms_corp/">🐦 Twitter</a>
-    <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-    <a href="https://discord.gg/EamjgSaEQf">📢 Discord</a>
-    <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-    <a href="https://swarms.ai">Swarms Website</a>
-    <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-    <a href="https://docs.swarms.world">📙 Documentation</a>
-    <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-    <a href="https://swarms.world"> Swarms Marketplace</a>
+  <!-- Project Stats - Most Important First -->
+  <a href="https://github.com/kyegomez/swarms/stargazers">
+    <picture>
+      <source srcset="https://img.shields.io/github/stars/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/github/stars/kyegomez/swarms?style=for-the-badge" alt="GitHub stars">
+    </picture>
+  </a>
+  <a href="https://github.com/kyegomez/swarms/network">
+    <picture>
+      <source srcset="https://img.shields.io/github/forks/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/github/forks/kyegomez/swarms?style=for-the-badge" alt="GitHub forks">
+    </picture>
+  </a>
+  <a href="https://github.com/kyegomez/swarms/issues">
+    <picture>
+      <source srcset="https://img.shields.io/github/issues/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/github/issues/kyegomez/swarms?style=for-the-badge" alt="GitHub issues">
+    </picture>
+  </a>
+  <a href="https://github.com/kyegomez/swarms/blob/main/LICENSE">
+    <picture>
+      <source srcset="https://img.shields.io/github/license/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/github/license/kyegomez/swarms?style=for-the-badge" alt="GitHub license">
+    </picture>
+  </a>
+  <a href="https://pepy.tech/project/swarms">
+    <picture>
+      <source srcset="https://static.pepy.tech/badge/swarms/month" media="(prefers-color-scheme: dark)">
+      <img src="https://static.pepy.tech/badge/swarms/month" alt="Downloads">
+    </picture>
+  </a>
+  <a href="https://libraries.io/github/kyegomez/swarms">
+    <picture>
+      <source srcset="https://img.shields.io/librariesio/github/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/librariesio/github/kyegomez/swarms?style=for-the-badge" alt="Dependency Status">
+    </picture>
+  </a>
 </p>
 
 <p align="center">
-    <!-- Social Media -->
-    <a href="https://discord.gg/jHnrkH5y">
-        <img src="https://img.shields.io/badge/Discord-Join%20our%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
-    </a>
-    <a href="https://www.youtube.com/@kyegomez3242">
-        <img src="https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube">
-    </a>
-    <a href="https://www.linkedin.com/in/kye-g-38759a207/">
-        <img src="https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn">
-    </a>
-    <a href="https://x.com/swarms_corp">
-        <img src="https://img.shields.io/badge/X.com-Follow-1DA1F2?style=for-the-badge&logo=x&logoColor=white" alt="X.com">
-    </a>
+  <!-- Social Media -->
+  <a href="https://twitter.com/swarms_corp/">
+    <picture>
+      <source srcset="https://img.shields.io/badge/Twitter-Follow-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/badge/Twitter-Follow-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" alt="Twitter">
+    </picture>
+  </a>
+  <a href="https://discord.gg/EamjgSaEQf">
+    <picture>
+      <source srcset="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
+    </picture>
+  </a>
+  <a href="https://www.youtube.com/@kyegomez3242">
+    <picture>
+      <source srcset="https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube">
+    </picture>
+  </a>
+  <a href="https://www.linkedin.com/in/kye-g-38759a207/">
+    <picture>
+      <source srcset="https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn">
+    </picture>
+  </a>
+  <a href="https://x.com/swarms_corp">
+    <picture>
+      <source srcset="https://img.shields.io/badge/X.com-Follow-1DA1F2?style=for-the-badge&logo=x&logoColor=white" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/badge/X.com-Follow-1DA1F2?style=for-the-badge&logo=x&logoColor=white" alt="X.com">
+    </picture>
+  </a>
 </p>
 
 <p align="center">
-    <!-- Project Stats -->
-    <a href="https://github.com/kyegomez/swarms/issues">
-        <img src="https://img.shields.io/github/issues/kyegomez/swarms" alt="GitHub issues">
-    </a>
-    <a href="https://github.com/kyegomez/swarms/network">
-        <img src="https://img.shields.io/github/forks/kyegomez/swarms" alt="GitHub forks">
-    </a>
-    <a href="https://github.com/kyegomez/swarms/stargazers">
-        <img src="https://img.shields.io/github/stars/kyegomez/swarms" alt="GitHub stars">
-    </a>
-    <a href="https://github.com/kyegomez/swarms/blob/main/LICENSE">
-        <img src="https://img.shields.io/github/license/kyegomez/swarms" alt="GitHub license">
-    </a>
-    <a href="https://star-history.com/#kyegomez/swarms">
-        <img src="https://img.shields.io/github/stars/kyegomez/swarms?style=social" alt="GitHub star chart">
-    </a>
-    <a href="https://libraries.io/github/kyegomez/swarms">
-        <img src="https://img.shields.io/librariesio/github/kyegomez/swarms" alt="Dependency Status">
-    </a>
-    <a href="https://pepy.tech/project/swarms">
-        <img src="https://static.pepy.tech/badge/swarms/month" alt="Downloads">
-    </a>
+  <!-- Main Navigation Links -->
+  <a href="https://swarms.ai">🏠 Swarms Website</a>
+  <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+  <a href="https://docs.swarms.world">📙 Documentation</a>
+  <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+  <a href="https://swarms.world">🛒 Swarms Marketplace</a>
 </p>
 
 <p align="center">
-    <!-- Share Buttons -->
-    <a href="https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms">
-        <img src="https://img.shields.io/twitter/url/https/twitter.com/cloudposse.svg?style=social&label=Share%20%40kyegomez/swarms" alt="Share on Twitter">
-    </a>
-    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms">
-        <img src="https://img.shields.io/badge/Share-%20facebook-blue" alt="Share on Facebook">
-    </a>
-    <a href="https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=&summary=&source=">
-        <img src="https://img.shields.io/badge/Share-%20linkedin-blue" alt="Share on LinkedIn">
-    </a>
-</p>
-
-<p align="center">
-    <!-- Additional Share Buttons -->
-    <a href="https://www.reddit.com/submit?url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=Swarms%20-%20the%20future%20of%20AI">
-        <img src="https://img.shields.io/badge/-Share%20on%20Reddit-orange" alt="Share on Reddit">
-    </a>
-    <a href="https://news.ycombinator.com/submitlink?u=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&t=Swarms%20-%20the%20future%20of%20AI">
-        <img src="https://img.shields.io/badge/-Share%20on%20Hacker%20News-orange" alt="Share on Hacker News">
-    </a>
-    <a href="https://pinterest.com/pin/create/button/?url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&media=https%3A%2F%2Fexample.com%2Fimage.jpg&description=Swarms%20-%20the%20future%20of%20AI">
-        <img src="https://img.shields.io/badge/-Share%20on%20Pinterest-red" alt="Share on Pinterest">
-    </a>
-    <a href="https://api.whatsapp.com/send?text=Check%20out%20Swarms%20-%20the%20future%20of%20AI%20%23swarms%20%23AI%0A%0Ahttps%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms">
-        <img src="https://img.shields.io/badge/-Share%20on%20WhatsApp-green" alt="Share on WhatsApp">
-    </a>
+  <!-- Share Buttons -->
+  <a href="https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms">
+    <picture>
+      <source srcset="https://img.shields.io/badge/Share%20on%20Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/badge/Share%20on%20Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" alt="Share on Twitter">
+    </picture>
+  </a>
+  <a href="https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=&summary=&source=">
+    <picture>
+      <source srcset="https://img.shields.io/badge/Share%20on%20LinkedIn-blue?style=for-the-badge" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/badge/Share%20on%20LinkedIn-blue?style=for-the-badge" alt="Share on LinkedIn">
+    </picture>
+  </a>
 </p>
 
 ## ✨ Features
@@ -112,31 +135,27 @@ Swarms delivers a comprehensive, enterprise-grade multi-agent infrastructure pla
 ## Install 💻
 
 ### Using pip
+
 ```bash
 $ pip3 install -U swarms
 ```
 
 ### Using uv (Recommended)
+
 [uv](https://github.com/astral-sh/uv) is a fast Python package installer and resolver, written in Rust.
 
 ```bash
-# Install uv
-$ curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install swarms using uv
 $ uv pip install swarms
 ```
 
 ### Using poetry
-```bash
-# Install poetry if you haven't already
-$ curl -sSL https://install.python-poetry.org | python3 -
 
-# Add swarms to your project
+```bash
 $ poetry add swarms
 ```
 
 ### From source
+
 ```bash
 # Clone the repository
 $ git clone https://github.com/kyegomez/swarms.git
@@ -145,6 +164,24 @@ $ cd swarms
 # Install with pip
 $ pip install -e .
 ```
+
+### Using Docker
+
+The easiest way to get started with Swarms is using our pre-built Docker image:
+
+```bash
+# Pull and run the latest image
+$ docker pull kyegomez/swarms:latest
+$ docker run --rm kyegomez/swarms:latest python -c "import swarms; print('Swarms is ready!')"
+
+# Run interactively for development
+$ docker run -it --rm -v $(pwd):/app kyegomez/swarms:latest bash
+
+# Using docker-compose (recommended for development)
+$ docker-compose up -d
+```
+
+For more Docker options and advanced usage, see our [Docker documentation](/scripts/docker/DOCKER.md).
 
 ---
 
@@ -171,7 +208,7 @@ from swarms import Agent
 # Initialize a new agent
 agent = Agent(
     model_name="gpt-4o-mini", # Specify the LLM
-    max_loops=1,              # Set the number of interactions
+    max_loops="auto",              # Set the number of interactions
     interactive=True,         # Enable interactive mode for real-time feedback
 )
 
@@ -351,7 +388,7 @@ print(results)
 
 ### AgentRearrange
 
-Inspired by `einsum`, `AgentRearrange` lets you define complex, non-linear relationships between agents using a simple string-based syntax. [Learn more](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/). This architecture is Perfect for orchestrating dynamic workflows where agents might work in parallel, sequence, or a combination of both.
+Inspired by `einsum`, `AgentRearrange` lets you define complex, non-linear relationships between agents using a simple string-based syntax. [Learn more](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/). This architecture is perfect for orchestrating dynamic workflows where agents might work in parallel, in sequence, or in any combination you choose.
 
 ```python
 from swarms import Agent, AgentRearrange
@@ -695,6 +732,7 @@ Explore comprehensive examples and tutorials to learn how to use Swarms effectiv
 
 | Application | Description | Link |
 |-------------|-------------|------|
+| Advanced Research System | Multi-agent research system inspired by Anthropic's research methodology | [AdvancedResearch](https://github.com/The-Swarm-Corporation/AdvancedResearch) |
 | Swarms DAO | Decentralized autonomous organization | [Swarms DAO](https://docs.swarms.world/en/latest/swarms/examples/swarms_dao/) |
 | Browser Agents | Web automation with agents | [Browser Agents](https://docs.swarms.world/en/latest/swarms/examples/swarms_of_browser_agents/) |
 | VLLM Agents | High-performance model serving | [VLLM Agents](https://docs.swarms.world/en/latest/swarms/examples/vllm/) |
@@ -724,7 +762,7 @@ By joining us, you have the opportunity to:
 
 * **Work on the Frontier of Agents:** Shape the future of autonomous agent technology and help build a production-grade, open-source framework.
 
-* **Join a Vibrant Community:** Collaborate with a passionate and growing group of agent developers, researchers, and AI enthusiasts.
+* **Join a Vibrant Community:** Collaborate with a passionate and growing group of agent developers, researchers, and agent enthusasits.
 
 * **Make a Tangible Impact:** Whether you're fixing a bug, adding a new feature, or improving documentation, your work will be used in real-world applications.
 

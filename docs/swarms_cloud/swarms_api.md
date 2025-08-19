@@ -1242,7 +1242,7 @@ Error responses include a detailed message explaining the issue:
 |--------------|---------------------|
 | Documentation | [https://docs.swarms.world](https://docs.swarms.world) |
 | Email | kye@swarms.world |
-| Community | [https://discord.gg/jM3Z6M9uMq](https://discord.gg/jM3Z6M9uMq) |
+| Community | [https://discord.gg/EamjgSaEQf](https://discord.gg/EamjgSaEQf) |
 | Marketplace | [https://swarms.world](https://swarms.world) |
 | Website | [https://swarms.ai](https://swarms.ai) |
 

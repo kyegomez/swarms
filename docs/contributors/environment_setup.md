@@ -623,7 +623,7 @@ If you encounter issues:
 
 1. **Check the FAQ** in the main documentation
 2. **Search existing issues** on GitHub
-3. **Ask in the Discord community**: [discord.gg/jM3Z6M9uMq](https://discord.gg/jM3Z6M9uMq)
+3. **Ask in the Discord community**: [discord.gg/jM3Z6M9uMq](https://discord.gg/EamjgSaEQf)
 4. **Create a GitHub issue** with:
    - Your operating system
    - Python version

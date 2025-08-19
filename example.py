@@ -1,5 +1,10 @@
 from swarms import Agent
 
+import litellm
+
+litellm._turn_on_debug()  # 👈 this is the 1-line change you need to make
+
+
 # Initialize the agent
 agent = Agent(
     agent_name="Quantitative-Trading-Agent",
@@ -40,8 +45,6 @@ agent = Agent(
     interactive=True,
     no_reasoning_prompt=True,
     streaming_on=True,
-    # dashboard=True
-    llm_base_url="https://api.openai.com/v1",
 )
 
 out = agent.run(

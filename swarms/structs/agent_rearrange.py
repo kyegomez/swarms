@@ -3,19 +3,17 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional, Union
 
-
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
-
+from swarms.structs.conversation import Conversation
+from swarms.structs.multi_agent_exec import get_agents_info
+from swarms.telemetry.main import log_agent_data
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.loguru_logger import initialize_logger
-from swarms.telemetry.main import log_agent_data
-from swarms.structs.conversation import Conversation
 from swarms.utils.output_types import OutputType
-from swarms.structs.multi_agent_exec import get_agents_info
 
 logger = initialize_logger(log_folder="rearrange")
 

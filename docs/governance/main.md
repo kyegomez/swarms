@@ -45,7 +45,7 @@ Welcome to the Swarms ecosystem. Click any tile below to explore our products, c
 
 <a class="resource-card" href="https://github.com/The-Swarm-Corporation/swarms-rs" target="_blank">🦀 GitHub: Swarms (Rust)</a>
 
-<a class="resource-card" href="https://discord.gg/jM3Z6M9uMq" target="_blank">💬 Join Our Discord</a>
+<a class="resource-card" href="https://discord.gg/EamjgSaEQf" target="_blank">💬 Join Our Discord</a>
 
 <a class="resource-card" href="https://t.me/swarmsgroupchat" target="_blank">📱 Telegram Group</a>
 
@@ -67,7 +67,7 @@ Welcome to the Swarms ecosystem. Click any tile below to explore our products, c
 | Chat UI      | [swarms.world/platform/chat](https://swarms.world/platform/chat)     |
 | Marketplace  | [swarms.world](https://swarms.world)                                 |
 | Startup App  | [Apply Here](https://www.swarms.xyz/programs/startups)               |
-| Discord      | [Join Now](https://discord.gg/jM3Z6M9uMq)                            |
+| Discord      | [Join Now](https://discord.gg/EamjgSaEQf)                            |
 | Telegram     | [Group Chat](https://t.me/swarmsgroupchat)                           |
 | Twitter/X    | [@swarms_corp](https://x.com/swarms_corp)                            |
 | Blog         | [medium.com/@kyeg](https://medium.com/@kyeg)                         |

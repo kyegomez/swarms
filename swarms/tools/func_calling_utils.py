@@ -1,5 +1,5 @@
 import json
-from typing import List, Union, Dict
+from typing import Dict, List, Union
 
 from pydantic import BaseModel
 
