@@ -1657,39 +1657,4 @@ Please refine the content to address the feedback while maintaining its core str
     def __repr__(self):
         return self.__str__()
 
-
-# =============================================================================
-# CONVENIENCE ALIASES AND EXPORTS
-# =============================================================================
-
-# Main framework class
-HierarchicalStructuredCommunicationSwarm = HierarchicalStructuredCommunicationFramework
-
-# Export all components
-__all__ = [
-    # Main framework
-    "HierarchicalStructuredCommunicationFramework",
-    "HierarchicalStructuredCommunicationSwarm",
-    
-    # Agent classes
-    "HierarchicalStructuredCommunicationGenerator",
-    "HierarchicalStructuredCommunicationEvaluator", 
-    "HierarchicalStructuredCommunicationRefiner",
-    "HierarchicalStructuredCommunicationSupervisor",
-    
-    # Data models
-    "StructuredMessage",
-    "HierarchicalOrder",
-    "EvaluationResult",
-    
-    # Schemas
-    "StructuredMessageSchema",
-    "EvaluationResultSchema",
-    "GeneratorResponseSchema",
-    "EvaluatorResponseSchema",
-    "RefinerResponseSchema",
-    
-    # Enums
-    "CommunicationType",
-    "AgentRole",
-] 
+# Nothing to see here yet.
