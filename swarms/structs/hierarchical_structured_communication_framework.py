@@ -1665,21 +1665,6 @@ Please refine the content to address the feedback while maintaining its core str
 # Main framework class
 HierarchicalStructuredCommunicationSwarm = HierarchicalStructuredCommunicationFramework
 
-# Agent classes for easy import
-TalkHierarchicalGenerator = HierarchicalStructuredCommunicationGenerator
-TalkHierarchicalEvaluator = HierarchicalStructuredCommunicationEvaluator
-TalkHierarchicalRefiner = HierarchicalStructuredCommunicationRefiner
-TalkHierarchicalSupervisor = HierarchicalStructuredCommunicationSupervisor
-
-# Schema classes
-TalkHierarchicalSchemas = {
-    "StructuredMessage": StructuredMessageSchema,
-    "EvaluationResult": EvaluationResultSchema,
-    "GeneratorResponse": GeneratorResponseSchema,
-    "EvaluatorResponse": EvaluatorResponseSchema,
-    "RefinerResponse": RefinerResponseSchema,
-}
-
 # Export all components
 __all__ = [
     # Main framework
@@ -1691,12 +1676,6 @@ __all__ = [
     "HierarchicalStructuredCommunicationEvaluator", 
     "HierarchicalStructuredCommunicationRefiner",
     "HierarchicalStructuredCommunicationSupervisor",
-    
-    # Convenience aliases
-    "TalkHierarchicalGenerator",
-    "TalkHierarchicalEvaluator",
-    "TalkHierarchicalRefiner", 
-    "TalkHierarchicalSupervisor",
     
     # Data models
     "StructuredMessage",
@@ -1713,7 +1692,4 @@ __all__ = [
     # Enums
     "CommunicationType",
     "AgentRole",
-    
-    # Schema collection
-    "TalkHierarchicalSchemas",
 ] 
