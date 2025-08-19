@@ -11,41 +11,8 @@ from swarms.agents.reasoning_agents import (
     agent_types,
 )
 from swarms.agents.reasoning_duo import ReasoningDuo
-from swarms.structs.hierarchical_structured_communication_framework import (
-    HierarchicalStructuredCommunicationGenerator as HierarchicalStructuredCommGenerator,
-    HierarchicalStructuredCommunicationEvaluator as HierarchicalStructuredCommEvaluator,
-    HierarchicalStructuredCommunicationRefiner as HierarchicalStructuredCommRefiner,
-    HierarchicalStructuredCommunicationSupervisor as HierarchicalStructuredCommSupervisor,
-    # Convenience aliases
-    TalkHierarchicalGenerator,
-    TalkHierarchicalEvaluator,
-    TalkHierarchicalRefiner,
-    TalkHierarchicalSupervisor,
-)
-from swarms.structs.stopping_conditions import (
-    check_cancelled,
-    check_complete,
-    check_done,
-    check_end,
-    check_error,
-    check_exit,
-    check_failure,
-    check_finished,
-    check_stopped,
-    check_success,
-)
 
 __all__ = [
-    "check_done",
-    "check_finished",
-    "check_complete",
-    "check_success",
-    "check_failure",
-    "check_error",
-    "check_stopped",
-    "check_cancelled",
-    "check_exit",
-    "check_end",
     "create_agents_from_yaml",
     "IterativeReflectiveExpansion",
     "SelfConsistencyAgent",
@@ -55,12 +22,4 @@ __all__ = [
     "ReflexionAgent",
     "GKPAgent",
     "AgentJudge",
-    "HierarchicalStructuredCommGenerator",
-    "HierarchicalStructuredCommEvaluator",
-    "HierarchicalStructuredCommRefiner",
-    "HierarchicalStructuredCommSupervisor",
-    "TalkHierarchicalGenerator",
-    "TalkHierarchicalEvaluator",
-    "TalkHierarchicalRefiner",
-    "TalkHierarchicalSupervisor",
 ]
