@@ -108,8 +108,25 @@ from swarms.structs.swarming_architectures import (
     star_swarm,
 )
 from swarms.structs.hierarchical_structured_communication_framework import (
-    HierarchicalStructuredCommunicationFramework as HierarchicalStructuredCommSwarm,
+    HierarchicalStructuredCommunicationFramework,
+    HierarchicalStructuredCommunicationGenerator,
+    HierarchicalStructuredCommunicationEvaluator,
+    HierarchicalStructuredCommunicationRefiner,
+    HierarchicalStructuredCommunicationSupervisor,
+    StructuredMessage,
+    HierarchicalOrder,
+    EvaluationResult,
+    StructuredMessageSchema,
+    EvaluationResultSchema,
+    GeneratorResponseSchema,
+    EvaluatorResponseSchema,
+    RefinerResponseSchema,
+    CommunicationType,
+    AgentRole,
 )
+
+# Convenience alias(fixes old code if any was left out in the wild)
+HierarchicalStructuredCommunicationSwarm = HierarchicalStructuredCommunicationFramework
 
 __all__ = [
     "Agent",
@@ -189,7 +206,21 @@ __all__ = [
     "HierarchicalSwarm",
     "HeavySwarm",
     "CronJob",
-    "HierarchicalStructuredCommSwarm",
+    "HierarchicalStructuredCommunicationSwarm",
+    "HierarchicalStructuredCommunicationGenerator",
+    "HierarchicalStructuredCommunicationEvaluator",
+    "HierarchicalStructuredCommunicationRefiner",
+    "HierarchicalStructuredCommunicationSupervisor",
+    "StructuredMessage",
+    "HierarchicalOrder",
+    "EvaluationResult",
+    "StructuredMessageSchema",
+    "EvaluationResultSchema",
+    "GeneratorResponseSchema",
+    "EvaluatorResponseSchema",
+    "RefinerResponseSchema",
+    "CommunicationType",
+    "AgentRole",
     # Stopping conditions
     "check_done",
     "check_finished",
