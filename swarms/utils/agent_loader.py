@@ -10,7 +10,7 @@ from concurrent.futures import (
 from pydantic import BaseModel, Field, field_validator
 from loguru import logger
 
-from swarms.structs.agent import Agent
+# Lazy import to avoid circular dependency
 
 # Default model configuration
 DEFAULT_MODEL = "gpt-4o"
@@ -186,7 +186,7 @@ class AgentLoader:
 
     def load_agent_from_markdown(
         self, file_path: str, **kwargs
-    ) -> Agent:
+    ) -> "Agent":
         """
         Load a single agent from a markdown file.
 
@@ -222,6 +222,9 @@ class AgentLoader:
                 agent_fields[config_key] = config_value
 
         try:
+            # Lazy import to avoid circular dependency
+            from swarms.structs.agent import Agent
+            
             logger.info(
                 f"Creating agent '{config.name}' from {file_path}"
             )
@@ -248,7 +251,7 @@ class AgentLoader:
         max_workers: Optional[int] = None,
         max_file_size_mb: float = 10.0,
         **kwargs,
-    ) -> List[Agent]:
+    ) -> List["Agent"]:
         """
         Load multiple agents from markdown files with optional concurrent processing.
 
@@ -370,7 +373,7 @@ class AgentLoader:
         )
         return agents
 
-    def load_single_agent(self, file_path: str, **kwargs) -> Agent:
+    def load_single_agent(self, file_path: str, **kwargs) -> "Agent":
         """
         Convenience method for loading a single agent.
         Uses Claude Code sub-agent YAML frontmatter format.
@@ -386,7 +389,7 @@ class AgentLoader:
 
     def load_multiple_agents(
         self, file_paths: Union[str, List[str]], **kwargs
-    ) -> List[Agent]:
+    ) -> List["Agent"]:
         """
         Convenience method for loading multiple agents.
         Uses Claude Code sub-agent YAML frontmatter format.
@@ -402,7 +405,7 @@ class AgentLoader:
 
 
 # Convenience functions
-def load_agent_from_markdown(file_path: str, **kwargs) -> Agent:
+def load_agent_from_markdown(file_path: str, **kwargs) -> "Agent":
     """
     Load a single agent from a markdown file with Claude Code YAML frontmatter format.
 
@@ -422,7 +425,7 @@ def load_agents_from_markdown(
     concurrent: bool = True,
     max_file_size_mb: float = 10.0,
     **kwargs,
-) -> List[Agent]:
+) -> List["Agent"]:
     """
     Load multiple agents from markdown files with Claude Code YAML frontmatter format.
 
