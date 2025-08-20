@@ -89,7 +89,6 @@ graph TD
 | `callback` | Callable function to be called after each agent loop. |
 | `metadata` | Dictionary containing metadata for the agent. |
 | `callbacks` | List of callable functions to be called during execution. |
-| `logger_handler` | Handler for logging messages. |
 | `search_algorithm` | Callable function for long-term memory retrieval. |
 | `logs_to_filename` | File path for logging agent activities. |
 | `evaluator` | Callable function for evaluating the agent's responses. |
@@ -121,14 +120,12 @@ graph TD
 | `memory_chunk_size` | Integer representing the maximum size of memory chunks for long-term memory retrieval. |
 | `agent_ops_on` | Boolean indicating whether agent operations should be enabled. |
 | `return_step_meta` | Boolean indicating whether to return JSON of all steps and additional metadata. |
-| `output_type` | Literal type indicating whether to output "string", "str", "list", "json", "dict", or "yaml". |
 | `time_created` | Float representing the time the agent was created. |
 | `tags` | Optional list of strings for tagging the agent. |
 | `use_cases` | Optional list of dictionaries describing use cases for the agent. |
 | `step_pool` | List of Step objects representing the agent's execution steps. |
 | `print_every_step` | Boolean indicating whether to print every step of execution. |
 | `agent_output` | ManySteps object containing the agent's output and metadata. |
-| `executor_workers` | Integer representing the number of executor workers for concurrent operations. |
 | `data_memory` | Optional callable for data memory operations. |
 | `load_yaml_path` | String representing the path to a YAML file for loading configurations. |
 | `auto_generate_prompt` | Boolean indicating whether to automatically generate prompts. |
@@ -137,17 +134,44 @@ graph TD
 | `artifacts_on` | Boolean indicating whether to save artifacts from agent execution |
 | `artifacts_output_path` | File path where artifacts should be saved |
 | `artifacts_file_extension` | File extension to use for saved artifacts |
-| `device` | Device to run computations on ("cpu" or "gpu") |
 | `all_cores` | Boolean indicating whether to use all CPU cores |
 | `device_id` | ID of the GPU device to use if running on GPU |
 | `scheduled_run_date` | Optional datetime for scheduling future agent runs |
-
+| `do_not_use_cluster_ops` | Boolean indicating whether to avoid cluster operations |
+| `all_gpus` | Boolean indicating whether to use all available GPUs |
+| `model_name` | String representing the name of the model to use |
+| `llm_args` | Dictionary containing additional arguments for the LLM |
+| `load_state_path` | String representing the path to load state from |
+| `role` | String representing the role of the agent (e.g., "worker") |
+| `print_on` | Boolean indicating whether to print output |
+| `tools_list_dictionary` | List of dictionaries representing tool schemas |
+| `mcp_url` | String or MCPConnection representing the MCP server URL |
+| `mcp_urls` | List of strings representing multiple MCP server URLs |
+| `react_on` | Boolean indicating whether to enable ReAct reasoning |
+| `safety_prompt_on` | Boolean indicating whether to enable safety prompts |
+| `random_models_on` | Boolean indicating whether to randomly select models |
+| `mcp_config` | MCPConnection object containing MCP configuration |
+| `top_p` | Float representing the top-p sampling parameter |
+| `conversation_schema` | ConversationSchema object for conversation formatting |
+| `llm_base_url` | String representing the base URL for the LLM API |
+| `llm_api_key` | String representing the API key for the LLM |
+| `rag_config` | RAGConfig object containing RAG configuration |
+| `tool_call_summary` | Boolean indicating whether to summarize tool calls |
+| `output_raw_json_from_tool_call` | Boolean indicating whether to output raw JSON from tool calls |
+| `summarize_multiple_images` | Boolean indicating whether to summarize multiple image outputs |
+| `tool_retry_attempts` | Integer representing the number of retry attempts for tool execution |
+| `reasoning_prompt_on` | Boolean indicating whether to enable reasoning prompts |
+| `dynamic_context_window` | Boolean indicating whether to dynamically adjust context window |
+| `created_at` | Float representing the timestamp when the agent was created |
+| `workspace_dir` | String representing the workspace directory for the agent |
+| `timeout` | Integer representing the timeout for operations in seconds |
 
 ## `Agent` Methods
 
 | Method | Description | Inputs | Usage Example |
 |--------|-------------|--------|----------------|
-| `run(task, img=None, is_last=False, device="cpu", device_id=0, all_cores=True, *args, **kwargs)` | Runs the autonomous agent loop to complete the given task. | `task` (str): The task to be performed.<br>`img` (str, optional): Path to an image file.<br>`is_last` (bool): Whether this is the last task.<br>`device` (str): Device to run on ("cpu" or "gpu").<br>`device_id` (int): ID of the GPU to use.<br>`all_cores` (bool): Whether to use all CPU cores.<br>`*args`, `**kwargs`: Additional arguments. | `response = agent.run("Generate a report on financial performance.")` |
+| `run(task, img=None, imgs=None, correct_answer=None, streaming_callback=None, *args, **kwargs)` | Runs the autonomous agent loop to complete the given task. | `task` (str): The task to be performed.<br>`img` (str, optional): Path to an image file.<br>`imgs` (List[str], optional): List of image paths.<br>`correct_answer` (str, optional): Expected correct answer for validation.<br>`streaming_callback` (Callable, optional): Callback for streaming tokens.<br>`*args`, `**kwargs`: Additional arguments. | `response = agent.run("Generate a report on financial performance.")` |
+| `run_batched(tasks, imgs=None, *args, **kwargs)` | Runs multiple tasks concurrently in batch mode. | `tasks` (List[str]): List of tasks to run.<br>`imgs` (List[str], optional): List of images to process.<br>`*args`, `**kwargs`: Additional arguments. | `responses = agent.run_batched(["Task 1", "Task 2"])` |
 | `__call__(task, img=None, *args, **kwargs)` | Alternative way to call the `run` method. | Same as `run`. | `response = agent("Generate a report on financial performance.")` |
 | `parse_and_execute_tools(response, *args, **kwargs)` | Parses the agent's response and executes any tools mentioned in it. | `response` (str): The agent's response to be parsed.<br>`*args`, `**kwargs`: Additional arguments. | `agent.parse_and_execute_tools(response)` |
 | `add_memory(message)` | Adds a message to the agent's memory. | `message` (str): The message to add. | `agent.add_memory("Important information")` |
@@ -155,6 +179,8 @@ graph TD
 | `run_concurrent(task, *args, **kwargs)` | Runs a task concurrently. | `task` (str): The task to run.<br>`*args`, `**kwargs`: Additional arguments. | `response = await agent.run_concurrent("Concurrent task")` |
 | `run_concurrent_tasks(tasks, *args, **kwargs)` | Runs multiple tasks concurrently. | `tasks` (List[str]): List of tasks to run.<br>`*args`, `**kwargs`: Additional arguments. | `responses = agent.run_concurrent_tasks(["Task 1", "Task 2"])` |
 | `bulk_run(inputs)` | Generates responses for multiple input sets. | `inputs` (List[Dict[str, Any]]): List of input dictionaries. | `responses = agent.bulk_run([{"task": "Task 1"}, {"task": "Task 2"}])` |
+| `run_multiple_images(task, imgs, *args, **kwargs)` | Runs the agent with multiple images using concurrent processing. | `task` (str): The task to perform on each image.<br>`imgs` (List[str]): List of image paths or URLs.<br>`*args`, `**kwargs`: Additional arguments. | `outputs = agent.run_multiple_images("Describe image", ["img1.jpg", "img2.png"])` |
+| `continuous_run_with_answer(task, img=None, correct_answer=None, max_attempts=10)` | Runs the agent until the correct answer is provided. | `task` (str): The task to perform.<br>`img` (str, optional): Image to process.<br>`correct_answer` (str): Expected answer.<br>`max_attempts` (int): Maximum attempts. | `response = agent.continuous_run_with_answer("Math problem", correct_answer="42")` |
 | `save()` | Saves the agent's history to a file. | None | `agent.save()` |
 | `load(file_path)` | Loads the agent's history from a file. | `file_path` (str): Path to the file. | `agent.load("agent_history.json")` |
 | `graceful_shutdown()` | Gracefully shuts down the system, saving the state. | None | `agent.graceful_shutdown()` |
@@ -178,8 +204,6 @@ graph TD
 | `send_agent_message(agent_name, message, *args, **kwargs)` | Sends a message from the agent to a user. | `agent_name` (str): Name of the agent.<br>`message` (str): Message to send.<br>`*args`, `**kwargs`: Additional arguments. | `response = agent.send_agent_message("AgentX", "Task completed")` |
 | `add_tool(tool)` | Adds a tool to the agent's toolset. | `tool` (Callable): Tool to add. | `agent.add_tool(my_custom_tool)` |
 | `add_tools(tools)` | Adds multiple tools to the agent's toolset. | `tools` (List[Callable]): List of tools to add. | `agent.add_tools([tool1, tool2])` |
-| `remove_tool(tool)` | Removes a tool from the agent's toolset. || Method | Description | Inputs | Usage Example |
-|--------|-------------|--------|----------------|
 | `remove_tool(tool)` | Removes a tool from the agent's toolset. | `tool` (Callable): Tool to remove. | `agent.remove_tool(my_custom_tool)` |
 | `remove_tools(tools)` | Removes multiple tools from the agent's toolset. | `tools` (List[Callable]): List of tools to remove. | `agent.remove_tools([tool1, tool2])` |
 | `get_docs_from_doc_folders()` | Retrieves and processes documents from the specified folder. | None | `agent.get_docs_from_doc_folders()` |
@@ -208,18 +232,30 @@ graph TD
 | `handle_sop_ops()` | Handles operations related to standard operating procedures. | None | `agent.handle_sop_ops()` |
 | `agent_output_type(responses)` | Processes and returns the agent's output based on the specified output type. | `responses` (list): List of responses. | `formatted_output = agent.agent_output_type(responses)` |
 | `check_if_no_prompt_then_autogenerate(task)` | Checks if a system prompt is not set and auto-generates one if needed. | `task` (str): The task to use for generating a prompt. | `agent.check_if_no_prompt_then_autogenerate("Analyze data")` |
-| `check_if_no_prompt_then_autogenerate(task)` | Checks if auto_generate_prompt is enabled and generates a prompt by combining agent name, description and system prompt | `task` (str, optional): Task to use as fallback | `agent.check_if_no_prompt_then_autogenerate("Analyze data")` |
 | `handle_artifacts(response, output_path, extension)` | Handles saving artifacts from agent execution | `response` (str): Agent response<br>`output_path` (str): Output path<br>`extension` (str): File extension | `agent.handle_artifacts(response, "outputs/", ".txt")` |
+| `showcase_config()` | Displays the agent's configuration in a formatted table. | None | `agent.showcase_config()` |
+| `talk_to(agent, task, img=None, *args, **kwargs)` | Initiates a conversation with another agent. | `agent` (Any): Target agent.<br>`task` (str): Task to discuss.<br>`img` (str, optional): Image to share.<br>`*args`, `**kwargs`: Additional arguments. | `response = agent.talk_to(other_agent, "Let's collaborate")` |
+| `talk_to_multiple_agents(agents, task, *args, **kwargs)` | Talks to multiple agents concurrently. | `agents` (List[Any]): List of target agents.<br>`task` (str): Task to discuss.<br>`*args`, `**kwargs`: Additional arguments. | `responses = agent.talk_to_multiple_agents([agent1, agent2], "Group discussion")` |
+| `get_agent_role()` | Returns the role of the agent. | None | `role = agent.get_agent_role()` |
+| `pretty_print(response, loop_count)` | Prints the response in a formatted panel. | `response` (str): Response to print.<br>`loop_count` (int): Current loop number. | `agent.pretty_print("Analysis complete", 1)` |
+| `parse_llm_output(response)` | Parses and standardizes the output from the LLM. | `response` (Any): Response from the LLM. | `parsed_response = agent.parse_llm_output(llm_output)` |
+| `sentiment_and_evaluator(response)` | Performs sentiment analysis and evaluation on the response. | `response` (str): Response to analyze. | `agent.sentiment_and_evaluator("Great response!")` |
+| `output_cleaner_op(response)` | Applies output cleaning operations to the response. | `response` (str): Response to clean. | `cleaned_response = agent.output_cleaner_op(response)` |
+| `mcp_tool_handling(response, current_loop)` | Handles MCP tool execution and responses. | `response` (Any): Response containing tool calls.<br>`current_loop` (int): Current loop number. | `agent.mcp_tool_handling(response, 1)` |
+| `temp_llm_instance_for_tool_summary()` | Creates a temporary LLM instance for tool summaries. | None | `temp_llm = agent.temp_llm_instance_for_tool_summary()` |
+| `execute_tools(response, loop_count)` | Executes tools based on the LLM response. | `response` (Any): Response containing tool calls.<br>`loop_count` (int): Current loop number. | `agent.execute_tools(response, 1)` |
+| `list_output_types()` | Returns available output types. | None | `types = agent.list_output_types()` |
+| `tool_execution_retry(response, loop_count)` | Executes tools with retry logic for handling failures. | `response` (Any): Response containing tool calls.<br>`loop_count` (int): Current loop number. | `agent.tool_execution_retry(response, 1)` |
 
 
 
 ## Updated Run Method
 
-Update the run method documentation to include new parameters:
+The run method has been updated with new parameters for enhanced functionality:
 
 | Method | Description | Inputs | Usage Example |
 |--------|-------------|--------|----------------|
-| `run(task, img=None, is_last=False, device="cpu", device_id=0, all_cores=True, scheduled_run_date=None)` | Runs the agent with specified parameters | `task` (str): Task to run<br>`img` (str, optional): Image path<br>`is_last` (bool): If this is last task<br>`device` (str): Device to use<br>`device_id` (int): GPU ID<br>`all_cores` (bool): Use all CPU cores<br>`scheduled_run_date` (datetime, optional): Future run date | `agent.run("Analyze data", device="gpu", device_id=0)` |
+| `run(task, img=None, imgs=None, correct_answer=None, streaming_callback=None, *args, **kwargs)` | Runs the agent with enhanced parameters | `task` (str): Task to run<br>`img` (str, optional): Single image path<br>`imgs` (List[str], optional): List of image paths<br>`correct_answer` (str, optional): Expected answer for validation<br>`streaming_callback` (Callable, optional): Callback for streaming tokens<br>`*args`, `**kwargs`: Additional arguments | `agent.run("Analyze data", imgs=["img1.jpg", "img2.png"])` |
 
 
 
@@ -420,8 +456,34 @@ tasks = [
 ]
 responses = agent.bulk_run(tasks)
 print(responses)
+
+# Run multiple tasks in batch mode (new method)
+task_list = ["Analyze data", "Generate report", "Create summary"]
+batch_responses = agent.run_batched(task_list)
+print(f"Completed {len(batch_responses)} tasks in batch mode")
 ```
 
+
+### Batch Processing with `run_batched`
+
+The new `run_batched` method allows you to process multiple tasks efficiently:
+
+```python
+# Process multiple tasks in batch
+tasks = [
+    "Analyze the financial data for Q1",
+    "Generate a summary report for stakeholders", 
+    "Create recommendations for Q2 planning"
+]
+
+# Run all tasks concurrently
+batch_results = agent.run_batched(tasks)
+
+# Process results
+for i, (task, result) in enumerate(zip(tasks, batch_results)):
+    print(f"Task {i+1}: {task}")
+    print(f"Result: {result}\n")
+```
 
 ### Various other settings
 
@@ -611,6 +673,36 @@ print(type(str_to_dict(out)))
 
 ```
 
+## New Features and Parameters
+
+### Enhanced Run Method Parameters
+
+The `run` method now supports several new parameters for advanced functionality:
+
+- **`imgs`**: Process multiple images simultaneously instead of just one
+- **`correct_answer`**: Validate responses against expected answers with automatic retries
+- **`streaming_callback`**: Real-time token streaming for interactive applications
+
+### MCP (Model Context Protocol) Integration
+
+New parameters enable seamless MCP server integration:
+
+- **`mcp_url`**: Connect to a single MCP server
+- **`mcp_urls`**: Connect to multiple MCP servers
+- **`mcp_config`**: Advanced MCP configuration options
+
+### Advanced Reasoning and Safety
+
+- **`react_on`**: Enable ReAct reasoning for complex problem-solving
+- **`safety_prompt_on`**: Add safety constraints to agent responses
+- **`reasoning_prompt_on`**: Enable multi-loop reasoning for complex tasks
+
+### Performance and Resource Management
+
+- **`dynamic_context_window`**: Automatically adjust context window based on available tokens
+- **`tool_retry_attempts`**: Configure retry behavior for tool execution
+- **`summarize_multiple_images`**: Automatically summarize results from multiple image processing
+
 ## Best Practices
 
 1. Always provide a clear and concise `system_prompt` to guide the agent's behavior.
@@ -627,5 +719,9 @@ print(type(str_to_dict(out)))
 12. Configure `device` and `device_id` appropriately for optimal performance
 13. Enable `rag_every_loop` when continuous context from long-term memory is needed
 14. Use `scheduled_run_date` for automated task scheduling
+15. Leverage `run_batched` for efficient processing of multiple related tasks
+16. Use `mcp_url` or `mcp_urls` to extend agent capabilities with external tools
+17. Enable `react_on` for complex reasoning tasks requiring step-by-step analysis
+18. Configure `tool_retry_attempts` for robust tool execution in production environments
 
 By following these guidelines and leveraging the Swarm Agent's extensive features, you can create powerful, flexible, and efficient autonomous agents for a wide range of applications.
