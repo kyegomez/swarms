@@ -9,7 +9,7 @@ from swarms.structs.board_of_directors_swarm import (
 )
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
-from swarms.structs.council_judge import CouncilAsAJudge
+from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.cron_job import CronJob
 from swarms.structs.de_hallucination_swarm import DeHallucinationSwarm
 from swarms.structs.deep_research_swarm import DeepResearchSwarm
