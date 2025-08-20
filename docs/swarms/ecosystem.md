@@ -1,149 +1,62 @@
 
-# Swarms Ecosystem
+# Swarms Infrastructure Stack
 
-*The Complete Enterprise-Grade Multi-Agent AI Platform*
+**We're Building the Operating System for the Agent Economy** 
 
----
-
-## **Join the Future of AI Development**
-
-**We're Building the Operating System for the Agent Economy** - The Swarms ecosystem represents the most comprehensive, production-ready multi-agent AI platform available today. From our flagship Python framework to high-performance Rust implementations and client libraries spanning every major programming language, we provide enterprise-grade tools that power the next generation of intelligent applications.
+The Swarms ecosystem represents the most comprehensive, production-ready multi-agent AI platform available today. From our flagship Python framework to high-performance Rust implementations and client libraries spanning every major programming language, we provide enterprise-grade tools that power the next generation of agentic applications.
 
 ---
 
-## **Complete Product Portfolio**
+## **Product Portfolio by Language & API**
 
-| **Product** | **Technology** | **Status** | **Repository** | **Documentation** |
-|-------------|---------------|------------|----------------|-------------------|
-| **Swarms Python Framework** | Python | **Production** | [swarms](https://github.com/kyegomez/swarms) | [Docs](https://docs.swarms.world/en/latest/swarms/install/install/) |
-| **Swarms Rust Framework** | Rust | **Production** | [swarms-rs](https://github.com/The-Swarm-Corporation/swarms-rs) | [Docs](https://docs.swarms.world/en/latest/swarms_rs/overview/) |
-| **Python API Client** | Python | **Production** | [swarms-sdk](https://github.com/The-Swarm-Corporation/swarms-sdk) | [Docs](https://docs.swarms.world/en/latest/swarms_cloud/python_client/) |
-| **TypeScript/Node.js Client** | TypeScript | **Production** | [swarms-ts](https://github.com/The-Swarm-Corporation/swarms-ts) | *Coming Soon* |
-| **Go Client** | Go | **Production** | [swarms-client-go](https://github.com/The-Swarm-Corporation/swarms-client-go) | *Coming Soon* |
-| **Java Client** | Java | **Production** | [swarms-java](https://github.com/The-Swarm-Corporation/swarms-java) | *Coming Soon* |
-| **Kotlin Client** | Kotlin | **Q2 2025** | *In Development* | *Coming Soon* |
-| **Ruby Client** | Ruby | **Q2 2025** | *In Development* | *Coming Soon* |
-| **Rust Client** | Rust | **Q2 2025** | *In Development* | *Coming Soon* |
-| **C#/.NET Client** | C# | **Q3 2025** | *In Development* | *Coming Soon* |
+### 🐍 **Python**
+
+| **Product**                  | **Description**                                                                                                                                                                                                 | **Status**      | **Repository**                                                                 | **Documentation**                                                                                  |
+|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|-------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| **Swarms Python Framework**  | The core multi-agent orchestration framework for Python. Enables building, managing, and scaling complex agentic systems with robust abstractions, workflows, and integrations.                                 | **Production**  | [swarms](https://github.com/kyegomez/swarms)                                  | [Docs](https://docs.swarms.world/en/latest/swarms/install/install/)                                |
+| **Python API Client**        | Official Python SDK for interacting with Swarms Cloud and remote agent infrastructure. Simplifies API calls, authentication, and integration into Python applications.                                          | **Production**  | [swarms-sdk](https://github.com/The-Swarm-Corporation/swarms-sdk)             | [Docs](https://docs.swarms.world/en/latest/swarms_cloud/python_client/)                            |
+| **Swarms Tools**             | A comprehensive library of prebuilt tools for various domains, including finance, social media, data processing, and more. Accelerates agent development by providing ready-to-use capabilities and integrations. | **Production**  | [swarms-tools](https://github.com/The-Swarm-Corporation/swarms-tools)          | *Coming Soon*                                                                                      |
+| **Swarms Memory**            | A robust library of memory structures and data loaders for Retrieval-Augmented Generation (RAG) processing. Provides advanced memory management, vector stores, and integration with agentic workflows.         | **Production**  | [swarms-memory](https://github.com/The-Swarm-Corporation/swarms-memory)        | *Coming Soon*                                                                                      |
+
+---
+
+### 🦀 **Rust**
+
+| **Product**                | **Description**                                                                                                                                                                                                 | **Status**      | **Repository**                                                                 | **Documentation**                                                                                  |
+|----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|-------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| **Swarms Rust Framework**  | High-performance, memory-safe multi-agent orchestration framework written in Rust. Designed for demanding production environments and seamless integration with Rust-based systems.                              | **Production**  | [swarms-rs](https://github.com/The-Swarm-Corporation/swarms-rs)               | [Docs](https://docs.swarms.world/en/latest/swarms_rs/overview/)                                   |
+| **Rust Client**            | Official Rust client library for connecting to Swarms Cloud and orchestrating agents from Rust applications. Provides idiomatic Rust APIs for agent management and communication.                              | **Q2 2025**     | *In Development*                                                              | *Coming Soon*                                                                                      |
+
+---
+
+### 🌐 **API Clients (Multi-Language)**
+
+| **Language/Platform**      | **Description**                                                                                                                                                                                                 | **Status**      | **Repository**                                                                 | **Documentation**                                                                                  |
+|----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|-------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| **TypeScript/Node.js**     | Official TypeScript/Node.js SDK for Swarms Cloud. Enables seamless integration of agentic workflows into JavaScript and TypeScript applications, both server-side and in the browser.                           | **Production**  | [swarms-ts](https://github.com/The-Swarm-Corporation/swarms-ts)               | *Coming Soon*                                                                                      |
+| **Go**                     | Go client library for Swarms Cloud, providing Go developers with native APIs to manage, orchestrate, and interact with agents in distributed systems and microservices.                                         | **Production**  | [swarms-client-go](https://github.com/The-Swarm-Corporation/swarms-client-go) | *Coming Soon*                                                                                      |
+| **Java**                   | Java SDK for Swarms Cloud, allowing enterprise Java applications to leverage multi-agent orchestration and integrate agentic capabilities into JVM-based systems.                                               | **Production**  | [swarms-java](https://github.com/The-Swarm-Corporation/swarms-java)           | *Coming Soon*                                                                                      |
+| **Kotlin**                 | Native Kotlin client for Swarms Cloud, designed for modern JVM and Android applications seeking to embed agentic intelligence and orchestration.                                                               | **Q2 2025**     | *In Development*                                                              | *Coming Soon*                                                                                      |
+| **Ruby**                   | Ruby SDK for Swarms Cloud, enabling Ruby and Rails developers to easily connect, manage, and orchestrate agents within their applications.                                                                     | **Q2 2025**     | *In Development*                                                              | *Coming Soon*                                                                                      |
+| **C#/.NET**                | Official C#/.NET client library for Swarms Cloud, providing .NET developers with tools to integrate agentic workflows into desktop, web, and cloud applications.                                               | **Q3 2025**     | *In Development*                                                              | *Coming Soon*                                                                                      |
 
 ---
 
 ## **Why Choose the Swarms Ecosystem?**
 
-### **Enterprise-Grade Architecture**
-
-- **Production Ready**: Battle-tested in enterprise environments with 99.9%+ uptime
-
-- **Scalable Infrastructure**: Handle millions of agent interactions with automatic scaling
-
-- **Security First**: End-to-end encryption, API key management, and enterprise compliance
-
-- **Observability**: Comprehensive logging, monitoring, and debugging capabilities
-
-### **Developer Experience**
-
-- **Multiple Language Support**: Native clients for every major programming language
-
-- **Unified API**: Consistent interface across all platforms and languages
-
-- **Rich Documentation**: Comprehensive guides, tutorials, and API references
-
-- **Active Community**: 24/7 support through Discord, GitHub, and direct channels
-
-### **Performance & Reliability**
-
-- **High Throughput**: Process thousands of concurrent agent requests
-
-- **Low Latency**: Optimized for real-time applications and user experiences
-
-- **Fault Tolerance**: Automatic retries, circuit breakers, and graceful degradation
-
-- **Multi-Cloud**: Deploy on AWS, GCP, Azure, or on-premises infrastructure
+| **Feature**                | **Description**                                                                                      |
+|----------------------------|------------------------------------------------------------------------------------------------------|
+| **Production Ready**         | Battle-tested in enterprise environments with 99.9%+ uptime                                           |
+| **Scalable Infrastructure** | Handle millions of agent interactions with automatic scaling                                         |
+| **Security First**          | End-to-end encryption, API key management, and enterprise compliance                                 |
+| **Observability**           | Comprehensive logging, monitoring, and debugging capabilities                                        |
+| **Multiple Language Support** | Native clients for every major programming language                                                  |
+| **Unified API**             | Consistent interface across all platforms and languages                                              |
+| **Rich Documentation**      | Comprehensive guides, tutorials, and API references                                                  |
+| **Active Community**        | 24/7 support through Discord, GitHub, and direct channels                                            |
+| **High Throughput**         | Process thousands of concurrent agent requests                                                       |
+| **Low Latency**             | Optimized for real-time applications and user experiences                                            |
+| **Fault Tolerance**         | Automatic retries, circuit breakers, and graceful degradation                                        |
+| **Multi-Cloud**             | Deploy on AWS, GCP, Azure, or on-premises infrastructure                                             |
 
 ---
-
-## **Join Our Growing Community**
-
-### **Connect With Developers Worldwide**
-
-| **Platform** | **Purpose** | **Join Link** | **Benefits** |
-|--------------|-------------|---------------|--------------|
-| **Discord Community** | Real-time support & discussions | [Join Discord](https://discord.gg/EamjgSaEQf) | • 24/7 developer support<br/>• Weekly community events<br/>• Direct access to core team<br/>• Beta feature previews |
-| **Twitter/X** | Latest updates & announcements | [Follow @swarms_corp](https://x.com/swarms_corp) | • Breaking news & updates<br/>• Community highlights<br/>• Technical insights<br/>• Industry partnerships |
-| **LinkedIn** | Professional network & updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | • Professional networking<br/>• Career opportunities<br/>• Enterprise partnerships<br/>• Industry insights |
-| **YouTube** | Tutorials & technical content | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | • In-depth tutorials<br/>• Live coding sessions<br/>• Architecture deep dives<br/>• Community showcases |
-
----
-
-## **Contribute to the Ecosystem**
-
-### **How You Can Make an Impact**
-
-| **Contribution Area** | **Skills Needed** | **Impact Level** | **Getting Started** |
-|-----------------------|-------------------|------------------|---------------------|
-| **Core Framework Development** | Python, Rust, Systems Design | **High Impact** | [Contributing Guide](https://docs.swarms.world/en/latest/contributors/main/) |
-| **Client Library Development** | Various Languages (Go, Java, TS, etc.) | **High Impact** | [Client Development](https://github.com/The-Swarm-Corporation) |
-| **Documentation & Tutorials** | Technical Writing, Examples | **High Impact** | [Docs Contributing](https://docs.swarms.world/en/latest/contributors/docs/) |
-| **Testing & Quality Assurance** | Testing Frameworks, QA | **Medium Impact** | [Testing Guide](https://docs.swarms.world/en/latest/swarms/framework/test/) |
-| **UI/UX & Design** | Design, Frontend Development | **Medium Impact** | [Design Contributions](https://github.com/The-Swarm-Corporation/swarms/issues) |
-| **Bug Reports & Feature Requests** | User Experience, Testing | **Easy Start** | [Report Issues](https://github.com/The-Swarm-Corporation/swarms/issues) |
-
----
-
-## **We're Hiring Top Talent**
-
-### **Join the Team Building the Future Of The World Economy**
-
-**Ready to work on cutting-edge agent technology that's shaping the future?** We're actively recruiting exceptional engineers, researchers, and technical leaders to join our mission of building the operating system for the agent economy.
-
-| **Why Join Swarms?** | **What We Offer** |
-|-----------------------|-------------------|
-| **Cutting-Edge Technology** | Work on the most powerful multi-agent systems, distributed computing, and enterprise-scale infrastructure |
-| **Global Impact** | Your code will power agent applications used by Fortune 500 companies and millions of developers |
-| **World-Class Team** | Collaborate with top engineers, researchers, and industry experts from Google, OpenAI, and more |
-| **Fast Growth** | Join a rapidly scaling company with massive market opportunity and venture backing |
-
-### **Open Positions**
-
-| **Position**                  | **Role Description**                                      |
-|-------------------------------|----------------------------------------------------------|
-| **Senior Rust Engineers**     | Building high-performance agent infrastructure           |
-| **Python Framework Engineers**| Expanding our core multi-agent capabilities              |
-| **DevOps/Platform Engineers** | Scaling cloud infrastructure for millions of agents      |
-| **Technical Writers**         | Creating world-class developer documentation             |
-| **Solutions Engineers**       | Helping enterprises adopt multi-agent AI                 |
-
-**Ready to Build the Future?** **[Apply Now at swarms.ai/hiring](https://swarms.ai/hiring)**
-
----
-
----
-
-## **Get Started Today**
-
-### **Quick Start Guide**
-
-| **Step** | **Action** | **Time Required** |
-|----------|------------|-------------------|
-| **1** | [Install Swarms Python Framework](https://docs.swarms.world/en/latest/swarms/install/install/) | 5 minutes |
-| **2** | [Run Your First Agent](https://docs.swarms.world/en/latest/swarms/examples/basic_agent/) | 10 minutes |
-| **3** | [Try Multi-Agent Workflows](https://docs.swarms.world/en/latest/swarms/examples/sequential_example/) | 15 minutes |
-| **4** | [Join Our Discord Community](https://discord.gg/EamjgSaEQf) | 2 minutes |
-| **5** | [Explore Enterprise Features](https://docs.swarms.world/en/latest/swarms_cloud/swarms_api/) | 20 minutes |
-
----
-
-## **Enterprise Support & Partnerships**
-
-### **Ready to Scale with Swarms?**
-
-| **Contact Type** | **Best For** | **Response Time** | **Contact Information** |
-|------------------|--------------|-------------------|-------------------------|
-| **Technical Support** | Development questions, troubleshooting | < 24 hours | [Book Support Call](https://cal.com/swarms/swarms-technical-support) |
-| **Enterprise Sales** | Custom deployments, enterprise licensing | < 4 hours | [kye@swarms.world](mailto:kye@swarms.world) |
-| **Partnerships** | Integration partnerships, technology alliances | < 48 hours | [kye@swarms.world](mailto:kye@swarms.world) |
-| **Investor Relations** | Investment opportunities, funding updates | By appointment | [kye@swarms.world](mailto:kye@swarms.world) |
-
----
-
-**Ready to build the future of AI? Start with Swarms today and join thousands of developers creating the next generation of intelligent applications.**
