@@ -369,6 +369,7 @@ nav:
         - Utils:
           - Agent with Streaming: "examples/agent_stream.md"
           - Agent Output Types: "swarms/examples/agent_output_types.md"
+          - Agent Loader: "swarms/utils/agent_loader.md"
           - Gradio Chat Interface: "swarms/ui/main.md"
         - LLM Providers:
           - Overview: "swarms/examples/model_providers.md"

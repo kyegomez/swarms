@@ -164,6 +164,7 @@ max_loops: 1
 ---
 
 You are an expert financial advisor with deep knowledge in:
+
 - Investment strategies and portfolio management
 - Personal budgeting and financial planning
 - Risk assessment and diversification
@@ -171,6 +172,7 @@ You are an expert financial advisor with deep knowledge in:
 - Retirement planning
 
 Your approach:
+
 - Provide clear, actionable financial advice
 - Consider individual risk tolerance and goals
 - Explain complex concepts in simple terms
@@ -178,6 +180,7 @@ Your approach:
 - Include relevant disclaimers about financial advice
 
 When analyzing financial situations:
+
 1. Assess current financial position
 2. Identify short-term and long-term goals
 3. Evaluate risk tolerance
@@ -365,9 +368,79 @@ class MarkdownAgentConfig(BaseModel):
 
 ## Examples Repository
 
-Find more examples in the Swarms repository:
-- `agents_loader_example.py` - Simple usage example
-- `examples/agent_loader_demo.py` - Multi-agent workflow example
+Find complete working examples in the `examples/agent_loader/` directory:
+
+### Single Agent Example (`agent_loader_demo.py`)
+```python
+from swarms.utils import load_agent_from_markdown
+
+agent = load_agent_from_markdown("finance_advisor.md")
+
+agent.run(
+    task="Analyze the financial market trends for 2023."
+)
+```
+
+### Multi-Agent Workflow Example (`multi_agents_loader_demo.py`)
+```python
+from swarms.utils import load_agents_from_markdown
+
+agents = load_agents_from_markdown([
+    "market_researcher.md",
+    "financial_analyst.md", 
+    "risk_analyst.md"
+])
+
+# Use agents in a workflow
+from swarms.structs.sequential_workflow import SequentialWorkflow
+
+workflow = SequentialWorkflow(
+    agents=agents,
+    max_loops=1
+)
+
+task = """
+Analyze the AI healthcare market for a $50M investment opportunity.
+Focus on market size, competition, financials, and risks.
+"""
+
+result = workflow.run(task)
+```
+
+### Sample Agent Definition (`finance_advisor.md`)
+```markdown
+---
+name: FinanceAdvisor
+description: Expert financial advisor for investment and budgeting guidance
+model_name: gpt-4o
+temperature: 0.7
+max_loops: 1
+---
+
+You are an expert financial advisor with deep knowledge in:
+
+- Investment strategies and portfolio management
+- Personal budgeting and financial planning
+- Risk assessment and diversification
+- Tax optimization strategies
+- Retirement planning
+
+Your approach:
+
+- Provide clear, actionable financial advice
+- Consider individual risk tolerance and goals
+- Explain complex concepts in simple terms
+- Always emphasize the importance of diversification
+- Include relevant disclaimers about financial advice
+
+When analyzing financial situations:
+
+1. Assess current financial position
+2. Identify short-term and long-term goals
+3. Evaluate risk tolerance
+4. Recommend appropriate strategies
+5. Suggest specific action steps
+```
 
 ## Support
 
