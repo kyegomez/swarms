@@ -1,21 +1,21 @@
-import traceback
 import concurrent.futures
 import datetime
+import inspect
 import json
 import os
+import traceback
 import uuid
 from typing import (
     TYPE_CHECKING,
+    Any,
     Dict,
     List,
+    Literal,
     Optional,
     Union,
-    Literal,
-    Any,
 )
 
 import yaml
-import inspect
 
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.litellm_tokenizer import count_tokens
@@ -24,6 +24,18 @@ if TYPE_CHECKING:
     from swarms.structs.agent import Agent
 
 from loguru import logger
+
+
+# Define available providers
+providers = Literal[
+    "mem0",
+    "in-memory",
+    "supabase",
+    "redis",
+    "sqlite",
+    "duckdb",
+    "pulsar",
+]
 
 
 def generate_conversation_id():
@@ -48,18 +60,6 @@ def get_conversation_dir():
         )
         os.makedirs(conversation_dir, mode=0o755, exist_ok=True)
     return conversation_dir
-
-
-# Define available providers
-providers = Literal[
-    "mem0",
-    "in-memory",
-    "supabase",
-    "redis",
-    "sqlite",
-    "duckdb",
-    "pulsar",
-]
 
 
 def _create_backend_conversation(backend: str, **kwargs):
@@ -183,9 +183,9 @@ class Conversation:
         name: str = "conversation-test",
         system_prompt: Optional[str] = None,
         time_enabled: bool = False,
-        autosave: bool = False,  # Changed default to False
+        autosave: bool = False,
         save_filepath: str = None,
-        load_filepath: str = None,  # New parameter to specify which file to load from
+        load_filepath: str = None,
         context_length: int = 8192,
         rules: str = None,
         custom_rules_prompt: str = None,
@@ -211,6 +211,8 @@ class Conversation:
         redis_data_dir: Optional[str] = None,
         conversations_dir: Optional[str] = None,
         export_method: str = "json",
+        dynamic_context_window: bool = True,
+        caching: bool = True,
         *args,
         **kwargs,
     ):
@@ -249,6 +251,8 @@ class Conversation:
         self.auto_persist = auto_persist
         self.redis_data_dir = redis_data_dir
         self.export_method = export_method
+        self.dynamic_context_window = dynamic_context_window
+        self.caching = caching
 
         if self.name is None:
             self.name = id
@@ -933,7 +937,15 @@ class Conversation:
                 # Fallback to in-memory implementation
                 pass
 
+        elif self.dynamic_context_window is True:
+            return self.dynamic_auto_chunking()
+
+        else:
+            return self._return_history_as_string_worker()
+
+    def _return_history_as_string_worker(self):
         formatted_messages = []
+
         for message in self.conversation_history:
             formatted_messages.append(
                 f"{message['role']}: {message['content']}"
@@ -1778,20 +1790,80 @@ class Conversation:
                 pass
         self.conversation_history = []
 
+    def _dynamic_auto_chunking_worker(self):
+        """
+        Dynamically chunk the conversation history to fit within the context length.
 
-# # Example usage
-# # conversation = Conversation()
-# conversation = Conversation(token_count=True)
+        Returns:
+            str: The chunked conversation history as a string that fits within context_length tokens.
+        """
+        all_tokens = self._return_history_as_string_worker()
+
+        total_tokens = count_tokens(
+            all_tokens, self.tokenizer_model_name
+        )
+
+        if total_tokens <= self.context_length:
+            return all_tokens
+
+        # We need to remove characters from the beginning until we're under the limit
+        # Start by removing a percentage of characters and adjust iteratively
+        target_tokens = self.context_length
+        current_string = all_tokens
+
+        # Binary search approach to find the right cutoff point
+        left, right = 0, len(all_tokens)
+
+        while left < right:
+            mid = (left + right) // 2
+            test_string = all_tokens[mid:]
+
+            if not test_string:
+                break
+
+            test_tokens = count_tokens(
+                test_string, self.tokenizer_model_name
+            )
+
+            if test_tokens <= target_tokens:
+                # We can remove more from the beginning
+                right = mid
+                current_string = test_string
+            else:
+                # We need to keep more from the beginning
+                left = mid + 1
+
+        return current_string
+
+    def dynamic_auto_chunking(self):
+        """
+        Dynamically chunk the conversation history to fit within the context length.
+
+        Returns:
+            str: The chunked conversation history as a string that fits within context_length tokens.
+        """
+        try:
+            return self._dynamic_auto_chunking_worker()
+        except Exception as e:
+            logger.error(f"Dynamic auto chunking failed: {e}")
+            return self._return_history_as_string_worker()
+
+
+# Example usage
+# conversation = Conversation()
+# conversation = Conversation(token_count=True, context_length=14)
 # conversation.add("user", "Hello, how are you?")
 # conversation.add("assistant", "I am doing well, thanks.")
+# conversation.add("user", "What is the weather in Tokyo?")
+# print(conversation.dynamic_auto_chunking())
 # # conversation.add(
 # #     "assistant", {"name": "tool_1", "output": "Hello, how are you?"}
-# # )
-# # print(conversation.return_json())
-
-# # # print(conversation.get_last_message_as_string())
+# )
 # print(conversation.return_json())
-# # # conversation.add("assistant", "I am doing well, thanks.")
-# # # # print(conversation.to_json())
-# # print(type(conversation.to_dict()))
-# # print(conversation.to_yaml())
+
+# # print(conversation.get_last_message_as_string())
+# print(conversation.return_json())
+# # conversation.add("assistant", "I am doing well, thanks.")
+# # # print(conversation.to_json())
+# print(type(conversation.to_dict()))
+# print(conversation.to_yaml())

@@ -5,7 +5,7 @@ This example shows how to use the CouncilAsAJudge with different output types,
 custom worker configurations, and focused evaluation scenarios.
 """
 
-from swarms.structs.council_judge import CouncilAsAJudge
+from swarms.structs.council_as_judge import CouncilAsAJudge
 
 
 def evaluate_with_final_output():

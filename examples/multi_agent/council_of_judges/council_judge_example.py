@@ -6,7 +6,7 @@ across multiple dimensions including accuracy, helpfulness, harmlessness,
 coherence, conciseness, and instruction adherence.
 """
 
-from swarms.structs.council_judge import CouncilAsAJudge
+from swarms.structs.council_as_judge import CouncilAsAJudge
 
 
 def main():

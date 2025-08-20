@@ -21,6 +21,13 @@ from typing import (
 
 import toml
 import yaml
+from litellm import model_list
+from litellm.utils import (
+    get_max_tokens,
+    supports_function_calling,
+    supports_parallel_function_calling,
+    supports_vision,
+)
 from loguru import logger
 from pydantic import BaseModel
 
@@ -45,7 +52,6 @@ from swarms.schemas.base_schemas import (
     ChatMessageResponse,
 )
 from swarms.schemas.conversation_schema import ConversationSchema
-from swarms.schemas.llm_agent_schema import ModelConfigOrigin
 from swarms.schemas.mcp_schemas import (
     MCPConnection,
 )
@@ -422,7 +428,6 @@ class Agent:
         mcp_config: Optional[MCPConnection] = None,
         top_p: Optional[float] = 0.90,
         conversation_schema: Optional[ConversationSchema] = None,
-        aditional_llm_config: Optional[ModelConfigOrigin] = None,
         llm_base_url: Optional[str] = None,
         llm_api_key: Optional[str] = None,
         rag_config: Optional[RAGConfig] = None,
@@ -430,8 +435,9 @@ class Agent:
         output_raw_json_from_tool_call: bool = False,
         summarize_multiple_images: bool = False,
         tool_retry_attempts: int = 3,
-        speed_mode: str = None,
         reasoning_prompt_on: bool = True,
+        dynamic_context_window: bool = True,
+        show_tool_execution_output: bool = True,
         *args,
         **kwargs,
     ):
@@ -562,7 +568,6 @@ class Agent:
         self.mcp_config = mcp_config
         self.top_p = top_p
         self.conversation_schema = conversation_schema
-        self.aditional_llm_config = aditional_llm_config
         self.llm_base_url = llm_base_url
         self.llm_api_key = llm_api_key
         self.rag_config = rag_config
@@ -572,16 +577,18 @@ class Agent:
         )
         self.summarize_multiple_images = summarize_multiple_images
         self.tool_retry_attempts = tool_retry_attempts
-        self.speed_mode = speed_mode
         self.reasoning_prompt_on = reasoning_prompt_on
-
-        # Initialize the feedback
-        self.feedback = []
+        self.dynamic_context_window = dynamic_context_window
+        self.show_tool_execution_output = show_tool_execution_output
 
         # self.init_handling()
         self.setup_config()
 
+        # Initialize the short memory
         self.short_memory = self.short_memory_init()
+
+        # Initialize the tools
+        self.tool_struct = self.setup_tools()
 
         if exists(self.docs_folder):
             self.get_docs_from_doc_folders()
@@ -606,8 +613,6 @@ class Agent:
         if self.react_on is True:
             self.system_prompt += REACT_SYS_PROMPT
 
-        # Run sequential operations after all concurrent tasks are done
-        # self.agent_output = self.agent_output_model()
         if self.autosave is True:
             log_agent_data(self.to_dict())
 
@@ -636,12 +641,13 @@ class Agent:
             verbose=self.verbose,
         )
 
-    def tool_handling(self):
-
-        self.tool_struct = BaseTool(
+    def setup_tools(self):
+        return BaseTool(
             tools=self.tools,
             verbose=self.verbose,
         )
+
+    def tool_handling(self):
 
         # Convert all the tools into a list of dictionaries
         self.tools_list_dictionary = (
@@ -660,11 +666,13 @@ class Agent:
 
         # Add agent name, description, and instructions to the prompt
         if self.agent_name is not None:
-            prompt += f"\n Name: {self.agent_name}"
+            prompt += f"\n Your Name: {self.agent_name} \n"
         elif self.agent_description is not None:
-            prompt += f"\n Description: {self.agent_description}"
+            prompt += (
+                f"\n Your Description: {self.agent_description} \n"
+            )
         elif self.system_prompt is not None:
-            prompt += f"\n Instructions: {self.system_prompt}"
+            prompt += f"\n Your Instructions: {self.system_prompt} \n"
         else:
             prompt = self.system_prompt
 
@@ -674,52 +682,18 @@ class Agent:
         # Initialize the short term memory
         memory = Conversation(
             name=f"{self.agent_name}_conversation",
+            system_prompt=prompt,
             user=self.user_name,
             rules=self.rules,
-            token_count=(
-                self.conversation_schema.count_tokens
-                if self.conversation_schema
-                else False
-            ),
-            message_id_on=(
-                self.conversation_schema.message_id_on
-                if self.conversation_schema
-                else False
-            ),
-            time_enabled=(
-                self.conversation_schema.time_enabled
-                if self.conversation_schema
-                else False
-            ),
-        )
-
-        # Add the system prompt to the conversation
-        memory.add(
-            role="System",
-            content=prompt,
+            token_count=False,
+            message_id_on=False,
+            time_enabled=True,
+            dynamic_context_window=self.dynamic_context_window,
+            tokenizer_model_name=self.model_name,
+            context_length=self.context_length,
         )
 
         return memory
-
-    def agent_output_model(self):
-        # Many steps
-        id = agent_id()
-
-        return ManySteps(
-            agent_id=id,
-            agent_name=self.agent_name,
-            # run_id=run_id,
-            task="",
-            max_loops=self.max_loops,
-            steps=self.short_memory.to_dict(),
-            full_history=self.short_memory.get_str(),
-            total_tokens=count_tokens(
-                text=self.short_memory.get_str()
-            ),
-            stopping_token=self.stopping_token,
-            interactive=self.interactive,
-            dynamic_temperature_enabled=self.dynamic_temperature_enabled,
-        )
 
     def llm_handling(self, *args, **kwargs):
         """Initialize the LiteLLM instance with combined configuration from all sources.
@@ -737,9 +711,6 @@ class Agent:
         Returns:
             LiteLLM: The initialized LiteLLM instance
         """
-        # Use cached instance if available
-        if self.llm is not None:
-            return self.llm
 
         if self.model_name is None:
             self.model_name = "gpt-4o-mini"
@@ -762,6 +733,7 @@ class Agent:
                 "max_tokens": self.max_tokens,
                 "system_prompt": self.system_prompt,
                 "stream": self.streaming_on,
+                "top_p": self.top_p,
             }
 
             # Initialize tools_list_dictionary, if applicable
@@ -823,7 +795,7 @@ class Agent:
             return self.llm
         except AgentLLMInitializationError as e:
             logger.error(
-                f"AgentLLMInitializationError: Agent Name: {self.agent_name} Error in llm_handling: {e} Your current configuration is not supported. Please check the configuration and parameters."
+                f"AgentLLMInitializationError: Agent Name: {self.agent_name} Error in llm_handling: {e} Your current configuration is not supported. Please check the configuration and parameters. Traceback: {traceback.format_exc()}"
             )
             return None
 
@@ -886,6 +858,9 @@ class Agent:
         if self.preset_stopping_token is not None:
             self.stopping_token = "<DONE>"
 
+        # Initialize the feedback
+        self.feedback = []
+
     def check_model_supports_utilities(
         self, img: Optional[str] = None
     ) -> bool:
@@ -898,11 +873,6 @@ class Agent:
         Returns:
             bool: True if model supports vision and image is provided, False otherwise.
         """
-        from litellm.utils import (
-            supports_function_calling,
-            supports_parallel_function_calling,
-            supports_vision,
-        )
 
         # Only check vision support if an image is provided
         if img is not None:
@@ -1234,7 +1204,7 @@ class Agent:
                             self.save()
 
                         logger.error(
-                            f"Attempt {attempt+1}/{self.retry_attempts}: Error generating response in loop {loop_count} for agent '{self.agent_name}': {str(e)} | "
+                            f"Attempt {attempt+1}/{self.retry_attempts}: Error generating response in loop {loop_count} for agent '{self.agent_name}': {str(e)} | Traceback: {traceback.format_exc()}"
                         )
                         attempt += 1
 
@@ -1312,9 +1282,7 @@ class Agent:
         except KeyboardInterrupt as error:
             self._handle_run_error(error)
 
-    def __handle_run_error(self, error: any):
-        import traceback
-
+    def _handle_run_error(self, error: any):
         if self.autosave is True:
             self.save()
             log_agent_data(self.to_dict())
@@ -1335,11 +1303,6 @@ class Agent:
         )
 
         raise error
-
-    def _handle_run_error(self, error: any):
-        # Handle error directly instead of using daemon thread
-        # to ensure proper exception propagation
-        self.__handle_run_error(error)
 
     async def arun(
         self,
@@ -1537,32 +1500,7 @@ class Agent:
         except Exception as error:
             logger.info(f"Error running bulk run: {error}", "red")
 
-    async def arun_batched(
-        self,
-        tasks: List[str],
-        *args,
-        **kwargs,
-    ):
-        """Asynchronously runs a batch of tasks."""
-        try:
-            # Create a list of coroutines for each task
-            coroutines = [
-                self.arun(task=task, *args, **kwargs)
-                for task in tasks
-            ]
-            # Use asyncio.gather to run them concurrently
-            results = await asyncio.gather(*coroutines)
-            return results
-        except Exception as error:
-            logger.error(f"Error running batched tasks: {error}")
-            raise
-
     def reliability_check(self):
-        from litellm import model_list
-        from litellm.utils import (
-            get_max_tokens,
-            supports_function_calling,
-        )
 
         if self.system_prompt is None:
             logger.warning(
@@ -1596,7 +1534,7 @@ class Agent:
         try:
             if self.max_tokens > get_max_tokens(self.model_name):
                 logger.warning(
-                    f"Max tokens is set to {self.max_tokens}, but the model '{self.model_name}' only supports {get_max_tokens(self.model_name)} tokens. Please set max tokens to {get_max_tokens(self.model_name)} or less."
+                    f"Max tokens is set to {self.max_tokens}, but the model '{self.model_name}' may or may not support {get_max_tokens(self.model_name)} tokens. Please set max tokens to {get_max_tokens(self.model_name)} or less."
                 )
 
         except Exception:
@@ -1604,7 +1542,7 @@ class Agent:
 
         if self.model_name not in model_list:
             logger.warning(
-                f"The model '{self.model_name}' is not supported. Please use a supported model, or override the model name with the 'llm' parameter, which should be a class with a 'run(task: str)' method or a '__call__' method."
+                f"The model '{self.model_name}' may not be supported. Please use a supported model, or override the model name with the 'llm' parameter, which should be a class with a 'run(task: str)' method or a '__call__' method."
             )
 
     def save(self, file_path: str = None) -> None:
@@ -1849,14 +1787,6 @@ class Agent:
                 max_workers=os.cpu_count()
             ) as executor:
                 self.executor = executor
-
-            # # Reinitialize tool structure if needed
-            # if hasattr(self, 'tools') and (self.tools or getattr(self, 'list_base_models', None)):
-            #     self.tool_struct = BaseTool(
-            #         tools=self.tools,
-            #         base_models=getattr(self, 'list_base_models', None),
-            #         tool_system_prompt=self.tool_system_prompt
-            #     )
 
         except Exception as e:
             logger.error(f"Error reinitializing components: {e}")
@@ -2622,19 +2552,20 @@ class Agent:
                     **kwargs,
                 )
             else:
-                # Non-streaming call
+                args = {
+                    "task": task,
+                }
+
                 if img is not None:
-                    out = self.llm.run(
-                        task=task, img=img, *args, **kwargs
-                    )
-                else:
-                    out = self.llm.run(task=task, *args, **kwargs)
+                    args["img"] = img
+
+                out = self.llm.run(**args, **kwargs)
 
                 return out
 
         except AgentLLMError as e:
             logger.error(
-                f"Error calling LLM: {e}. Task: {task}, Args: {args}, Kwargs: {kwargs}"
+                f"Error calling LLM: {e}. Task: {task}, Args: {args}, Kwargs: {kwargs} Traceback: {traceback.format_exc()}"
             )
             raise e
 
@@ -2724,6 +2655,30 @@ class Agent:
                 "For technical support, refer to this document: https://docs.swarms.world/en/latest/swarms/support/"
             )
             raise KeyboardInterrupt
+
+    def run_batched(
+        self,
+        tasks: List[str],
+        imgs: List[str] = None,
+        *args,
+        **kwargs,
+    ):
+        """
+        Run a batch of tasks concurrently.
+
+        Args:
+            tasks (List[str]): List of tasks to run.
+            imgs (List[str], optional): List of images to run. Defaults to None.
+            *args: Additional positional arguments to be passed to the execution method.
+            **kwargs: Additional keyword arguments to be passed to the execution method.
+
+        Returns:
+            List[Any]: List of results from each task execution.
+        """
+        return [
+            self.run(task=task, imgs=imgs, *args, **kwargs)
+            for task in tasks
+        ]
 
     def handle_artifacts(
         self, text: str, file_output_path: str, file_extension: str
@@ -3072,10 +3027,17 @@ class Agent:
         )
 
         if self.print_on is True:
-            self.pretty_print(
-                f"Tool Executed Successfully [{time.strftime('%H:%M:%S')}]",
-                loop_count,
-            )
+            if self.show_tool_execution_output is True:
+
+                self.pretty_print(
+                    f"Tool Executed Successfully [{time.strftime('%H:%M:%S')}] \n\nTool Output: {format_data_structure(output)}",
+                    loop_count,
+                )
+            else:
+                self.pretty_print(
+                    f"Tool Executed Successfully [{time.strftime('%H:%M:%S')}]",
+                    loop_count,
+                )
 
         # Now run the LLM again without tools - create a temporary LLM instance
         # instead of modifying the cached one

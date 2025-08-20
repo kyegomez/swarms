@@ -176,6 +176,12 @@ class LiteLLM:
 
         litellm.drop_params = True
 
+        # Add system prompt if present
+        if self.system_prompt is not None:
+            self.messages.append(
+                {"role": "system", "content": self.system_prompt}
+            )
+
         # Store additional args and kwargs for use in run method
         self.init_args = args
         self.init_kwargs = kwargs
@@ -232,8 +238,8 @@ class LiteLLM:
 
     def _prepare_messages(
         self,
-        task: str,
-        img: str = None,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
     ):
         """
         Prepare the messages for the given task.
@@ -246,24 +252,14 @@ class LiteLLM:
         """
         self.check_if_model_supports_vision(img=img)
 
-        # Initialize messages
-        messages = []
-
-        # Add system prompt if present
-        if self.system_prompt is not None:
-            messages.append(
-                {"role": "system", "content": self.system_prompt}
-            )
-
         # Handle vision case
         if img is not None:
-            messages = self.vision_processing(
-                task=task, image=img, messages=messages
-            )
-        else:
-            messages.append({"role": "user", "content": task})
+            self.vision_processing(task=task, image=img)
 
-        return messages
+        if task is not None:
+            self.messages.append({"role": "user", "content": task})
+
+        return self.messages
 
     def anthropic_vision_processing(
         self, task: str, image: str, messages: list
@@ -879,12 +875,18 @@ class LiteLLM:
             5. Default parameters
         """
         try:
-            messages = self._prepare_messages(task=task, img=img)
+
+            self.messages.append({"role": "user", "content": task})
+
+            if img is not None:
+                self.messages = self.vision_processing(
+                    task=task, image=img
+                )
 
             # Base completion parameters
             completion_params = {
                 "model": self.model_name,
-                "messages": messages,
+                "messages": self.messages,
                 "stream": self.stream,
                 "max_tokens": self.max_tokens,
                 "caching": self.caching,

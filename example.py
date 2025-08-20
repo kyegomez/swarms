@@ -36,10 +36,8 @@ agent = Agent(
     model_name="claude-sonnet-4-20250514",
     dynamic_temperature_enabled=True,
     output_type="str-all-except-first",
-    max_loops="auto",
-    interactive=True,
-    no_reasoning_prompt=True,
-    streaming_on=True,
+    max_loops=1,
+    dynamic_context_window=True,
 )
 
 out = agent.run(
