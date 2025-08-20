@@ -5,6 +5,7 @@ The `AgentLoader` is a powerful utility for creating Swarms agents from markdown
 ## Overview
 
 The AgentLoader enables you to:
+
 - Load single agents from markdown files with YAML frontmatter
 - Load multiple agents from directories or file lists with concurrent processing
 - Parse Claude Code sub-agent YAML frontmatter configurations
@@ -43,6 +44,7 @@ the subagent should follow.
 ```
 
 **Schema Fields:**
+
 - `name` (required): Your sub-agent name
 - `description` (required): Description of when this subagent should be invoked
 - `model_name` (optional): Name of model (defaults to random selection if not provided)
@@ -229,7 +231,7 @@ except Exception as e:
 
 ### Multi-Core Performance
 
-The AgentLoader utilizes **100% of CPU cores** for concurrent agent loading, providing significant performance improvements when processing multiple markdown files:
+The AgentLoader utilizes 100% of CPU cores for concurrent agent loading, providing significant performance improvements when processing multiple markdown files:
 
 ```python
 from swarms.utils import load_agents_from_markdown
@@ -445,6 +447,7 @@ When analyzing financial situations:
 ## Support
 
 For questions and support:
+
 - GitHub Issues: [https://github.com/kyegomez/swarms/issues](https://github.com/kyegomez/swarms/issues)
 - Documentation: [https://docs.swarms.world](https://docs.swarms.world)
 - Community: Join our Discord for real-time support
