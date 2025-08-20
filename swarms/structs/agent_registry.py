@@ -41,6 +41,15 @@ class AgentRegistrySchema(BaseModel):
 class AgentRegistry:
     """
     A class for managing a registry of agents.
+
+    Attributes:
+        name (str): The name of the registry.
+        description (str): A description of the registry.
+        return_json (bool): Indicates whether to return data in JSON format.
+        auto_save (bool): Indicates whether to automatically save changes to the registry.
+        agents (Dict[str, Agent]): A dictionary of agents in the registry, keyed by agent name.
+        lock (Lock): A lock for thread-safe operations on the registry.
+        agent_registry (AgentRegistrySchema): The schema for the agent registry.
     """
 
     def __init__(
@@ -53,6 +62,16 @@ class AgentRegistry:
         *args,
         **kwargs,
     ):
+        """
+        Initializes the AgentRegistry.
+
+        Args:
+            name (str, optional): The name of the registry. Defaults to "Agent Registry".
+            description (str, optional): A description of the registry. Defaults to "A registry for managing agents.".
+            agents (Optional[List[Agent]], optional): A list of agents to initially add to the registry. Defaults to None.
+            return_json (bool, optional): Indicates whether to return data in JSON format. Defaults to True.
+            auto_save (bool, optional): Indicates whether to automatically save changes to the registry. Defaults to False.
+        """
         self.name = name
         self.description = description
         self.return_json = return_json
@@ -122,6 +141,15 @@ class AgentRegistry:
                     raise
 
     def delete(self, agent_name: str) -> None:
+        """
+        Deletes an agent from the registry.
+
+        Args:
+            agent_name (str): The name of the agent to delete.
+
+        Raises:
+            KeyError: If the agent_name does not exist in the registry.
+        """
         with self.lock:
             try:
                 del self.agents[agent_name]
@@ -131,6 +159,17 @@ class AgentRegistry:
                 raise
 
     def update_agent(self, agent_name: str, new_agent: Agent) -> None:
+        """
+        Updates an existing agent in the registry.
+
+        Args:
+            agent_name (str): The name of the agent to update.
+            new_agent (Agent): The new agent to replace the existing one.
+
+        Raises:
+            KeyError: If the agent_name does not exist in the registry.
+            ValidationError: If the input data is invalid.
+        """
         with self.lock:
             if agent_name not in self.agents:
                 logger.error(f"Agent with name {agent_name} does not exist.")
@@ -143,6 +182,18 @@ class AgentRegistry:
                 raise
 
     def get(self, agent_name: str) -> Agent:
+        """
+        Retrieves an agent from the registry.
+
+        Args:
+            agent_name (str): The name of the agent to retrieve.
+
+        Returns:
+            Agent: The agent associated with the given agent_name.
+
+        Raises:
+            KeyError: If the agent_name does not exist in the registry.
+        """
         with self.lock:
             try:
                 agent = self.agents[agent_name]
@@ -153,6 +204,12 @@ class AgentRegistry:
                 raise
 
     def list_agents(self) -> List[str]:
+        """
+        Lists all agent names in the registry.
+
+        Returns:
+            List[str]: A list of all agent names.
+        """
         try:
             with self.lock:
                 agent_names = list(self.agents.keys())
@@ -163,6 +220,12 @@ class AgentRegistry:
             raise e
 
     def return_all_agents(self) -> List[Agent]:
+         """
+        Returns all agents from the registry.
+
+        Returns:
+            List[Agent]: A list of all agents.
+        """
         try:
             with self.lock:
                 agents = list(self.agents.values())
@@ -172,7 +235,19 @@ class AgentRegistry:
             logger.error(f"Error: {e}")
             raise e
 
-    def query(self, condition: Optional[Callable[[Agent], bool]] = None) -> List[Agent]:
+    def query(
+        self, condition: Optional[Callable[[Agent], bool]] = None
+        ) -> List[Agent]:
+            """
+        Queries agents based on a condition.
+
+        Args:
+            condition (Optional[Callable[[Agent], bool]]): A function that takes an agent and returns a boolean indicating
+                                                           whether the agent meets the condition.
+
+        Returns:
+            List[Agent]: A list of agents that meet the condition.
+        """
         try:
             with self.lock:
                 if condition is None:
@@ -187,6 +262,15 @@ class AgentRegistry:
             raise e
 
     def find_agent_by_name(self, agent_name: str) -> Optional[Agent]:
+        """
+        Find an agent by its name.
+
+        Args:
+            agent_name (str): The name of the agent to find.
+
+        Returns:
+            Agent: The agent with the given name.
+        """
         try:
             with ThreadPoolExecutor() as executor:
                 futures = {
@@ -202,13 +286,28 @@ class AgentRegistry:
             raise e
 
     def find_agent_by_id(self, agent_id: str) -> Optional[Agent]:
+        """
+        Find an agent by its ID.
+        """
         return self.agents.get(agent_id)
 
     def agents_to_json(self) -> str:
+                """
+        Converts all agents in the registry to a JSON string.
+
+        Returns:
+            str: A JSON string representation of all agents, keyed by their names.
+        """
         agents_dict = {name: agent.to_dict() for name, agent in self.agents.items()}
         return json.dumps(agents_dict, indent=4)
 
     def agent_to_py_model(self, agent: Agent):
+         """
+        Converts an agent to a Pydantic model.
+
+        Args:
+            agent (Agent): The agent to convert.
+        """
         agent_name = agent.agent_name
         agent_description = (
             agent.description if agent.description else "No description provided"
