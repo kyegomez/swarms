@@ -119,11 +119,16 @@ class AgentRegistry:
                 raise
 
     def add_many(self, agents: List[Agent]) -> None:
-        """
+         """
         Adds multiple agents to the registry.
-        Stops immediately if any agent has an invalid name.
+
+        Args:
+            agents (List[Agent]): The list of agents to add.
+
+        Raises:
+            ValueError: If any of the agent_names already exist in the registry.
+            ValidationError: If the input data is invalid.
         """
-        # ✅ Pre-validation before threading
         for agent in agents:
             if not isinstance(agent.agent_name, str) or not agent.agent_name.strip():
                 logger.error(f"Invalid agent_name in batch: {agent.agent_name!r}")
