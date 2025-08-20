@@ -320,13 +320,15 @@ nav:
         - Storage:
           - AgentRegistry: "swarms/structs/agent_registry.md"
 
+        - Agent Loader:
+          - Agent Loader: "swarms/utils/agent_loader.md"
+
         - Communication Structure: "swarms/structs/conversation.md"
 
     - Tools:
       - Overview: "swarms_tools/overview.md"
       - BaseTool Reference: "swarms/tools/base_tool.md"
       - MCP Client Utils: "swarms/tools/mcp_client_call.md"
-      - Agent Loader: "swarms/utils/agent_loader.md"
 
       - Vertical Tools:
         - Finance: "swarms_tools/finance.md"
