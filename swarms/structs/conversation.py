@@ -1790,21 +1790,63 @@ class Conversation:
                 pass
         self.conversation_history = []
 
-    def dynamic_auto_chunking(self):
+    def _dynamic_auto_chunking_worker(self):
+        """
+        Dynamically chunk the conversation history to fit within the context length.
+
+        Returns:
+            str: The chunked conversation history as a string that fits within context_length tokens.
+        """
         all_tokens = self._return_history_as_string_worker()
 
         total_tokens = count_tokens(
             all_tokens, self.tokenizer_model_name
         )
 
-        if total_tokens > self.context_length:
-            # Get the difference between the count_tokens and the context_length
-            difference = total_tokens - self.context_length
+        if total_tokens <= self.context_length:
+            return all_tokens
 
-            # Slice the first difference number of messages and contents from the beginning of the conversation history
-            new_history = all_tokens[difference:]
+        # We need to remove characters from the beginning until we're under the limit
+        # Start by removing a percentage of characters and adjust iteratively
+        target_tokens = self.context_length
+        current_string = all_tokens
 
-            return new_history
+        # Binary search approach to find the right cutoff point
+        left, right = 0, len(all_tokens)
+
+        while left < right:
+            mid = (left + right) // 2
+            test_string = all_tokens[mid:]
+
+            if not test_string:
+                break
+
+            test_tokens = count_tokens(
+                test_string, self.tokenizer_model_name
+            )
+
+            if test_tokens <= target_tokens:
+                # We can remove more from the beginning
+                right = mid
+                current_string = test_string
+            else:
+                # We need to keep more from the beginning
+                left = mid + 1
+
+        return current_string
+
+    def dynamic_auto_chunking(self):
+        """
+        Dynamically chunk the conversation history to fit within the context length.
+
+        Returns:
+            str: The chunked conversation history as a string that fits within context_length tokens.
+        """
+        try:
+            return self._dynamic_auto_chunking_worker()
+        except Exception as e:
+            logger.error(f"Dynamic auto chunking failed: {e}")
+            return self._return_history_as_string_worker()
 
 
 # Example usage

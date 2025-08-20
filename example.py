@@ -1,10 +1,5 @@
 from swarms import Agent
 
-import litellm
-
-litellm._turn_on_debug()  # 👈 this is the 1-line change you need to make
-
-
 # Initialize the agent
 agent = Agent(
     agent_name="Quantitative-Trading-Agent",
@@ -41,10 +36,8 @@ agent = Agent(
     model_name="claude-sonnet-4-20250514",
     dynamic_temperature_enabled=True,
     output_type="str-all-except-first",
-    max_loops="auto",
-    interactive=True,
-    no_reasoning_prompt=True,
-    streaming_on=True,
+    max_loops=1,
+    dynamic_context_window=True,
 )
 
 out = agent.run(
