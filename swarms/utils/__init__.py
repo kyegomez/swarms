@@ -20,12 +20,19 @@ from swarms.utils.file_processing import (
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
+
+from swarms.utils.agent_loader import (
+    AgentLoader,
+    MarkdownAgentConfig,
+    load_agent_from_markdown,
+    load_agents_from_markdown,
+)
+
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.output_types import HistoryOutputType
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.try_except_wrapper import try_except_wrapper
-
 
 __all__ = [
     "csv_to_text",
@@ -44,5 +51,9 @@ __all__ = [
     "HistoryOutputType",
     "history_output_formatter",
     "check_all_model_max_tokens",
+    "AgentLoader",
+    "MarkdownAgentConfig",
+    "load_agent_from_markdown",
+    "load_agents_from_markdown",
     "dynamic_auto_chunking",
 ]

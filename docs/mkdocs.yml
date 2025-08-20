@@ -320,6 +320,9 @@ nav:
         - Storage:
           - AgentRegistry: "swarms/structs/agent_registry.md"
 
+        - Agent Loader:
+          - Agent Loader: "swarms/utils/agent_loader.md"
+
         - Communication Structure: "swarms/structs/conversation.md"
 
     - Tools:
