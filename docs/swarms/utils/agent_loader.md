@@ -1,4 +1,4 @@
-# AgentLoader - Load Agents from Markdown Files
+# AgentLoader Documentation
 
 The `AgentLoader` is a powerful utility for creating Swarms agents from markdown files using the Claude Code sub-agent format. It supports both single and multiple markdown file loading, providing a flexible way to define and deploy agents using YAML frontmatter configuration.
 
