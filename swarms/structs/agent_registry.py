@@ -94,6 +94,9 @@ class AgentRegistry:
         """
         Adds a new agent to the registry.
 
+        Args:
+            agent (Agent): The agent to add.
+            
         Raises:
             ValueError: If the agent_name is invalid or already exists in the registry.
             ValidationError: If the input data is invalid.
