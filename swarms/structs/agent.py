@@ -48,16 +48,10 @@ from swarms.schemas.agent_mcp_errors import (
 from swarms.schemas.agent_step_schemas import ManySteps, Step
 from swarms.schemas.base_schemas import (
     AgentChatCompletionResponse,
-    ChatCompletionResponseChoice,
-    ChatMessageResponse,
 )
 from swarms.schemas.conversation_schema import ConversationSchema
 from swarms.schemas.mcp_schemas import (
     MCPConnection,
-)
-from swarms.structs.agent_rag_handler import (
-    AgentRAGHandler,
-    RAGConfig,
 )
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.conversation import Conversation
@@ -78,6 +72,7 @@ from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
 )
 from swarms.utils.data_to_text import data_to_text
+from swarms.utils.dynamic_context_window import dynamic_auto_chunking
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
 from swarms.utils.generate_keys import generate_api_key
@@ -116,8 +111,6 @@ ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
 
 # Agent Exceptions
-
-
 class AgentError(Exception):
     """Base class for all agent-related exceptions."""
 
@@ -430,7 +423,6 @@ class Agent:
         conversation_schema: Optional[ConversationSchema] = None,
         llm_base_url: Optional[str] = None,
         llm_api_key: Optional[str] = None,
-        rag_config: Optional[RAGConfig] = None,
         tool_call_summary: bool = True,
         output_raw_json_from_tool_call: bool = False,
         summarize_multiple_images: bool = False,
@@ -570,7 +562,6 @@ class Agent:
         self.conversation_schema = conversation_schema
         self.llm_base_url = llm_base_url
         self.llm_api_key = llm_api_key
-        self.rag_config = rag_config
         self.tool_call_summary = tool_call_summary
         self.output_raw_json_from_tool_call = (
             output_raw_json_from_tool_call
@@ -625,21 +616,10 @@ class Agent:
         if self.random_models_on is True:
             self.model_name = set_random_models_for_agents()
 
-        if self.long_term_memory is not None:
-            self.rag_handler = self.rag_setup_handling()
-
         if self.dashboard is True:
             self.print_dashboard()
 
         self.reliability_check()
-
-    def rag_setup_handling(self):
-        return AgentRAGHandler(
-            long_term_memory=self.long_term_memory,
-            config=self.rag_config,
-            agent_name=self.agent_name,
-            verbose=self.verbose,
-        )
 
     def setup_tools(self):
         return BaseTool(
@@ -1022,6 +1002,42 @@ class Agent:
             title=f"Agent {self.agent_name} Dashboard",
         )
 
+    def handle_rag_query(self, query: str):
+        """
+        Handle RAG query
+        """
+        try:
+            logger.info(
+                f"Agent: {self.agent_name} Querying RAG memory for: {query}"
+            )
+            output = self.long_term_memory.query(
+                query,
+            )
+
+            output = dynamic_auto_chunking(
+                content=output,
+                context_length=self.max_tokens,
+                tokenizer_model_name=self.model_name,
+            )
+
+            self.short_memory.add(
+                role="system",
+                content=(
+                    f"🔍 [RAG Query Initiated]\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"📝 Query:\n{query}\n\n"
+                    f"📚 Retrieved Knowledge (RAG Output):\n{output}\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"💡 The above information was retrieved from the agent's long-term memory using Retrieval-Augmented Generation (RAG). "
+                    f"Use this context to inform your next response or reasoning step."
+                ),
+            )
+        except Exception as e:
+            logger.error(
+                f"Agent: {self.agent_name} Error handling RAG query: {e} Traceback: {traceback.format_exc()}"
+            )
+            raise e
+
     # Main function
     def _run(
         self,
@@ -1032,21 +1048,30 @@ class Agent:
         **kwargs,
     ) -> Any:
         """
-        run the agent
+        Execute the agent's main loop for a given task.
+
+        This function manages the agent's reasoning and action loop, including:
+        - Initializing the task and context
+        - Handling Retrieval-Augmented Generation (RAG) queries if enabled
+        - Planning (if enabled)
+        - Managing internal reasoning loops and memory
+        - Optionally processing images and streaming output
+        - Autosaving agent state if configured
 
         Args:
-            task (str): The task to be performed.
-            img (str): The image to be processed.
-            is_last (bool): Indicates if this is the last task.
+            task (Optional[Union[str, Any]]): The task or prompt for the agent to process.
+            img (Optional[str]): Optional image path or data to be processed by the agent.
+            streaming_callback (Optional[Callable[[str], None]]): Optional callback for streaming output.
+            *args: Additional positional arguments for extensibility.
+            **kwargs: Additional keyword arguments for extensibility.
 
         Returns:
-            Any: The output of the agent.
-            (string, list, json, dict, yaml, xml)
+            Any: The agent's output, which may be a string, list, JSON, dict, YAML, XML, or other type depending on the agent's configuration and the task.
 
         Examples:
             agent(task="What is the capital of France?")
-            agent(task="What is the capital of France?", img="path/to/image.jpg")
-            agent(task="What is the capital of France?", img="path/to/image.jpg", is_last=True)
+            agent(task="Summarize this document.", img="path/to/image.jpg")
+            agent(task="Analyze this image.", img="path/to/image.jpg", is_last=True)
         """
         try:
 
@@ -1055,6 +1080,13 @@ class Agent:
             self.check_model_supports_utilities(img=img)
 
             self.short_memory.add(role=self.user_name, content=task)
+
+            # Handle RAG query only once
+            if (
+                self.long_term_memory is not None
+                and self.rag_every_loop is False
+            ):
+                self.handle_rag_query(task)
 
             if self.plan_enabled is True:
                 self.plan(task)
@@ -1075,6 +1107,13 @@ class Agent:
                 or loop_count < self.max_loops
             ):
                 loop_count += 1
+
+                # Handle RAG query every loop
+                if (
+                    self.long_term_memory is not None
+                    and self.rag_every_loop is True
+                ):
+                    self.handle_rag_query(task)
 
                 if (
                     isinstance(self.max_loops, int)
@@ -1284,7 +1323,7 @@ class Agent:
         traceback_info = traceback.format_exc()
 
         logger.error(
-            f"An error occurred while running your agent {self.agent_name}.\n"
+            f"Agent: {self.agent_name} An error occurred while running your agent.\n"
             f"Error Type: {error_type}\n"
             f"Error Message: {error_message}\n"
             f"Traceback:\n{traceback_info}\n"
@@ -1508,8 +1547,16 @@ class Agent:
                 "Max loops is not provided or is set to 0. Please set max loops to 1 or more."
             )
 
-        if self.max_tokens is None or self.max_tokens == 0:
-            self.max_tokens = get_max_tokens(self.model_name)
+        # Ensure max_tokens is set to a valid value based on the model, with a robust fallback.
+        if self.max_tokens is None or self.max_tokens <= 0:
+            suggested_tokens = get_max_tokens(self.model_name)
+            if suggested_tokens is not None and suggested_tokens > 0:
+                self.max_tokens = suggested_tokens
+            else:
+                logger.warning(
+                    f"Could not determine max_tokens for model '{self.model_name}'. Falling back to default value of 8192."
+                )
+                self.max_tokens = 8192
 
         if self.context_length is None or self.context_length == 0:
             raise AgentInitializationError(
@@ -2097,40 +2144,6 @@ class Agent:
             )
             raise error
 
-    def memory_query(self, task: str = None, *args, **kwargs) -> None:
-        try:
-            # Query the long term memory
-            if self.long_term_memory is not None:
-                formatter.print_panel(f"Querying RAG for: {task}")
-
-                memory_retrieval = self.long_term_memory.query(
-                    task, *args, **kwargs
-                )
-
-                memory_retrieval = (
-                    f"Documents Available: {str(memory_retrieval)}"
-                )
-
-                # # Count the tokens
-                # memory_token_count = count_tokens(
-                #     memory_retrieval
-                # )
-                # if memory_token_count > self.memory_chunk_size:
-                #     # Truncate the memory by the memory chunk size
-                #     memory_retrieval = self.truncate_string_by_tokens(
-                #         memory_retrieval, self.memory_chunk_size
-                #     )
-
-                self.short_memory.add(
-                    role="Database",
-                    content=memory_retrieval,
-                )
-
-                return None
-        except Exception as e:
-            logger.error(f"An error occurred: {e}")
-            raise e
-
     def sentiment_analysis_handler(self, response: str = None):
         """
         Performs sentiment analysis on the given response and stores the result in the short-term memory.
@@ -2222,107 +2235,6 @@ class Agent:
         )
 
         return out
-
-    def log_step_metadata(
-        self, loop: int, task: str, response: str
-    ) -> Step:
-        """Log metadata for each step of agent execution."""
-        # Generate unique step ID
-        step_id = f"step_{loop}_{uuid.uuid4().hex}"
-
-        # Calculate token usage
-        # full_memory = self.short_memory.return_history_as_string()
-        # prompt_tokens = count_tokens(full_memory)
-        # completion_tokens = count_tokens(response)
-        # total_tokens = prompt_tokens + completion_tokens
-        total_tokens = (count_tokens(task) + count_tokens(response),)
-
-        # # Get memory responses
-        # memory_responses = {
-        #     "short_term": (
-        #         self.short_memory.return_history_as_string()
-        #         if self.short_memory
-        #         else None
-        #     ),
-        #     "long_term": (
-        #         self.long_term_memory.query(task)
-        #         if self.long_term_memory
-        #         else None
-        #     ),
-        # }
-
-        # # Get tool responses if tool was used
-        # if self.tools:
-        #     try:
-        #         tool_call_output = parse_and_execute_json(
-        #             self.tools, response, parse_md=True
-        #         )
-        #         if tool_call_output:
-        #             {
-        #                 "tool_name": tool_call_output.get(
-        #                     "tool_name", "unknown"
-        #                 ),
-        #                 "tool_args": tool_call_output.get("args", {}),
-        #                 "tool_output": str(
-        #                     tool_call_output.get("output", "")
-        #                 ),
-        #             }
-        #     except Exception as e:
-        #         logger.debug(
-        #             f"No tool call detected in response: {e}"
-        #         )
-
-        # Create memory usage tracking
-        # memory_usage = {
-        #     "short_term": (
-        #         len(self.short_memory.messages)
-        #         if self.short_memory
-        #         else 0
-        #     ),
-        #     "long_term": (
-        #         self.long_term_memory.count
-        #         if self.long_term_memory
-        #         else 0
-        #     ),
-        #     "responses": memory_responses,
-        # }
-
-        step_log = Step(
-            step_id=step_id,
-            time=time.time(),
-            tokens=total_tokens,
-            response=AgentChatCompletionResponse(
-                id=self.id,
-                agent_name=self.agent_name,
-                object="chat.completion",
-                choices=ChatCompletionResponseChoice(
-                    index=loop,
-                    input=task,
-                    message=ChatMessageResponse(
-                        role=self.agent_name,
-                        content=response,
-                    ),
-                ),
-                # usage=UsageInfo(
-                #     prompt_tokens=prompt_tokens,
-                #     completion_tokens=completion_tokens,
-                #     total_tokens=total_tokens,
-                # ),
-                # tool_calls=(
-                #     [] if tool_response is None else [tool_response]
-                # ),
-                # memory_usage=None,
-            ),
-        )
-
-        # Update total tokens if agent_output exists
-        # if hasattr(self, "agent_output"):
-        #     self.agent_output.total_tokens += (
-        #         self.response.total_tokens
-        #     )
-
-        # Add step to agent output tracking
-        self.step_pool.append(step_log)
 
     def update_tool_usage(
         self,
