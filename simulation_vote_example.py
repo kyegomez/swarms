@@ -2,10 +2,6 @@ from swarms.sims.senator_assembly import SenatorAssembly
 
 
 def main():
-    """
-    Runs a simulation of a Senate vote on a bill proposing significant tax cuts for all Americans.
-    The bill is described in realistic legislative terms, and the simulation uses a concurrent voting model.
-    """
     senator_simulation = SenatorAssembly(
         model_name="claude-sonnet-4-20250514"
     )
