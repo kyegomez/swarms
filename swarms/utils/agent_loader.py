@@ -50,7 +50,7 @@ class MarkdownAgentConfig(BaseModel):
                 "System prompt must be a non-empty string"
             )
         return v
-    
+
 
 class AgentLoader:
     """
@@ -224,7 +224,7 @@ class AgentLoader:
         try:
             # Lazy import to avoid circular dependency
             from swarms.structs.agent import Agent
-            
+
             logger.info(
                 f"Creating agent '{config.name}' from {file_path}"
             )

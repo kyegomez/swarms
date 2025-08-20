@@ -272,7 +272,7 @@ nav:
       - Benefits: "swarms/concept/why.md"
       - Choosing Multi Agent Architecture: "swarms/concept/how_to_choose_swarms.md"
 
-      - Documentation:
+      - Reference Documentation:
         - Overview: "swarms/structs/overview.md"
         - Custom Multi Agent Architectures: "swarms/structs/custom_swarm.md"
         - Debate Multi-Agent Architectures: "swarms/structs/orchestration_methods.md"
@@ -296,8 +296,6 @@ nav:
           - Swarm Matcher: "swarms/structs/swarm_matcher.md"
           - Board of Directors: "swarms/structs/BoardOfDirectors.md"
 
-        # - Multi-Agent Multi-Modal Structures:
-        #   - ImageAgentBatchProcessor: "swarms/structs/image_batch_agent.md"
 
         - Routers:
           - SwarmRouter: "swarms/structs/swarm_router.md"
@@ -317,13 +315,11 @@ nav:
           - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
           - GraphWorkflow: "swarms/structs/graph_workflow.md"
 
-        - Storage:
-          - AgentRegistry: "swarms/structs/agent_registry.md"
-
-        - Agent Loader:
-          - Agent Loader: "swarms/utils/agent_loader.md"
-
         - Communication Structure: "swarms/structs/conversation.md"
+
+    - Utilities:
+      - Agent Loader: "swarms/utils/agent_loader.md"
+      - AgentRegistry: "swarms/structs/agent_registry.md"
 
     - Tools:
       - Overview: "swarms_tools/overview.md"
