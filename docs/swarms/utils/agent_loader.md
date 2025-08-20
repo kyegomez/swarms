@@ -6,9 +6,10 @@ The `AgentLoader` is a powerful utility for creating Swarms agents from markdown
 
 The AgentLoader enables you to:
 - Load single agents from markdown files with YAML frontmatter
-- Load multiple agents from directories or file lists
+- Load multiple agents from directories or file lists with concurrent processing
 - Parse Claude Code sub-agent YAML frontmatter configurations
 - Extract system prompts from markdown content
+- Utilize 100% CPU cores for high-performance batch loading
 - Provide comprehensive error handling and validation
 
 ## Installation
@@ -56,42 +57,37 @@ the subagent should follow.
 ```python
 from swarms.utils import load_agent_from_markdown
 
-# Load Claude Code format agent (YAML frontmatter)
-agent = load_agent_from_markdown(
-    file_path="performance-engineer.md"  # Uses YAML frontmatter format
+# Load agent from markdown file
+agent = load_agent_from_markdown("finance_advisor.md")
+
+# Use the agent
+response = agent.run(
+    "I have $10,000 to invest. What's a good strategy for a beginner?"
 )
-
-# The agent automatically gets configured with:
-# - Name, description from frontmatter
-# - Temperature, max_loops, model settings
-# - System prompt from content after frontmatter
-
-response = agent.run("Analyze application performance issues")
-print(response)
 ```
 
-### Loading Multiple Agents
+### Loading Multiple Agents (Concurrent)
 
 ```python
 from swarms.utils import load_agents_from_markdown
 
-# Load all agents from directory (YAML frontmatter format)
-agents = load_agents_from_markdown(
-    file_paths="./agents_directory/"  # Directory with Claude Code format files
+# Load agents from list of files with concurrent processing
+agents = load_agents_from_markdown([
+    "market_researcher.md",
+    "financial_analyst.md", 
+    "risk_analyst.md"
+], concurrent=True)  # Uses all CPU cores for faster loading
+
+# Use agents in a workflow
+from swarms.structs import SequentialWorkflow
+
+workflow = SequentialWorkflow(
+    agents=agents,
+    max_loops=1
 )
 
-# Load agents from specific files
-agents = load_agents_from_markdown(
-    file_paths=[
-        "performance-engineer.md",  # Claude Code YAML format
-        "financial-analyst.md",     # Claude Code YAML format
-        "security-analyst.md"       # Claude Code YAML format
-    ]
-)
-
-print(f"Loaded {len(agents)} agents")
-for agent in agents:
-    print(f"- {agent.agent_name}: {getattr(agent, 'temperature', 'default temp')}")
+task = "Analyze the AI healthcare market for a $50M investment."
+result = workflow.run(task)
 ```
 
 ## Class-Based Usage
@@ -109,8 +105,12 @@ loader = AgentLoader()
 # Load single agent
 agent = loader.load_single_agent("path/to/agent.md")
 
-# Load multiple agents
-agents = loader.load_multiple_agents("./agents_directory/")
+# Load multiple agents with concurrent processing
+agents = loader.load_multiple_agents(
+    "./agents_directory/", 
+    concurrent=True,      # Enable concurrent processing
+    max_workers=8         # Optional: limit worker threads
+)
 
 # Parse markdown file without creating agent
 config = loader.parse_markdown_file("path/to/agent.md")
@@ -150,34 +150,39 @@ agent = load_agent_from_markdown(
 
 ## Complete Example
 
-### Example: Claude Code Sub-Agent Format
+### Example: Finance Advisor Agent
 
-Create a file `performance-engineer.md`:
+Create a file `finance_advisor.md`:
 
 ```markdown
 ---
-name: performance-engineer
-description: Optimize application performance and identify bottlenecks
+name: FinanceAdvisor
+description: Expert financial advisor for investment and budgeting guidance
 model_name: gpt-4
-temperature: 0.3
-max_loops: 2
-mcp_url: http://example.com/mcp
+temperature: 0.7
+max_loops: 1
 ---
 
-You are a Performance Engineer specializing in application optimization and scalability.
+You are an expert financial advisor with deep knowledge in:
+- Investment strategies and portfolio management
+- Personal budgeting and financial planning
+- Risk assessment and diversification
+- Tax optimization strategies
+- Retirement planning
 
-Your role involves analyzing system performance, identifying bottlenecks, and implementing 
-solutions to improve efficiency and user experience.
+Your approach:
+- Provide clear, actionable financial advice
+- Consider individual risk tolerance and goals
+- Explain complex concepts in simple terms
+- Always emphasize the importance of diversification
+- Include relevant disclaimers about financial advice
 
-Key responsibilities:
-- Profile applications to identify performance issues
-- Optimize database queries and caching strategies  
-- Implement load testing and monitoring solutions
-- Recommend infrastructure improvements
-- Provide actionable optimization recommendations
-
-Always provide specific, measurable recommendations with implementation details.
-Focus on both immediate wins and long-term architectural improvements.
+When analyzing financial situations:
+1. Assess current financial position
+2. Identify short-term and long-term goals
+3. Evaluate risk tolerance
+4. Recommend appropriate strategies
+5. Suggest specific action steps
 ```
 
 ### Loading and Using the Agent
@@ -185,25 +190,13 @@ Focus on both immediate wins and long-term architectural improvements.
 ```python
 from swarms.utils import load_agent_from_markdown
 
-# Load Claude Code format agent (YAML frontmatter)
-performance_agent = load_agent_from_markdown(
-    file_path="performance-engineer.md"
+# Load the Finance Advisor agent
+agent = load_agent_from_markdown("finance_advisor.md")
+
+# Use the agent for financial advice
+response = agent.run(
+    "I have $10,000 to invest. What's a good strategy for a beginner?"
 )
-
-print(f"Agent: {performance_agent.agent_name}")
-print(f"Temperature: {getattr(performance_agent, 'temperature', 'default')}")
-print(f"Max loops: {performance_agent.max_loops}")
-print(f"System prompt preview: {performance_agent.system_prompt[:100]}...")
-
-# Use the performance agent
-task = """
-Analyze the performance of a web application that handles 10,000 concurrent users
-but is experiencing slow response times averaging 3 seconds. The application uses
-a PostgreSQL database and is deployed on AWS with 4 EC2 instances behind a load balancer.
-"""
-
-# Note: Actual agent.run() would make API calls
-print(f"\nTask for {performance_agent.agent_name}: {task[:100]}...")
 ```
 
 ## Error Handling
@@ -229,6 +222,54 @@ except Exception as e:
     print(f"Error loading agents: {e}")
 ```
 
+## Concurrent Processing Features
+
+### Multi-Core Performance
+
+The AgentLoader utilizes **100% of CPU cores** for concurrent agent loading, providing significant performance improvements when processing multiple markdown files:
+
+```python
+from swarms.utils import load_agents_from_markdown
+
+# Automatic concurrent processing for multiple files
+agents = load_agents_from_markdown([
+    "agent1.md", "agent2.md", "agent3.md", "agent4.md"
+])  # concurrent=True by default
+
+# Manual control over concurrency
+agents = load_agents_from_markdown(
+    "./agents_directory/",
+    concurrent=True,        # Enable concurrent processing
+    max_workers=8           # Limit to 8 worker threads
+)
+
+# Disable concurrency for debugging or single files
+agents = load_agents_from_markdown(
+    ["single_agent.md"],
+    concurrent=False        # Sequential processing
+)
+```
+
+### Resource Management
+
+```python
+# Default: Uses all CPU cores
+agents = load_agents_from_markdown(files, concurrent=True)
+
+# Custom worker count for resource control
+agents = load_agents_from_markdown(
+    files, 
+    concurrent=True,
+    max_workers=4  # Limit to 4 threads
+)
+
+# ThreadPoolExecutor automatically manages:
+# - Thread lifecycle
+# - Resource cleanup
+# - Exception handling
+# - Result collection
+```
+
 ## Advanced Features
 
 ### Custom System Prompt Building
@@ -249,33 +290,6 @@ print("Generated System Prompt:")
 print(config.system_prompt)
 ```
 
-### Batch Processing
-
-Process multiple agent files efficiently:
-
-```python
-import os
-from pathlib import Path
-from swarms.utils import AgentLoader
-
-loader = AgentLoader()
-
-# Find all markdown files in a directory
-agent_dir = Path("./agents")
-md_files = list(agent_dir.glob("*.md"))
-
-# Load all agents
-agents = []
-for file_path in md_files:
-    try:
-        agent = loader.load_single_agent(str(file_path))
-        agents.append(agent)
-        print(f"✓ Loaded: {agent.agent_name}")
-    except Exception as e:
-        print(f"✗ Failed to load {file_path}: {e}")
-
-print(f"\nSuccessfully loaded {len(agents)} agents")
-```
 
 ## Integration with Swarms
 
@@ -323,8 +337,13 @@ class AgentLoader:
 ### Convenience Functions
 
 ```python
-def load_agent_from_markdown(file_path: str, model: Optional[LiteLLM] = None, **kwargs) -> Agent
-def load_agents_from_markdown(file_paths: Union[str, List[str]], model: Optional[LiteLLM] = None, **kwargs) -> List[Agent]
+def load_agent_from_markdown(file_path: str, **kwargs) -> Agent
+def load_agents_from_markdown(
+    file_paths: Union[str, List[str]], 
+    concurrent: bool = True,          # Enable concurrent processing
+    max_workers: Optional[int] = None, # Max worker threads (defaults to CPU count)
+    **kwargs
+) -> List[Agent]
 ```
 
 ### Configuration Model
@@ -347,9 +366,8 @@ class MarkdownAgentConfig(BaseModel):
 ## Examples Repository
 
 Find more examples in the Swarms repository:
-- `examples/agents_loader_example.py` - Complete usage demonstration
-- `test_agent_loader.py` - Test suite with validation examples
-- `examples/single_agent/utils/markdown_agent.py` - Markdown agent utilities
+- `agents_loader_example.py` - Simple usage example
+- `examples/agent_loader_demo.py` - Multi-agent workflow example
 
 ## Support
 

@@ -22,6 +22,12 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.check_all_model_max_tokens import (
     check_all_model_max_tokens,
 )
+from swarms.utils.agent_loader import (
+    AgentLoader,
+    MarkdownAgentConfig,
+    load_agent_from_markdown,
+    load_agents_from_markdown,
+)
 
 
 __all__ = [
@@ -41,4 +47,8 @@ __all__ = [
     "HistoryOutputType",
     "history_output_formatter",
     "check_all_model_max_tokens",
+    "AgentLoader",
+    "MarkdownAgentConfig",
+    "load_agent_from_markdown",
+    "load_agents_from_markdown",
 ]
