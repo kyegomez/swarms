@@ -21,10 +21,6 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 
-from swarms.utils.check_all_model_max_tokens import (
-    check_all_model_max_tokens,
-)
-
 from swarms.utils.agent_loader import (
     AgentLoader,
     MarkdownAgentConfig,
