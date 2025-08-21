@@ -318,6 +318,7 @@ nav:
         - Communication Structure: "swarms/structs/conversation.md"
 
     - Utilities:
+      - CLI Reference: "swarms/cli/cli_reference.md"
       - Agent Loader: "swarms/utils/agent_loader.md"
       - AgentRegistry: "swarms/structs/agent_registry.md"
 
@@ -354,6 +355,8 @@ nav:
     - Paper Implementations: "examples/paper_implementations.md"
     - Templates & Applications: "examples/templates.md"
     - Community Resources: "examples/community_resources.md"
+    - CLI Examples: "swarms/cli/cli_examples.md"
+
     - Basic Examples:
       - Individual Agents:
         - Basic Agent: "swarms/examples/basic_agent.md"

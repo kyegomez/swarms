@@ -1,7 +1,7 @@
 import os
 import yaml
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
 from concurrent.futures import (
     ThreadPoolExecutor,
     as_completed,
@@ -10,37 +10,38 @@ from concurrent.futures import (
 from pydantic import BaseModel, Field, field_validator
 from loguru import logger
 
+# Type checking imports to avoid circular dependency
+if TYPE_CHECKING:
+    from swarms.structs.agent import Agent
+
 # Lazy import to avoid circular dependency
 
 # Default model configuration
-DEFAULT_MODEL = "gpt-4o"
+DEFAULT_MODEL = "gpt-4.1"
 
 
 class MarkdownAgentConfig(BaseModel):
     """Configuration model for agents loaded from Claude Code markdown files."""
 
-    name: str
-    description: str
-    model_name: Optional[str] = "gpt-4o"
+    name: Optional[str] = None
+    description: Optional[str] = None
+    model_name: Optional[str] = DEFAULT_MODEL
     temperature: Optional[float] = Field(default=0.1, ge=0.0, le=2.0)
     mcp_url: Optional[int] = None
-    system_prompt: str
-    max_loops: int = Field(default=1, ge=1)
-    autosave: bool = False
-    dashboard: bool = False
-    verbose: bool = False
-    dynamic_temperature_enabled: bool = False
+    system_prompt: Optional[str] = None
+    max_loops: Optional[int] = Field(default=1, ge=1)
+    autosave: Optional[bool] = False
+    dashboard: Optional[bool] = False
+    verbose: Optional[bool] = False
+    dynamic_temperature_enabled: Optional[bool] = False
     saved_state_path: Optional[str] = None
-    user_name: str = "default_user"
-    retry_attempts: int = Field(default=3, ge=1)
-    context_length: int = Field(default=100000, ge=1000)
-    return_step_meta: bool = False
-    output_type: str = "str"
-    auto_generate_prompt: bool = False
-    artifacts_on: bool = False
-    artifacts_file_extension: str = ".md"
-    artifacts_output_path: str = ""
-    streaming_on: bool = False
+    user_name: Optional[str] = "default_user"
+    retry_attempts: Optional[int] = Field(default=3, ge=1)
+    context_length: Optional[int] = Field(default=100000, ge=1000)
+    return_step_meta: Optional[bool] = False
+    output_type: Optional[str] = "str"
+    auto_generate_prompt: Optional[bool] = False
+    streaming_on: Optional[bool] = False
 
     @field_validator("system_prompt")
     @classmethod
@@ -67,11 +68,12 @@ class AgentLoader:
     - Error handling and validation
     """
 
-    def __init__(self):
+    def __init__(self, max_workers: Optional[int] = None):
         """
         Initialize the AgentLoader.
         """
-        pass
+        self.max_workers = max_workers
+        self.max_workers = os.cpu_count() * 2
 
     def parse_yaml_frontmatter(self, content: str) -> Dict[str, Any]:
         """
@@ -197,6 +199,9 @@ class AgentLoader:
         Returns:
             Configured Agent instance
         """
+        # Lazy import to avoid circular dependency
+        from swarms.structs.agent import Agent
+
         config = self.parse_markdown_file(file_path)
 
         # Override with any provided kwargs
@@ -206,8 +211,8 @@ class AgentLoader:
         # Map config fields to Agent parameters, handling special cases
         field_mapping = {
             "name": "agent_name",  # name -> agent_name
-            "description": None,  # not used by Agent
-            "mcp_url": None,  # not used by Agent
+            "description": "agent_description",  # not used by Agent
+            "mcp_url": "mcp_url",  # not used by Agent
         }
 
         agent_fields = {}
@@ -222,8 +227,6 @@ class AgentLoader:
                 agent_fields[config_key] = config_value
 
         try:
-            # Lazy import to avoid circular dependency
-            from swarms.structs.agent import Agent
 
             logger.info(
                 f"Creating agent '{config.name}' from {file_path}"
@@ -248,7 +251,6 @@ class AgentLoader:
         self,
         file_paths: Union[str, List[str]],
         concurrent: bool = True,
-        max_workers: Optional[int] = None,
         max_file_size_mb: float = 10.0,
         **kwargs,
     ) -> List["Agent"]:
@@ -258,13 +260,14 @@ class AgentLoader:
         Args:
             file_paths: Single file path, directory path, or list of file paths
             concurrent: Whether to use concurrent processing for multiple files
-            max_workers: Maximum number of worker threads (defaults to CPU count)
             max_file_size_mb: Maximum file size in MB to prevent memory issues
             **kwargs: Additional arguments to override default configuration
 
         Returns:
             List of configured Agent instances
         """
+        # Lazy import to avoid circular dependency
+
         agents = []
         paths_to_process = []
 
@@ -304,21 +307,14 @@ class AgentLoader:
                     f"Could not check size of {file_path}, skipping validation"
                 )
 
-        # Adjust max_workers for I/O-bound operations
-        if max_workers is None and concurrent:
-            # For I/O-bound: use more threads than CPU count, but cap it
-            max_workers = min(
-                20, len(paths_to_process), os.cpu_count() * 2
-            )
-
         # Use concurrent processing for multiple files if enabled
         if concurrent and len(paths_to_process) > 1:
             logger.info(
-                f"Loading {len(paths_to_process)} agents concurrently with {max_workers} workers..."
+                f"Loading {len(paths_to_process)} agents concurrently with {self.max_workers} workers..."
             )
 
             with ThreadPoolExecutor(
-                max_workers=max_workers
+                max_workers=self.max_workers
             ) as executor:
                 # Submit all tasks
                 future_to_path = {
@@ -385,6 +381,8 @@ class AgentLoader:
         Returns:
             Configured Agent instance
         """
+        # Lazy import to avoid circular dependency
+
         return self.load_agent_from_markdown(file_path, **kwargs)
 
     def load_multiple_agents(
@@ -401,6 +399,8 @@ class AgentLoader:
         Returns:
             List of configured Agent instances
         """
+        # Lazy import to avoid circular dependency
+
         return self.load_agents_from_markdown(file_paths, **kwargs)
 
 
@@ -416,6 +416,8 @@ def load_agent_from_markdown(file_path: str, **kwargs) -> "Agent":
     Returns:
         Configured Agent instance
     """
+    # Lazy import to avoid circular dependency
+
     loader = AgentLoader()
     return loader.load_single_agent(file_path, **kwargs)
 
@@ -438,6 +440,8 @@ def load_agents_from_markdown(
     Returns:
         List of configured Agent instances
     """
+    # Lazy import to avoid circular dependency
+
     loader = AgentLoader()
     return loader.load_agents_from_markdown(
         file_paths,
