@@ -1,27 +1,31 @@
 import os
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+import traceback
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import yaml
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type,
-)
 from pydantic import (
     BaseModel,
+    Extra,
     Field,
     field_validator,
 )
-from swarms.utils.loguru_logger import initialize_logger
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
+
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import SwarmRouter
-from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="create_agents_from_yaml")
 
 
 class AgentConfig(BaseModel):
+    """Configuration model for creating agents with support for custom kwargs."""
+
     agent_name: str
     system_prompt: str
     model_name: Optional[str] = None
@@ -41,9 +45,14 @@ class AgentConfig(BaseModel):
     artifacts_file_extension: str = ".md"
     artifacts_output_path: str = ""
 
+    # Allow arbitrary additional fields for custom agent parameters
+    class Config:
+        extra = "allow"
+
     @field_validator("system_prompt")
     @classmethod
     def validate_system_prompt(cls, v):
+        """Validate that system prompt is a non-empty string."""
         if not v or not isinstance(v, str) or len(v.strip()) == 0:
             raise ValueError(
                 "System prompt must be a non-empty string"
@@ -52,6 +61,8 @@ class AgentConfig(BaseModel):
 
 
 class SwarmConfig(BaseModel):
+    """Configuration model for creating swarm routers with support for custom kwargs."""
+
     name: str
     description: str
     max_loops: int = Field(default=1, ge=1)
@@ -62,30 +73,21 @@ class SwarmConfig(BaseModel):
     return_json: bool = False
     rules: str = ""
 
-    @field_validator("swarm_type")
-    @classmethod
-    def validate_swarm_type(cls, v):
-        valid_types = {
-            "SequentialWorkflow",
-            "ConcurrentWorkflow",
-            "AgentRearrange",
-            "MixtureOfAgents",
-            "auto",
-        }
-        if v not in valid_types:
-            raise ValueError(
-                f"Swarm type must be one of: {valid_types}"
-            )
-        return v
+    # Allow arbitrary additional fields for custom swarm parameters
+    class Config:
+        extra = Extra.allow
 
 
 class YAMLConfig(BaseModel):
+    """Main configuration model for the YAML file."""
+
     agents: List[AgentConfig] = Field(..., min_length=1)
     swarm_architecture: Optional[SwarmConfig] = None
 
-    model_config = {
-        "extra": "forbid"  # Prevent additional fields not in the model
-    }
+
+ReturnTypes = Literal[
+    "auto", "swarm", "agents", "both", "tasks", "run_swarm"
+]
 
 
 def load_yaml_safely(
@@ -124,45 +126,53 @@ def load_yaml_safely(
         f"Retrying after error: {retry_state.outcome.exception()}"
     ),
 )
-def create_agent_with_retry(
-    agent_config: Dict, model: LiteLLM
-) -> Agent:
+def create_agent_with_retry(agent_config: Dict) -> Agent:
     """Create an agent with retry logic for handling transient failures."""
     try:
         validated_config = AgentConfig(**agent_config)
-        agent = Agent(
-            agent_name=validated_config.agent_name,
-            system_prompt=validated_config.system_prompt,
-            llm=model,
-            max_loops=validated_config.max_loops,
-            autosave=validated_config.autosave,
-            dashboard=validated_config.dashboard,
-            verbose=validated_config.verbose,
-            dynamic_temperature_enabled=validated_config.dynamic_temperature_enabled,
-            saved_state_path=validated_config.saved_state_path,
-            user_name=validated_config.user_name,
-            retry_attempts=validated_config.retry_attempts,
-            context_length=validated_config.context_length,
-            return_step_meta=validated_config.return_step_meta,
-            output_type=validated_config.output_type,
-            auto_generate_prompt=validated_config.auto_generate_prompt,
-            artifacts_on=validated_config.artifacts_on,
-            artifacts_file_extension=validated_config.artifacts_file_extension,
-            artifacts_output_path=validated_config.artifacts_output_path,
-        )
+
+        # Extract standard Agent parameters
+        standard_params = {
+            "agent_name": validated_config.agent_name,
+            "system_prompt": validated_config.system_prompt,
+            "max_loops": validated_config.max_loops,
+            "model_name": validated_config.model_name,
+            "autosave": validated_config.autosave,
+            "dashboard": validated_config.dashboard,
+            "verbose": validated_config.verbose,
+            "dynamic_temperature_enabled": validated_config.dynamic_temperature_enabled,
+            "saved_state_path": validated_config.saved_state_path,
+            "user_name": validated_config.user_name,
+            "retry_attempts": validated_config.retry_attempts,
+            "context_length": validated_config.context_length,
+            "return_step_meta": validated_config.return_step_meta,
+            "output_type": validated_config.output_type,
+            "auto_generate_prompt": validated_config.auto_generate_prompt,
+            "artifacts_on": validated_config.artifacts_on,
+            "artifacts_file_extension": validated_config.artifacts_file_extension,
+            "artifacts_output_path": validated_config.artifacts_output_path,
+        }
+
+        # Extract any additional custom parameters
+        custom_params = {}
+        for key, value in agent_config.items():
+            if key not in standard_params and key != "agent_name":
+                custom_params[key] = value
+
+        # Create agent with standard and custom parameters
+        agent = Agent(**standard_params, **custom_params)
         return agent
     except Exception as e:
         logger.error(
-            f"Error creating agent {agent_config.get('agent_name', 'unknown')}: {str(e)}"
+            f"Error creating agent {agent_config.get('agent_name', 'unknown')}: {str(e)} Traceback: {traceback.format_exc()}"
         )
         raise
 
 
 def create_agents_from_yaml(
-    model: Callable = None,
     yaml_file: str = "agents.yaml",
     yaml_string: str = None,
-    return_type: str = "auto",
+    return_type: ReturnTypes = "auto",
 ) -> Union[
     SwarmRouter,
     Agent,
@@ -172,6 +182,39 @@ def create_agents_from_yaml(
 ]:
     """
     Create agents and/or SwarmRouter based on configurations defined in a YAML file or string.
+
+    This function now supports custom parameters for both Agent and SwarmRouter creation.
+    Any additional fields in your YAML configuration will be passed through as kwargs.
+
+    Args:
+        yaml_file: Path to YAML configuration file
+        yaml_string: YAML configuration as a string (alternative to yaml_file)
+        return_type: Type of return value ("auto", "swarm", "agents", "both", "tasks", "run_swarm")
+
+    Returns:
+        Depending on return_type and configuration, returns:
+        - Single Agent (if only one agent and return_type in ["auto", "swarm", "agents"])
+        - List of Agents (if multiple agents and return_type in ["auto", "swarm", "agents"])
+        - SwarmRouter (if return_type in ["auto", "swarm"] and swarm_architecture defined)
+        - Tuple of (SwarmRouter, List[Agent]) (if return_type == "both")
+        - Task results (if return_type == "tasks")
+        - Swarm execution result (if return_type == "run_swarm")
+
+    Example YAML with custom parameters:
+        agents:
+          - agent_name: "CustomAgent"
+            system_prompt: "You are a helpful assistant"
+            custom_param1: "value1"
+            custom_param2: 42
+            nested_config:
+              key: "value"
+
+        swarm_architecture:
+          name: "CustomSwarm"
+          description: "A custom swarm"
+          swarm_type: "SequentialWorkflow"
+          custom_swarm_param: "swarm_value"
+          another_param: 123
     """
     agents = []
     task_results = []
@@ -204,23 +247,7 @@ def create_agents_from_yaml(
                 f"Creating agent {idx}/{len(config['agents'])}: {agent_config['agent_name']}"
             )
 
-            if "model_name" in agent_config:
-                logger.info(
-                    f"Using specified model: {agent_config['model_name']}"
-                )
-                model_instance = LiteLLM(
-                    model_name=agent_config["model_name"]
-                )
-            else:
-                model_name = "gpt-4"
-                logger.info(
-                    f"No model specified, using default: {model_name}"
-                )
-                model_instance = LiteLLM(model_name=model_name)
-
-            agent = create_agent_with_retry(
-                agent_config, model_instance
-            )
+            agent = create_agent_with_retry(agent_config)
             logger.info(
                 f"Agent {agent_config['agent_name']} created successfully."
             )
@@ -257,18 +284,34 @@ def create_agents_from_yaml(
                 logger.info(
                     f"Creating SwarmRouter with type: {swarm_config.swarm_type}"
                 )
+
+                # Extract standard SwarmRouter parameters
+                standard_swarm_params = {
+                    "name": swarm_config.name,
+                    "description": swarm_config.description,
+                    "max_loops": swarm_config.max_loops,
+                    "agents": agents,
+                    "swarm_type": swarm_config.swarm_type,
+                    "task": swarm_config.task,
+                    "flow": swarm_config.flow,
+                    "autosave": swarm_config.autosave,
+                    "return_json": swarm_config.return_json,
+                    "rules": swarm_config.rules,
+                }
+
+                # Extract any additional custom parameters for SwarmRouter
+                custom_swarm_params = {}
+                for key, value in config[
+                    "swarm_architecture"
+                ].items():
+                    if key not in standard_swarm_params:
+                        custom_swarm_params[key] = value
+
+                # Create SwarmRouter with standard and custom parameters
                 swarm_router = SwarmRouter(
-                    name=swarm_config.name,
-                    description=swarm_config.description,
-                    max_loops=swarm_config.max_loops,
-                    agents=agents,
-                    swarm_type=swarm_config.swarm_type,
-                    task=swarm_config.task,
-                    flow=swarm_config.flow,
-                    autosave=swarm_config.autosave,
-                    return_json=swarm_config.return_json,
-                    rules=swarm_config.rules,
+                    **standard_swarm_params, **custom_swarm_params
                 )
+
                 logger.info(
                     f"SwarmRouter '{swarm_config.name}' created successfully."
                 )
@@ -284,18 +327,9 @@ def create_agents_from_yaml(
                     "has a valid swarm_architecture section with required fields."
                 )
 
-        # Handle return types with improved error checking
-        valid_return_types = {
-            "auto",
-            "swarm",
-            "agents",
-            "both",
-            "tasks",
-            "run_swarm",
-        }
-        if return_type not in valid_return_types:
+        if return_type not in ReturnTypes:
             raise ValueError(
-                f"Invalid return_type. Must be one of: {valid_return_types}"
+                f"Invalid return_type. Must be one of: {ReturnTypes}"
             )
 
         logger.info(f"Processing with return type: {return_type}")
@@ -363,6 +397,6 @@ def create_agents_from_yaml(
     except Exception as e:
         logger.error(
             f"Critical error in create_agents_from_yaml: {str(e)}\n"
-            "Please check your YAML configuration and try again."
+            f"Please check your YAML configuration and try again. Traceback: {traceback.format_exc()}"
         )
         raise

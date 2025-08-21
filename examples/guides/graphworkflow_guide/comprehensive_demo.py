@@ -713,7 +713,7 @@ def demonstrate_visualization_features():
     # Test text visualization (always available)
     print("\n📝 Testing text visualization...")
     try:
-        text_viz = workflow.visualize_simple()
+        workflow.visualize_simple()
         print("✅ Text visualization successful")
     except Exception as e:
         print(f"❌ Text visualization failed: {e}")
