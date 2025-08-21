@@ -7,11 +7,14 @@ This guide shows you how to deploy your Swarms agents as REST APIs using FastAPI
 FastAPI is a modern, fast web framework for building APIs with Python. Combined with Uvicorn (ASGI server), it provides excellent performance and automatic API documentation.
 
 **Benefits:**
-- **Fast**: Built on Starlette and Pydantic
-- **Auto-docs**: Automatic OpenAPI/Swagger documentation
-- **Type-safe**: Full type hints and validation
-- **Easy**: Minimal boilerplate code
-- **Monitoring**: Built-in logging and metrics
+
+| Feature        | Description                                      |
+|----------------|--------------------------------------------------|
+| **Fast**       | Built on Starlette and Pydantic                  |
+| **Auto-docs**  | Automatic OpenAPI/Swagger documentation          |
+| **Type-safe**  | Full type hints and validation                   |
+| **Easy**       | Minimal boilerplate code                         |
+| **Monitoring** | Built-in logging and metrics                     |
 
 ## Quick Start
 
@@ -209,8 +212,11 @@ uvicorn agent_api:app --host 0.0.0.0 --port 8000 --reload
 ### 4. Test Your API
 
 Your API will be available at:
+
 - **API**: http://localhost:8000
+
 - **Documentation**: http://localhost:8000/docs
+
 - **Alternative docs**: http://localhost:8000/redoc
 
 ## Usage Examples
@@ -442,14 +448,16 @@ async def detailed_health_check():
 
 ## Best Practices
 
-1. **Error Handling**: Always wrap agent execution in try-catch blocks
-2. **Validation**: Use Pydantic models for request validation
-3. **Rate Limiting**: Implement rate limiting for production APIs
-4. **Authentication**: Add proper authentication for sensitive endpoints
-5. **Logging**: Log all requests and responses for debugging
-6. **Monitoring**: Add health checks and metrics
-7. **Testing**: Write tests for your API endpoints
-8. **Documentation**: Keep your API documentation up to date
+| Best Practice         | Description                                               |
+|----------------------|-----------------------------------------------------------|
+| **Error Handling**   | Always wrap agent execution in try-catch blocks           |
+| **Validation**       | Use Pydantic models for request validation                |
+| **Rate Limiting**    | Implement rate limiting for production APIs               |
+| **Authentication**   | Add proper authentication for sensitive endpoints         |
+| **Logging**          | Log all requests and responses for debugging              |
+| **Monitoring**       | Add health checks and metrics                             |
+| **Testing**          | Write tests for your API endpoints                        |
+| **Documentation**    | Keep your API documentation up to date                    |
 
 ## Troubleshooting
 
@@ -462,16 +470,12 @@ async def detailed_health_check():
 
 ### Performance Tips
 
-1. **Connection pooling**: Reuse agent instances when possible
-2. **Async operations**: Use async/await for I/O operations
-3. **Caching**: Cache frequently requested responses
-4. **Load balancing**: Use multiple worker processes for high traffic
+| Performance Tip           | Description                                         |
+|--------------------------|-----------------------------------------------------|
+| **Connection pooling**    | Reuse agent instances when possible                |
+| **Async operations**      | Use async/await for I/O operations                 |
+| **Caching**               | Cache frequently requested responses               |
+| **Load balancing**        | Use multiple worker processes for high traffic     |
 
-## Next Steps
-
-- [Cron Job Deployment](cron_job_deployment.md) - For scheduled tasks
-- [Docker Deployment](docker_deployment.md) - For containerized deployment
-- [Kubernetes Deployment](kubernetes_deployment.md) - For orchestrated deployment
-- [Cloud Deployment](cloud_deployment.md) - For cloud platforms
 
 Your FastAPI agent API is now ready to handle requests and scale with your needs!
