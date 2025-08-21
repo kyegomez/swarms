@@ -76,6 +76,41 @@ swarms check-login
 ✓ Authentication verified
 ```
 
+#### Run Environment Setup Check
+
+```bash
+swarms setup-check
+```
+
+**Expected Output:**
+```
+🔍 Running Swarms Environment Setup Check
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Environment Check Results                                                  │
+├─────────┬─────────────────────────┬─────────────────────────────────────────┤
+│ Status  │ Check                   │ Details                                │
+├─────────┼─────────────────────────┼─────────────────────────────────────────┤
+│ ✓       │ Python Version          │ Python 3.11.5                          │
+│ ✓       │ Swarms Version          │ Current version: 8.1.1                 │
+│ ✓       │ API Keys                │ API keys found: OPENAI_API_KEY         │
+│ ✓       │ Dependencies            │ All required dependencies available     │
+│ ✓       │ Environment File        │ .env file exists with 1 API key(s)     │
+│ ⚠       │ Workspace Directory     │ WORKSPACE_DIR environment variable is not set │
+└─────────┴─────────────────────────┴─────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Setup Check Complete                                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ ⚠️ Some checks failed. Please review the issues above.                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+💡 Recommendations:
+  1. Set WORKSPACE_DIR environment variable: export WORKSPACE_DIR=/path/to/your/workspace
+
+Run 'swarms setup-check' again after making changes to verify.
+```
+
 ## Agent Management Examples
 
 ### 2. Creating Custom Agents
@@ -549,9 +584,34 @@ This will provide detailed output including:
 - Internal state changes
 - Performance metrics
 
+## Environment Setup
+
+### 12. Environment Verification
+
+The `setup-check` command is essential for ensuring your environment is properly configured:
+
+```bash
+# Run comprehensive environment check
+swarms setup-check
+```
+
+This command checks:
+- Python version compatibility (3.10+)
+- Swarms package version and updates
+- API key configuration
+- Required dependencies
+- Environment file setup
+- Workspace directory configuration
+
+**Use Cases:**
+- **Before starting a new project**: Verify all requirements are met
+- **After environment changes**: Confirm configuration updates
+- **Troubleshooting**: Identify missing dependencies or configuration issues
+- **Team onboarding**: Ensure consistent environment setup across team members
+
 ## Best Practices
 
-### 12. Performance Optimization
+### 13. Performance Optimization
 
 #### Use Concurrent Processing
 ```bash
@@ -579,7 +639,7 @@ swarms load-markdown \
 --context-length 4000 --max-loops 2
 ```
 
-### 13. Security Considerations
+### 14. Security Considerations
 
 #### Environment Variable Usage
 ```bash
@@ -608,6 +668,7 @@ The Swarms CLI provides a powerful and flexible interface for managing AI agents
 | **Agent Management**   | Creating and configuring custom agents                  |
 | **Multi-Agent Workflows** | Coordinating multiple agents                        |
 | **Configuration**      | YAML and markdown configuration formats                 |
+| **Environment Setup**  | Environment verification and setup checks               |
 | **Advanced Features**  | Dynamic configuration and MCP integration               |
 | **Troubleshooting**    | Common issues and solutions                             |
 | **Best Practices**     | Performance and security considerations                 |

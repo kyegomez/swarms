@@ -51,6 +51,7 @@ swarms <command> [options]
 | `auto-upgrade` | Update Swarms to latest version | None |
 | `book-call` | Schedule strategy session | None |
 | `autoswarm` | Generate and execute autonomous swarm | `--task`, `--model` |
+| `setup-check` | Run comprehensive environment setup check | None |
 
 ## Global Arguments
 
@@ -154,7 +155,7 @@ swarms agent \
 Generate and execute an autonomous swarm configuration.
 
 ```bash
-python -m swarms.cli.main autoswarm [options]
+swarms autoswarm [options]
 ```
 
 | Argument | Type | Default | Required | Description |
@@ -166,6 +167,58 @@ python -m swarms.cli.main autoswarm [options]
 
 ```bash
 swarms autoswarm --task "analyze this data" --model "gpt-4"
+```
+
+### `setup-check` Command
+
+Run a comprehensive environment setup check to verify your Swarms installation and configuration.
+
+```bash
+swarms setup-check [--verbose]
+```
+
+**Arguments:**
+- `--verbose`: Enable detailed debug output showing version detection methods
+
+This command performs the following checks:
+- **Python Version**: Verifies Python 3.10+ compatibility
+- **Swarms Version**: Checks current version and compares with latest available
+- **API Keys**: Verifies presence of common API keys in environment variables
+- **Dependencies**: Ensures required packages are available
+- **Environment File**: Checks for .env file existence and content
+- **Workspace Directory**: Verifies WORKSPACE_DIR environment variable
+
+**Examples:**
+```bash
+# Basic setup check
+swarms setup-check
+
+# Verbose setup check with debug information
+swarms setup-check --verbose
+```
+
+**Expected Output:**
+```
+🔍 Running Swarms Environment Setup Check
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Environment Check Results                                                  │
+├─────────┬─────────────────────────┬─────────────────────────────────────────┤
+│ Status  │ Check                   │ Details                                │
+├─────────┼─────────────────────────┼─────────────────────────────────────────┤
+│ ✓       │ Python Version          │ Python 3.11.5                          │
+│ ✓       │ Swarms Version          │ Current version: 8.1.1                 │
+│ ✓       │ API Keys                │ API keys found: OPENAI_API_KEY         │
+│ ✓       │ Dependencies            │ All required dependencies available     │
+│ ✓       │ Environment File        │ .env file exists with 1 API key(s)     │
+│ ✓       │ Workspace Directory     │ WORKSPACE_DIR is set to: /path/to/ws   │
+└─────────┴─────────────────────────┴─────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Setup Check Complete                                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 🎉 All checks passed! Your environment is ready for Swarms.               │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Error Handling
