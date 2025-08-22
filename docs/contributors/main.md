@@ -1,221 +1,40 @@
-# Contributing to Swarms: Building the Infrastructure for The Agentic Economy
+# Contribute to Swarms
 
-Multi-agent collaboration is the most important technology in human history. It will reshape civilization by enabling billions of autonomous agents to coordinate and solve problems at unprecedented scale.
+Our mission is to accelerate the transition to a fully autonomous world economy by providing enterprise-grade, production-ready infrastructure that enables seamless deployment and orchestration of millions of autonomous agents. We are creating the operating system for the agent economy, and we need your help to achieve this goal.
 
-!!! success "The Foundation of Tomorrow"
-    **Swarms** is the foundational infrastructure powering this autonomous economy. By contributing, you're building the systems that will enable the next generation of intelligent automation.
+Swarms is built by the community, for the community. We believe that collaborative development is the key to pushing the boundaries of what's possible with multi-agent AI. Your contributions are not only welcome—they are essential to our mission. [Learn more about why you should contribute to Swarms](https://docs.swarms.world/en/latest/contributors/main/)
 
-### What You're Building
+### Why Contribute?
 
-=== "Autonomous Systems"
-    **Autonomous Resource Allocation**
-    
-    Global supply chains and energy distribution optimized in real-time
+By joining us, you have the opportunity to:
 
-=== "Intelligence Networks"
-    **Distributed Decision Making**
-    
-    Collaborative intelligence networks across industries and governments
+* **Work on the Frontier of Agents:** Shape the future of autonomous agent technology and help build a production-grade, open-source framework.
 
-=== "Smart Markets"
-    **Self-Organizing Markets**
-    
-    Agent-driven marketplaces that automatically balance supply and demand
+* **Join a Vibrant Community:** Collaborate with a passionate and growing group of agent developers, researchers, and agent enthusasits.
 
-=== "Problem Solving"
-    **Collaborative Problem Solving**
-    
-    Massive agent swarms tackling climate change, disease, and scientific discovery
+* **Make a Tangible Impact:** Whether you're fixing a bug, adding a new feature, or improving documentation, your work will be used in real-world applications.
 
-=== "Infrastructure"
-    **Adaptive Infrastructure**
-    
-    Self-healing systems that evolve without human intervention
+* **Learn and Grow:** Gain hands-on experience with advanced AI concepts and strengthen your software engineering skills.
 
----
+Discover more about our mission and the benefits of becoming a contributor in our official [**Contributor's Guide**](https://docs.swarms.world/en/latest/contributors/main/).
 
-## Why Contribute to Swarms?
+### How to Get Started
 
-### :material-rocket-launch: Shape the Future of Civilization
+We've made it easy to start contributing. Here's how you can help:
 
-!!! abstract "Your Impact"
-    - Define standards for multi-agent communication protocols
-    - Build architectural patterns for distributed intelligence systems
-    - Create frameworks for deploying agent swarms in production
-    - Establish ethical guidelines for autonomous agent collaboration
+1. **Find an Issue to Tackle:** The best way to begin is by visiting our [**contributing project board**](https://github.com/users/kyegomez/projects/1). Look for issues tagged with `good first issue`—these are specifically selected for new contributors.
 
-### :material-trophy: Recognition and Professional Development
+2. **Report a Bug or Request a Feature:** Have a new idea or found something that isn't working right? We'd love to hear from you. Please [**file a Bug Report or Feature Request**](https://github.com/kyegomez/swarms/issues) on our GitHub Issues page.
 
-!!! tip "Immediate Recognition"
-    - **Social Media Features** - All merged PRs showcased publicly
-    - **Bounty Programs** - Financial rewards for high-impact contributions
-    - **Fast-Track Hiring** - Priority consideration for core team positions
-    - **Community Spotlights** - Regular recognition and acknowledgments
+3. **Understand Our Workflow and Standards:** Before submitting your work, please review our complete [**Contribution Guidelines**](https://github.com/kyegomez/swarms/blob/master/CONTRIBUTING.md). To help maintain code quality, we also encourage you to read our guide on [**Code Cleanliness**](https://docs.swarms.world/en/latest/swarms/framework/code_cleanliness/).
 
-!!! info "Career Benefits"
-    - Multi-agent expertise highly valued by AI industry
-    - Portfolio demonstrates cutting-edge technical skills
-    - Direct networking with leading researchers and companies
-    - Thought leadership opportunities in emerging field
+4. **Join the Discussion:** To participate in roadmap discussions and connect with other developers, join our community on [**Discord**](https://discord.gg/EamjgSaEQf).
 
-### :material-brain: Technical Expertise Development
 
-Master cutting-edge technologies:
+### ✨ Our Valued Contributors
 
-| Technology Area | Skills You'll Develop |
-|----------------|----------------------|
-| **Swarm Intelligence** | Design sophisticated agent coordination mechanisms |
-| **Distributed Computing** | Build scalable architectures for thousands of agents |
-| **Communication Protocols** | Create novel interaction patterns |
-| **Production AI** | Deploy and orchestrate enterprise-scale systems |
-| **Research Implementation** | Turn cutting-edge papers into working code |
+Thank you for contributing to swarms. Your work is extremely appreciated and recognized.
 
-### :material-account-group: Research Community Access
-
-!!! note "Collaborative Environment"
-    - Work with experts from academic institutions and industry
-    - Regular technical seminars and research discussions
-    - Structured mentorship from experienced contributors
-    - Applied research opportunities with real-world impact
-
----
-
-## Contribution Opportunities
-
-=== "New Contributors"
-    ### :material-school: Perfect for Getting Started
-    
-    - **Documentation** - Improve guides, tutorials, and API references
-    - **Bug Reports** - Identify and document issues
-    - **Code Quality** - Participate in testing and review processes
-    - **Community Support** - Help users in forums and discussions
-
-=== "Experienced Developers"
-    ### :material-code-braces: Advanced Technical Work
-    
-    - **Core Architecture** - Design fundamental system components
-    - **Performance Optimization** - Enhance coordination and communication efficiency
-    - **Research Implementation** - Turn cutting-edge papers into working code
-    - **Integration Development** - Build connections with AI tools and platforms
-
-=== "Researchers"
-    ### :material-flask: Research and Innovation
-    
-    - **Algorithm Development** - Implement novel multi-agent algorithms
-    - **Experimental Frameworks** - Create evaluation and benchmarking tools
-    - **Theoretical Contributions** - Develop research documentation and frameworks
-    - **Academic Collaboration** - Partner on funded research projects
-
----
-
-## How to Contribute
-
-### Step 1: Get Started
-
-!!! info "Essential Resources"
-    [:material-book-open-page-variant: **Documentation**](https://docs.swarms.world/en/latest/){ .md-button .md-button--primary }
-    [:material-github: **GitHub Repository**](https://github.com/kyegomez/swarms){ .md-button }
-    [:material-chat: **Community Channels**](#){ .md-button }
-
-### Step 2: Find Your Path
-
-```mermaid
-graph TD
-    A[Choose Your Path] --> B[Browse Issues]
-    A --> C[Review Roadmap]
-    A --> D[Propose Ideas]
-    B --> E[good first issue]
-    B --> F[help wanted]
-    C --> G[Core Features]
-    C --> H[Research Areas]
-    D --> I[Discussion Forums]
-```
-
-### Step 3: Make Impact
-
-1. **Fork & Setup** - Configure your development environment
-2. **Develop** - Create your contribution
-3. **Submit** - Open a pull request
-4. **Collaborate** - Work with maintainers
-5. **Celebrate** - See your work recognized
-
----
-
-## Recognition Framework
-
-### :material-flash: Immediate Benefits
-
-!!! success "Instant Recognition"
-    | Benefit | Description |
-    |---------|-------------|
-    | **Social Media Features** | Every merged PR showcased publicly |
-    | **Community Recognition** | Contributor badges and documentation credits |
-    | **Professional References** | Formal acknowledgment for portfolios |
-    | **Direct Mentorship** | Access to core team guidance |
-
-### :material-trending-up: Long-term Opportunities
-
-!!! tip "Career Growth"
-    - **Team Positions** - Fast-track consideration for core team roles
-    - **Conference Speaking** - Present work at AI conferences and events
-    - **Industry Connections** - Network with leading AI organizations
-    - **Research Collaboration** - Partner with academic institutions
-
----
-
-## Societal Impact
-
-!!! abstract "Building Solutions for Humanity"
-    Swarms enables technology that addresses critical challenges:
-
-    === "Research"
-        **Scientific Research**
-        
-        Accelerate collaborative research and discovery across disciplines
-
-    === "Healthcare"
-        **Healthcare Innovation**
-        
-        Support drug discovery and personalized medicine development
-
-    === "Environment"
-        **Environmental Solutions**
-        
-        Monitor climate and optimize sustainability initiatives
-
-    === "Education"
-        **Educational Technology**
-        
-        Create adaptive learning systems for personalized education
-
-    === "Economy"
-        **Economic Innovation**
-        
-        Generate new opportunities and efficiency improvements
-
----
-
-## Get Involved
-
-### :material-link: Connect With Us
-
-!!! info "Join the Community"
-    [:material-github: **GitHub Repository**](https://github.com/kyegomez/swarms){ .md-button .md-button--primary }
-    [:material-book: **Documentation**](https://docs.swarms.world/en/latest/){ .md-button }
-    [:material-forum: **Community Forums**](#){ .md-button }
-
----
-
-!!! warning "The Future is Now"
-    Multi-agent collaboration will define the next century of human progress. The autonomous economy depends on the infrastructure we build today.
-
-!!! success "Your Mission"
-    Your contribution to Swarms helps create the foundation for billions of autonomous agents working together to solve humanity's greatest challenges.
-
-    **Join us in building the most important technology of our time.**
-
----
-
-<div class="result" markdown>
-*Built with :material-heart: by the global Swarms community*
-</div>
+<a href="https://github.com/kyegomez/swarms/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=kyegomez/swarms" />
+</a>
