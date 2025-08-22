@@ -2,7 +2,7 @@
 
 The Board of Directors is a sophisticated multi-agent architecture that implements collective decision-making through democratic processes, voting mechanisms, and role-based leadership. This architecture provides an alternative to single-director patterns by enabling collaborative intelligence through structured governance.
 
-## 🏛️ Overview
+##  Overview
 
 The Board of Directors architecture follows a democratic workflow pattern:
 
@@ -14,7 +14,7 @@ The Board of Directors architecture follows a democratic workflow pattern:
 6. **Feedback Loop**: Board evaluates results and issues new orders if needed (up to `max_loops`)
 7. **Context Preservation**: All conversation history and context is maintained throughout the process
 
-## 🏗️ Architecture Components
+##  Architecture Components
 
 ### Core Components
 
@@ -73,7 +73,7 @@ sequenceDiagram
     Chairman->>User: Deliver Results
 ```
 
-## 👥 Board Member Roles
+##  Board Member Roles
 
 The Board of Directors supports various roles with different responsibilities and voting weights:
 
@@ -138,7 +138,7 @@ class BoardRoleHierarchy:
         }
 ```
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Basic Setup
 
@@ -206,7 +206,7 @@ result = board_swarm.run(task="Analyze the market potential for Tesla (TSLA) sto
 print(result)
 ```
 
-## 📋 Comprehensive Examples
+##  Comprehensive Examples
 
 ### 1. Strategic Investment Analysis
 
@@ -448,7 +448,7 @@ print("Crisis Management Results:")
 print(json.dumps(result, indent=2))
 ```
 
-## ⚙️ Configuration and Parameters
+##  Configuration and Parameters
 
 ### BoardOfDirectorsSwarm Parameters
 
@@ -551,7 +551,7 @@ quality_config = {
 }
 ```
 
-## 📊 Performance Monitoring and Analytics
+##  Performance Monitoring and Analytics
 
 ### Board Performance Metrics
 
@@ -656,7 +656,7 @@ print("Performance Report:")
 print(json.dumps(report, indent=2))
 ```
 
-## 🔧 Advanced Features and Customization
+##  Advanced Features and Customization
 
 ### Custom Board Templates
 
@@ -729,7 +729,7 @@ board_swarm = BoardOfDirectorsSwarm(
 )
 ```
 
-## 🛠️ Troubleshooting and Debugging
+##  Troubleshooting and Debugging
 
 ### Common Issues and Solutions
 
@@ -821,7 +821,7 @@ logging_swarm = BoardOfDirectorsSwarm(
 )
 ```
 
-## 📋 Use Cases
+##  Use Cases
 
 ### Corporate Governance
 - **Strategic Planning**: Long-term business strategy development
@@ -853,20 +853,20 @@ logging_swarm = BoardOfDirectorsSwarm(
 - **Recovery Planning**: Developing recovery and prevention strategies
 - **Legal Compliance**: Ensuring compliance during crisis situations
 
-## 🎯 Success Criteria
+##  Success Criteria
 
 A successful Board of Directors implementation should demonstrate:
 
-- ✅ **Democratic Decision Making**: All board members contribute to decisions
-- ✅ **Consensus Achievement**: Decisions reached through collaborative processes
-- ✅ **Role Effectiveness**: Each board member fulfills their responsibilities
-- ✅ **Agent Coordination**: Worker agents execute tasks efficiently
-- ✅ **Quality Output**: High-quality results through collective intelligence
-- ✅ **Process Transparency**: Clear visibility into decision-making processes
-- ✅ **Performance Optimization**: Efficient resource utilization and execution
-- ✅ **Continuous Improvement**: Learning from each execution cycle
+-  **Democratic Decision Making**: All board members contribute to decisions
+-  **Consensus Achievement**: Decisions reached through collaborative processes
+-  **Role Effectiveness**: Each board member fulfills their responsibilities
+-  **Agent Coordination**: Worker agents execute tasks efficiently
+-  **Quality Output**: High-quality results through collective intelligence
+-  **Process Transparency**: Clear visibility into decision-making processes
+-  **Performance Optimization**: Efficient resource utilization and execution
+-  **Continuous Improvement**: Learning from each execution cycle
 
-## 📚 Best Practices
+##  Best Practices
 
 ### 1. Role Definition
 - Clearly define responsibilities for each board member

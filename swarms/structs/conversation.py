@@ -1368,7 +1368,6 @@ class Conversation:
 
         # Binary search
         left, right = 0, len(text)
-        best_length = 0
         best_text = ""
 
         while left <= right:
@@ -1378,7 +1377,6 @@ class Conversation:
 
             if tokens <= target_tokens:
                 # If current truncated text token count is less than or equal to target, try longer text
-                best_length = mid
                 best_text = truncated
                 left = mid + 1
             else:

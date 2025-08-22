@@ -54,7 +54,7 @@ def install_package(package: str) -> bool:
     """Install a package using pip."""
     try:
         print(f"📦 Installing {package}...")
-        result = subprocess.run(
+        subprocess.run(
             [sys.executable, "-m", "pip", "install", package],
             capture_output=True,
             text=True,

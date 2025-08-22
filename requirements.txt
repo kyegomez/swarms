@@ -28,3 +28,4 @@ mcp
 numpy
 openai
 schedule
+colorama

@@ -1,8 +1,11 @@
 import argparse
 import os
+import sys
 import time
 import webbrowser
+from pathlib import Path
 
+from rich.align import Align
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -16,6 +19,8 @@ from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
 )
 from swarms.cli.onboarding_process import OnboardingProcess
+from swarms.structs.agent import Agent
+from swarms.utils.agent_loader import AgentLoader
 from swarms.utils.formatter import formatter
 
 # Initialize console with custom styling
@@ -39,16 +44,13 @@ COLORS = {
     "text": "#FFFFFF",
 }
 
-ASCII_ART = """
-   ▄████████  ▄█     █▄     ▄████████    ▄████████   ▄▄▄▄███▄▄▄▄      ▄████████ 
-  ███    ███ ███     ███   ███    ███   ███    ███ ▄██▀▀▀███▀▀▀██▄   ███    ███ 
-  ███    █▀  ███     ███   ███    ███   ███    ███ ███   ███   ███   ███    █▀  
-  ███        ███     ███   ███    ███  ▄███▄▄▄▄██▀ ███   ███   ███   ███        
-▀███████████ ███     ███ ▀███████████ ▀▀███▀▀▀▀▀   ███   ███   ███ ▀███████████ 
-         ███ ███     ███   ███    ███ ▀███████████ ███   ███   ███          ███ 
-   ▄█    ███ ███ ▄█▄ ███   ███    ███   ███    ███ ███   ███   ███    ▄█    ███ 
- ▄████████▀   ▀███▀███▀    ███    █▀    ███    ███  ▀█   ███   █▀   ▄████████▀  
-                                        ███    ███                                 
+ASCII_ART = r"""
+  _________                                     
+ /   _____/_  _  _______ _______  _____   ______
+ \_____  \\ \/ \/ /\__  \\_  __ \/     \ /  ___/
+ /        \\     /  / __ \|  | \/  Y Y  \\___ \ 
+/_______  / \/\_/  (____  /__|  |__|_|  /____  >
+        \/              \/            \/     \/                                
 """
 
 
@@ -66,10 +68,499 @@ def show_ascii_art():
     panel = Panel(
         Text(ASCII_ART, style=f"bold {COLORS['primary']}"),
         border_style=COLORS["secondary"],
-        title="[bold]Welcome to Swarms[/bold]",
+        title="[bold]Welcome to Swarms CLI[/bold]",
         subtitle="[dim]swarms.ai[/dim]",
     )
     console.print(panel)
+
+
+def check_workspace_dir() -> tuple[bool, str, str]:
+    """Check if WORKSPACE_DIR environment variable is set."""
+    workspace_dir = os.getenv("WORKSPACE_DIR")
+    if workspace_dir:
+        path = Path(workspace_dir)
+        if path.exists():
+            return (
+                True,
+                "✓",
+                f"WORKSPACE_DIR is set to: {workspace_dir}",
+            )
+        else:
+            return (
+                False,
+                "⚠",
+                f"WORKSPACE_DIR is set but path doesn't exist: {workspace_dir}",
+            )
+    else:
+        return (
+            False,
+            "✗",
+            "WORKSPACE_DIR environment variable is not set",
+        )
+
+
+def check_env_file() -> tuple[bool, str, str]:
+    """Check if .env file exists and has content."""
+    env_path = Path(".env")
+    if env_path.exists():
+        try:
+            content = env_path.read_text().strip()
+            if content:
+                # Count API keys
+                api_keys = [
+                    line
+                    for line in content.split("\n")
+                    if "API_KEY" in line and not line.startswith("#")
+                ]
+                return (
+                    True,
+                    "✓",
+                    f".env file exists with {len(api_keys)} API key(s)",
+                )
+            else:
+                return False, "⚠", ".env file exists but is empty"
+        except Exception as e:
+            return (
+                False,
+                "✗",
+                f".env file exists but cannot be read: {str(e)}",
+            )
+    else:
+        return False, "✗", ".env file not found in current directory"
+
+
+def check_swarms_version(
+    verbose: bool = False,
+) -> tuple[bool, str, str, str]:
+    """Check if swarms is at the latest version."""
+    try:
+        # Get current version using multiple methods
+        current_version = "Unknown"
+
+        if verbose:
+            console.print(
+                "[dim]🔍 Attempting to detect Swarms version...[/dim]"
+            )
+
+        # Method 1: Try importlib.metadata (Python 3.8+)
+        try:
+            import importlib.metadata
+
+            current_version = importlib.metadata.version("swarms")
+            if verbose:
+                console.print(
+                    f"[dim]  ✓ Method 1 (importlib.metadata): {current_version}[/dim]"
+                )
+        except ImportError:
+            if verbose:
+                console.print(
+                    "[dim]  ✗ Method 1 (importlib.metadata): Not available[/dim]"
+                )
+            pass
+
+        # Method 2: Try pkg_resources (older method)
+        if current_version == "Unknown":
+            try:
+                import pkg_resources
+
+                current_version = pkg_resources.get_distribution(
+                    "swarms"
+                ).version
+                if verbose:
+                    console.print(
+                        f"[dim]  ✓ Method 2 (pkg_resources): {current_version}[/dim]"
+                    )
+            except ImportError:
+                if verbose:
+                    console.print(
+                        "[dim]  ✗ Method 2 (pkg_resources): Not available[/dim]"
+                    )
+                pass
+
+        # Method 3: Try direct attribute access
+        if current_version == "Unknown":
+            try:
+                import swarms
+
+                current_version = getattr(
+                    swarms, "__version__", "Unknown"
+                )
+                if verbose:
+                    console.print(
+                        f"[dim]  ✓ Method 3 (direct attribute): {current_version}[/dim]"
+                    )
+            except ImportError:
+                if verbose:
+                    console.print(
+                        "[dim]  ✗ Method 3 (direct attribute): Import failed[/dim]"
+                    )
+                pass
+
+        # Method 4: Try to get from pyproject.toml or setup.py
+        if current_version == "Unknown":
+            try:
+                import subprocess
+
+                result = subprocess.run(
+                    ["pip", "show", "swarms"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                if result.returncode == 0:
+                    for line in result.stdout.split("\n"):
+                        if line.startswith("Version:"):
+                            current_version = line.split(":", 1)[
+                                1
+                            ].strip()
+                            if verbose:
+                                console.print(
+                                    f"[dim]  ✓ Method 4 (pip show): {current_version}[/dim]"
+                                )
+                            break
+            except Exception:
+                if verbose:
+                    console.print(
+                        "[dim]  ✗ Method 4 (pip show): Failed[/dim]"
+                    )
+                pass
+
+        # Method 5: Try to read from __init__.py file
+        if current_version == "Unknown":
+            try:
+                import swarms
+
+                swarms_path = swarms.__file__
+                if swarms_path:
+                    init_file = os.path.join(
+                        os.path.dirname(swarms_path), "__init__.py"
+                    )
+                    if os.path.exists(init_file):
+                        with open(init_file, "r") as f:
+                            content = f.read()
+                            # Look for version patterns like __version__ = "8.1.1"
+                            import re
+
+                            version_match = re.search(
+                                r'__version__\s*=\s*["\']([^"\']+)["\']',
+                                content,
+                            )
+                            if version_match:
+                                current_version = version_match.group(
+                                    1
+                                )
+                                if verbose:
+                                    console.print(
+                                        f"[dim]  ✓ Method 5 (__init__.py): {current_version}[/dim]"
+                                    )
+            except Exception:
+                if verbose:
+                    console.print(
+                        "[dim]  ✗ Method 5 (__init__.py): Failed[/dim]"
+                    )
+                pass
+
+        # Method 6: Try to read from pyproject.toml
+        if current_version == "Unknown":
+            try:
+                import swarms
+
+                swarms_path = swarms.__file__
+                if swarms_path:
+                    # Go up to find pyproject.toml
+                    current_dir = os.path.dirname(swarms_path)
+                    for _ in range(5):  # Go up max 5 levels
+                        pyproject_path = os.path.join(
+                            current_dir, "pyproject.toml"
+                        )
+                        if os.path.exists(pyproject_path):
+                            with open(pyproject_path, "r") as f:
+                                content = f.read()
+                                # Look for version in pyproject.toml
+                                import re
+
+                                version_match = re.search(
+                                    r'version\s*=\s*["\']([^"\']+)["\']',
+                                    content,
+                                )
+                                if version_match:
+                                    current_version = (
+                                        version_match.group(1)
+                                    )
+                                    break
+                        current_dir = os.path.dirname(current_dir)
+                        if current_dir == os.path.dirname(
+                            current_dir
+                        ):  # Reached root
+                            break
+            except Exception:
+                pass
+
+        if verbose:
+            console.print(
+                f"[dim]🎯 Final detected version: {current_version}[/dim]\n"
+            )
+
+        # Try to get latest version from PyPI
+        try:
+            import httpx
+
+            with httpx.Client(timeout=5.0) as client:
+                response = client.get(
+                    "https://pypi.org/pypi/swarms/json"
+                )
+                if response.status_code == 200:
+                    latest_version = response.json()["info"][
+                        "version"
+                    ]
+                    is_latest = current_version == latest_version
+                    if is_latest:
+                        return (
+                            True,
+                            "✓",
+                            f"Current version: {current_version}",
+                            latest_version,
+                        )
+                    else:
+                        return (
+                            False,
+                            "⚠",
+                            f"Current version: {current_version}",
+                            latest_version,
+                        )
+                else:
+                    return (
+                        True,
+                        "✓",
+                        f"Current version: {current_version}",
+                        "Unknown (PyPI unreachable)",
+                    )
+        except ImportError:
+            return (
+                True,
+                "✓",
+                f"Current version: {current_version}",
+                "Unknown (httpx not available)",
+            )
+        except Exception:
+            return (
+                True,
+                "✓",
+                f"Current version: {current_version}",
+                "Unknown (PyPI check failed)",
+            )
+
+        # If we still don't have a version, try one more method
+        if current_version == "Unknown":
+            try:
+                # Try to get from environment variable (sometimes set during build)
+                current_version = os.getenv(
+                    "SWARMS_VERSION", "Unknown"
+                )
+                if verbose and current_version != "Unknown":
+                    console.print(
+                        f"[dim]  ✓ Method 7 (env var): {current_version}[/dim]"
+                    )
+            except Exception:
+                if verbose:
+                    console.print(
+                        "[dim]  ✗ Method 7 (env var): Failed[/dim]"
+                    )
+                pass
+
+    except Exception as e:
+        return (
+            False,
+            "✗",
+            f"Error checking version: {str(e)}",
+            "Unknown",
+        )
+
+
+def check_python_version() -> tuple[bool, str, str]:
+    """Check Python version compatibility."""
+    version = sys.version_info
+    if version.major == 3 and version.minor >= 10:
+        return (
+            True,
+            "✓",
+            f"Python {version.major}.{version.minor}.{version.micro}",
+        )
+    else:
+        return (
+            False,
+            "✗",
+            f"Python {version.major}.{version.minor}.{version.micro} (requires 3.10+)",
+        )
+
+
+def check_api_keys() -> tuple[bool, str, str]:
+    """Check if common API keys are set."""
+    api_keys = {
+        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+        "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY"),
+        "GOOGLE_API_KEY": os.getenv("GOOGLE_API_KEY"),
+        "COHERE_API_KEY": os.getenv("COHERE_API_KEY"),
+    }
+
+    set_keys = [key for key, value in api_keys.items() if value]
+    if set_keys:
+        return True, "✓", f"API keys found: {', '.join(set_keys)}"
+    else:
+        return (
+            False,
+            "✗",
+            "No API keys found in environment variables",
+        )
+
+
+def check_dependencies() -> tuple[bool, str, str]:
+    """Check if key dependencies are available."""
+    required_deps = ["torch", "transformers", "litellm", "rich"]
+    missing_deps = []
+
+    for dep in required_deps:
+        try:
+            __import__(dep)
+        except ImportError:
+            missing_deps.append(dep)
+
+    if not missing_deps:
+        return True, "✓", "All required dependencies available"
+    else:
+        return (
+            False,
+            "⚠",
+            f"Missing dependencies: {', '.join(missing_deps)}",
+        )
+
+
+def run_setup_check(verbose: bool = False):
+    """Run comprehensive setup check with beautiful formatting."""
+    console.print(
+        "\n[bold blue]🔍 Running Swarms Environment Setup Check[/bold blue]\n"
+    )
+
+    if verbose:
+        console.print(
+            "[dim]Debug mode enabled - showing detailed version detection steps[/dim]\n"
+        )
+
+    # Create results table
+    table = Table(
+        show_header=True,
+        header_style=f"bold {COLORS['primary']}",
+        border_style=COLORS["secondary"],
+        title="Environment Check Results",
+        padding=(0, 2),
+    )
+
+    table.add_column("Status", style="bold", width=8)
+    table.add_column("Check", style="bold white", width=25)
+    table.add_column("Details", style="dim white")
+
+    # Run all checks
+    checks = [
+        ("Python Version", check_python_version()),
+        ("Swarms Version", check_swarms_version(verbose)),
+        ("API Keys", check_api_keys()),
+        ("Dependencies", check_dependencies()),
+        ("Environment File", check_env_file()),
+        ("Workspace Directory", check_workspace_dir()),
+    ]
+
+    all_passed = True
+
+    for check_name, (passed, status_icon, details, *extra) in checks:
+        if not passed:
+            all_passed = False
+
+        # Color code the status
+        if passed:
+            status_style = f"bold {COLORS['success']}"
+        elif status_icon == "⚠":
+            status_style = f"bold {COLORS['warning']}"
+        else:
+            status_style = f"bold {COLORS['error']}"
+
+        table.add_row(
+            f"[{status_style}]{status_icon}[/{status_style}]",
+            check_name,
+            details,
+        )
+
+    console.print(table)
+
+    # Show summary
+    if all_passed:
+        summary_panel = Panel(
+            Align.center(
+                "[bold green]🎉 All checks passed! Your environment is ready for Swarms.[/bold green]"
+            ),
+            border_style=COLORS["success"],
+            title="[bold]Setup Check Complete[/bold]",
+            padding=(1, 2),
+        )
+    else:
+        summary_panel = Panel(
+            Align.center(
+                "[bold yellow]⚠️ Some checks failed. Please review the issues above.[/bold yellow]"
+            ),
+            border_style=COLORS["warning"],
+            title="[bold]Setup Check Complete[/bold]",
+            padding=(1, 2),
+        )
+
+    console.print(summary_panel)
+
+    # Show recommendations
+    if not all_passed:
+        console.print("\n[bold blue]💡 Recommendations:[/bold blue]")
+
+        recommendations = []
+
+        # Check specific failures and provide recommendations
+        for check_name, (
+            passed,
+            status_icon,
+            details,
+            *extra,
+        ) in checks:
+            if not passed:
+                if "WORKSPACE_DIR" in check_name:
+                    recommendations.append(
+                        "Set WORKSPACE_DIR environment variable: export WORKSPACE_DIR=/path/to/your/workspace"
+                    )
+                elif "API Keys" in check_name:
+                    recommendations.append(
+                        "Set API keys: export OPENAI_API_KEY='your-key-here'"
+                    )
+                elif "Environment File" in check_name:
+                    recommendations.append(
+                        "Create .env file with your API keys"
+                    )
+                elif (
+                    "Swarms Version" in check_name and len(extra) > 0
+                ):
+                    latest_version = extra[0]
+                    if latest_version != "Unknown":
+                        recommendations.append(
+                            f"Update Swarms: pip install --upgrade swarms (latest: {latest_version})"
+                        )
+                elif "Dependencies" in check_name:
+                    recommendations.append(
+                        "Install missing dependencies: pip install -r requirements.txt"
+                    )
+
+        if recommendations:
+            for i, rec in enumerate(recommendations, 1):
+                console.print(f"  {i}. [yellow]{rec}[/yellow]")
+
+        console.print(
+            "\n[dim]Run 'swarms setup-check' again after making changes to verify.[/dim]"
+        )
+
+    return all_passed
 
 
 def create_command_table() -> Table:
@@ -91,9 +582,21 @@ def create_command_table() -> Table:
         ("get-api-key", "Retrieve your API key from the platform"),
         ("check-login", "Verify login status and initialize cache"),
         ("run-agents", "Execute agents from your YAML configuration"),
+        (
+            "load-markdown",
+            "Load agents from markdown files with YAML frontmatter",
+        ),
+        (
+            "agent",
+            "Create and run a custom agent with specified parameters",
+        ),
         ("auto-upgrade", "Update Swarms to the latest version"),
         ("book-call", "Schedule a strategy session with our team"),
         ("autoswarm", "Generate and execute an autonomous swarm"),
+        (
+            "setup-check",
+            "Run a comprehensive environment setup check",
+        ),
     ]
 
     for cmd, desc in commands:
@@ -180,11 +683,6 @@ def run_autoswarm(task: str, model: str):
             "[yellow]Initializing autoswarm configuration...[/yellow]"
         )
 
-        # Set LiteLLM verbose mode for debugging
-        import litellm
-
-        litellm.set_verbose = True
-
         # Validate inputs
         if not task or task.strip() == "":
             raise SwarmCLIError("Task cannot be empty")
@@ -226,6 +724,234 @@ def run_autoswarm(task: str, model: str):
             )
 
 
+def load_markdown_agents(
+    file_path: str, concurrent: bool = True, **kwargs
+):
+    """Load agents from markdown files with enhanced visual feedback."""
+    try:
+        console.print(
+            f"[yellow]Loading agents from markdown: {file_path}[/yellow]"
+        )
+
+        # Create progress display
+        progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        )
+
+        with progress:
+            # Add initial task
+            init_task = progress.add_task(
+                "Initializing markdown loader...", total=None
+            )
+
+            # Initialize agent loader
+            progress.update(
+                init_task,
+                description="Initializing agent loader...",
+            )
+            loader = AgentLoader()
+
+            # Load agents
+            progress.update(
+                init_task,
+                description="Loading agents from markdown...",
+            )
+
+            if os.path.isdir(file_path):
+                agents = loader.load_multiple_agents(
+                    file_path, concurrent=concurrent, **kwargs
+                )
+            else:
+                agents = [
+                    loader.load_single_agent(file_path, **kwargs)
+                ]
+
+            # Update progress on completion
+            progress.update(
+                init_task,
+                description="Processing complete!",
+                completed=True,
+            )
+
+        # Display results
+        if agents:
+            console.print(
+                f"\n[bold green]✓ Successfully loaded {len(agents)} agents![/bold green]"
+            )
+
+            # Create a table to display loaded agents
+            agent_table = Table(
+                show_header=True,
+                header_style=f"bold {COLORS['primary']}",
+                border_style=COLORS["secondary"],
+                title="Loaded Agents",
+                padding=(0, 2),
+            )
+
+            agent_table.add_column("Name", style="bold white")
+            agent_table.add_column("Model", style="dim white")
+            agent_table.add_column("Description", style="dim white")
+
+            for agent in agents:
+                name = getattr(agent, "agent_name", "Unknown")
+                model = getattr(agent, "model_name", "Unknown")
+                description = getattr(
+                    agent, "agent_description", "No description"
+                )
+
+                agent_table.add_row(name, model, description)
+
+            console.print(agent_table)
+
+            return agents
+        else:
+            console.print(
+                "[yellow]⚠ No agents were loaded from the markdown files.[/yellow]"
+            )
+            return []
+
+    except FileNotFoundError:
+        show_error(
+            "File Error",
+            f"Markdown file/directory not found: {file_path}\n"
+            "Please make sure the path exists and you're in the correct directory.",
+        )
+        return []
+    except ValueError as e:
+        show_error(
+            "Configuration Error",
+            f"Error parsing markdown: {str(e)}\n\n"
+            "Please check that your markdown files use the correct YAML frontmatter format:\n"
+            "---\n"
+            "name: Agent Name\n"
+            "description: Agent Description\n"
+            "model_name: gpt-4\n"
+            "temperature: 0.1\n"
+            "---\n"
+            "System prompt content here...",
+        )
+        return []
+    except Exception as e:
+        show_error(
+            "Execution Error",
+            f"An unexpected error occurred: {str(e)}\n"
+            "1. Check your markdown file format\n"
+            "2. Verify your API keys are set\n"
+            "3. Check network connectivity",
+        )
+        return []
+
+
+def create_swarm_agent(
+    name: str,
+    description: str,
+    system_prompt: str,
+    model_name: str,
+    task: str,
+    **kwargs,
+):
+    """Create and run a custom agent with the specified parameters."""
+    try:
+        console.print(
+            f"[yellow]Creating custom agent: {name}[/yellow]"
+        )
+
+        # Create progress display
+        progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        )
+
+        with progress:
+            # Add initial task
+            init_task = progress.add_task(
+                "Initializing agent...", total=None
+            )
+
+            # Create agent
+            progress.update(
+                init_task,
+                description="Creating agent with specified parameters...",
+            )
+
+            # Build agent configuration
+            agent_config = {
+                "agent_name": name,
+                "agent_description": description,
+                "system_prompt": system_prompt,
+                "model_name": model_name,
+                **kwargs,
+            }
+
+            # Remove None values to use defaults
+            agent_config = {
+                k: v for k, v in agent_config.items() if v is not None
+            }
+
+            agent = Agent(**agent_config)
+
+            # Update progress
+            progress.update(
+                init_task,
+                description="Agent created successfully! Running task...",
+            )
+
+            # Run the agent with the specified task
+            progress.update(
+                init_task,
+                description=f"Executing task: {task[:50]}...",
+            )
+
+            result = agent.run(task)
+
+            # Update progress on completion
+            progress.update(
+                init_task,
+                description="Task completed!",
+                completed=True,
+            )
+
+        # Display results
+        if result:
+            console.print(
+                f"\n[bold green]✓ Agent '{name}' completed the task successfully![/bold green]"
+            )
+
+            # Display agent info
+            agent_info = Panel(
+                f"[bold]Agent Name:[/bold] {name}\n"
+                f"[bold]Model:[/bold] {model_name}\n"
+                f"[bold]Task:[/bold] {task}\n"
+                f"[bold]Result:[/bold]\n{result}",
+                title="Agent Execution Results",
+                border_style="green",
+                padding=(1, 2),
+            )
+            console.print(agent_info)
+
+            return result
+        else:
+            console.print(
+                f"[yellow]⚠ Agent '{name}' completed but returned no results.[/yellow]"
+            )
+            return None
+
+    except Exception as e:
+        show_error(
+            "Agent Creation Error",
+            f"Failed to create or run agent: {str(e)}\n\n"
+            "Please check:\n"
+            "1. Your API keys are set correctly\n"
+            "2. The model name is valid\n"
+            "3. All required parameters are provided\n"
+            "4. Your system prompt is properly formatted",
+        )
+        return None
+
+
 def main():
     try:
 
@@ -242,9 +968,12 @@ def main():
                 "get-api-key",
                 "check-login",
                 "run-agents",
+                "load-markdown",
+                "agent",
                 "auto-upgrade",
                 "book-call",
                 "autoswarm",
+                "setup-check",
             ],
             help="Command to execute",
         )
@@ -255,13 +984,122 @@ def main():
             help="YAML configuration file path",
         )
         parser.add_argument(
-            "--task", type=str, help="Task for autoswarm"
+            "--markdown-path",
+            type=str,
+            help="Path to markdown file or directory containing markdown files",
         )
         parser.add_argument(
-            "--model",
+            "--concurrent",
+            action="store_true",
+            default=True,
+            help="Enable concurrent processing for multiple markdown files (default: True)",
+        )
+        # Swarm agent specific arguments
+        parser.add_argument(
+            "--name",
+            type=str,
+            help="Name of the custom agent",
+        )
+        parser.add_argument(
+            "--description",
+            type=str,
+            help="Description of the custom agent",
+        )
+        parser.add_argument(
+            "--system-prompt",
+            type=str,
+            help="System prompt for the custom agent",
+        )
+        parser.add_argument(
+            "--model-name",
             type=str,
             default="gpt-4",
-            help="Model for autoswarm",
+            help="Model name for the custom agent (default: gpt-4)",
+        )
+        parser.add_argument(
+            "--task",
+            type=str,
+            help="Task for the custom agent to execute",
+        )
+        parser.add_argument(
+            "--temperature",
+            type=float,
+            help="Temperature setting for the agent (0.0-2.0)",
+        )
+        parser.add_argument(
+            "--max-loops",
+            type=int,
+            help="Maximum number of loops for the agent",
+        )
+        parser.add_argument(
+            "--auto-generate-prompt",
+            action="store_true",
+            help="Enable auto-generation of prompts",
+        )
+        parser.add_argument(
+            "--dynamic-temperature-enabled",
+            action="store_true",
+            help="Enable dynamic temperature adjustment",
+        )
+        parser.add_argument(
+            "--dynamic-context-window",
+            action="store_true",
+            help="Enable dynamic context window",
+        )
+        parser.add_argument(
+            "--output-type",
+            type=str,
+            help="Output type for the agent (e.g., 'str', 'json')",
+        )
+        parser.add_argument(
+            "--verbose",
+            action="store_true",
+            help="Enable verbose mode for the agent",
+        )
+        parser.add_argument(
+            "--streaming-on",
+            action="store_true",
+            help="Enable streaming mode for the agent",
+        )
+        parser.add_argument(
+            "--context-length",
+            type=int,
+            help="Context length for the agent",
+        )
+        parser.add_argument(
+            "--retry-attempts",
+            type=int,
+            help="Number of retry attempts for the agent",
+        )
+        parser.add_argument(
+            "--return-step-meta",
+            action="store_true",
+            help="Return step metadata from the agent",
+        )
+        parser.add_argument(
+            "--dashboard",
+            action="store_true",
+            help="Enable dashboard for the agent",
+        )
+        parser.add_argument(
+            "--autosave",
+            action="store_true",
+            help="Enable autosave for the agent",
+        )
+        parser.add_argument(
+            "--saved-state-path",
+            type=str,
+            help="Path for saving agent state",
+        )
+        parser.add_argument(
+            "--user-name",
+            type=str,
+            help="Username for the agent",
+        )
+        parser.add_argument(
+            "--mcp-url",
+            type=str,
+            help="MCP URL for the agent",
         )
 
         args = parser.parse_args()
@@ -390,6 +1228,93 @@ def main():
                             "2. Verify your API keys are set\n"
                             "3. Check network connectivity",
                         )
+            elif args.command == "load-markdown":
+                if not args.markdown_path:
+                    show_error(
+                        "Missing required argument: --markdown-path",
+                        "Example usage: python cli.py load-markdown --markdown-path ./agents/",
+                    )
+                    exit(1)
+
+                # Load agents from markdown
+                agents = load_markdown_agents(
+                    args.markdown_path, concurrent=args.concurrent
+                )
+
+                if agents:
+                    console.print(
+                        f"\n[bold green]Ready to use {len(agents)} agents![/bold green]\n"
+                        "[dim]You can now use these agents in your code or run them interactively.[/dim]"
+                    )
+            elif args.command == "agent":
+                # Validate required arguments
+                required_args = [
+                    "name",
+                    "description",
+                    "system_prompt",
+                    "task",
+                ]
+                missing_args = [
+                    arg
+                    for arg in required_args
+                    if not getattr(args, arg)
+                ]
+
+                if missing_args:
+                    show_error(
+                        "Missing required arguments",
+                        f"Required arguments: {', '.join(missing_args)}\n\n"
+                        "Example usage:\n"
+                        "python cli.py agent \\\n"
+                        "  --name 'Trading Agent' \\\n"
+                        "  --description 'Advanced trading agent' \\\n"
+                        "  --system-prompt 'You are an expert trader...' \\\n"
+                        "  --task 'Analyze market trends' \\\n"
+                        "  --model-name 'gpt-4' \\\n"
+                        "  --temperature 0.1",
+                    )
+                    exit(1)
+
+                # Build kwargs for additional parameters
+                additional_params = {}
+                param_mapping = {
+                    "temperature": "temperature",
+                    "max_loops": "max_loops",
+                    "auto_generate_prompt": "auto_generate_prompt",
+                    "dynamic_temperature_enabled": "dynamic_temperature_enabled",
+                    "dynamic_context_window": "dynamic_context_window",
+                    "output_type": "output_type",
+                    "verbose": "verbose",
+                    "streaming_on": "streaming_on",
+                    "context_length": "context_length",
+                    "retry_attempts": "retry_attempts",
+                    "return_step_meta": "return_step_meta",
+                    "dashboard": "dashboard",
+                    "autosave": "autosave",
+                    "saved_state_path": "saved_state_path",
+                    "user_name": "user_name",
+                    "mcp_url": "mcp_url",
+                }
+
+                for cli_arg, agent_param in param_mapping.items():
+                    value = getattr(args, cli_arg)
+                    if value is not None:
+                        additional_params[agent_param] = value
+
+                # Create and run the custom agent
+                result = create_swarm_agent(
+                    name=args.name,
+                    description=args.description,
+                    system_prompt=args.system_prompt,
+                    model_name=args.model_name,
+                    task=args.task,
+                    **additional_params,
+                )
+
+                if result:
+                    console.print(
+                        f"\n[bold green]Agent '{args.name}' executed successfully![/bold green]"
+                    )
             elif args.command == "book-call":
                 webbrowser.open(
                     "https://cal.com/swarms/swarms-strategy-session"
@@ -402,6 +1327,8 @@ def main():
                     )
                     exit(1)
                 run_autoswarm(args.task, args.model)
+            elif args.command == "setup-check":
+                run_setup_check(verbose=args.verbose)
         except Exception as e:
             console.print(
                 f"[{COLORS['error']}]Error: {str(e)}[/{COLORS['error']}]"
