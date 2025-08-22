@@ -290,6 +290,7 @@ nav:
         - Hiearchical Architectures:
           - Overview: "swarms/structs/multi_swarm_orchestration.md"
           - HierarchicalSwarm: "swarms/structs/hierarchical_swarm.md"
+          - Hierarchical Structured Communication Framework: "swarms/structs/hierarchical_structured_communication_framework.md"
           - Auto Agent Builder: "swarms/structs/auto_agent_builder.md"
           - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
           - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
