@@ -43,4 +43,5 @@ agent = Agent(
 out = agent.run(
     task="What are the best top 3 etfs for gold coverage?"
 )
+
 print(out)

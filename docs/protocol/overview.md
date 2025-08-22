@@ -406,32 +406,21 @@ For more on the philosophy and architecture, see [Development Philosophy & Princ
 
 ## Further Reading & References
 
-- [Swarms Docs Home](https://docs.swarms.world/en/latest/)
-
-- [Quickstart for Agents](https://docs.swarms.world/en/latest/swarms/agents/)
-
-- [Agent API Reference](https://docs.swarms.world/en/latest/swarms/structs/agent/)
-
-- [Tools Overview](https://docs.swarms.world/en/latest/swarms_tools/overview/)
-
-- [BaseTool Reference](https://docs.swarms.world/en/latest/swarms/tools/base_tool/)
-
-- [Reasoning Agents Overview](https://docs.swarms.world/en/latest/swarms/agents/reasoning_agents_overview/)
-
-- [Multi-Agent Architectures Overview](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/)
-
-- [Examples Overview](https://docs.swarms.world/en/latest/examples/index/)
-
-- [CLI Documentation](https://docs.swarms.world/en/latest/swarms/cli/main/)
-
-- [Prompts Management](https://docs.swarms.world/en/latest/swarms/prompts/main/)
-
-- [Development Philosophy & Principles](https://docs.swarms.world/en/latest/swarms/concept/philosophy/)
-
-- [Understanding Swarms Architecture](https://docs.swarms.world/en/latest/swarms/concept/framework_architecture/)
-
-- [SIP Guidelines and Template](https://docs.swarms.world/en/latest/protocol/sip/)
-
+| Resource Name                        | Link                                                                                   | Description                                      |
+|-------------------------------------- |----------------------------------------------------------------------------------------|--------------------------------------------------|
+| Swarms Docs Home                     | [Swarms Docs Home](https://docs.swarms.world/en/latest/)                               | Main documentation homepage                      |
+| Quickstart for Agents                | [Quickstart for Agents](https://docs.swarms.world/en/latest/swarms/agents/)            | Getting started with Swarms agents               |
+| Agent API Reference                  | [Agent API Reference](https://docs.swarms.world/en/latest/swarms/structs/agent/)       | API reference for Agent class                    |
+| Tools Overview                       | [Tools Overview](https://docs.swarms.world/en/latest/swarms_tools/overview/)           | Overview of available tools                      |
+| BaseTool Reference                   | [BaseTool Reference](https://docs.swarms.world/en/latest/swarms/tools/base_tool/)      | Reference for the BaseTool class                 |
+| Reasoning Agents Overview            | [Reasoning Agents Overview](https://docs.swarms.world/en/latest/swarms/agents/reasoning_agents_overview/) | Overview of reasoning agents                     |
+| Multi-Agent Architectures Overview   | [Multi-Agent Architectures Overview](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/) | Multi-agent system architectures                 |
+| Examples Overview                    | [Examples Overview](https://docs.swarms.world/en/latest/examples/index/)               | Example projects and use cases                   |
+| CLI Documentation                    | [CLI Documentation](https://docs.swarms.world/en/latest/swarms/cli/main/)              | Command-line interface documentation             |
+| Prompts Management                   | [Prompts Management](https://docs.swarms.world/en/latest/swarms/prompts/main/)         | Managing and customizing prompts                 |
+| Development Philosophy & Principles  | [Development Philosophy & Principles](https://docs.swarms.world/en/latest/swarms/concept/philosophy/) | Framework philosophy and guiding principles      |
+| Understanding Swarms Architecture    | [Understanding Swarms Architecture](https://docs.swarms.world/en/latest/swarms/concept/framework_architecture/) | In-depth look at Swarms architecture             |
+| SIP Guidelines and Template          | [SIP Guidelines and Template](https://docs.swarms.world/en/latest/protocol/sip/)       | Swarms Improvement Proposal process and template |
 
 # Conclusion
 

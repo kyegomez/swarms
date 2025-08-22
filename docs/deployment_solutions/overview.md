@@ -4,16 +4,10 @@ This section covers various deployment strategies for Swarms agents and multi-ag
 
 ## Deployment Types Comparison & Documentation
 
-| Deployment Type         | Use Case                  | Complexity | Scalability | Cost         | Best For                              | Documentation Link                                                                 | Status        |
-|------------------------|---------------------------|------------|-------------|--------------|----------------------------------------|------------------------------------------------------------------------------------|---------------|
-| **FastAPI + Uvicorn**  | REST API endpoints        | Low        | Medium      | Low          | Quick prototypes, internal tools       | [FastAPI Agent API Guide](fastapi_agent_api.md)                                    | Available     |
-| **Cron Jobs**          | Scheduled tasks           | Low        | Low         | Very Low     | Batch processing, periodic tasks       | [Cron Job Examples](../../examples/deployment_solutions/cron_job_examples/)        | Available     |
-| **Docker Containers**  | Containerized deployment  | Medium     | High        | Low          | Production, portability                | [Docker Deployment Guide](docker_deployment.md)                                    | Coming Soon   |
-| **Kubernetes**         | Orchestrated containers   | High       | Very High   | Medium       | Enterprise, auto-scaling               | [Kubernetes Deployment Guide](kubernetes_deployment.md)                            | Coming Soon   |
-| **Cloud Functions**    | Serverless execution      | Low        | High        | Pay-per-use  | Event-driven, cost-effective           | [Cloud Deployment Guide](cloud_deployment.md)                                      | Coming Soon   |
-| **Cloud Run**          | Containerized serverless  | Medium     | High        | Pay-per-use  | Production, auto-scaling               | [Cloud Deployment Guide](cloud_deployment.md)                                      | Coming Soon   |
-| **Traditional VMs**    | Full control deployment   | Medium     | Medium      | Medium       | Custom requirements, full control      | [Cloud Deployment Guide](cloud_deployment.md)                                      | Coming Soon   |
-
+| Deployment Type         | Use Case            | Complexity | Scalability | Cost      | Best For                        | Documentation Link                                                          | Status     |
+|------------------------|---------------------|------------|-------------|-----------|----------------------------------|-----------------------------------------------------------------------------|------------|
+| **FastAPI + Uvicorn**  | REST API endpoints  | Low        | Medium      | Low       | Quick prototypes, internal tools | [FastAPI Agent API Guide](fastapi_agent_api.md)                             | Available  |
+| **Cron Jobs**          | Scheduled tasks     | Low        | Low         | Very Low  | Batch processing, periodic tasks | [Cron Job Examples](../../examples/deployment_solutions/cron_job_examples/) | Available  |
 
 
 ## Quick Start Guide
@@ -37,14 +31,6 @@ This section covers various deployment strategies for Swarms agents and multi-ag
 
 - **Examples**: [Cron Job Examples](../../examples/deployment_solutions/cron_job_examples/)
 
-
-### 3. Docker (Recommended for production)
-
-- **Best for**: Consistent deployment across environments
-
-- **Setup time**: 10-15 minutes
-
-- **Documentation**: [Docker Deployment](docker_deployment.md)
 
 
 ## Deployment Considerations

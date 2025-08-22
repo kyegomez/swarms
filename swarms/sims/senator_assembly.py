@@ -1,11 +1,3 @@
-"""
-US Senate Simulation with Specialized Senator Agents
-
-This simulation creates specialized AI agents representing all current US Senators,
-each with detailed backgrounds, political positions, and comprehensive system prompts
-that reflect their real-world characteristics, voting patterns, and policy priorities.
-"""
-
 from functools import lru_cache
 from typing import Dict, List, Optional
 
@@ -3483,3 +3475,9 @@ class SenatorAssembly:
         self, task: str, img: Optional[str] = None, *args, **kwargs
     ):
         return self.simulate_vote_concurrent(bill_description=task)
+
+    def batched_run(
+        self,
+        tasks: List[str],
+    ):
+        [self.run(task) for task in tasks]
