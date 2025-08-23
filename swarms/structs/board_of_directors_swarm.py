@@ -52,8 +52,6 @@ board_logger = initialize_logger(
 # ============================================================================
 
 
-
-
 class BoardConfigModel(BaseModel):
     """
     Configuration model for Board of Directors feature.
@@ -469,7 +467,6 @@ def get_board_config(
         _board_config = BoardConfig(config_file_path=config_file_path)
 
     return _board_config
-
 
 
 def create_default_config_file(

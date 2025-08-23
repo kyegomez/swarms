@@ -10,10 +10,9 @@ from swarms.prompts.multi_agent_collab_prompt import (
     MULTI_AGENT_COLLAB_PROMPT_TWO,
 )
 from swarms.structs.agent import Agent
+from swarms.structs.agent_rearrange import AgentRearrange
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.council_as_judge import CouncilAsAJudge
-from swarms.structs.csv_to_agent import AgentLoader
-from swarms.structs.deep_research_swarm import DeepResearchSwarm
 from swarms.structs.groupchat import GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
@@ -23,7 +22,6 @@ from swarms.structs.majority_voting import MajorityVoting
 from swarms.structs.malt import MALT
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.multi_agent_router import MultiAgentRouter
-from swarms.structs.agent_rearrange import AgentRearrange
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.swarm_matcher import swarm_matcher
 from swarms.telemetry.log_executions import log_execution
@@ -45,7 +43,6 @@ SwarmType = Literal[
     "auto",
     "MajorityVoting",
     "MALT",
-    "DeepResearchSwarm",
     "CouncilAsAJudge",
     "InteractiveGroupChat",
     "HeavySwarm",
@@ -288,12 +285,6 @@ class SwarmRouter:
 
             self.setup()
 
-            # Load agents from CSV
-            if self.load_agents_from_csv:
-                self.agents = AgentLoader(
-                    csv_path=self.csv_file_path
-                ).load_agents()
-
             if self.telemetry_enabled:
                 self.agent_config = self.agent_config()
 
@@ -387,7 +378,6 @@ class SwarmRouter:
             "MALT": self._create_malt,
             "CouncilAsAJudge": self._create_council_as_judge,
             "InteractiveGroupChat": self._create_interactive_group_chat,
-            "DeepResearchSwarm": self._create_deep_research_swarm,
             "HiearchicalSwarm": self._create_hierarchical_swarm,
             "MixtureOfAgents": self._create_mixture_of_agents,
             "MajorityVoting": self._create_majority_voting,
@@ -453,16 +443,6 @@ class SwarmRouter:
             max_loops=self.max_loops,
             output_type=self.output_type,
             speaker_function=self.speaker_function,
-        )
-
-    def _create_deep_research_swarm(self, *args, **kwargs):
-        """Factory function for DeepResearchSwarm."""
-        return DeepResearchSwarm(
-            name=self.name,
-            description=self.description,
-            agents=self.agents,
-            max_loops=self.max_loops,
-            output_type=self.output_type,
         )
 
     def _create_hierarchical_swarm(self, *args, **kwargs):

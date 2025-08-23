@@ -15,7 +15,6 @@ The `SwarmRouter` class is a flexible routing system designed to manage differen
 | `HiearchicalSwarm` | Hierarchical organization of agents |
 | `MajorityVoting` | Uses majority voting for decision making |
 | `MALT` | Multi-Agent Language Tasks |
-| `DeepResearchSwarm` | Specialized for deep research tasks |
 | `CouncilAsAJudge` | Council-based judgment system |
 | `InteractiveGroupChat` | Interactive group chat with user participation |
 | `auto` | Automatically selects best swarm type via embedding search |

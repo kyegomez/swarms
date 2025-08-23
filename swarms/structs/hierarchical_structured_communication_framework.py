@@ -1550,7 +1550,7 @@ Always explain your refinements and how they address the evaluation feedback.
             eval_message = f"Evaluate the following content based on {criterion} criterion"
             eval_background = f"Evaluation criterion: {criterion}\nContent to evaluate: {content}"
 
-            structured_msg = self.send_structured_message(
+            self.send_structured_message(
                 sender=self.evaluation_supervisor_name,
                 recipient=(
                     evaluator.agent_name
@@ -1684,7 +1684,7 @@ Always explain your refinements and how they address the evaluation feedback.
         message = f"Generate content for the following task: {task}"
         background = f"Task context: {task}\n\nProvide comprehensive, well-structured content."
 
-        structured_msg = self.send_structured_message(
+        self.send_structured_message(
             sender=self.supervisor_name,
             recipient=(
                 generator.agent_name
@@ -1755,7 +1755,7 @@ Always explain your refinements and how they address the evaluation feedback.
         )
         background = f"Original content: {original_content}\n\nEvaluation feedback:\n{feedback_summary}"
 
-        structured_msg = self.send_structured_message(
+        self.send_structured_message(
             sender=self.supervisor_name,
             recipient=(
                 refiner.agent_name

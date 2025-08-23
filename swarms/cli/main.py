@@ -20,7 +20,7 @@ from swarms.agents.create_agents_from_yaml import (
 )
 from swarms.cli.onboarding_process import OnboardingProcess
 from swarms.structs.agent import Agent
-from swarms.utils.agent_loader import AgentLoader
+from swarms.structs.agent_loader import AgentLoader
 from swarms.utils.formatter import formatter
 from dotenv import load_dotenv
 

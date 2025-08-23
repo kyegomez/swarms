@@ -14,7 +14,6 @@ SwarmType = Literal[
     "auto",
     "MajorityVoting",
     "MALT",
-    "DeepResearchSwarm",
     "CouncilAsAJudge",
     "InteractiveGroupChat",
 ]
