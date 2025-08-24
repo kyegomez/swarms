@@ -1,5 +1,6 @@
 import threading
 import time
+import re
 from typing import Any, Callable, Dict, List, Optional
 
 from rich.console import Console
@@ -13,6 +14,8 @@ from rich.progress import (
 from rich.table import Table
 from rich.text import Text
 from rich.spinner import Spinner
+from rich.markdown import Markdown
+from rich.syntax import Syntax
 
 # Global lock to ensure only a single Rich Live context is active at any moment.
 # Rich's Live render is **not** thread-safe; concurrent Live contexts on the same
@@ -26,6 +29,136 @@ dashboard_live = None
 
 # Create a spinner for loading animation
 spinner = Spinner("dots", style="yellow")
+
+
+class MarkdownOutputHandler:
+    """Custom output handler to render content as markdown with simplified syntax highlighting"""
+    
+    def __init__(self, console: Console):
+        self.console = console
+    
+    def _clean_output(self, output: str) -> str:
+        """Clean up the output for better markdown rendering"""
+        if not output:
+            return ""
+        
+        # Remove log prefixes and timestamps
+        output = re.sub(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| INFO.*?\|.*?\|', '', output)
+        output = re.sub(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| DEBUG.*?\|.*?\|', '', output)
+        output = re.sub(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| WARNING.*?\|.*?\|', '', output)
+        output = re.sub(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| ERROR.*?\|.*?\|', '', output)
+        
+        # Remove spinner characters and progress indicators
+        output = re.sub(r'[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]', '', output)
+        output = re.sub(r'⠋ Processing\.\.\.', '', output)
+        output = re.sub(r'⠙ Processing\.\.\.', '', output)
+        output = re.sub(r'⠹ Processing\.\.\.', '', output)
+        output = re.sub(r'⠸ Processing\.\.\.', '', output)
+        output = re.sub(r'⠼ Processing\.\.\.', '', output)
+        output = re.sub(r'⠴ Processing\.\.\.', '', output)
+        output = re.sub(r'⠦ Processing\.\.\.', '', output)
+        output = re.sub(r'⠧ Processing\.\.\.', '', output)
+        output = re.sub(r'⠇ Processing\.\.\.', '', output)
+        output = re.sub(r'⠏ Processing\.\.\.', '', output)
+        
+        # Remove loop indicators
+        output = re.sub(r'⠋ Loop \d+/\d+', '', output)
+        output = re.sub(r'⠙ Loop \d+/\d+', '', output)
+        output = re.sub(r'⠹ Loop \d+/\d+', '', output)
+        output = re.sub(r'⠸ Loop \d+/\d+', '', output)
+        output = re.sub(r'⠼ Loop \d+/\d+', '', output)
+        output = re.sub(r'⠴ Loop \d+/\d+', '', output)
+        output = re.sub(r'⠦ Loop \d+/\d+', '', output)
+        output = re.sub(r'⠧ Loop \d+/\d+', '', output)
+        output = re.sub(r'⠇ Loop \d+/\d+', '', output)
+        output = re.sub(r'⠏ Loop \d+/\d+', '', output)
+        
+        # Remove any remaining log messages
+        output = re.sub(r'INFO.*?\|.*?\|.*?\|', '', output)
+        output = re.sub(r'DEBUG.*?\|.*?\|.*?\|', '', output)
+        output = re.sub(r'WARNING.*?\|.*?\|.*?\|', '', output)
+        output = re.sub(r'ERROR.*?\|.*?\|.*?\|', '', output)
+        
+        # Clean up extra whitespace and empty lines
+        output = re.sub(r'\n\s*\n\s*\n', '\n\n', output)
+        output = re.sub(r'^\s+', '', output, flags=re.MULTILINE)
+        output = re.sub(r'\s+$', '', output, flags=re.MULTILINE)
+        
+        # Remove any remaining plaintext artifacts
+        output = re.sub(r'Generated content:', '', output)
+        output = re.sub(r'Evaluation result:', '', output)
+        output = re.sub(r'Refined content:', '', output)
+        
+        # Ensure proper markdown formatting
+        if not output.strip().startswith('#'):
+            # If no headers, add some structure
+            lines = output.strip().split('\n')
+            if len(lines) > 0:
+                # Add a header for the first meaningful line
+                first_line = lines[0].strip()
+                if first_line and not first_line.startswith('**'):
+                    output = f"## {first_line}\n\n" + '\n'.join(lines[1:])
+        
+        return output.strip()
+    
+    def render_with_simple_syntax_highlighting(self, content: str) -> list:
+        """Render content with simplified syntax highlighting for code blocks"""
+        # For now, let's just render everything as markdown to ensure it works
+        # We can add code block detection back later if needed
+        return [('markdown', content)]
+    
+    def render_content_parts(self, parts: list) -> list:
+        """Render different content parts with appropriate formatting"""
+        rendered_parts = []
+        
+        for part in parts:
+            if part[0] == 'markdown':
+                # Render markdown
+                try:
+                    md = Markdown(part[1])
+                    rendered_parts.append(md)
+                except Exception:
+                    # Fallback to plain text
+                    rendered_parts.append(Text(part[1]))
+            
+            elif part[0] == 'code':
+                # Code is already rendered as Syntax or Text object
+                rendered_parts.append(part[1])
+        
+        return rendered_parts
+    
+    def render_markdown_output(self, content: str, title: str = "", border_style: str = "blue"):
+        """Render content as markdown with syntax highlighting"""
+        if not content or content.strip() == "":
+            return
+        
+        # Clean up the output
+        cleaned_content = self._clean_output(content)
+        
+        # Render with syntax highlighting
+        try:
+            # Split content into parts (markdown and code blocks)
+            parts = self.render_with_simple_syntax_highlighting(cleaned_content)
+            
+            # Render each part appropriately
+            rendered_parts = self.render_content_parts(parts)
+            
+            # Create a group of rendered parts
+            from rich.console import Group
+            content_group = Group(*rendered_parts)
+            
+            self.console.print(Panel(
+                content_group,
+                title=title,
+                border_style=border_style
+            ))
+        except Exception as e:
+            # Fallback to plain text if rendering fails
+            self.console.print(Panel(
+                cleaned_content,
+                title=title,
+                border_style="yellow"
+            ))
 
 
 def choose_random_color():
@@ -50,9 +183,12 @@ class Formatter:
     A class for formatting and printing rich text to the console.
     """
 
-    def __init__(self):
+    def __init__(self, markdown: bool = True):
         """
         Initializes the Formatter with a Rich Console instance.
+
+        Args:
+            markdown (bool): Whether to enable markdown output rendering. Defaults to True.
         """
         self.console = Console()
         self._dashboard_live = None
@@ -69,6 +205,29 @@ class Formatter:
             "⠏",
         ]
         self._spinner_idx = 0
+        self.markdown = markdown
+        
+        # Initialize markdown output handler if enabled
+        if self.markdown:
+            self.markdown_handler = MarkdownOutputHandler(self.console)
+        else:
+            self.markdown_handler = None
+    
+    def enable_markdown(self):
+        """Enable markdown output rendering"""
+        if not self.markdown:
+            self.markdown = True
+            self.markdown_handler = MarkdownOutputHandler(self.console)
+    
+    def disable_markdown(self):
+        """Disable markdown output rendering"""
+        if self.markdown:
+            self.markdown = False
+            self.markdown_handler = None
+    
+    def is_markdown_enabled(self) -> bool:
+        """Check if markdown output is enabled"""
+        return self.markdown
 
     def _get_status_with_loading(self, status: str) -> Text:
         """
@@ -142,12 +301,36 @@ class Formatter:
         if not isinstance(content, str):
             content = str(content)
 
-        try:
-            self._print_panel(content, title, style)
-        except Exception:
-            # Fallback to basic printing if panel fails
-            print(f"\n{title}:")
-            print(content)
+        # Use markdown rendering if enabled
+        if self.markdown and self.markdown_handler:
+            self.markdown_handler.render_markdown_output(content, title, style)
+        else:
+            # Fallback to original panel printing
+            try:
+                self._print_panel(content, title, style)
+            except Exception:
+                # Fallback to basic printing if panel fails
+                print(f"\n{title}:")
+                print(content)
+    
+    def print_markdown(
+        self,
+        content: str,
+        title: str = "",
+        border_style: str = "blue",
+    ) -> None:
+        """Print content as markdown with syntax highlighting.
+
+        Args:
+            content (str): The content to display as markdown
+            title (str): The title of the panel
+            border_style (str): The border style for the panel
+        """
+        if self.markdown_handler:
+            self.markdown_handler.render_markdown_output(content, title, border_style)
+        else:
+            # Fallback to regular panel if markdown is disabled
+            self.print_panel(content, title, border_style)
 
     def print_table(
         self, title: str, data: Dict[str, List[str]]
@@ -397,7 +580,7 @@ class Formatter:
     def print_agent_dashboard(
         self,
         agents_data: List[Dict[str, Any]],
-        title: str = "ConcurrentWorkflow Dashboard",
+        title: str = "Concurrent Workflow Dashboard",
         is_final: bool = False,
     ) -> None:
         """
@@ -440,4 +623,5 @@ class Formatter:
             self._dashboard_live = None
 
 
-formatter = Formatter()
+# Global formatter instance with markdown output enabled by default
+formatter = Formatter(markdown=True)
