@@ -195,12 +195,13 @@ class Formatter:
     A class for formatting and printing rich text to the console.
     """
 
-    def __init__(self, markdown: bool = True):
+    def __init__(self, md: bool = True):
         """
         Initializes the Formatter with a Rich Console instance.
 
         Args:
-            markdown (bool): Whether to enable markdown output rendering. Defaults to True.
+            md (bool): Enable markdown output rendering. Defaults to True.
+                If True but rich.markdown is not available, markdown will be disabled.
         """
         self.console = Console()
         self._dashboard_live = None
@@ -217,29 +218,15 @@ class Formatter:
             "⠏",
         ]
         self._spinner_idx = 0
-        self.markdown = markdown and RICH_MARKDOWN_AVAILABLE
         
-        # Initialize markdown output handler if enabled and available
-        if self.markdown and RICH_MARKDOWN_AVAILABLE:
-            self.markdown_handler = MarkdownOutputHandler(self.console)
-        else:
-            self.markdown_handler = None
+        # Set markdown capability based on availability and user preference
+        self._markdown_enabled = md and RICH_MARKDOWN_AVAILABLE
+        self.markdown_handler = MarkdownOutputHandler(self.console) if self._markdown_enabled else None
     
-    def enable_markdown(self):
-        """Enable markdown output rendering"""
-        if not self.markdown:
-            self.markdown = True
-            self.markdown_handler = MarkdownOutputHandler(self.console)
-    
-    def disable_markdown(self):
-        """Disable markdown output rendering"""
-        if self.markdown:
-            self.markdown = False
-            self.markdown_handler = None
-    
-    def is_markdown_enabled(self) -> bool:
+    @property
+    def markdown_enabled(self) -> bool:
         """Check if markdown output is enabled"""
-        return self.markdown
+        return self._markdown_enabled
 
     def _get_status_with_loading(self, status: str) -> Text:
         """
@@ -314,7 +301,7 @@ class Formatter:
             content = str(content)
 
         # Use markdown rendering if enabled
-        if self.markdown and self.markdown_handler:
+        if self._markdown_enabled and self.markdown_handler:
             self.markdown_handler.render_markdown_output(content, title, style)
         else:
             # Fallback to original panel printing
@@ -430,7 +417,7 @@ class Formatter:
     def print_streaming_panel(
         self,
         streaming_response,
-        title: str = "🤖 Agent Streaming Response",
+        title: str = "Agent Streaming Response",
         style: str = None,
         collect_chunks: bool = False,
         on_chunk_callback: Optional[Callable] = None,
@@ -636,4 +623,4 @@ class Formatter:
 
 
 # Global formatter instance with markdown output enabled by default
-formatter = Formatter(markdown=True)
+formatter = Formatter(md=True)
