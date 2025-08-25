@@ -1,14 +1,15 @@
 import os
-import yaml
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
 from concurrent.futures import (
     ThreadPoolExecutor,
-    as_completed,
     TimeoutError,
+    as_completed,
 )
-from pydantic import BaseModel, Field, field_validator
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+
+import yaml
 from loguru import logger
+from pydantic import BaseModel, Field, field_validator
 
 # Type checking imports to avoid circular dependency
 if TYPE_CHECKING:
@@ -407,14 +408,39 @@ class AgentLoader:
 # Convenience functions
 def load_agent_from_markdown(file_path: str, **kwargs) -> "Agent":
     """
-    Load a single agent from a markdown file with Claude Code YAML frontmatter format.
+    Load a single agent from a markdown file using the Claude Code YAML frontmatter format.
+
+    This function provides a simple interface for loading an agent configuration
+    from a markdown file. It supports all configuration overrides accepted by the
+    underlying `AgentLoader` and agent class.
 
     Args:
-        file_path: Path to markdown file with YAML frontmatter
-        **kwargs: Additional configuration overrides
+        file_path (str): Path to the markdown file containing YAML frontmatter
+            with agent configuration.
+        **kwargs: Optional keyword arguments to override agent configuration
+            parameters. Common options include:
+                - max_loops (int): Maximum number of reasoning loops.
+                - autosave (bool): Enable automatic state saving.
+                - dashboard (bool): Enable dashboard monitoring.
+                - verbose (bool): Enable verbose logging.
+                - dynamic_temperature_enabled (bool): Enable dynamic temperature.
+                - saved_state_path (str): Path for saving agent state.
+                - user_name (str): User identifier.
+                - retry_attempts (int): Number of retry attempts.
+                - context_length (int): Maximum context length.
+                - return_step_meta (bool): Return step metadata.
+                - output_type (str): Output format type.
+                - auto_generate_prompt (bool): Auto-generate prompts.
+                - artifacts_on (bool): Enable artifacts.
+                - streaming_on (bool): Enable streaming output.
+                - mcp_url (str): MCP server URL if needed.
 
     Returns:
-        Configured Agent instance
+        Agent: Configured Agent instance loaded from the markdown file.
+
+    Example:
+        >>> agent = load_agent_from_markdown("finance_advisor.md", max_loops=3, verbose=True)
+        >>> response = agent.run("What is the best investment strategy for 2024?")
     """
     # Lazy import to avoid circular dependency
 
@@ -429,16 +455,36 @@ def load_agents_from_markdown(
     **kwargs,
 ) -> List["Agent"]:
     """
-    Load multiple agents from markdown files with Claude Code YAML frontmatter format.
+    Load multiple agents from markdown files using the Claude Code YAML frontmatter format.
+
+    This function supports loading agents from a list of markdown files or from all
+    markdown files in a directory. It can process files concurrently for faster loading,
+    and allows configuration overrides for all loaded agents.
 
     Args:
-        file_paths: Directory path or list of file paths with YAML frontmatter
-        concurrent: Whether to use concurrent processing for multiple files
-        max_file_size_mb: Maximum file size in MB to prevent memory issues
-        **kwargs: Additional configuration overrides
+        file_paths (Union[str, List[str]]): Either a directory path containing markdown
+            files or a list of markdown file paths to load.
+        concurrent (bool, optional): If True, enables concurrent processing for faster
+            loading of multiple files. Defaults to True.
+        max_file_size_mb (float, optional): Maximum file size (in MB) for each markdown
+            file to prevent memory issues. Files exceeding this size will be skipped.
+            Defaults to 10.0.
+        **kwargs: Optional keyword arguments to override agent configuration
+            parameters for all loaded agents. See `load_agent_from_markdown` for
+            available options.
 
     Returns:
-        List of configured Agent instances
+        List[Agent]: List of configured Agent instances loaded from the markdown files.
+
+    Example:
+        >>> agents = load_agents_from_markdown(
+        ...     ["agent1.md", "agent2.md"],
+        ...     concurrent=True,
+        ...     max_loops=2,
+        ...     verbose=True
+        ... )
+        >>> for agent in agents:
+        ...     print(agent.name)
     """
     # Lazy import to avoid circular dependency
 

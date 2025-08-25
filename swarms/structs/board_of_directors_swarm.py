@@ -19,7 +19,6 @@ Flow:
 6. All context and conversation history is preserved throughout the process
 """
 
-import asyncio
 import json
 import os
 import re
@@ -34,7 +33,6 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
-from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import list_all_agents
 from swarms.utils.history_output_formatter import (
@@ -52,23 +50,6 @@ board_logger = initialize_logger(
 # ============================================================================
 # BOARD OF DIRECTORS CONFIGURATION
 # ============================================================================
-
-
-class BoardFeatureStatus(str, Enum):
-    """Enumeration of Board of Directors feature status.
-
-    This enum defines the possible states of the Board of Directors feature
-    within the Swarms Framework.
-
-    Attributes:
-        ENABLED: Feature is explicitly enabled
-        DISABLED: Feature is explicitly disabled
-        AUTO: Feature state is determined automatically
-    """
-
-    ENABLED = "enabled"
-    DISABLED = "disabled"
-    AUTO = "auto"
 
 
 class BoardConfigModel(BaseModel):
@@ -90,12 +71,6 @@ class BoardConfigModel(BaseModel):
         auto_fallback_to_director: Automatically fall back to Director mode if Board fails
         custom_board_templates: Custom board templates for different use cases
     """
-
-    # Feature control
-    board_feature_enabled: bool = Field(
-        default=False,
-        description="Whether the Board of Directors feature is enabled globally.",
-    )
 
     # Board composition
     default_board_size: int = Field(
@@ -201,9 +176,6 @@ class BoardConfig:
             ):
                 self._load_from_file()
 
-            # Override with environment variables
-            self._load_from_environment()
-
             # Override with explicit config data
             if self.config_data:
                 self._load_from_dict(self.config_data)
@@ -236,62 +208,6 @@ class BoardConfig:
             )
             raise
 
-    def _load_from_environment(self) -> None:
-        """
-        Load configuration from environment variables.
-
-        This method maps environment variables to configuration parameters
-        and handles type conversion appropriately.
-        """
-        env_mappings = {
-            "SWARMS_BOARD_FEATURE_ENABLED": "board_feature_enabled",
-            "SWARMS_BOARD_DEFAULT_SIZE": "default_board_size",
-            "SWARMS_BOARD_DECISION_THRESHOLD": "decision_threshold",
-            "SWARMS_BOARD_ENABLE_VOTING": "enable_voting",
-            "SWARMS_BOARD_ENABLE_CONSENSUS": "enable_consensus",
-            "SWARMS_BOARD_DEFAULT_MODEL": "default_board_model",
-            "SWARMS_BOARD_VERBOSE_LOGGING": "verbose_logging",
-            "SWARMS_BOARD_MAX_MEETING_DURATION": "max_board_meeting_duration",
-            "SWARMS_BOARD_AUTO_FALLBACK": "auto_fallback_to_director",
-        }
-
-        for env_var, config_key in env_mappings.items():
-            value = os.getenv(env_var)
-            if value is not None:
-                try:
-                    # Convert string values to appropriate types
-                    if config_key in [
-                        "board_feature_enabled",
-                        "enable_voting",
-                        "enable_consensus",
-                        "verbose_logging",
-                        "auto_fallback_to_director",
-                    ]:
-                        converted_value = value.lower() in [
-                            "true",
-                            "1",
-                            "yes",
-                            "on",
-                        ]
-                    elif config_key in [
-                        "default_board_size",
-                        "max_board_meeting_duration",
-                    ]:
-                        converted_value = int(value)
-                    elif config_key in ["decision_threshold"]:
-                        converted_value = float(value)
-                    else:
-                        converted_value = value
-
-                    setattr(self.config, config_key, converted_value)
-                    logger.debug(
-                        f"Loaded {config_key} from environment: {converted_value}"
-                    )
-                except (ValueError, TypeError) as e:
-                    logger.warning(
-                        f"Failed to parse environment variable {env_var}: {e}"
-                    )
-
     def _load_from_dict(self, config_dict: Dict[str, Any]) -> None:
         """
         Load configuration from dictionary.
@@ -311,15 +227,6 @@ class BoardConfig:
                     raise ValueError(
                         f"Invalid configuration value for {key}: {e}"
                     )
-
-    def is_enabled(self) -> bool:
-        """
-        Check if the Board of Directors feature is enabled.
-
-        Returns:
-            bool: True if the feature is enabled, False otherwise
-        """
-        return self.config.board_feature_enabled
 
     def get_config(self) -> BoardConfigModel:
         """
@@ -560,64 +467,6 @@ def get_board_config(
         _board_config = BoardConfig(config_file_path=config_file_path)
 
     return _board_config
-
-
-def enable_board_feature(
-    config_file_path: Optional[str] = None,
-) -> None:
-    """
-    Enable the Board of Directors feature globally.
-
-    This function enables the Board of Directors feature and saves the configuration
-    to the specified file path.
-
-    Args:
-        config_file_path: Optional path to save the configuration
-    """
-    config = get_board_config(config_file_path)
-    config.update_config({"board_feature_enabled": True})
-
-    if config_file_path:
-        config.save_config(config_file_path)
-
-    logger.info("Board of Directors feature enabled")
-
-
-def disable_board_feature(
-    config_file_path: Optional[str] = None,
-) -> None:
-    """
-    Disable the Board of Directors feature globally.
-
-    This function disables the Board of Directors feature and saves the configuration
-    to the specified file path.
-
-    Args:
-        config_file_path: Optional path to save the configuration
-    """
-    config = get_board_config(config_file_path)
-    config.update_config({"board_feature_enabled": False})
-
-    if config_file_path:
-        config.save_config(config_file_path)
-
-    logger.info("Board of Directors feature disabled")
-
-
-def is_board_feature_enabled(
-    config_file_path: Optional[str] = None,
-) -> bool:
-    """
-    Check if the Board of Directors feature is enabled.
-
-    Args:
-        config_file_path: Optional path to configuration file
-
-    Returns:
-        bool: True if the feature is enabled, False otherwise
-    """
-    config = get_board_config(config_file_path)
-    return config.is_enabled()
 
 
 def create_default_config_file(
@@ -953,7 +802,7 @@ class BoardSpec(BaseModel):
     )
 
 
-class BoardOfDirectorsSwarm(BaseSwarm):
+class BoardOfDirectorsSwarm:
     """
     A hierarchical swarm of agents with a Board of Directors that orchestrates tasks.
 
@@ -1029,13 +878,8 @@ class BoardOfDirectorsSwarm(BaseSwarm):
         Raises:
             ValueError: If critical requirements are not met during initialization
         """
-        super().__init__(
-            name=name,
-            description=description,
-            agents=agents,
-        )
-
         self.name = name
+        self.description = description
         self.board_members = board_members or []
         self.agents = agents or []
         self.max_loops = max_loops
@@ -1047,9 +891,8 @@ class BoardOfDirectorsSwarm(BaseSwarm):
         self.decision_threshold = decision_threshold
         self.enable_voting = enable_voting
         self.enable_consensus = enable_consensus
-        self.max_workers = max_workers or min(
-            32, (os.cpu_count() or 1) + 4
-        )
+        self.max_workers = max_workers
+        self.max_workers = os.cpu_count()
 
         # Initialize the swarm
         self._init_board_swarm()
@@ -1256,14 +1099,6 @@ You should be thorough, organized, and detail-oriented in your documentation."""
             if self.verbose:
                 board_logger.info(
                     f"🔍 Running reliability checks for swarm: {self.name}"
-                )
-
-            # Check if Board of Directors feature is enabled
-            board_config = get_board_config()
-            if not board_config.is_enabled():
-                raise ValueError(
-                    "Board of Directors feature is not enabled. Please enable it using "
-                    "enable_board_feature() or set SWARMS_BOARD_FEATURE_ENABLED=true environment variable."
                 )
 
             if not self.agents or len(self.agents) == 0:
@@ -1686,34 +1521,6 @@ Please provide your response in the following format:
             error_msg = f"❌ Failed to run Board of Directors swarm: {str(e)}\n🔍 Traceback: {traceback.format_exc()}"
             board_logger.error(error_msg)
             raise
-
-    async def arun(
-        self,
-        task: str,
-        img: Optional[str] = None,
-        *args: Any,
-        **kwargs: Any,
-    ) -> Any:
-        """
-        Run the Board of Directors swarm asynchronously.
-
-        This method provides an asynchronous interface for running the swarm,
-        allowing for non-blocking execution in async contexts.
-
-        Args:
-            task: The task to be executed
-            img: Optional image input
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
-
-        Returns:
-            Any: The final result of the swarm execution
-        """
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            None, self.run, task, img, *args, **kwargs
-        )
-        return result
 
     def _generate_board_feedback(self, outputs: List[Any]) -> str:
         """

@@ -20,8 +20,11 @@ from swarms.agents.create_agents_from_yaml import (
 )
 from swarms.cli.onboarding_process import OnboardingProcess
 from swarms.structs.agent import Agent
-from swarms.utils.agent_loader import AgentLoader
+from swarms.structs.agent_loader import AgentLoader
 from swarms.utils.formatter import formatter
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Initialize console with custom styling
 console = Console()
@@ -45,12 +48,14 @@ COLORS = {
 }
 
 ASCII_ART = r"""
-  _________                                     
- /   _____/_  _  _______ _______  _____   ______
- \_____  \\ \/ \/ /\__  \\_  __ \/     \ /  ___/
- /        \\     /  / __ \|  | \/  Y Y  \\___ \ 
-/_______  / \/\_/  (____  /__|  |__|_|  /____  >
-        \/              \/            \/     \/                                
+  █████████  █████   ███   █████   █████████   ███████████   ██████   ██████  █████████ 
+ ███░░░░░███░░███   ░███  ░░███   ███░░░░░███ ░░███░░░░░███ ░░██████ ██████  ███░░░░░███
+░███    ░░░  ░███   ░███   ░███  ░███    ░███  ░███    ░███  ░███░█████░███ ░███    ░░░ 
+░░█████████  ░███   ░███   ░███  ░███████████  ░██████████   ░███░░███ ░███ ░░█████████ 
+ ░░░░░░░░███ ░░███  █████  ███   ░███░░░░░███  ░███░░░░░███  ░███ ░░░  ░███  ░░░░░░░░███
+ ███    ░███  ░░░█████░█████░    ░███    ░███  ░███    ░███  ░███      ░███  ███    ░███
+░░█████████     ░░███ ░░███      █████   █████ █████   █████ █████     █████░░█████████ 
+ ░░░░░░░░░       ░░░   ░░░      ░░░░░   ░░░░░ ░░░░░   ░░░░░ ░░░░░     ░░░░░  ░░░░░░░░░                                 
 """
 
 
@@ -68,7 +73,7 @@ def show_ascii_art():
     panel = Panel(
         Text(ASCII_ART, style=f"bold {COLORS['primary']}"),
         border_style=COLORS["secondary"],
-        title="[bold]Welcome to Swarms CLI[/bold]",
+        title="[bold]Welcome to the Swarms CLI[/bold]",
         subtitle="[dim]swarms.ai[/dim]",
     )
     console.print(panel)
@@ -395,7 +400,14 @@ def check_python_version() -> tuple[bool, str, str]:
 
 
 def check_api_keys() -> tuple[bool, str, str]:
-    """Check if common API keys are set."""
+    """
+    Check if at least one common API key is set in the environment variables.
+
+    Returns:
+        tuple: (True, "✓", message) if at least one API key is set,
+               (False, "✗", message) otherwise.
+    """
+
     api_keys = {
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
         "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY"),
@@ -403,9 +415,16 @@ def check_api_keys() -> tuple[bool, str, str]:
         "COHERE_API_KEY": os.getenv("COHERE_API_KEY"),
     }
 
-    set_keys = [key for key, value in api_keys.items() if value]
-    if set_keys:
-        return True, "✓", f"API keys found: {', '.join(set_keys)}"
+    # At least one key must be present and non-empty
+    if any(value for value in api_keys.values()):
+        present_keys = [
+            key for key, value in api_keys.items() if value
+        ]
+        return (
+            True,
+            "✓",
+            f"At least one API key found: {', '.join(present_keys)}",
+        )
     else:
         return (
             False,

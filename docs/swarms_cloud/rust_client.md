@@ -233,7 +233,6 @@ Available swarm types for different execution patterns.
 | `Auto` | Automatically selects the best swarm type |
 | `MajorityVoting` | Agents vote on decisions |
 | `Malt` | Multi-Agent Language Tasks |
-| `DeepResearchSwarm` | Specialized for deep research tasks |
 
 ## Detailed Examples
 

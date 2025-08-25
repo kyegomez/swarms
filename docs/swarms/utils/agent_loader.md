@@ -18,7 +18,7 @@ The AgentLoader enables you to:
 The AgentLoader is included with the Swarms framework:
 
 ```python
-from swarms.utils import AgentLoader, load_agent_from_markdown, load_agents_from_markdown
+from swarms import AgentLoader, load_agent_from_markdown, load_agents_from_markdown
 ```
 
 ## Markdown Format
@@ -99,7 +99,7 @@ result = workflow.run(task)
 For more advanced usage, use the `AgentLoader` class directly:
 
 ```python
-from swarms.utils import AgentLoader
+from swarms import AgentLoader
 
 # Initialize loader
 loader = AgentLoader()
@@ -209,7 +209,7 @@ response = agent.run(
 The AgentLoader provides comprehensive error handling:
 
 ```python
-from swarms.utils import AgentLoader
+from swarms import AgentLoader
 
 loader = AgentLoader()
 

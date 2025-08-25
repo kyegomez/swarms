@@ -1,7 +1,7 @@
 ---
 name: FinanceAdvisor
 description: Expert financial advisor for investment and budgeting guidance
-model_name: gpt-4o
+model_name: claude-sonnet-4-20250514
 temperature: 0.7
 max_loops: 1
 ---

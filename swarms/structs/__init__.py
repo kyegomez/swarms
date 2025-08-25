@@ -1,18 +1,15 @@
 from swarms.structs.agent import Agent
 from swarms.structs.agent_builder import AgentsBuilder
+from swarms.structs.agent_rearrange import AgentRearrange, rearrange
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.batch_agent_execution import batch_agent_execution
-from swarms.structs.board_of_directors_swarm import (
-    BoardOfDirectorsSwarm,
-)
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.cron_job import CronJob
 from swarms.structs.de_hallucination_swarm import DeHallucinationSwarm
-from swarms.structs.deep_research_swarm import DeepResearchSwarm
 from swarms.structs.graph_workflow import (
     Edge,
     GraphWorkflow,
@@ -24,8 +21,8 @@ from swarms.structs.groupchat import (
     expertise_based,
 )
 from swarms.structs.heavy_swarm import HeavySwarm
-from swarms.structs.hierarchical_swarm import HierarchicalSwarm
-from swarms.structs.hybrid_hierarchical_peer_swarm import (
+from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hybrid_hiearchical_peer_swarm import (
     HybridHierarchicalClusterSwarm,
 )
 from swarms.structs.interactive_groupchat import (
@@ -66,7 +63,6 @@ from swarms.structs.multi_agent_exec import (
     run_single_agent,
 )
 from swarms.structs.multi_agent_router import MultiAgentRouter
-from swarms.structs.rearrange import AgentRearrange, rearrange
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
@@ -82,7 +78,7 @@ from swarms.structs.stopping_conditions import (
     check_stopped,
     check_success,
 )
-from swarms.structs.swarm_arange import SwarmRearrange
+from swarms.structs.swarm_rearrange import SwarmRearrange
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmType,
@@ -107,32 +103,11 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
-from swarms.structs.hierarchical_structured_communication_framework import (
-    HierarchicalStructuredCommunicationFramework,
-    HierarchicalStructuredCommunicationGenerator,
-    HierarchicalStructuredCommunicationEvaluator,
-    HierarchicalStructuredCommunicationRefiner,
-    HierarchicalStructuredCommunicationSupervisor,
-    StructuredMessage,
-    HierarchicalOrder,
-    EvaluationResult,
-    StructuredMessageSchema,
-    EvaluationResultSchema,
-    GeneratorResponseSchema,
-    EvaluatorResponseSchema,
-    RefinerResponseSchema,
-    CommunicationType,
-    AgentRole,
-)
-
-# Convenience alias(fixes old code if any was left out in the wild)
-HierarchicalStructuredCommunicationSwarm = HierarchicalStructuredCommunicationFramework
 
 __all__ = [
     "Agent",
     "BaseStructure",
     "BaseSwarm",
-    "BoardOfDirectorsSwarm",
     "ConcurrentWorkflow",
     "Conversation",
     "GroupChat",
@@ -188,7 +163,6 @@ __all__ = [
     "AgentsBuilder",
     "MALT",
     "DeHallucinationSwarm",
-    "DeepResearchSwarm",
     "HybridHierarchicalClusterSwarm",
     "get_agents_info",
     "get_swarms_info",
@@ -206,22 +180,6 @@ __all__ = [
     "HierarchicalSwarm",
     "HeavySwarm",
     "CronJob",
-    "HierarchicalStructuredCommunicationSwarm",
-    "HierarchicalStructuredCommunicationGenerator",
-    "HierarchicalStructuredCommunicationEvaluator",
-    "HierarchicalStructuredCommunicationRefiner",
-    "HierarchicalStructuredCommunicationSupervisor",
-    "StructuredMessage",
-    "HierarchicalOrder",
-    "EvaluationResult",
-    "StructuredMessageSchema",
-    "EvaluationResultSchema",
-    "GeneratorResponseSchema",
-    "EvaluatorResponseSchema",
-    "RefinerResponseSchema",
-    "CommunicationType",
-    "AgentRole",
-    # Stopping conditions
     "check_done",
     "check_finished",
     "check_complete",

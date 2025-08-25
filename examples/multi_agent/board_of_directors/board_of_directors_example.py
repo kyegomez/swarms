@@ -10,22 +10,7 @@ To run this example:
 2. Run: python examples/multi_agent/board_of_directors/board_of_directors_example.py
 """
 
-import os
-import sys
 from typing import List
-
-# Add the root directory to the Python path if running from examples directory
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if "examples" in current_dir:
-    root_dir = current_dir
-    while os.path.basename(
-        root_dir
-    ) != "examples" and root_dir != os.path.dirname(root_dir):
-        root_dir = os.path.dirname(root_dir)
-    if os.path.basename(root_dir) == "examples":
-        root_dir = os.path.dirname(root_dir)
-        if root_dir not in sys.path:
-            sys.path.insert(0, root_dir)
 
 from swarms.structs.board_of_directors_swarm import (
     BoardOfDirectorsSwarm,
@@ -37,7 +22,6 @@ from swarms.structs.agent import Agent
 
 def create_board_members() -> List[BoardMember]:
     """Create board members with specific roles."""
-
     chairman = Agent(
         agent_name="Chairman",
         agent_description="Executive Chairman with strategic vision",
@@ -86,7 +70,6 @@ def create_board_members() -> List[BoardMember]:
 
 def create_worker_agents() -> List[Agent]:
     """Create worker agents for the swarm."""
-
     researcher = Agent(
         agent_name="Researcher",
         agent_description="Research analyst for data analysis",
@@ -114,9 +97,8 @@ def create_worker_agents() -> List[Agent]:
     return [researcher, developer, marketer]
 
 
-def run_board_example() -> None:
+def run_board_example() -> str:
     """Run a Board of Directors example."""
-
     # Create board members and worker agents
     board_members = create_board_members()
     worker_agents = create_worker_agents()
@@ -127,7 +109,7 @@ def run_board_example() -> None:
         board_members=board_members,
         agents=worker_agents,
         max_loops=2,
-        verbose=True,
+        verbose=False,
         decision_threshold=0.6,
     )
 
@@ -137,66 +119,17 @@ def run_board_example() -> None:
     Include market research, technical planning, marketing strategy, and financial projections.
     """
 
-    # Execute the task
-    result = board_swarm.run(task=task)
-
-    print("Task completed successfully!")
-    print(f"Result: {result}")
-
-
-def run_simple_example() -> None:
-    """Run a simple Board of Directors example."""
-
-    # Create simple agents
-    analyst = Agent(
-        agent_name="Analyst",
-        agent_description="Data analyst",
-        model_name="gpt-4o-mini",
-        max_loops=1,
-    )
-
-    writer = Agent(
-        agent_name="Writer",
-        agent_description="Content writer",
-        model_name="gpt-4o-mini",
-        max_loops=1,
-    )
-
-    # Create swarm with default settings
-    board_swarm = BoardOfDirectorsSwarm(
-        name="Simple_Board",
-        agents=[analyst, writer],
-        verbose=True,
-    )
-
-    # Execute simple task
-    task = (
-        "Analyze current market trends and create a summary report."
-    )
-    result = board_swarm.run(task=task)
-
-    print("Simple example completed!")
-    print(f"Result: {result}")
+    # Execute the task and return result
+    return board_swarm.run(task=task)
 
 
 def main() -> None:
-    """Main function to run the examples."""
-
-    if not os.getenv("OPENAI_API_KEY"):
-        print(
-            "Warning: OPENAI_API_KEY not set. Example may not work."
-        )
-        return
 
     try:
-        print("Running simple Board of Directors example...")
-        run_simple_example()
-
-        print("\nRunning comprehensive Board of Directors example...")
-        run_board_example()
-
-    except Exception as e:
-        print(f"Error: {e}")
+        result = run_board_example()
+        return result
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":
