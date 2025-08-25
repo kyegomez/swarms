@@ -15,15 +15,8 @@ from rich.table import Table
 from rich.text import Text
 from rich.spinner import Spinner
 
-# Optional imports for markdown functionality
-try:
-    from rich.markdown import Markdown
-    from rich.syntax import Syntax
-    RICH_MARKDOWN_AVAILABLE = True
-except ImportError:
-    RICH_MARKDOWN_AVAILABLE = False
-    Markdown = None
-    Syntax = None
+from rich.markdown import Markdown
+from rich.syntax import Syntax
 
 # Global lock to ensure only a single Rich Live context is active at any moment.
 # Rich's Live render is **not** thread-safe; concurrent Live contexts on the same
@@ -123,12 +116,8 @@ class MarkdownOutputHandler:
             if part[0] == 'markdown':
                 # Render markdown
                 try:
-                    if RICH_MARKDOWN_AVAILABLE and Markdown:
-                        md = Markdown(part[1])
-                        rendered_parts.append(md)
-                    else:
-                        # Fallback to plain text if rich.markdown not available
-                        rendered_parts.append(Text(part[1]))
+                    md = Markdown(part[1])
+                    rendered_parts.append(md)
                 except Exception:
                     # Fallback to plain text
                     rendered_parts.append(Text(part[1]))
@@ -201,7 +190,6 @@ class Formatter:
 
         Args:
             md (bool): Enable markdown output rendering. Defaults to True.
-                If True but rich.markdown is not available, markdown will be disabled.
         """
         self.console = Console()
         self._dashboard_live = None
@@ -219,14 +207,8 @@ class Formatter:
         ]
         self._spinner_idx = 0
         
-        # Set markdown capability based on availability and user preference
-        self._markdown_enabled = md and RICH_MARKDOWN_AVAILABLE
-        self.markdown_handler = MarkdownOutputHandler(self.console) if self._markdown_enabled else None
-    
-    @property
-    def markdown_enabled(self) -> bool:
-        """Check if markdown output is enabled"""
-        return self._markdown_enabled
+        # Set markdown capability based on user preference
+        self.markdown_handler = MarkdownOutputHandler(self.console) if md else None
 
     def _get_status_with_loading(self, status: str) -> Text:
         """
@@ -301,7 +283,7 @@ class Formatter:
             content = str(content)
 
         # Use markdown rendering if enabled
-        if self._markdown_enabled and self.markdown_handler:
+        if self.markdown_handler:
             self.markdown_handler.render_markdown_output(content, title, style)
         else:
             # Fallback to original panel printing
