@@ -592,7 +592,7 @@ class Formatter:
     def print_agent_dashboard(
         self,
         agents_data: List[Dict[str, Any]],
-        title: str = "🤖 Agent Dashboard",
+        title: str = "Concurrent Workflow Dashboard",
         is_final: bool = False,
     ) -> None:
         """
