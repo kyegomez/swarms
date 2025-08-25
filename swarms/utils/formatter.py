@@ -14,8 +14,16 @@ from rich.progress import (
 from rich.table import Table
 from rich.text import Text
 from rich.spinner import Spinner
-from rich.markdown import Markdown
-from rich.syntax import Syntax
+
+# Optional imports for markdown functionality
+try:
+    from rich.markdown import Markdown
+    from rich.syntax import Syntax
+    RICH_MARKDOWN_AVAILABLE = True
+except ImportError:
+    RICH_MARKDOWN_AVAILABLE = False
+    Markdown = None
+    Syntax = None
 
 # Global lock to ensure only a single Rich Live context is active at any moment.
 # Rich's Live render is **not** thread-safe; concurrent Live contexts on the same
@@ -34,7 +42,7 @@ spinner = Spinner("dots", style="yellow")
 class MarkdownOutputHandler:
     """Custom output handler to render content as markdown with simplified syntax highlighting"""
     
-    def __init__(self, console: Console):
+    def __init__(self, console: "Console"):
         self.console = console
     
     def _clean_output(self, output: str) -> str:
@@ -115,8 +123,12 @@ class MarkdownOutputHandler:
             if part[0] == 'markdown':
                 # Render markdown
                 try:
-                    md = Markdown(part[1])
-                    rendered_parts.append(md)
+                    if RICH_MARKDOWN_AVAILABLE and Markdown:
+                        md = Markdown(part[1])
+                        rendered_parts.append(md)
+                    else:
+                        # Fallback to plain text if rich.markdown not available
+                        rendered_parts.append(Text(part[1]))
                 except Exception:
                     # Fallback to plain text
                     rendered_parts.append(Text(part[1]))
@@ -205,10 +217,10 @@ class Formatter:
             "⠏",
         ]
         self._spinner_idx = 0
-        self.markdown = markdown
+        self.markdown = markdown and RICH_MARKDOWN_AVAILABLE
         
-        # Initialize markdown output handler if enabled
-        if self.markdown:
+        # Initialize markdown output handler if enabled and available
+        if self.markdown and RICH_MARKDOWN_AVAILABLE:
             self.markdown_handler = MarkdownOutputHandler(self.console)
         else:
             self.markdown_handler = None
@@ -580,7 +592,7 @@ class Formatter:
     def print_agent_dashboard(
         self,
         agents_data: List[Dict[str, Any]],
-        title: str = "Concurrent Workflow Dashboard",
+        title: str = "🤖 Agent Dashboard",
         is_final: bool = False,
     ) -> None:
         """
