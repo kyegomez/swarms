@@ -1,23 +1,9 @@
-import os
-
-from swarm_models import OpenAIChat
 from swarms import Agent
 from fluid_api_agent.main import fluid_api_request
 from dotenv import load_dotenv
 
 
 load_dotenv()
-
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("GROQ_API_KEY")
-
-# Model
-model = OpenAIChat(
-    openai_api_base="https://api.groq.com/openai/v1",
-    openai_api_key=api_key,
-    model_name="llama-3.1-70b-versatile",
-    temperature=0.1,
-)
 
 
 def omni_api(task: str) -> str:
@@ -98,22 +84,11 @@ agent = Agent(
     agent_name="API-Finance-Expert",
     agent_description="An API expert agent specialized in financial analysis and investment planning.",
     system_prompt=API_AGENT_SYS_PROMPT,
-    max_loops=1,  # Allow a few iterations for refining outputs
-    llm=model,
-    dynamic_temperature_enabled=True,  # Enable temperature adjustments for optimal creativity
-    user_name="swarms_corp",
-    retry_attempts=5,  # Retry API calls to ensure reliability
-    context_length=8192,  # Context length for comprehensive analysis
-    return_step_meta=False,
-    output_type="str",  # Output tables or results in markdown format
-    auto_generate_prompt=False,  # Use the custom system prompt for guidance
-    max_tokens=4000,
-    saved_state_path="api_finance_expert.json",
-    tools=[omni_api],  # Integrate the omni_api tool
+    model_name="gpt-4o-mini",
+    tools=[omni_api],
 )
 
 # Run the agent with a financial task
 agent.run(
-    "Fetch the current price for eth",
-    all_cores=True,  # Utilize all processing cores for efficiency
+    "Fetch the current price for eth with coingecko",
 )
