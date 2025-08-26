@@ -8,12 +8,9 @@ from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     HistoryOutputType,
 )
+from swarms.structs.swarm_id import swarm_id
 
 logger = initialize_logger(log_folder="swarm_arange")
-
-
-def swarm_id():
-    return uuid.uuid4().hex
 
 
 class SwarmRearrange:

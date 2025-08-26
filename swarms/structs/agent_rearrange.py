@@ -1,12 +1,9 @@
 import json
-import uuid
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from swarms.structs.agent import Agent
-from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.conversation import Conversation
-from swarms.structs.multi_agent_exec import get_agents_info
 from swarms.telemetry.main import log_agent_data
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.history_output_formatter import (
@@ -14,51 +11,12 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.structs.swarm_id import swarm_id
 
 logger = initialize_logger(log_folder="rearrange")
 
 
-def swarm_id():
-    return uuid.uuid4().hex
-
-
-class AgentRearrange(BaseSwarm):
-    """
-    A class representing a swarm of agents for rearranging tasks.
-
-    Attributes:
-        id (str): Unique identifier for the swarm
-        name (str): Name of the swarm
-        description (str): Description of the swarm's purpose
-        agents (callable): Dictionary mapping agent names to Agent objects
-        flow (str): The flow pattern defining task execution order
-        max_loops (int): Maximum number of execution loops
-        verbose (bool): Whether to enable verbose logging
-        memory_system (BaseVectorDatabase): Memory system for storing agent interactions
-        human_in_the_loop (bool): Whether human intervention is enabled
-        custom_human_in_the_loop (Callable): Custom function for human intervention
-        return_json (bool): Whether to return output in JSON format
-        output_type (OutputType): Format of output ("all", "final", "list", or "dict")
-        swarm_history (dict): History of agent interactions
-        input_config (AgentRearrangeInput): Input configuration schema
-        output_schema (AgentRearrangeOutput): Output schema
-
-    Methods:
-        __init__(): Initializes the AgentRearrange object
-        reliability_checks(): Validates swarm configuration
-        set_custom_flow(): Sets a custom flow pattern
-        add_agent(): Adds an agent to the swarm
-        track_history(): Records agent interaction history
-        remove_agent(): Removes an agent from the swarm
-        add_agents(): Adds multiple agents to the swarm
-        validate_flow(): Validates the flow pattern
-        run(): Executes the swarm's task processing
-        astream(): Runs the swarm with streaming output
-        batch_run(): Processes multiple tasks in batches
-        abatch_run(): Asynchronously processes multiple tasks in batches
-        concurrent_run(): Processes multiple tasks concurrently
-
-    """
+class AgentRearrange:
 
     def __init__(
         self,
@@ -74,29 +32,17 @@ class AgentRearrange(BaseSwarm):
         custom_human_in_the_loop: Optional[
             Callable[[str], str]
         ] = None,
-        return_json: bool = False,
         output_type: OutputType = "all",
-        docs: List[str] = None,
-        doc_folder: str = None,
-        device: str = "cpu",
-        device_id: int = 0,
-        all_cores: bool = False,
-        all_gpus: bool = True,
-        no_use_clusterops: bool = True,
         autosave: bool = True,
-        return_entire_history: bool = False,
         rules: str = None,
         team_awareness: bool = False,
+        time_enabled: bool = False,
+        message_id_on: bool = False,
         *args,
         **kwargs,
     ):
-        super(AgentRearrange, self).__init__(
-            name=name,
-            description=description,
-            agents=agents if agents else [],
-            *args,
-            **kwargs,
-        )
+        self.name = name
+        self.description = description
         self.id = id
         self.agents = {agent.agent_name: agent for agent in agents}
         self.flow = flow if flow is not None else ""
@@ -105,29 +51,46 @@ class AgentRearrange(BaseSwarm):
         self.memory_system = memory_system
         self.human_in_the_loop = human_in_the_loop
         self.custom_human_in_the_loop = custom_human_in_the_loop
-        self.return_json = return_json
         self.output_type = output_type
-        self.docs = docs
-        self.doc_folder = doc_folder
-        self.device = device
-        self.device_id = device_id
-        self.all_cores = all_cores
-        self.all_gpus = all_gpus
-        self.no_use_clusterops = no_use_clusterops
         self.autosave = autosave
-        self.return_entire_history = return_entire_history
+        self.time_enabled = time_enabled
+        self.message_id_on = message_id_on
 
         self.conversation = Conversation(
-            time_enabled=False, token_count=False
+            name=f"{self.name}-Conversation",
+            time_enabled=self.time_enabled,
+            token_count=False,
+            message_id_on=self.message_id_on,
         )
 
         if rules:
-            self.conversation.add("User", rules)
+            self.conversation.add("user", rules)
 
         if team_awareness is True:
-            agents_info = get_agents_info(self.agents, self.name)
+            # agents_info = get_agents_info(agents=self.agents, team_name=self.name)
 
-            self.conversation.add("Your Swarm", agents_info)
+            # Add sequential flow information if available
+            sequential_info = self._get_sequential_flow_info()
+            if sequential_info:
+                # agents_info += "\n\n" + sequential_info
+                self.conversation.add("system", sequential_info)
+
+            # self.conversation.add("system", agents_info)
+
+        self.reliability_check()
+
+    def reliability_check(self):
+        if self.agents is None or len(self.agents) == 0:
+            raise ValueError("Agents list cannot be None or empty")
+
+        if self.max_loops == 0:
+            raise ValueError("max_loops cannot be 0")
+
+        if self.flow is None or self.flow == "":
+            raise ValueError("flow cannot be None or empty")
+
+        if self.output_type is None or self.output_type == "":
+            raise ValueError("output_type cannot be None or empty")
 
     def set_custom_flow(self, flow: str):
         self.flow = flow
@@ -212,6 +175,136 @@ class AgentRearrange(BaseSwarm):
 
         logger.info(f"Flow: {self.flow} is valid.")
         return True
+
+    def _get_sequential_awareness(
+        self, agent_name: str, tasks: List[str]
+    ) -> str:
+        """
+        Determines the sequential awareness information for an agent in a sequential flow.
+
+        Args:
+            agent_name (str): The name of the current agent.
+            tasks (List[str]): The list of tasks in the flow.
+
+        Returns:
+            str: A string describing the agents ahead and behind in the sequence.
+        """
+        # Find the position of the current agent in the flow
+        agent_position = None
+        for i, task in enumerate(tasks):
+            agent_names = [name.strip() for name in task.split(",")]
+            if agent_name in agent_names:
+                agent_position = i
+                break
+
+        if agent_position is None:
+            return ""
+
+        awareness_info = []
+
+        # Check if there's an agent before (ahead in the sequence)
+        if agent_position > 0:
+            prev_task = tasks[agent_position - 1]
+            prev_agents = [
+                name.strip() for name in prev_task.split(",")
+            ]
+            if (
+                prev_agents and prev_agents[0] != "H"
+            ):  # Skip human agents
+                awareness_info.append(
+                    f"Agent ahead: {', '.join(prev_agents)}"
+                )
+
+        # Check if there's an agent after (behind in the sequence)
+        if agent_position < len(tasks) - 1:
+            next_task = tasks[agent_position + 1]
+            next_agents = [
+                name.strip() for name in next_task.split(",")
+            ]
+            if (
+                next_agents and next_agents[0] != "H"
+            ):  # Skip human agents
+                awareness_info.append(
+                    f"Agent behind: {', '.join(next_agents)}"
+                )
+
+        if awareness_info:
+            return (
+                f"Sequential awareness: {' | '.join(awareness_info)}"
+            )
+        return ""
+
+    def _get_sequential_flow_info(self) -> str:
+        """
+        Gets information about the overall sequential flow structure.
+
+        Returns:
+            str: A string describing the sequential flow structure.
+        """
+        if not self.flow or "->" not in self.flow:
+            return ""
+
+        tasks = self.flow.split("->")
+        flow_info = []
+
+        for i, task in enumerate(tasks):
+            agent_names = [name.strip() for name in task.split(",")]
+            if (
+                agent_names and agent_names[0] != "H"
+            ):  # Skip human agents
+                position_info = (
+                    f"Step {i+1}: {', '.join(agent_names)}"
+                )
+                if i > 0:
+                    prev_task = tasks[i - 1]
+                    prev_agents = [
+                        name.strip() for name in prev_task.split(",")
+                    ]
+                    if prev_agents and prev_agents[0] != "H":
+                        position_info += (
+                            f" (follows: {', '.join(prev_agents)})"
+                        )
+                if i < len(tasks) - 1:
+                    next_task = tasks[i + 1]
+                    next_agents = [
+                        name.strip() for name in next_task.split(",")
+                    ]
+                    if next_agents and next_agents[0] != "H":
+                        position_info += (
+                            f" (leads to: {', '.join(next_agents)})"
+                        )
+                flow_info.append(position_info)
+
+        if flow_info:
+            return "Sequential Flow Structure:\n" + "\n".join(
+                flow_info
+            )
+        return ""
+
+    def get_agent_sequential_awareness(self, agent_name: str) -> str:
+        """
+        Gets the sequential awareness information for a specific agent.
+
+        Args:
+            agent_name (str): The name of the agent to get awareness for.
+
+        Returns:
+            str: A string describing the agents ahead and behind in the sequence.
+        """
+        if not self.flow or "->" not in self.flow:
+            return ""
+
+        tasks = self.flow.split("->")
+        return self._get_sequential_awareness(agent_name, tasks)
+
+    def get_sequential_flow_structure(self) -> str:
+        """
+        Gets the overall sequential flow structure information.
+
+        Returns:
+            str: A string describing the complete sequential flow structure.
+        """
+        return self._get_sequential_flow_info()
 
     def _run(
         self,
@@ -319,6 +412,20 @@ class AgentRearrange(BaseSwarm):
 
                         agent = self.agents[agent_name]
 
+                        # Add sequential awareness information for the agent
+                        awareness_info = (
+                            self._get_sequential_awareness(
+                                agent_name, tasks
+                            )
+                        )
+                        if awareness_info:
+                            self.conversation.add(
+                                "system", awareness_info
+                            )
+                            logger.info(
+                                f"Added sequential awareness for {agent_name}: {awareness_info}"
+                            )
+
                         current_task = agent.run(
                             task=self.conversation.get_str(),
                             img=img,
@@ -368,11 +475,6 @@ class AgentRearrange(BaseSwarm):
         Args:
             task (str, optional): The task to execute. Defaults to None.
             img (str, optional): Path to input image if required. Defaults to None.
-            device (str, optional): Computing device to use ('cpu' or 'gpu'). Defaults to "cpu".
-            device_id (int, optional): ID of specific device to use. Defaults to 1.
-            all_cores (bool, optional): Whether to use all CPU cores. Defaults to True.
-            all_gpus (bool, optional): Whether to use all available GPUs. Defaults to False.
-            no_use_clusterops (bool, optional): Whether to use clusterops. Defaults to False.
             *args: Additional positional arguments passed to _run().
             **kwargs: Additional keyword arguments passed to _run().
 
@@ -419,10 +521,6 @@ class AgentRearrange(BaseSwarm):
         tasks: List[str],
         img: Optional[List[str]] = None,
         batch_size: int = 10,
-        device: str = "cpu",
-        device_id: int = None,
-        all_cores: bool = True,
-        all_gpus: bool = False,
         *args,
         **kwargs,
     ) -> List[str]:
@@ -456,10 +554,6 @@ class AgentRearrange(BaseSwarm):
                     self.run(
                         task=task,
                         img=img_path,
-                        device=device,
-                        device_id=device_id,
-                        all_cores=all_cores,
-                        all_gpus=all_gpus,
                         *args,
                         **kwargs,
                     )

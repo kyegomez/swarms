@@ -52,6 +52,7 @@ from swarms.schemas.base_schemas import (
 from swarms.schemas.conversation_schema import ConversationSchema
 from swarms.schemas.mcp_schemas import (
     MCPConnection,
+    MultipleMCPConnections,
 )
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.conversation import Conversation
@@ -419,6 +420,7 @@ class Agent:
         safety_prompt_on: bool = False,
         random_models_on: bool = False,
         mcp_config: Optional[MCPConnection] = None,
+        mcp_configs: Optional[MultipleMCPConnections] = None,
         top_p: Optional[float] = 0.90,
         conversation_schema: Optional[ConversationSchema] = None,
         llm_base_url: Optional[str] = None,
@@ -571,6 +573,7 @@ class Agent:
         self.reasoning_prompt_on = reasoning_prompt_on
         self.dynamic_context_window = dynamic_context_window
         self.show_tool_execution_output = show_tool_execution_output
+        self.mcp_configs = mcp_configs
 
         # self.init_handling()
         self.setup_config()

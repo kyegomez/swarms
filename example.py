@@ -8,7 +8,7 @@ agent = Agent(
     dynamic_temperature_enabled=True,
     max_loops=1,
     dynamic_context_window=True,
-    streaming_on=True,
+    streaming_on=False,
 )
 
 out = agent.run(

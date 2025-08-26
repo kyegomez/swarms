@@ -169,7 +169,7 @@ class AgentValidator:
             )
 
 
-class AgentLoader:
+class CSVAgentLoader:
     """Class to manage agents through various file formats with type safety and high performance"""
 
     def __init__(

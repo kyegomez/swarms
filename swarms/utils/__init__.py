@@ -1,3 +1,8 @@
+from swarms.utils.agent_loader_markdown import (
+    load_agent_from_markdown,
+    load_agents_from_markdown,
+    MarkdownAgentLoader,
+)
 from swarms.utils.check_all_model_max_tokens import (
     check_all_model_max_tokens,
 )
@@ -20,12 +25,6 @@ from swarms.utils.file_processing import (
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
-
-from swarms.utils.agent_loader_markdown import (
-    load_agent_from_markdown,
-    load_agents_from_markdown,
-)
-
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.output_types import HistoryOutputType
 from swarms.utils.parse_code import extract_code_from_markdown
@@ -52,4 +51,5 @@ __all__ = [
     "load_agent_from_markdown",
     "load_agents_from_markdown",
     "dynamic_auto_chunking",
+    "MarkdownAgentLoader",
 ]

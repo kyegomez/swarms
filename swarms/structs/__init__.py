@@ -103,6 +103,7 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
+from swarms.structs.agent_loader import AgentLoader
 
 __all__ = [
     "Agent",
@@ -190,4 +191,5 @@ __all__ = [
     "check_cancelled",
     "check_exit",
     "check_end",
+    "AgentLoader",
 ]
