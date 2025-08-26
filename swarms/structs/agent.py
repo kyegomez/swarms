@@ -1026,16 +1026,16 @@ class Agent:
             self.short_memory.add(
                 role="system",
                 content=(
-                    f"🔍 [RAG Query Initiated]\n"
-                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                    f"📝 Query:\n{query}\n\n"
-                    f"📚 Retrieved Knowledge (RAG Output):\n{output}\n"
-                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                    f"💡 The above information was retrieved from the agent's long-term memory using Retrieval-Augmented Generation (RAG). "
-                    f"Use this context to inform your next response or reasoning step."
+                    "[RAG Query Initiated]\n"
+                    "----------------------------------\n"
+                    f"Query:\n{query}\n\n"
+                    f"Retrieved Knowledge (RAG Output):\n{output}\n"
+                    "----------------------------------\n"
+                    "The above information was retrieved from the agent's long-term memory using Retrieval-Augmented Generation (RAG). "
+                    "Use this context to inform your next response or reasoning step."
                 ),
             )
-        except Exception as e:
+        except AgentMemoryError as e:
             logger.error(
                 f"Agent: {self.agent_name} Error handling RAG query: {e} Traceback: {traceback.format_exc()}"
             )

@@ -1,5 +1,6 @@
 from swarms.structs.agent import Agent
 from swarms.structs.agent_builder import AgentsBuilder
+from swarms.structs.agent_loader import AgentLoader
 from swarms.structs.agent_rearrange import AgentRearrange, rearrange
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.base_structure import BaseStructure
@@ -103,7 +104,6 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
-from swarms.structs.agent_loader import AgentLoader
 
 __all__ = [
     "Agent",

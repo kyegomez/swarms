@@ -7,15 +7,6 @@ of the Talk Structurally, Act Hierarchically framework.
 All components are now in one file: hierarchical_structured_communication_framework.py
 """
 
-import os
-import sys
-
-# Add the project root to the Python path
-project_root = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..")
-)
-sys.path.insert(0, project_root)
-
 from dotenv import load_dotenv
 
 # Import everything from the single file

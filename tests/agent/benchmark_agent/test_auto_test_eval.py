@@ -5,7 +5,7 @@ import sys
 import traceback
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import psutil
 import requests
@@ -95,22 +95,8 @@ class SwarmsIssueReporter:
         except:
             return "Unknown"
 
-    def _get_gpu_info(self) -> Tuple[bool, Optional[str]]:
-        """Get GPU information and CUDA availability."""
-        try:
-            import torch
-
-            cuda_available = torch.cuda.is_available()
-            if cuda_available:
-                gpu_info = torch.cuda.get_device_name(0)
-                return cuda_available, gpu_info
-            return False, None
-        except:
-            return False, None
-
     def _get_system_info(self) -> SwarmSystemInfo:
         """Collect system and Swarms-specific information."""
-        cuda_available, gpu_info = self._get_gpu_info()
 
         return SwarmSystemInfo(
             os_name=platform.system(),
@@ -120,8 +106,6 @@ class SwarmsIssueReporter:
             memory_usage=psutil.virtual_memory().percent,
             disk_usage=psutil.disk_usage("/").percent,
             swarms_version=self._get_swarms_version(),
-            cuda_available=cuda_available,
-            gpu_info=gpu_info,
         )
 
     def _categorize_error(
