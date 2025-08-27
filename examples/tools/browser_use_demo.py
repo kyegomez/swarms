@@ -34,7 +34,7 @@ class BrowserAgent:
             llm=ChatOpenAI(model="gpt-4.1"),
         )
         result = await agent.run()
-        return result
+        return result.model_dump_json(indent=4)
 
     def run(self, task: str):
         """

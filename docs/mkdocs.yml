@@ -424,6 +424,14 @@ nav:
           - Swarms DAO: "swarms/examples/swarms_dao.md"
           - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
           - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
+    
+    - Tools & Integrations:
+      - Web Search with Exa: "examples/exa_search.md"
+      - Advanced Research: "examples/av.md"
+      - Browser Use: "examples/browser_use.md"
+      - Yahoo Finance: "swarms/examples/yahoo_finance.md"
+
+
 
     - Apps:
       - Smart Database: "examples/smart_database.md"
