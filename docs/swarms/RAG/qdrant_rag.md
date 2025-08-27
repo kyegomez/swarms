@@ -21,18 +21,18 @@ pip install qdrant-client fastembed swarms-memory litellm
 
 1. First, install the latest version of Swarms:
 
-```bash
-pip3 install -U swarms
-```
+   ```bash
+   pip3 install -U swarms
+   ```
 
 2. Set up your environment variables in a `.env` file:
 
-```plaintext
-OPENAI_API_KEY="your-api-key-here"
-QDRANT_URL="https://your-cluster.qdrant.io"
-QDRANT_API_KEY="your-api-key"
-WORKSPACE_DIR="agent_workspace"
-```
+   ```plaintext
+   OPENAI_API_KEY="your-api-key-here"
+   QDRANT_URL="https://your-cluster.qdrant.io"
+   QDRANT_API_KEY="your-api-key"
+   WORKSPACE_DIR="agent_workspace"
+   ```
 
 3. Choose your Qdrant deployment option:
    - **In-memory**: For testing and development (data is not persisted)
@@ -193,10 +193,10 @@ print(response)
 3. Get your cluster URL and API key
 4. Set environment variables:
 
-```bash
-export QDRANT_URL="https://your-cluster.eu-central.aws.cloud.qdrant.io"
-export QDRANT_API_KEY="your-api-key-here"
-```
+   ```bash
+   export QDRANT_URL="https://your-cluster.eu-central.aws.cloud.qdrant.io"
+   export QDRANT_API_KEY="your-api-key-here"
+   ```
 
 ### Running Local Qdrant Server
 
