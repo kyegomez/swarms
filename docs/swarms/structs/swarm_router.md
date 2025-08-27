@@ -1,65 +1,11 @@
 # SwarmRouter Documentation
 
-The `SwarmRouter` class is a flexible routing system designed to manage different types of swarms for task execution. It provides a unified interface to interact with various swarm types, including:
+The `SwarmRouter` class is a flexible routing system designed to manage different types of swarms for task execution. It provides a unified interface to interact with various swarm types.
 
-| Swarm Type | Description |
-|------------|-------------|
-| `AgentRearrange` | Optimizes agent arrangement for task execution |
-| `MixtureOfAgents` | Combines multiple agent types for diverse tasks |
-| `SpreadSheetSwarm` | Uses spreadsheet-like operations for task management |
-| `SequentialWorkflow` | Executes tasks sequentially |
-| `ConcurrentWorkflow` | Executes tasks in parallel |
-| `GroupChat` | Facilitates communication among agents in a group chat format |
-| `MultiAgentRouter` | Routes tasks between multiple agents |
-| `AutoSwarmBuilder` | Automatically builds swarm structure |
-| `HiearchicalSwarm` | Hierarchical organization of agents |
-| `MajorityVoting` | Uses majority voting for decision making |
-| `MALT` | Multi-Agent Language Tasks |
-| `CouncilAsAJudge` | Council-based judgment system |
-| `InteractiveGroupChat` | Interactive group chat with user participation |
-| `auto` | Automatically selects best swarm type via embedding search |
+Full Path: `from swarms.structs.swarm_router`
 
-## Classes
 
-### Document
-
-A Pydantic model for representing document data.
-
-| Attribute | Type | Description |
-| --- | --- | --- |
-| `file_path` | str | Path to the document file. |
-| `data` | str | Content of the document. |
-
-### SwarmLog
-
-A Pydantic model for capturing log entries.
-
-| Attribute | Type | Description |
-| --- | --- | --- |
-| `id` | str | Unique identifier for the log entry. |
-| `timestamp` | datetime | Time of log creation. |
-| `level` | str | Log level (e.g., "info", "error"). |
-| `message` | str | Log message content. |
-| `swarm_type` | SwarmType | Type of swarm associated with the log. |
-| `task` | str | Task being performed (optional). |
-| `metadata` | Dict[str, Any] | Additional metadata (optional). |
-| `documents` | List[Document] | List of documents associated with the log. |
-
-### SwarmRouterConfig
-
-Configuration model for SwarmRouter.
-
-| Attribute | Type | Description |
-| --- | --- | --- |
-| `name` | str | Name identifier for the SwarmRouter instance |
-| `description` | str | Description of the SwarmRouter's purpose |
-| `swarm_type` | SwarmType | Type of swarm to use |
-| `rearrange_flow` | Optional[str] | Flow configuration string |
-| `rules` | Optional[str] | Rules to inject into every agent |
-| `multi_agent_collab_prompt` | bool | Whether to enable multi-agent collaboration prompts |
-| `task` | str | The task to be executed by the swarm |
-
-### SwarmRouter
+## Initialization Parameters
 
 Main class for routing tasks to different swarm types.
 
@@ -108,13 +54,28 @@ Main class for routing tasks to different swarm types.
 | `concurrent_batch_run` | `tasks: List[str], *args, **kwargs` | Execute multiple tasks concurrently |
 
 
-## Installation
+## Available Swarm Types
 
-To use the SwarmRouter, first install the required dependencies:
+The `SwarmRouter` supports many various multi-agent architectures for various applications.
 
-```bash
-pip install swarms swarm_models
-```
+| Swarm Type | Description |
+|------------|-------------|
+| `AgentRearrange` | Optimizes agent arrangement for task execution |
+| `MixtureOfAgents` | Combines multiple agent types for diverse tasks |
+| `SpreadSheetSwarm` | Uses spreadsheet-like operations for task management |
+| `SequentialWorkflow` | Executes tasks sequentially |
+| `ConcurrentWorkflow` | Executes tasks in parallel |
+| `GroupChat` | Facilitates communication among agents in a group chat format |
+| `MultiAgentRouter` | Routes tasks between multiple agents |
+| `AutoSwarmBuilder` | Automatically builds swarm structure |
+| `HiearchicalSwarm` | Hierarchical organization of agents |
+| `MajorityVoting` | Uses majority voting for decision making |
+| `MALT` | Multi-Agent Language Tasks |
+| `CouncilAsAJudge` | Council-based judgment system |
+| `InteractiveGroupChat` | Interactive group chat with user participation |
+| `auto` | Automatically selects best swarm type via embedding search |
+
+
 
 ## Basic Usage
 
