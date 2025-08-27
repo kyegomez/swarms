@@ -431,7 +431,8 @@ nav:
       - Browser Use: "examples/browser_use.md"
       - Yahoo Finance: "swarms/examples/yahoo_finance.md"
 
-
+    - RAG:
+      - RAG with Qdrant: "swarms/RAG/qdrant_rag.md"
 
     - Apps:
       - Smart Database: "examples/smart_database.md"
