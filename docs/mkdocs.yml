@@ -432,7 +432,7 @@ nav:
       - Yahoo Finance: "swarms/examples/yahoo_finance.md"
 
     - RAG:
-      - Swarms with Qdrant: "swarms/examples/RAG/agent_with_qdrant_rag.md"
+      - RAG with Qdrant: "swarms/rag/qdrant_rag.md"
 
     - Apps:
       - Smart Database: "examples/smart_database.md"

@@ -12,8 +12,10 @@ This example demonstrates how to integrate Qdrant vector database with Swarms ag
 ## Installation
 
 ```bash
-pip install qdrant-client fastembed swarms-memory
+pip install qdrant-client fastembed swarms-memory litellm
 ```
+
+> **Note**: The `litellm` package is required for using LiteLLM provider models like OpenAI, Azure, Cohere, etc.
 
 ## Tutorial Steps
 
@@ -102,8 +104,12 @@ agent = Agent(
 )
 
 # Query with RAG
-response = agent.run("What is Qdrant and how does it relate to RAG?")
-print(response)
+try:
+    response = agent.run("What is Qdrant and how does it relate to RAG?")
+    print(response)
+except Exception as e:
+    print(f"Error during query: {e}")
+    # Handle error appropriately
 ```
 
 ### Advanced Setup with Batch Processing and Metadata
@@ -214,22 +220,37 @@ services:
 ```python
 from qdrant_client import QdrantClient, models
 from swarms_memory import QdrantDB
+import os
+import logging
 
-# Connect to Qdrant server
-client = QdrantClient(
-    host="localhost",
-    port=6333,
-    api_key="your-api-key"  # Optional
-)
+# Setup logging for production monitoring
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Production RAG configuration
-rag_db = QdrantDB(
-    client=client,
-    embedding_model="text-embedding-3-large",  # Higher quality embeddings
-    collection_name="production_knowledge",
-    distance=models.Distance.COSINE,
-    n_results=10
-)
+try:
+    # Connect to Qdrant server with proper error handling
+    client = QdrantClient(
+        host=os.getenv("QDRANT_HOST", "localhost"),
+        port=int(os.getenv("QDRANT_PORT", "6333")),
+        api_key=os.getenv("QDRANT_API_KEY"),  # Use environment variable
+        timeout=30  # 30 second timeout
+    )
+    
+    # Production RAG configuration with enhanced settings
+    rag_db = QdrantDB(
+        client=client,
+        embedding_model="text-embedding-3-large",  # Higher quality embeddings
+        collection_name="production_knowledge",
+        distance=models.Distance.COSINE,
+        n_results=10,
+        api_key=os.getenv("OPENAI_API_KEY")  # Secure API key handling
+    )
+    
+    logger.info("Successfully initialized production RAG database")
+    
+except Exception as e:
+    logger.error(f"Failed to initialize RAG database: {e}")
+    raise
 ```
 
 ## Configuration Options
