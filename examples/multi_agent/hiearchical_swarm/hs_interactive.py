@@ -13,8 +13,6 @@ swarm = HierarchicalSwarm(
     agents=[research_agent, analysis_agent],
     max_loops=1,
     interactive=True,  # Enable the Arasaka dashboard
-    # director_reasoning_enabled=False,
-    # director_reasoning_model_name="groq/moonshotai/kimi-k2-instruct",
     multi_agent_prompt_improvements=True,
 )
 
