@@ -1,6 +1,6 @@
 # SpreadSheetSwarm Documentation
 
----
+
 
 ## Class Definition
 
@@ -189,19 +189,9 @@ swarm._save_to_csv()
 ```python
 import os
 
-from swarms import Agent
-from swarm_models import OpenAIChat
+from swarms import Agent, SpreadSheetSwarm
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
-)
-from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
-
-# Example usage:
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Model
-model = OpenAIChat(
-    openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
 )
 
 
@@ -210,7 +200,7 @@ agents = [
     Agent(
         agent_name=f"Financial-Analysis-Agent-spreesheet-swarm:{i}",
         system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-        llm=model,
+        model_name="gpt-4.1",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="finance_agent.json",
@@ -242,9 +232,7 @@ swarm.run(
 
 ```python
 import os
-from swarms import Agent
-from swarm_models import OpenAIChat
-from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
+from swarms import Agent, SpreadSheetSwarm
 
 # Define custom system prompts for QR code generation
 QR_CODE_AGENT_1_SYS_PROMPT = """
@@ -255,20 +243,13 @@ QR_CODE_AGENT_2_SYS_PROMPT = """
 You are a Python coding expert. Your task is to write a Python script to generate a QR code for the link: https://github.com/The-Swarm-Corporation/Cookbook. The code should save the QR code as an image file.
 """
 
-# Example usage:
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Model
-model = OpenAIChat(
-    openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
-)
 
 # Initialize your agents for QR code generation
 agents = [
     Agent(
         agent_name="QR-Code-Generator-Agent-Luma",
         system_prompt=QR_CODE_AGENT_1_SYS_PROMPT,
-        llm=model,
+        model_name="gpt-4.1",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="qr_code_agent_luma.json",
@@ -278,7 +259,7 @@ agents = [
     Agent(
         agent_name="QR-Code-Generator-Agent-Cookbook",
         system_prompt=QR_CODE_AGENT_2_SYS_PROMPT,
-        llm=model,
+        model_name="gpt-4.1",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="qr_code_agent_cookbook.json",
@@ -310,9 +291,7 @@ swarm.run(
 ```python
 
 import os
-from swarms import Agent
-from swarm_models import OpenAIChat
-from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
+from swarms import Agent, SpreadSheetSwarm
 
 # Define custom system prompts for each social media platform
 TWITTER_AGENT_SYS_PROMPT = """
@@ -344,7 +323,7 @@ agents = [
     Agent(
         agent_name="Twitter-Marketing-Agent",
         system_prompt=TWITTER_AGENT_SYS_PROMPT,
-        llm=model,
+        model_name="gpt-4.1",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="twitter_agent.json",
@@ -354,7 +333,7 @@ agents = [
     Agent(
         agent_name="Instagram-Marketing-Agent",
         system_prompt=INSTAGRAM_AGENT_SYS_PROMPT,
-        llm=model,
+        model_name="gpt-4.1",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="instagram_agent.json",
@@ -364,7 +343,7 @@ agents = [
     Agent(
         agent_name="Facebook-Marketing-Agent",
         system_prompt=FACEBOOK_AGENT_SYS_PROMPT,
-        llm=model,
+        model_name="gpt-4.1",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="facebook_agent.json",
@@ -374,7 +353,7 @@ agents = [
     Agent(
         agent_name="Email-Marketing-Agent",
         system_prompt=EMAIL_AGENT_SYS_PROMPT,
-        llm=model,
+        model_name="gpt-4.1",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="email_agent.json",
@@ -404,22 +383,11 @@ swarm.run(
 
 ## Additional Information and Tips
 
-- **Thread Synchronization**: When working with multiple agents in a concurrent environment, it's crucial to ensure that access to shared resources is properly synchronized using locks to avoid race conditions.
-
-- **Autosave Feature**: If you enable the `autosave_on` flag, ensure that the file path provided is correct and writable. This feature is handy for long-running tasks where you want to periodically save the state.
-
-- **Error Handling**
-
-: Implementing proper error handling within your agents can prevent the swarm from crashing during execution. Consider catching exceptions in the `run` method and logging errors appropriately.
-
-- **Custom Agents**: You can extend the `Agent` class to create custom agents that perform specific tasks tailored to your application's needs.
+| Tip/Feature            | Description                                                                                                                                                                                                                 |
+|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Thread Synchronization** | When working with multiple agents in a concurrent environment, it's crucial to ensure that access to shared resources is properly synchronized using locks to avoid race conditions.                                      |
+| **Autosave Feature**       | If you enable the `autosave_on` flag, ensure that the file path provided is correct and writable. This feature is handy for long-running tasks where you want to periodically save the state.                            |
+| **Error Handling**         | Implementing proper error handling within your agents can prevent the swarm from crashing during execution. Consider catching exceptions in the `run` method and logging errors appropriately.                            |
+| **Custom Agents**          | You can extend the `Agent` class to create custom agents that perform specific tasks tailored to your application's needs.                                                                                               |
 
 ---
-
-## References and Resources
-
-- [Python's `queue` module](https://docs.python.org/3/library/queue.html)
-- [Python's `threading` module](https://docs.python.org/3/library/threading.html)
-- [CSV File Handling in Python](https://docs.python.org/3/library/csv.html)
-- [JSON Handling in Python](https://docs.python.org/3/library/json.html)
-
