@@ -19,31 +19,44 @@ pip install qdrant-client fastembed swarms-memory litellm
 
 ## Tutorial Steps
 
-1. **Install Swarms**: First, install the latest version of Swarms:
+### Step 1: Install Swarms
 
-   ```bash
-   pip3 install -U swarms
-   ```
+First, install the latest version of Swarms:
 
-2. **Environment Setup**: Set up your environment variables in a `.env` file:
+```bash
+pip3 install -U swarms
+```
 
-   ```plaintext
-   OPENAI_API_KEY="your-api-key-here"
-   QDRANT_URL="https://your-cluster.qdrant.io"
-   QDRANT_API_KEY="your-api-key"
-   WORKSPACE_DIR="agent_workspace"
-   ```
+### Step 2: Environment Setup
 
-3. **Choose Deployment**: Select your Qdrant deployment option:
-   - **In-memory**: For testing and development (data is not persisted)
-   - **Local server**: For production deployments with persistent storage
-   - **Qdrant Cloud**: Managed cloud service (recommended for production)
+Set up your environment variables in a `.env` file:
 
-4. **Configure Database**: Set up the vector database wrapper with your preferred embedding model and collection settings
+```plaintext
+OPENAI_API_KEY="your-api-key-here"
+QDRANT_URL="https://your-cluster.qdrant.io"
+QDRANT_API_KEY="your-api-key"
+WORKSPACE_DIR="agent_workspace"
+```
 
-5. **Add Documents**: Load documents using individual or batch processing methods
+### Step 3: Choose Deployment
 
-6. **Create Agent**: Initialize your agent with RAG capabilities and start querying
+Select your Qdrant deployment option:
+
+- **In-memory**: For testing and development (data is not persisted)
+- **Local server**: For production deployments with persistent storage
+- **Qdrant Cloud**: Managed cloud service (recommended for production)
+
+### Step 4: Configure Database
+
+Set up the vector database wrapper with your preferred embedding model and collection settings
+
+### Step 5: Add Documents
+
+Load documents using individual or batch processing methods
+
+### Step 6: Create Agent
+
+Initialize your agent with RAG capabilities and start querying
 
 ## Code
 
