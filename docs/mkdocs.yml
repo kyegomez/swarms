@@ -251,6 +251,8 @@ nav:
           - Agent MCP Integration: "swarms/structs/agent_mcp.md"
         - Long Term Memory Reference:
           - Integrating RAG with Agents: "swarms/memory/diy_memory.md"
+        - RAG Integration:
+          - Qdrant RAG Integration: "swarms/RAG/qdrant_rag.md"
         
     - Third-Party Agents:
       - Creating Custom Agents: "swarms/agents/new_agent.md"
