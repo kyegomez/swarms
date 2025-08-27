@@ -50,9 +50,8 @@ The flow pattern uses arrow notation (`->`) to define execution order:
 ### Basic Sequential Flow
 
 ```python
-from swarms.structs.swarm_rearrange import SwarmRearrange
 import os
-from swarms import Agent, AgentRearrange
+from swarms import Agent, AgentRearrange, SwarmRearrange
 
 # model = Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"))
 company = "TGSC"
