@@ -251,8 +251,6 @@ nav:
           - Agent MCP Integration: "swarms/structs/agent_mcp.md"
         - Long Term Memory Reference:
           - Integrating RAG with Agents: "swarms/memory/diy_memory.md"
-        - RAG Integration:
-          - Qdrant RAG Integration: "swarms/RAG/qdrant_rag.md"
         
     - Third-Party Agents:
       - Creating Custom Agents: "swarms/agents/new_agent.md"
@@ -433,7 +431,8 @@ nav:
       - Browser Use: "examples/browser_use.md"
       - Yahoo Finance: "swarms/examples/yahoo_finance.md"
 
-
+    - RAG:
+      - Swarms with Qdrant: "swarms/examples/RAG/agent_with_qdrant_rag.md"
 
     - Apps:
       - Smart Database: "examples/smart_database.md"
