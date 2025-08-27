@@ -9,10 +9,9 @@ market_researcher = Agent(
     3. Evaluating competitor strategies
     4. Assessing customer needs and preferences
     5. Providing actionable market insights""",
-    model_name="claude-3-sonnet-20240229",
+    model_name="gpt-4.1",
     max_loops=1,
     temperature=0.7,
-    streaming_on=True,
 )
 
 # Initialize financial analyst agent
@@ -24,9 +23,8 @@ financial_analyst = Agent(
     3. Assessing risk factors
     4. Providing financial forecasts
     5. Recommending financial strategies""",
-    model_name="claude-3-sonnet-20240229",
+    model_name="gpt-4.1",
     max_loops=1,
-    streaming_on=True,
     temperature=0.7,
 )
 
@@ -39,10 +37,9 @@ technical_analyst = Agent(
     3. Identifying support and resistance levels
     4. Assessing market momentum
     5. Providing trading recommendations""",
-    model_name="claude-3-sonnet-20240229",
+    model_name="gpt-4.1",
     max_loops=1,
     temperature=0.7,
-    streaming_on=True,
 )
 
 # Create list of agents
@@ -53,11 +50,9 @@ router = SequentialWorkflow(
     name="market-analysis-router",
     agents=agents,
     max_loops=1,
-    # output_type="all",
+    team_awareness=True,
 )
 
-result = router.run(
-    "Analyze Tesla (TSLA) stock from market, financial, and technical perspectives"
-)
+result = router.run("What are the best 3 oil ETFs?")
 
 print(result)

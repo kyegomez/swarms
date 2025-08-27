@@ -1,4 +1,5 @@
 from swarms import Agent
+from swarms_tools import exa_search
 
 # Initialize the agent
 agent = Agent(
@@ -8,7 +9,8 @@ agent = Agent(
     dynamic_temperature_enabled=True,
     max_loops=1,
     dynamic_context_window=True,
-    streaming_on=True,
+    tools=[exa_search],
+    streaming_on=False,
 )
 
 out = agent.run(

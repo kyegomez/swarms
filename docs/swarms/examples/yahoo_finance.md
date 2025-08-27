@@ -1,12 +1,31 @@
-# Swarms Tools Example with Yahoo Finance
+# Yahoo Finance Integration with Swarms
 
-- `pip3 install swarms swarms-tools`
-- Add `OPENAI_API_KEY` to your `.env` file
-- Run `yahoo_finance_agent.py`
-- Agent will make a function call to the desired tool
-- The tool will be executed and the result will be returned to the agent
-- The agent will then analyze the result and return the final output
 
+This example demonstrates how to integrate Yahoo Finance data into your Swarms agents using the `swarms-tools` package. The agent can analyze real-time financial data, stock metrics, and market information by making function calls to the Yahoo Finance API. This is particularly useful for financial analysis, portfolio management, and market research applications.
+
+## Install
+
+```bash
+pip3 install -U swarms swarms-tools
+```
+
+## Environment Variables
+
+```txt
+# OpenAI API Key (Required for LLM functionality)
+OPENAI_API_KEY="your_openai_api_key_here"
+```
+
+## Usage
+
+1. Install the required packages
+2. Add your `OPENAI_API_KEY` to your `.env` file
+3. Run the example code below
+4. The agent will make a function call to the Yahoo Finance tool
+5. The tool will execute and return financial data
+6. The agent analyzes the result and provides insights
+
+## Code Example
 
 ```python
 from swarms import Agent
@@ -24,19 +43,12 @@ agent = Agent(
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     max_loops=1,
     model_name="gpt-4o",
-    dynamic_temperature_enabled=True,
-    user_name="swarms_corp",
-    retry_attempts=3,
-    context_length=8192,
-    return_step_meta=False,
-    output_type="str",  # "json", "dict", "csv" OR "string" "yaml" and
-    auto_generate_prompt=False,  # Auto generate prompt for the agent based on name, description, and system prompt, task
-    max_tokens=4000,  # max output tokens
-    saved_state_path="agent_00.json",
-    interactive=False,
     tools=[yahoo_finance_api],
 )
 
+# Run financial analysis
 agent.run("Analyze the latest metrics for nvidia")
-# Less than 30 lines of code....
 ```
+
+**Result**: Less than 30 lines of code to get a fully functional financial analysis agent!
+

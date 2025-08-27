@@ -1,6 +1,6 @@
 import os
 import traceback
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from dotenv import load_dotenv
 from loguru import logger
@@ -202,7 +202,6 @@ class SwarmRouterConfig(BaseModel):
 
 
 def reasoning_agent_run(
-    self,
     task: str,
     img: Optional[str] = None,
     name: str = None,
@@ -257,6 +256,11 @@ class AutoSwarmBuilder:
         generate_router_config: bool = False,
         interactive: bool = False,
         max_tokens: int = 8000,
+        execution_type: Literal[
+            "return-agents",
+            "execute-swarm-router",
+            "return-agent-configurations",
+        ] = "return-agents",
     ):
         """Initialize the AutoSwarmBuilder.
 
@@ -277,6 +281,7 @@ class AutoSwarmBuilder:
         self.generate_router_config = generate_router_config
         self.interactive = interactive
         self.max_tokens = max_tokens
+        self.execution_type = execution_type
         self.conversation = Conversation()
 
         self.reliability_check()

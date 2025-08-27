@@ -11,9 +11,6 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, Any
 import warnings
-
-warnings.filterwarnings("ignore")
-
 import cv2
 import numpy as np
 import torch
@@ -21,6 +18,10 @@ import torchvision.transforms as transforms
 from PIL import Image
 import open3d as o3d
 from loguru import logger
+
+
+warnings.filterwarnings("ignore")
+
 
 # Third-party model imports
 try:

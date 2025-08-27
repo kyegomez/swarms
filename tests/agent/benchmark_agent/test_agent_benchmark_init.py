@@ -118,6 +118,10 @@ def benchmark_multiple_agents(num_agents=100):
         "Throughput",
         f"{(num_agents/total_elapsed_time) * 1000:.2f} agents/second",
     )
+    time_table.add_row(
+        "Agents per Minute",
+        f"{(num_agents/total_elapsed_time) * 60000:.0f} agents/minute",
+    )
 
     # Add memory measurements
     memory_table.add_row(

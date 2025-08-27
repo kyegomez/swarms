@@ -375,18 +375,24 @@ nav:
           - Agent Output Types: "swarms/examples/agent_output_types.md"
           - Gradio Chat Interface: "swarms/ui/main.md"
         - LLM Providers:
-          - Overview: "swarms/examples/model_providers.md"
-          - OpenAI: "swarms/examples/openai_example.md"
-          - Anthropic: "swarms/examples/claude.md"
-          - Groq: "swarms/examples/groq.md"
-          - Cohere: "swarms/examples/cohere.md"
-          - DeepSeek: "swarms/examples/deepseek.md"
-          - Ollama: "swarms/examples/ollama.md"
-          - OpenRouter: "swarms/examples/openrouter.md"
-          - XAI: "swarms/examples/xai.md"
-          - Azure OpenAI: "swarms/examples/azure.md"
-          - VLLM: "swarms/examples/vllm_integration.md"
-          - Llama4: "swarms/examples/llama4.md"
+          - Language Models:
+            - How to Create A Custom Language Model: "swarms/models/custom_model.md"
+            - Overview: "swarms/examples/model_providers.md"
+            - OpenAI: "swarms/examples/openai_example.md"
+            - Anthropic: "swarms/examples/claude.md"
+            - Groq: "swarms/examples/groq.md"
+            - Cohere: "swarms/examples/cohere.md"
+            - DeepSeek: "swarms/examples/deepseek.md"
+            - Ollama: "swarms/examples/ollama.md"
+            - OpenRouter: "swarms/examples/openrouter.md"
+            - XAI: "swarms/examples/xai.md"
+            - Azure OpenAI: "swarms/examples/azure.md"
+            - VLLM: "swarms/examples/vllm_integration.md"
+            - Llama4: "swarms/examples/llama4.md"
+          - MultiModal Models:
+            - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
+            - Multi Modal Models Available: "swarms/models/multimodal_models.md"
+            - GPT4VisionAPI: "swarms/models/gpt4v.md"
 
 
 
@@ -418,66 +424,43 @@ nav:
           - Swarms DAO: "swarms/examples/swarms_dao.md"
           - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
           - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
+    
+    - Tools & Integrations:
+      - Web Search with Exa: "examples/exa_search.md"
+      - Advanced Research: "examples/av.md"
+      - Browser Use: "examples/browser_use.md"
+      - Yahoo Finance: "swarms/examples/yahoo_finance.md"
+
+
 
     - Apps:
       - Smart Database: "examples/smart_database.md"
 
 
-  # - Swarm Models:
-  #   - Overview: "swarms/models/index.md"
-  #   # - Models Available: "swarms/models/index.md"
-  #   # - Available Models from OpenAI, Huggingface, TogetherAI, and more: "swarms/models/models_available_overview.md"
-  #   # - Model Router
-  #   - Quickstart: "swarms/models/models_available_overview.md"
-  #   - How to Create A Custom Language Model: "swarms/models/custom_model.md"
-  #   - Language Models:
-  #     - BaseLLM: "swarms/models/base_llm.md"
-  #     - HuggingFaceLLM: "swarms/models/huggingface.md"
-  #     - Anthropic: "swarms/models/anthropic.md"
-  #     - OpenAIChat: "swarms/models/openai.md"
-  #     - OpenAIFunctionCaller: "swarms/models/openai_function_caller.md"
-  #     - Groq: "swarms/models/groq.md"
-  #     - Cerebras: "swarms/models/cerebras.md"
-  #   - MultiModal Models:
-  #     - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
-  #     - Multi Modal Models Available: "swarms/models/multimodal_models.md"
-  #     - GPT4VisionAPI: "swarms/models/gpt4v.md"
   - Swarms Cloud API:
-    - Overview: "swarms_cloud/swarms_api.md"
-    - Quickstart: "swarms_cloud/quickstart.md"
-    - MCP Server: "swarms_cloud/mcp.md"
-    - Rate Limits: "swarms_cloud/rate_limits.md"
-    - Best Practices: "swarms_cloud/best_practices.md"
+    - Overview: "swarms_cloud/migration.md"
 
-    - Capabilities:
-      - Agents:
-        - Individual Agent Completions: "swarms_cloud/agent_api.md"
-        - Tools: "swarms_cloud/swarms_api_tools.md"
-      - Multi-Agent:
-        - Multi Agent Architectures Available: "swarms_cloud/swarm_types.md"
-        - Swarm Types:
-          - AgentRearrange: "swarms_cloud/agent_rearrange.md"
-          - MixtureOfAgents: "swarms_cloud/mixture_of_agents.md"
-          - SequentialWorkflow: "swarms_cloud/sequential_workflow.md"
-          - ConcurrentWorkflow: "swarms_cloud/concurrent_workflow.md"
-          - GroupChat: "swarms_cloud/group_chat.md"
-          - MultiAgentRouter: "swarms_cloud/multi_agent_router.md"
-          - HierarchicalSwarm: "swarms_cloud/hierarchical_swarm.md"
-          - MajorityVoting: "swarms_cloud/majority_voting.md"
-          # - AutoSwarmBuilder: "swarms_cloud/auto_swarm_builder.md"
-          # - Auto: "swarms_cloud/auto.md"
-        - Examples:
-          - Medical Swarm: "swarms/examples/swarms_api_medical.md"
-          - Finance Swarm: "swarms/examples/swarms_api_finance.md"
 
-    - Clients:
-      - Overview: "swarms_cloud/api_clients.md"
-      - Python Client: "swarms_cloud/python_client.md"
-      - Rust Client: "swarms_cloud/rust_client.md"
-
-    - Pricing:
-      - Pricing: "swarms_cloud/api_pricing.md"
-      - Subscription Tiers: "swarms_cloud/subscription_tiers.md"
+  #   - Capabilities:
+  #     - Agents:
+  #       - Individual Agent Completions: "swarms_cloud/agent_api.md"
+  #       - Tools: "swarms_cloud/swarms_api_tools.md"
+  #     - Multi-Agent:
+  #       - Multi Agent Architectures Available: "swarms_cloud/swarm_types.md"
+  #       - Swarm Types:
+  #         - AgentRearrange: "swarms_cloud/agent_rearrange.md"
+  #         - MixtureOfAgents: "swarms_cloud/mixture_of_agents.md"
+  #         - SequentialWorkflow: "swarms_cloud/sequential_workflow.md"
+  #         - ConcurrentWorkflow: "swarms_cloud/concurrent_workflow.md"
+  #         - GroupChat: "swarms_cloud/group_chat.md"
+  #         - MultiAgentRouter: "swarms_cloud/multi_agent_router.md"
+  #         - HierarchicalSwarm: "swarms_cloud/hierarchical_swarm.md"
+  #         - MajorityVoting: "swarms_cloud/majority_voting.md"
+  #         # - AutoSwarmBuilder: "swarms_cloud/auto_swarm_builder.md"
+  #         # - Auto: "swarms_cloud/auto.md"
+        # - Examples:
+        #   - Medical Swarm: "swarms/examples/swarms_api_medical.md"
+        #   - Finance Swarm: "swarms/examples/swarms_api_finance.md"
 
   - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"
@@ -508,8 +491,3 @@ nav:
     - Architecture & Design:
       - Understanding Swarms Architecture: "swarms/concept/framework_architecture.md"
       - Development Philosophy & Principles: "swarms/concept/philosophy.md"
-
-  # - About Swarms:
-  #   - Vision & Mission: "swarms/concept/vision.md"
-  #   - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
-  #   - Products: "swarms/products.md"

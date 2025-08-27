@@ -1,5 +1,4 @@
 import os
-import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 from typing import Dict, Optional, Tuple
@@ -12,6 +11,8 @@ from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
+
+from swarms.structs.swarm_id import swarm_id
 
 
 class EvaluationError(Exception):
@@ -30,13 +31,6 @@ class AggregationError(EvaluationError):
     """Exception raised when aggregation of evaluations fails."""
 
     pass
-
-
-def swarm_id() -> str:
-    """
-    Generate a unique ID for the swarm.
-    """
-    return str(uuid.uuid4())
 
 
 # Define evaluation dimensions and their evaluation goals

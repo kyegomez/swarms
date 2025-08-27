@@ -1,7 +1,5 @@
 # MixtureOfAgents Class Documentation
 
-## Architecture Overview
-
 ```mermaid
 graph TD
     A[Input Task] --> B[Initialize MixtureOfAgents]
@@ -26,7 +24,6 @@ graph TD
     end
 ```
 
-## Overview
 
 The `MixtureOfAgents` class represents a mixture of agents operating within a swarm. The workflow of the swarm follows a parallel → sequential → parallel → final output agent process. This implementation is inspired by concepts discussed in the paper: [https://arxiv.org/pdf/2406.04692](https://arxiv.org/pdf/2406.04692).
 
@@ -73,45 +70,8 @@ class MixtureOfAgents(BaseSwarm):
 | `auto_save`      | `bool`       | Flag indicating whether to auto-save the metadata to a file.                                  | `False`                                |
 | `saved_file_name`| `str`        | The name of the file where the metadata will be saved.                                        | `"moe_swarm.json"`                     |
 
-### `agent_check`
 
-```python
-def agent_check(self):
-```
 
-#### Description
-
-Checks if the provided `agents` attribute is a list of `Agent` instances. Raises a `TypeError` if the validation fails.
-
-#### Example Usage
-
-```python
-moe_swarm = MixtureOfAgents(agents=[agent1, agent2])
-moe_swarm.agent_check()  # Validates the agents
-```
-
-### `final_agent_check`
-
-```python
-def final_agent_check(self):
-```
-
-#### Description
-
-Checks if the provided `final_agent` attribute is an instance of `Agent`. Raises a `TypeError` if the validation fails.
-
-#### Example Usage
-
-```python
-moe_swarm = MixtureOfAgents(final_agent=final_agent)
-moe_swarm.final_agent_check()  # Validates the final agent
-```
-
-### `swarm_initialization`
-
-```python
-def swarm_initialization(self):
-```
 
 #### Description
 
@@ -280,48 +240,28 @@ For further reading and background information on the concepts used in the `Mixt
 ```python
 from swarms import MixtureOfAgents, Agent
 
-from swarm_models import OpenAIChat
-
 # Define agents
 director = Agent(
     agent_name="Director",
     system_prompt="Directs the tasks for the accountants",
-    llm=OpenAIChat(),
+    model_name="gpt-4.1",
     max_loops=1,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    state_save_file_type="json",
-    saved_state_path="director.json",
 )
 
 # Initialize accountant 1
 accountant1 = Agent(
     agent_name="Accountant1",
     system_prompt="Prepares financial statements",
-    llm=OpenAIChat(),
+    model_name="gpt-4.1",
     max_loops=1,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    state_save_file_type="json",
-    saved_state_path="accountant1.json",
 )
 
 # Initialize accountant 2
 accountant2 = Agent(
     agent_name="Accountant2",
     system_prompt="Audits financial records",
-    llm=OpenAIChat(),
+    model_name="gpt-4.1",
     max_loops=1,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    state_save_file_type="json",
-    saved_state_path="accountant2.json",
 )
 
 
@@ -338,49 +278,28 @@ print(history)
 ```python
 from swarms import MixtureOfAgents, Agent
 
-from swarm_models import OpenAIChat
-
 # Define Agents
-# Define agents
 director = Agent(
     agent_name="Director",
     system_prompt="Directs the tasks for the accountants",
-    llm=OpenAIChat(),
+    model_name="gpt-4.1",
     max_loops=1,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    state_save_file_type="json",
-    saved_state_path="director.json",
 )
 
 # Initialize accountant 1
 accountant1 = Agent(
     agent_name="Accountant1",
     system_prompt="Prepares financial statements",
-    llm=OpenAIChat(),
+    model_name="gpt-4.1",
     max_loops=1,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    state_save_file_type="json",
-    saved_state_path="accountant1.json",
 )
 
 # Initialize accountant 2
 accountant2 = Agent(
     agent_name="Accountant2",
     system_prompt="Audits financial records",
-    llm=OpenAIChat(),
+    model_name="gpt-4.1",
     max_loops=1,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    state_save_file_type="json",
-    saved_state_path="accountant2.json",
 )
 
 # Initialize the MixtureOfAgents with verbose output and auto-save enabled
@@ -401,49 +320,30 @@ print(history)
 ```python
 from swarms import MixtureOfAgents, Agent
 
-from swarm_models import OpenAIChat
 
 # Define agents
 # Initialize the director agent
 director = Agent(
     agent_name="Director",
     system_prompt="Directs the tasks for the accountants",
-    llm=OpenAIChat(),
+    model_name="gpt-4.1",
     max_loops=1,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    state_save_file_type="json",
-    saved_state_path="director.json",
 )
 
 # Initialize accountant 1
 accountant1 = Agent(
     agent_name="Accountant1",
     system_prompt="Prepares financial statements",
-    llm=OpenAIChat(),
+    model_name="gpt-4.1",
     max_loops=1,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    state_save_file_type="json",
-    saved_state_path="accountant1.json",
 )
 
 # Initialize accountant 2
 accountant2 = Agent(
     agent_name="Accountant2",
     system_prompt="Audits financial records",
-    llm=OpenAIChat(),
+    model_name="gpt-4.1",
     max_loops=1,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    state_save_file_type="json",
-    saved_state_path="accountant2.json",
 )
 
 # Initialize the MixtureOfAgents with custom rules and multiple layers
@@ -468,11 +368,13 @@ The `MixtureOfAgents` class is a powerful and flexible framework for managing an
 
 ### Key Takeaways
 
-1. **Flexible Initialization**: The class allows for customizable initialization with various parameters, enabling users to tailor the swarm's configuration to their specific needs.
-2. **Robust Agent Management**: With built-in validation methods, the class ensures that all agents and the final agent are correctly instantiated, preventing runtime errors and facilitating smooth execution.
-3. **Layered Processing**: The layered approach to processing allows for intermediate results to be iteratively refined, enhancing the overall output quality.
-4. **Verbose Logging and Auto-Save**: These features aid in debugging, monitoring, and record-keeping, providing transparency and ease of management.
-5. **Comprehensive Documentation**: The detailed class and method documentation, along with numerous usage examples, provide a clear and thorough understanding of how to leverage the `MixtureOfAgents` class effectively.
+| Feature                          | Description                                                                                                                                                                                                                 |
+|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Flexible Initialization**       | The class allows for customizable initialization with various parameters, enabling users to tailor the swarm's configuration to their specific needs.                                                                       |
+| **Robust Agent Management**       | Built-in validation methods ensure that all agents and the final agent are correctly instantiated, preventing runtime errors and facilitating smooth execution.                                                             |
+| **Layered Processing**            | The layered approach to processing allows for intermediate results to be iteratively refined, enhancing the overall output quality.                                                                                        |
+| **Verbose Logging and Auto-Save** | Features such as verbose logging and auto-save aid in debugging, monitoring, and record-keeping, providing transparency and ease of management.                                                                             |
+| **Comprehensive Documentation**   | Detailed class and method documentation, along with numerous usage examples, provide a clear and thorough understanding of how to leverage the `MixtureOfAgents` class effectively.                                         |
 
 ### Practical Applications
 
@@ -499,46 +401,28 @@ In conclusion, the `MixtureOfAgents` class represents a versatile and efficient 
 
 ```python
 from swarms import MixtureOfAgents, Agent
-from swarm_models import OpenAIChat
 
 # Initialize agents as in previous examples
 director = Agent(
     agent_name="Director",
     system_prompt="Directs the tasks for the accountants",
-    llm=OpenAIChat(),
+    model_name="gpt-4.1",
     max_loops=1,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    state_save_file_type="json",
-    saved_state_path="director.json",
+
 )
 
 accountant1 = Agent(
     agent_name="Accountant1",
     system_prompt="Prepares financial statements",
-    llm=OpenAIChat(),
+    model_name="gpt-4.1",
     max_loops=1,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    state_save_file_type="json",
-    saved_state_path="accountant1.json",
 )
 
 accountant2 = Agent(
     agent_name="Accountant2",
     system_prompt="Audits financial records",
-    llm=OpenAIChat(),
+    model_name="gpt-4.1",
     max_loops=1,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    state_save_file_type="json",
-    saved_state_path="accountant2.json",
 )
 
 # Initialize MixtureOfAgents
@@ -562,7 +446,6 @@ for task, result in zip(tasks, results):
 
 ```python
 from swarms import MixtureOfAgents, Agent
-from swarm_models import OpenAIChat
 
 # Initialize agents as before
 # ... agent initialization code ...
@@ -585,19 +468,3 @@ for task, result in zip(tasks, results):
     print(f"Task: {task}\nResult: {result}\n")
 ```
 
-## Advanced Features
-
-### Context Preservation
-
-The `MixtureOfAgents` class maintains context between iterations when running multiple loops. Each subsequent iteration receives the context from previous runs, allowing for more sophisticated and context-aware processing.
-
-### Asynchronous Processing
-
-The class implements asynchronous processing internally using Python's `asyncio`, enabling efficient handling of concurrent operations and improved performance for complex workflows.
-
-### Telemetry and Logging
-
-Built-in telemetry and logging capabilities help track agent performance and maintain detailed execution records:
-- Automatic logging of agent outputs
-- Structured data capture using Pydantic models
-- JSON-formatted output options

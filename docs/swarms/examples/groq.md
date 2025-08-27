@@ -9,8 +9,6 @@
 ```python
 import os
 
-from swarm_models import OpenAIChat
-
 from swarms import Agent
 
 company = "NVDA"

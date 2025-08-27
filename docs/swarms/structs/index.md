@@ -2,27 +2,23 @@
 
 ---
 
-## 🚀 Benefits of Multi-Agent Collaboration
-
-<div align="center">
-  <img src="/assets/img/benefits.png" alt="Benefits of Multi-Agent Collaboration" width="700"/>
-  <br/>
-  <em>Fig. 1: Key benefits and structure of multi-agent collaboration</em>
-</div>
+## Benefits of Multi-Agent Collaboration
 
 ### Why Multi-Agent Architectures?
 
 Multi-agent systems unlock new levels of intelligence, reliability, and efficiency by enabling agents to work together. Here are the core benefits:
 
-1. **Reduction of Hallucination**: Cross-verification between agents ensures more accurate, reliable outputs by reducing hallucination.
-2. **Extended Memory**: Agents share knowledge and task history, achieving collective long-term memory for smarter, more adaptive responses.
-3. **Specialization & Task Distribution**: Delegating tasks to specialized agents boosts efficiency and quality.
-4. **Parallel Processing**: Multiple agents work simultaneously, greatly increasing speed and throughput.
-5. **Scalability & Adaptability**: Systems can dynamically scale and adapt, maintaining efficiency as demands change.
+| **Benefit**                       | **Description**                                                                                                      |
+|------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| **Reduction of Hallucination**     | Cross-verification between agents ensures more accurate, reliable outputs by reducing hallucination.                 |
+| **Extended Memory**                | Agents share knowledge and task history, achieving collective long-term memory for smarter, more adaptive responses. |
+| **Specialization & Task Distribution** | Delegating tasks to specialized agents boosts efficiency and quality.                                           |
+| **Parallel Processing**            | Multiple agents work simultaneously, greatly increasing speed and throughput.                                        |
+| **Scalability & Adaptability**     | Systems can dynamically scale and adapt, maintaining efficiency as demands change.                                  |
 
 ---
 
-## 🏗️ Multi-Agent Architectures For Production Deployments
+## Multi-Agent Architectures For Production Deployments
 
 `swarms` provides a variety of powerful, pre-built multi-agent architectures enabling you to orchestrate agents in various ways. Choose the right structure for your specific problem to build efficient and reliable production systems.
 
@@ -42,7 +38,7 @@ Multi-agent systems unlock new levels of intelligence, reliability, and efficien
 
 ---
 
-### 🏢 HierarchicalSwarm Example
+### HierarchicalSwarm Example
 
 Hierarchical architectures enable structured, iterative, and scalable problem-solving by combining a director (or router) agent with specialized worker agents or swarms. Below are two key patterns:
 
@@ -292,14 +288,14 @@ Join our community of agent engineers and researchers for technical support, cut
 
 | Platform | Description | Link |
 |----------|-------------|------|
-| 📚 Documentation | Official documentation and guides | [docs.swarms.world](https://docs.swarms.world) |
-| 📝 Blog | Latest updates and technical articles | [Medium](https://medium.com/@kyeg) |
-| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/EamjgSaEQf) |
-| 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
-| 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
-| 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
-| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
-| 🚀 Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
+| Documentation | Official documentation and guides | [docs.swarms.world](https://docs.swarms.world) |
+| Blog | Latest updates and technical articles | [Medium](https://medium.com/@kyeg) |
+| Discord | Live chat and community support | [Join Discord](https://discord.gg/EamjgSaEQf) |
+| Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
+| LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
+| YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyXyitkbU_WSy7bd_41SqQ) |
+| Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
+| Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
 
 ---
 

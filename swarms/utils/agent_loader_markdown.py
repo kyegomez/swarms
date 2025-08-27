@@ -54,7 +54,7 @@ class MarkdownAgentConfig(BaseModel):
         return v
 
 
-class AgentLoader:
+class MarkdownAgentLoader:
     """
     Loader for creating agents from markdown files using Claude Code sub-agent format.
 
@@ -444,7 +444,7 @@ def load_agent_from_markdown(file_path: str, **kwargs) -> "Agent":
     """
     # Lazy import to avoid circular dependency
 
-    loader = AgentLoader()
+    loader = MarkdownAgentLoader()
     return loader.load_single_agent(file_path, **kwargs)
 
 
@@ -488,7 +488,7 @@ def load_agents_from_markdown(
     """
     # Lazy import to avoid circular dependency
 
-    loader = AgentLoader()
+    loader = MarkdownAgentLoader()
     return loader.load_agents_from_markdown(
         file_paths,
         concurrent=concurrent,

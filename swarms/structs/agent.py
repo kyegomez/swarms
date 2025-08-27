@@ -52,6 +52,7 @@ from swarms.schemas.base_schemas import (
 from swarms.schemas.conversation_schema import ConversationSchema
 from swarms.schemas.mcp_schemas import (
     MCPConnection,
+    MultipleMCPConnections,
 )
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.conversation import Conversation
@@ -419,6 +420,7 @@ class Agent:
         safety_prompt_on: bool = False,
         random_models_on: bool = False,
         mcp_config: Optional[MCPConnection] = None,
+        mcp_configs: Optional[MultipleMCPConnections] = None,
         top_p: Optional[float] = 0.90,
         conversation_schema: Optional[ConversationSchema] = None,
         llm_base_url: Optional[str] = None,
@@ -571,6 +573,7 @@ class Agent:
         self.reasoning_prompt_on = reasoning_prompt_on
         self.dynamic_context_window = dynamic_context_window
         self.show_tool_execution_output = show_tool_execution_output
+        self.mcp_configs = mcp_configs
 
         # self.init_handling()
         self.setup_config()
@@ -1023,16 +1026,16 @@ class Agent:
             self.short_memory.add(
                 role="system",
                 content=(
-                    f"🔍 [RAG Query Initiated]\n"
-                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                    f"📝 Query:\n{query}\n\n"
-                    f"📚 Retrieved Knowledge (RAG Output):\n{output}\n"
-                    f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                    f"💡 The above information was retrieved from the agent's long-term memory using Retrieval-Augmented Generation (RAG). "
-                    f"Use this context to inform your next response or reasoning step."
+                    "[RAG Query Initiated]\n"
+                    "----------------------------------\n"
+                    f"Query:\n{query}\n\n"
+                    f"Retrieved Knowledge (RAG Output):\n{output}\n"
+                    "----------------------------------\n"
+                    "The above information was retrieved from the agent's long-term memory using Retrieval-Augmented Generation (RAG). "
+                    "Use this context to inform your next response or reasoning step."
                 ),
             )
-        except Exception as e:
+        except AgentMemoryError as e:
             logger.error(
                 f"Agent: {self.agent_name} Error handling RAG query: {e} Traceback: {traceback.format_exc()}"
             )

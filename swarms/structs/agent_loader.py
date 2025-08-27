@@ -6,11 +6,11 @@ from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
 )
 from swarms.structs.agent import Agent
-from swarms.structs.csv_to_agent import AgentLoader as CSVAgentLoader
+from swarms.structs.csv_to_agent import CSVAgentLoader
 from swarms.utils.agent_loader_markdown import (
     load_agent_from_markdown,
     load_agents_from_markdown,
-    AgentLoader as MarkdownAgentLoader,
+    MarkdownAgentLoader,
 )
 
 
@@ -21,10 +21,11 @@ class AgentLoader:
     This class provides methods to load agents from Markdown, YAML, and CSV files.
     """
 
-    def __init__(self):
+    def __init__(self, concurrent: bool = True):
         """
         Initialize the AgentLoader instance.
         """
+        self.concurrent = concurrent
         pass
 
     def load_agents_from_markdown(

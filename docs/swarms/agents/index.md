@@ -1,17 +1,12 @@
 # Agents Introduction
 
+
+An agent in swarms is basically 4 elements added together:
+
+`agent = LLM + Tools + RAG + Loop`
+
 The Agent class is the core component of the Swarms framework, designed to create intelligent, autonomous AI agents capable of handling complex tasks through multi-modal processing, tool integration, and structured outputs. This comprehensive guide covers all aspects of the Agent class, from basic setup to advanced features.
 
-## Table of Contents
-
-1. [Prerequisites & Installation](#prerequisites--installation)
-2. [Basic Agent Configuration](#basic-agent-configuration)
-3. [Multi-Modal Capabilities](#multi-modal-capabilities)
-4. [Tool Integration](#tool-integration)
-5. [Structured Outputs](#structured-outputs)
-6. [Advanced Features](#advanced-features)
-7. [Best Practices](#best-practices)
-8. [Complete Examples](#complete-examples)
 
 ## Prerequisites & Installation
 
@@ -492,57 +487,6 @@ final_only_agent = Agent(
 )
 ```
 
-### Safety and Content Filtering
-
-```python
-from swarms import Agent
-
-# Agent with enhanced safety features
-safe_agent = Agent(
-    agent_name="Safe-Agent",
-    agent_description="Agent with comprehensive safety measures",
-    system_prompt="You are a helpful, harmless, and honest AI assistant.",
-    model_name="gpt-4o-mini",
-    safety_prompt_on=True,  # Enable safety prompts
-    max_loops=1,
-    temperature=0.3  # Lower temperature for more consistent, safe responses
-)
-```
-
-## Best Practices
-
-### Error Handling and Robustness
-
-```python
-import logging
-from swarms import Agent
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-def robust_agent_execution(agent, task, max_retries=3):
-    """Execute agent with retry logic and error handling."""
-    for attempt in range(max_retries):
-        try:
-            response = agent.run(task)
-            logger.info(f"Agent execution successful on attempt {attempt + 1}")
-            return response
-        except Exception as e:
-            logger.error(f"Attempt {attempt + 1} failed: {str(e)}")
-            if attempt == max_retries - 1:
-                raise
-            time.sleep(2 ** attempt)  # Exponential backoff
-    
-    return None
-
-# Example usage
-try:
-    result = robust_agent_execution(agent, "Analyze market trends")
-    print(result)
-except Exception as e:
-    print(f"Agent execution failed: {e}")
-```
 
 ### Performance Optimization
 
@@ -869,15 +813,13 @@ If you encounter issues or need assistance:
 
 We welcome contributions! Here's how to get involved:
 
-- **Report Bugs**: Help us improve by reporting issues
-
-- **Suggest Features**: Share your ideas for new capabilities
-
-- **Submit Code**: Contribute improvements and new features
-
-- **Improve Documentation**: Help make our docs better
-
-- **Share Examples**: Show how you're using Swarms in your projects
+| Contribution Type        | Description                                      |
+|-------------------------|--------------------------------------------------|
+| **Report Bugs**         | Help us improve by reporting issues              |
+| **Suggest Features**    | Share your ideas for new capabilities            |
+| **Submit Code**         | Contribute improvements and new features         |
+| **Improve Documentation** | Help make our docs better                      |
+| **Share Examples**      | Show how you're using Swarms in your projects    |
 
 ---
 

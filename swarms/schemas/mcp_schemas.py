@@ -1,5 +1,6 @@
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
-from typing import Dict, List, Any, Optional
 
 
 class MCPConnection(BaseModel):
@@ -37,7 +38,7 @@ class MCPConnection(BaseModel):
 
 class MultipleMCPConnections(BaseModel):
     connections: List[MCPConnection] = Field(
-        default=[], description="List of MCP connections"
+        description="List of MCP connections"
     )
 
     class Config:

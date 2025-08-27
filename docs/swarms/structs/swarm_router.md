@@ -1,65 +1,11 @@
 # SwarmRouter Documentation
 
-The `SwarmRouter` class is a flexible routing system designed to manage different types of swarms for task execution. It provides a unified interface to interact with various swarm types, including:
+The `SwarmRouter` class is a flexible routing system designed to manage different types of swarms for task execution. It provides a unified interface to interact with various swarm types.
 
-| Swarm Type | Description |
-|------------|-------------|
-| `AgentRearrange` | Optimizes agent arrangement for task execution |
-| `MixtureOfAgents` | Combines multiple agent types for diverse tasks |
-| `SpreadSheetSwarm` | Uses spreadsheet-like operations for task management |
-| `SequentialWorkflow` | Executes tasks sequentially |
-| `ConcurrentWorkflow` | Executes tasks in parallel |
-| `GroupChat` | Facilitates communication among agents in a group chat format |
-| `MultiAgentRouter` | Routes tasks between multiple agents |
-| `AutoSwarmBuilder` | Automatically builds swarm structure |
-| `HiearchicalSwarm` | Hierarchical organization of agents |
-| `MajorityVoting` | Uses majority voting for decision making |
-| `MALT` | Multi-Agent Language Tasks |
-| `CouncilAsAJudge` | Council-based judgment system |
-| `InteractiveGroupChat` | Interactive group chat with user participation |
-| `auto` | Automatically selects best swarm type via embedding search |
+Full Path: `from swarms.structs.swarm_router`
 
-## Classes
 
-### Document
-
-A Pydantic model for representing document data.
-
-| Attribute | Type | Description |
-| --- | --- | --- |
-| `file_path` | str | Path to the document file. |
-| `data` | str | Content of the document. |
-
-### SwarmLog
-
-A Pydantic model for capturing log entries.
-
-| Attribute | Type | Description |
-| --- | --- | --- |
-| `id` | str | Unique identifier for the log entry. |
-| `timestamp` | datetime | Time of log creation. |
-| `level` | str | Log level (e.g., "info", "error"). |
-| `message` | str | Log message content. |
-| `swarm_type` | SwarmType | Type of swarm associated with the log. |
-| `task` | str | Task being performed (optional). |
-| `metadata` | Dict[str, Any] | Additional metadata (optional). |
-| `documents` | List[Document] | List of documents associated with the log. |
-
-### SwarmRouterConfig
-
-Configuration model for SwarmRouter.
-
-| Attribute | Type | Description |
-| --- | --- | --- |
-| `name` | str | Name identifier for the SwarmRouter instance |
-| `description` | str | Description of the SwarmRouter's purpose |
-| `swarm_type` | SwarmType | Type of swarm to use |
-| `rearrange_flow` | Optional[str] | Flow configuration string |
-| `rules` | Optional[str] | Rules to inject into every agent |
-| `multi_agent_collab_prompt` | bool | Whether to enable multi-agent collaboration prompts |
-| `task` | str | The task to be executed by the swarm |
-
-### SwarmRouter
+## Initialization Parameters
 
 Main class for routing tasks to different swarm types.
 
@@ -108,13 +54,28 @@ Main class for routing tasks to different swarm types.
 | `concurrent_batch_run` | `tasks: List[str], *args, **kwargs` | Execute multiple tasks concurrently |
 
 
-## Installation
+## Available Swarm Types
 
-To use the SwarmRouter, first install the required dependencies:
+The `SwarmRouter` supports many various multi-agent architectures for various applications.
 
-```bash
-pip install swarms swarm_models
-```
+| Swarm Type | Description |
+|------------|-------------|
+| `AgentRearrange` | Optimizes agent arrangement for task execution |
+| `MixtureOfAgents` | Combines multiple agent types for diverse tasks |
+| `SpreadSheetSwarm` | Uses spreadsheet-like operations for task management |
+| `SequentialWorkflow` | Executes tasks sequentially |
+| `ConcurrentWorkflow` | Executes tasks in parallel |
+| `GroupChat` | Facilitates communication among agents in a group chat format |
+| `MultiAgentRouter` | Routes tasks between multiple agents |
+| `AutoSwarmBuilder` | Automatically builds swarm structure |
+| `HiearchicalSwarm` | Hierarchical organization of agents |
+| `MajorityVoting` | Uses majority voting for decision making |
+| `MALT` | Multi-Agent Language Tasks |
+| `CouncilAsAJudge` | Council-based judgment system |
+| `InteractiveGroupChat` | Interactive group chat with user participation |
+| `auto` | Automatically selects best swarm type via embedding search |
+
+
 
 ## Basic Usage
 
@@ -122,20 +83,6 @@ pip install swarms swarm_models
 import os
 from dotenv import load_dotenv
 from swarms import Agent, SwarmRouter, SwarmType
-from swarm_models import OpenAIChat
-
-load_dotenv()
-
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("GROQ_API_KEY")
-
-# Model
-model = OpenAIChat(
-    openai_api_base="https://api.groq.com/openai/v1",
-    openai_api_key=api_key,
-    model_name="llama-3.1-70b-versatile",
-    temperature=0.1,
-)
 
 # Define specialized system prompts for each agent
 DATA_EXTRACTOR_PROMPT = """You are a highly specialized private equity agent focused on data extraction from various documents. Your expertise includes:
@@ -158,31 +105,15 @@ Deliver clear, concise summaries that capture the essence of various documents w
 data_extractor_agent = Agent(
     agent_name="Data-Extractor",
     system_prompt=DATA_EXTRACTOR_PROMPT,
-    llm=model,
+    model_name="gpt-4.1",
     max_loops=1,
-    autosave=True,
-    verbose=True,
-    dynamic_temperature_enabled=True,
-    saved_state_path="data_extractor_agent.json",
-    user_name="pe_firm",
-    retry_attempts=1,
-    context_length=200000,
-    output_type="string",
 )
 
 summarizer_agent = Agent(
     agent_name="Document-Summarizer",
     system_prompt=SUMMARIZER_PROMPT,
-    llm=model,
+    model_name="gpt-4.1",
     max_loops=1,
-    autosave=True,
-    verbose=True,
-    dynamic_temperature_enabled=True,
-    saved_state_path="summarizer_agent.json",
-    user_name="pe_firm",
-    retry_attempts=1,
-    context_length=200000,
-    output_type="string",
 )
 
 # Initialize the SwarmRouter
@@ -192,8 +123,6 @@ router = SwarmRouter(
     max_loops=1,
     agents=[data_extractor_agent, summarizer_agent],
     swarm_type="ConcurrentWorkflow",
-    autosave=True,
-    return_json=True,
 )
 
 # Example usage
@@ -203,10 +132,6 @@ if __name__ == "__main__":
         "Where is the best place to find template term sheets for series A startups? Provide links and references"
     )
     print(result)
-
-    # Retrieve and print logs
-    for log in router.get_logs():
-        print(f"{log.timestamp} - {log.level}: {log.message}")
 ```
 
 ## Advanced Usage
@@ -241,40 +166,6 @@ auto_router = SwarmRouter(
 )
 
 result = auto_router.run("Analyze and summarize the quarterly financial report")
-```
-
-### Loading Agents from CSV
-
-To load agents from a CSV file:
-
-```python
-csv_router = SwarmRouter(
-    name="CSVAgentRouter",
-    load_agents_from_csv=True,
-    csv_file_path="agents.csv",
-    swarm_type="SequentialWorkflow"
-)
-
-result = csv_router.run("Process the client data")
-```
-
-### Using Shared Memory System
-
-To enable shared memory across agents:
-
-```python
-from swarms.memory import SemanticMemory
-
-memory_system = SemanticMemory()
-
-memory_router = SwarmRouter(
-    name="MemoryRouter",
-    agents=[agent1, agent2],
-    shared_memory_system=memory_system,
-    swarm_type="SequentialWorkflow"
-)
-
-result = memory_router.run("Analyze historical data and make predictions")
 ```
 
 ### Injecting Rules to All Agents
@@ -454,6 +345,7 @@ result = voting_router.run("Should we invest in Company X based on the available
 ```
 
 ### Auto Select (Experimental)
+
 Autonomously selects the right swarm by conducting vector search on your input task or name or description or all 3.
 
 ```python
@@ -550,19 +442,4 @@ router = SwarmRouter(
 )
 
 result = router("Analyze the market data")  # Equivalent to router.run("Analyze the market data")
-```
-
-### Using the swarm_router Function
-
-For quick one-off tasks, you can use the swarm_router function:
-
-```python
-from swarms import swarm_router
-
-result = swarm_router(
-    name="QuickRouter",
-    agents=[agent1, agent2],
-    swarm_type="ConcurrentWorkflow",
-    task="Analyze the quarterly report"
-)
 ```

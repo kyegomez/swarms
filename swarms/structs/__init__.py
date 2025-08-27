@@ -1,5 +1,6 @@
 from swarms.structs.agent import Agent
 from swarms.structs.agent_builder import AgentsBuilder
+from swarms.structs.agent_loader import AgentLoader
 from swarms.structs.agent_rearrange import AgentRearrange, rearrange
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.base_structure import BaseStructure
@@ -190,4 +191,5 @@ __all__ = [
     "check_cancelled",
     "check_exit",
     "check_end",
+    "AgentLoader",
 ]
