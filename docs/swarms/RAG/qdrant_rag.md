@@ -383,30 +383,28 @@ print(result)
 
 ## Best Practices
 
-1. **Document Processing Strategy**:
-   - **Chunking**: Split large documents into 200-500 token chunks for optimal retrieval
-   - **Overlap**: Use 20-50 token overlap between chunks to maintain context
-   - **Preprocessing**: Clean and normalize text before indexing
-
-2. **Collection Organization**:
-   - Use separate collections for different document types (technical docs, policies, etc.)
-   - Implement consistent naming conventions for collections
-   - Consider document lifecycle and update strategies
-
-3. **Embedding Model Selection**:
-   - **Development**: Use `all-MiniLM-L6-v2` for fast iteration
-   - **Production**: Use `text-embedding-3-small` or `text-embedding-3-large` for quality
-   - **Specialized Domains**: Consider domain-specific embedding models
-
-4. **Performance Optimization**:
-   - **Retrieval Count**: Start with 3-5 results, adjust based on performance testing
-   - **Batch Operations**: Use `batch_add()` for efficient bulk document ingestion
-   - **Metadata Strategy**: Store relevant metadata for enhanced filtering and context
-
-5. **Production Deployment**:
-   - Use Qdrant Cloud or self-hosted server for persistent storage
-   - Implement proper error handling and retry mechanisms
-   - Monitor performance metrics and embedding quality
+| Category | Best Practice | Details |
+|----------|---------------|---------|
+| **Document Processing Strategy** | | |
+| | Chunking | Split large documents into 200-500 token chunks for optimal retrieval |
+| | Overlap | Use 20-50 token overlap between chunks to maintain context |
+| | Preprocessing | Clean and normalize text before indexing |
+| **Collection Organization** | | |
+| | Separation | Use separate collections for different document types (technical docs, policies, etc.) |
+| | Naming | Implement consistent naming conventions for collections |
+| | Lifecycle | Consider document lifecycle and update strategies |
+| **Embedding Model Selection** | | |
+| | Development | Use `all-MiniLM-L6-v2` for fast iteration |
+| | Production | Use `text-embedding-3-small` or `text-embedding-3-large` for quality |
+| | Specialized | Consider domain-specific embedding models for specialized domains |
+| **Performance Optimization** | | |
+| | Retrieval Count | Start with 3-5 results, adjust based on performance testing |
+| | Batch Operations | Use `batch_add()` for efficient bulk document ingestion |
+| | Metadata Strategy | Store relevant metadata for enhanced filtering and context |
+| **Production Deployment** | | |
+| | Storage | Use Qdrant Cloud or self-hosted server for persistent storage |
+| | Error Handling | Implement proper error handling and retry mechanisms |
+| | Monitoring | Monitor performance metrics and embedding quality |
 
 ## Performance Tips
 
