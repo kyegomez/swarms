@@ -16,7 +16,6 @@ from rich.text import Text
 from rich.spinner import Spinner
 
 from rich.markdown import Markdown
-from rich.syntax import Syntax
 
 # Global lock to ensure only a single Rich Live context is active at any moment.
 # Rich's Live render is **not** thread-safe; concurrent Live contexts on the same
@@ -34,86 +33,106 @@ spinner = Spinner("dots", style="yellow")
 
 class MarkdownOutputHandler:
     """Custom output handler to render content as markdown with simplified syntax highlighting"""
-    
+
     def __init__(self, console: "Console"):
         self.console = console
-    
+
     def _clean_output(self, output: str) -> str:
         """Clean up the output for better markdown rendering"""
         if not output:
             return ""
-        
+
         # Remove log prefixes and timestamps
-        output = re.sub(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| INFO.*?\|.*?\|', '', output)
-        output = re.sub(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| DEBUG.*?\|.*?\|', '', output)
-        output = re.sub(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| WARNING.*?\|.*?\|', '', output)
-        output = re.sub(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| ERROR.*?\|.*?\|', '', output)
-        
+        output = re.sub(
+            r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| INFO.*?\|.*?\|",
+            "",
+            output,
+        )
+        output = re.sub(
+            r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| DEBUG.*?\|.*?\|",
+            "",
+            output,
+        )
+        output = re.sub(
+            r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| WARNING.*?\|.*?\|",
+            "",
+            output,
+        )
+        output = re.sub(
+            r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| ERROR.*?\|.*?\|",
+            "",
+            output,
+        )
+
         # Remove spinner characters and progress indicators
-        output = re.sub(r'[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]', '', output)
-        output = re.sub(r'⠋ Processing\.\.\.', '', output)
-        output = re.sub(r'⠙ Processing\.\.\.', '', output)
-        output = re.sub(r'⠹ Processing\.\.\.', '', output)
-        output = re.sub(r'⠸ Processing\.\.\.', '', output)
-        output = re.sub(r'⠼ Processing\.\.\.', '', output)
-        output = re.sub(r'⠴ Processing\.\.\.', '', output)
-        output = re.sub(r'⠦ Processing\.\.\.', '', output)
-        output = re.sub(r'⠧ Processing\.\.\.', '', output)
-        output = re.sub(r'⠇ Processing\.\.\.', '', output)
-        output = re.sub(r'⠏ Processing\.\.\.', '', output)
-        
+        output = re.sub(r"[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]", "", output)
+        output = re.sub(r"⠋ Processing\.\.\.", "", output)
+        output = re.sub(r"⠙ Processing\.\.\.", "", output)
+        output = re.sub(r"⠹ Processing\.\.\.", "", output)
+        output = re.sub(r"⠸ Processing\.\.\.", "", output)
+        output = re.sub(r"⠼ Processing\.\.\.", "", output)
+        output = re.sub(r"⠴ Processing\.\.\.", "", output)
+        output = re.sub(r"⠦ Processing\.\.\.", "", output)
+        output = re.sub(r"⠧ Processing\.\.\.", "", output)
+        output = re.sub(r"⠇ Processing\.\.\.", "", output)
+        output = re.sub(r"⠏ Processing\.\.\.", "", output)
+
         # Remove loop indicators
-        output = re.sub(r'⠋ Loop \d+/\d+', '', output)
-        output = re.sub(r'⠙ Loop \d+/\d+', '', output)
-        output = re.sub(r'⠹ Loop \d+/\d+', '', output)
-        output = re.sub(r'⠸ Loop \d+/\d+', '', output)
-        output = re.sub(r'⠼ Loop \d+/\d+', '', output)
-        output = re.sub(r'⠴ Loop \d+/\d+', '', output)
-        output = re.sub(r'⠦ Loop \d+/\d+', '', output)
-        output = re.sub(r'⠧ Loop \d+/\d+', '', output)
-        output = re.sub(r'⠇ Loop \d+/\d+', '', output)
-        output = re.sub(r'⠏ Loop \d+/\d+', '', output)
-        
+        output = re.sub(r"⠋ Loop \d+/\d+", "", output)
+        output = re.sub(r"⠙ Loop \d+/\d+", "", output)
+        output = re.sub(r"⠹ Loop \d+/\d+", "", output)
+        output = re.sub(r"⠸ Loop \d+/\d+", "", output)
+        output = re.sub(r"⠼ Loop \d+/\d+", "", output)
+        output = re.sub(r"⠴ Loop \d+/\d+", "", output)
+        output = re.sub(r"⠦ Loop \d+/\d+", "", output)
+        output = re.sub(r"⠧ Loop \d+/\d+", "", output)
+        output = re.sub(r"⠇ Loop \d+/\d+", "", output)
+        output = re.sub(r"⠏ Loop \d+/\d+", "", output)
+
         # Remove any remaining log messages
-        output = re.sub(r'INFO.*?\|.*?\|.*?\|', '', output)
-        output = re.sub(r'DEBUG.*?\|.*?\|.*?\|', '', output)
-        output = re.sub(r'WARNING.*?\|.*?\|.*?\|', '', output)
-        output = re.sub(r'ERROR.*?\|.*?\|.*?\|', '', output)
-        
+        output = re.sub(r"INFO.*?\|.*?\|.*?\|", "", output)
+        output = re.sub(r"DEBUG.*?\|.*?\|.*?\|", "", output)
+        output = re.sub(r"WARNING.*?\|.*?\|.*?\|", "", output)
+        output = re.sub(r"ERROR.*?\|.*?\|.*?\|", "", output)
+
         # Clean up extra whitespace and empty lines
-        output = re.sub(r'\n\s*\n\s*\n', '\n\n', output)
-        output = re.sub(r'^\s+', '', output, flags=re.MULTILINE)
-        output = re.sub(r'\s+$', '', output, flags=re.MULTILINE)
-        
+        output = re.sub(r"\n\s*\n\s*\n", "\n\n", output)
+        output = re.sub(r"^\s+", "", output, flags=re.MULTILINE)
+        output = re.sub(r"\s+$", "", output, flags=re.MULTILINE)
+
         # Remove any remaining plaintext artifacts
-        output = re.sub(r'Generated content:', '', output)
-        output = re.sub(r'Evaluation result:', '', output)
-        output = re.sub(r'Refined content:', '', output)
-        
+        output = re.sub(r"Generated content:", "", output)
+        output = re.sub(r"Evaluation result:", "", output)
+        output = re.sub(r"Refined content:", "", output)
+
         # Ensure proper markdown formatting
-        if not output.strip().startswith('#'):
+        if not output.strip().startswith("#"):
             # If no headers, add some structure
-            lines = output.strip().split('\n')
+            lines = output.strip().split("\n")
             if len(lines) > 0:
                 # Add a header for the first meaningful line
                 first_line = lines[0].strip()
-                if first_line and not first_line.startswith('**'):
-                    output = f"## {first_line}\n\n" + '\n'.join(lines[1:])
-        
+                if first_line and not first_line.startswith("**"):
+                    output = f"## {first_line}\n\n" + "\n".join(
+                        lines[1:]
+                    )
+
         return output.strip()
-    
-    def render_with_simple_syntax_highlighting(self, content: str) -> list:
+
+    def render_with_simple_syntax_highlighting(
+        self, content: str
+    ) -> list:
         """Render content with simplified syntax highlighting for code blocks"""
         # For now, let's just render everything as markdown to ensure it works
         # We can add code block detection back later if needed
-        return [('markdown', content)]
-    
+        return [("markdown", content)]
+
     def render_content_parts(self, parts: list) -> list:
         """Render different content parts with appropriate formatting"""
         rendered_parts = []
-        
+
         for part in parts:
-            if part[0] == 'markdown':
+            if part[0] == "markdown":
                 # Render markdown
                 try:
                     md = Markdown(part[1])
@@ -121,45 +140,57 @@ class MarkdownOutputHandler:
                 except Exception:
                     # Fallback to plain text
                     rendered_parts.append(Text(part[1]))
-            
-            elif part[0] == 'code':
+
+            elif part[0] == "code":
                 # Code is already rendered as Syntax or Text object
                 rendered_parts.append(part[1])
-        
+
         return rendered_parts
-    
-    def render_markdown_output(self, content: str, title: str = "", border_style: str = "blue"):
+
+    def render_markdown_output(
+        self,
+        content: str,
+        title: str = "",
+        border_style: str = "blue",
+    ):
         """Render content as markdown with syntax highlighting"""
         if not content or content.strip() == "":
             return
-        
+
         # Clean up the output
         cleaned_content = self._clean_output(content)
-        
+
         # Render with syntax highlighting
         try:
             # Split content into parts (markdown and code blocks)
-            parts = self.render_with_simple_syntax_highlighting(cleaned_content)
-            
+            parts = self.render_with_simple_syntax_highlighting(
+                cleaned_content
+            )
+
             # Render each part appropriately
             rendered_parts = self.render_content_parts(parts)
-            
+
             # Create a group of rendered parts
             from rich.console import Group
+
             content_group = Group(*rendered_parts)
-            
-            self.console.print(Panel(
-                content_group,
-                title=title,
-                border_style=border_style
-            ))
-        except Exception as e:
+
+            self.console.print(
+                Panel(
+                    content_group,
+                    title=title,
+                    border_style=border_style,
+                )
+            )
+        except Exception:
             # Fallback to plain text if rendering fails
-            self.console.print(Panel(
-                cleaned_content,
-                title=title,
-                border_style="yellow"
-            ))
+            self.console.print(
+                Panel(
+                    cleaned_content,
+                    title=title,
+                    border_style="yellow",
+                )
+            )
 
 
 def choose_random_color():
@@ -206,9 +237,11 @@ class Formatter:
             "⠏",
         ]
         self._spinner_idx = 0
-        
+
         # Set markdown capability based on user preference
-        self.markdown_handler = MarkdownOutputHandler(self.console) if md else None
+        self.markdown_handler = (
+            MarkdownOutputHandler(self.console) if md else None
+        )
 
     def _get_status_with_loading(self, status: str) -> Text:
         """
@@ -284,7 +317,9 @@ class Formatter:
 
         # Use markdown rendering if enabled
         if self.markdown_handler:
-            self.markdown_handler.render_markdown_output(content, title, style)
+            self.markdown_handler.render_markdown_output(
+                content, title, style
+            )
         else:
             # Fallback to original panel printing
             try:
@@ -293,7 +328,7 @@ class Formatter:
                 # Fallback to basic printing if panel fails
                 print(f"\n{title}:")
                 print(content)
-    
+
     def print_markdown(
         self,
         content: str,
@@ -308,7 +343,9 @@ class Formatter:
             border_style (str): The border style for the panel
         """
         if self.markdown_handler:
-            self.markdown_handler.render_markdown_output(content, title, border_style)
+            self.markdown_handler.render_markdown_output(
+                content, title, border_style
+            )
         else:
             # Fallback to regular panel if markdown is disabled
             self.print_panel(content, title, border_style)

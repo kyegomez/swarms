@@ -1,12 +1,13 @@
 import random
-from swarms.structs.base_swarm import BaseSwarm
-from typing import List
-from swarms.structs.agent import Agent
-from pydantic import BaseModel, Field
-from typing import Optional
 from datetime import datetime
-from swarms.schemas.agent_step_schemas import ManySteps
+from typing import List, Optional
+
 import tenacity
+from pydantic import BaseModel, Field
+
+from swarms.schemas.agent_step_schemas import ManySteps
+from swarms.structs.agent import Agent
+from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger("round-robin")

@@ -32,24 +32,6 @@ A production-grade multi-agent system enabling sophisticated group conversations
 | max_loops | int | 10 | Maximum conversation turns |
 
 
-## Table of Contents
-
-- [Installation](#installation)
-- [Core Concepts](#core-concepts)
-- [Basic Usage](#basic-usage)
-- [Advanced Configuration](#advanced-configuration)
-- [Speaker Functions](#speaker-functions)
-- [Response Models](#response-models)
-- [Advanced Examples](#advanced-examples)
-- [API Reference](#api-reference)
-- [Best Practices](#best-practices)
-
-## Installation
-
-```bash
-pip3 install swarms swarm-models loguru
-```
-
 ## Core Concepts
 
 The GroupChat system consists of several key components:
@@ -65,55 +47,23 @@ The GroupChat system consists of several key components:
 
 import os
 from dotenv import load_dotenv
-from swarm_models import OpenAIChat
 from swarms import Agent, GroupChat, expertise_based
 
-
 if __name__ == "__main__":
-
-    load_dotenv()
-
-    # Get the OpenAI API key from the environment variable
-    api_key = os.getenv("OPENAI_API_KEY")
-
-    # Create an instance of the OpenAIChat class
-    model = OpenAIChat(
-        openai_api_key=api_key,
-        model_name="gpt-4o-mini",
-        temperature=0.1,
-    )
 
     # Example agents
     agent1 = Agent(
         agent_name="Financial-Analysis-Agent",
         system_prompt="You are a financial analyst specializing in investment strategies.",
-        llm=model,
+        model_name="gpt-4.1",
         max_loops=1,
-        autosave=False,
-        dashboard=False,
-        verbose=True,
-        dynamic_temperature_enabled=True,
-        user_name="swarms_corp",
-        retry_attempts=1,
-        context_length=200000,
-        output_type="string",
-        streaming_on=False,
     )
 
     agent2 = Agent(
         agent_name="Tax-Adviser-Agent",
         system_prompt="You are a tax adviser who provides clear and concise guidance on tax-related queries.",
-        llm=model,
+        model_name="gpt-4.1",
         max_loops=1,
-        autosave=False,
-        dashboard=False,
-        verbose=True,
-        dynamic_temperature_enabled=True,
-        user_name="swarms_corp",
-        retry_attempts=1,
-        context_length=200000,
-        output_type="string",
-        streaming_on=False,
     )
 
     agents = [agent1, agent2]
@@ -212,36 +162,6 @@ chat = GroupChat(
 )
 ```
 
-## Response Models
-
-### Complete Schema
-
-```python
-class AgentResponse(BaseModel):
-    """Individual agent response in a conversation turn"""
-    agent_name: str
-    role: str
-    message: str
-    timestamp: datetime = Field(default_factory=datetime.now)
-    turn_number: int
-    preceding_context: List[str] = Field(default_factory=list)
-
-class ChatTurn(BaseModel):
-    """Single turn in the conversation"""
-    turn_number: int
-    responses: List[AgentResponse]
-    task: str
-    timestamp: datetime = Field(default_factory=datetime.now)
-
-class ChatHistory(BaseModel):
-    """Complete conversation history"""
-    turns: List[ChatTurn]
-    total_messages: int
-    name: str
-    description: str
-    start_time: datetime = Field(default_factory=datetime.now)
-```
-
 ## Advanced Examples
 
 ### Multi-Agent Analysis Team
@@ -251,19 +171,19 @@ class ChatHistory(BaseModel):
 data_analyst = Agent(
     agent_name="Data-Analyst",
     system_prompt="You analyze numerical data and patterns",
-    llm=model
+    model_name="gpt-4.1",
 )
 
 market_expert = Agent(
     agent_name="Market-Expert",
     system_prompt="You provide market insights and trends",
-    llm=model
+    model_name="gpt-4.1",
 )
 
 strategy_advisor = Agent(
     agent_name="Strategy-Advisor",
     system_prompt="You formulate strategic recommendations",
-    llm=model
+    model_name="gpt-4.1",
 )
 
 # Create analysis team
@@ -308,29 +228,12 @@ for task, history in zip(tasks, histories):
 
 ## Best Practices
 
-1. **Agent Design**
-   - Give agents clear, specific roles
-   - Use detailed system prompts
-   - Set appropriate context lengths
-   - Enable retries for reliability
-
-2. **Speaker Functions**
-   - Match function to use case
-   - Consider conversation flow
-   - Handle edge cases
-   - Add appropriate logging
-
-3. **Error Handling**
-   - Use try-except blocks
-   - Log errors appropriately
-   - Implement retry logic
-   - Provide fallback responses
-
-4. **Performance**
-   - Use concurrent processing for multiple tasks
-   - Monitor context lengths
-   - Implement proper cleanup
-   - Cache responses when appropriate
+| Category            | Recommendations                                                                                   |
+|---------------------|--------------------------------------------------------------------------------------------------|
+| **Agent Design**    | - Give agents clear, specific roles<br>- Use detailed system prompts<br>- Set appropriate context lengths<br>- Enable retries for reliability |
+| **Speaker Functions** | - Match function to use case<br>- Consider conversation flow<br>- Handle edge cases<br>- Add appropriate logging |
+| **Error Handling**  | - Use try-except blocks<br>- Log errors appropriately<br>- Implement retry logic<br>- Provide fallback responses |
+| **Performance**     | - Use concurrent processing for multiple tasks<br>- Monitor context lengths<br>- Implement proper cleanup<br>- Cache responses when appropriate |
 
 ## API Reference
 
