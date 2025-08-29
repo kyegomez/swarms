@@ -1,5 +1,5 @@
 from swarms.structs.agent import Agent
-from swarms.structs.dynamic_conversational_swarm import (
+from new_experimental.dynamic_conversational_swarm import (
     DynamicConversationalSwarm,
 )
 

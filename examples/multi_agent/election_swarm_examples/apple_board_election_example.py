@@ -1,5 +1,5 @@
 from swarms import Agent
-from swarms.structs.election_swarm import (
+from new_experimental.election_swarm import (
     ElectionSwarm,
 )
 

@@ -28,6 +28,7 @@ experimental/
 encryption
 errors
 chroma
+new_experimental/
 agent_workspace
 .pt
 Accounting Assistant_state.json
