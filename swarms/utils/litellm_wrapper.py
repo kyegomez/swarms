@@ -1,17 +1,15 @@
-import traceback
-from typing import Optional
-import base64
-import requests
-from pathlib import Path
-
 import asyncio
-from typing import List
+import base64
+import traceback
+import uuid
+from pathlib import Path
+from typing import List, Optional
 
-from loguru import logger
 import litellm
+import requests
+from litellm import acompletion, completion, supports_vision
+from loguru import logger
 from pydantic import BaseModel
-
-from litellm import completion, acompletion, supports_vision
 
 
 class LiteLLMException(Exception):
@@ -22,27 +20,25 @@ class LiteLLMException(Exception):
 
 def get_audio_base64(audio_source: str) -> str:
     """
-    Convert audio from a given source to a base64 encoded string.
+    Convert audio data from a URL or local file path to a base64-encoded string.
 
-    This function handles both URLs and local file paths. If the audio source is a URL, it fetches the audio data
-    from the internet. If it is a local file path, it reads the audio data from the specified file.
+    This function supports both remote (HTTP/HTTPS) and local audio sources. If the source is a URL,
+    it fetches the audio data via HTTP. If the source is a local file path, it reads the file directly.
 
     Args:
-        audio_source (str): The source of the audio, which can be a URL or a local file path.
+        audio_source (str): The path or URL to the audio file.
 
     Returns:
-        str: A base64 encoded string representation of the audio data.
+        str: The base64-encoded string of the audio data.
 
     Raises:
-        requests.HTTPError: If the HTTP request to fetch audio data fails.
+        requests.HTTPError: If fetching audio from a URL fails.
         FileNotFoundError: If the local audio file does not exist.
     """
-    # Handle URL
     if audio_source.startswith(("http://", "https://")):
         response = requests.get(audio_source)
         response.raise_for_status()
         audio_data = response.content
-    # Handle local file
     else:
         with open(audio_source, "rb") as file:
             audio_data = file.read()
@@ -53,31 +49,157 @@ def get_audio_base64(audio_source: str) -> str:
 
 def get_image_base64(image_source: str) -> str:
     """
-    Convert image from a given source to a base64 encoded string.
-    Handles URLs, local file paths, and data URIs.
+    Convert image data from a URL, local file path, or data URI to a base64-encoded string in data URI format.
+
+    If the input is already a data URI, it is returned unchanged. Otherwise, the image is loaded from the
+    specified source, encoded as base64, and returned as a data URI with the appropriate MIME type.
+
+    Args:
+        image_source (str): The path, URL, or data URI of the image.
+
+    Returns:
+        str: The image as a base64-encoded data URI string.
+
+    Raises:
+        requests.HTTPError: If fetching the image from a URL fails.
+        FileNotFoundError: If the local image file does not exist.
     """
-    # If already a data URI, return as is
     if image_source.startswith("data:image"):
         return image_source
 
-    # Handle URL
     if image_source.startswith(("http://", "https://")):
         response = requests.get(image_source)
         response.raise_for_status()
         image_data = response.content
-    # Handle local file
     else:
         with open(image_source, "rb") as file:
             image_data = file.read()
 
-    # Get file extension for mime type
     extension = Path(image_source).suffix.lower()
-    mime_type = (
-        f"image/{extension[1:]}" if extension else "image/jpeg"
-    )
-
+    mime_type_mapping = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".bmp": "image/bmp",
+        ".tiff": "image/tiff",
+        ".svg": "image/svg+xml",
+    }
+    mime_type = mime_type_mapping.get(extension, "image/jpeg")
     encoded_string = base64.b64encode(image_data).decode("utf-8")
     return f"data:{mime_type};base64,{encoded_string}"
+
+
+def save_base64_as_image(
+    base64_data: str,
+    output_dir: str = "images",
+) -> str:
+    """
+    Decode base64-encoded image data and save it as an image file in the specified directory.
+
+    This function supports both raw base64 strings and data URIs (data:image/...;base64,...).
+    The image format is determined from the MIME type if present, otherwise defaults to JPEG.
+    The image is saved with a randomly generated filename.
+
+    Args:
+        base64_data (str): The base64-encoded image data, either as a raw string or a data URI.
+        output_dir (str, optional): Directory to save the image file. Defaults to "images".
+            If None, saves to the current working directory.
+
+    Returns:
+        str: The full path to the saved image file.
+
+    Raises:
+        ValueError: If the base64 data is not a valid data URI or is otherwise invalid.
+        IOError: If the image cannot be written to disk.
+    """
+    import os
+
+    if output_dir is None:
+        output_dir = os.getcwd()
+    os.makedirs(output_dir, exist_ok=True)
+
+    if base64_data.startswith("data:image"):
+        try:
+            header, encoded_data = base64_data.split(",", 1)
+            mime_type = header.split(":")[1].split(";")[0]
+        except (ValueError, IndexError):
+            raise ValueError("Invalid data URI format")
+    else:
+        encoded_data = base64_data
+        mime_type = "image/jpeg"
+
+    mime_to_extension = {
+        "image/jpeg": ".jpg",
+        "image/jpg": ".jpg",
+        "image/png": ".png",
+        "image/gif": ".gif",
+        "image/webp": ".webp",
+        "image/bmp": ".bmp",
+        "image/tiff": ".tiff",
+        "image/svg+xml": ".svg",
+    }
+    extension = mime_to_extension.get(mime_type, ".jpg")
+    filename = f"{uuid.uuid4()}{extension}"
+    file_path = os.path.join(output_dir, filename)
+
+    try:
+        logger.debug(
+            f"Attempting to decode base64 data of length: {len(encoded_data)}"
+        )
+        logger.debug(
+            f"Base64 data (first 100 chars): {encoded_data[:100]}..."
+        )
+        image_data = base64.b64decode(encoded_data)
+        with open(file_path, "wb") as f:
+            f.write(image_data)
+        logger.info(f"Image saved successfully to: {file_path}")
+        return file_path
+    except Exception as e:
+        logger.error(
+            f"Base64 decoding failed. Data length: {len(encoded_data)}"
+        )
+        logger.error(
+            f"First 100 chars of data: {encoded_data[:100]}..."
+        )
+        raise IOError(f"Failed to save image: {str(e)}")
+
+
+def gemini_output_img_handler(response: any):
+    """
+    Handle Gemini model output that may contain a base64-encoded image string.
+
+    If the response content is a base64-encoded image (i.e., a string starting with a known image data URI prefix),
+    this function saves the image to disk and returns the file path. Otherwise, it returns the content as is.
+
+    Args:
+        response (any): The response object from the Gemini model. It is expected to have
+            a structure such that `response.choices[0].message.content` contains the output.
+
+    Returns:
+        str: The file path to the saved image if the content is a base64 image, or the original content otherwise.
+    """
+    response_content = response.choices[0].message.content
+
+    base64_prefixes = [
+        "data:image/jpeg;base64,",
+        "data:image/jpg;base64,",
+        "data:image/png;base64,",
+        "data:image/gif;base64,",
+        "data:image/webp;base64,",
+        "data:image/bmp;base64,",
+        "data:image/tiff;base64,",
+        "data:image/svg+xml;base64,",
+    ]
+
+    if isinstance(response_content, str) and any(
+        response_content.strip().startswith(prefix)
+        for prefix in base64_prefixes
+    ):
+        return save_base64_as_image(base64_data=response_content)
+    else:
+        return response_content
 
 
 class LiteLLM:
@@ -99,7 +221,7 @@ class LiteLLM:
         tool_choice: str = "auto",
         parallel_tool_calls: bool = False,
         audio: str = None,
-        retries: int = 0,
+        retries: int = 3,
         verbose: bool = False,
         caching: bool = False,
         mcp_call: bool = False,
@@ -245,20 +367,26 @@ class LiteLLM:
 
         Args:
             task (str): The task to prepare messages for.
+            img (str, optional): Image input if any. Defaults to None.
 
         Returns:
             list: A list of messages prepared for the task.
         """
-        self.check_if_model_supports_vision(img=img)
+        # Start with a fresh copy of messages to avoid duplication
+        messages = self.messages.copy()
 
-        # Handle vision case
+        # Check if model supports vision if image is provided
         if img is not None:
-            self.vision_processing(task=task, image=img)
+            self.check_if_model_supports_vision(img=img)
+            # Handle vision case - this already includes both task and image
+            messages = self.vision_processing(
+                task=task, image=img, messages=messages
+            )
+        elif task is not None:
+            # Only add task message if no image (since vision_processing handles both)
+            messages.append({"role": "user", "content": task})
 
-        if task is not None:
-            self.messages.append({"role": "user", "content": task})
-
-        return self.messages
+        return messages
 
     def anthropic_vision_processing(
         self, task: str, image: str, messages: list
@@ -352,11 +480,20 @@ class LiteLLM:
 
             # Add format for specific models
             extension = Path(image).suffix.lower()
-            mime_type = (
-                f"image/{extension[1:]}"
-                if extension
-                else "image/jpeg"
-            )
+
+            # Map common image extensions to proper MIME types
+            mime_type_mapping = {
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".png": "image/png",
+                ".gif": "image/gif",
+                ".webp": "image/webp",
+                ".bmp": "image/bmp",
+                ".tiff": "image/tiff",
+                ".svg": "image/svg+xml",
+            }
+
+            mime_type = mime_type_mapping.get(extension, "image/jpeg")
             vision_message["image_url"]["format"] = mime_type
 
         # Append vision message
@@ -430,6 +567,10 @@ class LiteLLM:
         This approach reduces server load and improves performance by avoiding
         unnecessary image downloads and base64 conversions when possible.
         """
+        # Ensure messages is a list
+        if messages is None:
+            messages = []
+
         logger.info(f"Processing image for model: {self.model_name}")
 
         # Log whether we're using direct URL or base64 conversion
@@ -542,18 +683,13 @@ class LiteLLM:
             5. Default parameters
         """
         try:
-
-            self.messages.append({"role": "user", "content": task})
-
-            if img is not None:
-                self.messages = self.vision_processing(
-                    task=task, image=img
-                )
+            # Prepare messages properly - this handles both task and image together
+            messages = self._prepare_messages(task=task, img=img)
 
             # Base completion parameters
             completion_params = {
                 "model": self.model_name,
-                "messages": self.messages,
+                "messages": messages,
                 "stream": self.stream,
                 "max_tokens": self.max_tokens,
                 "caching": self.caching,
@@ -616,8 +752,10 @@ class LiteLLM:
                 return self.output_for_tools(response)
             elif self.return_all is True:
                 return response.model_dump()
+            elif "gemini" in self.model_name.lower():
+                return gemini_output_img_handler(response)
             else:
-                # Return standard response content
+                # For non-Gemini models, return the content directly
                 return response.choices[0].message.content
 
         except LiteLLMException as error:
@@ -628,9 +766,6 @@ class LiteLLM:
                 logger.warning(
                     "Rate limit hit, retrying with exponential backoff..."
                 )
-                import time
-
-                time.sleep(2)
                 return self.run(task, audio, img, *args, **kwargs)
             raise error
 
@@ -661,7 +796,9 @@ class LiteLLM:
             str: The content of the response from the model.
         """
         try:
-            messages = self._prepare_messages(task)
+            # Extract image parameter from kwargs if present
+            img = kwargs.pop("img", None) if "img" in kwargs else None
+            messages = self._prepare_messages(task=task, img=img)
 
             # Prepare common completion parameters
             completion_params = {
@@ -703,9 +840,13 @@ class LiteLLM:
                     .message.tool_calls[0]
                     .function.arguments
                 )
-
-            print(response)
-            return response
+            elif self.return_all is True:
+                return response.model_dump()
+            elif "gemini" in self.model_name.lower():
+                return gemini_output_img_handler(response)
+            else:
+                # For non-Gemini models, return the content directly
+                return response.choices[0].message.content
 
         except Exception as error:
             logger.error(f"Error in LiteLLM arun: {str(error)}")

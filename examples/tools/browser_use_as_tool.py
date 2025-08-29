@@ -10,7 +10,11 @@ load_dotenv()
 
 
 class BrowserUseAgent:
-    def __init__(self, agent_name: str = "BrowserAgent", agent_description: str = "A browser agent that can navigate the web and perform tasks."):
+    def __init__(
+        self,
+        agent_name: str = "BrowserAgent",
+        agent_description: str = "A browser agent that can navigate the web and perform tasks.",
+    ):
         """
         Initialize a BrowserAgent with a given name.
 
@@ -50,7 +54,6 @@ class BrowserUseAgent:
         return asyncio.run(self.browser_agent_test(task))
 
 
-
 def browser_agent_tool(task: str):
     """
     Executes a browser automation agent as a callable tool.
@@ -60,7 +63,7 @@ def browser_agent_tool(task: str):
     as a JSON-formatted string.
 
     Args:
-        task (str): 
+        task (str):
             A detailed instruction or prompt describing the browser-based task to perform.
             For example, you can instruct the agent to navigate to a website, extract information,
             or interact with web elements.
@@ -80,11 +83,12 @@ def browser_agent_tool(task: str):
     return BrowserAgent().run(task)
 
 
-
 agent = Agent(
-    name = "Browser Agent",
-    model_name = "gpt-4.1",
-    tools = [browser_agent_tool],
+    name="Browser Agent",
+    model_name="gpt-4.1",
+    tools=[browser_agent_tool],
 )
 
-agent.run("Please navigate to https://www.coingecko.com and identify the best performing cryptocurrency coin over the past 24 hours.")
+agent.run(
+    "Please navigate to https://www.coingecko.com and identify the best performing cryptocurrency coin over the past 24 hours."
+)
