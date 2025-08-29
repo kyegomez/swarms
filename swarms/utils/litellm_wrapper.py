@@ -1,3 +1,5 @@
+import traceback
+from typing import Optional, Callable
 import asyncio
 import base64
 import traceback
@@ -340,6 +342,7 @@ class LiteLLM:
                 # Store other types of runtime_args for debugging
                 completion_params["runtime_args"] = runtime_args
 
+
     def output_for_tools(self, response: any):
         if self.mcp_call is True:
             out = response.choices[0].message.tool_calls[0].function
@@ -648,6 +651,338 @@ class LiteLLM:
                     f"Model {self.model_name} does not support vision"
                 )
 
+    def _collect_streaming_chunks(self, streaming_response, callback=None):
+        """Helper method to collect chunks from streaming response."""
+        chunks = []
+        for chunk in streaming_response:
+            if hasattr(chunk, "choices") and chunk.choices[0].delta.content:
+                content = chunk.choices[0].delta.content
+                chunks.append(content)
+                if callback:
+                    callback(content)
+        return "".join(chunks)
+
+    def _handle_streaming_response(
+        self,
+        streaming_response,
+        title: str = "LLM Response",
+        style: Optional[str] = None,
+        streaming_callback: Optional[Callable[[str], None]] = None,
+        print_on: bool = True,
+        verbose: bool = False,
+    ) -> str:
+        """
+        Centralized streaming response handler for all streaming scenarios.
+        
+        Args:
+            streaming_response: The streaming response object
+            title: Title for the streaming panel
+            style: Style for the panel (optional)
+            streaming_callback: Callback for real-time streaming
+            print_on: Whether to print the streaming output
+            verbose: Whether to enable verbose logging
+            
+        Returns:
+            str: The complete response string
+        """
+        # Non-streaming response - return as is
+        if not (hasattr(streaming_response, "__iter__") and not isinstance(streaming_response, str)):
+            return streaming_response
+        
+        # Handle callback streaming
+        if streaming_callback is not None:
+            return self._collect_streaming_chunks(streaming_response, streaming_callback)
+        
+        # Handle silent streaming
+        if not print_on:
+            return self._collect_streaming_chunks(streaming_response)
+        
+        # Handle formatted streaming with panel
+        from swarms.utils.formatter import formatter
+        from loguru import logger
+        
+        collected_chunks = []
+        def on_chunk_received(chunk: str):
+            collected_chunks.append(chunk)
+            if verbose:
+                logger.debug(f"Streaming chunk received: {chunk[:50]}...")
+
+        return formatter.print_streaming_panel(
+            streaming_response,
+            title=title,
+            style=style,
+            collect_chunks=True,
+            on_chunk_callback=on_chunk_received,
+        )
+
+    def run_with_streaming(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        audio: Optional[str] = None,
+        streaming_callback: Optional[Callable[[str], None]] = None,
+        title: str = "LLM Response",
+        style: Optional[str] = None,
+        print_on: bool = True,
+        verbose: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """
+        Run LLM with centralized streaming handling.
+        
+        Args:
+            task: The task/prompt to send to the LLM
+            img: Optional image input
+            audio: Optional audio input
+            streaming_callback: Callback for real-time streaming
+            title: Title for streaming panel
+            style: Style for streaming panel
+            print_on: Whether to print streaming output
+            verbose: Whether to enable verbose logging
+            
+        Returns:
+            str: The complete response
+        """
+        original_stream = self.stream
+        self.stream = True
+        
+        try:
+            # Build kwargs for run method
+            run_kwargs = {"task": task, **kwargs}
+            if img is not None:
+                run_kwargs["img"] = img
+            if audio is not None:
+                run_kwargs["audio"] = audio
+            
+            response = self.run(*args, **run_kwargs)
+            
+            return self._handle_streaming_response(
+                response,
+                title=title,
+                style=style,
+                streaming_callback=streaming_callback,
+                print_on=print_on,
+                verbose=verbose,
+            )
+        finally:
+            self.stream = original_stream
+
+    def run_tool_summary_with_streaming(
+        self,
+        tool_results: str,
+        agent_name: str = "Agent",
+        print_on: bool = True,
+        verbose: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """
+        Run tool summary with streaming support.
+        
+        Args:
+            tool_results: The tool execution results to summarize
+            agent_name: Name of the agent for the panel title
+            print_on: Whether to print streaming output
+            verbose: Whether to enable verbose logging
+            
+        Returns:
+            str: The complete summary response
+        """
+        return self.run_with_streaming(
+            task=f"Please analyze and summarize the following tool execution output:\n\n{tool_results}",
+            title=f"Agent: {agent_name} - Tool Summary",
+            style="green",
+            print_on=print_on,
+            verbose=verbose,
+            *args,
+            **kwargs,
+        )
+
+    def handle_string_streaming(
+        self,
+        response: str,
+        print_on: bool = True,
+        delay: float = 0.01,
+    ) -> None:
+        """
+        Handle streaming for string responses by simulating streaming output.
+        
+        Args:
+            response: The string response to stream
+            print_on: Whether to print the streaming output
+            delay: Delay between characters for streaming effect
+        """
+        if not (print_on and response):
+            return
+            
+        import time
+        for char in response:
+            print(char, end="", flush=True)
+            if delay > 0:
+                time.sleep(delay)
+        print()  # Newline at the end
+
+    def _process_anthropic_chunk(self, chunk, current_tool_call, tool_call_buffer, tool_calls_in_stream, print_on, verbose):
+        """Process Anthropic-style streaming chunks."""
+        import json
+        from loguru import logger
+        
+        chunk_type = getattr(chunk, 'type', None)
+        full_text_response = ""
+        
+        if chunk_type == 'content_block_start' and hasattr(chunk, 'content_block') and chunk.content_block.type == 'tool_use':
+            tool_name = chunk.content_block.name
+            if print_on:
+                print(f"\nTool Call: {tool_name}...", flush=True)
+            current_tool_call = {"id": chunk.content_block.id, "name": tool_name, "input": ""}
+            tool_call_buffer = ""
+        
+        elif chunk_type == 'content_block_delta' and hasattr(chunk, 'delta'):
+            if chunk.delta.type == 'input_json_delta':
+                tool_call_buffer += chunk.delta.partial_json
+            elif chunk.delta.type == 'text_delta':
+                text_chunk = chunk.delta.text
+                full_text_response += text_chunk
+                if print_on:
+                    print(text_chunk, end="", flush=True)
+
+        elif chunk_type == 'content_block_stop' and current_tool_call:
+            try:
+                tool_input = json.loads(tool_call_buffer)
+                current_tool_call["input"] = tool_input
+                tool_calls_in_stream.append(current_tool_call)
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse tool arguments: {tool_call_buffer}. Error: {e}")
+                # Store the raw buffer for debugging
+                current_tool_call["input"] = {"raw_buffer": tool_call_buffer, "error": str(e)}
+                tool_calls_in_stream.append(current_tool_call)
+            current_tool_call = None
+            tool_call_buffer = ""
+            
+        return full_text_response, current_tool_call, tool_call_buffer
+    
+    def _process_openai_chunk(self, chunk, tool_calls_in_stream, print_on, verbose):
+        """Process OpenAI-style streaming chunks."""
+        import json
+        full_text_response = ""
+        
+        if not (hasattr(chunk, 'choices') and chunk.choices):
+            return full_text_response
+            
+        choice = chunk.choices[0]
+        if not (hasattr(choice, 'delta') and choice.delta):
+            return full_text_response
+            
+        delta = choice.delta
+        
+        # Handle text content
+        if hasattr(delta, 'content') and delta.content:
+            text_chunk = delta.content
+            full_text_response += text_chunk
+            if print_on:
+                print(text_chunk, end="", flush=True)
+        
+        # Handle tool calls in streaming chunks
+        if hasattr(delta, 'tool_calls') and delta.tool_calls:
+            for tool_call in delta.tool_calls:
+                tool_index = getattr(tool_call, 'index', 0)
+                
+                # Ensure we have enough slots in the list
+                while len(tool_calls_in_stream) <= tool_index:
+                    tool_calls_in_stream.append(None)
+                
+                if hasattr(tool_call, 'function') and tool_call.function:
+                    func = tool_call.function
+                    
+                    # Create new tool call if slot is empty and we have a function name
+                    if tool_calls_in_stream[tool_index] is None and hasattr(func, 'name') and func.name:
+                        if print_on:
+                            print(f"\nTool Call: {func.name}...", flush=True)
+                        tool_calls_in_stream[tool_index] = {
+                            "id": getattr(tool_call, 'id', f"call_{tool_index}"),
+                            "name": func.name,
+                            "arguments": ""
+                        }
+                    
+                    # Accumulate arguments
+                    if tool_calls_in_stream[tool_index] and hasattr(func, 'arguments') and func.arguments is not None:
+                        tool_calls_in_stream[tool_index]["arguments"] += func.arguments
+                        
+                        if verbose:
+                            logger.debug(f"Accumulated arguments for {tool_calls_in_stream[tool_index].get('name', 'unknown')}: '{tool_calls_in_stream[tool_index]['arguments']}'")
+                        
+                        # Try to parse if we have complete JSON
+                        try:
+                            args_dict = json.loads(tool_calls_in_stream[tool_index]["arguments"])
+                            tool_calls_in_stream[tool_index]["input"] = args_dict
+                            tool_calls_in_stream[tool_index]["arguments_complete"] = True
+                            if verbose:
+                                logger.info(f"Complete tool call for {tool_calls_in_stream[tool_index]['name']} with args: {args_dict}")
+                        except json.JSONDecodeError:
+                            # Continue accumulating - JSON might be incomplete
+                            if verbose:
+                                logger.debug(f"Incomplete JSON for {tool_calls_in_stream[tool_index].get('name', 'unknown')}: {tool_calls_in_stream[tool_index]['arguments'][:100]}...")
+                            
+        return full_text_response
+
+    def parse_streaming_chunks_with_tools(
+        self,
+        stream,
+        agent_name: str = "Agent",
+        print_on: bool = True,
+        verbose: bool = False,
+    ) -> tuple:
+        """
+        Parse streaming chunks and extract both text and tool calls.
+        
+        Args:
+            stream: The streaming response object
+            agent_name: Name of the agent for printing
+            print_on: Whether to print streaming output
+            verbose: Whether to enable verbose logging
+            
+        Returns:
+            tuple: (full_text_response, tool_calls_list)
+        """
+        full_text_response = ""
+        tool_calls_in_stream = []
+        current_tool_call = None
+        tool_call_buffer = ""
+
+        if print_on:
+            print(f"{agent_name}: ", end="", flush=True)
+
+        # Process streaming chunks in real-time
+        try:
+            for chunk in stream:
+                if verbose:
+                    logger.debug(f"Processing streaming chunk: {type(chunk)}")
+                
+                # Try Anthropic-style processing first
+                anthropic_result = self._process_anthropic_chunk(
+                    chunk, current_tool_call, tool_call_buffer, tool_calls_in_stream, print_on, verbose
+                )
+                if anthropic_result[0]:  # If text was processed
+                    text_chunk, current_tool_call, tool_call_buffer = anthropic_result
+                    full_text_response += text_chunk
+                    continue
+                
+                # If not Anthropic, try OpenAI-style processing
+                openai_text = self._process_openai_chunk(chunk, tool_calls_in_stream, print_on, verbose)
+                if openai_text:
+                    full_text_response += openai_text
+        except Exception as e:
+            logger.error(f"Error processing streaming chunks: {e}")
+            if print_on:
+                print(f"\n[Streaming Error: {e}]")
+            return full_text_response, tool_calls_in_stream
+
+        if print_on:
+            print()  # Newline after streaming text
+
+        return full_text_response, tool_calls_in_stream
+
     def run(
         self,
         task: str,
@@ -840,6 +1175,11 @@ class LiteLLM:
                     .message.tool_calls[0]
                     .function.arguments
                 )
+            # Standard completion
+            response = await acompletion(**completion_params)
+
+            print(response)
+            return response
             elif self.return_all is True:
                 return response.model_dump()
             elif "gemini" in self.model_name.lower():

@@ -1174,20 +1174,24 @@ class Agent:
                                 **kwargs,
                             )
 
-                        # If streaming is enabled, then don't print the response
+                        # Handle streaming response with tools
+                        if self.streaming_on and exists(self.tools_list_dictionary) and hasattr(response, "__iter__") and not isinstance(response, str):
+                            response = self.tool_struct.handle_streaming_with_tools(
+                                response=response,
+                                llm=self.llm,
+                                agent_name=self.agent_name,
+                                print_on=self.print_on
+                            )
+                        else:
+                            # Parse the response from the agent with the output type
+                            if exists(self.tools_list_dictionary):
+                                if isinstance(response, BaseModel):
+                                    response = response.model_dump()
 
-                        # Parse the response from the agent with the output type
-                        if exists(self.tools_list_dictionary):
-                            if isinstance(response, BaseModel):
-                                response = response.model_dump()
-
-                        # Parse the response from the agent with the output type
-                        response = self.parse_llm_output(response)
-
-                        self.short_memory.add(
-                            role=self.agent_name,
-                            content=response,
-                        )
+                            response = self.parse_llm_output(response)
+                            
+                        if isinstance(response, str) and response.strip():
+                            self.short_memory.add(role=self.agent_name, content=response)
 
                         # Print
                         if self.print_on is True:
@@ -1197,13 +1201,18 @@ class Agent:
                                     f"[Structured Output] [Time: {time.strftime('%H:%M:%S')}] \n\n {json.dumps(response, indent=4)}",
                                     loop_count,
                                 )
-                            elif self.streaming_on:
-                                pass
-                            else:
+                            elif self.streaming_on and isinstance(response, dict) and response.get("choices"):
+                                # Handle streaming tool calls structured output  
+                                tool_calls = response.get("choices", [{}])[0].get("message", {}).get("tool_calls", [])
+                                if tool_calls:
+                                    self.pretty_print(
+                                        f"[Structured Output] [Time: {time.strftime('%H:%M:%S')}] \n\n {json.dumps(tool_calls, indent=4)}",
+                                        loop_count,
+                                    )
+                            elif not self.streaming_on:
                                 self.pretty_print(
                                     response, loop_count
                                 )
-
                         # Check and execute callable tools
                         if exists(self.tools):
                             self.tool_execution_retry(
@@ -2207,11 +2216,19 @@ class Agent:
             raise ValueError("Response is required.")
 
         try:
-            # Stream and print the response token by token
-            for token in response.split():
-                print(token, end=" ", flush=True)
-                time.sleep(delay)
-            print()  # Ensure a newline after streaming
+            # Use centralized string streaming from wrapper
+            if hasattr(self.llm, "handle_string_streaming"):
+                self.llm.handle_string_streaming(
+                    response=response,
+                    print_on=self.print_on,
+                    delay=delay,
+                )
+            else:
+                # Fallback to original implementation if wrapper doesn't support it
+                for token in response.split():
+                    print(token, end=" ", flush=True)
+                    time.sleep(delay)
+                print()  # Ensure a newline after streaming
         except Exception as e:
             print(f"An error occurred during streaming: {e}")
 
@@ -2424,86 +2441,32 @@ class Agent:
             del kwargs["is_last"]
 
         try:
-            # Set streaming parameter in LLM if streaming is enabled
-            if self.streaming_on and hasattr(self.llm, "stream"):
-                original_stream = self.llm.stream
+            # Special handling for streaming with tools - need raw stream for parsing
+            if self.streaming_on and exists(self.tools_list_dictionary):
+                original_stream = getattr(self.llm, 'stream', False)
                 self.llm.stream = True
-
-                if img is not None:
-                    streaming_response = self.llm.run(
-                        task=task, img=img, *args, **kwargs
-                    )
-                else:
-                    streaming_response = self.llm.run(
-                        task=task, *args, **kwargs
-                    )
-
-                # If we get a streaming response, handle it with the new streaming panel
-                if hasattr(
-                    streaming_response, "__iter__"
-                ) and not isinstance(streaming_response, str):
-                    # Check if streaming_callback is provided (for ConcurrentWorkflow dashboard integration)
-                    if streaming_callback is not None:
-                        # Real-time callback streaming for dashboard integration
-                        chunks = []
-                        for chunk in streaming_response:
-                            if (
-                                hasattr(chunk, "choices")
-                                and chunk.choices[0].delta.content
-                            ):
-                                content = chunk.choices[
-                                    0
-                                ].delta.content
-                                chunks.append(content)
-                                # Call the streaming callback with the new chunk
-                                streaming_callback(content)
-                        complete_response = "".join(chunks)
-                    # Check print_on parameter for different streaming behaviors
-                    elif self.print_on is False:
-                        # Silent streaming - no printing, just collect chunks
-                        chunks = []
-                        for chunk in streaming_response:
-                            if (
-                                hasattr(chunk, "choices")
-                                and chunk.choices[0].delta.content
-                            ):
-                                content = chunk.choices[
-                                    0
-                                ].delta.content
-                                chunks.append(content)
-                        complete_response = "".join(chunks)
+                
+                try:
+                    if img is not None:
+                        stream_response = self.llm.run(task=task, img=img, *args, **kwargs)
                     else:
-                        # Collect chunks for conversation saving
-                        collected_chunks = []
-
-                        def on_chunk_received(chunk: str):
-                            """Callback to collect chunks as they arrive"""
-                            collected_chunks.append(chunk)
-                            # Optional: Save each chunk to conversation in real-time
-                            # This creates a more detailed conversation history
-                            if self.verbose:
-                                logger.debug(
-                                    f"Streaming chunk received: {chunk[:50]}..."
-                                )
-
-                        # Use the streaming panel to display and collect the response
-                        complete_response = formatter.print_streaming_panel(
-                            streaming_response,
-                            title=f"🤖 Agent: {self.agent_name} Loops: {current_loop}",
-                            style=None,  # Use random color like non-streaming approach
-                            collect_chunks=True,
-                            on_chunk_callback=on_chunk_received,
-                        )
-
-                    # Restore original stream setting
+                        stream_response = self.llm.run(task=task, *args, **kwargs)
+                    return stream_response
+                finally:
                     self.llm.stream = original_stream
-
-                    # Return the complete response for further processing
-                    return complete_response
-                else:
-                    # Restore original stream setting
-                    self.llm.stream = original_stream
-                    return streaming_response
+            
+            # Use centralized streaming logic from wrapper if streaming is enabled (no tools)
+            elif self.streaming_on and hasattr(self.llm, "run_with_streaming"):
+                return self.llm.run_with_streaming(
+                    task=task,
+                    img=img,
+                    streaming_callback=streaming_callback,
+                    title=f"Agent: {self.agent_name} Loops: {current_loop}",
+                    print_on=self.print_on,
+                    verbose=self.verbose,
+                    *args,
+                    **kwargs,
+                )
             else:
                 args = {
                     "task": task,
@@ -2908,9 +2871,18 @@ class Agent:
             try:
                 temp_llm = self.temp_llm_instance_for_tool_summary()
 
-                summary = temp_llm.run(
-                    task=self.short_memory.get_str()
-                )
+                # Use centralized streaming logic for MCP tool summary
+                if self.streaming_on:
+                    summary = temp_llm.run_with_streaming(
+                        task=self.short_memory.get_str(),
+                        title=f"Agent: {self.agent_name} - MCP Tool Summary", 
+                        style="cyan",
+                        print_on=self.print_on,
+                        verbose=self.verbose,
+                    )
+                else:
+                    summary = temp_llm.run(task=self.short_memory.get_str())
+                        
             except Exception as e:
                 logger.error(
                     f"Error calling LLM after MCP tool execution: {e}"
@@ -2918,7 +2890,7 @@ class Agent:
                 # Fallback: provide a default summary
                 summary = "I successfully executed the MCP tool and retrieved the information above."
 
-            if self.print_on is True:
+            if self.print_on and not self.streaming_on:
                 self.pretty_print(summary, loop_count=current_loop)
 
             # Add to the memory
@@ -2935,7 +2907,7 @@ class Agent:
             temperature=self.temperature,
             max_tokens=self.max_tokens,
             system_prompt=self.system_prompt,
-            stream=False,  # Always disable streaming for tool summaries
+            stream=self.streaming_on,
             tools_list_dictionary=None,
             parallel_tool_calls=False,
             base_url=self.llm_base_url,
@@ -3000,12 +2972,26 @@ class Agent:
                 """
             )
 
+            # Use centralized streaming logic for tool summary
+            if self.streaming_on:
+                tool_response = temp_llm.run_tool_summary_with_streaming(
+                    tool_results=str(output),
+                    agent_name=self.agent_name,
+                    print_on=self.print_on,
+                    verbose=self.verbose,
+                )
+            else:
+                tool_response = temp_llm.run(
+                    f"Please analyze and summarize the following tool execution output:\n\n{output}"
+                )
+                    
+            # Add the tool response to memory
             self.short_memory.add(
                 role=self.agent_name,
                 content=tool_response,
             )
 
-            if self.print_on is True:
+            if self.print_on and not self.streaming_on:
                 self.pretty_print(
                     tool_response,
                     loop_count,
