@@ -19,6 +19,7 @@ You are the Marketing Strategist Agent for a DAO. Your role is to develop, imple
 - Leverage analytics to refine marketing strategies, focusing on measurable KPIs like engagement, conversion rates, and member retention.
 - Suggest innovative methods to make the DAO's mission resonate with a broader audience (e.g., gamified incentives, contests, or viral campaigns).
 - Ensure every strategy emphasizes transparency, sustainability, and long-term impact.
+- Remove emojis; keep it enterperise level formality in tone, but still understandable and engaging.
 """
 
 PRODUCT_AGENT_SYS_PROMPT = """
@@ -37,6 +38,7 @@ You are the Product Manager Agent for a DAO focused on decentralized governance 
 - Design systems that emphasize decentralization, transparency, and scalability.
 - Provide detailed feature proposals, technical specifications, and timelines for implementation.
 - Ensure all features are optimized for both experienced blockchain users and newcomers to Web3.
+- Remove emojis; keep it enterperise level formality in tone, but still understandable and engaging.
 """
 
 GROWTH_AGENT_SYS_PROMPT = """
@@ -55,6 +57,7 @@ You are the Growth Strategist Agent for a DAO focused on decentralized governanc
 - Propose growth experiments (A/B testing, new incentives, etc.) and analyze their effectiveness.
 - Suggest tools for data collection and analysis, ensuring privacy and transparency.
 - Ensure growth strategies align with the DAO's mission of sustainability and climate action.
+- Remove emojis; keep it enterperise level formality in tone, but still understandable and engaging.
 """
 
 TREASURY_AGENT_SYS_PROMPT = """
@@ -72,6 +75,8 @@ You are the Treasury Management Agent for a DAO focused on decentralized governa
 - Analyze financial risks and suggest mitigation strategies.
 - Ensure all recommendations prioritize the DAO's mission of reducing carbon emissions and driving global climate action.
 - Provide periodic financial updates and propose budget reallocations based on current needs.
+- Ensure compliance with relevant regulations and best practices in DAO treasury management.
+- Remove emojis; keep it enterperise level formality in tone, but still understandable and engaging.
 """
 
 OPERATIONS_AGENT_SYS_PROMPT = """
@@ -89,51 +94,47 @@ You are the Operations Coordinator Agent for a DAO focused on decentralized gove
 - Create efficient workflows to handle DAO proposals and governance activities.
 - Suggest tools or platforms to improve operational efficiency.
 - Provide regular updates on task progress and flag any blockers or risks.
+- Remove emojis; keep it enterperise level formality in tone, but still understandable and engaging.
 """
 
 # Initialize agents
 marketing_agent = Agent(
     agent_name="Marketing-Agent",
     system_prompt=MARKETING_AGENT_SYS_PROMPT,
-    model_name="deepseek/deepseek-reasoner",
-    autosave=True,
-    dashboard=False,
+    model_name="claude-sonnet-4-20250514",
+    max_loops=1,
     verbose=True,
 )
 
 product_agent = Agent(
     agent_name="Product-Agent",
     system_prompt=PRODUCT_AGENT_SYS_PROMPT,
-    model_name="deepseek/deepseek-reasoner",
-    autosave=True,
-    dashboard=False,
+    model_name="claude-sonnet-4-20250514",
+    max_loops=1,
     verbose=True,
 )
 
 growth_agent = Agent(
     agent_name="Growth-Agent",
     system_prompt=GROWTH_AGENT_SYS_PROMPT,
-    model_name="deepseek/deepseek-reasoner",
-    autosave=True,
-    dashboard=False,
+    model_name="claude-sonnet-4-20250514",
+    max_loops=1,
     verbose=True,
 )
 
 treasury_agent = Agent(
     agent_name="Treasury-Agent",
     system_prompt=TREASURY_AGENT_SYS_PROMPT,
-    model_name="deepseek/deepseek-reasoner",
-    autosave=True,
-    dashboard=False,
+    model_name="claude-sonnet-4-20250514",
+    max_loops=1,
     verbose=True,
 )
 
 operations_agent = Agent(
     agent_name="Operations-Agent",
     system_prompt=OPERATIONS_AGENT_SYS_PROMPT,
-    model_name="deepseek/deepseek-reasoner",
-    autosave=True,
-    dashboard=False,
+    model_name="claude-sonnet-4-20250514",
+    max_loops=1,
     verbose=True,
 )
 
