@@ -717,6 +717,7 @@ class Agent:
                 "system_prompt": self.system_prompt,
                 "stream": self.streaming_on,
                 "top_p": self.top_p,
+                "retries": self.retry_attempts,
             }
 
             # Initialize tools_list_dictionary, if applicable
