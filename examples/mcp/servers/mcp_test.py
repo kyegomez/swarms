@@ -1,4 +1,3 @@
-# crypto_price_server.py
 from mcp.server.fastmcp import FastMCP
 import requests
 
@@ -113,4 +112,4 @@ def get_htx_crypto_price(symbol: str) -> str:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="sse")
+    mcp.run()

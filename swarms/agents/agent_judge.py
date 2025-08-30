@@ -36,11 +36,12 @@ def get_reward(input: str) -> int:
         "excellent",
         "perfect",
     ]
-    
+
     if any(word in input.lower() for word in words):
         return 1
     else:
         return 0
+
 
 def get_agent_judge_prompt() -> str:
     """
@@ -373,7 +374,7 @@ class AgentJudge:
                 return get_reward(self.conversation.get_str())
             else:
                 return self.conversation.get_str()
-        except Exception as e:  
+        except Exception as e:
             error_message = f"AgentJudge: {self.agent_name} encountered an error: {e}\n Traceback: {traceback.format_exc()}"
             raise AgentJudgeExecutionError(error_message)
 
