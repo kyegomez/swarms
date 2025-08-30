@@ -10,15 +10,14 @@ The AgentJudge is designed to evaluate and critique outputs from other AI agents
 
 Key capabilities:
 
-- **Quality Assessment**: Evaluates correctness, clarity, and completeness of agent outputs
-
-- **Structured Feedback**: Provides detailed critiques with strengths, weaknesses, and suggestions
-
-- **Multimodal Support**: Can evaluate text outputs alongside images
-
-- **Context Building**: Maintains evaluation context across multiple iterations
-
-- **Batch Processing**: Efficiently processes multiple evaluations
+| Capability                   | Description                                                                                   |
+|------------------------------|-----------------------------------------------------------------------------------------------|
+| **Quality Assessment**        | Evaluates correctness, clarity, and completeness of agent outputs                            |
+| **Structured Feedback**       | Provides detailed critiques with strengths, weaknesses, and suggestions                      |
+| **Multimodal Support**        | Can evaluate text outputs alongside images                                                   |
+| **Context Building**          | Maintains evaluation context across multiple iterations                                      |
+| **Custom Evaluation Criteria**| Supports weighted evaluation criteria for domain-specific assessments                        |
+| **Batch Processing**          | Efficiently processes multiple evaluations                                                   |
 
 ## Architecture
 
@@ -50,7 +49,6 @@ graph TD
     J --> O
     J --> P
     J --> Q
-
 ```
 
 ## Class Reference
@@ -62,10 +60,12 @@ AgentJudge(
     id: str = str(uuid.uuid4()),
     agent_name: str = "Agent Judge",
     description: str = "You're an expert AI agent judge...",
-    system_prompt: str = AGENT_JUDGE_PROMPT,
+    system_prompt: str = None,
     model_name: str = "openai/o1",
     max_loops: int = 1,
     verbose: bool = False,
+    evaluation_criteria: Optional[Dict[str, float]] = None,
+    return_score: bool = False,
     *args,
     **kwargs
 )
@@ -78,10 +78,12 @@ AgentJudge(
 | `id` | `str` | `str(uuid.uuid4())` | Unique identifier for the judge instance |
 | `agent_name` | `str` | `"Agent Judge"` | Name of the agent judge |
 | `description` | `str` | `"You're an expert AI agent judge..."` | Description of the agent's role |
-| `system_prompt` | `str` | `AGENT_JUDGE_PROMPT` | System instructions for evaluation |
+| `system_prompt` | `str` | `None` | Custom system instructions (uses default if None) |
 | `model_name` | `str` | `"openai/o1"` | LLM model for evaluation |
 | `max_loops` | `int` | `1` | Maximum evaluation iterations |
 | `verbose` | `bool` | `False` | Enable verbose logging |
+| `evaluation_criteria` | `Optional[Dict[str, float]]` | `None` | Dictionary of evaluation criteria and weights |
+| `return_score` | `bool` | `False` | Whether to return a numerical score instead of full conversation |
 
 ### Methods
 
@@ -90,29 +92,28 @@ AgentJudge(
 ```python
 step(
     task: str = None,
-    tasks: Optional[List[str]] = None,
     img: Optional[str] = None
 ) -> str
 ```
 
-Processes a single task or list of tasks and returns evaluation.
+Processes a single task and returns the agent's evaluation.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `task` | `str` | `None` | Single task/output to evaluate |
-| `tasks` | `List[str]` | `None` | List of tasks/outputs to evaluate |
-| `img` | `str` | `None` | Path to image for multimodal evaluation |
+| `img` | `Optional[str]` | `None` | Path to image for multimodal evaluation |
 
 **Returns:** `str` - Detailed evaluation response
+
+**Raises:** `ValueError` - If no task is provided
 
 #### run()
 
 ```python
 run(
     task: str = None,
-    tasks: Optional[List[str]] = None,
     img: Optional[str] = None
-) -> List[str]
+) -> Union[str, int]
 ```
 
 Executes evaluation in multiple iterations with context building.
@@ -120,86 +121,115 @@ Executes evaluation in multiple iterations with context building.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `task` | `str` | `None` | Single task/output to evaluate |
-| `tasks` | `List[str]` | `None` | List of tasks/outputs to evaluate |
-| `img` | `str` | `None` | Path to image for multimodal evaluation |
+| `img` | `Optional[str]` | `None` | Path to image for multimodal evaluation |
 
-**Returns:** `List[str]` - List of evaluation responses from each iteration
+**Returns:** 
+- `str` - Full conversation context if `return_score=False` (default)
+- `int` - Numerical reward score if `return_score=True`
 
 #### run_batched()
 
 ```python
 run_batched(
-    tasks: Optional[List[str]] = None,
-    imgs: Optional[List[str]] = None
-) -> List[List[str]]
+    tasks: Optional[List[str]] = None
+) -> List[Union[str, int]]
 ```
 
-Executes batch evaluation of multiple tasks with corresponding images.
+Executes batch evaluation of multiple tasks.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `tasks` | `List[str]` | `None` | List of tasks/outputs to evaluate |
-| `imgs` | `List[str]` | `None` | List of image paths (same length as tasks) |
+| `tasks` | `Optional[List[str]]` | `None` | List of tasks/outputs to evaluate |
 
-**Returns:** `List[List[str]]` - Evaluation responses for each task
+**Returns:** `List[Union[str, int]]` - Evaluation responses for each task
 
 ## Examples
 
-### Basic Usage
+### Basic Evaluation
 
 ```python
-from swarms import AgentJudge
+from swarms.agents.agent_judge import AgentJudge
+
+# Initialize the agent judge
+judge = AgentJudge(
+    agent_name="quality-judge",
+    model_name="gpt-4",
+    max_loops=2
+)
+
+# Example agent output to evaluate
+agent_output = "The capital of France is Paris. The city is known for its famous Eiffel Tower and delicious croissants. The population is approximately 2.1 million people."
+
+# Run evaluation with context building
+evaluations = judge.run(task=agent_output)
+```
+
+### Technical Evaluation with Custom Criteria
+
+```python
+from swarms.agents.agent_judge import AgentJudge
+
+# Initialize the agent judge with custom evaluation criteria
+judge = AgentJudge(
+    agent_name="technical-judge",
+    model_name="gpt-4",
+    max_loops=1,
+    evaluation_criteria={
+        "accuracy": 0.4,
+        "completeness": 0.3,
+        "clarity": 0.2,
+        "logic": 0.1,
+    },
+)
+
+# Example technical agent output to evaluate
+technical_output = "To solve the quadratic equation x² + 5x + 6 = 0, we can use the quadratic formula: x = (-b ± √(b² - 4ac)) / 2a. Here, a=1, b=5, c=6. Substituting: x = (-5 ± √(25 - 24)) / 2 = (-5 ± √1) / 2 = (-5 ± 1) / 2. So x = -2 or x = -3."
+
+# Run evaluation with context building
+evaluations = judge.run(task=technical_output)
+```
+
+### Creative Content Evaluation
+
+```python
+from swarms.agents.agent_judge import AgentJudge
+
+# Initialize the agent judge for creative content evaluation
+judge = AgentJudge(
+    agent_name="creative-judge",
+    model_name="gpt-4",
+    max_loops=2,
+    evaluation_criteria={
+        "creativity": 0.4,
+        "originality": 0.3,
+        "engagement": 0.2,
+        "coherence": 0.1,
+    },
+)
+
+# Example creative agent output to evaluate
+creative_output = "The moon hung like a silver coin in the velvet sky, casting shadows that danced with the wind. Ancient trees whispered secrets to the stars, while time itself seemed to pause in reverence of this magical moment. The world held its breath, waiting for the next chapter of the eternal story."
+
+# Run evaluation with context building
+evaluations = judge.run(task=creative_output)
+```
+
+### Single Task Evaluation
+
+```python
+from swarms.agents.agent_judge import AgentJudge
 
 # Initialize with default settings
 judge = AgentJudge()
 
 # Single task evaluation
-result = judge.step(task="The capital of France is Paris.")
-print(result)
-```
-
-### Custom Configuration
-
-```python
-from swarms import AgentJudge
-
-# Custom judge configuration
-judge = AgentJudge(
-    agent_name="content-evaluator",
-    model_name="gpt-4",
-    max_loops=3,
-    verbose=True
-)
-
-# Evaluate multiple outputs
-outputs = [
-    "Agent CalculusMaster: The integral of x^2 + 3x + 2 is (1/3)x^3 + (3/2)x^2 + 2x + C",
-    "Agent DerivativeDynamo: The derivative of sin(x) is cos(x)",
-    "Agent LimitWizard: The limit of sin(x)/x as x approaches 0 is 1"
-]
-
-evaluation = judge.step(tasks=outputs)
-print(evaluation)
-```
-
-### Iterative Evaluation with Context
-
-```python
-from swarms import AgentJudge
-
-# Multiple iterations with context building
-judge = AgentJudge(max_loops=3)
-
-# Each iteration builds on previous context
-evaluations = judge.run(task="Agent output: 2+2=5")
-for i, eval_result in enumerate(evaluations):
-    print(f"Iteration {i+1}: {eval_result}\n")
+result = judge.step(task="The answer is 42.")
 ```
 
 ### Multimodal Evaluation
 
 ```python
-from swarms import AgentJudge
+from swarms.agents.agent_judge import AgentJudge
 
 judge = AgentJudge()
 
@@ -208,32 +238,42 @@ evaluation = judge.step(
     task="Describe what you see in this image",
     img="path/to/image.jpg"
 )
-print(evaluation)
 ```
 
 ### Batch Processing
 
 ```python
-from swarms import AgentJudge
+from swarms.agents.agent_judge import AgentJudge
 
 judge = AgentJudge()
 
-# Batch evaluation with images
+# Batch evaluation
 tasks = [
-    "Describe this chart",
-    "What's the main trend?",
-    "Any anomalies?"
-]
-images = [
-    "chart1.png",
-    "chart2.png", 
-    "chart3.png"
+    "The capital of France is Paris.",
+    "2 + 2 = 4",
+    "The Earth is flat."
 ]
 
 # Each task evaluated independently
-evaluations = judge.run_batched(tasks=tasks, imgs=images)
-for i, task_evals in enumerate(evaluations):
-    print(f"Task {i+1} evaluations: {task_evals}")
+evaluations = judge.run_batched(tasks=tasks)
+```
+
+### Scoring Mode
+
+```python
+from swarms.agents.agent_judge import AgentJudge
+
+# Initialize with scoring enabled
+judge = AgentJudge(
+    agent_name="scoring-judge",
+    model_name="gpt-4",
+    max_loops=2,
+    return_score=True
+)
+
+# Get numerical score instead of full conversation
+score = judge.run(task="This is a correct and well-explained answer.")
+# Returns: 1 (if positive keywords found) or 0
 ```
 
 ## Reference

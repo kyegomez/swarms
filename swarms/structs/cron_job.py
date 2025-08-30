@@ -46,6 +46,7 @@ class CronJob:
         job_id: Unique identifier for the job
         is_running: Flag indicating if the job is currently running
         thread: Thread object for running the job
+        callback: Optional callback function to customize output processing
     """
 
     def __init__(
@@ -53,6 +54,7 @@ class CronJob:
         agent: Optional[Union[Any, Callable]] = None,
         interval: Optional[str] = None,
         job_id: Optional[str] = None,
+        callback: Optional[Callable[[Any, str, dict], Any]] = None,
     ):
         """Initialize the CronJob wrapper.
 
@@ -60,6 +62,12 @@ class CronJob:
             agent: The Swarms Agent instance or callable to be scheduled
             interval: The interval string (e.g., "5seconds", "10minutes", "1hour")
             job_id: Optional unique identifier for the job. If not provided, one will be generated.
+            callback: Optional callback function to customize output processing.
+                     Signature: callback(output: Any, task: str, metadata: dict) -> Any
+                     - output: The original output from the agent
+                     - task: The task that was executed
+                     - metadata: Dictionary containing job_id, timestamp, execution_count, etc.
+                     Returns: The customized output
 
         Raises:
             CronJobConfigError: If the interval format is invalid
@@ -70,6 +78,9 @@ class CronJob:
         self.is_running = False
         self.thread = None
         self.schedule = schedule.Scheduler()
+        self.callback = callback
+        self.execution_count = 0
+        self.start_time = None
 
         logger.info(f"Initializing CronJob with ID: {self.job_id}")
 
@@ -242,17 +253,47 @@ class CronJob:
                      (e.g., img=image_path, streaming_callback=callback_func)
 
         Returns:
-            Any: The result of the task execution
+            Any: The result of the task execution (original or customized by callback)
 
         Raises:
             CronJobExecutionError: If task execution fails
         """
         try:
             logger.debug(f"Executing task for job {self.job_id}")
+            
+            # Execute the agent
             if isinstance(self.agent, Callable):
-                return self.agent.run(task=task, **kwargs)
+                original_output = self.agent.run(task=task, **kwargs)
             else:
-                return self.agent(task, **kwargs)
+                original_output = self.agent(task, **kwargs)
+            
+            # Increment execution count
+            self.execution_count += 1
+            
+            # Prepare metadata for callback
+            metadata = {
+                "job_id": self.job_id,
+                "timestamp": time.time(),
+                "execution_count": self.execution_count,
+                "task": task,
+                "kwargs": kwargs,
+                "start_time": self.start_time,
+                "is_running": self.is_running
+            }
+            
+            # Apply callback if provided
+            if self.callback:
+                try:
+                    customized_output = self.callback(original_output, task, metadata)
+                    logger.debug(f"Callback applied to job {self.job_id}, execution {self.execution_count}")
+                    return customized_output
+                except Exception as callback_error:
+                    logger.warning(f"Callback failed for job {self.job_id}: {callback_error}")
+                    # Return original output if callback fails
+                    return original_output
+            
+            return original_output
+            
         except Exception as e:
             logger.error(
                 f"Task execution failed for job {self.job_id}: {str(e)}"
@@ -300,6 +341,7 @@ class CronJob:
         try:
             if not self.is_running:
                 self.is_running = True
+                self.start_time = time.time()
                 self.thread = threading.Thread(
                     target=self._run_schedule,
                     daemon=True,
@@ -361,6 +403,31 @@ class CronJob:
                 raise CronJobExecutionError(
                     f"Schedule loop failed: {str(e)}"
                 )
+
+    def set_callback(self, callback: Callable[[Any, str, dict], Any]):
+        """Set or update the callback function for output customization.
+        
+        Args:
+            callback: Function to customize output processing.
+                     Signature: callback(output: Any, task: str, metadata: dict) -> Any
+        """
+        self.callback = callback
+        logger.info(f"Callback updated for job {self.job_id}")
+    
+    def get_execution_stats(self) -> dict:
+        """Get execution statistics for the cron job.
+        
+        Returns:
+            dict: Statistics including execution count, start time, running status, etc.
+        """
+        return {
+            "job_id": self.job_id,
+            "is_running": self.is_running,
+            "execution_count": self.execution_count,
+            "start_time": self.start_time,
+            "uptime": time.time() - self.start_time if self.start_time else 0,
+            "interval": self.interval
+        }
 
 
 # # Example usage

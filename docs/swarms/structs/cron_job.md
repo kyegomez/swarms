@@ -1,496 +1,415 @@
 # CronJob
 
-A wrapper class that turns any callable (including Swarms agents) into a scheduled cron job. This class provides functionality to schedule and run tasks at specified intervals using the schedule library with cron-style scheduling.
+A wrapper class that turns any callable (including Swarms agents) into a scheduled cron job using the schedule library with cron-style scheduling.
 
-## Overview
+Full Path `from swarms.structs.cron_job`
 
-The CronJob class allows you to:
-
-- Schedule any callable or Swarms Agent to run at specified intervals
-
-- Support for seconds, minutes, and hours intervals
-
-- Run tasks in a separate thread
-
-- Handle graceful start/stop of scheduled jobs
-
-- Manage multiple concurrent scheduled jobs
-
-## Architecture
-
-```mermaid
-graph TD
-    A[CronJob] --> B[Initialize]
-    B --> C[Parse Interval]
-    C --> D[Schedule Task]
-    D --> E[Run Job]
-    E --> F[Execute Task]
-    F --> G{Is Agent?}
-    G -->|Yes| H[Run Agent]
-    G -->|No| I[Run Callable]
-    H --> J[Handle Result]
-    I --> J
-    J --> K[Sleep]
-    K --> E
-```
-
-## Class Reference
-
-### Constructor
+## Class Definition
 
 ```python
-def __init__(
-    agent: Optional[Union[Agent, Callable]] = None,
-    interval: Optional[str] = None,
-    job_id: Optional[str] = None
-)
+class CronJob:
+    def __init__(
+        self,
+        agent: Optional[Union[Any, Callable]] = None,
+        interval: Optional[str] = None,
+        job_id: Optional[str] = None,
+        callback: Optional[Callable[[Any, str, dict], Any]] = None,
+    ) -> None
 ```
 
-| Parameter | Type | Description | Required |
-|-----------|------|-------------|-----------|
-| agent | Agent or Callable | The Swarms Agent instance or callable to be scheduled | No |
-| interval | str | The interval string (e.g., "5seconds", "10minutes", "1hour") | No |
-| job_id | str | Unique identifier for the job. If not provided, one will be generated | No |
+## Constructor Parameters
 
-### Methods
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `agent` | `Optional[Union[Any, Callable]]` | `None` | The Swarms Agent instance or callable to be scheduled |
+| `interval` | `Optional[str]` | `None` | Interval string in format "Xunit" (e.g., "5seconds", "10minutes", "1hour") |
+| `job_id` | `Optional[str]` | `None` | Unique identifier for the job. Auto-generated if not provided |
+| `callback` | `Optional[Callable[[Any, str, dict], Any]]` | `None` | Function to customize output processing |
 
-#### run
+## Instance Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `agent` | `Union[Any, Callable]` | The scheduled agent or callable |
+| `interval` | `str` | The scheduling interval string |
+| `job_id` | `str` | Unique job identifier |
+| `is_running` | `bool` | Current execution status |
+| `thread` | `Optional[threading.Thread]` | Background execution thread |
+| `schedule` | `schedule.Scheduler` | Internal scheduler instance |
+| `callback` | `Optional[Callable[[Any, str, dict], Any]]` | Output customization function |
+| `execution_count` | `int` | Number of executions completed |
+| `start_time` | `Optional[float]` | Job start timestamp |
+
+## Methods
+
+### `run(task: str, **kwargs) -> Any`
+
+Schedules and starts the cron job execution.
+
+**Parameters:**
+- `task` (`str`): Task string to be executed by the agent
+- `**kwargs` (`dict`): Additional parameters passed to agent's run method
+
+**Returns:**
+- `Any`: Result of the cron job execution
+
+**Raises:**
+- `CronJobConfigError`: If agent or interval is not configured
+- `CronJobExecutionError`: If task execution fails
+
+### `__call__(task: str, **kwargs) -> Any`
+
+Callable interface for the CronJob instance.
+
+**Parameters:**
+- `task` (`str`): Task string to be executed
+- `**kwargs` (`dict`): Additional parameters passed to agent's run method
+
+**Returns:**
+- `Any`: Result of the task execution
+
+### `start() -> None`
+
+Starts the scheduled job in a separate thread.
+
+**Raises:**
+- `CronJobExecutionError`: If the job fails to start
+
+### `stop() -> None`
+
+Stops the scheduled job gracefully.
+
+**Raises:**
+- `CronJobExecutionError`: If the job fails to stop properly
+
+### `set_callback(callback: Callable[[Any, str, dict], Any]) -> None`
+
+Sets or updates the callback function for output customization.
+
+**Parameters:**
+- `callback` (`Callable[[Any, str, dict], Any]`): Function to customize output processing
+
+### `get_execution_stats() -> Dict[str, Any]`
+
+Retrieves execution statistics for the cron job.
+
+**Returns:**
+- `Dict[str, Any]`: Dictionary containing:
+  - `job_id` (`str`): Unique job identifier
+  - `is_running` (`bool`): Current execution status
+  - `execution_count` (`int`): Number of executions completed
+  - `start_time` (`Optional[float]`): Job start timestamp
+  - `uptime` (`float`): Seconds since job started
+  - `interval` (`str`): Scheduled execution interval
+
+## Callback Function Signature
 
 ```python
-def run(task: str, **kwargs)
+def callback_function(
+    output: Any,           # Original output from the agent
+    task: str,             # Task that was executed
+    metadata: dict         # Job execution metadata
+) -> Any:                  # Customized output (any type)
+    pass
 ```
 
-| Parameter | Type | Description | Required |
-|-----------|------|-------------|-----------|
-| task | str | The task string to be executed by the agent | Yes |
-| **kwargs | dict | Additional parameters to pass to the agent's run method | No |
+### Callback Metadata Dictionary
 
-#### __call__
+| Key | Type | Description |
+|-----|------|-------------|
+| `job_id` | `str` | Unique job identifier |
+| `timestamp` | `float` | Execution timestamp (Unix time) |
+| `execution_count` | `int` | Sequential execution number |
+| `task` | `str` | The task string that was executed |
+| `kwargs` | `dict` | Additional parameters passed to agent |
+| `start_time` | `Optional[float]` | Job start timestamp |
+| `is_running` | `bool` | Current job status |
+
+## Interval Format
+
+The `interval` parameter accepts strings in the format `"Xunit"`:
+
+| Unit | Examples | Description |
+|------|----------|-------------|
+| `seconds` | `"5seconds"`, `"30seconds"` | Execute every X seconds |
+| `minutes` | `"1minute"`, `"15minutes"` | Execute every X minutes |
+| `hours` | `"1hour"`, `"6hours"` | Execute every X hours |
+
+## Exceptions
+
+### `CronJobError`
+Base exception class for all CronJob errors.
+
+### `CronJobConfigError`
+Raised for configuration errors (invalid agent, interval format, etc.).
+
+### `CronJobScheduleError`
+Raised for scheduling-related errors.
+
+### `CronJobExecutionError`
+Raised for execution-related errors (start/stop failures, task execution failures).
+
+## Type Definitions
 
 ```python
-def __call__(task: str, **kwargs)
+from typing import Any, Callable, Dict, Optional, Union
+
+# Agent type can be any callable or object with run method
+AgentType = Union[Any, Callable]
+
+# Callback function signature
+CallbackType = Callable[[Any, str, Dict[str, Any]], Any]
+
+# Execution statistics return type
+StatsType = Dict[str, Any]
 ```
 
-| Parameter | Type | Description | Required |
-|-----------|------|-------------|-----------|
-| task | str | The task string to be executed | Yes |
-| **kwargs | dict | Additional parameters to pass to the agent's run method | No |
+## Quick Start Examples
 
-## Examples
-
-### Basic Usage with Swarms Agent
+### Basic Usage
 
 ```python
 from swarms import Agent, CronJob
-from loguru import logger
 
-# Initialize the agent
-agent = Agent(
-    agent_name="Quantitative-Trading-Agent",
-    agent_description="Advanced quantitative trading and algorithmic analysis agent",
-    system_prompt="""You are an expert quantitative trading agent...""",
-    max_loops=1,
-    model_name="gpt-4.1",
-    dynamic_temperature_enabled=True,
-    output_type="str-all-except-first",
-    streaming_on=True,
-    print_on=True,
-    telemetry_enable=False,
-)
-
-# Create and run a cron job every 10 seconds
-logger.info("Starting example cron job")
-cron_job = CronJob(agent=agent, interval="10seconds")
-cron_job.run(
-    task="What are the best top 3 etfs for gold coverage?"
-)
+# Simple agent cron job
+agent = Agent(agent_name="MyAgent", ...)
+cron_job = CronJob(agent=agent, interval="30seconds")
+cron_job.run("Analyze market trends")
 ```
 
-### Using with a Custom Function
+### With Custom Function
 
 ```python
-def custom_task(task: str):
-    print(f"Executing task: {task}")
-    return "Task completed"
+def my_task(task: str) -> str:
+    return f"Completed: {task}"
 
-# Create a cron job with a custom function
+cron_job = CronJob(agent=my_task, interval="1minute")
+cron_job.run("Process data")
+```
+
+### With Callback
+
+```python
+def callback(output, task, metadata):
+    return {"result": output, "count": metadata["execution_count"]}
+
 cron_job = CronJob(
-    agent=custom_task,
-    interval="5minutes",
-    job_id="custom_task_job"
+    agent=agent, 
+    interval="30seconds", 
+    callback=callback
 )
-cron_job.run("Perform analysis")
 ```
 
 
-### Cron Jobs With Multi-Agent Structures
+## Full Examples
 
-You can also run Cron Jobs with multi-agent structures like `SequentialWorkflow`, `ConcurrentWorkflow`, `HiearchicalSwarm`, and other methods. 
-
-- Just initialize the class as the agent parameter in the `CronJob(agent=swarm)`
-
-- Input your arguments into the `.run(task: str)` method
-
+### Complete Agent with Callback
 
 ```python
-"""
-Cryptocurrency Concurrent Multi-Agent Cron Job Example
+from swarms import Agent, CronJob
+from datetime import datetime
+import json
 
-This example demonstrates how to use ConcurrentWorkflow with CronJob to create
-a powerful cryptocurrency tracking system. Each specialized agent analyzes a
-specific cryptocurrency concurrently every minute.
+# Create agent
+agent = Agent(
+    agent_name="Financial-Analyst",
+    system_prompt="You are a financial analyst. Analyze market data and provide insights.",
+    model_name="gpt-4o-mini",
+    max_loops=1
+)
 
-Features:
-- ConcurrentWorkflow for parallel agent execution
-- CronJob scheduling for automated runs every 1 minute
-- Each agent specializes in analyzing one specific cryptocurrency
-- Real-time data fetching from CoinGecko API
-- Concurrent analysis of multiple cryptocurrencies
-- Structured output with professional formatting
-
-Architecture:
-CronJob -> ConcurrentWorkflow -> [Bitcoin Agent, Ethereum Agent, Solana Agent, etc.] -> Parallel Analysis
-"""
-
-from typing import List
-from loguru import logger
-
-from swarms import Agent, CronJob, ConcurrentWorkflow
-from swarms_tools import coin_gecko_coin_api
-
-
-def create_crypto_specific_agents() -> List[Agent]:
-    """
-    Creates agents that each specialize in analyzing a specific cryptocurrency.
-
-    Returns:
-        List[Agent]: List of cryptocurrency-specific Agent instances
-    """
-
-    # Bitcoin Specialist Agent
-    bitcoin_agent = Agent(
-        agent_name="Bitcoin-Analyst",
-        agent_description="Expert analyst specializing exclusively in Bitcoin (BTC) analysis and market dynamics",
-        system_prompt="""You are a Bitcoin specialist and expert analyst. Your expertise includes:
-
-BITCOIN SPECIALIZATION:
-- Bitcoin's unique position as digital gold
-- Bitcoin halving cycles and their market impact
-- Bitcoin mining economics and hash rate analysis
-- Lightning Network and Layer 2 developments
-- Bitcoin adoption by institutions and countries
-- Bitcoin's correlation with traditional markets
-- Bitcoin technical analysis and on-chain metrics
-- Bitcoin's role as a store of value and hedge against inflation
-
-ANALYSIS FOCUS:
-- Analyze ONLY Bitcoin data from the provided dataset
-- Focus on Bitcoin-specific metrics and trends
-- Consider Bitcoin's unique market dynamics
-- Evaluate Bitcoin's dominance and market leadership
-- Assess institutional adoption trends
-- Monitor on-chain activity and network health
-
-DELIVERABLES:
-- Bitcoin-specific analysis and insights
-- Price action assessment and predictions
-- Market dominance analysis
-- Institutional adoption impact
-- Technical and fundamental outlook
-- Risk factors specific to Bitcoin
-
-Extract Bitcoin data from the provided dataset and provide comprehensive Bitcoin-focused analysis.""",
-        model_name="groq/moonshotai/kimi-k2-instruct",
-        max_loops=1,
-        dynamic_temperature_enabled=True,
-        streaming_on=False,
-        tools=[coin_gecko_coin_api],
-    )
-
-    # Ethereum Specialist Agent
-    ethereum_agent = Agent(
-        agent_name="Ethereum-Analyst",
-        agent_description="Expert analyst specializing exclusively in Ethereum (ETH) analysis and ecosystem development",
-        system_prompt="""You are an Ethereum specialist and expert analyst. Your expertise includes:
-
-ETHEREUM SPECIALIZATION:
-- Ethereum's smart contract platform and DeFi ecosystem
-- Ethereum 2.0 transition and proof-of-stake mechanics
-- Gas fees, network usage, and scalability solutions
-- Layer 2 solutions (Arbitrum, Optimism, Polygon)
-- DeFi protocols and TVL (Total Value Locked) analysis
-- NFT markets and Ethereum's role in digital assets
-- Developer activity and ecosystem growth
-- EIP proposals and network upgrades
-
-ANALYSIS FOCUS:
-- Analyze ONLY Ethereum data from the provided dataset
-- Focus on Ethereum's platform utility and network effects
-- Evaluate DeFi ecosystem health and growth
-- Assess Layer 2 adoption and scalability solutions
-- Monitor network usage and gas fee trends
-- Consider Ethereum's competitive position vs other smart contract platforms
-
-DELIVERABLES:
-- Ethereum-specific analysis and insights
-- Platform utility and adoption metrics
-- DeFi ecosystem impact assessment
-- Network health and scalability evaluation
-- Competitive positioning analysis
-- Technical and fundamental outlook for ETH
-
-Extract Ethereum data from the provided dataset and provide comprehensive Ethereum-focused analysis.""",
-        model_name="groq/moonshotai/kimi-k2-instruct",
-        max_loops=1,
-        dynamic_temperature_enabled=True,
-        streaming_on=False,
-        tools=[coin_gecko_coin_api],
-    )
-
-    # Solana Specialist Agent
-    solana_agent = Agent(
-        agent_name="Solana-Analyst",
-        agent_description="Expert analyst specializing exclusively in Solana (SOL) analysis and ecosystem development",
-        system_prompt="""You are a Solana specialist and expert analyst. Your expertise includes:
-
-SOLANA SPECIALIZATION:
-- Solana's high-performance blockchain architecture
-- Proof-of-History consensus mechanism
-- Solana's DeFi ecosystem and DEX platforms (Serum, Raydium)
-- NFT marketplaces and creator economy on Solana
-- Network outages and reliability concerns
-- Developer ecosystem and Rust programming adoption
-- Validator economics and network decentralization
-- Cross-chain bridges and interoperability
-
-ANALYSIS FOCUS:
-- Analyze ONLY Solana data from the provided dataset
-- Focus on Solana's performance and scalability advantages
-- Evaluate network stability and uptime improvements
-- Assess ecosystem growth and developer adoption
-- Monitor DeFi and NFT activity on Solana
-- Consider Solana's competitive position vs Ethereum
-
-DELIVERABLES:
-- Solana-specific analysis and insights
-- Network performance and reliability assessment
-- Ecosystem growth and adoption metrics
-- DeFi and NFT market analysis
-- Competitive advantages and challenges
-- Technical and fundamental outlook for SOL
-
-Extract Solana data from the provided dataset and provide comprehensive Solana-focused analysis.""",
-        model_name="groq/moonshotai/kimi-k2-instruct",
-        max_loops=1,
-        dynamic_temperature_enabled=True,
-        streaming_on=False,
-        tools=[coin_gecko_coin_api],
-    )
-
-    # Cardano Specialist Agent
-    cardano_agent = Agent(
-        agent_name="Cardano-Analyst",
-        agent_description="Expert analyst specializing exclusively in Cardano (ADA) analysis and research-driven development",
-        system_prompt="""You are a Cardano specialist and expert analyst. Your expertise includes:
-
-CARDANO SPECIALIZATION:
-- Cardano's research-driven development approach
-- Ouroboros proof-of-stake consensus protocol
-- Smart contract capabilities via Plutus and Marlowe
-- Cardano's three-layer architecture (settlement, computation, control)
-- Academic partnerships and peer-reviewed research
-- Cardano ecosystem projects and DApp development
-- Native tokens and Cardano's UTXO model
-- Sustainability and treasury funding mechanisms
-
-ANALYSIS FOCUS:
-- Analyze ONLY Cardano data from the provided dataset
-- Focus on Cardano's methodical development approach
-- Evaluate smart contract adoption and ecosystem growth
-- Assess academic partnerships and research contributions
-- Monitor native token ecosystem development
-- Consider Cardano's long-term roadmap and milestones
-
-DELIVERABLES:
-- Cardano-specific analysis and insights
-- Development progress and milestone achievements
-- Smart contract ecosystem evaluation
-- Academic research impact assessment
-- Native token and DApp adoption metrics
-- Technical and fundamental outlook for ADA
-
-Extract Cardano data from the provided dataset and provide comprehensive Cardano-focused analysis.""",
-        model_name="groq/moonshotai/kimi-k2-instruct",
-        max_loops=1,
-        dynamic_temperature_enabled=True,
-        streaming_on=False,
-        tools=[coin_gecko_coin_api],
-    )
-
-    # Binance Coin Specialist Agent
-    bnb_agent = Agent(
-        agent_name="BNB-Analyst",
-        agent_description="Expert analyst specializing exclusively in BNB analysis and Binance ecosystem dynamics",
-        system_prompt="""You are a BNB specialist and expert analyst. Your expertise includes:
-
-BNB SPECIALIZATION:
-- BNB's utility within the Binance ecosystem
-- Binance Smart Chain (BSC) development and adoption
-- BNB token burns and deflationary mechanics
-- Binance exchange volume and market leadership
-- BSC DeFi ecosystem and yield farming
-- Cross-chain bridges and multi-chain strategies
-- Regulatory challenges facing Binance globally
-- BNB's role in transaction fee discounts and platform benefits
-
-ANALYSIS FOCUS:
-- Analyze ONLY BNB data from the provided dataset
-- Focus on BNB's utility value and exchange benefits
-- Evaluate BSC ecosystem growth and competition with Ethereum
-- Assess token burn impact on supply and price
-- Monitor Binance platform developments and regulations
-- Consider BNB's centralized vs decentralized aspects
-
-DELIVERABLES:
-- BNB-specific analysis and insights
-- Utility value and ecosystem benefits assessment
-- BSC adoption and DeFi growth evaluation
-- Token economics and burn mechanism impact
-- Regulatory risk and compliance analysis
-- Technical and fundamental outlook for BNB
-
-Extract BNB data from the provided dataset and provide comprehensive BNB-focused analysis.""",
-        model_name="groq/moonshotai/kimi-k2-instruct",
-        max_loops=1,
-        dynamic_temperature_enabled=True,
-        streaming_on=False,
-        tools=[coin_gecko_coin_api],
-    )
-
-    # XRP Specialist Agent
-    xrp_agent = Agent(
-        agent_name="XRP-Analyst",
-        agent_description="Expert analyst specializing exclusively in XRP analysis and cross-border payment solutions",
-        system_prompt="""You are an XRP specialist and expert analyst. Your expertise includes:
-
-XRP SPECIALIZATION:
-- XRP's role in cross-border payments and remittances
-- RippleNet adoption by financial institutions
-- Central Bank Digital Currency (CBDC) partnerships
-- Regulatory landscape and SEC lawsuit implications
-- XRP Ledger's consensus mechanism and energy efficiency
-- On-Demand Liquidity (ODL) usage and growth
-- Competition with SWIFT and traditional payment rails
-- Ripple's partnerships with banks and payment providers
-
-ANALYSIS FOCUS:
-- Analyze ONLY XRP data from the provided dataset
-- Focus on XRP's utility in payments and remittances
-- Evaluate RippleNet adoption and institutional partnerships
-- Assess regulatory developments and legal clarity
-- Monitor ODL usage and transaction volumes
-- Consider XRP's competitive position in payments
-
-DELIVERABLES:
-- XRP-specific analysis and insights
-- Payment utility and adoption assessment
-- Regulatory landscape and legal developments
-- Institutional partnership impact evaluation
-- Cross-border payment market analysis
-- Technical and fundamental outlook for XRP
-
-Extract XRP data from the provided dataset and provide comprehensive XRP-focused analysis.""",
-        model_name="groq/moonshotai/kimi-k2-instruct",
-        max_loops=1,
-        dynamic_temperature_enabled=True,
-        streaming_on=False,
-        tools=[coin_gecko_coin_api],
-    )
-
-    return [
-        bitcoin_agent,
-        ethereum_agent,
-        solana_agent,
-        cardano_agent,
-        bnb_agent,
-        xrp_agent,
-    ]
-
-
-def create_crypto_workflow() -> ConcurrentWorkflow:
-    """
-    Creates a ConcurrentWorkflow with cryptocurrency-specific analysis agents.
-
-    Returns:
-        ConcurrentWorkflow: Configured workflow for crypto analysis
-    """
-    agents = create_crypto_specific_agents()
-
-    workflow = ConcurrentWorkflow(
-        name="Crypto-Specific-Analysis-Workflow",
-        description="Concurrent execution of cryptocurrency-specific analysis agents",
-        agents=agents,
-        max_loops=1,
-    )
-
-    return workflow
-
-
-def create_crypto_cron_job() -> CronJob:
-    """
-    Creates a CronJob that runs cryptocurrency-specific analysis every minute using ConcurrentWorkflow.
-
-    Returns:
-        CronJob: Configured cron job for automated crypto analysis
-    """
-    # Create the concurrent workflow
-    workflow = create_crypto_workflow()
-
-    # Create the cron job
-    cron_job = CronJob(
-        agent=workflow,  # Use the workflow as the agent
-        interval="5seconds",  # Run every 1 minute
-    )
-
-    return cron_job
-
-
-def main():
-    """
-    Main function to run the cryptocurrency-specific concurrent analysis cron job.
-    """
-    cron_job = create_crypto_cron_job()
-
-    prompt = """
+# Advanced callback with monitoring
+class AdvancedCallback:
+    def __init__(self):
+        self.history = []
+        self.error_count = 0
+        
+    def __call__(self, output, task, metadata):
+        # Track execution
+        execution_data = {
+            "output": output,
+            "execution_id": metadata["execution_count"],
+            "timestamp": datetime.fromtimestamp(metadata["timestamp"]).isoformat(),
+            "task": task,
+            "job_id": metadata["job_id"],
+            "success": bool(output and "error" not in str(output).lower())
+        }
+        
+        if not execution_data["success"]:
+            self.error_count += 1
+            
+        self.history.append(execution_data)
+        
+        # Keep only last 100 executions
+        if len(self.history) > 100:
+            self.history.pop(0)
+            
+        return execution_data
     
-    Conduct a comprehensive analysis of your assigned cryptocurrency.
-    
-    """
+    def get_stats(self):
+        return {
+            "total_executions": len(self.history),
+            "error_count": self.error_count,
+            "success_rate": (len(self.history) - self.error_count) / len(self.history) if self.history else 0
+        }
 
-    # Start the cron job
-    logger.info("🔄 Starting automated analysis loop...")
-    logger.info("⏰ Press Ctrl+C to stop the cron job")
+# Use advanced callback
+callback = AdvancedCallback()
+cron_job = CronJob(
+    agent=agent,
+    interval="2minutes",
+    job_id="financial_analysis_job",
+    callback=callback
+)
 
-    output = cron_job.run(task=prompt)
-    print(output)
-
-
-if __name__ == "__main__":
-    main()
+# Run the cron job
+try:
+    cron_job.run("Analyze current market conditions and provide investment recommendations")
+except KeyboardInterrupt:
+    cron_job.stop()
+    print("Final stats:", json.dumps(callback.get_stats(), indent=2))
 ```
 
-## Conclusion
+### Multi-Agent Workflow with CronJob
 
-The CronJob class provides a powerful way to schedule and automate tasks using Swarms Agents or custom functions. Key benefits include:
+```python
+from swarms import Agent, CronJob, ConcurrentWorkflow
+import json
 
-- Easy integration with Swarms Agents
+# Create specialized agents
+bitcoin_agent = Agent(
+    agent_name="Bitcoin-Analyst",
+    system_prompt="You are a Bitcoin specialist. Focus only on Bitcoin analysis.",
+    model_name="gpt-4o-mini",
+    max_loops=1
+)
 
-- Flexible interval scheduling
+ethereum_agent = Agent(
+    agent_name="Ethereum-Analyst", 
+    system_prompt="You are an Ethereum specialist. Focus only on Ethereum analysis.",
+    model_name="gpt-4o-mini",
+    max_loops=1
+)
 
-- Thread-safe execution
+# Create concurrent workflow
+workflow = ConcurrentWorkflow(
+    name="Crypto-Analysis-Workflow",
+    agents=[bitcoin_agent, ethereum_agent],
+    max_loops=1
+)
 
-- Graceful error handling
+# Workflow callback
+def workflow_callback(output, task, metadata):
+    """Process multi-agent workflow output."""
+    return {
+        "workflow_results": output,
+        "execution_id": metadata["execution_count"],
+        "timestamp": metadata["timestamp"],
+        "agents_count": len(workflow.agents),
+        "task": task,
+        "metadata": {
+            "job_id": metadata["job_id"],
+            "uptime": metadata.get("uptime", 0)
+        }
+    }
 
-- Simple API for task scheduling
+# Create workflow cron job
+workflow_cron = CronJob(
+    agent=workflow,
+    interval="5minutes",
+    job_id="crypto_workflow_job",
+    callback=workflow_callback
+)
 
-- Support for both agent and callable-based tasks 
+# Run workflow cron job
+workflow_cron.run("Analyze your assigned cryptocurrency and provide market insights")
+```
+
+### API Integration Example
+
+```python
+import requests
+from swarms import Agent, CronJob
+import json
+
+# Create agent
+agent = Agent(
+    agent_name="News-Analyst",
+    system_prompt="Analyze news and provide summaries.",
+    model_name="gpt-4o-mini",
+    max_loops=1
+)
+
+# API webhook callback
+def api_callback(output, task, metadata):
+    """Send results to external API."""
+    payload = {
+        "data": output,
+        "source": "swarms_cronjob",
+        "job_id": metadata["job_id"],
+        "execution_id": metadata["execution_count"],
+        "timestamp": metadata["timestamp"],
+        "task": task
+    }
+    
+    try:
+        # Send to webhook (replace with your URL)
+        response = requests.post(
+            "https://api.example.com/webhook",
+            json=payload,
+            timeout=30
+        )
+        
+        return {
+            "original_output": output,
+            "api_status": "sent",
+            "api_response_code": response.status_code,
+            "execution_id": metadata["execution_count"]
+        }
+    except requests.RequestException as e:
+        return {
+            "original_output": output,
+            "api_status": "failed",
+            "error": str(e),
+            "execution_id": metadata["execution_count"]
+        }
+
+# Database logging callback
+def db_callback(output, task, metadata):
+    """Log to database (pseudo-code)."""
+    # db.execute(
+    #     "INSERT INTO cron_results (job_id, output, timestamp) VALUES (?, ?, ?)",
+    #     (metadata["job_id"], output, metadata["timestamp"])
+    # )
+    
+    return {
+        "output": output,
+        "logged_to_db": True,
+        "execution_id": metadata["execution_count"]
+    }
+
+# Create cron job with API integration
+api_cron_job = CronJob(
+    agent=agent,
+    interval="10minutes",
+    job_id="news_analysis_api_job",
+    callback=api_callback
+)
+
+# Dynamic callback switching example
+db_cron_job = CronJob(
+    agent=agent,
+    interval="1hour",
+    job_id="news_analysis_db_job"
+)
+
+# Start with API callback
+db_cron_job.set_callback(api_callback)
+
+# Later switch to database callback
+# db_cron_job.set_callback(db_callback)
+
+# Get execution statistics
+stats = db_cron_job.get_execution_stats()
+print(f"Job statistics: {json.dumps(stats, indent=2)}")
+``` 
