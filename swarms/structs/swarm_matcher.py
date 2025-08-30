@@ -5,9 +5,6 @@ import numpy as np
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from swarms.utils.auto_download_check_packages import (
-    auto_check_and_download_package,
-)
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="swarm_matcher")
@@ -48,18 +45,16 @@ class SwarmMatcher:
         try:
             import torch
         except ImportError:
-            auto_check_and_download_package(
-                "torch", package_manager="pip", upgrade=True
+            raise ImportError(
+                "torch package not found. Pip install torch."
             )
-            import torch
 
         try:
             import transformers
         except ImportError:
-            auto_check_and_download_package(
-                "transformers", package_manager="pip", upgrade=True
+            raise ImportError(
+                "transformers package not found. Pip install transformers."
             )
-            import transformers
 
         self.torch = torch
         try:

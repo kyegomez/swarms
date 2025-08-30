@@ -1,6 +1,7 @@
 from swarms.utils.auto_download_check_packages import (
     auto_check_and_download_package,
 )
+from typing import Any
 
 
 try:
@@ -22,7 +23,7 @@ except ImportError:
 
 class StringStoppingCriteria(transformers.StoppingCriteria):
     def __init__(
-        self, tokenizer: transformers.PreTrainedTokenizer, prompt_length: int  # type: ignore
+        self, tokenizer: Any, prompt_length: int  # type: ignore
     ):
         self.tokenizer = tokenizer
         self.prompt_length = prompt_length
@@ -48,7 +49,7 @@ class StringStoppingCriteria(transformers.StoppingCriteria):
 class NumberStoppingCriteria(transformers.StoppingCriteria):
     def __init__(
         self,
-        tokenizer: transformers.PreTrainedTokenizer,  # type: ignore
+        tokenizer: Any,  # type: ignore
         prompt_length: int,
         precision: int = 3,
     ):

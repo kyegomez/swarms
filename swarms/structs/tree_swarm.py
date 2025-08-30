@@ -3,56 +3,118 @@ from collections import Counter
 from datetime import datetime
 from typing import Any, List, Optional
 
+import numpy as np
+from litellm import embedding
 from pydantic import BaseModel, Field
-from swarms.structs.agent import Agent
-from swarms.utils.loguru_logger import initialize_logger
-from swarms.utils.auto_download_check_packages import (
-    auto_check_and_download_package,
-)
-from swarms.structs.conversation import Conversation
 
+from swarms.structs.agent import Agent
+from swarms.structs.conversation import Conversation
+from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="tree_swarm")
 
 
 # Pydantic Models for Logging
 class AgentLogInput(BaseModel):
+    """
+    Input log model for tracking agent task execution.
+
+    Attributes:
+        log_id (str): Unique identifier for the log entry
+        agent_name (str): Name of the agent executing the task
+        task (str): Description of the task being executed
+        timestamp (datetime): When the task was started
+    """
+
     log_id: str = Field(
         default_factory=lambda: str(uuid.uuid4()), alias="id"
     )
     agent_name: str
     task: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(datetime.UTC))
 
 
 class AgentLogOutput(BaseModel):
+    """
+    Output log model for tracking agent task completion.
+
+    Attributes:
+        log_id (str): Unique identifier for the log entry
+        agent_name (str): Name of the agent that completed the task
+        result (Any): Result/output from the task execution
+        timestamp (datetime): When the task was completed
+    """
+
     log_id: str = Field(
         default_factory=lambda: str(uuid.uuid4()), alias="id"
     )
     agent_name: str
     result: Any
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(datetime.UTC))
 
 
 class TreeLog(BaseModel):
+    """
+    Tree execution log model for tracking tree-level operations.
+
+    Attributes:
+        log_id (str): Unique identifier for the log entry
+        tree_name (str): Name of the tree that executed the task
+        task (str): Description of the task that was executed
+        selected_agent (str): Name of the agent selected for the task
+        timestamp (datetime): When the task was executed
+        result (Any): Result/output from the task execution
+    """
+
     log_id: str = Field(
         default_factory=lambda: str(uuid.uuid4()), alias="id"
     )
     tree_name: str
     task: str
     selected_agent: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(datetime.UTC))
     result: Any
 
 
 def extract_keywords(prompt: str, top_n: int = 5) -> List[str]:
     """
     A simplified keyword extraction function using basic word splitting instead of NLTK tokenization.
+
+    Args:
+        prompt (str): The text prompt to extract keywords from
+        top_n (int): Maximum number of keywords to return
+
+    Returns:
+        List[str]: List of extracted keywords
     """
     words = prompt.lower().split()
     filtered_words = [word for word in words if word.isalnum()]
     word_counts = Counter(filtered_words)
     return [word for word, _ in word_counts.most_common(top_n)]
+
+
+def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
+    """
+    Calculate cosine similarity between two vectors.
+
+    Args:
+        vec1 (List[float]): First vector
+        vec2 (List[float]): Second vector
+
+    Returns:
+        float: Cosine similarity score between 0 and 1
+    """
+    vec1 = np.array(vec1)
+    vec2 = np.array(vec2)
+
+    dot_product = np.dot(vec1, vec2)
+    norm1 = np.linalg.norm(vec1)
+    norm2 = np.linalg.norm(vec2)
+
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+
+    return dot_product / (norm1 * norm2)
 
 
 class TreeAgent(Agent):
@@ -68,9 +130,23 @@ class TreeAgent(Agent):
         system_prompt: str = None,
         model_name: str = "gpt-4o",
         agent_name: Optional[str] = None,
+        embedding_model_name: str = "text-embedding-ada-002",
         *args,
         **kwargs,
     ):
+        """
+        Initialize a TreeAgent with litellm embedding capabilities.
+
+        Args:
+            name (str): Name of the agent
+            description (str): Description of the agent
+            system_prompt (str): System prompt for the agent
+            model_name (str): Name of the language model to use
+            agent_name (Optional[str]): Alternative name for the agent
+            embedding_model_name (str): Name of the embedding model to use
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+        """
         agent_name = agent_name
         super().__init__(
             name=name,
@@ -81,32 +157,63 @@ class TreeAgent(Agent):
             *args,
             **kwargs,
         )
+        self.embedding_model_name = embedding_model_name
 
-        try:
-            import sentence_transformers
-        except ImportError:
-            auto_check_and_download_package(
-                "sentence-transformers", package_manager="pip"
+        # Generate system prompt embedding using litellm
+        if system_prompt:
+            self.system_prompt_embedding = self._get_embedding(
+                system_prompt
             )
-            import sentence_transformers
-
-        self.sentence_transformers = sentence_transformers
-
-        # Pretrained model for embeddings
-        self.embedding_model = (
-            sentence_transformers.SentenceTransformer(
-                "all-MiniLM-L6-v2"
-            )
-        )
-        self.system_prompt_embedding = self.embedding_model.encode(
-            system_prompt, convert_to_tensor=True
-        )
+        else:
+            self.system_prompt_embedding = None
 
         # Automatically extract keywords from system prompt
-        self.relevant_keywords = extract_keywords(system_prompt)
+        self.relevant_keywords = (
+            extract_keywords(system_prompt) if system_prompt else []
+        )
 
         # Distance is now calculated based on similarity between agents' prompts
         self.distance = None  # Will be dynamically calculated later
+
+    def _get_embedding(self, text: str) -> List[float]:
+        """
+        Get embedding for a given text using litellm.
+
+        Args:
+            text (str): Text to embed
+
+        Returns:
+            List[float]: Embedding vector
+        """
+        try:
+            response = embedding(
+                model=self.embedding_model_name, input=[text]
+            )
+            logger.info(f"Embedding type: {type(response)}")
+            # print(response)
+            # Handle different response structures from litellm
+            if hasattr(response, "data") and response.data:
+                if hasattr(response.data[0], "embedding"):
+                    return response.data[0].embedding
+                elif (
+                    isinstance(response.data[0], dict)
+                    and "embedding" in response.data[0]
+                ):
+                    return response.data[0]["embedding"]
+                else:
+                    logger.error(
+                        f"Unexpected response structure: {response.data[0]}"
+                    )
+                    return [0.0] * 1536
+            else:
+                logger.error(
+                    f"Unexpected response structure: {response}"
+                )
+                return [0.0] * 1536
+        except Exception as e:
+            logger.error(f"Error getting embedding: {e}")
+            # Return a zero vector as fallback
+            return [0.0] * 1536  # Default OpenAI embedding dimension
 
     def calculate_distance(self, other_agent: "TreeAgent") -> float:
         """
@@ -118,10 +225,16 @@ class TreeAgent(Agent):
         Returns:
             float: Distance score between 0 and 1, with 0 being close and 1 being far.
         """
-        similarity = self.sentence_transformers.util.pytorch_cos_sim(
+        if (
+            not self.system_prompt_embedding
+            or not other_agent.system_prompt_embedding
+        ):
+            return 1.0  # Maximum distance if embeddings are not available
+
+        similarity = cosine_similarity(
             self.system_prompt_embedding,
             other_agent.system_prompt_embedding,
-        ).item()
+        )
         distance = (
             1 - similarity
         )  # Closer agents have a smaller distance
@@ -130,6 +243,18 @@ class TreeAgent(Agent):
     def run_task(
         self, task: str, img: str = None, *args, **kwargs
     ) -> Any:
+        """
+        Execute a task and log the input and output.
+
+        Args:
+            task (str): The task to execute
+            img (str): Optional image input
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+
+        Returns:
+            Any: Result of the task execution
+        """
         input_log = AgentLogInput(
             agent_name=self.agent_name,
             task=task,
@@ -157,7 +282,7 @@ class TreeAgent(Agent):
         Checks if the agent is relevant for the given task using both keyword matching and embedding similarity.
 
         Args:
-            task (str): The task to be executed.
+            task (str): The task or query for which we need to find a relevant agent.
             threshold (float): The cosine similarity threshold for embedding-based matching.
 
         Returns:
@@ -170,14 +295,10 @@ class TreeAgent(Agent):
         )
 
         # Perform embedding similarity match if keyword match is not found
-        if not keyword_match:
-            task_embedding = self.embedding_model.encode(
-                task, convert_to_tensor=True
-            )
-            similarity = (
-                self.sentence_transformers.util.pytorch_cos_sim(
-                    self.system_prompt_embedding, task_embedding
-                ).item()
+        if not keyword_match and self.system_prompt_embedding:
+            task_embedding = self._get_embedding(task)
+            similarity = cosine_similarity(
+                self.system_prompt_embedding, task_embedding
             )
             logger.info(
                 f"Semantic similarity between task and {self.agent_name}: {similarity:.2f}"
@@ -203,6 +324,9 @@ class Tree:
     def calculate_agent_distances(self):
         """
         Automatically calculate and assign distances between agents in the tree based on prompt similarity.
+
+        This method computes the semantic distance between consecutive agents using their system prompt
+        embeddings and sorts the agents by distance for optimal task routing.
         """
         logger.info(
             f"Calculating distances between agents in tree '{self.tree_name}'"
@@ -271,10 +395,16 @@ class ForestSwarm:
         **kwargs,
     ):
         """
-        Initializes the structure with multiple trees of agents.
+        Initialize a ForestSwarm with multiple trees of agents.
 
         Args:
-            trees (List[Tree]): A list of trees in the structure.
+            name (str): Name of the forest swarm
+            description (str): Description of the forest swarm
+            trees (List[Tree]): A list of trees in the structure
+            shared_memory (Any): Shared memory object for inter-tree communication
+            rules (str): Rules governing the forest swarm behavior
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
         """
         self.name = name
         self.description = description
@@ -290,13 +420,13 @@ class ForestSwarm:
 
     def find_relevant_tree(self, task: str) -> Optional[Tree]:
         """
-        Finds the most relevant tree based on the given task.
+        Find the most relevant tree based on the given task.
 
         Args:
-            task (str): The task or query for which we need to find a relevant tree.
+            task (str): The task or query for which we need to find a relevant tree
 
         Returns:
-            Optional[Tree]: The most relevant tree, or None if no match found.
+            Optional[Tree]: The most relevant tree, or None if no match found
         """
         logger.info(
             f"Searching for the most relevant tree for task: {task}"
@@ -309,13 +439,16 @@ class ForestSwarm:
 
     def run(self, task: str, img: str = None, *args, **kwargs) -> Any:
         """
-        Executes the given task by finding the most relevant tree and agent within that tree.
+        Execute the given task by finding the most relevant tree and agent within that tree.
 
         Args:
-            task (str): The task or query to be executed.
+            task (str): The task or query to be executed
+            img (str): Optional image input for vision-enabled tasks
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
 
         Returns:
-            Any: The result of the task after it has been processed by the agents.
+            Any: The result of the task after it has been processed by the agents
         """
         try:
             logger.info(
