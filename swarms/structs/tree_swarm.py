@@ -31,7 +31,9 @@ class AgentLogInput(BaseModel):
     )
     agent_name: str
     task: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(datetime.UTC))
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(datetime.UTC)
+    )
 
 
 class AgentLogOutput(BaseModel):
@@ -50,7 +52,9 @@ class AgentLogOutput(BaseModel):
     )
     agent_name: str
     result: Any
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(datetime.UTC))
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(datetime.UTC)
+    )
 
 
 class TreeLog(BaseModel):
@@ -72,7 +76,9 @@ class TreeLog(BaseModel):
     tree_name: str
     task: str
     selected_agent: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(datetime.UTC))
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(datetime.UTC)
+    )
     result: Any
 
 

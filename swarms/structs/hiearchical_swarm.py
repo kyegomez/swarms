@@ -1146,10 +1146,6 @@ class HierarchicalSwarm:
             if task is None and self.interactive:
                 task = self._get_interactive_task()
 
-            # if task is None:
-            #     raise ValueError(
-            #         "Task is required for swarm execution"
-            #     )
 
             current_loop = 0
             last_output = None
