@@ -51,6 +51,7 @@ from swarms.prompts.reasoning_prompt import INTERNAL_MONOLGUE_PROMPT
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import list_all_agents
+from swarms.structs.omni_agent_types import AgentListType
 from swarms.tools.base_tool import BaseTool
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -672,7 +673,7 @@ class HierarchicalSwarm:
         name: str = "HierarchicalAgentSwarm",
         description: str = "Distributed task swarm",
         director: Optional[Union[Agent, Callable, Any]] = None,
-        agents: List[Union[Agent, Callable, Any]] = None,
+        agents: AgentListType = None,
         max_loops: int = 1,
         output_type: OutputType = "dict-all-except-first",
         feedback_director_model_name: str = "gpt-4o-mini",
@@ -822,7 +823,7 @@ class HierarchicalSwarm:
         # Initialize logger only if verbose is enabled
         if self.verbose:
             logger.info(
-                f"🚀 Initializing HierarchicalSwarm: {self.name}"
+                f"[INIT] Initializing HierarchicalSwarm: {self.name}"
             )
 
         self.conversation = Conversation(time_enabled=False)
@@ -847,7 +848,7 @@ class HierarchicalSwarm:
 
         if self.verbose:
             logger.success(
-                f"✅ HierarchicalSwarm: {self.name} initialized successfully."
+                f"[SUCCESS] HierarchicalSwarm: {self.name} initialized successfully."
             )
 
         if self.multi_agent_prompt_improvements:
@@ -867,7 +868,7 @@ class HierarchicalSwarm:
         """
         try:
             if self.verbose:
-                logger.info("📝 Adding agent context to director")
+                logger.info("[INFO] Adding agent context to director")
 
             list_all_agents(
                 agents=self.agents,
@@ -878,15 +879,15 @@ class HierarchicalSwarm:
 
             if self.verbose:
                 logger.success(
-                    "✅ Agent context added to director successfully"
+                    "[SUCCESS] Agent context added to director successfully"
                 )
 
         except Exception as e:
             error_msg = (
-                f"❌ Failed to add context to director: {str(e)}"
+                f"[ERROR] Failed to add context to director: {str(e)}"
             )
             logger.error(
-                f"{error_msg}\n🔍 Traceback: {traceback.format_exc()}"
+                f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}"
             )
 
     def setup_director(self):
@@ -904,12 +905,12 @@ class HierarchicalSwarm:
         """
         try:
             if self.verbose:
-                logger.info("🎯 Setting up director agent")
+                logger.info("[SETUP] Setting up director agent")
 
             schema = BaseTool().base_model_to_dict(SwarmSpec)
 
             if self.verbose:
-                logger.debug(f"📋 Director schema: {schema}")
+                logger.debug(f"[SCHEMA] Director schema: {schema}")
 
             return Agent(
                 agent_name=self.director_name,
@@ -923,7 +924,7 @@ class HierarchicalSwarm:
             )
 
         except Exception as e:
-            error_msg = f"❌ Failed to setup director: {str(e)}\n🔍 Traceback: {traceback.format_exc()}\n🐛 If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+            error_msg = f"[ERROR] Failed to setup director: {str(e)}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             logger.error(error_msg)
 
     def reliability_checks(self):
@@ -963,7 +964,7 @@ class HierarchicalSwarm:
                 )
 
         except Exception as e:
-            error_msg = f"❌ Failed to setup director: {str(e)}\n🔍 Traceback: {traceback.format_exc()}\n🐛 If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+            error_msg = f"[ERROR] Failed to setup director: {str(e)}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             logger.error(error_msg)
 
     def agents_no_print(self):
@@ -995,7 +996,9 @@ class HierarchicalSwarm:
         """
         try:
             if self.verbose:
-                logger.info(f"🎯 Running director with task: {task}")
+                logger.info(
+                    f"[RUN] Running director with task: {task}"
+                )
 
             if self.planning_director_agent is not None:
                 plan = self.planning_director_agent.run(
@@ -1022,15 +1025,17 @@ class HierarchicalSwarm:
             )
 
             if self.verbose:
-                logger.success("✅ Director execution completed")
+                logger.success(
+                    "[SUCCESS] Director execution completed"
+                )
                 logger.debug(
-                    f"📋 Director output type: {type(function_call)}"
+                    f"[OUTPUT] Director output type: {type(function_call)}"
                 )
 
             return function_call
 
         except Exception as e:
-            error_msg = f"❌ Failed to setup director: {str(e)}\n🔍 Traceback: {traceback.format_exc()}\n🐛 If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+            error_msg = f"[ERROR] Failed to setup director: {str(e)}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             logger.error(error_msg)
             raise e
 
@@ -1059,7 +1064,7 @@ class HierarchicalSwarm:
         try:
             if self.verbose:
                 logger.info(
-                    f"👣 Executing single step for task: {task}"
+                    f"[STEP] Executing single step for task: {task}"
                 )
 
             # Update dashboard for director execution
@@ -1073,7 +1078,7 @@ class HierarchicalSwarm:
 
             if self.verbose:
                 logger.info(
-                    f"📋 Parsed plan and {len(orders)} orders"
+                    f"[PARSE] Parsed plan and {len(orders)} orders"
                 )
 
             # Update dashboard with plan and orders information
@@ -1094,7 +1099,7 @@ class HierarchicalSwarm:
             outputs = self.execute_orders(orders)
 
             if self.verbose:
-                logger.info(f"⚡ Executed {len(outputs)} orders")
+                logger.info(f"[EXEC] Executed {len(outputs)} orders")
 
             if self.director_feedback_on is True:
                 feedback = self.feedback_director(outputs)
@@ -1102,12 +1107,14 @@ class HierarchicalSwarm:
                 feedback = outputs
 
             if self.verbose:
-                logger.success("✅ Step completed successfully")
+                logger.success(
+                    "[SUCCESS] Step completed successfully"
+                )
 
             return feedback
 
         except Exception as e:
-            error_msg = f"❌ Failed to setup director: {str(e)}\n🔍 Traceback: {traceback.format_exc()}\n🐛 If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+            error_msg = f"[ERROR] Failed to setup director: {str(e)}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             logger.error(error_msg)
 
     def run(
@@ -1146,7 +1153,6 @@ class HierarchicalSwarm:
             if task is None and self.interactive:
                 task = self._get_interactive_task()
 
-
             current_loop = 0
             last_output = None
 
@@ -1157,16 +1163,16 @@ class HierarchicalSwarm:
 
             if self.verbose:
                 logger.info(
-                    f"🚀 Starting hierarchical swarm run: {self.name}"
+                    f"[START] Starting hierarchical swarm run: {self.name}"
                 )
                 logger.info(
-                    f"📊 Configuration - Max loops: {self.max_loops}"
+                    f"[CONFIG] Configuration - Max loops: {self.max_loops}"
                 )
 
             while current_loop < self.max_loops:
                 if self.verbose:
                     logger.info(
-                        f"🔄 Loop {current_loop + 1}/{self.max_loops} - Processing task"
+                        f"[LOOP] Loop {current_loop + 1}/{self.max_loops} - Processing task"
                     )
 
                 # Update dashboard loop counter
@@ -1196,11 +1202,11 @@ class HierarchicalSwarm:
 
                     if self.verbose:
                         logger.success(
-                            f"✅ Loop {current_loop + 1} completed successfully"
+                            f"[SUCCESS] Loop {current_loop + 1} completed successfully"
                         )
 
                 except Exception as e:
-                    error_msg = f"❌ Failed to setup director: {str(e)}\n🔍 Traceback: {traceback.format_exc()}\n🐛 If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+                    error_msg = f"[ERROR] Failed to setup director: {str(e)}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
                     logger.error(error_msg)
 
                 current_loop += 1
@@ -1218,10 +1224,10 @@ class HierarchicalSwarm:
 
             if self.verbose:
                 logger.success(
-                    f"🎉 Hierarchical swarm run completed: {self.name}"
+                    f"[COMPLETE] Hierarchical swarm run completed: {self.name}"
                 )
                 logger.info(
-                    f"📊 Total loops executed: {current_loop}"
+                    f"[STATS] Total loops executed: {current_loop}"
                 )
 
             return history_output_formatter(
@@ -1234,7 +1240,7 @@ class HierarchicalSwarm:
                 self.dashboard.update_director_status("ERROR")
                 self.dashboard.stop()
 
-            error_msg = f"❌ Failed to setup director: {str(e)}\n🔍 Traceback: {traceback.format_exc()}\n🐛 If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+            error_msg = f"[ERROR] Failed to setup director: {str(e)}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             logger.error(error_msg)
 
     def _get_interactive_task(self) -> str:
@@ -1275,7 +1281,7 @@ class HierarchicalSwarm:
         """
         try:
             if self.verbose:
-                logger.info("📝 Generating director feedback")
+                logger.info("[FEEDBACK] Generating director feedback")
 
             task = f"History: {self.conversation.get_str()} \n\n"
 
@@ -1302,13 +1308,13 @@ class HierarchicalSwarm:
 
             if self.verbose:
                 logger.success(
-                    "✅ Director feedback generated successfully"
+                    "[SUCCESS] Director feedback generated successfully"
                 )
 
             return output
 
         except Exception as e:
-            error_msg = f"❌ Failed to setup director: {str(e)}\n🔍 Traceback: {traceback.format_exc()}\n🐛 If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+            error_msg = f"[ERROR] Failed to setup director: {str(e)}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             logger.error(error_msg)
 
     def call_single_agent(
@@ -1336,7 +1342,7 @@ class HierarchicalSwarm:
         """
         try:
             if self.verbose:
-                logger.info(f"📞 Calling agent: {agent_name}")
+                logger.info(f"[CALL] Calling agent: {agent_name}")
 
             # Find agent by name
             agent = None
@@ -1373,7 +1379,7 @@ class HierarchicalSwarm:
 
             if self.verbose:
                 logger.success(
-                    f"✅ Agent {agent_name} completed task successfully"
+                    f"[SUCCESS] Agent {agent_name} completed task successfully"
                 )
 
             return output
@@ -1385,7 +1391,7 @@ class HierarchicalSwarm:
                     agent_name, "ERROR", task, f"Error: {str(e)}"
                 )
 
-            error_msg = f"❌ Failed to setup director: {str(e)}\n🔍 Traceback: {traceback.format_exc()}\n🐛 If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+            error_msg = f"[ERROR] Failed to setup director: {str(e)}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             logger.error(error_msg)
 
     def parse_orders(self, output):
@@ -1409,8 +1415,8 @@ class HierarchicalSwarm:
         """
         try:
             if self.verbose:
-                logger.info("📋 Parsing director orders")
-                logger.debug(f"📊 Output type: {type(output)}")
+                logger.info("[PARSE] Parsing director orders")
+                logger.debug(f"[TYPE] Output type: {type(output)}")
 
             import json
 
@@ -1454,7 +1460,7 @@ class HierarchicalSwarm:
 
                                                 if self.verbose:
                                                     logger.success(
-                                                        f"✅ Successfully parsed plan and {len(orders)} orders"
+                                                        f"[SUCCESS] Successfully parsed plan and {len(orders)} orders"
                                                     )
 
                                                 return plan, orders
@@ -1463,7 +1469,7 @@ class HierarchicalSwarm:
                                         ) as json_err:
                                             if self.verbose:
                                                 logger.warning(
-                                                    f"⚠️ JSON decode error: {json_err}"
+                                                    f"[WARN] JSON decode error: {json_err}"
                                                 )
                                             pass
                         # Check if it's a direct function call format
@@ -1488,7 +1494,7 @@ class HierarchicalSwarm:
 
                                         if self.verbose:
                                             logger.success(
-                                                f"✅ Successfully parsed plan and {len(orders)} orders"
+                                                f"[SUCCESS] Successfully parsed plan and {len(orders)} orders"
                                             )
 
                                         return plan, orders
@@ -1497,7 +1503,7 @@ class HierarchicalSwarm:
                                 ) as json_err:
                                     if self.verbose:
                                         logger.warning(
-                                            f"⚠️ JSON decode error: {json_err}"
+                                            f"[WARN] JSON decode error: {json_err}"
                                         )
                                     pass
                 # If no function call found, raise error
@@ -1515,7 +1521,7 @@ class HierarchicalSwarm:
 
                     if self.verbose:
                         logger.success(
-                            f"✅ Successfully parsed plan and {len(orders)} orders"
+                            f"[SUCCESS] Successfully parsed plan and {len(orders)} orders"
                         )
 
                     return plan, orders
@@ -1529,7 +1535,7 @@ class HierarchicalSwarm:
                 )
 
         except Exception as e:
-            error_msg = f"❌ Failed to parse orders: {str(e)}\n🔍 Traceback: {traceback.format_exc()}\n🐛 If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+            error_msg = f"[ERROR] Failed to parse orders: {str(e)}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             logger.error(error_msg)
             raise e
 
@@ -1552,13 +1558,13 @@ class HierarchicalSwarm:
         """
         try:
             if self.verbose:
-                logger.info(f"⚡ Executing {len(orders)} orders")
+                logger.info(f"[EXEC] Executing {len(orders)} orders")
 
             outputs = []
             for i, order in enumerate(orders):
                 if self.verbose:
                     logger.info(
-                        f"📋 Executing order {i+1}/{len(orders)}: {order.agent_name}"
+                        f"[ORDER] Executing order {i+1}/{len(orders)}: {order.agent_name}"
                     )
 
                 # Update dashboard for agent execution
@@ -1590,13 +1596,13 @@ class HierarchicalSwarm:
 
             if self.verbose:
                 logger.success(
-                    f"✅ All {len(orders)} orders executed successfully"
+                    f"[SUCCESS] All {len(orders)} orders executed successfully"
                 )
 
             return outputs
 
         except Exception as e:
-            error_msg = f"❌ Failed to setup director: {str(e)}\n🔍 Traceback: {traceback.format_exc()}\n🐛 If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+            error_msg = f"[ERROR] Failed to setup director: {str(e)}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             logger.error(error_msg)
 
     def batched_run(
@@ -1624,10 +1630,10 @@ class HierarchicalSwarm:
         try:
             if self.verbose:
                 logger.info(
-                    f"🚀 Starting batched hierarchical swarm run: {self.name}"
+                    f"[START] Starting batched hierarchical swarm run: {self.name}"
                 )
                 logger.info(
-                    f"📊 Configuration - Max loops: {self.max_loops}"
+                    f"[CONFIG] Configuration - Max loops: {self.max_loops}"
                 )
 
             # Initialize a list to store the results
@@ -1640,18 +1646,18 @@ class HierarchicalSwarm:
 
             if self.verbose:
                 logger.success(
-                    f"🎉 Batched hierarchical swarm run completed: {self.name}"
+                    f"[COMPLETE] Batched hierarchical swarm run completed: {self.name}"
                 )
-                logger.info(f"📊 Total tasks processed: {len(tasks)}")
+                logger.info(
+                    f"[STATS] Total tasks processed: {len(tasks)}"
+                )
 
             return results
 
         except Exception as e:
-            error_msg = (
-                f"❌ Batched hierarchical swarm run failed: {str(e)}"
-            )
+            error_msg = f"[ERROR] Batched hierarchical swarm run failed: {str(e)}"
             if self.verbose:
                 logger.error(error_msg)
                 logger.error(
-                    f"🔍 Traceback: {traceback.format_exc()}"
+                    f"[TRACE] Traceback: {traceback.format_exc()}"
                 )

@@ -1,20 +1,9 @@
-"""
-Todo:
-
-- Add multi-agent selection for a task and then run them automatically
-- Add shared memory for large instances of agents
-
-
-
-"""
-
 import os
 from typing import List, Optional
 
 from loguru import logger
 from pydantic import BaseModel, Field
 from swarms.utils.function_caller_model import OpenAIFunctionCaller
-from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.output_types import OutputType
 from swarms.utils.any_to_str import any_to_str
@@ -22,7 +11,7 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.formatter import formatter
-from typing import Callable, Union
+from swarms.structs.omni_agent_types import AgentListType
 
 
 class AgentResponse(BaseModel):
@@ -60,7 +49,7 @@ class MultiAgentRouter:
         self,
         name: str = "swarm-router",
         description: str = "Routes tasks to specialized agents based on their capabilities",
-        agents: List[Union[Agent, Callable]] = [],
+        agents: AgentListType = None,
         model: str = "gpt-4o-mini",
         temperature: float = 0.1,
         shared_memory_system: callable = None,
@@ -86,7 +75,6 @@ class MultiAgentRouter:
         self.model = model
         self.temperature = temperature
         self.if_print = if_print
-        # Initialize Agents
         self.agents = {agent.name: agent for agent in agents}
         self.conversation = Conversation()
 

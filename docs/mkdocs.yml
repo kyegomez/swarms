@@ -435,6 +435,7 @@ nav:
       - RAG with Qdrant: "swarms/RAG/qdrant_rag.md"
 
     - Apps:
+      - Web Scraper Agents: "developer_guides/web_scraper.md"
       - Smart Database: "examples/smart_database.md"
 
 

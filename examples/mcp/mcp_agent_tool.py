@@ -4,11 +4,14 @@ from swarms import Agent
 
 mcp = FastMCP("MCPAgentTool")
 
+
 @mcp.tool(
     name="create_agent",
     description="Create an agent with the specified name, system prompt, and model, then run a task.",
 )
-def create_agent(agent_name: str, system_prompt: str, model_name: str, task: str) -> str:
+def create_agent(
+    agent_name: str, system_prompt: str, model_name: str, task: str
+) -> str:
     """
     Create an agent with the given parameters and execute the specified task.
 
