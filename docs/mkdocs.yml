@@ -430,6 +430,7 @@ nav:
       - Advanced Research: "examples/av.md"
       - Browser Use: "examples/browser_use.md"
       - Yahoo Finance: "swarms/examples/yahoo_finance.md"
+      - Firecrawl: "developer_guides/firecrawl.md"
 
     - RAG:
       - RAG with Qdrant: "swarms/RAG/qdrant_rag.md"
