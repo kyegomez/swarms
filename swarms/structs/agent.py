@@ -432,6 +432,10 @@ class Agent:
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
         show_tool_execution_output: bool = True,
+        reasoning_effort: str = None,
+        drop_params: bool = True,
+        thinking_tokens: int = None,
+        reasoning_enabled: bool = True,
         *args,
         **kwargs,
     ):
@@ -574,6 +578,10 @@ class Agent:
         self.dynamic_context_window = dynamic_context_window
         self.show_tool_execution_output = show_tool_execution_output
         self.mcp_configs = mcp_configs
+        self.reasoning_effort = reasoning_effort
+        self.drop_params = drop_params
+        self.thinking_tokens = thinking_tokens
+        self.reasoning_enabled = reasoning_enabled
 
         # self.init_handling()
         self.setup_config()
@@ -718,6 +726,9 @@ class Agent:
                 "stream": self.streaming_on,
                 "top_p": self.top_p,
                 "retries": self.retry_attempts,
+                "reasoning_effort": self.reasoning_effort,
+                "thinking_tokens": self.thinking_tokens,
+                "reasoning_enabled": self.reasoning_enabled,
             }
 
             # Initialize tools_list_dictionary, if applicable
@@ -974,33 +985,37 @@ class Agent:
             )
 
     def print_dashboard(self):
+        """
+        Print a dashboard displaying the agent's current status and configuration.
+        Uses square brackets instead of emojis for section headers and bullet points.
+        """
         tools_activated = True if self.tools is not None else False
         mcp_activated = True if self.mcp_url is not None else False
         formatter.print_panel(
             f"""
             
-            🤖 Agent {self.agent_name} Dashboard 🚀
-            ════════════════════════════════════════════════════════════
+            [Agent {self.agent_name} Dashboard]
+            ===========================================================
             
-            🎯 Agent {self.agent_name} Status: ONLINE & OPERATIONAL
-            ────────────────────────────────────────────────────────────
+            [Agent {self.agent_name} Status]: ONLINE & OPERATIONAL
+            -----------------------------------------------------------
             
-            📋 Agent Identity:
-            • 🏷️  Name: {self.agent_name}
-            • 📝 Description: {self.agent_description}
+            [Agent Identity]
+            - [Name]: {self.agent_name}
+            - [Description]: {self.agent_description}
             
-            ⚙️  Technical Specifications:
-            • 🤖 Model: {self.model_name}
-            • 🔄 Internal Loops: {self.max_loops}
-            • 🎯 Max Tokens: {self.max_tokens}
-            • 🌡️  Dynamic Temperature: {self.dynamic_temperature_enabled}
+            [Technical Specifications]
+            - [Model]: {self.model_name}
+            - [Internal Loops]: {self.max_loops}
+            - [Max Tokens]: {self.max_tokens}
+            - [Dynamic Temperature]: {self.dynamic_temperature_enabled}
             
-            🔧 System Modules:
-            • 🛠️  Tools Activated: {tools_activated}
-            • 🔗 MCP Activated: {mcp_activated}
+            [System Modules]
+            - [Tools Activated]: {tools_activated}
+            - [MCP Activated]: {mcp_activated}
             
-            ════════════════════════════════════════════════════════════
-            🚀 Ready for Tasks 🚀
+            ===========================================================
+            [Ready for Tasks]
                               
             """,
             title=f"Agent {self.agent_name} Dashboard",

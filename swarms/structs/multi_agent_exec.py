@@ -144,7 +144,6 @@ def run_agents_concurrently_multiprocess(
 def batched_grid_agent_execution(
     agents: List[AgentType],
     tasks: List[str],
-    max_workers: int = None,
 ) -> List[Any]:
     """
     Run multiple agents with different tasks concurrently.
@@ -157,9 +156,6 @@ def batched_grid_agent_execution(
         raise ValueError(
             "The number of agents must match the number of tasks."
         )
-
-    if max_workers is None:
-        max_workers = os.cpu_count()
 
     results = []
 

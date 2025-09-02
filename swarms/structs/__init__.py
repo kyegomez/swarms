@@ -39,9 +39,6 @@ from swarms.structs.ma_blocks import (
 )
 from swarms.structs.majority_voting import (
     MajorityVoting,
-    majority_voting,
-    most_frequent,
-    parse_code_completion,
 )
 from swarms.structs.malt import MALT
 from swarms.structs.meme_agent_persona_generator import (
@@ -112,9 +109,6 @@ __all__ = [
     "Conversation",
     "GroupChat",
     "MajorityVoting",
-    "majority_voting",
-    "most_frequent",
-    "parse_code_completion",
     "AgentRearrange",
     "rearrange",
     "RoundRobinSwarm",

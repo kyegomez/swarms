@@ -7,7 +7,7 @@ from typing import List, Optional
 
 import litellm
 import requests
-from litellm import acompletion, completion, supports_vision
+from litellm import completion, supports_vision
 from loguru import logger
 from pydantic import BaseModel
 
@@ -231,6 +231,10 @@ class LiteLLM:
         base_url: str = None,
         api_key: str = None,
         api_version: str = None,
+        reasoning_effort: str = None,
+        drop_params: bool = True,
+        thinking_tokens: int = None,
+        reasoning_enabled: bool = True,
         *args,
         **kwargs,
     ):
@@ -284,6 +288,9 @@ class LiteLLM:
         self.base_url = base_url
         self.api_key = api_key
         self.api_version = api_version
+        self.reasoning_effort = reasoning_effort
+        self.thinking_tokens = thinking_tokens
+        self.reasoning_enabled = reasoning_enabled
         self.modalities = []
         self.messages = []  # Initialize messages list
 
@@ -296,7 +303,7 @@ class LiteLLM:
             retries  # Add retries for better reliability
         )
 
-        litellm.drop_params = True
+        litellm.drop_params = drop_params
 
         # Add system prompt if present
         if self.system_prompt is not None:
@@ -307,6 +314,63 @@ class LiteLLM:
         # Store additional args and kwargs for use in run method
         self.init_args = args
         self.init_kwargs = kwargs
+
+        self.reasoning_check()
+
+    def reasoning_check(self):
+        """
+        Check if reasoning is enabled and supported by the model, and adjust temperature accordingly.
+
+        If reasoning is enabled and the model supports reasoning, set temperature to 1 for optimal reasoning.
+        Also logs information or warnings based on the model's reasoning support and configuration.
+        """
+        if (
+            self.reasoning_enabled is True
+            and litellm.supports_reasoning(model=self.model_name)
+            is True
+        ):
+            logger.info(
+                f"Model {self.model_name} supports reasoning and reasoning enabled is set to {self.reasoning_enabled}. Temperature will be set to 1 for better reasoning as some models may not work with low temperature."
+            )
+            self.temperature = 1
+        else:
+            logger.warning(
+                f"Model {self.model_name} does not support reasoning and reasoning enabled is set to {self.reasoning_enabled}. Temperature will not be set to 1."
+            )
+
+        if (
+            self.reasoning_enabled is True
+            and litellm.supports_reasoning(model=self.model_name)
+            is False
+        ):
+            logger.warning(
+                f"Model {self.model_name} may or may not support reasoning and reasoning enabled is set to {self.reasoning_enabled}"
+            )
+
+        if (
+            self.reasoning_enabled is True
+            and self.check_if_model_name_uses_anthropic(
+                model_name=self.model_name
+            )
+            is True
+        ):
+            if self.thinking_tokens is None:
+                logger.info(
+                    f"Model {self.model_name} is an Anthropic model and reasoning enabled is set to {self.reasoning_enabled}. Thinking tokens is mandatory for Anthropic models."
+                )
+                self.thinking_tokens = self.max_tokens / 4
+
+        if (
+            self.reasoning_enabled is True
+            and self.check_if_model_name_uses_anthropic(
+                model_name=self.model_name
+            )
+            is True
+        ):
+            logger.info(
+                "top_p must be greater than 0.95 for Anthropic models with reasoning enabled"
+            )
+            self.top_p = 0.95
 
     def _process_additional_args(
         self, completion_params: dict, runtime_args: tuple
@@ -356,6 +420,61 @@ class LiteLLM:
             if isinstance(out, BaseModel):
                 out = out.model_dump()
             return out
+
+    def output_for_reasoning(self, response: any):
+        """
+        Handle output for reasoning models, formatting reasoning content and thinking blocks.
+
+        Args:
+            response: The response object from the LLM API call
+
+        Returns:
+            str: Formatted string containing reasoning content, thinking blocks, and main content
+        """
+        output_parts = []
+
+        # Check if reasoning content is available
+        if (
+            hasattr(response.choices[0].message, "reasoning_content")
+            and response.choices[0].message.reasoning_content
+        ):
+            output_parts.append(
+                f"Reasoning Content:\n{response.choices[0].message.reasoning_content}\n"
+            )
+
+        # Check if thinking blocks are available (Anthropic models)
+        if (
+            hasattr(response.choices[0].message, "thinking_blocks")
+            and response.choices[0].message.thinking_blocks
+        ):
+            output_parts.append("Thinking Blocks:")
+            for i, block in enumerate(
+                response.choices[0].message.thinking_blocks, 1
+            ):
+                block_type = block.get("type", "")
+                thinking = block.get("thinking", "")
+                output_parts.append(
+                    f"Block {i} (Type: {block_type}):"
+                )
+                output_parts.append(f"  Thinking: {thinking}")
+                output_parts.append("")
+
+        # Include tools if available
+        if (
+            hasattr(response.choices[0].message, "tool_calls")
+            and response.choices[0].message.tool_calls
+        ):
+            output_parts.append(
+                f"Tools:\n{self.output_for_tools(response)}\n"
+            )
+
+        # Always include the main content
+        content = response.choices[0].message.content
+        if content:
+            output_parts.append(f"Content:\n{content}")
+
+        # Join all parts into a single string
+        return "\n".join(output_parts)
 
     def _prepare_messages(
         self,
@@ -648,6 +767,26 @@ class LiteLLM:
                     f"Model {self.model_name} does not support vision"
                 )
 
+    @staticmethod
+    def check_if_model_name_uses_anthropic(model_name: str):
+        """
+        Check if the model name uses Anthropic.
+        """
+        if "anthropic" in model_name.lower():
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def check_if_model_name_uses_openai(model_name: str):
+        """
+        Check if the model name uses OpenAI.
+        """
+        if "openai" in model_name.lower():
+            return True
+        else:
+            return False
+
     def run(
         self,
         task: str,
@@ -737,6 +876,29 @@ class LiteLLM:
             if self.modalities and len(self.modalities) >= 2:
                 completion_params["modalities"] = self.modalities
 
+            if (
+                self.reasoning_effort is not None
+                and litellm.supports_reasoning(model=self.model_name)
+                is True
+            ):
+                completion_params["reasoning_effort"] = (
+                    self.reasoning_effort
+                )
+            else:
+                logger.warning(
+                    f"Model {self.model_name} may or may not support reasoning"
+                )
+
+            if (
+                self.reasoning_enabled is True
+                and self.thinking_tokens is not None
+            ):
+                thinking = {
+                    "type": "enabled",
+                    "budget_tokens": self.thinking_tokens,
+                }
+                completion_params["thinking"] = thinking
+
             # Process additional args if any
             self._process_additional_args(completion_params, args)
 
@@ -746,6 +908,13 @@ class LiteLLM:
             # Handle streaming response
             if self.stream:
                 return response  # Return the streaming generator directly
+
+            # Handle reasoning model output
+            elif (
+                self.reasoning_enabled
+                and self.reasoning_effort is not None
+            ):
+                return self.output_for_reasoning(response)
 
             # Handle tool-based response
             elif self.tools_list_dictionary is not None:
@@ -783,118 +952,6 @@ class LiteLLM:
         """
         return self.run(task, *args, **kwargs)
 
-    async def arun(self, task: str, *args, **kwargs):
-        """
-        Run the LLM model asynchronously for the given task.
-
-        Args:
-            task (str): The task to run the model for.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            str: The content of the response from the model.
-        """
-        try:
-            # Extract image parameter from kwargs if present
-            img = kwargs.pop("img", None) if "img" in kwargs else None
-            messages = self._prepare_messages(task=task, img=img)
-
-            # Prepare common completion parameters
-            completion_params = {
-                "model": self.model_name,
-                "messages": messages,
-                "stream": self.stream,
-                "temperature": self.temperature,
-                "max_tokens": self.max_tokens,
-            }
-
-            # Merge initialization kwargs first (lower priority)
-            if self.init_kwargs:
-                completion_params.update(self.init_kwargs)
-
-            # Merge runtime kwargs (higher priority - overrides init kwargs)
-            if kwargs:
-                completion_params.update(kwargs)
-
-            # Handle tool-based completion
-            if self.tools_list_dictionary is not None:
-                completion_params.update(
-                    {
-                        "tools": self.tools_list_dictionary,
-                        "tool_choice": self.tool_choice,
-                        "parallel_tool_calls": self.parallel_tool_calls,
-                    }
-                )
-
-            # Process additional args if any
-            self._process_additional_args(completion_params, args)
-
-            # Make the completion call
-            response = await acompletion(**completion_params)
-
-            # Handle tool-based response
-            if self.tools_list_dictionary is not None:
-                return (
-                    response.choices[0]
-                    .message.tool_calls[0]
-                    .function.arguments
-                )
-            elif self.return_all is True:
-                return response.model_dump()
-            elif "gemini" in self.model_name.lower():
-                return gemini_output_img_handler(response)
-            else:
-                # For non-Gemini models, return the content directly
-                return response.choices[0].message.content
-
-        except Exception as error:
-            logger.error(f"Error in LiteLLM arun: {str(error)}")
-            # if "rate_limit" in str(error).lower():
-            #     logger.warning(
-            #         "Rate limit hit, retrying with exponential backoff..."
-            #     )
-            #     await asyncio.sleep(2)  # Use async sleep
-            #     return await self.arun(task, *args, **kwargs)
-            raise error
-
-    async def _process_batch(
-        self, tasks: List[str], batch_size: int = 10
-    ):
-        """
-        Process a batch of tasks asynchronously.
-
-        Args:
-            tasks (List[str]): List of tasks to process.
-            batch_size (int): Size of each batch.
-
-        Returns:
-            List[str]: List of responses.
-        """
-        results = []
-        for i in range(0, len(tasks), batch_size):
-            batch = tasks[i : i + batch_size]
-            batch_results = await asyncio.gather(
-                *[self.arun(task) for task in batch],
-                return_exceptions=True,
-            )
-
-            # Handle any exceptions in the batch
-            for result in batch_results:
-                if isinstance(result, Exception):
-                    logger.error(
-                        f"Error in batch processing: {str(result)}"
-                    )
-                    results.append(str(result))
-                else:
-                    results.append(result)
-
-            # Add a small delay between batches to avoid rate limits
-            if i + batch_size < len(tasks):
-                await asyncio.sleep(0.5)
-
-        return results
-
     def batched_run(self, tasks: List[str], batch_size: int = 10):
         """
         Run multiple tasks in batches synchronously.
@@ -910,21 +967,3 @@ class LiteLLM:
             f"Running {len(tasks)} tasks in batches of {batch_size}"
         )
         return asyncio.run(self._process_batch(tasks, batch_size))
-
-    async def batched_arun(
-        self, tasks: List[str], batch_size: int = 10
-    ):
-        """
-        Run multiple tasks in batches asynchronously.
-
-        Args:
-            tasks (List[str]): List of tasks to process.
-            batch_size (int): Size of each batch.
-
-        Returns:
-            List[str]: List of responses.
-        """
-        logger.info(
-            f"Running {len(tasks)} tasks asynchronously in batches of {batch_size}"
-        )
-        return await self._process_batch(tasks, batch_size)

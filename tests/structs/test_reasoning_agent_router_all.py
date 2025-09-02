@@ -131,9 +131,7 @@ def test_router_description(report):
     """Test ReasoningAgentRouter with custom description (only change description param)"""
     start_time = time.time()
     try:
-        result = test_agents_swarm(
-            description="Test description for router"
-        )
+        test_agents_swarm(description="Test description for router")
         # Check if the description was set correctly
         router = ReasoningAgentRouter(
             description="Test description for router"
@@ -164,7 +162,7 @@ def test_router_model_name(report):
     """Test ReasoningAgentRouter with custom model_name (only change model_name param)"""
     start_time = time.time()
     try:
-        result = test_agents_swarm(model_name="gpt-4")
+        test_agents_swarm(model_name="gpt-4")
         router = ReasoningAgentRouter(model_name="gpt-4")
         if router.model_name == "gpt-4":
             report.add_result(
@@ -192,9 +190,7 @@ def test_router_system_prompt(report):
     """Test ReasoningAgentRouter with custom system_prompt (only change system_prompt param)"""
     start_time = time.time()
     try:
-        result = test_agents_swarm(
-            system_prompt="You are a test router."
-        )
+        test_agents_swarm(system_prompt="You are a test router.")
         router = ReasoningAgentRouter(
             system_prompt="You are a test router."
         )
@@ -224,7 +220,7 @@ def test_router_max_loops(report):
     """Test ReasoningAgentRouter with custom max_loops (only change max_loops param)"""
     start_time = time.time()
     try:
-        result = test_agents_swarm(max_loops=5)
+        test_agents_swarm(max_loops=5)
         router = ReasoningAgentRouter(max_loops=5)
         if router.max_loops == 5:
             report.add_result(
@@ -252,7 +248,7 @@ def test_router_swarm_type(report):
     """Test ReasoningAgentRouter with custom swarm_type (only change swarm_type param)"""
     start_time = time.time()
     try:
-        result = test_agents_swarm(swarm_type="reasoning-agent")
+        test_agents_swarm(swarm_type="reasoning-agent")
         router = ReasoningAgentRouter(swarm_type="reasoning-agent")
         if router.swarm_type == "reasoning-agent":
             report.add_result(
@@ -281,7 +277,7 @@ def test_router_num_samples(report):
     start_time = time.time()
     try:
         router = ReasoningAgentRouter(num_samples=3)
-        output = router.run("How many samples do you use?")
+        router.run("How many samples do you use?")
         if router.num_samples == 3:
             report.add_result(
                 "Parameter: num_samples",
@@ -389,7 +385,7 @@ def test_router_eval(report):
     """Test ReasoningAgentRouter with eval enabled (only change eval param)"""
     start_time = time.time()
     try:
-        result = test_agents_swarm(eval=True)
+        test_agents_swarm(eval=True)
         router = ReasoningAgentRouter(eval=True)
         if router.eval is True:
             report.add_result(
@@ -417,7 +413,7 @@ def test_router_random_models_on(report):
     """Test ReasoningAgentRouter with random_models_on enabled (only change random_models_on param)"""
     start_time = time.time()
     try:
-        result = test_agents_swarm(random_models_on=True)
+        test_agents_swarm(random_models_on=True)
         router = ReasoningAgentRouter(random_models_on=True)
         if router.random_models_on is True:
             report.add_result(
@@ -445,7 +441,7 @@ def test_router_majority_voting_prompt(report):
     """Test ReasoningAgentRouter with custom majority_voting_prompt (only change majority_voting_prompt param)"""
     start_time = time.time()
     try:
-        result = test_agents_swarm(
+        test_agents_swarm(
             majority_voting_prompt="Vote for the best answer."
         )
         router = ReasoningAgentRouter(
@@ -526,7 +522,7 @@ def test_router_select_swarm(report):
             majority_voting_prompt=DEFAULT_MAJORITY_VOTING_PROMPT,
         )
         # Run the method to test
-        result = router.select_swarm()
+        router.select_swarm()
         # Determine if the result is as expected (not raising error is enough for this test)
         report.add_result(
             "Method: select_swarm()",

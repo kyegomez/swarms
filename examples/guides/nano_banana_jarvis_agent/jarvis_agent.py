@@ -20,6 +20,7 @@ SYSTEM_PROMPT = (
     "Return the image only."
 )
 
+# Agent for AR annotation
 agent = Agent(
     agent_name="Tactical-Strategist-Agent",
     agent_description="Agent specialized in tactical strategy, scenario analysis, and actionable recommendations for complex situations.",
@@ -35,4 +36,5 @@ out = agent.run(
     img="hk.jpg",
 )
 
+print("AR Annotation Output:")
 print(out)
