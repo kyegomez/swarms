@@ -4,18 +4,22 @@
 
 The Model Context Protocol (MCP) provides a standardized way to create and manage AI agents through a server-client architecture. Running agents on MCP offers several key benefits:
 
-- **Standardized Interface**: Consistent API for agent creation and management across different systems
-- **Scalability**: Handle multiple agents simultaneously through a single MCP server
-- **Interoperability**: Agents can be called from any MCP-compatible client
-- **Resource Management**: Centralized control over agent lifecycle and resources
-- **Protocol Compliance**: Follows the established MCP standard for AI tool integration
+| Benefit                | Description                                                                 |
+|------------------------|-----------------------------------------------------------------------------|
+| Standardized Interface | Consistent API for agent creation and management across different systems    |
+| Scalability            | Handle multiple agents simultaneously through a single MCP server            |
+| Interoperability       | Agents can be called from any MCP-compatible client                          |
+| Resource Management    | Centralized control over agent lifecycle and resources                       |
+| Protocol Compliance    | Follows the established MCP standard for AI tool integration                 |
 
 ## Step 1: Setup and Installation
 
 ### Prerequisites
 
-- Python 3.8 or higher
-- pip package manager
+| Requirement           |
+|-----------------------|
+| Python 3.8 or higher  |
+| pip package manager   |
 
 ### Required Packages
 
@@ -102,7 +106,7 @@ from mcp.client.streamable_http import (
 async def create_agent_via_mcp():
     """Create and use an agent through MCP using streamable HTTP."""
     
-    print("🔧 Starting MCP client connection...")
+    print("   Starting MCP client connection...")
     
     # Connect to the MCP server using streamable HTTP
     try:
@@ -120,7 +124,7 @@ async def create_agent_via_mcp():
                 print("Listing available tools...")
                 try:
                     tools = await session.list_tools()
-                    print(f"📋 Available tools: {[tool.name for tool in tools.tools]}")
+                    print(f"  Available tools: {[tool.name for tool in tools.tools]}")
                         
                 except Exception as e:
                     print(f"Failed to list tools: {e}")
@@ -187,7 +191,7 @@ from mcp.client.streamable_http import (
 
 async def create_agent_via_mcp(session, agent_name, system_prompt, model_name, task):
     """Create and use an agent through MCP using streamable HTTP."""
-    print(f"🔧 Creating agent '{agent_name}' with task: {task}")
+    print(f"   Creating agent '{agent_name}' with task: {task}")
     try:
         arguments = {
             "agent_name": agent_name,
@@ -223,7 +227,7 @@ async def create_agent_via_mcp(session, agent_name, system_prompt, model_name, t
         raise
 
 async def main():
-    print("🔧 Starting MCP client connection...")
+    print("   Starting MCP client connection...")
 
     try:
         async with http_client("http://localhost:8000/mcp") as (read, write, _):
@@ -239,7 +243,7 @@ async def main():
                 print("Listing available tools...")
                 try:
                     tools = await session.list_tools()
-                    print(f"📋 Available tools: {[tool.name for tool in tools.tools]}")
+                    print(f"  Available tools: {[tool.name for tool in tools.tools]}")
                 except Exception as e:
                     print(f"Failed to list tools: {e}")
                     raise
@@ -307,27 +311,33 @@ Here's a complete overview of all the steps needed to set up your agent initiali
 
 ### **Step-by-Step Summary:**
 
-1. **📦 Package Installation** - Install MCP SDK, FastMCP, Swarms, and dependencies
-2. **🔧 Server Creation** - Create the MCP server with agent creation tool
-3. **🚀 Server Startup** - Run the MCP server to handle client requests
-4. **📱 Basic Client** - Create a simple client to run single agents
-5. **🔄 Advanced Client** - Build multi-agent workflows with sequential processing
+| Step | Description |
+|------|-------------|
+| 1. Package Installation | Install MCP SDK, FastMCP, Swarms, and dependencies |
+| 2. Server Creation | Create the MCP server with agent creation tool |
+| 3. Server Startup | Run the MCP server to handle client requests |
+| 4. Basic Client | Create a simple client to run single agents |
+| 5. Advanced Client | Build multi-agent workflows with sequential processing |
 
 ### **What You'll Have After Following These Steps:**
 
-- ✅ **MCP Server** running and ready to handle agent creation requests
-- ✅ **Single Agent Client** for basic agent tasks
-- ✅ **Multi-Agent Client** for complex, chained workflows
-- ✅ **Complete System** for dynamic agent creation and management
-- ✅ **Scalable Architecture** that can handle multiple concurrent agent requests
+| Component | Description |
+|-----------|-------------|
+| MCP Server | Running and ready to handle agent creation requests |
+| Single Agent Client | For basic agent tasks |
+| Multi-Agent Client | For complex, chained workflows |
+| Complete System | For dynamic agent creation and management |
+| Scalable Architecture | Can handle multiple concurrent agent requests |
 
 ### **Key Benefits Achieved:**
 
-- **Standardized Interface** for agent management
-- **Scalable Architecture** for multiple agents
-- **Protocol Compliance** with MCP standards
-- **Resource Management** for efficient agent lifecycle
-- **Interoperability** with any MCP-compatible client
+| Benefit | Description |
+|---------|-------------|
+| Standardized Interface | For agent management |
+| Scalable Architecture | For multiple agents |
+| Protocol Compliance | With MCP standards |
+| Resource Management | For efficient agent lifecycle |
+| Interoperability | With any MCP-compatible client |
 
 This setup gives you a complete, production-ready system for running AI agents through the Model Context Protocol!
 
@@ -337,10 +347,10 @@ If you'd like technical support, join our Discord below and stay updated on our 
 
 | Platform | Link | Description |
 |----------|------|-------------|
-| 📚 Documentation | [docs.swarms.world](https://docs.swarms.world) | Official documentation and guides |
-| 📝 Blog | [Medium](https://medium.com/@kyeg) | Latest updates and technical articles |
-| 💬 Discord | [Join Discord](https://discord.gg/EamjgSaEQf) | Live chat and community support |
-| 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
-| 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
-| 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
-| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
+| Documentation | [docs.swarms.world](https://docs.swarms.world) | Official documentation and guides |
+| Blog | [Medium](https://medium.com/@kyeg) | Latest updates and technical articles |
+| Discord | [Join Discord](https://discord.gg/EamjgSaEQf) | Live chat and community support |
+| Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
+| LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
+| YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
+| Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
