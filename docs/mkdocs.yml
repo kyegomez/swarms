@@ -327,6 +327,7 @@ nav:
       - Overview: "swarms_tools/overview.md"
       - BaseTool Reference: "swarms/tools/base_tool.md"
       - MCP Client Utils: "swarms/tools/mcp_client_call.md"
+      - MCP Agent Tool: "swarms/tools/mcp_agent_tool.md"
 
       - Vertical Tools:
         - Finance: "swarms_tools/finance.md"
