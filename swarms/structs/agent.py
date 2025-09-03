@@ -63,7 +63,7 @@ from swarms.structs.safe_loading import (
 )
 from swarms.telemetry.main import log_agent_data
 from swarms.tools.base_tool import BaseTool
-from swarms.tools.mcp_client_call import (
+from swarms.tools.mcp_client_tools import (
     execute_multiple_tools_on_multiple_mcp_servers_sync,
     execute_tool_call_simple,
     get_mcp_tools_sync,
@@ -435,7 +435,7 @@ class Agent:
         reasoning_effort: str = None,
         drop_params: bool = True,
         thinking_tokens: int = None,
-        reasoning_enabled: bool = True,
+        reasoning_enabled: bool = False,
         *args,
         **kwargs,
     ):
@@ -1928,7 +1928,6 @@ class Agent:
                 feedback_counts[feedback] += 1
             else:
                 feedback_counts[feedback] = 1
-        print(f"Feedback counts: {feedback_counts}")
 
     def undo_last(self) -> Tuple[str, str]:
         """
@@ -2177,27 +2176,18 @@ class Agent:
             # Sentiment analysis
             if self.sentiment_analyzer:
                 sentiment = self.sentiment_analyzer(response)
-                print(f"Sentiment: {sentiment}")
 
                 if sentiment > self.sentiment_threshold:
-                    print(
-                        f"Sentiment: {sentiment} is above"
-                        " threshold:"
-                        f" {self.sentiment_threshold}"
-                    )
+                    pass
                 elif sentiment < self.sentiment_threshold:
-                    print(
-                        f"Sentiment: {sentiment} is below"
-                        " threshold:"
-                        f" {self.sentiment_threshold}"
-                    )
+                    pass
 
                 self.short_memory.add(
                     role=self.agent_name,
                     content=sentiment,
                 )
-        except Exception as e:
-            print(f"Error occurred during sentiment analysis: {e}")
+        except Exception:
+            pass
 
     def stream_response(
         self, response: str, delay: float = 0.001
@@ -2224,11 +2214,9 @@ class Agent:
         try:
             # Stream and print the response token by token
             for token in response.split():
-                print(token, end=" ", flush=True)
                 time.sleep(delay)
-            print()  # Ensure a newline after streaming
-        except Exception as e:
-            print(f"An error occurred during streaming: {e}")
+        except Exception:
+            pass
 
     def check_available_tokens(self):
         # Log the amount of tokens left in the memory and in the task
@@ -2842,7 +2830,6 @@ class Agent:
             logger.info("Evaluating response...")
 
             evaluated_response = self.evaluator(response)
-            print("Evaluated Response:" f" {evaluated_response}")
             self.short_memory.add(
                 role="Evaluator",
                 content=evaluated_response,

@@ -496,11 +496,8 @@ class BaseSwarm(ABC):
             for future in as_completed(future_to_llm):
                 try:
                     responses.append(future.result())
-                except Exception as error:
-                    print(
-                        f"{future_to_llm[future]} generated an"
-                        f" exception: {error}"
-                    )
+                except Exception:
+                    pass
         self.last_responses = responses
         self.task_history.append(task)
         return responses

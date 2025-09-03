@@ -171,7 +171,6 @@ class AgentJudge:
         # Evaluate a single output
         output = "The capital of France is Paris."
         evaluation = judge.step(task=output)
-        print(evaluation)
 
         # Evaluate multiple outputs with context building
         outputs = [

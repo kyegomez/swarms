@@ -24,9 +24,14 @@ spinner = Spinner("dots", style="yellow")
 
 
 class MarkdownOutputHandler:
-    """Custom output handler to render content as markdown with simplified syntax highlighting"""
+    """Custom output handler to render content as markdown with simplified syntax highlighting."""
 
     def __init__(self, console: "Console"):
+        """Initialize the MarkdownOutputHandler with a console instance.
+
+        Args:
+            console (Console): Rich console instance for rendering.
+        """
         self.console = console
 
     def _clean_output(self, output: str) -> str:
@@ -57,29 +62,12 @@ class MarkdownOutputHandler:
         )
 
         # Remove spinner characters and progress indicators
-        output = re.sub(r"[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]", "", output)
-        output = re.sub(r"⠋ Processing\.\.\.", "", output)
-        output = re.sub(r"⠙ Processing\.\.\.", "", output)
-        output = re.sub(r"⠹ Processing\.\.\.", "", output)
-        output = re.sub(r"⠸ Processing\.\.\.", "", output)
-        output = re.sub(r"⠼ Processing\.\.\.", "", output)
-        output = re.sub(r"⠴ Processing\.\.\.", "", output)
-        output = re.sub(r"⠦ Processing\.\.\.", "", output)
-        output = re.sub(r"⠧ Processing\.\.\.", "", output)
-        output = re.sub(r"⠇ Processing\.\.\.", "", output)
-        output = re.sub(r"⠏ Processing\.\.\.", "", output)
-
-        # Remove loop indicators
-        output = re.sub(r"⠋ Loop \d+/\d+", "", output)
-        output = re.sub(r"⠙ Loop \d+/\d+", "", output)
-        output = re.sub(r"⠹ Loop \d+/\d+", "", output)
-        output = re.sub(r"⠸ Loop \d+/\d+", "", output)
-        output = re.sub(r"⠼ Loop \d+/\d+", "", output)
-        output = re.sub(r"⠴ Loop \d+/\d+", "", output)
-        output = re.sub(r"⠦ Loop \d+/\d+", "", output)
-        output = re.sub(r"⠧ Loop \d+/\d+", "", output)
-        output = re.sub(r"⠇ Loop \d+/\d+", "", output)
-        output = re.sub(r"⠏ Loop \d+/\d+", "", output)
+        spinner_chars = "[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]"
+        output = re.sub(rf"{spinner_chars}", "", output)
+        output = re.sub(
+            rf"{spinner_chars} Processing\.\.\.", "", output
+        )
+        output = re.sub(rf"{spinner_chars} Loop \d+/\d+", "", output)
 
         # Remove any remaining log messages
         output = re.sub(r"INFO.*?\|.*?\|.*?\|", "", output)
@@ -98,44 +86,122 @@ class MarkdownOutputHandler:
         output = re.sub(r"Refined content:", "", output)
 
         # Ensure proper markdown formatting
-        if not output.strip().startswith("#"):
-            # If no headers, add some structure
-            lines = output.strip().split("\n")
-            if len(lines) > 0:
-                # Add a header for the first meaningful line
-                first_line = lines[0].strip()
-                if first_line and not first_line.startswith("**"):
-                    output = f"## {first_line}\n\n" + "\n".join(
-                        lines[1:]
-                    )
+        lines = output.strip().split("\n")
+        if lines and not any(
+            line.strip().startswith("#") for line in lines[:3]
+        ):
+            # Check if first line looks like a title (not already formatted)
+            first_line = lines[0].strip()
+            if (
+                first_line
+                and not first_line.startswith(
+                    ("**", "#", "-", "*", ">", "```")
+                )
+                and len(first_line) < 100  # Reasonable title length
+                and not first_line.endswith((",", ".", ":", ";"))
+                or first_line.endswith(":")
+            ):
+                # Make it a header
+                output = f"## {first_line}\n\n" + "\n".join(lines[1:])
+            else:
+                # Keep original formatting
+                output = "\n".join(lines)
 
         return output.strip()
 
     def render_with_simple_syntax_highlighting(
         self, content: str
     ) -> list:
-        """Render content with simplified syntax highlighting for code blocks"""
-        # For now, let's just render everything as markdown to ensure it works
-        # We can add code block detection back later if needed
-        return [("markdown", content)]
+        """Render content with syntax highlighting for code blocks.
+
+        Args:
+            content (str): The content to parse and highlight.
+
+        Returns:
+            list: List of tuples (type, content) where type is 'markdown' or 'code'.
+        """
+        parts = []
+        current_pos = 0
+
+        # Pattern to match code blocks with optional language specifier
+        code_block_pattern = re.compile(
+            r"```(?P<lang>\w+)?\n(?P<code>.*?)\n```",
+            re.DOTALL | re.MULTILINE,
+        )
+
+        for match in code_block_pattern.finditer(content):
+            # Add markdown content before code block
+            if match.start() > current_pos:
+                markdown_content = content[
+                    current_pos : match.start()
+                ].strip()
+                if markdown_content:
+                    parts.append(("markdown", markdown_content))
+
+            # Add code block
+            lang = match.group("lang") or "text"
+            code = match.group("code")
+            parts.append(("code", (lang, code)))
+
+            current_pos = match.end()
+
+        # Add remaining markdown content
+        if current_pos < len(content):
+            remaining = content[current_pos:].strip()
+            if remaining:
+                parts.append(("markdown", remaining))
+
+        # If no parts found, treat entire content as markdown
+        if not parts:
+            parts.append(("markdown", content))
+
+        return parts
 
     def render_content_parts(self, parts: list) -> list:
-        """Render different content parts with appropriate formatting"""
+        """Render different content parts with appropriate formatting.
+
+        Args:
+            parts (list): List of tuples (type, content) to render.
+
+        Returns:
+            list: List of rendered Rich objects.
+        """
         rendered_parts = []
 
-        for part in parts:
-            if part[0] == "markdown":
+        for part_type, content in parts:
+            if part_type == "markdown":
                 # Render markdown
                 try:
-                    md = Markdown(part[1])
+                    md = Markdown(content, code_theme="monokai")
                     rendered_parts.append(md)
                 except Exception:
-                    # Fallback to plain text
-                    rendered_parts.append(Text(part[1]))
+                    # Fallback to plain text with error indication
+                    rendered_parts.append(
+                        Text(content, style="white")
+                    )
 
-            elif part[0] == "code":
-                # Code is already rendered as Syntax or Text object
-                rendered_parts.append(part[1])
+            elif part_type == "code":
+                # Render code with syntax highlighting
+                lang, code = content
+                try:
+                    from rich.syntax import Syntax
+
+                    syntax = Syntax(
+                        code,
+                        lang,
+                        theme="monokai",
+                        line_numbers=True,
+                        word_wrap=True,
+                    )
+                    rendered_parts.append(syntax)
+                except Exception:
+                    # Fallback to text with code styling
+                    rendered_parts.append(
+                        Text(
+                            f"```{lang}\n{code}\n```",
+                            style="white on grey23",
+                        )
+                    )
 
         return rendered_parts
 
@@ -145,7 +211,13 @@ class MarkdownOutputHandler:
         title: str = "",
         border_style: str = "blue",
     ):
-        """Render content as markdown with syntax highlighting"""
+        """Render content as markdown with syntax highlighting.
+
+        Args:
+            content (str): The markdown content to render.
+            title (str): Title for the panel.
+            border_style (str): Border style for the panel.
+        """
         if not content or content.strip() == "":
             return
 
@@ -165,22 +237,44 @@ class MarkdownOutputHandler:
             # Create a group of rendered parts
             from rich.console import Group
 
-            content_group = Group(*rendered_parts)
+            if rendered_parts:
+                content_group = Group(*rendered_parts)
 
-            self.console.print(
-                Panel(
-                    content_group,
-                    title=title,
-                    border_style=border_style,
+                self.console.print(
+                    Panel(
+                        content_group,
+                        title=title,
+                        border_style=border_style,
+                        padding=(1, 2),
+                        expand=False,
+                    )
                 )
-            )
-        except Exception:
-            # Fallback to plain text if rendering fails
+            else:
+                # No content to render
+                self.console.print(
+                    Panel(
+                        Text(
+                            "No content to display",
+                            style="dim italic",
+                        ),
+                        title=title,
+                        border_style="yellow",
+                    )
+                )
+        except Exception as e:
+            # Fallback to plain text if rendering fails with better error info
+            error_msg = f"Markdown rendering error: {str(e)}"
             self.console.print(
                 Panel(
                     cleaned_content,
-                    title=title,
+                    title=(
+                        f"{title} [dim](fallback mode)[/dim]"
+                        if title
+                        else "Content (fallback mode)"
+                    ),
                     border_style="yellow",
+                    subtitle=error_msg,
+                    subtitle_align="left",
                 )
             )
 

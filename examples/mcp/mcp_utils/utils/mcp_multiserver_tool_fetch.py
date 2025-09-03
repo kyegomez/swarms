@@ -1,4 +1,4 @@
-from swarms.tools.mcp_client_call import (
+from swarms.tools.mcp_client_tools import (
     get_tools_for_multiple_mcp_servers,
 )
 from swarms.schemas.mcp_schemas import MCPConnection

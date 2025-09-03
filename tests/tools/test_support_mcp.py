@@ -6,7 +6,7 @@ from loguru import logger
 
 # Import the functions to test (assuming they're in a module called mcp_client)
 # from mcp_client import *  # Replace with actual import
-from swarms.tools.mcp_client_call import (
+from swarms.tools.mcp_client_tools import (
     MCPConnectionError,
     MCPValidationError,
     _create_server_tool_mapping_async,

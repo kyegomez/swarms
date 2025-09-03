@@ -4,7 +4,7 @@ from swarms.tools.cohere_func_call_schema import (
     ParameterDefinition,
 )
 from swarms.tools.json_utils import base_model_to_json
-from swarms.tools.mcp_client_call import (
+from swarms.tools.mcp_client_tools import (
     _create_server_tool_mapping,
     _create_server_tool_mapping_async,
     _execute_tool_call_simple,

@@ -1,4 +1,4 @@
-from swarms.tools.mcp_client_call import (
+from swarms.tools.mcp_client_tools import (
     execute_tool_call_simple,
     get_mcp_tools_sync,
 )

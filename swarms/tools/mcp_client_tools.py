@@ -3,6 +3,7 @@ import contextlib
 import json
 import os
 import random
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import wraps
 from typing import Any, Dict, List, Literal, Optional, Union
@@ -215,7 +216,7 @@ def retry_with_backoff(retries=3, backoff_in_seconds=1):
                 except Exception as e:
                     if x == retries:
                         logger.error(
-                            f"Failed after {retries} retries: {str(e)}"
+                            f"Failed after {retries} retries: {str(e)}\n{traceback.format_exc()}"
                         )
                         raise
                     sleep_time = (
@@ -418,7 +419,9 @@ async def aget_mcp_tools(
                 )
                 return tools
     except Exception as e:
-        logger.error(f"Error fetching MCP tools: {str(e)}")
+        logger.error(
+            f"Error fetching MCP tools: {str(e)}\n{traceback.format_exc()}"
+        )
         raise MCPConnectionError(
             f"Failed to connect to MCP server: {str(e)}"
         )
@@ -464,7 +467,9 @@ def get_mcp_tools_sync(
                 )
             )
         except Exception as e:
-            logger.error(f"Error in get_mcp_tools_sync: {str(e)}")
+            logger.error(
+                f"Error in get_mcp_tools_sync: {str(e)}\n{traceback.format_exc()}"
+            )
             raise MCPExecutionError(
                 f"Failed to execute MCP tools sync: {str(e)}"
             )
@@ -556,7 +561,7 @@ def get_tools_for_multiple_mcp_servers(
                 tools.extend(server_tools)
             except Exception as e:
                 logger.error(
-                    f"Error fetching tools from {url}: {str(e)}"
+                    f"Error fetching tools from {url}: {str(e)}\n{traceback.format_exc()}"
                 )
                 raise MCPExecutionError(
                     f"Failed to fetch tools from {url}: {str(e)}"
@@ -650,12 +655,16 @@ async def _execute_tool_call_simple(
                     )
                     return out
                 except Exception as e:
-                    logger.error(f"Error in tool execution: {str(e)}")
+                    logger.error(
+                        f"Error in tool execution: {str(e)}\n{traceback.format_exc()}"
+                    )
                     raise MCPExecutionError(
                         f"Tool execution failed for tool '{getattr(response, 'function', {}).get('name', 'unknown')}' on server '{url}': {str(e)}"
                     )
     except Exception as e:
-        logger.error(f"Error in MCP client connection: {str(e)}")
+        logger.error(
+            f"Error in MCP client connection: {str(e)}\n{traceback.format_exc()}"
+        )
         raise MCPConnectionError(
             f"Failed to connect to MCP server '{url}' using transport '{transport}': {str(e)}"
         )
@@ -747,7 +756,7 @@ def _create_server_tool_mapping(
                     }
         except Exception as e:
             logger.warning(
-                f"Failed to fetch tools from server {url}: {str(e)}"
+                f"Failed to fetch tools from server {url}: {str(e)}\n{traceback.format_exc()}"
             )
             continue
     return server_tool_mapping
@@ -801,7 +810,7 @@ async def _create_server_tool_mapping_async(
                     }
         except Exception as e:
             logger.warning(
-                f"Failed to fetch tools from server {url}: {str(e)}"
+                f"Failed to fetch tools from server {url}: {str(e)}\n{traceback.format_exc()}"
             )
             continue
     return server_tool_mapping
@@ -842,7 +851,7 @@ async def _execute_tool_on_server(
         }
     except Exception as e:
         logger.error(
-            f"Failed to execute tool on server {server_info['url']}: {str(e)}"
+            f"Failed to execute tool on server {server_info['url']}: {str(e)}\n{traceback.format_exc()}"
         )
         return {
             "server_url": server_info["url"],
@@ -1068,7 +1077,7 @@ async def execute_multiple_tools_on_multiple_mcp_servers(
     for i, result in enumerate(results):
         if isinstance(result, Exception):
             logger.error(
-                f"Task {i} failed with exception: {str(result)}"
+                f"Task {i} failed with exception: {str(result)}\n{traceback.format_exc()}"
             )
             processed_results.append(
                 {
@@ -1129,7 +1138,7 @@ def execute_multiple_tools_on_multiple_mcp_servers_sync(
             )
         except Exception as e:
             logger.error(
-                f"Error in execute_multiple_tools_on_multiple_mcp_servers_sync: {str(e)}"
+                f"Error in execute_multiple_tools_on_multiple_mcp_servers_sync: {str(e)}\n{traceback.format_exc()}"
             )
             raise MCPExecutionError(
                 f"Failed to execute multiple tools sync: {str(e)}"

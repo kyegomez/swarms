@@ -2,7 +2,7 @@
 Simple test for the execute_multiple_tools_on_multiple_mcp_servers functionality.
 """
 
-from swarms.tools.mcp_client_call import (
+from swarms.tools.mcp_client_tools import (
     execute_multiple_tools_on_multiple_mcp_servers_sync,
 )
 

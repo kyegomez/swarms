@@ -8,7 +8,7 @@ This example shows how to:
 """
 
 import asyncio
-from swarms.tools.mcp_client_call import (
+from swarms.tools.mcp_client_tools import (
     execute_multiple_tools_on_multiple_mcp_servers,
     execute_multiple_tools_on_multiple_mcp_servers_sync,
     get_tools_for_multiple_mcp_servers,

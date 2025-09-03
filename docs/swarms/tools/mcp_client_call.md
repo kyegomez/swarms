@@ -42,7 +42,7 @@ Asynchronously fetches available MCP tools from the server with retry logic.
 
 ```python
 import asyncio
-from swarms.tools.mcp_client_call import aget_mcp_tools
+from swarms.tools.mcp_client_tools import aget_mcp_tools
 from swarms.tools.mcp_connection import MCPConnection
 
 async def main():
@@ -92,7 +92,7 @@ Synchronous version of get_mcp_tools that handles event loop management.
 #### Example
 
 ```python
-from swarms.tools.mcp_client_call import get_mcp_tools_sync
+from swarms.tools.mcp_client_tools import get_mcp_tools_sync
 from swarms.tools.mcp_connection import MCPConnection
 
 # Using server path
@@ -134,7 +134,7 @@ Get tools for multiple MCP servers concurrently using ThreadPoolExecutor.
 #### Example
 
 ```python
-from swarms.tools.mcp_client_call import get_tools_for_multiple_mcp_servers
+from swarms.tools.mcp_client_tools import get_tools_for_multiple_mcp_servers
 from swarms.tools.mcp_connection import MCPConnection
 
 # Define server URLs
@@ -189,7 +189,7 @@ Execute a tool call using the MCP client.
 #### Example
 ```python
 import asyncio
-from swarms.tools.mcp_client_call import execute_tool_call_simple
+from swarms.tools.mcp_client_tools import execute_tool_call_simple
 from swarms.tools.mcp_connection import MCPConnection
 
 async def main():
