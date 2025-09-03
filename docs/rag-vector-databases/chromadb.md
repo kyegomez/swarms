@@ -232,24 +232,12 @@ client = chromadb.PersistentClient(
 
 ### Common Issues
 
-1. **Connection Errors**
-   - Check ChromaDB server status
-   - Verify network connectivity
-   - Confirm correct host and port settings
+1. **Connection Errors**: Check ChromaDB server status. Verify network connectivity. Confirm correct host and port settings.
 
-2. **Performance Issues**
-   - Monitor collection size and query complexity
-   - Consider collection partitioning
-   - Optimize metadata queries
+2. **Performance Issues**: Monitor collection size and query complexity. Consider collection partitioning. Optimize metadata queries.
 
-3. **Memory Issues**
-   - Adjust HNSW parameters
-   - Use persistent storage instead of in-memory
-   - Implement proper cleanup procedures
+3. **Memory Issues**: Adjust HNSW parameters. Use persistent storage instead of in-memory. Implement proper cleanup procedures.
 
-4. **Embedding Errors**
-   - Verify LiteLLM configuration
-   - Check API keys and quotas
-   - Handle rate limiting properly
+4. **Embedding Errors**: Verify LiteLLM configuration. Check API keys and quotas. Handle rate limiting properly.
 
 This comprehensive guide provides everything needed to integrate ChromaDB with Swarms agents for powerful RAG applications using the unified LiteLLM embeddings approach.

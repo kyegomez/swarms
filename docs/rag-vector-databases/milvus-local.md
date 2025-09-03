@@ -295,24 +295,12 @@ print(f"Document count: {stats['row_count']}")
 
 ### Common Issues
 
-1. **Database File Errors**
-   - Check file permissions and disk space
-   - Ensure directory exists before creating database
-   - Handle concurrent access properly
+1. **Database File Errors**: Check file permissions and disk space. Ensure directory exists before creating database. Handle concurrent access properly.
 
-2. **Performance Issues**
-   - Monitor database size relative to available memory
-   - Consider index type optimization for dataset size
-   - Batch operations for better throughput
+2. **Performance Issues**: Monitor database size relative to available memory. Consider index type optimization for dataset size. Batch operations for better throughput.
 
-3. **Memory Usage**
-   - Use appropriate index parameters for available RAM
-   - Monitor system memory usage
-   - Consider data compression techniques
+3. **Memory Usage**: Use appropriate index parameters for available RAM. Monitor system memory usage. Consider data compression techniques.
 
-4. **Data Corruption**
-   - Implement proper backup and recovery procedures
-   - Handle application crashes gracefully
-   - Use database validation tools
+4. **Data Corruption**: Implement proper backup and recovery procedures. Handle application crashes gracefully. Use database validation tools.
 
 This comprehensive guide provides everything needed to integrate Milvus Lite with Swarms agents for local, lightweight RAG applications using the unified LiteLLM embeddings approach.

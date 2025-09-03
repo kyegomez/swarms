@@ -256,24 +256,12 @@ index = faiss.IndexIVFPQ(quantizer, dimension, nlist, m, nbits)
 
 ### Common Issues
 
-1. **Memory Errors**
-   - Reduce batch sizes or use product quantization
-   - Consider using memory mapping for large indices
-   - Monitor system memory usage
+1. **Memory Errors**: Reduce batch sizes or use product quantization. Consider using memory mapping for large indices. Monitor system memory usage.
 
-2. **Slow Search Performance**
-   - Check if IVF index is properly trained
-   - Adjust nprobe parameter (higher = slower but more accurate)
-   - Consider using GPU acceleration
+2. **Slow Search Performance**: Check if IVF index is properly trained. Adjust nprobe parameter (higher = slower but more accurate). Consider using GPU acceleration.
 
-3. **Low Search Accuracy**
-   - Increase nlist for IVF indices
-   - Adjust efSearch for HNSW indices  
-   - Verify embedding normalization
+3. **Low Search Accuracy**: Increase nlist for IVF indices. Adjust efSearch for HNSW indices. Verify embedding normalization.
 
-4. **Index Loading Issues**
-   - Check file permissions and disk space
-   - Verify FAISS version compatibility
-   - Ensure consistent data types (float32)
+4. **Index Loading Issues**: Check file permissions and disk space. Verify FAISS version compatibility. Ensure consistent data types (float32).
 
 This comprehensive guide provides everything needed to integrate FAISS with Swarms agents for high-performance RAG applications using the unified LiteLLM embeddings approach.

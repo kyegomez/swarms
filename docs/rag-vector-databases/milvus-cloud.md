@@ -275,24 +275,12 @@ def monitored_search(memory, query, **kwargs):
 
 ### Common Issues
 
-1. **Connection Errors**
-   - Verify MILVUS_CLOUD_URI and MILVUS_CLOUD_TOKEN
-   - Check network connectivity and firewall settings
-   - Confirm cloud region accessibility
+1. **Connection Errors**: Verify MILVUS_CLOUD_URI and MILVUS_CLOUD_TOKEN. Check network connectivity and firewall settings. Confirm cloud region accessibility.
 
-2. **Performance Issues**
-   - Monitor collection size and index type appropriateness
-   - Check query complexity and filter expressions
-   - Review auto-scaling configuration
+2. **Performance Issues**: Monitor collection size and index type appropriateness. Check query complexity and filter expressions. Review auto-scaling configuration.
 
-3. **Search Accuracy Issues**
-   - Verify embedding model consistency
-   - Check vector normalization if using cosine similarity
-   - Review index parameters and search parameters
+3. **Search Accuracy Issues**: Verify embedding model consistency. Check vector normalization if using cosine similarity. Review index parameters and search parameters.
 
-4. **Quota and Billing Issues**
-   - Monitor usage against plan limits
-   - Review auto-scaling settings
-   - Check billing alerts and notifications
+4. **Quota and Billing Issues**: Monitor usage against plan limits. Review auto-scaling settings. Check billing alerts and notifications.
 
 This comprehensive guide provides everything needed to integrate Milvus Cloud with Swarms agents for enterprise-scale RAG applications using the unified LiteLLM embeddings approach.

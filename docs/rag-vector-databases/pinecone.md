@@ -346,25 +346,13 @@ class MonitoredPineconeMemory(PineconeMemory):
 
 ### Common Issues
 
-1. **API Quota Exceeded**
-   - Monitor API usage and implement rate limiting
-   - Consider upgrading plan or optimizing query patterns
-   - Use batch operations to reduce API calls
+1. **API Quota Exceeded**: Monitor API usage and implement rate limiting. Consider upgrading plan or optimizing query patterns. Use batch operations to reduce API calls.
 
-2. **High Latency**
-   - Check pod type and consider upgrading
-   - Verify regional configuration
-   - Optimize query complexity and top_k values
+2. **High Latency**: Check pod type and consider upgrading. Verify regional configuration. Optimize query complexity and top_k values.
 
-3. **Index Capacity Issues**
-   - Monitor index fullness metrics
-   - Consider scaling up pod type or adding shards
-   - Implement data archival strategies
+3. **Index Capacity Issues**: Monitor index fullness metrics. Consider scaling up pod type or adding shards. Implement data archival strategies.
 
-4. **Connection Errors**
-   - Verify API key and environment configuration
-   - Check network connectivity and firewall settings
-   - Implement retry logic with exponential backoff
+4. **Connection Errors**: Verify API key and environment configuration. Check network connectivity and firewall settings. Implement retry logic with exponential backoff.
 
 ### Performance Tuning
 ```python
