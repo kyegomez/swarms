@@ -1,4 +1,4 @@
-# MCP Agent Tool Documentation
+# Agent as MCP
 
 ## Introduction to MCP and Agent Running
 
