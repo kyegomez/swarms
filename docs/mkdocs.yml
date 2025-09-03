@@ -433,7 +433,7 @@ nav:
       - Yahoo Finance: "swarms/examples/yahoo_finance.md"
       - Firecrawl: "developer_guides/firecrawl.md"
 
-    - RAG Vector Databases:
+    - RAG:
       - Overview: "rag-vector-databases/overview.md"
       - ChromaDB Integration: "rag-vector-databases/chromadb.md"
       - FAISS Integration: "rag-vector-databases/faiss.md"

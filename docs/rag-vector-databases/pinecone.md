@@ -60,475 +60,56 @@ export OPENAI_API_KEY="your-openai-api-key"
 
 ```python
 """
-Pinecone RAG Integration with Swarms Agent
+Agent with Pinecone RAG (Retrieval-Augmented Generation)
 
-This example demonstrates how to integrate Pinecone as a serverless vector database
-for RAG operations with Swarms agents using LiteLLM embeddings.
+This example demonstrates using Pinecone as a vector database for RAG operations,
+allowing agents to store and retrieve documents for enhanced context.
 """
 
 import os
 import time
-from typing import List, Dict, Any, Optional
-import numpy as np
-import pinecone
 from swarms import Agent
-from litellm import embedding
+from swarms_memory import PineconeMemory
 
-class PineconeMemory:
-    """Pinecone-based memory system for RAG operations"""
-    
-    def __init__(self, 
-                 index_name: str = "swarms-knowledge-base",
-                 embedding_model: str = "text-embedding-3-small",
-                 dimension: int = 1536,
-                 metric: str = "cosine",
-                 pod_type: str = "p1.x1",
-                 replicas: int = 1,
-                 shards: int = 1):
-        """
-        Initialize Pinecone memory system
-        
-        Args:
-            index_name: Name of the Pinecone index
-            embedding_model: LiteLLM embedding model name  
-            dimension: Vector dimension (1536 for text-embedding-3-small)
-            metric: Distance metric (cosine, euclidean, dotproduct)
-            pod_type: Pinecone pod type for performance/cost optimization
-            replicas: Number of replicas for high availability
-            shards: Number of shards for horizontal scaling
-        """
-        self.index_name = index_name
-        self.embedding_model = embedding_model
-        self.dimension = dimension
-        self.metric = metric
-        self.pod_type = pod_type
-        self.replicas = replicas
-        self.shards = shards
-        
-        # Initialize Pinecone connection
-        self._initialize_pinecone()
-        
-        # Create or connect to index
-        self.index = self._create_or_get_index()
-        
-        # Document counter for ID generation
-        self._doc_counter = 0
-        
-    def _initialize_pinecone(self):
-        """Initialize Pinecone with API credentials"""
-        api_key = os.getenv("PINECONE_API_KEY")
-        environment = os.getenv("PINECONE_ENVIRONMENT")
-        
-        if not api_key or not environment:
-            raise ValueError("PINECONE_API_KEY and PINECONE_ENVIRONMENT must be set")
-        
-        pinecone.init(api_key=api_key, environment=environment)
-        print(f"Initialized Pinecone in environment: {environment}")
-        
-    def _create_or_get_index(self):
-        """Create or get the Pinecone index"""
-        
-        # Check if index exists
-        if self.index_name in pinecone.list_indexes():
-            print(f"Connecting to existing index: {self.index_name}")
-            return pinecone.Index(self.index_name)
-        
-        # Create new index
-        print(f"Creating new index: {self.index_name}")
-        pinecone.create_index(
-            name=self.index_name,
-            dimension=self.dimension,
-            metric=self.metric,
-            pod_type=self.pod_type,
-            replicas=self.replicas,
-            shards=self.shards
-        )
-        
-        # Wait for index to be ready
-        print("Waiting for index to be ready...")
-        while not pinecone.describe_index(self.index_name).status['ready']:
-            time.sleep(1)
-        
-        print(f"Index {self.index_name} is ready!")
-        return pinecone.Index(self.index_name)
-    
-    def _get_embeddings(self, texts: List[str]) -> List[List[float]]:
-        """Generate embeddings using LiteLLM"""
-        response = embedding(
-            model=self.embedding_model,
-            input=texts
-        )
-        return [item["embedding"] for item in response["data"]]
-    
-    def _generate_id(self, prefix: str = "doc") -> str:
-        """Generate unique document ID"""
-        self._doc_counter += 1
-        return f"{prefix}_{self._doc_counter}_{int(time.time())}"
-    
-    def add_documents(self, 
-                     documents: List[str], 
-                     metadata: List[Dict] = None,
-                     ids: List[str] = None,
-                     namespace: str = None,
-                     batch_size: int = 100) -> List[str]:
-        """Add multiple documents to Pinecone"""
-        if metadata is None:
-            metadata = [{}] * len(documents)
-        
-        if ids is None:
-            ids = [self._generate_id() for _ in documents]
-        
-        # Generate embeddings
-        embeddings = self._get_embeddings(documents)
-        
-        # Prepare vectors for upsert
-        vectors = []
-        for i, (doc_id, embedding_vec, doc, meta) in enumerate(
-            zip(ids, embeddings, documents, metadata)
-        ):
-            # Add document text to metadata
-            meta_with_text = {**meta, "text": doc}
-            vectors.append({
-                "id": doc_id,
-                "values": embedding_vec,
-                "metadata": meta_with_text
-            })
-        
-        # Batch upsert vectors
-        upserted_ids = []
-        for i in range(0, len(vectors), batch_size):
-            batch = vectors[i:i + batch_size]
-            self.index.upsert(vectors=batch, namespace=namespace)
-            upserted_ids.extend([v["id"] for v in batch])
-        
-        print(f"Added {len(documents)} documents to Pinecone index")
-        return upserted_ids
-    
-    def add_document(self, 
-                    document: str, 
-                    metadata: Dict = None,
-                    doc_id: str = None,
-                    namespace: str = None) -> str:
-        """Add a single document to Pinecone"""
-        result = self.add_documents(
-            documents=[document],
-            metadata=[metadata or {}],
-            ids=[doc_id] if doc_id else None,
-            namespace=namespace
-        )
-        return result[0] if result else None
-    
-    def search(self, 
-               query: str,
-               top_k: int = 3,
-               namespace: str = None,
-               filter_dict: Dict = None,
-               include_metadata: bool = True,
-               include_values: bool = False) -> Dict[str, Any]:
-        """Search for similar documents in Pinecone"""
-        
-        # Generate query embedding
-        query_embedding = self._get_embeddings([query])[0]
-        
-        # Perform search
-        results = self.index.query(
-            vector=query_embedding,
-            top_k=top_k,
-            namespace=namespace,
-            filter=filter_dict,
-            include_metadata=include_metadata,
-            include_values=include_values
-        )
-        
-        # Format results
-        formatted_results = {
-            "documents": [],
-            "metadata": [],
-            "scores": [],
-            "ids": []
-        }
-        
-        for match in results.matches:
-            formatted_results["ids"].append(match.id)
-            formatted_results["scores"].append(float(match.score))
-            
-            if include_metadata and match.metadata:
-                formatted_results["documents"].append(match.metadata.get("text", ""))
-                # Remove text from metadata to avoid duplication
-                meta_without_text = {k: v for k, v in match.metadata.items() if k != "text"}
-                formatted_results["metadata"].append(meta_without_text)
-            else:
-                formatted_results["documents"].append("")
-                formatted_results["metadata"].append({})
-        
-        return formatted_results
-    
-    def delete_documents(self, 
-                        ids: List[str] = None,
-                        filter_dict: Dict = None,
-                        namespace: str = None,
-                        delete_all: bool = False) -> Dict:
-        """Delete documents from Pinecone"""
-        if delete_all:
-            return self.index.delete(delete_all=True, namespace=namespace)
-        elif ids:
-            return self.index.delete(ids=ids, namespace=namespace)
-        elif filter_dict:
-            return self.index.delete(filter=filter_dict, namespace=namespace)
-        else:
-            raise ValueError("Must specify ids, filter_dict, or delete_all=True")
-    
-    def get_index_stats(self, namespace: str = None) -> Dict:
-        """Get index statistics"""
-        return self.index.describe_index_stats().to_dict()
-    
-    def list_namespaces(self) -> List[str]:
-        """List all namespaces in the index"""
-        stats = self.index.describe_index_stats()
-        return list(stats.namespaces.keys()) if stats.namespaces else []
-    
-    def update_document(self, 
-                       doc_id: str,
-                       document: str = None,
-                       metadata: Dict = None,
-                       namespace: str = None):
-        """Update an existing document"""
-        if document:
-            # Generate new embedding if document text changed
-            embedding_vec = self._get_embeddings([document])[0]
-            metadata = metadata or {}
-            metadata["text"] = document
-            
-            self.index.upsert(
-                vectors=[{
-                    "id": doc_id,
-                    "values": embedding_vec,
-                    "metadata": metadata
-                }],
-                namespace=namespace
-            )
-        elif metadata:
-            # Update only metadata (requires fetching existing vector)
-            fetch_result = self.index.fetch([doc_id], namespace=namespace)
-            if doc_id in fetch_result.vectors:
-                existing_vector = fetch_result.vectors[doc_id]
-                updated_metadata = {**existing_vector.metadata, **metadata}
-                
-                self.index.upsert(
-                    vectors=[{
-                        "id": doc_id,
-                        "values": existing_vector.values,
-                        "metadata": updated_metadata
-                    }],
-                    namespace=namespace
-                )
-
-# Initialize Pinecone memory
-memory = PineconeMemory(
-    index_name="swarms-rag-demo",
+# Initialize Pinecone wrapper for RAG operations
+rag_db = PineconeMemory(
+    api_key=os.getenv("PINECONE_API_KEY", "your-pinecone-api-key"),
+    index_name="knowledge-base",
     embedding_model="text-embedding-3-small",
-    dimension=1536,
-    metric="cosine",
-    pod_type="p1.x1"  # Cost-effective for development
+    namespace="examples"
 )
 
-# Sample documents for the knowledge base
+# Add documents to the knowledge base
 documents = [
-    "Pinecone is a fully managed vector database service designed for AI applications at scale.",
-    "RAG systems enhance AI responses by retrieving relevant context from knowledge bases.",
-    "Vector embeddings enable semantic similarity search across unstructured data.",
-    "The Swarms framework provides seamless integration with cloud vector databases like Pinecone.",
-    "LiteLLM offers unified access to various embedding models through a consistent API.",
-    "Serverless vector databases eliminate infrastructure management and provide auto-scaling.",
-    "Real-time updates in Pinecone allow dynamic knowledge base modifications without downtime.",
-    "Global distribution ensures low-latency access to vector search across worldwide regions.",
+    "Pinecone is a vector database that makes it easy to add semantic search to applications.",
+    "RAG combines retrieval and generation for more accurate AI responses.",
+    "Vector embeddings enable semantic search across documents.",
+    "The swarms framework supports multiple memory backends including Pinecone.",
+    "Swarms is the first and most reliable multi-agent production-grade framework.",
+    "Kye Gomez is Founder and CEO of Swarms."
 ]
 
-# Rich metadata for advanced filtering
-metadatas = [
-    {"category": "database", "topic": "pinecone", "difficulty": "beginner", "type": "overview", "industry": "tech"},
-    {"category": "ai", "topic": "rag", "difficulty": "intermediate", "type": "concept", "industry": "ai"},
-    {"category": "ml", "topic": "embeddings", "difficulty": "intermediate", "type": "concept", "industry": "ai"},
-    {"category": "framework", "topic": "swarms", "difficulty": "beginner", "type": "integration", "industry": "ai"},
-    {"category": "library", "topic": "litellm", "difficulty": "beginner", "type": "tool", "industry": "ai"},
-    {"category": "architecture", "topic": "serverless", "difficulty": "advanced", "type": "concept", "industry": "cloud"},
-    {"category": "feature", "topic": "realtime", "difficulty": "advanced", "type": "capability", "industry": "database"},
-    {"category": "infrastructure", "topic": "global", "difficulty": "advanced", "type": "architecture", "industry": "cloud"},
-]
+# Add documents individually
+for doc in documents:
+    rag_db.add(doc)
 
-# Add documents to Pinecone
-print("Adding documents to Pinecone...")
-doc_ids = memory.add_documents(documents, metadatas)
-print(f"Successfully added {len(doc_ids)} documents")
+# Wait for Pinecone's eventual consistency to ensure documents are indexed
+print("Waiting for documents to be indexed...")
+time.sleep(2)
 
-# Display index statistics
-stats = memory.get_index_stats()
-print(f"Index stats: Total vectors: {stats.get('total_vector_count', 0)}")
-
-# Create Swarms agent with Pinecone RAG
+# Create agent with RAG capabilities
 agent = Agent(
-    agent_name="Pinecone-RAG-Agent",
-    agent_description="Cloud-native agent with Pinecone-powered RAG for global-scale knowledge retrieval",
+    agent_name="RAG-Agent",
+    agent_description="Swarms Agent with Pinecone-powered RAG for enhanced knowledge retrieval",
     model_name="gpt-4o",
     max_loops=1,
     dynamic_temperature_enabled=True,
+    long_term_memory=rag_db
 )
 
-def query_with_pinecone_rag(query_text: str, 
-                           top_k: int = 3, 
-                           filter_dict: Dict = None,
-                           namespace: str = None):
-    """Query with RAG using Pinecone for global-scale retrieval"""
-    print(f"\nQuerying: {query_text}")
-    if filter_dict:
-        print(f"Filter: {filter_dict}")
-    
-    # Retrieve relevant documents using Pinecone
-    results = memory.search(
-        query=query_text,
-        top_k=top_k,
-        filter_dict=filter_dict,
-        namespace=namespace
-    )
-    
-    if not results["documents"]:
-        print("No relevant documents found")
-        return agent.run(query_text)
-    
-    # Prepare context from retrieved documents
-    context = "\n".join([
-        f"Document {i+1}: {doc}" 
-        for i, doc in enumerate(results["documents"])
-    ])
-    
-    # Display retrieved documents with metadata and scores
-    print("Retrieved documents:")
-    for i, (doc, score, meta) in enumerate(zip(
-        results["documents"], results["scores"], results["metadata"]
-    )):
-        print(f"  {i+1}. (Score: {score:.4f}) Category: {meta.get('category', 'N/A')}")
-        print(f"     Topic: {meta.get('topic', 'N/A')}, Industry: {meta.get('industry', 'N/A')}")
-        print(f"     {doc[:100]}...")
-    
-    # Enhanced prompt with context
-    enhanced_prompt = f"""
-Based on the following retrieved context from our global knowledge base, please answer the question:
-
-Context:
-{context}
-
-Question: {query_text}
-
-Please provide a comprehensive answer based primarily on the context provided.
-"""
-    
-    # Run agent with enhanced prompt
-    response = agent.run(enhanced_prompt)
-    return response
-
-# Example usage and testing
-if __name__ == "__main__":
-    # Test basic queries
-    queries = [
-        "What is Pinecone and what makes it suitable for AI applications?",
-        "How do RAG systems work and what are their benefits?",
-        "What are the advantages of serverless vector databases?",
-        "How does global distribution improve vector search performance?",
-    ]
-    
-    print("=== Basic RAG Queries ===")
-    for query in queries:
-        response = query_with_pinecone_rag(query, top_k=3)
-        print(f"Answer: {response}\n")
-        print("-" * 80)
-    
-    # Test advanced filtering
-    print("\n=== Advanced Filtering Queries ===")
-    
-    # Query only AI industry documents
-    response = query_with_pinecone_rag(
-        "What are key AI concepts?",
-        top_k=3,
-        filter_dict={"industry": "ai"}
-    )
-    print(f"AI concepts: {response}\n")
-    
-    # Query advanced topics in cloud/database industry
-    response = query_with_pinecone_rag(
-        "What are advanced cloud and database features?",
-        top_k=2,
-        filter_dict={
-            "$and": [
-                {"difficulty": "advanced"},
-                {"$or": [{"industry": "cloud"}, {"industry": "database"}]}
-            ]
-        }
-    )
-    print(f"Advanced features: {response}\n")
-    
-    # Query concepts and overviews for beginners
-    response = query_with_pinecone_rag(
-        "What should beginners know about databases and frameworks?",
-        top_k=3,
-        filter_dict={
-            "$and": [
-                {"difficulty": "beginner"},
-                {"$or": [{"category": "database"}, {"category": "framework"}]}
-            ]
-        }
-    )
-    print(f"Beginner content: {response}\n")
-    
-    # Demonstrate namespaces (optional)
-    print("=== Namespace Example ===")
-    # Add documents to a specific namespace
-    namespace_docs = ["Pinecone supports namespaces for logical data separation and multi-tenancy."]
-    namespace_meta = [{"category": "feature", "topic": "namespaces", "difficulty": "intermediate"}]
-    memory.add_documents(namespace_docs, namespace_meta, namespace="features")
-    
-    # Query within namespace
-    response = query_with_pinecone_rag(
-        "How do namespaces work?",
-        top_k=2,
-        namespace="features"
-    )
-    print(f"Namespace query: {response}\n")
-    
-    # Demonstrate document update
-    print("=== Document Update Example ===")
-    # Update an existing document
-    if doc_ids:
-        memory.update_document(
-            doc_id=doc_ids[0],
-            metadata={"updated": True, "version": "2.0"}
-        )
-        print("Updated document metadata")
-    
-    # Add dynamic document
-    new_doc = "Pinecone provides comprehensive monitoring and analytics for vector database operations."
-    new_meta = {
-        "category": "monitoring", 
-        "topic": "analytics", 
-        "difficulty": "intermediate",
-        "industry": "database",
-        "type": "feature"
-    }
-    new_id = memory.add_document(new_doc, new_meta)
-    
-    # Query about the new document
-    response = query_with_pinecone_rag("What monitoring capabilities are available?")
-    print(f"Monitoring capabilities: {response}\n")
-    
-    # Display final statistics
-    final_stats = memory.get_index_stats()
-    print(f"Final index stats: Total vectors: {final_stats.get('total_vector_count', 0)}")
-    
-    # List namespaces
-    namespaces = memory.list_namespaces()
-    print(f"Available namespaces: {namespaces}")
-    
-    # Example of cleanup (use with caution)
-    # memory.delete_documents(filter_dict={"category": "test"})
+# Query with RAG
+response = agent.run("What is Pinecone and how does it relate to RAG? Who is the founder of Swarms?")
+print(response)
 ```
 
 ## Use Cases

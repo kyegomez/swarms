@@ -56,171 +56,53 @@ export OPENAI_API_KEY="your-openai-api-key"
 
 ```python
 """
-ChromaDB RAG Integration with Swarms Agent
+Agent with ChromaDB RAG (Retrieval-Augmented Generation)
 
-This example demonstrates how to integrate ChromaDB as a vector database
-for RAG operations with Swarms agents using LiteLLM embeddings.
+This example demonstrates using ChromaDB as a vector database for RAG operations,
+allowing agents to store and retrieve documents for enhanced context.
 """
 
-import chromadb
 from swarms import Agent
-import os
-from litellm import embedding
+from swarms_memory import ChromaDB
 
-# Initialize ChromaDB client
-# Option 1: In-memory (for testing/development)
-# client = chromadb.Client()
 
-# Option 2: Persistent local storage (recommended for development)
-client = chromadb.PersistentClient(path="./chroma_db")
-
-# Option 3: Remote ChromaDB server (for production)
-# client = chromadb.HttpClient(
-#     host=os.getenv("CHROMA_HOST", "localhost"),
-#     port=os.getenv("CHROMA_PORT", "8000")
-# )
-
-# Create or get collection
-collection_name = "swarms_knowledge_base"
-collection = client.get_or_create_collection(
-    name=collection_name,
-    metadata={"description": "Knowledge base for Swarms agents"}
+# Initialize ChromaDB wrapper for RAG operations
+rag_db = ChromaDB(
+    metric="cosine",  # Distance metric for similarity search
+    output_dir="knowledge_base_new",  # Collection name
+    limit_tokens=1000,  # Token limit for queries
+    n_results=3,  # Number of results to retrieve
+    verbose=False
 )
 
-# Embedding function using LiteLLM
-def get_embeddings(texts):
-    """Generate embeddings using LiteLLM unified interface"""
-    if isinstance(texts, str):
-        texts = [texts]
-    
-    response = embedding(
-        model="text-embedding-3-small",  # Using LiteLLM unified approach
-        input=texts
-    )
-    return [item["embedding"] for item in response["data"]]
-
-# Sample documents to add to the knowledge base
+# Add documents to the knowledge base
 documents = [
-    "ChromaDB is an open-source embedding database for AI applications.",
-    "RAG combines retrieval and generation for enhanced AI responses.",
-    "Vector embeddings enable semantic search across documents.",
-    "The Swarms framework supports multiple memory backends including ChromaDB.",
-    "LiteLLM provides a unified interface for different embedding models.",
+    "ChromaDB is an open-source embedding database designed to store and query vector embeddings efficiently.",
+    "ChromaDB provides a simple Python API for adding, querying, and managing vector embeddings with metadata.",
+    "ChromaDB supports multiple embedding functions including OpenAI, Sentence Transformers, and custom models.",
+    "ChromaDB can run locally or in distributed mode, making it suitable for both development and production.",
+    "ChromaDB offers filtering capabilities allowing queries based on both vector similarity and metadata conditions.",
+    "ChromaDB provides persistent storage and can handle large-scale embedding collections with fast retrieval.",
+    "Kye Gomez is the founder of Swarms."
 ]
 
-# Document metadata
-metadatas = [
-    {"category": "database", "topic": "chromadb", "difficulty": "beginner"},
-    {"category": "ai", "topic": "rag", "difficulty": "intermediate"},
-    {"category": "ai", "topic": "embeddings", "difficulty": "intermediate"},
-    {"category": "framework", "topic": "swarms", "difficulty": "beginner"},
-    {"category": "library", "topic": "litellm", "difficulty": "beginner"},
-]
+# Method 1: Add documents individually
+for doc in documents:
+    rag_db.add(doc)
 
-# Generate embeddings and add documents
-embeddings = get_embeddings(documents)
-document_ids = [f"doc_{i}" for i in range(len(documents))]
-
-# Add documents to ChromaDB
-collection.add(
-    embeddings=embeddings,
-    documents=documents,
-    metadatas=metadatas,
-    ids=document_ids
-)
-
-# Custom memory class for ChromaDB integration
-class ChromaDBMemory:
-    def __init__(self, collection, embedding_model="text-embedding-3-small"):
-        self.collection = collection
-        self.embedding_model = embedding_model
-    
-    def add(self, text, metadata=None):
-        """Add a document to ChromaDB"""
-        doc_id = f"doc_{len(self.collection.get()['ids'])}"
-        embedding = get_embeddings([text])[0]
-        
-        self.collection.add(
-            embeddings=[embedding],
-            documents=[text],
-            metadatas=[metadata] if metadata else [{}],
-            ids=[doc_id]
-        )
-        return doc_id
-    
-    def query(self, query_text, n_results=3, where=None):
-        """Query ChromaDB for relevant documents"""
-        query_embedding = get_embeddings([query_text])[0]
-        
-        results = self.collection.query(
-            query_embeddings=[query_embedding],
-            n_results=n_results,
-            where=where
-        )
-        
-        return {
-            'documents': results['documents'][0],
-            'metadatas': results['metadatas'][0],
-            'distances': results['distances'][0]
-        }
-
-# Initialize ChromaDB memory
-memory = ChromaDBMemory(collection)
-
-# Create Swarms agent with ChromaDB memory
+# Create agent with RAG capabilities
 agent = Agent(
-    agent_name="ChromaDB-RAG-Agent",
-    agent_description="Agent with ChromaDB-powered RAG for enhanced knowledge retrieval",
+    agent_name="RAG-Agent",
+    agent_description="Swarms Agent with ChromaDB-powered RAG for enhanced knowledge retrieval",
     model_name="gpt-4o",
     max_loops=1,
     dynamic_temperature_enabled=True,
-    # Note: Integrating custom memory requires implementing the memory interface
+    long_term_memory=rag_db
 )
 
-# Function to query with context
-def query_with_rag(query_text):
-    """Query with RAG using ChromaDB"""
-    # Retrieve relevant documents
-    results = memory.query(query_text, n_results=3)
-    
-    # Prepare context
-    context = "\n".join(results['documents'])
-    
-    # Enhanced prompt with context
-    enhanced_prompt = f"""
-    Based on the following context, please answer the question:
-    
-    Context:
-    {context}
-    
-    Question: {query_text}
-    
-    Please provide a comprehensive answer based on the context provided.
-    """
-    
-    # Run agent with enhanced prompt
-    response = agent.run(enhanced_prompt)
-    return response
-
-# Example usage
-if __name__ == "__main__":
-    # Query with RAG
-    question = "What is ChromaDB and how does it work with RAG?"
-    response = query_with_rag(question)
-    print(f"Question: {question}")
-    print(f"Answer: {response}")
-    
-    # Add new document dynamically
-    new_doc = "ChromaDB supports advanced filtering with metadata queries."
-    memory.add(new_doc, {"category": "feature", "topic": "filtering"})
-    
-    # Query with filtering
-    filtered_results = memory.query(
-        "How to filter results?",
-        n_results=2,
-        where={"category": "feature"}
-    )
-    print(f"Filtered results: {filtered_results['documents']}")
+# Query with RAG
+response = agent.run("What is ChromaDB and who is founder of swarms ?")
+print(response)
 ```
 
 ## Use Cases
