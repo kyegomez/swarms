@@ -433,8 +433,19 @@ nav:
       - Yahoo Finance: "swarms/examples/yahoo_finance.md"
       - Firecrawl: "developer_guides/firecrawl.md"
 
-    - RAG:
-      - RAG with Qdrant: "swarms/RAG/qdrant_rag.md"
+    - RAG Vector Databases:
+      - Overview: "rag-vector-databases/overview.md"
+      - ChromaDB Integration: "rag-vector-databases/chromadb.md"
+      - FAISS Integration: "rag-vector-databases/faiss.md"
+      - Milvus Cloud Integration: "rag-vector-databases/milvus-cloud.md"
+      - Milvus Local Integration: "rag-vector-databases/milvus-local.md"
+      - Pinecone Integration: "rag-vector-databases/pinecone.md"
+      - Qdrant Integration: "rag-vector-databases/qdrant.md"
+      - Qdrant Tutorial (Alternative): "rag-vector-databases/qdrant-alternative.md"
+      - Weaviate Cloud Integration: "rag-vector-databases/weaviate-cloud.md"
+      - Weaviate Local Integration: "rag-vector-databases/weaviate-local.md"
+      - Zyphra RAG Integration: "rag-vector-databases/zyphra-rag.md"
+      - SingleStore Integration: "rag-vector-databases/singlestore.md"
 
     - Apps:
       - Web Scraper Agents: "developer_guides/web_scraper.md"
