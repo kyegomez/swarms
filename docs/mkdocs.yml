@@ -346,6 +346,7 @@ nav:
       - Overview: "deployment_solutions/overview.md"
       - FastAPI + Uvicorn: "deployment_solutions/fastapi_agent_api.md"
       - CronJob: "swarms/structs/cron_job.md"
+      - Agent on MCP: "docs/examples/mcp_ds.md"
       - Providers:
         - Deploy on Google Cloud Run: "swarms_cloud/cloud_run.md"
         - Deploy on Phala: "swarms_cloud/phala_deploy.md"
