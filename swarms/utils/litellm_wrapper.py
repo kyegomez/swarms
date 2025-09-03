@@ -234,7 +234,7 @@ class LiteLLM:
         reasoning_effort: str = None,
         drop_params: bool = True,
         thinking_tokens: int = None,
-        reasoning_enabled: bool = True,
+        reasoning_enabled: bool = False,
         *args,
         **kwargs,
     ):
@@ -291,6 +291,7 @@ class LiteLLM:
         self.reasoning_effort = reasoning_effort
         self.thinking_tokens = thinking_tokens
         self.reasoning_enabled = reasoning_enabled
+        self.verbose = verbose
         self.modalities = []
         self.messages = []  # Initialize messages list
 
@@ -315,7 +316,8 @@ class LiteLLM:
         self.init_args = args
         self.init_kwargs = kwargs
 
-        self.reasoning_check()
+        # if self.reasoning_enabled is True:
+        #     self.reasoning_check()
 
     def reasoning_check(self):
         """
@@ -324,53 +326,40 @@ class LiteLLM:
         If reasoning is enabled and the model supports reasoning, set temperature to 1 for optimal reasoning.
         Also logs information or warnings based on the model's reasoning support and configuration.
         """
-        if (
-            self.reasoning_enabled is True
-            and litellm.supports_reasoning(model=self.model_name)
-            is True
-        ):
-            logger.info(
-                f"Model {self.model_name} supports reasoning and reasoning enabled is set to {self.reasoning_enabled}. Temperature will be set to 1 for better reasoning as some models may not work with low temperature."
-            )
-            self.temperature = 1
-        else:
-            logger.warning(
-                f"Model {self.model_name} does not support reasoning and reasoning enabled is set to {self.reasoning_enabled}. Temperature will not be set to 1."
-            )
+        """
+        Check if reasoning is enabled and supported by the model, and adjust temperature, thinking_tokens, and top_p accordingly.
 
-        if (
-            self.reasoning_enabled is True
-            and litellm.supports_reasoning(model=self.model_name)
-            is False
-        ):
-            logger.warning(
-                f"Model {self.model_name} may or may not support reasoning and reasoning enabled is set to {self.reasoning_enabled}"
+        This single-line version combines all previous checks and actions for reasoning-enabled models, including Anthropic-specific logic.
+        """
+        if self.reasoning_enabled:
+            supports_reasoning = litellm.supports_reasoning(
+                model=self.model_name
             )
-
-        if (
-            self.reasoning_enabled is True
-            and self.check_if_model_name_uses_anthropic(
+            uses_anthropic = self.check_if_model_name_uses_anthropic(
                 model_name=self.model_name
             )
-            is True
-        ):
-            if self.thinking_tokens is None:
+            if supports_reasoning:
                 logger.info(
-                    f"Model {self.model_name} is an Anthropic model and reasoning enabled is set to {self.reasoning_enabled}. Thinking tokens is mandatory for Anthropic models."
+                    f"Model {self.model_name} supports reasoning and reasoning enabled is set to {self.reasoning_enabled}. Temperature will be set to 1 for better reasoning as some models may not work with low temperature."
                 )
-                self.thinking_tokens = self.max_tokens / 4
-
-        if (
-            self.reasoning_enabled is True
-            and self.check_if_model_name_uses_anthropic(
-                model_name=self.model_name
-            )
-            is True
-        ):
-            logger.info(
-                "top_p must be greater than 0.95 for Anthropic models with reasoning enabled"
-            )
-            self.top_p = 0.95
+                self.temperature = 1
+            else:
+                logger.warning(
+                    f"Model {self.model_name} does not support reasoning and reasoning enabled is set to {self.reasoning_enabled}. Temperature will not be set to 1."
+                )
+                logger.warning(
+                    f"Model {self.model_name} may or may not support reasoning and reasoning enabled is set to {self.reasoning_enabled}"
+                )
+            if uses_anthropic:
+                if self.thinking_tokens is None:
+                    logger.info(
+                        f"Model {self.model_name} is an Anthropic model and reasoning enabled is set to {self.reasoning_enabled}. Thinking tokens is mandatory for Anthropic models."
+                    )
+                    self.thinking_tokens = self.max_tokens / 4
+                logger.info(
+                    "top_p must be greater than 0.95 for Anthropic models with reasoning enabled"
+                )
+                self.top_p = 0.95
 
     def _process_additional_args(
         self, completion_params: dict, runtime_args: tuple
@@ -883,10 +872,6 @@ class LiteLLM:
             ):
                 completion_params["reasoning_effort"] = (
                     self.reasoning_effort
-                )
-            else:
-                logger.warning(
-                    f"Model {self.model_name} may or may not support reasoning"
                 )
 
             if (
