@@ -117,4 +117,4 @@ def get_okx_crypto_volume(symbol: str) -> str:
 
 if __name__ == "__main__":
     # Run the server on port 8000 (you can change this to any available port)
-    mcp.run(transport="sse")
+    mcp.run(transport="streamable-http")

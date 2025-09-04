@@ -11,7 +11,6 @@ from typing import Any, Dict, List, Literal, Optional, Union
 from litellm.types.utils import ChatCompletionMessageToolCall
 from loguru import logger
 from mcp import ClientSession
-from mcp.client.sse import sse_client
 
 try:
     from mcp.client.streamable_http import streamablehttp_client
@@ -315,7 +314,7 @@ def get_mcp_client(transport, url, headers=None, timeout=5, **kwargs):
             url, headers=headers, timeout=timeout, **kwargs
         )
     else:
-        return sse_client(
+        return streamablehttp_client(
             url, headers=headers, timeout=timeout, **kwargs
         )
 

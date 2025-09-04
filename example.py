@@ -9,6 +9,7 @@ agent = Agent(
     max_loops=1,
     dynamic_context_window=True,
     streaming_on=False,
+    print_on=False,
 )
 
 out = agent.run(

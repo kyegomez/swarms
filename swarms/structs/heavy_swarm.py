@@ -1,6 +1,7 @@
 import concurrent.futures
 import json
 import os
+import random
 import time
 import traceback
 from functools import lru_cache
@@ -24,6 +25,7 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.tools.tool_type import tool_type
 
 RESEARCH_AGENT_PROMPT = """
 You are an expert Research Agent with exceptional capabilities in:
@@ -471,7 +473,6 @@ class HeavySwarm:
         self,
         name: str = "HeavySwarm",
         description: str = "A swarm of agents that can analyze a task and generate specialized questions for each agent role",
-        agents: List[Agent] = None,
         timeout: int = 300,
         aggregation_strategy: str = "synthesis",
         loops_per_agent: int = 1,
@@ -482,6 +483,8 @@ class HeavySwarm:
         show_dashboard: bool = False,
         agent_prints_on: bool = False,
         output_type: str = "dict-all-except-first",
+        worker_tools: tool_type = None,
+        random_loops_per_agent: bool = False,
     ):
         """
         Initialize the HeavySwarm with configuration parameters.
@@ -519,7 +522,6 @@ class HeavySwarm:
         """
         self.name = name
         self.description = description
-        self.agents = agents
         self.timeout = timeout
         self.aggregation_strategy = aggregation_strategy
         self.loops_per_agent = loops_per_agent
@@ -530,14 +532,30 @@ class HeavySwarm:
         self.show_dashboard = show_dashboard
         self.agent_prints_on = agent_prints_on
         self.output_type = output_type
+        self.worker_tools = worker_tools
+        self.random_loops_per_agent = random_loops_per_agent
 
         self.conversation = Conversation()
         self.console = Console()
+
+        self.agents = self.create_agents()
 
         if self.show_dashboard:
             self.show_swarm_info()
 
         self.reliability_check()
+
+    def handle_worker_agent_loops(self) -> int:
+        """
+        Handle the loops per agent for the worker agents.
+        """
+        loops = None
+
+        if self.random_loops_per_agent:
+            loops = random.randint(1, 10)
+        else:
+            loops = self.loops_per_agent
+        return loops
 
     def show_swarm_info(self):
         """
@@ -831,10 +849,8 @@ class HeavySwarm:
                 )
             )
 
-        agents = self.create_agents()
-
         agent_results = self._execute_agents_parallel(
-            questions=questions, agents=agents, img=img
+            questions=questions, agents=self.agents, img=img
         )
 
         # Synthesis with dashboard
@@ -962,17 +978,23 @@ class HeavySwarm:
         if self.verbose:
             logger.info("🏗️ Creating specialized agents...")
 
+        tools = None
+
+        if self.worker_tools is not None:
+            tools = self.worker_tools
+
         # Research Agent - Deep information gathering and data collection
         research_agent = Agent(
             agent_name="Research-Agent",
             agent_description="Expert research agent specializing in comprehensive information gathering and data collection",
             system_prompt=RESEARCH_AGENT_PROMPT,
-            max_loops=self.loops_per_agent,
+            max_loops=self.handle_worker_agent_loops(),
             model_name=self.worker_model_name,
             streaming_on=False,
             verbose=False,
             dynamic_temperature_enabled=True,
             print_on=self.agent_prints_on,
+            tools=tools,
         )
 
         # Analysis Agent - Pattern recognition and deep analytical insights
@@ -980,12 +1002,13 @@ class HeavySwarm:
             agent_name="Analysis-Agent",
             agent_description="Expert analytical agent specializing in pattern recognition, data analysis, and insight generation",
             system_prompt=ANALYSIS_AGENT_PROMPT,
-            max_loops=self.loops_per_agent,
+            max_loops=self.handle_worker_agent_loops(),
             model_name=self.worker_model_name,
             streaming_on=False,
             verbose=False,
             dynamic_temperature_enabled=True,
             print_on=self.agent_prints_on,
+            tools=tools,
         )
 
         # Alternatives Agent - Strategic options and creative solutions
@@ -993,12 +1016,13 @@ class HeavySwarm:
             agent_name="Alternatives-Agent",
             agent_description="Expert strategic agent specializing in alternative approaches, creative solutions, and option generation",
             system_prompt=ALTERNATIVES_AGENT_PROMPT,
-            max_loops=self.loops_per_agent,
+            max_loops=self.handle_worker_agent_loops(),
             model_name=self.worker_model_name,
             streaming_on=False,
             verbose=False,
             dynamic_temperature_enabled=True,
             print_on=self.agent_prints_on,
+            tools=tools,
         )
 
         # Verification Agent - Validation, feasibility assessment, and quality assurance
@@ -1006,12 +1030,13 @@ class HeavySwarm:
             agent_name="Verification-Agent",
             agent_description="Expert verification agent specializing in validation, feasibility assessment, and quality assurance",
             system_prompt=VERIFICATION_AGENT_PROMPT,
-            max_loops=self.loops_per_agent,
+            max_loops=self.handle_worker_agent_loops(),
             model_name=self.worker_model_name,
             streaming_on=False,
             verbose=False,
             dynamic_temperature_enabled=True,
             print_on=self.agent_prints_on,
+            tools=tools,
         )
 
         # Synthesis Agent - Integration and comprehensive analysis
@@ -1024,6 +1049,8 @@ class HeavySwarm:
             streaming_on=False,
             verbose=False,
             dynamic_temperature_enabled=True,
+            print_on=self.agent_prints_on,
+            tools=tools,
         )
 
         agents = {
