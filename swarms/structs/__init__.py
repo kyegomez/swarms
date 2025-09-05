@@ -100,6 +100,7 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
+from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 
 __all__ = [
     "Agent",
@@ -184,4 +185,5 @@ __all__ = [
     "check_exit",
     "check_end",
     "AgentLoader",
+    "BatchedGridWorkflow",
 ]

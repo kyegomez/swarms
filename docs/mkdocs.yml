@@ -315,6 +315,7 @@ nav:
           - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
           - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
           - GraphWorkflow: "swarms/structs/graph_workflow.md"
+          - BatchedGridWorkflow: "swarms/structs/batched_grid_workflow.md"
 
         - Communication Structure: "swarms/structs/conversation.md"
 
@@ -422,6 +423,9 @@ nav:
         - Agents as Tools: "swarms/examples/agents_as_tools.md"
         - Aggregate Multi-Agent Responses: "swarms/examples/aggregate.md"
         - Interactive GroupChat Example: "swarms/examples/igc_example.md"
+        - BatchedGridWorkflow Examples:
+          - Simple BatchedGridWorkflow: "swarms/examples/batched_grid_simple_example.md"
+          - Advanced BatchedGridWorkflow: "swarms/examples/batched_grid_advanced_example.md"
         - Applications:
           - Swarms DAO: "swarms/examples/swarms_dao.md"
           - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
