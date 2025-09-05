@@ -485,6 +485,7 @@ class HeavySwarm:
         output_type: str = "dict-all-except-first",
         worker_tools: tool_type = None,
         random_loops_per_agent: bool = False,
+        max_loops: int = 1,
     ):
         """
         Initialize the HeavySwarm with configuration parameters.
@@ -534,6 +535,7 @@ class HeavySwarm:
         self.output_type = output_type
         self.worker_tools = worker_tools
         self.random_loops_per_agent = random_loops_per_agent
+        self.max_loops = max_loops
 
         self.conversation = Conversation()
         self.console = Console()

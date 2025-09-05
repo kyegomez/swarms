@@ -1,6 +1,4 @@
-# task -> research -> synethsis or debate or voting -> output
-
-from swarms.structs.heavy_swarm import HeavySwarm
+from swarms import HeavySwarm
 from swarms_tools import exa_search
 
 swarm = HeavySwarm(
@@ -24,4 +22,3 @@ prompt = (
 
 out = swarm.run(prompt)
 print(out)
-

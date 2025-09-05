@@ -193,10 +193,13 @@ class SwarmRouter:
         speaker_function: str = None,
         heavy_swarm_loops_per_agent: int = 1,
         heavy_swarm_question_agent_model_name: str = "gpt-4.1",
-        heavy_swarm_worker_model_name: str = "claude-3-5-sonnet-20240620",
+        heavy_swarm_worker_model_name: str = "gpt-4.1",
+        heavy_swarm_swarm_show_output: bool = True,
         telemetry_enabled: bool = False,
         council_judge_model_name: str = "gpt-4o-mini",  # Add missing model_name attribute
         verbose: bool = False,
+        worker_tools: List[Callable] = None,
+        aggregation_strategy: str = "synthesis",
         *args,
         **kwargs,
     ):
@@ -234,6 +237,11 @@ class SwarmRouter:
         self.telemetry_enabled = telemetry_enabled
         self.council_judge_model_name = council_judge_model_name  # Add missing model_name attribute
         self.verbose = verbose
+        self.worker_tools = worker_tools
+        self.aggregation_strategy = aggregation_strategy
+        self.heavy_swarm_swarm_show_output = (
+            heavy_swarm_swarm_show_output
+        )
 
         # Initialize swarm factory for O(1) lookup performance
         self._swarm_factory = self._initialize_swarm_factory()
@@ -264,7 +272,10 @@ class SwarmRouter:
                     "SwarmRouter: Swarm type cannot be 'none'. Check the docs for all the swarm types available. https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
                 )
 
-            if self.agents is None:
+            if (
+                self.swarm_type != "HeavySwarm"
+                and self.agents is None
+            ):
                 raise SwarmRouterConfigError(
                     "SwarmRouter: No agents provided for the swarm. Check the docs to learn of required parameters. https://docs.swarms.world/en/latest/swarms/structs/agent/"
                 )
@@ -392,12 +403,14 @@ class SwarmRouter:
         return HeavySwarm(
             name=self.name,
             description=self.description,
-            agents=self.agents,
-            max_loops=self.max_loops,
             output_type=self.output_type,
             loops_per_agent=self.heavy_swarm_loops_per_agent,
             question_agent_model_name=self.heavy_swarm_question_agent_model_name,
             worker_model_name=self.heavy_swarm_worker_model_name,
+            agent_prints_on=self.heavy_swarm_swarm_show_output,
+            worker_tools=self.worker_tools,
+            aggregation_strategy=self.aggregation_strategy,
+            show_dashboard=False,
         )
 
     def _create_agent_rearrange(self, *args, **kwargs):

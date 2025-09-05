@@ -1,4 +1,4 @@
-from swarms.agents.agent_judge import AgentJudge
+from swarms import AgentJudge
 
 # Initialize the agent judge with custom evaluation criteria
 judge = AgentJudge(

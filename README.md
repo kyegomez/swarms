@@ -633,24 +633,31 @@ The `HierarchicalSwarm` excels at:
 ```python
 from swarms import HeavySwarm
 
-# Initialize the HeavySwarm with configuration
+# Pip install swarms-tools
+from swarms_tools import exa_search
+
 swarm = HeavySwarm(
-    worker_model_name="gpt-4o-mini",  # Model for worker agents
-    question_agent_model_name="gpt-4o-mini",  # Model for question generation
-    loops_per_agent=1,  # Number of loops per agent
-    show_dashboard=True,  # Enable real-time dashboard
+    name="Gold ETF Research Team",
+    description="A team of agents that research the best gold ETFs",
+    worker_model_name="claude-sonnet-4-20250514",
+    show_dashboard=True,
+    question_agent_model_name="gpt-4.1",
+    loops_per_agent=1,
+    agent_prints_on=False,
+    worker_tools=[exa_search],
+    random_loops_per_agent=True,
 )
 
-# Run complex analysis task
-result = swarm.run(
-    "Provide 3 publicly traded biotech companies that are currently trading below their cash value. "
-    "For each company identified, provide available data or projections for the next 6 months, "
-    "including any relevant financial metrics, upcoming catalysts, or events that could impact valuation. "
-    "Present your findings in a clear, structured format with ticker symbols, current prices, "
-    "cash values, and percentage differences."
+prompt = (
+    "Find the best 3 gold ETFs. For each ETF, provide the ticker symbol, "
+    "full name, current price, expense ratio, assets under management, and "
+    "a brief explanation of why it is considered among the best. Present the information "
+    "in a clear, structured format suitable for investors. Scrape the data from the web. "
 )
 
-print(result)
+out = swarm.run(prompt)
+print(out)
+
 ```
 
 The `HeavySwarm` provides:
