@@ -11,6 +11,7 @@ from swarms.prompts.multi_agent_collab_prompt import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
+from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.groupchat import GroupChat
@@ -396,6 +397,7 @@ class SwarmRouter:
             "MultiAgentRouter": self._create_multi_agent_router,
             "SequentialWorkflow": self._create_sequential_workflow,
             "ConcurrentWorkflow": self._create_concurrent_workflow,
+            "BatchedGridWorkflow": self._create_batched_grid_workflow,
         }
 
     def _create_heavy_swarm(self, *args, **kwargs):
@@ -426,6 +428,16 @@ class SwarmRouter:
             return_entire_history=self.return_entire_history,
             *args,
             **kwargs,
+        )
+        
+        
+    def _create_batched_grid_workflow(self, *args, **kwargs):
+        """Factory function for BatchedGridWorkflow."""
+        return BatchedGridWorkflow(
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
+            max_loops=self.max_loops,
         )
 
     def _create_malt(self, *args, **kwargs):

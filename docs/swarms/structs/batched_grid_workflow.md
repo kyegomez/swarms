@@ -113,22 +113,33 @@ Internal method that runs the workflow without error handling.
 ### Basic Usage
 
 ```python
-from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 from swarms import Agent
+from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 
-# Create agents
-agent1 = Agent(model="gpt-4", system_prompt="You are a helpful assistant")
-agent2 = Agent(model="gpt-4", system_prompt="You are a creative writer")
-
-# Create workflow
-workflow = BatchedGridWorkflow(
-    agents=[agent1, agent2],
-    max_loops=1
+# Initialize the ETF-focused agent
+agent = Agent(
+    agent_name="ETF-Research-Agent",
+    agent_description="Specialized agent for researching, analyzing, and recommending Exchange-Traded Funds (ETFs) across various sectors and markets.",
+    model_name="claude-sonnet-4-20250514",
+    dynamic_temperature_enabled=True,
+    max_loops=1,
+    dynamic_context_window=True,
 )
 
-# Execute tasks
-tasks = ["Write a poem about nature", "Analyze market trends"]
+
+# Create workflow with default settings
+workflow = BatchedGridWorkflow(agents=[agent, agent])
+
+# Define simple tasks
+tasks = [
+    "What are the best GOLD ETFs?",
+    "What are the best american energy ETFs?",
+]
+
+# Run the workflow
 result = workflow.run(tasks)
+
+print(result)
 ```
 
 ### Multi-Loop Execution
