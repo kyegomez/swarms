@@ -113,8 +113,7 @@ Internal method that runs the workflow without error handling.
 ### Basic Usage
 
 ```python
-from swarms import Agent
-from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
+from swarms import Agent, BatchedGridWorkflow
 
 # Initialize the ETF-focused agent
 agent = Agent(

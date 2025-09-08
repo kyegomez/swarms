@@ -16,6 +16,7 @@ databases
 static/generated
 conversations/
 next_swarms_update.txt
+infra.md
 runs
 Financial-Analysis-Agent_state.json
 conversations/

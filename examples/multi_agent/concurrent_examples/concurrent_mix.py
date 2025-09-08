@@ -1,15 +1,6 @@
-import os
-
-from swarm_models import OpenAIChat
-
-from swarms import Agent, run_agents_with_tasks_concurrently
-
-# Fetch the OpenAI API key from the environment variable
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Create an instance of the OpenAIChat class
-model = OpenAIChat(
-    openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
+from swarms import Agent
+from swarms.structs.multi_agent_exec import (
+    batched_grid_agent_execution,
 )
 
 # Initialize agents for different roles
@@ -27,7 +18,7 @@ delaware_ccorp_agent = Agent(
     corporate law and ensure that all hiring practices are in compliance with 
     state and federal regulations.
     """,
-    llm=model,
+    model_name="claude-sonnet-4-20250514",
     max_loops=1,
     autosave=False,
     dashboard=False,
@@ -54,7 +45,7 @@ indian_foreign_agent = Agent(
     implications of hiring foreign nationals and the requirements for obtaining 
     necessary visas and work permits.
     """,
-    llm=model,
+    model_name="claude-sonnet-4-20250514",
     max_loops=1,
     autosave=False,
     dashboard=False,
@@ -86,11 +77,10 @@ tasks = [
     """,
 ]
 
-# Run agents with tasks concurrently
-results = run_agents_with_tasks_concurrently(
-    agents, tasks, all_cores=True, device="cpu", no_clusterops=True
+results = batched_grid_agent_execution(
+    agents=agents,
+    tasks=tasks,
 )
 
-# Print the results
-# for result in results:
-#     print(result)
+for result in results:
+    print(result)

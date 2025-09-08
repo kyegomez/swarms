@@ -49826,32 +49826,6 @@ A dataclass for system resource metrics.
 | memory_percent | float | Current memory usage percentage |
 | active_threads | int   | Number of active threads |
 
-### run_agents_with_resource_monitoring()
-
-Runs agents with system resource monitoring and adaptive batch sizing.
-
-#### Arguments
-
-| Parameter         | Type           | Required | Default | Description |
-|------------------|----------------|----------|---------|-------------|
-| agents           | List[AgentType]| Yes      | -       | List of Agent instances |
-| task             | str            | Yes      | -       | Task string to execute |
-| cpu_threshold    | float          | No       | 90.0    | Max CPU usage percentage |
-| memory_threshold | float          | No       | 90.0    | Max memory usage percentage |
-| check_interval   | float          | No       | 1.0     | Resource check interval in seconds |
-
-## Performance Considerations
-
-- Default batch sizes and worker counts are optimized based on CPU cores
-- Resource monitoring helps prevent system overload
-- Using `uvloop` provides better performance than standard `asyncio`
-
-## Error Handling
-
-- Functions handle asyncio event loop creation/retrieval
-- Timeout mechanism prevents infinite waiting
-- Resource monitoring allows for adaptive performance adjustment
-
 --------------------------------------------------
 
 # File: swarms/structs/yaml_model.md

@@ -1,25 +1,16 @@
-import concurrent.futures
 import asyncio
+import concurrent.futures
 import os
-import threading
 from concurrent.futures import (
     ThreadPoolExecutor,
 )
-from dataclasses import dataclass
 from typing import Any, Callable, List, Optional, Union
 
-import psutil
+import uvloop
+from loguru import logger
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
-from loguru import logger
-
-
-@dataclass
-class ResourceMetrics:
-    cpu_percent: float
-    memory_percent: float
-    active_threads: int
 
 
 def run_single_agent(
@@ -29,42 +20,38 @@ def run_single_agent(
     return agent.run(task=task, *args, **kwargs)
 
 
-async def run_agent_async(
-    agent: AgentType, task: str, executor: ThreadPoolExecutor
-) -> Any:
+async def run_agent_async(agent: AgentType, task: str) -> Any:
     """
-    Run an agent asynchronously using a thread executor.
+    Run an agent asynchronously.
 
     Args:
         agent: Agent instance to run
         task: Task string to execute
-        executor: ThreadPoolExecutor instance for handling CPU-bound operations
 
     Returns:
         Agent execution result
     """
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(
-        executor, run_single_agent, agent, task
+        None, run_single_agent, agent, task
     )
 
 
 async def run_agents_concurrently_async(
-    agents: List[AgentType], task: str, executor: ThreadPoolExecutor
+    agents: List[AgentType], task: str
 ) -> List[Any]:
     """
-    Run multiple agents concurrently using asyncio and thread executor.
+    Run multiple agents concurrently using asyncio.
 
     Args:
         agents: List of Agent instances to run concurrently
         task: Task string to execute
-        executor: ThreadPoolExecutor for CPU-bound operations
 
     Returns:
         List of outputs from each agent
     """
     results = await asyncio.gather(
-        *(run_agent_async(agent, task, executor) for agent in agents)
+        *(run_agent_async(agent, task) for agent in agents)
     )
     return results
 
@@ -142,14 +129,23 @@ def run_agents_concurrently_multiprocess(
 
 
 def batched_grid_agent_execution(
-    agents: List[AgentType],
+    agents: List["AgentType"],
     tasks: List[str],
+    max_workers: int = None,
 ) -> List[Any]:
     """
     Run multiple agents with different tasks concurrently.
+
+    Args:
+        agents (List[AgentType]): List of agent instances.
+        tasks (List[str]): List of tasks, one for each agent.
+        max_workers (int, optional): Maximum number of threads to use. Defaults to 90% of CPU cores.
+
+    Returns:
+        List[Any]: List of results from each agent.
     """
     logger.info(
-        f"Batch Grid Execution with {len(agents)} and number of tasks: {len(tasks)}"
+        f"Batch Grid Execution with {len(agents)} agents and number of tasks: {len(tasks)}"
     )
 
     if len(agents) != len(tasks):
@@ -157,289 +153,256 @@ def batched_grid_agent_execution(
             "The number of agents must match the number of tasks."
         )
 
-    results = []
+    # 90% of the available CPU cores
+    max_workers = max_workers or int(os.cpu_count() * 0.9)
 
-    for agent, task in zip(agents, tasks):
-        result = run_single_agent(agent, task)
-        results.append(result)
+    results = [None] * len(agents)
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=max_workers
+    ) as executor:
+        future_to_index = {
+            executor.submit(run_single_agent, agent, task): idx
+            for idx, (agent, task) in enumerate(zip(agents, tasks))
+        }
+        for future in concurrent.futures.as_completed(
+            future_to_index
+        ):
+            idx = future_to_index[future]
+            try:
+                results[idx] = future.result()
+            except Exception as e:
+                results[idx] = e
 
     return results
-
-
-def run_agents_sequentially(
-    agents: List[AgentType], task: str
-) -> List[Any]:
-    """
-    Run multiple agents sequentially for baseline comparison.
-
-    Args:
-        agents: List of Agent instances to run
-        task: Task string to execute
-
-    Returns:
-        List of outputs from each agent
-    """
-    return [run_single_agent(agent, task) for agent in agents]
 
 
 def run_agents_with_different_tasks(
-    agent_task_pairs: List[tuple[AgentType, str]],
-    batch_size: int = None,
+    agent_task_pairs: List[tuple["AgentType", str]],
+    batch_size: int = 10,
     max_workers: int = None,
 ) -> List[Any]:
     """
-    Run multiple agents with different tasks concurrently.
+    Run multiple agents with different tasks concurrently, processing them in batches.
+
+    This function executes each agent on its corresponding task, processing the agent-task pairs in batches
+    of size `batch_size` for efficient resource utilization.
 
     Args:
-        agent_task_pairs: List of (agent, task) tuples
-        batch_size: Number of agents to run in parallel
-        max_workers: Maximum number of threads
+        agent_task_pairs: List of (agent, task) tuples.
+        batch_size: Number of agents to run in parallel in each batch.
+        max_workers: Maximum number of threads.
+
+    Returns:
+        List of outputs from each agent, in the same order as the input pairs.
+    """
+    if not agent_task_pairs:
+        return []
+
+    results = []
+    total_pairs = len(agent_task_pairs)
+    for i in range(0, total_pairs, batch_size):
+        batch = agent_task_pairs[i : i + batch_size]
+        agents, tasks = zip(*batch)
+        batch_results = batched_grid_agent_execution(
+            list(agents), list(tasks), max_workers=max_workers
+        )
+        results.extend(batch_results)
+    return results
+
+
+def run_agents_concurrently_uvloop(
+    agents: List[AgentType],
+    task: str,
+    max_workers: Optional[int] = None,
+) -> List[Any]:
+    """
+    Run multiple agents concurrently using uvloop for optimized async performance.
+
+    uvloop is a fast, drop-in replacement for asyncio's event loop, implemented in Cython.
+    It's designed to be significantly faster than the standard asyncio event loop,
+    especially beneficial for I/O-bound tasks and concurrent operations.
+
+    Args:
+        agents: List of Agent instances to run concurrently
+        task: Task string to execute by all agents
+        max_workers: Maximum number of threads in the executor (defaults to 95% of CPU cores)
 
     Returns:
         List of outputs from each agent
-    """
 
-    async def run_pair_async(
-        pair: tuple[AgentType, str], executor: ThreadPoolExecutor
-    ) -> Any:
-        agent, task = pair
-        return await run_agent_async(agent, task, executor)
-
-    cpu_cores = os.cpu_count()
-    batch_size = batch_size or cpu_cores
-    max_workers = max_workers or cpu_cores * 2
-    results = []
-
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        for i in range(0, len(agent_task_pairs), batch_size):
-            batch = agent_task_pairs[i : i + batch_size]
-            batch_results = loop.run_until_complete(
-                asyncio.gather(
-                    *(
-                        run_pair_async(pair, executor)
-                        for pair in batch
-                    )
-                )
-            )
-            results.extend(batch_results)
-
-    return results
-
-
-async def run_agent_with_timeout(
-    agent: AgentType,
-    task: str,
-    timeout: float,
-    executor: ThreadPoolExecutor,
-) -> Any:
-    """
-    Run an agent with a timeout limit.
-
-    Args:
-        agent: Agent instance to run
-        task: Task string to execute
-        timeout: Timeout in seconds
-        executor: ThreadPoolExecutor instance
-
-    Returns:
-        Agent execution result or None if timeout occurs
+    Raises:
+        ImportError: If uvloop is not installed
+        RuntimeError: If uvloop cannot be set as the event loop policy
     """
     try:
-        return await asyncio.wait_for(
-            run_agent_async(agent, task, executor), timeout=timeout
+        # Set uvloop as the default event loop policy for better performance
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    except ImportError:
+        logger.warning(
+            "uvloop not available, falling back to standard asyncio. "
+            "Install uvloop with: pip install uvloop"
         )
-    except asyncio.TimeoutError:
-        return None
+    except RuntimeError as e:
+        logger.warning(
+            f"Could not set uvloop policy: {e}. Using default asyncio."
+        )
 
+    if max_workers is None:
+        # Use 95% of available CPU cores for optimal performance
+        num_cores = os.cpu_count()
+        max_workers = int(num_cores * 0.95) if num_cores else 1
 
-def run_agents_with_timeout(
-    agents: List[AgentType],
-    task: str,
-    timeout: float,
-    batch_size: int = None,
-    max_workers: int = None,
-) -> List[Any]:
-    """
-    Run multiple agents concurrently with a timeout for each agent.
-
-    Args:
-        agents: List of Agent instances
-        task: Task string to execute
-        timeout: Timeout in seconds for each agent
-        batch_size: Number of agents to run in parallel
-        max_workers: Maximum number of threads
-
-    Returns:
-        List of outputs (None for timed out agents)
-    """
-    cpu_cores = os.cpu_count()
-    batch_size = batch_size or cpu_cores
-    max_workers = max_workers or cpu_cores * 2
-    results = []
-
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        for i in range(0, len(agents), batch_size):
-            batch = agents[i : i + batch_size]
-            batch_results = loop.run_until_complete(
-                asyncio.gather(
-                    *(
-                        run_agent_with_timeout(
-                            agent, task, timeout, executor
-                        )
-                        for agent in batch
-                    )
-                )
-            )
-            results.extend(batch_results)
-
-    return results
-
-
-def get_system_metrics() -> ResourceMetrics:
-    """Get current system resource usage"""
-    return ResourceMetrics(
-        cpu_percent=psutil.cpu_percent(),
-        memory_percent=psutil.virtual_memory().percent,
-        active_threads=threading.active_count(),
+    logger.info(
+        f"Running {len(agents)} agents concurrently with uvloop (max_workers: {max_workers})"
     )
 
+    async def run_agents_async():
+        """Inner async function to handle the concurrent execution."""
+        results = []
 
-def run_agents_with_resource_monitoring(
+        def run_agent_sync(agent: AgentType) -> Any:
+            """Synchronous wrapper for agent execution."""
+            return agent.run(task=task)
+
+        loop = asyncio.get_event_loop()
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Create tasks for all agents
+            tasks = [
+                loop.run_in_executor(executor, run_agent_sync, agent)
+                for agent in agents
+            ]
+
+            # Wait for all tasks to complete and collect results
+            completed_tasks = await asyncio.gather(
+                *tasks, return_exceptions=True
+            )
+
+            # Handle results and exceptions
+            for i, result in enumerate(completed_tasks):
+                if isinstance(result, Exception):
+                    logger.error(
+                        f"Agent {i+1} failed with error: {result}"
+                    )
+                    results.append(result)
+                else:
+                    results.append(result)
+
+        return results
+
+    # Run the async function
+    try:
+        return asyncio.run(run_agents_async())
+    except RuntimeError as e:
+        if "already running" in str(e).lower():
+            # Handle case where event loop is already running
+            logger.warning(
+                "Event loop already running, using get_event_loop()"
+            )
+            loop = asyncio.get_event_loop()
+            return loop.run_until_complete(run_agents_async())
+        else:
+            raise
+
+
+def run_agents_with_tasks_uvloop(
     agents: List[AgentType],
-    task: str,
-    cpu_threshold: float = 90.0,
-    memory_threshold: float = 90.0,
-    check_interval: float = 1.0,
+    tasks: List[str],
+    max_workers: Optional[int] = None,
 ) -> List[Any]:
     """
-    Run agents with system resource monitoring and adaptive batch sizing.
+    Run multiple agents with different tasks concurrently using uvloop.
 
-    Args:
-        agents: List of Agent instances
-        task: Task string to execute
-        cpu_threshold: Max CPU usage percentage
-        memory_threshold: Max memory usage percentage
-        check_interval: Resource check interval in seconds
-
-    Returns:
-        List of outputs from each agent
-    """
-
-    async def monitor_resources():
-        while True:
-            metrics = get_system_metrics()
-            if (
-                metrics.cpu_percent > cpu_threshold
-                or metrics.memory_percent > memory_threshold
-            ):
-                # Reduce batch size or pause execution
-                pass
-            await asyncio.sleep(check_interval)
-
-    # Implementation details...
-
-
-def _run_agents_with_tasks_concurrently(
-    agents: List[AgentType],
-    tasks: List[str] = [],
-    batch_size: int = None,
-    max_workers: int = None,
-) -> List[Any]:
-    """
-    Run multiple agents with corresponding tasks concurrently.
+    This function pairs each agent with a specific task and runs them concurrently
+    using uvloop for optimized performance.
 
     Args:
         agents: List of Agent instances to run
-        tasks: List of task strings to execute
-        batch_size: Number of agents to run in parallel
-        max_workers: Maximum number of threads
+        tasks: List of task strings (must match number of agents)
+        max_workers: Maximum number of threads (defaults to 95% of CPU cores)
 
     Returns:
         List of outputs from each agent
+
+    Raises:
+        ValueError: If number of agents doesn't match number of tasks
     """
     if len(agents) != len(tasks):
         raise ValueError(
-            "The number of agents must match the number of tasks."
+            f"Number of agents ({len(agents)}) must match number of tasks ({len(tasks)})"
         )
 
-    cpu_cores = os.cpu_count()
-    batch_size = batch_size or cpu_cores
-    max_workers = max_workers or cpu_cores * 2
-    results = []
-
     try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        # Set uvloop as the default event loop policy
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    except ImportError:
+        logger.warning(
+            "uvloop not available, falling back to standard asyncio. "
+            "Install uvloop with: pip install uvloop"
+        )
+    except RuntimeError as e:
+        logger.warning(
+            f"Could not set uvloop policy: {e}. Using default asyncio."
+        )
 
-    async def run_agent_task_pair(
-        agent: AgentType, task: str, executor: ThreadPoolExecutor
-    ) -> Any:
-        return await run_agent_async(agent, task, executor)
+    if max_workers is None:
+        num_cores = os.cpu_count()
+        max_workers = int(num_cores * 0.95) if num_cores else 1
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        for i in range(0, len(agents), batch_size):
-            batch_agents = agents[i : i + batch_size]
-            batch_tasks = tasks[i : i + batch_size]
-            batch_results = loop.run_until_complete(
-                asyncio.gather(
-                    *(
-                        run_agent_task_pair(agent, task, executor)
-                        for agent, task in zip(
-                            batch_agents, batch_tasks
-                        )
-                    )
-                )
-            )
-            results.extend(batch_results)
-
-    return results
-
-
-def run_agents_with_tasks_concurrently(
-    agents: List[AgentType],
-    tasks: List[str] = [],
-    batch_size: int = None,
-    max_workers: int = None,
-    device: str = "cpu",
-    device_id: int = 1,
-    all_cores: bool = True,
-    no_clusterops: bool = False,
-) -> List[Any]:
-    """
-    Executes a list of agents with their corresponding tasks concurrently on a specified device.
-
-    This function orchestrates the concurrent execution of a list of agents with their respective tasks on a specified device, either CPU or GPU. It leverages the `exec_callable_with_clusterops` function to manage the execution on the specified device.
-
-    Args:
-        agents (List[AgentType]): A list of Agent instances or callable functions to execute concurrently.
-        tasks (List[str], optional): A list of task strings to execute for each agent. Defaults to an empty list.
-        batch_size (int, optional): The number of agents to run in parallel. Defaults to None.
-        max_workers (int, optional): The maximum number of threads to use for execution. Defaults to None.
-        device (str, optional): The device to use for execution. Defaults to "cpu".
-        device_id (int, optional): The ID of the GPU to use if device is set to "gpu". Defaults to 0.
-        all_cores (bool, optional): If True, uses all available CPU cores. Defaults to True.
-
-    Returns:
-        List[Any]: A list of outputs from each agent execution.
-    """
-    # Make the first agent not use the ifrs
-    return _run_agents_with_tasks_concurrently(
-        agents, tasks, batch_size, max_workers
+    logger.inufo(
+        f"Running {len(agents)} agents with {len(tasks)} tasks using uvloop (max_workers: {max_workers})"
     )
+
+    async def run_agents_with_tasks_async():
+        """Inner async function to handle concurrent execution with different tasks."""
+        results = []
+
+        def run_agent_task_sync(agent: AgentType, task: str) -> Any:
+            """Synchronous wrapper for agent execution with specific task."""
+            return agent.run(task=task)
+
+        loop = asyncio.get_event_loop()
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Create tasks for agent-task pairs
+            tasks_async = [
+                loop.run_in_executor(
+                    executor, run_agent_task_sync, agent, task
+                )
+                for agent, task in zip(agents, tasks)
+            ]
+
+            # Wait for all tasks to complete
+            completed_tasks = await asyncio.gather(
+                *tasks_async, return_exceptions=True
+            )
+
+            # Handle results and exceptions
+            for i, result in enumerate(completed_tasks):
+                if isinstance(result, Exception):
+                    logger.error(
+                        f"Agent {i+1} (task: {tasks[i][:50]}...) failed with error: {result}"
+                    )
+                    results.append(result)
+                else:
+                    results.append(result)
+
+        return results
+
+    # Run the async function
+    try:
+        return asyncio.run(run_agents_with_tasks_async())
+    except RuntimeError as e:
+        if "already running" in str(e).lower():
+            logger.warning(
+                "Event loop already running, using get_event_loop()"
+            )
+            loop = asyncio.get_event_loop()
+            return loop.run_until_complete(
+                run_agents_with_tasks_async()
+            )
+        else:
+            raise
 
 
 def get_swarms_info(swarms: List[Callable]) -> str:

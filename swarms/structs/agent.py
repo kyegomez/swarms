@@ -332,6 +332,7 @@ class Agent:
         list_of_pdf: Optional[str] = None,
         tokenizer: Optional[Any] = None,
         long_term_memory: Optional[Union[Callable, Any]] = None,
+        fallback_model_name: Optional[str] = None,
         preset_stopping_token: Optional[bool] = False,
         traceback: Optional[Any] = None,
         traceback_handlers: Optional[Any] = None,
@@ -582,6 +583,7 @@ class Agent:
         self.drop_params = drop_params
         self.thinking_tokens = thinking_tokens
         self.reasoning_enabled = reasoning_enabled
+        self.fallback_model_name = fallback_model_name
 
         # self.init_handling()
         self.setup_config()
@@ -2633,7 +2635,7 @@ class Agent:
         """
         return [
             self.run(task=task, imgs=imgs, *args, **kwargs)
-            for task in tasks
+            for task, imgs in zip(tasks, imgs)
         ]
 
     def handle_artifacts(

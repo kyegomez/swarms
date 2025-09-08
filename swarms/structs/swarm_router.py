@@ -429,8 +429,7 @@ class SwarmRouter:
             *args,
             **kwargs,
         )
-        
-        
+
     def _create_batched_grid_workflow(self, *args, **kwargs):
         """Factory function for BatchedGridWorkflow."""
         return BatchedGridWorkflow(

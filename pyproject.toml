@@ -81,6 +81,7 @@ mcp = "*"
 openai = "*"
 aiohttp = "*"
 schedule = "*"
+uvloop = "*"
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"
