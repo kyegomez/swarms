@@ -336,12 +336,6 @@ nav:
         - Social Media:
           - Twitter: "swarms_tools/twitter.md"
 
-    # - Memory:
-    #   - Overview: "swarms_memory/index.md"
-    #   - Memory Systems:
-    #     - ChromaDB: "swarms_memory/chromadb.md"
-    #     - Pinecone: "swarms_memory/pinecone.md"
-    #     - Faiss: "swarms_memory/faiss.md"
 
     - Deployment Solutions:
       - Overview: "deployment_solutions/overview.md"
@@ -399,15 +393,6 @@ nav:
 
 
 
-      # - Swarms Tools: 
-      #   - Agent with Yahoo Finance: "swarms/examples/yahoo_finance.md"
-      #   - Twitter Agents: "swarms_tools/twitter.md"
-      #   - Blockchain Agents:
-      #     - Agent with HTX + CoinGecko: "swarms/examples/swarms_tools_htx.md"
-      #     - Agent with HTX + CoinGecko Function Calling: "swarms/examples/swarms_tools_htx_gecko.md"
-      #     - Lumo: "swarms/examples/lumo.md"
-      #     - Quant Crypto Agent: "swarms/examples/quant_crypto_agent.md"
-
     - Advanced Examples:
       - Multi-Agent Architectures:
         - HierarchicalSwarm Examples: "swarms/examples/hierarchical_swarm_example.md"
@@ -449,27 +434,6 @@ nav:
   - Swarms Cloud API:
     - Overview: "swarms_cloud/migration.md"
 
-
-  #   - Capabilities:
-  #     - Agents:
-  #       - Individual Agent Completions: "swarms_cloud/agent_api.md"
-  #       - Tools: "swarms_cloud/swarms_api_tools.md"
-  #     - Multi-Agent:
-  #       - Multi Agent Architectures Available: "swarms_cloud/swarm_types.md"
-  #       - Swarm Types:
-  #         - AgentRearrange: "swarms_cloud/agent_rearrange.md"
-  #         - MixtureOfAgents: "swarms_cloud/mixture_of_agents.md"
-  #         - SequentialWorkflow: "swarms_cloud/sequential_workflow.md"
-  #         - ConcurrentWorkflow: "swarms_cloud/concurrent_workflow.md"
-  #         - GroupChat: "swarms_cloud/group_chat.md"
-  #         - MultiAgentRouter: "swarms_cloud/multi_agent_router.md"
-  #         - HierarchicalSwarm: "swarms_cloud/hierarchical_swarm.md"
-  #         - MajorityVoting: "swarms_cloud/majority_voting.md"
-  #         # - AutoSwarmBuilder: "swarms_cloud/auto_swarm_builder.md"
-  #         # - Auto: "swarms_cloud/auto.md"
-        # - Examples:
-        #   - Medical Swarm: "swarms/examples/swarms_api_medical.md"
-        #   - Finance Swarm: "swarms/examples/swarms_api_finance.md"
 
   - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"
