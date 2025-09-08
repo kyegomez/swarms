@@ -16,6 +16,7 @@ from rich.spinner import Spinner
 
 from rich.markdown import Markdown
 
+
 # Global Live display for the dashboard
 dashboard_live = None
 
@@ -721,4 +722,4 @@ class Formatter:
 
 
 # Global formatter instance with markdown output enabled by default
-formatter = Formatter(md=True)
+formatter = Formatter(md=False)

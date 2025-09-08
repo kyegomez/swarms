@@ -8,7 +8,7 @@ The Hierarchical Swarm follows a clear workflow pattern:
 
 1. **Task Reception**: User provides a task to the swarm
 2. **Planning**: Director creates a comprehensive plan and distributes orders to agents
-3. **Execution**: Individual agents execute their assigned tasks
+3. **Execution**: Individual agents execute their assigned tasks (with optional real-time streaming)
 4. **Feedback Loop**: Director evaluates results and issues new orders if needed (up to `max_loops`)
 5. **Context Preservation**: All conversation history and context is maintained throughout the process
 
@@ -34,12 +34,16 @@ graph TD
 
 ## Key Features
 
-- **Hierarchical Coordination**: Director agent orchestrates all operations
-- **Specialized Agents**: Each agent has specific expertise and responsibilities
-- **Iterative Refinement**: Multiple feedback loops for improved results
-- **Context Preservation**: Full conversation history maintained
-- **Flexible Output Formats**: Support for various output types (dict, str, list)
-- **Comprehensive Logging**: Detailed logging for debugging and monitoring
+| Feature                      | Description                                                                                   |
+|------------------------------|-----------------------------------------------------------------------------------------------|
+| **Hierarchical Coordination**| Director agent orchestrates all operations                                                    |
+| **Specialized Agents**       | Each agent has specific expertise and responsibilities                                       |
+| **Iterative Refinement**     | Multiple feedback loops for improved results                                                 |
+| **Context Preservation**     | Full conversation history maintained                                                         |
+| **Flexible Output Formats**  | Support for various output types (dict, str, list)                                           |
+| **Comprehensive Logging**    | Detailed logging for debugging and monitoring                                                |
+| **Live Streaming**           | Real-time streaming callbacks for monitoring agent outputs                                   |
+| **Token-by-Token Updates**   | Watch text formation in real-time as agents generate responses                               |
 
 ## `HierarchicalSwarm` Constructor
 
@@ -60,7 +64,7 @@ graph TD
 
 ## Core Methods
 
-### `run(task, img=None, *args, **kwargs)`
+### `run(task, img=None, streaming_callback=None, *args, **kwargs)`
 
 Executes the hierarchical swarm for a specified number of feedback loops, processing the task through multiple iterations for refinement and improvement.
 
@@ -70,6 +74,7 @@ Executes the hierarchical swarm for a specified number of feedback loops, proces
 |-----------|------|---------|-------------|
 | `task` | `str` | **Required** | The initial task to be processed by the swarm |
 | `img` | `str` | `None` | Optional image input for the agents |
+| `streaming_callback` | `Callable[[str, str, bool], None]` | `None` | Optional callback for real-time streaming of agent outputs |
 | `*args` | `Any` | - | Additional positional arguments |
 | `**kwargs` | `Any` | - | Additional keyword arguments |
 
@@ -113,26 +118,75 @@ result = swarm.run(task=task)
 print(result)
 ```
 
-### `step(task, img=None, *args, **kwargs)`
+#### Streaming Callback Example
 
-Runs a single step of the hierarchical swarm, executing one complete cycle of planning, distribution, execution, and feedback.
+```python
+from swarms import Agent
+from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 
-#### Parameters
+def streaming_callback(agent_name: str, chunk: str, is_final: bool):
+    """Callback function for real-time streaming of agent outputs."""
+    if not hasattr(streaming_callback, 'buffers'):
+        streaming_callback.buffers = {}
+        streaming_callback.paragraph_count = {}
+
+    if agent_name not in streaming_callback.buffers:
+        streaming_callback.buffers[agent_name] = ""
+        streaming_callback.paragraph_count[agent_name] = 1
+        print(f"\n🎬 {agent_name} starting...")
+
+    if chunk.strip():
+        tokens = chunk.replace('\n', ' \n ').split()
+        for token in tokens:
+            if token == '\n':
+                if streaming_callback.buffers[agent_name].strip():
+                    print(f"\n📄 {agent_name} - Paragraph {streaming_callback.paragraph_count[agent_name]} Complete:")
+                    print(f"{streaming_callback.buffers[agent_name].strip()}")
+                    streaming_callback.paragraph_count[agent_name] += 1
+                    streaming_callback.buffers[agent_name] = ""
+            else:
+                streaming_callback.buffers[agent_name] += token + " "
+                print(f"\r{agent_name} | {streaming_callback.buffers[agent_name].strip()}", end="", flush=True)
+
+    if is_final:
+        print(f"\n✅ {agent_name} completed!")
+
+# Create agents
+agents = [
+    Agent(agent_name="Researcher", model_name="gpt-4o-mini"),
+    Agent(agent_name="Analyst", model_name="gpt-4o-mini"),
+]
+
+# Initialize swarm
+swarm = HierarchicalSwarm(
+    name="Streaming-Analysis-Swarm",
+    agents=agents,
+    max_loops=1,
+    verbose=True,
+)
+
+# Execute with streaming
+task = "Analyze the impact of AI on the job market"
+result = swarm.run(task=task, streaming_callback=streaming_callback)
+```
+
+#### Parameters (step method)
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `task` | `str` | **Required** | The task to be executed in this step |
 | `img` | `str` | `None` | Optional image input for the agents |
+| `streaming_callback` | `Callable[[str, str, bool], None]` | `None` | Optional callback for real-time streaming of agent outputs |
 | `*args` | `Any` | - | Additional positional arguments |
 | `**kwargs` | `Any` | - | Additional keyword arguments |
 
-#### Returns
+#### Returns (step method)
 
 | Type | Description |
 |------|-------------|
 | `str` | Feedback from the director based on agent outputs |
 
-#### Example
+#### Example (step method)
 
 ```python
 from swarms import Agent
@@ -166,26 +220,23 @@ feedback = swarm.step(task=task)
 print("Director Feedback:", feedback)
 ```
 
-### `batched_run(tasks, img=None, *args, **kwargs)`
-
-Executes the hierarchical swarm for a list of tasks, processing each task through the complete workflow.
-
-#### Parameters
+#### Parameters (batched_run method)
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `tasks` | `List[str]` | **Required** | List of tasks to be processed |
 | `img` | `str` | `None` | Optional image input for the agents |
+| `streaming_callback` | `Callable[[str, str, bool], None]` | `None` | Optional callback for real-time streaming of agent outputs |
 | `*args` | `Any` | - | Additional positional arguments |
 | `**kwargs` | `Any` | - | Additional keyword arguments |
 
-#### Returns
+#### Returns (batched_run method)
 
 | Type | Description |
 |------|-------------|
 | `List[Any]` | List of results for each task |
 
-#### Example
+#### Example (batched_run method)
 
 ```python
 from swarms import Agent
@@ -334,14 +385,98 @@ The `HierarchicalSwarm` supports various output formats through the `output_type
 | `"str"` | Returns conversation history as a string | For simple text output |
 | `"list"` | Returns conversation history as a list | For sequential processing |
 
+## Streaming Callbacks
+
+The `HierarchicalSwarm` supports real-time streaming of agent outputs through optional callback functions. This feature allows you to monitor the text generation process as it happens, token by token.
+
+### Streaming Callback Function Signature
+
+```python
+def streaming_callback(agent_name: str, chunk: str, is_final: bool) -> None:
+    """
+    Callback function for real-time streaming of agent outputs.
+
+    Args:
+        agent_name (str): The name of the agent producing the output
+        chunk (str): The chunk of text generated (empty if is_final=True)
+        is_final (bool): True when the agent has completed its task
+    """
+    pass
+```
+
+### Streaming Callback Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `agent_name` | `str` | The name of the agent currently generating output |
+| `chunk` | `str` | The text chunk generated by the agent |
+| `is_final` | `bool` | Indicates if this is the final chunk (agent completed) |
+
+### Live Paragraph Formation
+
+The streaming callback can accumulate tokens to show live paragraph formation:
+
+```python
+def live_paragraph_callback(agent_name: str, chunk: str, is_final: bool):
+    """Shows live paragraph formation as text is generated."""
+    if not hasattr(live_paragraph_callback, 'buffers'):
+        live_paragraph_callback.buffers = {}
+
+    if agent_name not in live_paragraph_callback.buffers:
+        live_paragraph_callback.buffers[agent_name] = ""
+        print(f"\n🎬 {agent_name} starting...")
+
+    if chunk.strip():
+        tokens = chunk.replace('\n', ' \n ').split()
+        for token in tokens:
+            if token == '\n':
+                if live_paragraph_callback.buffers[agent_name].strip():
+                    print(f"\n📄 {agent_name} - Paragraph Complete:")
+                    print(f"{live_paragraph_callback.buffers[agent_name].strip()}")
+                    live_paragraph_callback.buffers[agent_name] = ""
+            else:
+                live_paragraph_callback.buffers[agent_name] += token + " "
+                print(f"\r{agent_name} | {live_paragraph_callback.buffers[agent_name].strip()}", end="", flush=True)
+
+    if is_final:
+        print(f"\n✅ {agent_name} completed!")
+```
+
+### Streaming Use Cases
+
+- **Real-time Monitoring**: Watch agents work simultaneously
+- **Progress Tracking**: See text formation token by token
+- **Live Debugging**: Monitor agent performance in real-time
+- **User Experience**: Provide live feedback to users
+- **Logging**: Capture detailed execution traces
+
+### Streaming in Different Methods
+
+Streaming callbacks work with all execution methods:
+
+```python
+# Single task with streaming
+result = swarm.run(task=task, streaming_callback=my_callback)
+
+# Single step with streaming
+result = swarm.step(task=task, streaming_callback=my_callback)
+
+# Batch processing with streaming
+results = swarm.batched_run(tasks=tasks, streaming_callback=my_callback)
+```
+
 ## Best Practices
 
-1. **Agent Specialization**: Create agents with specific, well-defined expertise areas
-2. **Clear Task Descriptions**: Provide detailed, actionable task descriptions
-3. **Appropriate Loop Count**: Set `max_loops` based on task complexity (1-3 for most tasks)
-4. **Verbose Logging**: Enable verbose mode during development for debugging
-5. **Context Preservation**: Leverage the built-in conversation history for continuity
-6. **Error Handling**: Implement proper error handling for production use
+| Best Practice                | Description                                                                                      |
+|------------------------------|--------------------------------------------------------------------------------------------------|
+| **Agent Specialization**     | Create agents with specific, well-defined expertise areas                                        |
+| **Clear Task Descriptions**  | Provide detailed, actionable task descriptions                                                  |
+| **Appropriate Loop Count**   | Set `max_loops` based on task complexity (1-3 for most tasks)                                   |
+| **Verbose Logging**          | Enable verbose mode during development for debugging                                             |
+| **Context Preservation**     | Leverage the built-in conversation history for continuity                                       |
+| **Error Handling**           | Implement proper error handling for production use                                              |
+| **Streaming Callbacks**      | Use streaming callbacks for real-time monitoring and user feedback                              |
+| **Callback Performance**     | Keep streaming callbacks lightweight to avoid blocking the main execution thread                |
 
 ## Error Handling
 
@@ -357,4 +492,4 @@ The `HierarchicalSwarm` includes comprehensive error handling with detailed logg
 - **Loop Optimization**: Balance between thoroughness and performance with `max_loops`
 - **Agent Count**: More agents increase coordination overhead
 - **Model Selection**: Choose appropriate models for your use case and budget
-- **Verbose Mode**: Disable verbose logging in production for better performance 
+- **Verbose Mode**: Disable verbose logging in production for better performance

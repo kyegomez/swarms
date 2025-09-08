@@ -6,6 +6,7 @@ from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.batch_agent_execution import batch_agent_execution
+from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.council_as_judge import CouncilAsAJudge
@@ -100,7 +101,6 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
-from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 
 __all__ = [
     "Agent",

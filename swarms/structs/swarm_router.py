@@ -659,10 +659,9 @@ class SwarmRouter:
 
     def _run(
         self,
-        task: str,
+        task: Optional[str] = None,
+        tasks: Optional[List[str]] = None,
         img: Optional[str] = None,
-        model_response: Optional[str] = None,
-        imgs: Optional[List[str]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -690,8 +689,21 @@ class SwarmRouter:
             enabled_on=self.telemetry_enabled,
         )
 
+        args = {}
+
+        if tasks is not None:
+            args["tasks"] = tasks
+        else:
+            args["task"] = task
+
+        if img is not None:
+            args["img"] = img
+
         try:
-            result = self.swarm.run(task=task, *args, **kwargs)
+            if self.swarm_type == "BatchedGridWorkflow":
+                result = self.swarm.run(**args, **kwargs)
+            else:
+                result = self.swarm.run(**args, **kwargs)
 
             log_execution(
                 swarm_id=self.id,
@@ -718,10 +730,9 @@ class SwarmRouter:
 
     def run(
         self,
-        task: str,
+        task: Optional[str] = None,
         img: Optional[str] = None,
-        imgs: Optional[List[str]] = None,
-        model_response: Optional[str] = None,
+        tasks: Optional[List[str]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -746,8 +757,7 @@ class SwarmRouter:
             return self._run(
                 task=task,
                 img=img,
-                imgs=imgs,
-                model_response=model_response,
+                tasks=tasks,
                 *args,
                 **kwargs,
             )
