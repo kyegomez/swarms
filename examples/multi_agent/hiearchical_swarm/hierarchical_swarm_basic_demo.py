@@ -46,11 +46,8 @@ if __name__ == "__main__":
     print("\nExecuting with streaming callback:\n")
 
     # Run with streaming
-    result = swarm.run(
-        task=task,
-        streaming_callback=simple_callback
-    )
+    result = swarm.run(task=task, streaming_callback=simple_callback)
 
-    print("\n" + "="*30)
+    print("\n" + "=" * 30)
     print("Final result:")
     print(result)

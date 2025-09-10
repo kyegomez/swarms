@@ -1,3 +1,9 @@
+"""
+
+Senator Assembly: A Large-Scale Multi-Agent Simulation of the US Senate
+
+"""
+
 from functools import lru_cache
 from typing import Dict, List, Optional
 

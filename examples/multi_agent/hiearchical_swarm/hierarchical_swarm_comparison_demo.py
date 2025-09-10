@@ -61,22 +61,30 @@ def run_traditional_swarm():
     print("\nResult:")
     if isinstance(result, dict):
         for key, value in result.items():
-            print(f"{key}: {value[:200]}..." if len(str(value)) > 200 else f"{key}: {value}")
+            print(
+                f"{key}: {value[:200]}..."
+                if len(str(value)) > 200
+                else f"{key}: {value}"
+            )
     else:
-        print(result[:500] + "..." if len(str(result)) > 500 else result)
+        print(
+            result[:500] + "..." if len(str(result)) > 500 else result
+        )
 
 
 def run_streaming_swarm():
     """Run swarm with streaming callbacks."""
-    import time
-    from typing import Callable
 
     def simple_callback(agent_name: str, chunk: str, is_final: bool):
         if chunk.strip():
             if is_final:
                 print(f"\n✅ {agent_name} completed")
             else:
-                print(f"🔄 {agent_name}: {chunk[:50]}..." if len(chunk) > 50 else f"🔄 {agent_name}: {chunk}")
+                print(
+                    f"🔄 {agent_name}: {chunk[:50]}..."
+                    if len(chunk) > 50
+                    else f"🔄 {agent_name}: {chunk}"
+                )
 
     print("\n🎯 STREAMING SWARM EXECUTION")
     print("-" * 50)
@@ -95,22 +103,25 @@ def run_streaming_swarm():
 
     print(f"Task: {task}")
 
-    result = swarm.run(
-        task=task,
-        streaming_callback=simple_callback
-    )
+    result = swarm.run(task=task, streaming_callback=simple_callback)
 
     print("\nResult:")
     if isinstance(result, dict):
         for key, value in result.items():
-            print(f"{key}: {value[:200]}..." if len(str(value)) > 200 else f"{key}: {value}")
+            print(
+                f"{key}: {value[:200]}..."
+                if len(str(value)) > 200
+                else f"{key}: {value}"
+            )
     else:
-        print(result[:500] + "..." if len(str(result)) > 500 else result)
+        print(
+            result[:500] + "..." if len(str(result)) > 500 else result
+        )
 
 
 if __name__ == "__main__":
     print("🔄 HIERARCHICAL SWARM COMPARISON DEMO")
-    print("="*50)
+    print("=" * 50)
     print("Comparing traditional vs streaming execution\n")
 
     # Run traditional first
@@ -119,6 +130,6 @@ if __name__ == "__main__":
     # Run streaming second
     run_streaming_swarm()
 
-    print("\n" + "="*50)
+    print("\n" + "=" * 50)
     print("✨ Comparison complete!")
     print("Notice how streaming shows progress in real-time")

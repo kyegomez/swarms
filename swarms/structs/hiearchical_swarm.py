@@ -743,11 +743,10 @@ class HierarchicalSwarm:
         self.multi_agent_prompt_improvements = (
             multi_agent_prompt_improvements
         )
-        
-        self.reliability_checks()
 
+        self.initialize_swarm()
 
-    def reliability_checks(self):
+    def initialize_swarm(self):
         if self.interactive:
             self.agents_no_print()
 
@@ -767,7 +766,7 @@ class HierarchicalSwarm:
             )
 
         self.init_swarm()
-        
+
     def list_worker_agents(self) -> str:
         return list_all_agents(
             agents=self.agents,
@@ -798,7 +797,7 @@ class HierarchicalSwarm:
         Returns:
             str: The reasoning output from the agent
         """
-        
+
         agent = Agent(
             agent_name=self.director_name,
             agent_description=f"You're the {self.director_name} agent that is responsible for reasoning about the task and creating a plan for the swarm to accomplish the task.",
@@ -1044,9 +1043,16 @@ class HierarchicalSwarm:
             logger.error(error_msg)
             raise e
 
-    def step(self, task: str, img: str = None, streaming_callback: Optional[
-        Callable[[str, str, bool], None]
-    ] = None, *args, **kwargs):
+    def step(
+        self,
+        task: str,
+        img: str = None,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+        *args,
+        **kwargs,
+    ):
         """
         Execute a single step of the hierarchical swarm workflow.
 
@@ -1106,7 +1112,9 @@ class HierarchicalSwarm:
                 self.dashboard.update_director_status("EXECUTING")
 
             # Execute the orders
-            outputs = self.execute_orders(orders, streaming_callback=streaming_callback)
+            outputs = self.execute_orders(
+                orders, streaming_callback=streaming_callback
+            )
 
             if self.verbose:
                 logger.info(f"[EXEC] Executed {len(outputs)} orders")
@@ -1213,7 +1221,11 @@ class HierarchicalSwarm:
                 # Execute one step of the swarm
                 try:
                     last_output = self.step(
-                        task=loop_task, img=img, streaming_callback=streaming_callback, *args, **kwargs
+                        task=loop_task,
+                        img=img,
+                        streaming_callback=streaming_callback,
+                        *args,
+                        **kwargs,
                     )
 
                     if self.verbose:
@@ -1334,9 +1346,14 @@ class HierarchicalSwarm:
             logger.error(error_msg)
 
     def call_single_agent(
-        self, agent_name: str, task: str, streaming_callback: Optional[
+        self,
+        agent_name: str,
+        task: str,
+        streaming_callback: Optional[
             Callable[[str, str, bool], None]
-        ] = None, *args, **kwargs
+        ] = None,
+        *args,
+        **kwargs,
     ):
         """
         Call a single agent by name to execute a specific task.
@@ -1393,11 +1410,14 @@ class HierarchicalSwarm:
 
             # Handle streaming callback if provided
             if streaming_callback is not None:
+
                 def agent_streaming_callback(chunk: str):
                     """Wrapper for agent streaming callback."""
                     try:
                         if chunk is not None and chunk.strip():
-                            streaming_callback(agent_name, chunk, False)
+                            streaming_callback(
+                                agent_name, chunk, False
+                            )
                     except Exception as callback_error:
                         if self.verbose:
                             logger.warning(
@@ -1589,9 +1609,13 @@ class HierarchicalSwarm:
             logger.error(error_msg)
             raise e
 
-    def execute_orders(self, orders: list, streaming_callback: Optional[
-        Callable[[str, str, bool], None]
-    ] = None):
+    def execute_orders(
+        self,
+        orders: list,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+    ):
         """
         Execute all orders from the director's output.
 
@@ -1632,7 +1656,9 @@ class HierarchicalSwarm:
                     )
 
                 output = self.call_single_agent(
-                    order.agent_name, order.task, streaming_callback=streaming_callback
+                    order.agent_name,
+                    order.task,
+                    streaming_callback=streaming_callback,
                 )
 
                 # Update dashboard with completed status
@@ -1661,9 +1687,14 @@ class HierarchicalSwarm:
             logger.error(error_msg)
 
     def batched_run(
-        self, tasks: List[str], img: str = None, streaming_callback: Optional[
+        self,
+        tasks: List[str],
+        img: str = None,
+        streaming_callback: Optional[
             Callable[[str, str, bool], None]
-        ] = None, *args, **kwargs
+        ] = None,
+        *args,
+        **kwargs,
     ):
         """
         Execute the hierarchical swarm for multiple tasks in sequence.
@@ -1701,7 +1732,13 @@ class HierarchicalSwarm:
 
             # Process each task in parallel
             for task in tasks:
-                result = self.run(task, img, streaming_callback=streaming_callback, *args, **kwargs)
+                result = self.run(
+                    task,
+                    img,
+                    streaming_callback=streaming_callback,
+                    *args,
+                    **kwargs,
+                )
                 results.append(result)
 
             if self.verbose:

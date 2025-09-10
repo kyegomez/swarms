@@ -33,7 +33,7 @@ def streaming_callback(agent_name: str, chunk: str, is_final: bool):
     timestamp = time.strftime("%H:%M:%S")
 
     # Store accumulated text for each agent to track paragraph formation
-    if not hasattr(streaming_callback, 'agent_buffers'):
+    if not hasattr(streaming_callback, "agent_buffers"):
         streaming_callback.agent_buffers = {}
         streaming_callback.paragraph_count = {}
 
@@ -42,39 +42,59 @@ def streaming_callback(agent_name: str, chunk: str, is_final: bool):
         streaming_callback.agent_buffers[agent_name] = ""
         streaming_callback.paragraph_count[agent_name] = 1
         print(f"\n🎬 [{timestamp}] {agent_name} starting...")
-        print("="*60)
+        print("=" * 60)
 
     if chunk.strip():
         # Split chunk into tokens (words/punctuation)
-        tokens = chunk.replace('\n', ' \n ').split()
+        tokens = chunk.replace("\n", " \n ").split()
 
         for token in tokens:
             # Handle paragraph breaks
-            if token == '\n':
-                if streaming_callback.agent_buffers[agent_name].strip():
-                    print(f"\n📄 [{timestamp}] {agent_name} - Paragraph {streaming_callback.paragraph_count[agent_name]} Complete:")
-                    print(f"{streaming_callback.agent_buffers[agent_name].strip()}")
-                    print("="*60)
-                    streaming_callback.paragraph_count[agent_name] += 1
+            if token == "\n":
+                if streaming_callback.agent_buffers[
+                    agent_name
+                ].strip():
+                    print(
+                        f"\n📄 [{timestamp}] {agent_name} - Paragraph {streaming_callback.paragraph_count[agent_name]} Complete:"
+                    )
+                    print(
+                        f"{streaming_callback.agent_buffers[agent_name].strip()}"
+                    )
+                    print("=" * 60)
+                    streaming_callback.paragraph_count[
+                        agent_name
+                    ] += 1
                     streaming_callback.agent_buffers[agent_name] = ""
             else:
                 # Add token to buffer and show live accumulation
-                streaming_callback.agent_buffers[agent_name] += token + " "
+                streaming_callback.agent_buffers[agent_name] += (
+                    token + " "
+                )
 
                 # Clear line and show current paragraph
-                print(f"\r[{timestamp}] {agent_name} | {streaming_callback.agent_buffers[agent_name].strip()}", end="", flush=True)
+                print(
+                    f"\r[{timestamp}] {agent_name} | {streaming_callback.agent_buffers[agent_name].strip()}",
+                    end="",
+                    flush=True,
+                )
 
     if is_final:
         print()  # New line after live updates
         # Print any remaining content as final paragraph
         if streaming_callback.agent_buffers[agent_name].strip():
-            print(f"\n✅ [{timestamp}] {agent_name} COMPLETED - Final Paragraph:")
-            print(f"{streaming_callback.agent_buffers[agent_name].strip()}")
+            print(
+                f"\n✅ [{timestamp}] {agent_name} COMPLETED - Final Paragraph:"
+            )
+            print(
+                f"{streaming_callback.agent_buffers[agent_name].strip()}"
+            )
             print()
 
         print(f"🎯 [{timestamp}] {agent_name} finished processing")
-        print(f"📊 Total paragraphs processed: {streaming_callback.paragraph_count[agent_name] - 1}")
-        print("="*60)
+        print(
+            f"📊 Total paragraphs processed: {streaming_callback.paragraph_count[agent_name] - 1}"
+        )
+        print("=" * 60)
 
 
 def create_sample_agents():
@@ -141,15 +161,18 @@ def main():
     """
 
     print(f"📋 Task: {task.strip()}")
-    print("\n🎯 Starting hierarchical swarm with live paragraph streaming...")
+    print(
+        "\n🎯 Starting hierarchical swarm with live paragraph streaming..."
+    )
     print("Watch as agents build complete paragraphs in real-time!\n")
-    print("Each token accumulates to form readable text, showing the full paragraph as it builds.\n")
+    print(
+        "Each token accumulates to form readable text, showing the full paragraph as it builds.\n"
+    )
 
     # Run the swarm with streaming callback
     try:
         result = swarm.run(
-            task=task,
-            streaming_callback=streaming_callback
+            task=task, streaming_callback=streaming_callback
         )
 
         print("\n🎉 Swarm execution completed!")
@@ -168,7 +191,7 @@ def simple_callback_example():
 
     def simple_callback(agent_name: str, chunk: str, is_final: bool):
         """Simple callback that shows live paragraph formation."""
-        if not hasattr(simple_callback, 'buffer'):
+        if not hasattr(simple_callback, "buffer"):
             simple_callback.buffer = {}
             simple_callback.token_count = {}
 
@@ -177,18 +200,26 @@ def simple_callback_example():
             simple_callback.token_count[agent_name] = 0
 
         if chunk.strip():
-            tokens = chunk.replace('\n', ' \n ').split()
+            tokens = chunk.replace("\n", " \n ").split()
             for token in tokens:
                 if token.strip():
                     simple_callback.token_count[agent_name] += 1
                     simple_callback.buffer[agent_name] += token + " "
                     # Show live accumulation
-                    print(f"\r{agent_name} | {simple_callback.buffer[agent_name].strip()}", end="", flush=True)
+                    print(
+                        f"\r{agent_name} | {simple_callback.buffer[agent_name].strip()}",
+                        end="",
+                        flush=True,
+                    )
 
         if is_final:
             print()  # New line after live updates
-            print(f"✓ {agent_name} finished! Total tokens: {simple_callback.token_count[agent_name]}")
-            print(f"Final text: {simple_callback.buffer[agent_name].strip()}")
+            print(
+                f"✓ {agent_name} finished! Total tokens: {simple_callback.token_count[agent_name]}"
+            )
+            print(
+                f"Final text: {simple_callback.buffer[agent_name].strip()}"
+            )
             print("-" * 40)
 
     # Create simple agents

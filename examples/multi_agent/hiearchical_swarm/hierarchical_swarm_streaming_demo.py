@@ -11,7 +11,9 @@ def create_streaming_callback() -> Callable[[str, str, bool], None]:
     agent_buffers = {}
     paragraph_count = {}
 
-    def streaming_callback(agent_name: str, chunk: str, is_final: bool):
+    def streaming_callback(
+        agent_name: str, chunk: str, is_final: bool
+    ):
         timestamp = time.strftime("%H:%M:%S")
 
         # Initialize buffers for new agents
@@ -19,19 +21,21 @@ def create_streaming_callback() -> Callable[[str, str, bool], None]:
             agent_buffers[agent_name] = ""
             paragraph_count[agent_name] = 1
             print(f"\n🎬 [{timestamp}] {agent_name} starting...")
-            print("="*60)
+            print("=" * 60)
 
         if chunk.strip():
             # Split chunk into tokens (words/punctuation)
-            tokens = chunk.replace('\n', ' \n ').split()
+            tokens = chunk.replace("\n", " \n ").split()
 
             for token in tokens:
                 # Handle paragraph breaks
-                if token == '\n':
+                if token == "\n":
                     if agent_buffers[agent_name].strip():
-                        print(f"\n📄 [{timestamp}] {agent_name} - Paragraph {paragraph_count[agent_name]} Complete:")
+                        print(
+                            f"\n📄 [{timestamp}] {agent_name} - Paragraph {paragraph_count[agent_name]} Complete:"
+                        )
                         print(f"{agent_buffers[agent_name].strip()}")
-                        print("="*60)
+                        print("=" * 60)
                         paragraph_count[agent_name] += 1
                         agent_buffers[agent_name] = ""
                 else:
@@ -39,19 +43,29 @@ def create_streaming_callback() -> Callable[[str, str, bool], None]:
                     agent_buffers[agent_name] += token + " "
 
                     # Clear line and show current paragraph
-                    print(f"\r[{timestamp}] {agent_name} | {agent_buffers[agent_name].strip()}", end="", flush=True)
+                    print(
+                        f"\r[{timestamp}] {agent_name} | {agent_buffers[agent_name].strip()}",
+                        end="",
+                        flush=True,
+                    )
 
         if is_final:
             print()  # New line after live updates
             # Print any remaining content as final paragraph
             if agent_buffers[agent_name].strip():
-                print(f"\n✅ [{timestamp}] {agent_name} COMPLETED - Final Paragraph:")
+                print(
+                    f"\n✅ [{timestamp}] {agent_name} COMPLETED - Final Paragraph:"
+                )
                 print(f"{agent_buffers[agent_name].strip()}")
                 print()
 
-            print(f"🎯 [{timestamp}] {agent_name} finished processing")
-            print(f"📊 Total paragraphs processed: {paragraph_count[agent_name] - 1}")
-            print("="*60)
+            print(
+                f"🎯 [{timestamp}] {agent_name} finished processing"
+            )
+            print(
+                f"📊 Total paragraphs processed: {paragraph_count[agent_name] - 1}"
+            )
+            print("=" * 60)
 
     return streaming_callback
 
@@ -88,7 +102,7 @@ def create_agents():
 
 if __name__ == "__main__":
     print("🎯 HIERARCHICAL SWARM STREAMING DEMO")
-    print("="*50)
+    print("=" * 50)
 
     # Create agents and swarm
     agents = create_agents()

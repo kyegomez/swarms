@@ -364,6 +364,7 @@ nav:
           - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
           - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
           - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
+          - Message Transforms for Context Management: "swarms/structs/transforms.md"
         - Vision:
           - Agents with Vision: "swarms/examples/vision_processing.md"
           - Agent with Multiple Images: "swarms/examples/multiple_images.md"

@@ -23,7 +23,11 @@ def create_batch_callback() -> Callable[[str, str, bool], None]:
                 print(f"\n✅ [{timestamp}] {agent_name} COMPLETED")
             else:
                 # Shorter output for batch processing
-                print(f"🔄 {agent_name}: {chunk[:30]}..." if len(chunk) > 30 else f"🔄 {agent_name}: {chunk}")
+                print(
+                    f"🔄 {agent_name}: {chunk[:30]}..."
+                    if len(chunk) > 30
+                    else f"🔄 {agent_name}: {chunk}"
+                )
 
     return batch_callback
 
@@ -50,7 +54,7 @@ def create_agents():
 
 if __name__ == "__main__":
     print("📦 HIERARCHICAL SWARM BATCH PROCESSING DEMO")
-    print("="*50)
+    print("=" * 50)
 
     # Create agents and swarm
     agents = create_agents()
@@ -67,7 +71,7 @@ if __name__ == "__main__":
     tasks = [
         "What are the environmental benefits of solar energy?",
         "How does wind power contribute to sustainable development?",
-        "What are the economic advantages of hydroelectric power?"
+        "What are the economic advantages of hydroelectric power?",
     ]
 
     print(f"Processing {len(tasks)} tasks:")
@@ -87,7 +91,7 @@ if __name__ == "__main__":
         streaming_callback=streaming_callback,
     )
 
-    print("\n" + "="*50)
+    print("\n" + "=" * 50)
     print("🎉 BATCH PROCESSING COMPLETED!")
     print(f"Processed {len(results)} tasks")
 

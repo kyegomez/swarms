@@ -57,6 +57,11 @@ from swarms.schemas.mcp_schemas import (
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
+from swarms.structs.transforms import (
+    MessageTransforms,
+    TransformConfig,
+    handle_transforms,
+)
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
@@ -188,6 +193,7 @@ class Agent:
         saved_state_path (str): The path to the saved state
         autosave (bool): Autosave the state
         context_length (int): The context length
+        transforms (Optional[Union[TransformConfig, dict]]): Message transformation configuration for handling context limits
         user_name (str): The user name
         self_healing_enabled (bool): Enable self healing
         code_interpreter (bool): Enable code interpreter
@@ -324,6 +330,7 @@ class Agent:
         saved_state_path: Optional[str] = None,
         autosave: Optional[bool] = False,
         context_length: Optional[int] = 8192,
+        transforms: Optional[Union[TransformConfig, dict]] = None,
         user_name: Optional[str] = "Human",
         self_healing_enabled: Optional[bool] = False,
         code_interpreter: Optional[bool] = False,
@@ -459,6 +466,20 @@ class Agent:
         self.dynamic_loops = dynamic_loops
         self.user_name = user_name
         self.context_length = context_length
+
+        # Initialize transforms
+        if transforms is None:
+            self.transforms = None
+        elif isinstance(transforms, TransformConfig):
+            self.transforms = MessageTransforms(transforms)
+        elif isinstance(transforms, dict):
+            config = TransformConfig(**transforms)
+            self.transforms = MessageTransforms(config)
+        else:
+            raise ValueError(
+                "transforms must be a TransformConfig object or a dictionary"
+            )
+
         self.sop = sop
         self.sop_list = sop_list
         self.tools = tools
@@ -1162,10 +1183,19 @@ class Agent:
                 if self.dynamic_temperature_enabled is True:
                     self.dynamic_temperature()
 
-                # Task prompt
-                task_prompt = (
-                    self.short_memory.return_history_as_string()
-                )
+                # Task prompt with optional transforms
+                if self.transforms is not None:
+                    task_prompt = handle_transforms(
+                        transforms=self.transforms,
+                        short_memory=self.short_memory,
+                        model_name=self.model_name,
+                    )
+
+                else:
+                    # Use original method if no transforms
+                    task_prompt = (
+                        self.short_memory.return_history_as_string()
+                    )
 
                 # Parameters
                 attempt = 0
