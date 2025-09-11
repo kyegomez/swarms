@@ -7,20 +7,12 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import wraps
 from typing import Any, Dict, List, Literal, Optional, Union
+from urllib.parse import urlparse
 
 from litellm.types.utils import ChatCompletionMessageToolCall
 from loguru import logger
 from mcp import ClientSession
-
-try:
-    from mcp.client.streamable_http import streamablehttp_client
-except ImportError:
-    logger.error(
-        "streamablehttp_client is not available. Please ensure the MCP SDK is up to date with pip3 install -U mcp"
-    )
-
-from urllib.parse import urlparse
-
+from mcp.client.streamable_http import streamablehttp_client
 from mcp.types import (
     CallToolRequestParams as MCPCallToolRequestParams,
 )
@@ -281,7 +273,7 @@ def connect_to_mcp_server(connection: MCPConnection = None):
     return (
         headers,
         connection.timeout or 5,
-        connection.transport or "sse",
+        connection.transport or "streamable-http",
         connection.url,
     )
 
@@ -289,9 +281,9 @@ def connect_to_mcp_server(connection: MCPConnection = None):
 def get_mcp_client(transport, url, headers=None, timeout=5, **kwargs):
     """
     Helper to select the correct MCP client context manager based on transport.
-    Supports 'sse' (default) and 'streamable_http'.
+    Supports 'streamable_http' (default).
     Args:
-        transport (str): The transport type ('sse' or 'streamable_http').
+        transport (str): The transport type ('streamable_http').
         url (str): The server URL.
         headers (dict): Optional headers.
         timeout (int): Timeout in seconds.
@@ -323,7 +315,7 @@ def auto_detect_transport(url: str) -> str:
     """
     Guess the MCP transport based on the URL scheme and path.
     Does not make any network requests.
-    Returns one of: 'streamable_http', 'sse', or 'stdio'.
+    Returns one of: 'streamable_http' or 'stdio'.
     Args:
         url (str): The server URL.
     Returns:
@@ -336,19 +328,16 @@ def auto_detect_transport(url: str) -> str:
             f"Automatically selected 'streamable_http' transport for {url}"
         )
         return "streamable_http"
-    elif scheme in ("ws", "wss"):
-        logger.info(
-            f"Automatically selected 'sse' transport for {url}"
-        )
-        return "sse"  # or 'websocket' if you support it
     elif "stdio" in url or scheme == "":
         logger.info(
             f"Automatically selected 'stdio' transport for {url}"
         )
         return "stdio"
     else:
-        logger.info(f"Defaulting to 'sse' transport for {url}")
-        return "sse"
+        logger.info(
+            f"Defaulting to 'streamable_http' transport for {url}"
+        )
+        return "streamable-http"
 
 
 @retry_with_backoff(retries=3)
@@ -430,7 +419,7 @@ def get_mcp_tools_sync(
     server_path: Optional[str] = None,
     format: str = "openai",
     connection: Optional[MCPConnection] = None,
-    transport: Optional[str] = None,
+    transport: Optional[str] = "streamable-http",
     *args,
     **kwargs,
 ) -> List[Dict[str, Any]]:
@@ -578,7 +567,7 @@ async def _execute_tool_call_simple(
     **kwargs,
 ):
     """
-    Execute a tool call using the MCP client, supporting both SSE and streamable HTTP.
+    Execute a tool call using the MCP client, supporting streamable HTTP.
     Args:
         response (any): The tool call request.
         server_path (str): The server URL.
@@ -605,7 +594,7 @@ async def _execute_tool_call_simple(
         headers, timeout, _transport, url = (
             None,
             5,
-            "sse",
+            "streamable-http",
             server_path,
         )
     try:
@@ -765,7 +754,7 @@ async def _create_server_tool_mapping_async(
     urls: List[str],
     connections: List[MCPConnection] = None,
     format: str = "openai",
-    transport: str = "sse",
+    transport: str = "streamable-http",
 ) -> Dict[str, Dict[str, Any]]:
     """
     Async version: Create a mapping of function names to server information for all MCP servers.
@@ -819,7 +808,7 @@ async def _execute_tool_on_server(
     tool_call: Dict[str, Any],
     server_info: Dict[str, Any],
     output_type: Literal["json", "dict", "str", "formatted"] = "str",
-    transport: str = "sse",
+    transport: str = "streamable-http",
 ) -> Dict[str, Any]:
     """
     Execute a single tool call on a specific server.
@@ -870,7 +859,7 @@ async def execute_multiple_tools_on_multiple_mcp_servers(
     connections: List[MCPConnection] = None,
     output_type: Literal["json", "dict", "str", "formatted"] = "str",
     max_concurrent: Optional[int] = None,
-    transport: str = "sse",
+    transport: str = "streamable-http",
     *args,
     **kwargs,
 ) -> List[Dict[str, Any]]:
@@ -1105,7 +1094,7 @@ def execute_multiple_tools_on_multiple_mcp_servers_sync(
     connections: List[MCPConnection] = None,
     output_type: Literal["json", "dict", "str", "formatted"] = "str",
     max_concurrent: Optional[int] = None,
-    transport: str = "sse",
+    transport: str = "streamable-http",
     *args,
     **kwargs,
 ) -> List[Dict[str, Any]]:

@@ -11,6 +11,36 @@ from swarms.structs.swarm_id import swarm_id
 
 
 class BatchedGridWorkflow:
+    """
+    A workflow class for executing tasks in a batched grid pattern.
+
+    This class implements a batched grid workflow where multiple agents can execute
+    tasks concurrently in a grid-like fashion. Each agent processes tasks independently,
+    and the workflow can be run for multiple loops to enable iterative processing.
+
+    The workflow supports:
+    - Concurrent task execution across multiple agents
+    - Configurable number of execution loops
+    - Error handling and logging for robust operation
+    - Unique identification and naming for workflow instances
+
+    Attributes:
+        id (str): Unique identifier for the workflow instance.
+        name (str): Human-readable name for the workflow.
+        description (str): Description of the workflow's purpose.
+        agents (List[AgentType]): List of agents to execute tasks.
+        max_loops (int): Maximum number of execution loops to perform.
+
+    Example:
+        >>> from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
+        >>> workflow = BatchedGridWorkflow(
+        ...     name="Data Processing Workflow",
+        ...     agents=[agent1, agent2, agent3],
+        ...     max_loops=3
+        ... )
+        >>> results = workflow.run(["task1", "task2", "task3"])
+    """
+
     def __init__(
         self,
         id: str = swarm_id(),
@@ -23,11 +53,11 @@ class BatchedGridWorkflow:
         Initialize a BatchedGridWorkflow instance.
 
         Args:
-            id: Unique identifier for the workflow
-            name: Name of the workflow
-            description: Description of what the workflow does
-            agents: List of agents to execute tasks
-            max_loops: Maximum number of execution loops to run (must be >= 1)
+            id: Unique identifier for the workflow.
+            name: Name of the workflow.
+            description: Description of what the workflow does.
+            agents: List of agents to execute tasks.
+            max_loops: Maximum number of execution loops to run (must be >= 1).
         """
         self.id = id
         self.name = name
@@ -44,10 +74,10 @@ class BatchedGridWorkflow:
         Execute one step of the batched grid workflow.
 
         Args:
-            tasks: List of tasks to execute
+            tasks: List of tasks to execute.
 
         Returns:
-            Output from the batched grid agent execution
+            Output from the batched grid agent execution.
         """
         return batched_grid_agent_execution(self.agents, tasks)
 
@@ -56,10 +86,10 @@ class BatchedGridWorkflow:
         Run the batched grid workflow with the given tasks.
 
         Args:
-            tasks: List of tasks to execute
+            tasks: List of tasks to execute.
 
         Returns:
-            List: Results from all execution loops
+            List: Results from all execution loops.
         """
         results = []
         current_loop = 0
@@ -75,11 +105,25 @@ class BatchedGridWorkflow:
     def run(self, tasks: List[str]):
         """
         Run the batched grid workflow with the given tasks.
+
+        Args:
+            tasks: List of tasks to execute.
+
+        Returns:
+            List: Results from all execution loops.
+
+        Raises:
+            Exception: If an error occurs during workflow execution.
         """
         try:
             return self.run_(tasks)
         except Exception as e:
             logger.error(
-                f"BatchedGridWorkflow Error: {self.name}\n\nId: {self.id}\n\nAn error occurred while running the batched grid workflow: {e}\nTraceback:\n{traceback.format_exc()}"
+                (
+                    f"BatchedGridWorkflow Error: {self.name}\n"
+                    f"Id: {self.id}\n"
+                    f"An error occurred while running the batched grid workflow: {e}\n"
+                    f"Traceback:\n{traceback.format_exc()}"
+                )
             )
-            raise e
+            raise

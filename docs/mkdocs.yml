@@ -363,7 +363,6 @@ nav:
           - Agents with Vision and Tool Usage: "swarms/examples/vision_tools.md"
           - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
           - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
-          - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
           - Message Transforms for Context Management: "swarms/structs/transforms.md"
         - Vision:
           - Agents with Vision: "swarms/examples/vision_processing.md"
@@ -404,7 +403,6 @@ nav:
         - SwarmRouter Example: "swarms/examples/swarm_router.md"
         - MultiAgentRouter Minimal Example: "swarms/examples/multi_agent_router_minimal.md"
         - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
-        # - MixtureOfAgents Example: "swarms/examples/mixture_of_agents.md"
         - Mixture of Agents Example: "swarms/examples/moa_example.md"
         - Unique Swarms: "swarms/examples/unique_swarms.md"
         - Agents as Tools: "swarms/examples/agents_as_tools.md"
@@ -414,9 +412,10 @@ nav:
           - Simple BatchedGridWorkflow: "swarms/examples/batched_grid_simple_example.md"
           - Advanced BatchedGridWorkflow: "swarms/examples/batched_grid_advanced_example.md"
         - Applications:
-          - Swarms DAO: "swarms/examples/swarms_dao.md"
           - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
           - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
+          - Hiearchical Marketing Team: "examples/marketing_team.md"
+          - Gold ETF Research with HeavySwarm: "examples/gold_etf_research.md"
     
     - Tools & Integrations:
       - Web Search with Exa: "examples/exa_search.md"
@@ -424,6 +423,10 @@ nav:
       - Browser Use: "examples/browser_use.md"
       - Yahoo Finance: "swarms/examples/yahoo_finance.md"
       - Firecrawl: "developer_guides/firecrawl.md"
+      
+      - MCP: 
+        - Multi-MCP Agent Integration: "swarms/examples/multi_mcp_agent.md"
+        - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
 
     - RAG:
       - RAG with Qdrant: "swarms/RAG/qdrant_rag.md"

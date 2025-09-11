@@ -395,20 +395,45 @@ class LiteLLM:
 
     def output_for_tools(self, response: any):
         if self.mcp_call is True:
-            out = response.choices[0].message.tool_calls[0].function
-            output = {
-                "function": {
-                    "name": out.name,
-                    "arguments": out.arguments,
+            # Check if tool_calls exists and is not None
+            if (
+                response.choices
+                and response.choices[0].message
+                and response.choices[0].message.tool_calls
+                and len(response.choices[0].message.tool_calls) > 0
+            ):
+                out = (
+                    response.choices[0].message.tool_calls[0].function
+                )
+                output = {
+                    "function": {
+                        "name": out.name,
+                        "arguments": out.arguments,
+                    }
                 }
-            }
-            return output
+                return output
+            else:
+                # Return a default response when no tool calls are present
+                return {
+                    "function": {
+                        "name": "no_tool_call",
+                        "arguments": "{}",
+                    }
+                }
         else:
-            out = response.choices[0].message.tool_calls
-
-            if isinstance(out, BaseModel):
-                out = out.model_dump()
-            return out
+            # Check if tool_calls exists and is not None
+            if (
+                response.choices
+                and response.choices[0].message
+                and response.choices[0].message.tool_calls
+            ):
+                out = response.choices[0].message.tool_calls
+                if isinstance(out, BaseModel):
+                    out = out.model_dump()
+                return out
+            else:
+                # Return empty list when no tool calls are present
+                return []
 
     def output_for_reasoning(self, response: any):
         """
