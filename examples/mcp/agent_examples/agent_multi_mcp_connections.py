@@ -39,8 +39,8 @@ agent = Agent(
     dynamic_temperature_enabled=True,
     output_type="all",
     mcp_urls=[
-        "http://0.0.0.0:8000/sse",
-        "http://0.0.0.0:8001/sse",
+        "http://0.0.0.0:8000/mcp",
+        "http://0.0.0.0:8001/mcp",
     ],
 )
 

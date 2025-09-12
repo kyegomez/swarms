@@ -13,12 +13,12 @@ response = {
 }
 
 connection = MCPConnection(
-    url="http://0.0.0.0:8000/sse",
+    url="http://0.0.0.0:8000/mcp",
     headers={"Authorization": "Bearer 1234567890"},
     timeout=10,
 )
 
-url = "http://0.0.0.0:8000/sse"
+url = "http://0.0.0.0:8000/mcp"
 
 if __name__ == "__main__":
     tools = asyncio.run(

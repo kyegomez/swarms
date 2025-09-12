@@ -40,7 +40,7 @@ agent = Agent(
     max_loops=2,
     tools_list_dictionary=tools,
     output_type="final",
-    mcp_url="http://0.0.0.0:8000/sse",
+    mcp_url="http://0.0.0.0:8000/mcp",
 )
 
 out = agent.run(
