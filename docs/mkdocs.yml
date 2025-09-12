@@ -328,7 +328,7 @@ nav:
       - Overview: "swarms_tools/overview.md"
       - BaseTool Reference: "swarms/tools/base_tool.md"
       - MCP Client Utils: "swarms/tools/mcp_client_call.md"
-      - MCP Agent Tool: "swarms/tools/mcp_agent_tool.md"
+      - MCP Agent Tool: "swarms/structsagent_mcp.md"
 
       - Vertical Tools:
         - Finance: "swarms_tools/finance.md"
@@ -371,7 +371,7 @@ nav:
           - Agent with Streaming: "examples/agent_stream.md"
           - Agent Output Types: "swarms/examples/agent_output_types.md"
           - Gradio Chat Interface: "swarms/ui/main.md"
-          - Agent with Gemini Nano Banana: "swarms/examples/jarvis_agent.md"
+          - Agent with Gemini Nano Banana: "examples/jarvis_agent.md"
         - LLM Providers:
           - Language Models:
             - How to Create A Custom Language Model: "swarms/models/custom_model.md"
