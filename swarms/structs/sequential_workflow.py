@@ -95,6 +95,7 @@ class SequentialWorkflow:
             max_loops=self.max_loops,
             output_type=self.output_type,
             team_awareness=self.team_awareness,
+            streaming_callback=self.streaming_callback,
             *args,
             **kwargs,
         )

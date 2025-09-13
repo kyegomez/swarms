@@ -387,7 +387,7 @@ class AgentRearrange:
                         for agent_name in agent_names:
                             agent = self.agents[agent_name]
                             # Set agent.streaming_on if no streaming_callback
-                            if self.streaming_callback is None:
+                            if self.streaming_callback is not None:
                                 agent.streaming_on = True
                             result = agent.run(
                                 task=self.conversation.get_str(),
@@ -437,7 +437,7 @@ class AgentRearrange:
                             )
 
                         # Set agent.streaming_on if no streaming_callback
-                        if self.streaming_callback is None:
+                        if self.streaming_callback is not None:
                             agent.streaming_on = True
                         current_task = agent.run(
                             task=self.conversation.get_str(),
