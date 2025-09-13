@@ -3,13 +3,13 @@ from swarms.schemas.mcp_schemas import MCPConnection
 
 
 mcp_config = MCPConnection(
-    url="http://0.0.0.0:8000/sse",
+    url="http://0.0.0.0:8000/mcp",
     # headers={"Authorization": "Bearer 1234567890"},
     timeout=5,
 )
 
 
-mcp_url = "http://0.0.0.0:8000/sse"
+mcp_url = "http://0.0.0.0:8000/mcp"
 
 # Initialize the agent
 agent = Agent(

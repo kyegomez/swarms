@@ -13,7 +13,7 @@ async def create_agent_via_mcp():
 
     # Connect to the MCP server using streamable HTTP
     try:
-        async with http_client("http://localhost:8000/mcp") as (
+        async with http_client("http://localhost:8001/mcp") as (
             read,
             write,
             _,

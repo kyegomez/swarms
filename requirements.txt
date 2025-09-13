@@ -29,3 +29,4 @@ numpy
 openai
 schedule
 uvloop
+litellm

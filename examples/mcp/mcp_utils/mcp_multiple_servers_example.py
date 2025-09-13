@@ -21,25 +21,25 @@ def example_sync_execution():
 
     # Example server URLs (replace with your actual MCP server URLs)
     urls = [
-        "http://localhost:8000/sse",  # Server 1
-        "http://localhost:8001/sse",  # Server 2
-        "http://localhost:8002/sse",  # Server 3
+        "http://localhost:8000/mcp",  # Server 1
+        "http://localhost:8001/mcp",  # Server 2
+        "http://localhost:8002/mcp",  # Server 3
     ]
 
     # Optional: Create connection objects for each server
     connections = [
         MCPConnection(
-            url="http://localhost:8000/sse",
+            url="http://localhost:8000/mcp",
             authorization_token="token1",  # if needed
             timeout=10,
         ),
         MCPConnection(
-            url="http://localhost:8001/sse",
+            url="http://localhost:8001/mcp",
             authorization_token="token2",  # if needed
             timeout=10,
         ),
         MCPConnection(
-            url="http://localhost:8002/sse",
+            url="http://localhost:8002/mcp",
             authorization_token="token3",  # if needed
             timeout=10,
         ),
@@ -111,9 +111,9 @@ async def example_async_execution():
 
     # Example server URLs
     urls = [
-        "http://localhost:8000/sse",
-        "http://localhost:8001/sse",
-        "http://localhost:8002/sse",
+        "http://localhost:8000/mcp",
+        "http://localhost:8001/mcp",
+        "http://localhost:8002/mcp",
     ]
 
     # Example responses with multiple tool calls in a single response
@@ -190,9 +190,9 @@ def example_get_tools_from_multiple_servers():
     """Example of getting tools from multiple servers."""
 
     urls = [
-        "http://localhost:8000/sse",
-        "http://localhost:8001/sse",
-        "http://localhost:8002/sse",
+        "http://localhost:8000/mcp",
+        "http://localhost:8001/mcp",
+        "http://localhost:8002/mcp",
     ]
 
     print("\n=== Getting Tools from Multiple Servers ===")
