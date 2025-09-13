@@ -38,6 +38,7 @@ class AgentRearrange:
         team_awareness: bool = False,
         time_enabled: bool = False,
         message_id_on: bool = False,
+        streaming_callback: Optional[Callable[[str], None]] = None,
         *args,
         **kwargs,
     ):
@@ -55,6 +56,7 @@ class AgentRearrange:
         self.autosave = autosave
         self.time_enabled = time_enabled
         self.message_id_on = message_id_on
+        self.streaming_callback = streaming_callback
 
         self.conversation = Conversation(
             name=f"{self.name}-Conversation",
@@ -384,6 +386,9 @@ class AgentRearrange:
 
                         for agent_name in agent_names:
                             agent = self.agents[agent_name]
+                            # Set agent.streaming_on if no streaming_callback
+                            if self.streaming_callback is None:
+                                agent.streaming_on = True
                             result = agent.run(
                                 task=self.conversation.get_str(),
                                 img=img,
@@ -391,6 +396,11 @@ class AgentRearrange:
                                 **kwargs,
                             )
                             result = any_to_str(result)
+
+
+                            # Call streaming callback with the result if provided
+                            if self.streaming_callback:
+                                self.streaming_callback(result)
 
                             self.conversation.add(
                                 agent.agent_name, result
@@ -426,6 +436,9 @@ class AgentRearrange:
                                 f"Added sequential awareness for {agent_name}: {awareness_info}"
                             )
 
+                        # Set agent.streaming_on if no streaming_callback
+                        if self.streaming_callback is None:
+                            agent.streaming_on = True
                         current_task = agent.run(
                             task=self.conversation.get_str(),
                             img=img,
@@ -433,6 +446,10 @@ class AgentRearrange:
                             **kwargs,
                         )
                         current_task = any_to_str(current_task)
+
+                        # Call streaming callback with the result if provided
+                        if self.streaming_callback:
+                            self.streaming_callback(current_task)
 
                         self.conversation.add(
                             agent.agent_name, current_task
