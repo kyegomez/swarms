@@ -44,7 +44,7 @@ agent = Agent(
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     max_loops=1,
     # tools_list_dictionary=tools,
-    # mcp_servers=["http://localhost:8000/sse"],
+    # mcp_servers=["http://localhost:8000/mcp"],
     # output_type="dict-all-except-first",
     #     "dict-final",
     # "dict-all-except-first",

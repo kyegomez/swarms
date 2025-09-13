@@ -13,7 +13,7 @@ Prerequisites:
    npm run build
    npm start
 
-2. The server will start on http://localhost:3000/sse
+2. The server will start on http://localhost:3000/mcp
 
 Features:
 - Automatic tool discovery from MCP server
@@ -41,7 +41,7 @@ class StagehandMCPAgent:
     def __init__(
         self,
         agent_name: str = "StagehandMCPAgent",
-        mcp_server_url: str = "http://localhost:3000/sse",
+        mcp_server_url: str = "http://localhost:3000/mcp",
         model_name: str = "gpt-4o-mini",
         max_loops: int = 1,
     ):
@@ -91,7 +91,7 @@ class MultiSessionBrowserSwarm:
 
     def __init__(
         self,
-        mcp_server_url: str = "http://localhost:3000/sse",
+        mcp_server_url: str = "http://localhost:3000/mcp",
         num_agents: int = 3,
     ):
         """
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     print("Stagehand MCP Server Integration Examples")
     print("=" * 70)
     print(
-        "\nMake sure the Stagehand MCP server is running on http://localhost:3000/sse"
+        "\nMake sure the Stagehand MCP server is running on http://localhost:3000/mcp"
     )
     print("Run: cd stagehand-mcp-server && npm start\n")
 
@@ -175,7 +175,7 @@ if __name__ == "__main__":
 
     mcp_agent = StagehandMCPAgent(
         agent_name="WebResearchAgent",
-        mcp_server_url="http://localhost:3000/sse",
+        mcp_server_url="http://localhost:3000/mcp",
     )
 
     # Research task using MCP tools
@@ -196,7 +196,7 @@ if __name__ == "__main__":
 
     parallel_agent = StagehandMCPAgent(
         agent_name="ParallelBrowserAgent",
-        mcp_server_url="http://localhost:3000/sse",
+        mcp_server_url="http://localhost:3000/mcp",
     )
 
     result2 = parallel_agent.run(
@@ -217,7 +217,7 @@ if __name__ == "__main__":
 
     # Create a swarm of specialized browser agents
     browser_swarm = MultiSessionBrowserSwarm(
-        mcp_server_url="http://localhost:3000/sse",
+        mcp_server_url="http://localhost:3000/mcp",
         num_agents=3,
     )
 
@@ -242,7 +242,7 @@ if __name__ == "__main__":
 
     workflow_agent = StagehandMCPAgent(
         agent_name="WorkflowAgent",
-        mcp_server_url="http://localhost:3000/sse",
+        mcp_server_url="http://localhost:3000/mcp",
         max_loops=2,  # Allow more complex reasoning
     )
 

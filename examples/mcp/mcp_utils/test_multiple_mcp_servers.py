@@ -14,8 +14,8 @@ def test_async_multiple_tools_execution():
     )
 
     urls = [
-        "http://localhost:8000/sse",
-        "http://localhost:8001/sse",
+        "http://localhost:8000/mcp",
+        "http://localhost:8001/mcp",
     ]
 
     # Mock responses with multiple tool calls

@@ -86,7 +86,7 @@ from examples.stagehand.stagehand_mcp_agent import StagehandMCPAgent
 # Connect to Stagehand MCP server
 mcp_agent = StagehandMCPAgent(
     agent_name="WebResearchAgent",
-    mcp_server_url="http://localhost:3000/sse",
+    mcp_server_url="http://localhost:3000/mcp",
 )
 
 # Use MCP tools including multi-session management

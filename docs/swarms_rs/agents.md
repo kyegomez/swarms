@@ -198,7 +198,7 @@ let agent = client
     .add_stdio_mcp_server("uvx", ["mcp-hn"])
     .await
     // Add SSE MCP server
-    .add_sse_mcp_server("file-browser", "http://127.0.0.1:8000/sse")
+    .add_sse_mcp_server("file-browser", "http://127.0.0.1:8000/mcp")
     .await
     .build();
 ```
@@ -235,7 +235,7 @@ async fn main() -> Result<()> {
         .await
         // Add filesystem tool
         // To set up: uvx mcp-proxy --sse-port=8000 -- npx -y @modelcontextprotocol/server-filesystem ~
-        .add_sse_mcp_server("file-browser", "http://127.0.0.1:8000/sse")
+        .add_sse_mcp_server("file-browser", "http://127.0.0.1:8000/mcp")
         .await
         .retry_attempts(2)
         .max_loops(3)

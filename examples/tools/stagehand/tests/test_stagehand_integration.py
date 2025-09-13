@@ -271,12 +271,12 @@ class TestStagehandMCP:
 
         mcp_agent = StagehandMCPAgent(
             agent_name="TestMCPAgent",
-            mcp_server_url="http://localhost:3000/sse",
+            mcp_server_url="http://localhost:3000/mcp",
             model_name="gpt-4o-mini",
         )
 
         assert mcp_agent.agent.agent_name == "TestMCPAgent"
-        assert mcp_agent.agent.mcp_url == "http://localhost:3000/sse"
+        assert mcp_agent.agent.mcp_url == "http://localhost:3000/mcp"
         assert mcp_agent.agent.model_name == "gpt-4o-mini"
 
     def test_multi_session_swarm_creation(self):
@@ -286,7 +286,7 @@ class TestStagehandMCP:
         )
 
         swarm = MultiSessionBrowserSwarm(
-            mcp_server_url="http://localhost:3000/sse",
+            mcp_server_url="http://localhost:3000/mcp",
             num_agents=3,
         )
 

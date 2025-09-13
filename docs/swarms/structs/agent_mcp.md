@@ -93,7 +93,7 @@ The **Model Context Protocol (MCP)** integration enables Swarms agents to dynami
         agent_name="Financial-Analysis-Agent",
         agent_description="AI-powered financial advisor",
         max_loops=1,
-        mcp_url="http://localhost:8000/sse",  # Your MCP server
+        mcp_url="http://localhost:8000/mcp",  # Your MCP server
         output_type="all",
     )
 
@@ -117,7 +117,7 @@ The **Model Context Protocol (MCP)** integration enables Swarms agents to dynami
         agent_description="Comprehensive market analysis agent",
         system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
         max_loops=3,
-        mcp_url="http://production-server:8000/sse",
+        mcp_url="http://production-server:8000/mcp",
         output_type="json",
         # Additional parameters for production
         temperature=0.1,
@@ -193,7 +193,7 @@ graph TD
 
     | Parameter | Type | Description | Default | Example |
     |-----------|------|-------------|---------|---------|
-    | `mcp_url` | `str` | MCP server endpoint | `None` | `"http://localhost:8000/sse"` |
+    | `mcp_url` | `str` | MCP server endpoint | `None` | `"http://localhost:8000/mcp"` |
     | `output_type` | `str` | Response format | `"str"` | `"json"`, `"all"`, `"dict"` |
     | `max_loops` | `int` | Execution iterations | `1` | `3` |
     | `temperature` | `float` | Response creativity | `0.1` | `0.1-1.0` |
@@ -214,7 +214,7 @@ graph TD
         agent_name="Crypto-Trading-Agent",
         agent_description="Real-time cryptocurrency market analyzer",
         max_loops=2,
-        mcp_url="http://crypto-server:8000/sse",
+        mcp_url="http://crypto-server:8000/mcp",
         output_type="json",
         temperature=0.1,
     )
@@ -241,7 +241,7 @@ graph TD
         agent_description="Comprehensive financial market analyst",
         system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
         max_loops=4,
-        mcp_url="http://finance-api:8000/sse",
+        mcp_url="http://finance-api:8000/mcp",
         output_type="all",
         temperature=0.2,
     )
@@ -269,7 +269,7 @@ graph TD
         agent_name="Healthcare-Data-Agent",
         agent_description="Medical data analysis and research assistant",
         max_loops=3,
-        mcp_url="http://medical-api:8000/sse",
+        mcp_url="http://medical-api:8000/mcp",
         output_type="dict",
         system_prompt="""
         You are a healthcare data analyst. Use available medical databases
@@ -396,14 +396,14 @@ graph TD
     from swarms.schemas.mcp_schemas import MCPConnection
     
     mcp_config = MCPConnection(
-        url="http://server:8000/sse",
+        url="http://server:8000/mcp",
         headers={"Authorization": "Bearer token"},
         timeout=30,
         retry_attempts=3
     )
     
     # ✅ Use direct URL instead
-    mcp_url = "http://server:8000/sse"
+    mcp_url = "http://server:8000/mcp"
     ```
 
     ### 🚧 Single Server Limitation
@@ -413,12 +413,12 @@ graph TD
     ```python
     # ❌ Multiple servers not supported
     mcp_servers = [
-        "http://server1:8000/sse",
-        "http://server2:8000/sse"
+        "http://server1:8000/mcp",
+        "http://server2:8000/mcp"
     ]
     
     # ✅ Single server only
-    mcp_url = "http://primary-server:8000/sse"
+    mcp_url = "http://primary-server:8000/mcp"
     ```
 
     ### 🚧 Sequential Execution
@@ -444,7 +444,7 @@ graph TD
         **Solutions**:
         ```bash
         # Check server status
-        curl -I http://localhost:8000/sse
+        curl -I http://localhost:8000/mcp
         
         # Verify port is open
         netstat -tulpn | grep :8000
@@ -513,7 +513,7 @@ graph TD
         ```python
         # Increase timeout
         agent = Agent(
-            mcp_url="http://server:8000/sse",
+            mcp_url="http://server:8000/mcp",
             timeout=60,  # seconds
         )
         
@@ -546,7 +546,7 @@ graph TD
     
     agent = Agent(
         agent_name="Debug-Agent",
-        mcp_url="http://localhost:8000/sse",
+        mcp_url="http://localhost:8000/mcp",
         verbose=True,  # Enable verbose output
         output_type="all",  # Get full execution trace
     )
@@ -601,7 +601,7 @@ graph TD
 
     # Environment variables (.env file)
     """
-    MCP_SERVER_URL=https://secure-server.company.com/sse
+    MCP_SERVER_URL=https://secure-server.company.com/mcp
     MCP_API_KEY=your-secure-api-key
     MCP_TIMEOUT=30
     """
@@ -741,7 +741,7 @@ graph TD
     
     agent = Agent(
         agent_name="Your-Agent",
-        mcp_url="http://localhost:8000/sse",
+        mcp_url="http://localhost:8000/mcp",
         output_type="json",
         max_loops=2
     )

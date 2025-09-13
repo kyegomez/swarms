@@ -477,7 +477,7 @@ def get_okx_crypto_volume(symbol: str) -> str:
 ```python
 if __name__ == "__main__":
     # Run the MCP server with SSE (Server-Sent Events) transport
-    # Server will be available at http://localhost:8001/sse
+    # Server will be available at http://localhost:8001/mcp
     mcp.run(transport="sse")
 ```
 
@@ -487,7 +487,7 @@ if __name__ == "__main__":
 from swarms import Agent
 
 # Method 2: Using direct URL (simpler for development)
-mcp_url = "http://0.0.0.0:8001/sse"
+mcp_url = "http://0.0.0.0:8001/mcp"
 
 # Initialize agent with MCP tools
 agent = Agent(
