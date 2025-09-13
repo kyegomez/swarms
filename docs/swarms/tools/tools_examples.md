@@ -478,7 +478,7 @@ def get_okx_crypto_volume(symbol: str) -> str:
 if __name__ == "__main__":
     # Run the MCP server with SSE (Server-Sent Events) transport
     # Server will be available at http://localhost:8001/mcp
-    mcp.run(transport="sse")
+    mcp.run(transport="streamable-http")
 ```
 
 ### Step 4: Connect Agent to MCP Server
