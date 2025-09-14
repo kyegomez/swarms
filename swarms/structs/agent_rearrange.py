@@ -386,7 +386,6 @@ class AgentRearrange:
 
                         for agent_name in agent_names:
                             agent = self.agents[agent_name]
-                            # Set agent.streaming_on if no streaming_callback
                             if self.streaming_callback is not None:
                                 agent.streaming_on = True
                             result = agent.run(
@@ -398,7 +397,6 @@ class AgentRearrange:
                             result = any_to_str(result)
 
 
-                            # Call streaming callback with the result if provided
                             if self.streaming_callback:
                                 self.streaming_callback(result)
 
@@ -422,7 +420,6 @@ class AgentRearrange:
 
                         agent = self.agents[agent_name]
 
-                        # Add sequential awareness information for the agent
                         awareness_info = (
                             self._get_sequential_awareness(
                                 agent_name, tasks
@@ -436,7 +433,6 @@ class AgentRearrange:
                                 f"Added sequential awareness for {agent_name}: {awareness_info}"
                             )
 
-                        # Set agent.streaming_on if no streaming_callback
                         if self.streaming_callback is not None:
                             agent.streaming_on = True
                         current_task = agent.run(
@@ -447,7 +443,6 @@ class AgentRearrange:
                         )
                         current_task = any_to_str(current_task)
 
-                        # Call streaming callback with the result if provided
                         if self.streaming_callback:
                             self.streaming_callback(current_task)
 

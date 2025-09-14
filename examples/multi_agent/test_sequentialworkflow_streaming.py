@@ -1,17 +1,13 @@
 from swarms.structs.agent import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
+def streaming_callback(token):
+    buffer.append(token)
+    if len(buffer) >= 20 or token.endswith("\n"):
+        print("".join(buffer), end="", flush=True)
+        buffer.clear()
+
 def run_workflow_with_streaming_callback(task, streaming_callback):
-    """
-    Run a sequential workflow with two agents and a streaming callback.
-
-    Args:
-        task (str): The task to process through the workflow.
-        streaming_callback (callable): Function to handle streaming output.
-
-    Returns:
-        The final result from the workflow.
-    """
 
     agent1 = Agent(
         name="Research Agent",
@@ -55,34 +51,9 @@ def run_workflow_with_streaming_callback(task, streaming_callback):
 
 if __name__ == "__main__":
 
-# ## REGULAR STREAMING CALLBACK
-#     def streaming_callback(token):
-#         print(token, end="", flush=True)
+    buffer = []
 
-#     run_workflow_with_streaming_callback(
-#         task="What are the latest advancements in AI?",
-#         streaming_callback=streaming_callback,
-#     )
-
-
-# ## CUSTOM BUFFERING STREAMING_CALLBACK BASED ON DEV PREFERED 
-#     buffer = []
-#     def streaming_callback(token):
-#         buffer.append(token)
-#         # Print in bigger chunks (e.g., every 20 tokens or on final flush)
-#         if len(buffer) >= 20 or token.endswith("\n"):
-#             print("".join(buffer), end="", flush=True)
-#             buffer.clear()
-#         # Optionally, you could add a flush at the end of the run if needed
-
-#     run_workflow_with_streaming_callback(
-#         task="What are the latest advancements in AI?",
-#         streaming_callback=streaming_callback,
-#     )
-
-
-## NO ADDED STREAMING_CALLBACK
     run_workflow_with_streaming_callback(
         task="What are the latest advancements in AI?",
-        streaming_callback=None,
+        streaming_callback=streaming_callback,
     )
