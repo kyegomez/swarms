@@ -8,7 +8,7 @@ agent = Agent(
     agent_name="Financial-Analysis-Agent",  # Name of the agent
     agent_description="Personal finance advisor agent",  # Description of the agent's role
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,  # System prompt for financial tasks
-    max_loops=1, 
+    max_loops=1,
     mcp_urls=[
         "http://0.0.0.0:8001/mcp",  # URL for the OKX crypto price MCP server
         "http://0.0.0.0:8000/mcp",  # URL for the agent creation MCP server
