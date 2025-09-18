@@ -31,10 +31,9 @@ agent = Agent(
 ```python
 from swarms import Agent
 
-# Configure multiple fallback models
+# Configure multiple fallback models using unified list
 agent = Agent(
-    model_name="gpt-4o",  # Primary model
-    fallback_models=["gpt-4o-mini", "gpt-3.5-turbo", "claude-3-haiku"],  # Fallback models in order
+    fallback_models=["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo", "claude-3-haiku"],  # First is primary, rest are fallbacks
     max_loops=1
 )
 ```
@@ -46,9 +45,15 @@ from swarms import Agent
 
 # You can use both single fallback and fallback list
 agent = Agent(
-    model_name="gpt-4o",
+    model_name="gpt-4o",  # Primary model
     fallback_model_name="gpt-4o-mini",  # Single fallback
     fallback_models=["gpt-3.5-turbo", "claude-3-haiku"],  # Additional fallbacks
+    max_loops=1
+)
+
+# Or use the unified list approach (recommended)
+agent = Agent(
+    fallback_models=["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo", "claude-3-haiku"],
     max_loops=1
 )
 # Final order: gpt-4o -> gpt-4o-mini -> gpt-3.5-turbo -> claude-3-haiku
@@ -272,3 +277,5 @@ The fallback system is fully backward compatible. Existing agents will continue 
 ## Conclusion
 
 The fallback model system provides a robust way to ensure your Swarms agents remain operational even when individual models fail. By configuring appropriate fallback models, you can improve reliability, handle rate limits, and optimize costs while maintaining the same simple API.
+
+For more examples and advanced usage, see the `examples/fallback_model_example.py` file in the Swarms repository.
