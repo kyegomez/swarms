@@ -323,6 +323,7 @@ nav:
       - CLI Reference: "swarms/cli/cli_reference.md"
       - Agent Loader: "swarms/utils/agent_loader.md"
       - AgentRegistry: "swarms/structs/agent_registry.md"
+      - Fallback Models: "swarms/utils/fallback_models.md"
 
     - Tools:
       - Overview: "swarms_tools/overview.md"
