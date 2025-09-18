@@ -277,5 +277,3 @@ The fallback system is fully backward compatible. Existing agents will continue 
 ## Conclusion
 
 The fallback model system provides a robust way to ensure your Swarms agents remain operational even when individual models fail. By configuring appropriate fallback models, you can improve reliability, handle rate limits, and optimize costs while maintaining the same simple API.
-
-For more examples and advanced usage, see the `examples/fallback_model_example.py` file in the Swarms repository.
