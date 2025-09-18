@@ -203,7 +203,7 @@ class Agent:
         tokenizer (Any): The tokenizer
         long_term_memory (BaseVectorDatabase): The long term memory
         fallback_model_name (str): The fallback model name to use if primary model fails
-        fallback_models (List[str]): List of fallback model names to try in order if primary model fails
+        fallback_models (List[str]): List of model names to try in order. First model is primary, rest are fallbacks
         preset_stopping_token (bool): Enable preset stopping token
         traceback (Any): The traceback
         traceback_handlers (Any): The traceback handlers
@@ -306,12 +306,11 @@ class Agent:
 
     >>> # Fallback model example
     >>> agent = Agent(
-    ...     model_name="gpt-4o",
-    ...     fallback_models=["gpt-4o-mini", "gpt-3.5-turbo"],
+    ...     fallback_models=["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"],
     ...     max_loops=1
     ... )
     >>> response = agent.run("Generate a report on the financials.")
-    >>> # If gpt-4o fails, it will automatically try gpt-4o-mini, then gpt-3.5-turbo
+    >>> # Will try gpt-4o first, then gpt-4o-mini, then gpt-3.5-turbo if each fails
 
     """
 
@@ -620,6 +619,10 @@ class Agent:
         self.fallback_models = fallback_models or []
         self.current_model_index = 0
         self.model_attempts = {}
+        
+        # If fallback_models is provided, use the first model as the primary model
+        if self.fallback_models and not self.model_name:
+            self.model_name = self.fallback_models[0]
 
         # self.init_handling()
         self.setup_config()
@@ -2574,41 +2577,7 @@ class Agent:
                 f"Error calling LLM with model '{self.get_current_model()}': {e}. "
                 f"Task: {task}, Args: {args}, Kwargs: {kwargs} Traceback: {traceback.format_exc()}"
             )
-            
-            # Try fallback models if available
-            if self.is_fallback_available() and self.switch_to_next_model():
-                logger.info(
-                    f"Retrying with fallback model '{self.get_current_model()}' for agent '{self.agent_name}'"
-                )
-                try:
-                    # Recursive call with the new model
-                    return self.call_llm(
-                        task=task,
-                        img=img,
-                        current_loop=current_loop,
-                        streaming_callback=streaming_callback,
-                        *args,
-                        **kwargs
-                    )
-                except Exception as fallback_error:
-                    logger.error(
-                        f"Fallback model '{self.get_current_model()}' also failed: {fallback_error}"
-                    )
-                    # Continue to next fallback or raise if no more models
-                    if self.is_fallback_available() and self.switch_to_next_model():
-                        return self.call_llm(
-                            task=task,
-                            img=img,
-                            current_loop=current_loop,
-                            streaming_callback=streaming_callback,
-                            *args,
-                            **kwargs
-                        )
-                    else:
-                        raise e
-            else:
-                # No fallback available or all fallbacks exhausted
-                raise e
+            raise e
 
     def handle_sop_ops(self):
         # If the user inputs a list of strings for the sop then join them and set the sop
@@ -2685,8 +2654,44 @@ class Agent:
 
             return output
 
-        except AgentRunError as e:
-            self._handle_run_error(e)
+        except (AgentRunError, AgentLLMError, Exception) as e:
+            # Try fallback models if available
+            if self.is_fallback_available() and self.switch_to_next_model():
+                logger.info(
+                    f"Agent '{self.agent_name}' failed with model '{self.get_current_model()}'. "
+                    f"Retrying with fallback model '{self.get_current_model()}'"
+                )
+                try:
+                    # Recursive call to run() with the new model
+                    return self.run(
+                        task=task,
+                        img=img,
+                        imgs=imgs,
+                        correct_answer=correct_answer,
+                        streaming_callback=streaming_callback,
+                        *args,
+                        **kwargs
+                    )
+                except Exception as fallback_error:
+                    logger.error(
+                        f"Fallback model '{self.get_current_model()}' also failed: {fallback_error}"
+                    )
+                    # Continue to next fallback or raise if no more models
+                    if self.is_fallback_available() and self.switch_to_next_model():
+                        return self.run(
+                            task=task,
+                            img=img,
+                            imgs=imgs,
+                            correct_answer=correct_answer,
+                            streaming_callback=streaming_callback,
+                            *args,
+                            **kwargs
+                        )
+                    else:
+                        self._handle_run_error(e)
+            else:
+                # No fallback available or all fallbacks exhausted
+                self._handle_run_error(e)
 
         except KeyboardInterrupt:
             logger.warning(
@@ -3036,17 +3041,17 @@ class Agent:
         Returns:
             List[str]: List of model names in order of preference
         """
-        models = [self.model_name] if self.model_name else []
+        models = []
         
-        # Add single fallback model if specified
-        if self.fallback_model_name and self.fallback_model_name not in models:
-            models.append(self.fallback_model_name)
-        
-        # Add fallback models list if specified
+        # If fallback_models is specified, use it as the primary list
         if self.fallback_models:
-            for model in self.fallback_models:
-                if model not in models:
-                    models.append(model)
+            models = self.fallback_models.copy()
+        else:
+            # Otherwise, build the list from individual parameters
+            if self.model_name:
+                models.append(self.model_name)
+            if self.fallback_model_name and self.fallback_model_name not in models:
+                models.append(self.fallback_model_name)
         
         return models
 
@@ -3060,7 +3065,7 @@ class Agent:
         available_models = self.get_available_models()
         if self.current_model_index < len(available_models):
             return available_models[self.current_model_index]
-        return self.model_name or "gpt-4o-mini"
+        return available_models[0] if available_models else "gpt-4o-mini"
 
     def switch_to_next_model(self) -> bool:
         """
@@ -3095,7 +3100,9 @@ class Agent:
     def reset_model_index(self) -> None:
         """Reset the model index to use the primary model."""
         self.current_model_index = 0
-        if self.model_name:
+        available_models = self.get_available_models()
+        if available_models:
+            self.model_name = available_models[0]
             self.llm = self.llm_handling()
 
     def is_fallback_available(self) -> bool:
