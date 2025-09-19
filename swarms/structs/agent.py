@@ -28,6 +28,7 @@ from litellm.utils import (
     supports_parallel_function_calling,
     supports_vision,
 )
+from litellm.exceptions import BadRequestError, InternalServerError, AuthenticationError
 from loguru import logger
 from pydantic import BaseModel
 
@@ -747,8 +748,11 @@ class Agent:
         if self.model_name is None:
             self.model_name = "gpt-4o-mini"
         
-        # Use current model (which may be a fallback)
-        current_model = self.get_current_model()
+        # Use current model (which may be a fallback) only if fallbacks are configured
+        if self.fallback_models:
+            current_model = self.get_current_model()
+        else:
+            current_model = self.model_name
 
         # Determine if parallel tool calls should be enabled
         if exists(self.tools) and len(self.tools) >= 2:
@@ -763,7 +767,7 @@ class Agent:
         try:
             # Base configuration that's always included
             common_args = {
-                "model_name": self.model_name,
+                "model_name": current_model,
                 "temperature": self.temperature,
                 "max_tokens": self.max_tokens,
                 "system_prompt": self.system_prompt,
@@ -1299,7 +1303,7 @@ class Agent:
 
                         success = True  # Mark as successful to exit the retry loop
 
-                    except Exception as e:
+                    except (BadRequestError, InternalServerError, AuthenticationError, Exception) as e:
 
                         if self.autosave is True:
                             log_agent_data(self.to_dict())
@@ -2572,7 +2576,7 @@ class Agent:
 
                 return out
 
-        except (AgentLLMError, Exception) as e:
+        except (AgentLLMError, BadRequestError, InternalServerError, AuthenticationError, Exception) as e:
             logger.error(
                 f"Error calling LLM with model '{self.get_current_model()}': {e}. "
                 f"Task: {task}, Args: {args}, Kwargs: {kwargs} Traceback: {traceback.format_exc()}"
@@ -2654,7 +2658,7 @@ class Agent:
 
             return output
 
-        except (AgentRunError, AgentLLMError, Exception) as e:
+        except (AgentRunError, AgentLLMError, BadRequestError, InternalServerError, AuthenticationError, Exception) as e:
             # Try fallback models if available
             if self.is_fallback_available() and self.switch_to_next_model():
                 logger.info(
