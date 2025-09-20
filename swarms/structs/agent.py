@@ -15,21 +15,25 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
     Tuple,
     Union,
-    Sequence,
 )
 
 import toml
 import yaml
 from litellm import model_list
+from litellm.exceptions import (
+    AuthenticationError,
+    BadRequestError,
+    InternalServerError,
+)
 from litellm.utils import (
     get_max_tokens,
     supports_function_calling,
     supports_parallel_function_calling,
     supports_vision,
 )
-from litellm.exceptions import BadRequestError, InternalServerError, AuthenticationError
 from loguru import logger
 from pydantic import BaseModel
 
@@ -59,14 +63,15 @@ from swarms.schemas.mcp_schemas import (
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
+from swarms.structs.multi_agent_router import MultiAgentRouter
+from swarms.structs.safe_loading import (
+    SafeLoaderUtils,
+    SafeStateManager,
+)
 from swarms.structs.transforms import (
     MessageTransforms,
     TransformConfig,
     handle_transforms,
-)
-from swarms.structs.safe_loading import (
-    SafeLoaderUtils,
-    SafeStateManager,
 )
 from swarms.telemetry.main import log_agent_data
 from swarms.tools.base_tool import BaseTool
@@ -95,7 +100,6 @@ from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
 from swarms.utils.pdf_to_text import pdf_to_text
-from swarms.structs.multi_agent_router import MultiAgentRouter
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -621,11 +625,11 @@ class Agent:
             self.transforms = MessageTransforms(config)
         else:
             pass
-        
+
         self.fallback_models = fallback_models or []
         self.current_model_index = 0
         self.model_attempts = {}
-        
+
         # If fallback_models is provided, use the first model as the primary model
         if self.fallback_models and not self.model_name:
             self.model_name = self.fallback_models[0]
@@ -764,7 +768,7 @@ class Agent:
 
         if self.model_name is None:
             self.model_name = "gpt-4o-mini"
-        
+
         # Use current model (which may be a fallback) only if fallbacks are configured
         if self.fallback_models:
             current_model = self.get_current_model()
@@ -1320,7 +1324,12 @@ class Agent:
 
                         success = True  # Mark as successful to exit the retry loop
 
-                    except (BadRequestError, InternalServerError, AuthenticationError, Exception) as e:
+                    except (
+                        BadRequestError,
+                        InternalServerError,
+                        AuthenticationError,
+                        Exception,
+                    ) as e:
 
                         if self.autosave is True:
                             log_agent_data(self.to_dict())
@@ -2593,7 +2602,13 @@ class Agent:
 
                 return out
 
-        except (AgentLLMError, BadRequestError, InternalServerError, AuthenticationError, Exception) as e:
+        except (
+            AgentLLMError,
+            BadRequestError,
+            InternalServerError,
+            AuthenticationError,
+            Exception,
+        ) as e:
             logger.error(
                 f"Error calling LLM with model '{self.get_current_model()}': {e}. "
                 f"Task: {task}, Args: {args}, Kwargs: {kwargs} Traceback: {traceback.format_exc()}"
@@ -2677,30 +2692,52 @@ class Agent:
 
             return output
 
-        except (AgentRunError, AgentLLMError, BadRequestError, InternalServerError, AuthenticationError, Exception) as e:
+        except (
+            AgentRunError,
+            AgentLLMError,
+            BadRequestError,
+            InternalServerError,
+            AuthenticationError,
+            Exception,
+        ) as e:
             # Try fallback models if available
-            if self.is_fallback_available() and self.switch_to_next_model():
-                logger.info(
-                    f"Agent '{self.agent_name}' failed with model '{self.get_current_model()}'. "
-                    f"Retrying with fallback model '{self.get_current_model()}'"
-                )
+            if (
+                self.is_fallback_available()
+                and self.switch_to_next_model()
+            ):
+                # Always log fallback events, regardless of verbose setting
+                if self.verbose:
+                    logger.warning(
+                        f"⚠️  [FALLBACK] Agent '{self.agent_name}' failed with model '{self.get_current_model()}'. "
+                        f"Switching to fallback model '{self.get_current_model()}' (attempt {self.current_model_index + 1}/{len(self.get_available_models())})"
+                    )
                 try:
                     # Recursive call to run() with the new model
-                    return self.run(
+                    result = self.run(
                         task=task,
                         img=img,
                         imgs=imgs,
                         correct_answer=correct_answer,
                         streaming_callback=streaming_callback,
                         *args,
-                        **kwargs
+                        **kwargs,
                     )
+                    if self.verbose:
+                        # Log successful completion with fallback model
+                        logger.info(
+                            f"✅ [FALLBACK SUCCESS] Agent '{self.agent_name}' successfully completed task "
+                            f"using fallback model '{self.get_current_model()}'"
+                        )
+                    return result
                 except Exception as fallback_error:
                     logger.error(
                         f"Fallback model '{self.get_current_model()}' also failed: {fallback_error}"
                     )
                     # Continue to next fallback or raise if no more models
-                    if self.is_fallback_available() and self.switch_to_next_model():
+                    if (
+                        self.is_fallback_available()
+                        and self.switch_to_next_model()
+                    ):
                         return self.run(
                             task=task,
                             img=img,
@@ -2708,12 +2745,24 @@ class Agent:
                             correct_answer=correct_answer,
                             streaming_callback=streaming_callback,
                             *args,
-                            **kwargs
+                            **kwargs,
                         )
                     else:
+                        if self.verbose:
+                            logger.error(
+                                f"❌ [FALLBACK EXHAUSTED] Agent '{self.agent_name}' has exhausted all available models. "
+                                f"Tried {len(self.get_available_models())} models: {self.get_available_models()}"
+                            )
+
                         self._handle_run_error(e)
             else:
-                # No fallback available or all fallbacks exhausted
+                if self.verbose:
+                    # No fallback available
+                    logger.error(
+                        f"❌ [NO FALLBACK] Agent '{self.agent_name}' failed with model '{self.get_current_model()}' "
+                        f"and no fallback models are configured. Error: {str(e)[:100]}{'...' if len(str(e)) > 100 else ''}"
+                    )
+
                 self._handle_run_error(e)
 
         except KeyboardInterrupt:
@@ -3060,12 +3109,12 @@ class Agent:
     def get_available_models(self) -> List[str]:
         """
         Get the list of available models including primary and fallback models.
-        
+
         Returns:
             List[str]: List of model names in order of preference
         """
         models = []
-        
+
         # If fallback_models is specified, use it as the primary list
         if self.fallback_models:
             models = self.fallback_models.copy()
@@ -3073,49 +3122,60 @@ class Agent:
             # Otherwise, build the list from individual parameters
             if self.model_name:
                 models.append(self.model_name)
-            if self.fallback_model_name and self.fallback_model_name not in models:
+            if (
+                self.fallback_model_name
+                and self.fallback_model_name not in models
+            ):
                 models.append(self.fallback_model_name)
-        
+
         return models
 
     def get_current_model(self) -> str:
         """
         Get the current model being used.
-        
+
         Returns:
             str: Current model name
         """
         available_models = self.get_available_models()
         if self.current_model_index < len(available_models):
             return available_models[self.current_model_index]
-        return available_models[0] if available_models else "gpt-4o-mini"
+        return (
+            available_models[0] if available_models else "gpt-4o-mini"
+        )
 
     def switch_to_next_model(self) -> bool:
         """
         Switch to the next available model in the fallback list.
-        
+
         Returns:
             bool: True if successfully switched to next model, False if no more models available
         """
         available_models = self.get_available_models()
-        
+
         if self.current_model_index + 1 < len(available_models):
+            previous_model = (
+                available_models[self.current_model_index]
+                if self.current_model_index < len(available_models)
+                else "Unknown"
+            )
             self.current_model_index += 1
             new_model = available_models[self.current_model_index]
-            
+
+            # Always log model switches
             logger.warning(
-                f"Agent '{self.agent_name}' switching to fallback model: {new_model} "
+                f"🔄 [MODEL SWITCH] Agent '{self.agent_name}' switching from '{previous_model}' to fallback model: '{new_model}' "
                 f"(attempt {self.current_model_index + 1}/{len(available_models)})"
             )
-            
+
             # Update the model name and reinitialize LLM
             self.model_name = new_model
             self.llm = self.llm_handling()
-            
+
             return True
         else:
             logger.error(
-                f"Agent '{self.agent_name}' has exhausted all available models. "
+                f"❌ [NO MORE MODELS] Agent '{self.agent_name}' has exhausted all available models. "
                 f"Tried {len(available_models)} models: {available_models}"
             )
             return False
@@ -3131,7 +3191,7 @@ class Agent:
     def is_fallback_available(self) -> bool:
         """
         Check if fallback models are available.
-        
+
         Returns:
             bool: True if fallback models are configured
         """

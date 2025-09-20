@@ -237,13 +237,12 @@ nav:
       - Overview: "swarms/framework/agents_explained.md"
       - Quickstart: "swarms/agents/index.md"
       - Reference: "swarms/structs/agent.md"
-      - LLM Providers: "swarms/models/agent_and_models.md"
       - Tools and MCP: "swarms/tools/tools_examples.md"
       - Multi-Agent Helpers: "swarms/structs/agent_multi_agent_communication.md"
-      - Running Agents with YAML: "swarms/agents/create_agents_yaml.md"
-        
       
-      - Additional Capabilities:
+      - Capabilities:
+        - Fallback Models: "swarms/utils/fallback_models.md"
+        - Running Agents with YAML: "swarms/agents/create_agents_yaml.md"
         - Tools Reference:
           - Overview: "swarms/tools/main.md"
           - What are tools?: "swarms/tools/build_tool.md"
@@ -323,7 +322,6 @@ nav:
       - CLI Reference: "swarms/cli/cli_reference.md"
       - Agent Loader: "swarms/utils/agent_loader.md"
       - AgentRegistry: "swarms/structs/agent_registry.md"
-      - Fallback Models: "swarms/utils/fallback_models.md"
 
     - Tools:
       - Overview: "swarms_tools/overview.md"
