@@ -49,6 +49,7 @@ class SequentialWorkflow:
         shared_memory_system: callable = None,
         multi_agent_collab_prompt: bool = True,
         team_awareness: bool = False,
+        streaming_callback: Optional[Callable[[str, str, bool], None]] = None,
         *args,
         **kwargs,
     ):
@@ -64,6 +65,8 @@ class SequentialWorkflow:
             output_type (OutputType, optional): Output format for the workflow. Defaults to "dict".
             shared_memory_system (callable, optional): Callable for shared memory management. Defaults to None.
             multi_agent_collab_prompt (bool, optional): If True, appends a collaborative prompt to each agent.
+            team_awareness (bool, optional): Whether to enable team awareness. Defaults to False.
+            streaming_callback (Optional[Callable[[str], None]], optional): Callback function to receive streaming tokens in real-time. Defaults to None.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -79,6 +82,7 @@ class SequentialWorkflow:
         self.shared_memory_system = shared_memory_system
         self.multi_agent_collab_prompt = multi_agent_collab_prompt
         self.team_awareness = team_awareness
+        self.streaming_callback = streaming_callback
 
         self.reliability_check()
         self.flow = self.sequential_flow()
@@ -91,6 +95,7 @@ class SequentialWorkflow:
             max_loops=self.max_loops,
             output_type=self.output_type,
             team_awareness=self.team_awareness,
+            streaming_callback=self.streaming_callback,
             *args,
             **kwargs,
         )
@@ -158,6 +163,9 @@ class SequentialWorkflow:
         task: str,
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
         *args,
         **kwargs,
     ):
@@ -183,6 +191,9 @@ class SequentialWorkflow:
             return self.agent_rearrange.run(
                 task=task,
                 img=img,
+                streaming_callback=streaming_callback,
+                *args,
+                **kwargs,
             )
 
         except Exception as e:

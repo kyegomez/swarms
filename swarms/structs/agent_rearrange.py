@@ -5,7 +5,6 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.telemetry.main import log_agent_data
-from swarms.utils.any_to_str import any_to_str
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -38,6 +37,7 @@ class AgentRearrange:
         team_awareness: bool = False,
         time_enabled: bool = False,
         message_id_on: bool = False,
+        streaming_callback: Optional[Callable[[str], None]] = None,
         *args,
         **kwargs,
     ):
@@ -55,6 +55,7 @@ class AgentRearrange:
         self.autosave = autosave
         self.time_enabled = time_enabled
         self.message_id_on = message_id_on
+        self.streaming_callback = streaming_callback
 
         self.conversation = Conversation(
             name=f"{self.name}-Conversation",
@@ -311,6 +312,9 @@ class AgentRearrange:
         task: str = None,
         img: str = None,
         custom_tasks: Dict[str, str] = None,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
         *args,
         **kwargs,
     ):
@@ -345,8 +349,6 @@ class AgentRearrange:
                 return "Invalid flow configuration."
 
             tasks = self.flow.split("->")
-            current_task = task
-            response_dict = {}
 
             logger.info(
                 f"Starting task execution with {len(tasks)} steps"
@@ -384,24 +386,51 @@ class AgentRearrange:
 
                         for agent_name in agent_names:
                             agent = self.agents[agent_name]
-                            result = agent.run(
-                                task=self.conversation.get_str(),
-                                img=img,
-                                *args,
-                                **kwargs,
-                            )
-                            result = any_to_str(result)
+                            # Handle streaming callback if provided
+                            if streaming_callback is not None:
 
-                            self.conversation.add(
-                                agent.agent_name, result
-                            )
+                                def agent_streaming_callback(chunk: str):
+                                    """Wrapper for agent streaming callback."""
+                                    try:
+                                        if chunk is not None and chunk.strip():
+                                            streaming_callback(
+                                                agent_name, chunk, False
+                                            )
+                                    except Exception as callback_error:
+                                        if self.verbose:
+                                            logger.warning(
+                                                f"[STREAMING] Callback failed for {agent_name}: {str(callback_error)}"
+                                            )
 
-                            response_dict[agent_name] = result
-                            logger.debug(
-                                f"Agent {agent_name} output: {result}"
-                            )
+                                output = agent.run(
+                                    task=f"History: {self.conversation.get_str()} \n\n Task: {task}",
+                                    streaming_callback=agent_streaming_callback,
+                                    *args,
+                                    **kwargs,
+                                )
 
-                        ",".join(agent_names)
+                                # Call completion callback
+                                try:
+                                    streaming_callback(agent_name, "", True)
+                                except Exception as callback_error:
+                                    if self.verbose:
+                                        logger.warning(
+                                            f"[STREAMING] Completion callback failed for {agent_name}: {str(callback_error)}"
+                                        )
+                            else:
+                                output = agent.run(
+                                    task=f"History: {self.conversation.get_str()} \n\n Task: {task}",
+                                    *args,
+                                    **kwargs,
+                                )
+                            self.conversation.add(role=agent_name, content=output)
+
+                            if self.verbose:
+                                logger.success(
+                                    f"[SUCCESS] Agent {agent_name} completed task successfully"
+                                )
+
+                        self.conversation.add(role=agent_name, content=output)
 
                     else:
                         # Sequential processing
@@ -412,7 +441,6 @@ class AgentRearrange:
 
                         agent = self.agents[agent_name]
 
-                        # Add sequential awareness information for the agent
                         awareness_info = (
                             self._get_sequential_awareness(
                                 agent_name, tasks
@@ -426,19 +454,50 @@ class AgentRearrange:
                                 f"Added sequential awareness for {agent_name}: {awareness_info}"
                             )
 
-                        current_task = agent.run(
-                            task=self.conversation.get_str(),
-                            img=img,
-                            *args,
-                            **kwargs,
-                        )
-                        current_task = any_to_str(current_task)
+                        # Handle streaming callback if provided
+                        if streaming_callback is not None:
 
-                        self.conversation.add(
-                            agent.agent_name, current_task
-                        )
+                            def agent_streaming_callback(chunk: str):
+                                """Wrapper for agent streaming callback."""
+                                try:
+                                    if chunk is not None and chunk.strip():
+                                        streaming_callback(
+                                            agent_name, chunk, False
+                                        )
+                                except Exception as callback_error:
+                                    if self.verbose:
+                                        logger.warning(
+                                            f"[STREAMING] Callback failed for {agent_name}: {str(callback_error)}"
+                                        )
 
-                        response_dict[agent_name] = current_task
+                            output = agent.run(
+                                task=f"History: {self.conversation.get_str()} \n\n Task: {task}",
+                                streaming_callback=agent_streaming_callback,
+                                *args,
+                                **kwargs,
+                            )
+
+                            # Call completion callback
+                            try:
+                                streaming_callback(agent_name, "", True)
+                            except Exception as callback_error:
+                                if self.verbose:
+                                    logger.warning(
+                                        f"[STREAMING] Completion callback failed for {agent_name}: {str(callback_error)}"
+                                    )
+                        else:
+                            output = agent.run(
+                                task=f"History: {self.conversation.get_str()} \n\n Task: {task}",
+                                *args,
+                                **kwargs,
+                            )
+                        self.conversation.add(role=agent_name, content=output)
+
+                        if self.verbose:
+                            logger.success(
+                                f"[SUCCESS] Agent {agent_name} completed task successfully"
+                            )
+
 
                 loop_count += 1
 
