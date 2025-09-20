@@ -133,7 +133,6 @@ class SequentialWorkflow:
             agent_names = []
             for agent in self.agents:
                 try:
-                    # Try to get agent_name, fallback to name if not available
                     agent_name = (
                         getattr(agent, "agent_name", None)
                         or agent.name
@@ -187,7 +186,6 @@ class SequentialWorkflow:
             Exception: If any error occurs during task execution.
         """
         try:
-            # prompt = f"{MULTI_AGENT_COLLAB_PROMPT}\n\n{task}"
             return self.agent_rearrange.run(
                 task=task,
                 img=img,
