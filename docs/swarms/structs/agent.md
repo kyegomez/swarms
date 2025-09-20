@@ -91,6 +91,7 @@ The `Agent` class establishes a conversational loop with a language model, allow
 | `callback` | `Optional[Callable]` | Callable function to be called after each agent loop. |
 | `metadata` | `Optional[Dict[str, Any]]` | Dictionary containing metadata for the agent. |
 | `callbacks` | `Optional[List[Callable]]` | List of callable functions to be called during execution. |
+| `handoffs` | `Optional[Union[Sequence[Callable], Any]]` | List of Agent instances that can be delegated tasks to. When provided, the agent will use a MultiAgentRouter to intelligently route tasks to the most appropriate specialized agent. |
 | `search_algorithm` | `Optional[Callable]` | Callable function for long-term memory retrieval. |
 | `logs_to_filename` | `Optional[str]` | File path for logging agent activities. |
 | `evaluator` | `Optional[Callable]` | Callable function for evaluating the agent's responses. |
@@ -239,6 +240,7 @@ The `Agent` class establishes a conversational loop with a language model, allow
 | `model_dump_yaml()` | Saves the agent model to a YAML file in the workspace directory. | None | `agent.model_dump_yaml()` |
 | `log_agent_data()` | Logs the agent's data to an external API. | None | `agent.log_agent_data()` |
 | `handle_tool_schema_ops()` | Handles operations related to tool schemas. | None | `agent.handle_tool_schema_ops()` |
+| `handle_handoffs(task)` | Handles task delegation to specialized agents when handoffs are configured. | `task` (str): Task to be delegated to appropriate specialized agent. | `response = agent.handle_handoffs("Analyze market data")` |
 | `call_llm(task, *args, **kwargs)` | Calls the appropriate method on the language model. | `task` (str): Task for the LLM.<br>`*args`, `**kwargs`: Additional arguments. | `response = agent.call_llm("Generate text")` |
 | `handle_sop_ops()` | Handles operations related to standard operating procedures. | None | `agent.handle_sop_ops()` |
 | `agent_output_type(responses)` | Processes and returns the agent's output based on the specified output type. | `responses` (list): List of responses. | `formatted_output = agent.agent_output_type(responses)` |
@@ -426,6 +428,100 @@ agent = Agent(
 response = agent.run("What are the components of a startup's stock incentive equity plan?")
 print(response)
 ```
+
+### Agent Handoffs and Task Delegation
+
+The `Agent` class supports intelligent task delegation through the `handoffs` parameter. When provided with a list of specialized agents, the main agent acts as a router that analyzes incoming tasks and delegates them to the most appropriate specialized agent based on their capabilities and descriptions.
+
+#### How Handoffs Work
+
+1. **Task Analysis**: When a task is received, the main agent uses a built-in "boss agent" to analyze the task requirements
+2. **Agent Selection**: The boss agent evaluates all available specialized agents and selects the most suitable one(s) based on their descriptions and capabilities
+3. **Task Delegation**: The selected agent(s) receive the task (potentially modified for better execution) and process it
+4. **Response Aggregation**: Results from specialized agents are collected and returned
+
+#### Key Features
+
+| Feature                   | Description                                                                                   |
+|---------------------------|-----------------------------------------------------------------------------------------------|
+| **Intelligent Routing**   | Uses AI to determine the best agent for each task                                             |
+| **Multiple Agent Support**| Can delegate to multiple agents for complex tasks requiring different expertise               |
+| **Task Modification**     | Can modify tasks to better suit the selected agent's capabilities                             |
+| **Transparent Reasoning** | Provides clear explanations for agent selection decisions                                     |
+| **Seamless Integration**  | Works transparently with the existing `run()` method                                          |
+
+#### Basic Handoff Example
+
+```python
+from swarms import Agent
+
+# Create specialized agents
+risk_metrics_agent = Agent(
+    agent_name="Risk-Metrics-Calculator",
+    agent_description="Calculates key risk metrics like VaR, Sharpe ratio, and volatility",
+    system_prompt="""You are a risk metrics specialist. Calculate and explain:
+    - Value at Risk (VaR)
+    - Sharpe ratio
+    - Volatility
+    - Maximum drawdown
+    - Beta coefficient
+    
+    Provide clear, numerical results with brief explanations.""",
+    max_loops=1,
+    model_name="gpt-4o-mini",
+    dynamic_temperature_enabled=True,
+)
+
+market_risk_agent = Agent(
+    agent_name="Market-Risk-Monitor",
+    agent_description="Monitors market conditions and identifies risk factors",
+    system_prompt="""You are a market risk monitor. Identify and assess:
+    - Market volatility trends
+    - Economic risk factors
+    - Geopolitical risks
+    - Interest rate risks
+    - Currency risks
+    
+    Provide current risk alerts and trends.""",
+    max_loops=1,
+    dynamic_temperature_enabled=True,
+)
+
+# Create main agent with handoffs
+portfolio_risk_agent = Agent(
+    agent_name="Portfolio-Risk-Analyzer",
+    agent_description="Analyzes portfolio diversification and concentration risk",
+    system_prompt="""You are a portfolio risk analyst. Focus on:
+    - Portfolio diversification analysis
+    - Concentration risk assessment
+    - Correlation analysis
+    - Sector/asset allocation risk
+    - Liquidity risk evaluation
+    
+    Provide actionable insights for risk reduction.""",
+    max_loops=1,
+    dynamic_temperature_enabled=True,
+    handoffs=[
+        risk_metrics_agent,
+        market_risk_agent,
+    ],
+)
+
+# Run task - will be automatically delegated to appropriate agent
+response = portfolio_risk_agent.run(
+    "Calculate VaR and Sharpe ratio for a portfolio with 15% annual return and 20% volatility"
+)
+print(response)
+```
+
+
+#### Use Cases
+
+- **Financial Analysis**: Route different types of financial analysis to specialized agents (risk, valuation, market analysis)
+- **Software Development**: Delegate coding, testing, documentation, and code review to different agents
+- **Research Projects**: Route research tasks to domain-specific agents
+- **Customer Support**: Delegate different types of inquiries to specialized support agents
+- **Content Creation**: Route writing, editing, and fact-checking to different content specialists
 
 ### Interactive Mode
 
@@ -1014,5 +1110,6 @@ The `run` method now supports several new parameters for advanced functionality:
 | `mcp_url` or `mcp_urls`                                 | Use mcp_url or mcp_urls to extend agent capabilities with external tools.                        |
 | `react_on`                                              | Enable react_on for complex reasoning tasks requiring step-by-step analysis.                     |
 | `tool_retry_attempts`                                   | Configure tool_retry_attempts for robust tool execution in production environments.              |
+| `handoffs`                                              | Use handoffs to create specialized agent teams that can intelligently route tasks based on complexity and expertise requirements. |
 
 By following these guidelines and leveraging the Swarm Agent's extensive features, you can create powerful, flexible, and efficient autonomous agents for a wide range of applications.

@@ -17,6 +17,7 @@ from typing import (
     Optional,
     Tuple,
     Union,
+    Sequence,
 )
 
 import toml
@@ -94,6 +95,7 @@ from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
 from swarms.utils.pdf_to_text import pdf_to_text
+from swarms.structs.multi_agent_router import MultiAgentRouter
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -456,6 +458,8 @@ class Agent:
         drop_params: bool = True,
         thinking_tokens: int = None,
         reasoning_enabled: bool = False,
+        handoffs: Optional[Union[Sequence[Callable], Any]] = None,
+        capabilities: Optional[List[str]] = None,
         *args,
         **kwargs,
     ):
@@ -478,19 +482,6 @@ class Agent:
         self.dynamic_loops = dynamic_loops
         self.user_name = user_name
         self.context_length = context_length
-
-        # Initialize transforms
-        if transforms is None:
-            self.transforms = None
-        elif isinstance(transforms, TransformConfig):
-            self.transforms = MessageTransforms(transforms)
-        elif isinstance(transforms, dict):
-            config = TransformConfig(**transforms)
-            self.transforms = MessageTransforms(config)
-        else:
-            raise ValueError(
-                "transforms must be a TransformConfig object or a dictionary"
-            )
 
         self.sop = sop
         self.sop_list = sop_list
@@ -617,6 +608,20 @@ class Agent:
         self.thinking_tokens = thinking_tokens
         self.reasoning_enabled = reasoning_enabled
         self.fallback_model_name = fallback_model_name
+        self.handoffs = handoffs
+        self.capabilities = capabilities
+
+        # Initialize transforms
+        if transforms is None:
+            self.transforms = None
+        elif isinstance(transforms, TransformConfig):
+            self.transforms = MessageTransforms(transforms)
+        elif isinstance(transforms, dict):
+            config = TransformConfig(**transforms)
+            self.transforms = MessageTransforms(config)
+        else:
+            pass
+        
         self.fallback_models = fallback_models or []
         self.current_model_index = 0
         self.model_attempts = {}
@@ -673,6 +678,18 @@ class Agent:
             self.print_dashboard()
 
         self.reliability_check()
+
+    def handle_handoffs(self, task: Optional[str] = None):
+        router = MultiAgentRouter(
+            name=self.agent_name,
+            description=self.agent_description,
+            agents=self.handoffs,
+            model=self.model_name,
+            temperature=self.temperature,
+            output_type=self.output_type,
+        )
+
+        return router.run(task=task)
 
     def setup_tools(self):
         return BaseTool(
@@ -2647,6 +2664,8 @@ class Agent:
                     *args,
                     **kwargs,
                 )
+            elif exists(self.handoffs):
+                output = self.handle_handoffs(task=task)
             else:
                 output = self._run(
                     task=task,

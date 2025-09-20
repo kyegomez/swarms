@@ -9,7 +9,6 @@ import litellm
 import requests
 from litellm import completion, supports_vision
 from loguru import logger
-from pydantic import BaseModel
 
 
 class LiteLLMException(Exception):
@@ -235,6 +234,7 @@ class LiteLLM:
         drop_params: bool = True,
         thinking_tokens: int = None,
         reasoning_enabled: bool = False,
+        response_format: any = None,
         *args,
         **kwargs,
     ):
@@ -292,6 +292,7 @@ class LiteLLM:
         self.thinking_tokens = thinking_tokens
         self.reasoning_enabled = reasoning_enabled
         self.verbose = verbose
+        self.response_format = response_format
         self.modalities = []
         self.messages = []  # Initialize messages list
 
@@ -394,46 +395,73 @@ class LiteLLM:
                 completion_params["runtime_args"] = runtime_args
 
     def output_for_tools(self, response: any):
-        if self.mcp_call is True:
+        """
+        Process tool calls from the LLM response and return formatted output.
+
+        Args:
+            response: The response object from the LLM API call
+
+        Returns:
+            dict or list: Formatted tool call data, or default response if no tool calls
+        """
+        try:
+            # Convert response to dict if it's a Pydantic model
+            if hasattr(response, "model_dump"):
+                response_dict = response.model_dump()
+            else:
+                response_dict = response
+
             # Check if tool_calls exists and is not None
             if (
-                response.choices
-                and response.choices[0].message
-                and response.choices[0].message.tool_calls
-                and len(response.choices[0].message.tool_calls) > 0
-            ):
-                out = (
-                    response.choices[0].message.tool_calls[0].function
+                response_dict.get("choices")
+                and response_dict["choices"][0].get("message")
+                and response_dict["choices"][0]["message"].get(
+                    "tool_calls"
                 )
-                output = {
-                    "function": {
-                        "name": out.name,
-                        "arguments": out.arguments,
+                and len(
+                    response_dict["choices"][0]["message"][
+                        "tool_calls"
+                    ]
+                )
+                > 0
+            ):
+                tool_call = response_dict["choices"][0]["message"][
+                    "tool_calls"
+                ][0]
+                if "function" in tool_call:
+                    return {
+                        "function": {
+                            "name": tool_call["function"].get(
+                                "name", ""
+                            ),
+                            "arguments": tool_call["function"].get(
+                                "arguments", "{}"
+                            ),
+                        }
                     }
-                }
-                return output
+                else:
+                    # Handle case where tool_call structure is different
+                    return tool_call
             else:
                 # Return a default response when no tool calls are present
+                logger.warning(
+                    "No tool calls found in response, returning default response"
+                )
                 return {
                     "function": {
                         "name": "no_tool_call",
                         "arguments": "{}",
                     }
                 }
-        else:
-            # Check if tool_calls exists and is not None
-            if (
-                response.choices
-                and response.choices[0].message
-                and response.choices[0].message.tool_calls
-            ):
-                out = response.choices[0].message.tool_calls
-                if isinstance(out, BaseModel):
-                    out = out.model_dump()
-                return out
-            else:
-                # Return empty list when no tool calls are present
-                return []
+        except Exception as e:
+            logger.error(f"Error processing tool calls: {str(e)}")
+            # Return a safe default response
+            return {
+                "function": {
+                    "name": "error_processing_tool_calls",
+                    "arguments": f'{{"error": "{str(e)}"}}',
+                }
+            }
 
     def output_for_reasoning(self, response: any):
         """
@@ -886,6 +914,11 @@ class LiteLLM:
             if self.base_url is not None:
                 completion_params["base_url"] = self.base_url
 
+            if self.response_format is not None:
+                completion_params["response_format"] = (
+                    self.response_format
+                )
+
             # Add modalities if needed
             if self.modalities and len(self.modalities) >= 2:
                 completion_params["modalities"] = self.modalities
@@ -914,6 +947,14 @@ class LiteLLM:
 
             # Make the completion call
             response = completion(**completion_params)
+            # print(response)
+
+            # Validate response
+            if not response:
+                logger.error(
+                    "Received empty response from completion call"
+                )
+                return None
 
             # Handle streaming response
             if self.stream:
@@ -928,25 +969,19 @@ class LiteLLM:
 
             # Handle tool-based response
             elif self.tools_list_dictionary is not None:
-                return self.output_for_tools(response)
+                result = self.output_for_tools(response)
+                return result
             elif self.return_all is True:
                 return response.model_dump()
             elif "gemini" in self.model_name.lower():
                 return gemini_output_img_handler(response)
             else:
-                # For non-Gemini models, return the content directly
                 return response.choices[0].message.content
 
         except LiteLLMException as error:
             logger.error(
                 f"Error in LiteLLM run: {str(error)} Traceback: {traceback.format_exc()}"
             )
-            if "rate_limit" in str(error).lower():
-                logger.warning(
-                    "Rate limit hit, retrying with exponential backoff..."
-                )
-                return self.run(task, audio, img, *args, **kwargs)
-            raise error
 
     def __call__(self, task: str, *args, **kwargs):
         """
