@@ -49,7 +49,7 @@ class SequentialWorkflow:
         shared_memory_system: callable = None,
         multi_agent_collab_prompt: bool = True,
         team_awareness: bool = False,
-        streaming_callback: Optional[Callable[[str], None]] = None,
+        streaming_callback: Optional[Callable[[str, str, bool], None]] = None,
         *args,
         **kwargs,
     ):
@@ -163,6 +163,9 @@ class SequentialWorkflow:
         task: str,
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
         *args,
         **kwargs,
     ):
@@ -188,7 +191,7 @@ class SequentialWorkflow:
             return self.agent_rearrange.run(
                 task=task,
                 img=img,
-                streaming_callback=self.streaming_callback,
+                streaming_callback=streaming_callback,
                 *args,
                 **kwargs,
             )
