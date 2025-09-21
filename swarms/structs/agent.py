@@ -14,6 +14,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Literal,
     Optional,
     Sequence,
     Tuple,
@@ -464,6 +465,7 @@ class Agent:
         reasoning_enabled: bool = False,
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
         capabilities: Optional[List[str]] = None,
+        mode: Literal["interactive", "fast", "standard"] = "standard",
         *args,
         **kwargs,
     ):
@@ -614,6 +616,7 @@ class Agent:
         self.fallback_model_name = fallback_model_name
         self.handoffs = handoffs
         self.capabilities = capabilities
+        self.mode = mode
 
         # Initialize transforms
         if transforms is None:
@@ -682,6 +685,10 @@ class Agent:
             self.print_dashboard()
 
         self.reliability_check()
+
+        if self.mode == "fast":
+            self.print_on = False
+            self.verbose = False
 
     def handle_handoffs(self, task: Optional[str] = None):
         router = MultiAgentRouter(

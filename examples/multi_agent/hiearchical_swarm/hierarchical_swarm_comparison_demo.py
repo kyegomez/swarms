@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-"""
-Hierarchical Swarm Comparison Demo
-
-This demo compares traditional swarm execution (without streaming)
-versus streaming execution to show the difference in behavior.
-"""
-
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 from swarms.agents import Agent
 

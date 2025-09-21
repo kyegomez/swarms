@@ -38,26 +38,39 @@ print_status "Starting Swarms development environment setup..."
 
 # Check Python version
 print_status "Checking Python version..."
+PYTHON_CMD=""
+
+# Try to find Python command (check both python and python3)
 if command_exists python3; then
-    PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
-    print_status "Found Python $PYTHON_VERSION"
+    PYTHON_CMD="python3"
+elif command_exists python; then
+    # Check if it's Python 3.x
+    if python -c 'import sys; exit(0 if sys.version_info[0] == 3 else 1)' 2>/dev/null; then
+        PYTHON_CMD="python"
+    fi
+fi
+
+if [ -n "$PYTHON_CMD" ]; then
+    PYTHON_VERSION=$($PYTHON_CMD -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+    print_status "Found Python $PYTHON_VERSION using command: $PYTHON_CMD"
     
     # Check if Python version meets requirements (>=3.10)
-    if python3 -c 'import sys; exit(0 if sys.version_info >= (3, 10) else 1)'; then
+    if $PYTHON_CMD -c 'import sys; exit(0 if sys.version_info >= (3, 10) else 1)'; then
         print_success "Python version is compatible (>=3.10)"
     else
         print_error "Python 3.10 or higher is required. Please install a compatible Python version."
         exit 1
     fi
 else
-    print_error "Python3 is not installed. Please install Python 3.10 or higher."
+    print_error "Python is not installed or not found. Please install Python 3.10 or higher."
+    print_error "Make sure Python is in your PATH and accessible as 'python' or 'python3'"
     exit 1
 fi
 
 # Install Poetry if not present
 if ! command_exists poetry; then
     print_status "Poetry not found. Installing Poetry..."
-    curl -sSL https://install.python-poetry.org | python3 -
+    curl -sSL https://install.python-poetry.org | $PYTHON_CMD -
     
     # Add Poetry to PATH for current session
     export PATH="$HOME/.local/bin:$PATH"
@@ -77,7 +90,14 @@ fi
 # Configure Poetry to create virtual environments in project directory
 print_status "Configuring Poetry..."
 poetry config virtualenvs.in-project true
-poetry config virtualenvs.prefer-active-python true
+
+# Check if the prefer-active-python option exists (available in newer Poetry versions)
+if poetry config --list | grep -q "virtualenvs.prefer-active-python"; then
+    poetry config virtualenvs.prefer-active-python true
+    print_status "Set virtualenvs.prefer-active-python to true"
+else
+    print_warning "virtualenvs.prefer-active-python option not available in this Poetry version, skipping..."
+fi
 
 # Install dependencies
 print_status "Installing project dependencies..."
