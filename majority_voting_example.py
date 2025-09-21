@@ -118,8 +118,8 @@ risk_agent = Agent(
 
 # Create the majority voting swarm with the three specialized quant agents
 swarm = MajorityVoting(
-    name = "Quant-Analysis-Swarm",
-    description = "Analysis of the current market conditions and provide investment recommendations for a $40k portfolio.",
+    name="Quant-Analysis-Swarm",
+    description="Analysis of the current market conditions and provide investment recommendations for a $40k portfolio.",
     agents=[technical_agent, fundamental_agent, risk_agent],
 )
 

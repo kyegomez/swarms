@@ -10,7 +10,7 @@ SYSTEM_PROMPT = (
 agent = Agent(
     agent_name="Tactical-Strategist-Agent",
     agent_description="Agent specialized in tactical strategy, scenario analysis, and actionable recommendations for complex situations.",
-    model_name="gemini/gemini-2.5-flash-image-preview", #"gemini/gemini-2.5-flash-image-preview",
+    model_name="gemini/gemini-2.5-flash-image-preview",  # "gemini/gemini-2.5-flash-image-preview",
     dynamic_temperature_enabled=True,
     max_loops=1,
     dynamic_context_window=True,
@@ -23,4 +23,3 @@ out = agent.run(
     task=f"{SYSTEM_PROMPT} \n\n Annotate all the tallest buildings in the image",
     img="hk.jpg",
 )
-

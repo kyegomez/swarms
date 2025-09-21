@@ -1,7 +1,7 @@
 import concurrent.futures
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, List, Optional
+from typing import Any, List
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -18,14 +18,67 @@ logger = initialize_logger(log_folder="majority_voting")
 
 
 CONSENSUS_AGENT_PROMPT = """
-Review the responses from all agents above. For each agent (referenced by their name), 
-provide a thorough, objective evaluation of their contribution to the task. 
-Compare and contrast the responses, highlighting strengths, weaknesses, and unique perspectives. 
-Determine which response(s) best address the task overall, and explain your reasoning clearly. 
-If possible, provide a ranked list or clear recommendation for the best response(s) based on the quality, 
-relevance, and completeness of the answers. 
-Be fair, detailed, and unbiased in your analysis, regardless of the topic.
+You are the Consensus Agent, responsible for synthesizing and evaluating the responses from a panel of expert agents. Your task is to deliver a rigorous, insightful, and actionable consensus based on their outputs.
+
+**Instructions:**
+
+1. **Comprehensive Evaluation:**  
+   For each agent (referenced by their name), provide a detailed, objective critique of their response. Assess the following dimensions:
+   - Accuracy and correctness
+   - Depth of analysis and insight
+   - Relevance to the original task or question
+   - Clarity, structure, and communication quality
+   - Unique perspectives or innovative ideas
+
+2. **Comparative Analysis:**  
+   Compare and contrast the agents’ responses. Highlight:
+   - Overlapping themes or points of agreement
+   - Divergent viewpoints or conflicting recommendations
+   - Notable strengths and weaknesses of each approach
+
+3. **Consensus Building:**  
+   - Identify which response(s) most effectively address the task, providing clear justification for your choices.
+   - If appropriate, synthesize the best elements from multiple responses into a unified, superior answer.
+   - Clearly explain your reasoning and the criteria used for your judgment.
+
+4. **Ranking and Recommendation:**  
+   - Provide a ranked list of agent responses, from most to least effective, with concise rationales for each position.
+   - Offer a final, well-justified recommendation or summary that represents the optimal consensus.
+
+5. **Fairness and Rigor:**  
+   - Remain impartial, thorough, and evidence-based in your analysis.
+   - Avoid bias towards any agent or perspective.
+   - Ensure your consensus is actionable, well-supported, and clearly communicated.
+
+**Output Format:**
+- For each agent: [Agent Name]: [Evaluation]
+- Comparative Analysis: [Summary]
+- Ranked List: [1. Agent Name, 2. Agent Name, ...]
+- Final Consensus/Recommendation: [Your synthesized answer or recommendation]
+
+Your goal is to deliver a consensus that is not only fair and balanced, but also maximizes the quality, relevance, and utility of the collective agent output.
 """
+
+
+def default_consensus_agent(
+    name: str = "Consensus-Agent",
+    system_prompt: str = None,
+    description: str = "An agent that uses consensus to generate a final answer.",
+    model_name: str = "gpt-4o",
+    *args,
+    **kwargs,
+):
+    return Agent(
+        agent_name=name,
+        agent_description=description,
+        model_name=model_name,
+        max_loops=1,
+        system_prompt=system_prompt,
+        dynamic_context_window=True,
+        dynamic_temperature_enabled=True,
+        *args,
+        **kwargs,
+    )
 
 
 class MajorityVoting:
@@ -51,12 +104,15 @@ class MajorityVoting:
         name: str = "MajorityVoting",
         description: str = "A multi-loop majority voting system for agents",
         agents: List[Agent] = None,
-        consensus_agent: Optional[Agent] = None,
         autosave: bool = False,
         verbose: bool = False,
         max_loops: int = 1,
         output_type: OutputType = "dict",
         consensus_agent_prompt: str = CONSENSUS_AGENT_PROMPT,
+        consensus_agent_name: str = "Consensus-Agent",
+        consensus_agent_description: str = "An agent that uses consensus to generate a final answer.",
+        consensus_agent_model_name: str = "gpt-4o",
+        additional_consensus_agent_kwargs: dict = {},
         *args,
         **kwargs,
     ):
@@ -64,7 +120,6 @@ class MajorityVoting:
         self.name = name
         self.description = description
         self.agents = agents
-        self.consensus_agent = consensus_agent
         self.autosave = autosave
         self.verbose = verbose
         self.max_loops = max_loops
@@ -75,22 +130,34 @@ class MajorityVoting:
             time_enabled=False, *args, **kwargs
         )
 
-        self.initialize_majority_voting()
+        self.consensus_agent = default_consensus_agent(
+            name=consensus_agent_name,
+            system_prompt=consensus_agent_prompt,
+            description=consensus_agent_description,
+            model_name=consensus_agent_model_name,
+            **additional_consensus_agent_kwargs,
+        )
 
-    def initialize_majority_voting(self):
+        self.reliability_check()
+
+    def reliability_check(self):
 
         if self.agents is None:
             raise ValueError("Agents list is empty")
 
-        # Log the agents
+        # Log the agents in a more formatted, readable way
+        agent_list = "\n".join(
+            [f"  - {agent.agent_name}" for agent in self.agents]
+        )
+        panel_content = (
+            f"[bold]Initializing Majority Voting System[/bold]\n"
+            f"[bold]Number of agents:[/bold] {len(self.agents)}\n"
+            f"[bold]Agents:[/bold]\n{agent_list}"
+        )
         formatter.print_panel(
-            f"Initializing majority voting system\nNumber of agents: {len(self.agents)}\nAgents: {', '.join(agent.agent_name for agent in self.agents)}",
+            panel_content,
             title="Majority Voting",
         )
-
-        if self.consensus_agent is None:
-            # if no consensus agent is provided, use the last agent
-            self.consensus_agent = self.agents[-1]
 
     def run(self, task: str, *args, **kwargs) -> List[Any]:
         """
@@ -126,9 +193,7 @@ class MajorityVoting:
 
             # Now run the consensus agent
             consensus_output = self.consensus_agent.run(
-                task=(
-                    f"History: {self.conversation.get_str()} \n\n {self.consensus_agent_prompt}"
-                ),
+                task=(f"History: {self.conversation.get_str()}"),
             )
 
             self.conversation.add(
