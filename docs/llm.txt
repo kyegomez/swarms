@@ -7696,7 +7696,7 @@ agents = [
 # Initialize the swarm to run these agents concurrently
 swarm = SpreadSheetSwarm(
     agents=agents,
-    autosave_on=True,
+    autosave=True,
     save_file_path="marketing_posts.csv",
 )
 
@@ -42470,7 +42470,7 @@ agents = [
 # Initialize the swarm to run these agents concurrently
 swarm = SpreadSheetSwarm(
     agents=agents,
-    autosave_on=True,
+    autosave=True,
     save_file_path="marketing_posts.csv",
 )
 
@@ -47159,7 +47159,7 @@ The `SpreadSheetSwarm` class contains several attributes that define its behavio
 | `name`             | `str`                             | The name of the swarm.                                                                      |
 | `description`      | `str`                             | A description of the swarm's purpose.                                                       |
 | `agents`           | `Union[Agent, List[Agent]]`       | The agents participating in the swarm. Can be a single agent or a list of agents.           |
-| `autosave_on`      | `bool`                            | Flag indicating whether autosave is enabled.                                                |
+| `autosave`      | `bool`                            | Flag indicating whether autosave is enabled.                                                |
 | `save_file_path`   | `str`                             | The file path where the swarm data will be saved.                                           |
 | `task_queue`       | `queue.Queue`                     | The queue that stores tasks to be processed by the agents.                                  |
 | `lock`             | `threading.Lock`                  | A lock used for thread synchronization to prevent race conditions.                          |
@@ -47173,7 +47173,7 @@ The `SpreadSheetSwarm` class contains several attributes that define its behavio
 - **`name`** (`str`, optional): The name of the swarm. Default is `"Spreadsheet-Swarm"`.
 - **`description`** (`str`, optional): A brief description of the swarm. Default is `"A swarm that processes tasks from a queue using multiple agents on different threads."`.
 - **`agents`** (`Union[Agent, List[Agent]]`, optional): The agents participating in the swarm. Default is an empty list.
-- **`autosave_on`** (`bool`, optional): A flag to indicate if autosave is enabled. Default is `True`.
+- **`autosave`** (`bool`, optional): A flag to indicate if autosave is enabled. Default is `True`.
 - **`save_file_path`** (`str`, optional): The file path where swarm data will be saved. Default is `"spreedsheet_swarm.csv"`.
 - **`run_all_agents`** (`bool`, optional): Flag to determine if all agents should run. Default is `True`.
 - **`max_loops`** (`int`, optional): The number of times to repeat the task. Default is `1`.
@@ -47351,7 +47351,7 @@ swarm = SpreadSheetSwarm(
     name="Finance-Spreadsheet-Swarm",
     description="A swarm that processes tasks from a queue using multiple agents on different threads.",
     agents=agents,
-    autosave_on=True,
+    autosave=True,
     save_file_path="financial_spreed_sheet_swarm_demo.csv",
     run_all_agents=False,
     max_loops=1,
@@ -47409,7 +47409,7 @@ swarm = SpreadSheetSwarm(
     name="QR-Code-Generation-Swarm",
     description="A swarm that generates Python scripts to create QR codes for specific links.",
     agents=agents,
-    autosave_on=True,
+    autosave=True,
     save_file_path="qr_code_generation_results.csv",
     run_all_agents=False,
     max_loops=1,
@@ -47503,7 +47503,7 @@ swarm = SpreadSheetSwarm(
     name="Social-Media-Marketing-Swarm",
     description="A swarm that processes social media marketing tasks using multiple agents on different threads.",
     agents=agents,
-    autosave_on=True,
+    autosave=True,
     save_file_path="social_media_marketing_spreadsheet.csv",
     run_all_agents=False,
     max_loops=2,
@@ -47522,7 +47522,7 @@ swarm.run(
 | Tip/Feature            | Description                                                                                                                                                                                                                 |
 |------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Thread Synchronization** | When working with multiple agents in a concurrent environment, it's crucial to ensure that access to shared resources is properly synchronized using locks to avoid race conditions.                                      |
-| **Autosave Feature**       | If you enable the `autosave_on` flag, ensure that the file path provided is correct and writable. This feature is handy for long-running tasks where you want to periodically save the state.                            |
+| **Autosave Feature**       | If you enable the `autosave` flag, ensure that the file path provided is correct and writable. This feature is handy for long-running tasks where you want to periodically save the state.                            |
 | **Error Handling**         | Implementing proper error handling within your agents can prevent the swarm from crashing during execution. Consider catching exceptions in the `run` method and logging errors appropriately.                            |
 | **Custom Agents**          | You can extend the `Agent` class to create custom agents that perform specific tasks tailored to your application's needs.                                                                                               |
 
@@ -49595,7 +49595,7 @@ The `TaskQueueSwarm` class is designed to manage and execute tasks using multipl
 | `agents` | `List[Agent]` | The list of agents in the swarm. |
 | `task_queue` | `queue.Queue` | A queue to store tasks for processing. |
 | `lock` | `threading.Lock` | A lock for thread synchronization. |
-| `autosave_on` | `bool` | Whether to automatically save the swarm metadata. |
+| `autosave` | `bool` | Whether to automatically save the swarm metadata. |
 | `save_file_path` | `str` | The file path for saving swarm metadata. |
 | `workspace_dir` | `str` | The directory path of the workspace. |
 | `return_metadata_on` | `bool` | Whether to return the swarm metadata after running. |
@@ -49604,7 +49604,7 @@ The `TaskQueueSwarm` class is designed to manage and execute tasks using multipl
 
 ## Methods
 
-### `__init__(self, agents: List[Agent], name: str = "Task-Queue-Swarm", description: str = "A swarm that processes tasks from a queue using multiple agents on different threads.", autosave_on: bool = True, save_file_path: str = "swarm_run_metadata.json", workspace_dir: str = os.getenv("WORKSPACE_DIR"), return_metadata_on: bool = False, max_loops: int = 1, *args, **kwargs)`
+### `__init__(self, agents: List[Agent], name: str = "Task-Queue-Swarm", description: str = "A swarm that processes tasks from a queue using multiple agents on different threads.", autosave: bool = True, save_file_path: str = "swarm_run_metadata.json", workspace_dir: str = os.getenv("WORKSPACE_DIR"), return_metadata_on: bool = False, max_loops: int = 1, *args, **kwargs)`
 
 The constructor initializes the `TaskQueueSwarm` object.
 
@@ -49612,7 +49612,7 @@ The constructor initializes the `TaskQueueSwarm` object.
   - `agents` (`List[Agent]`): The list of agents in the swarm.
   - `name` (`str`, optional): The name of the swarm. Defaults to "Task-Queue-Swarm".
   - `description` (`str`, optional): The description of the swarm. Defaults to "A swarm that processes tasks from a queue using multiple agents on different threads.".
-  - `autosave_on` (`bool`, optional): Whether to automatically save the swarm metadata. Defaults to True.
+  - `autosave` (`bool`, optional): Whether to automatically save the swarm metadata. Defaults to True.
   - `save_file_path` (`str`, optional): The file path to save the swarm metadata. Defaults to "swarm_run_metadata.json".
   - `workspace_dir` (`str`, optional): The directory path of the workspace. Defaults to os.getenv("WORKSPACE_DIR").
   - `return_metadata_on` (`bool`, optional): Whether to return the swarm metadata after running. Defaults to False.

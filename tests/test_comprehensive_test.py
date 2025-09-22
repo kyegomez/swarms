@@ -445,7 +445,7 @@ def test_spreadsheet_swarm():
         description="A swarm for processing data",
         agents=agents,
         max_loops=1,
-        autosave_on=False,
+        autosave=False,
     )
 
     response = swarm.run(

@@ -1,0 +1,5 @@
+agent_name,description,system_prompt,task,model_name,max_loops,user_name,stopping_token
+Research-Agent,Market research specialist,You are a financial research expert with 10+ years of experience,Analyze the renewable energy sector growth trends and identify top investment opportunities,claude-sonnet-4-20250514,1,user,
+Technical-Agent,Technical analysis expert,You are a technical trading analyst specializing in chart patterns and indicators,Identify key technical indicators for energy stocks and provide trading signals,claude-sonnet-4-20250514,1,user,
+Risk-Agent,Risk management specialist,You are a risk assessment expert focused on portfolio optimization,Evaluate portfolio diversification strategies for energy investments and assess risk levels,claude-sonnet-4-20250514,1,user,
+Data-Agent,Data analysis specialist,You are a data scientist specializing in financial data analysis,Extract and analyze key financial metrics from energy sector companies,claude-sonnet-4-20250514,1,user,

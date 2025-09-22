@@ -192,7 +192,7 @@ agents = [
 # Initialize the swarm to run these agents concurrently
 swarm = SpreadSheetSwarm(
     agents=agents,
-    autosave_on=True,
+    autosave=True,
     save_file_path="marketing_posts.csv",
 )
 
