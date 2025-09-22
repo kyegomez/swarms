@@ -1,153 +1,320 @@
 """
-CorporateSwarm - Autonomous Corporate Governance System
+CorporateSwarm - Advanced Autonomous Corporate Governance System
 
-A sophisticated multi-agent orchestration system that simulates a complete corporate
-structure with board governance, executive leadership, departmental operations, and
-democratic decision-making processes. Built on the foundation of EuroSwarm Parliament
-with corporate-specific enhancements.
+Multi-agent orchestration system for corporate governance with board oversight, 
+executive leadership, ESG frameworks, risk management, and democratic decision-making.
 
-This module provides a comprehensive corporate simulation including:
-- Board of Directors with democratic voting
-- Executive leadership team coordination
-- Departmental swarm management
-- Financial oversight and reporting
-- Strategic decision-making processes
-- Compliance and governance frameworks
-
-Classes:
-    CorporateMember: Represents individual corporate stakeholders
-    CorporateProposal: Represents business proposals and decisions
-    CorporateDepartment: Represents corporate departments
-    CorporateVote: Represents voting sessions and results
-    CorporateSwarm: Main corporate orchestration system
+Features: ESG scoring, risk assessment, stakeholder engagement, regulatory compliance,
+AI ethics governance, crisis management, and innovation oversight.
 """
 
+# Standard library imports
+import asyncio
 import json
+import os
 import time
+import traceback
 import uuid
+from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from enum import Enum
+from functools import lru_cache
 from typing import Any, Dict, List, Optional, Union
 
+# Third-party imports
 from loguru import logger
 from pydantic import BaseModel, Field
 
+# Swarms imports
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.hybrid_hiearchical_peer_swarm import HybridHierarchicalClusterSwarm
 from swarms.structs.swarm_router import SwarmRouter
-from swarms.utils.history_output_formatter import history_output_formatter
+from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.output_types import OutputType
+
+# ============================================================================
+# CONSTANTS AND CONFIGURATION
+# ============================================================================
+
+# Initialize centralized logger
+CORPORATE_LOGGER = initialize_logger(log_folder="corporate_swarm")
+
+# Default configuration values
+DEFAULT_BOARD_SIZE = 6
+DEFAULT_EXECUTIVE_TEAM_SIZE = 4
+DEFAULT_DECISION_THRESHOLD = 0.6
+DEFAULT_BUDGET_LIMIT = 200.0
+DEFAULT_BATCH_SIZE = 25
+DEFAULT_MEETING_DURATION = 600
+
+# Risk assessment constants
+RISK_LEVELS = {"low": 0.3, "medium": 0.6, "high": 0.8, "critical": 1.0}
+RISK_CATEGORIES = ["operational", "financial", "strategic", "compliance", "cybersecurity", "reputation", "environmental", "regulatory"]
+
+# Stakeholder types
+STAKEHOLDER_TYPES = ["investor", "customer", "employee", "community", "supplier", "regulator"]
+
+# Compliance frameworks
+COMPLIANCE_FRAMEWORKS = {
+    "SOX": ("financial", ["Internal controls", "Financial reporting", "Audit requirements"]),
+    "GDPR": ("data_privacy", ["Data protection", "Privacy rights", "Consent management"]),
+    "ISO 27001": ("cybersecurity", ["Information security", "Risk management", "Security controls"]),
+    "ESG": ("sustainability", ["Environmental reporting", "Social responsibility", "Governance standards"]),
+    "HIPAA": ("healthcare", ["Patient privacy", "Data security", "Compliance monitoring"])
+}
+
+
+# ============================================================================
+# CORPORATE SWARM CONFIGURATION
+# ============================================================================
+
+
+class CorporateConfigModel(BaseModel):
+    """Configuration model for CorporateSwarm with corporate structure and governance settings."""
+
+    # Corporate structure
+    default_board_size: int = Field(
+        default=6,
+        ge=3,
+        le=15,
+        description="Default number of board members when creating a new board.",
+    )
+
+    default_executive_team_size: int = Field(
+        default=4,
+        ge=2,
+        le=10,
+        description="Default number of executive team members.",
+    )
+
+    # Governance settings
+    decision_threshold: float = Field(
+        default=0.6,
+        ge=0.0,
+        le=1.0,
+        description="Threshold for majority decisions (0.0-1.0).",
+    )
+
+    enable_democratic_discussion: bool = Field(
+        default=True,
+        description="Enable democratic discussion features.",
+    )
+
+    enable_departmental_work: bool = Field(
+        default=True,
+        description="Enable departmental collaboration.",
+    )
+
+    enable_financial_oversight: bool = Field(
+        default=True,
+        description="Enable financial oversight features.",
+    )
+
+    # Model settings
+    default_corporate_model: str = Field(
+        default="gpt-4o-mini",
+        description="Default model for corporate member agents.",
+    )
+
+    # Logging and monitoring
+    verbose_logging: bool = Field(
+        default=False,
+        description="Enable verbose logging for corporate operations.",
+    )
+
+    # Performance settings
+    max_corporate_meeting_duration: int = Field(
+        default=600,
+        ge=60,
+        le=3600,
+        description="Maximum duration for corporate meetings in seconds.",
+    )
+
+    budget_limit: float = Field(
+        default=200.0,
+        ge=0.0,
+        description="Maximum budget in dollars for corporate operations.",
+    )
+
+    batch_size: int = Field(
+        default=25,
+        ge=1,
+        le=100,
+        description="Number of members to process in batches.",
+    )
+
+    enable_lazy_loading: bool = Field(
+        default=True,
+        description="Enable lazy loading of member agents.",
+    )
+
+    enable_caching: bool = Field(
+        default=True,
+        description="Enable response caching.",
+    )
+
+
+@dataclass
+class CorporateConfig:
+    """Configuration manager for CorporateSwarm."""
+    
+    config_file_path: Optional[str] = None
+    config_data: Optional[Dict[str, Any]] = None
+    config: CorporateConfigModel = field(init=False)
+
+    def __post_init__(self) -> None:
+        self._load_config()
+
+    def _load_config(self) -> None:
+        """Load configuration with priority: explicit data > file > defaults."""
+        try:
+            self.config = CorporateConfigModel()
+            if self.config_file_path and os.path.exists(self.config_file_path):
+                self._load_from_file()
+            if self.config_data:
+                self._load_from_dict(self.config_data)
+        except Exception as e:
+            CORPORATE_LOGGER.error(f"Configuration loading failed: {e}")
+            raise
+
+    def _load_from_file(self) -> None:
+        """Load configuration from YAML file."""
+        try:
+            import yaml
+            with open(self.config_file_path, "r") as f:
+                self._load_from_dict(yaml.safe_load(f))
+                CORPORATE_LOGGER.info(f"Loaded config from: {self.config_file_path}")
+        except Exception as e:
+            CORPORATE_LOGGER.warning(f"File loading failed {self.config_file_path}: {e}")
+            raise
+
+    def _load_from_dict(self, config_dict: Dict[str, Any]) -> None:
+        """Load configuration from dictionary with validation."""
+        for key, value in config_dict.items():
+            if hasattr(self.config, key):
+                try:
+                    setattr(self.config, key, value)
+                except (ValueError, TypeError) as e:
+                    CORPORATE_LOGGER.warning(f"Config {key} failed: {e}")
+                    raise ValueError(f"Invalid configuration value for {key}: {e}")
+
+    def get_config(self) -> CorporateConfigModel:
+        return self.config
+
+    def update_config(self, updates: Dict[str, Any]) -> None:
+        try:
+            self._load_from_dict(updates)
+        except ValueError as e:
+            CORPORATE_LOGGER.error(f"Config update failed: {e}")
+            raise
+
+    def validate_config(self) -> List[str]:
+        """Validate configuration and return error list."""
+        errors = []
+        try:
+            self.config.model_validate(self.config.model_dump())
+        except Exception as e:
+            errors.append(f"Configuration validation failed: {e}")
+        
+        if self.config.decision_threshold < 0.5:
+            errors.append("Decision threshold should be at least 0.5")
+        if self.config.default_board_size < 3:
+            errors.append("Board size should be at least 3")
+        
+        return errors
+
+
+# Global configuration cache
+_corporate_config: Optional[CorporateConfig] = None
+
+@lru_cache(maxsize=1)
+def get_corporate_config(config_file_path: Optional[str] = None) -> CorporateConfig:
+    """Get global CorporateSwarm configuration instance."""
+    global _corporate_config
+    if _corporate_config is None:
+        _corporate_config = CorporateConfig(config_file_path=config_file_path)
+    return _corporate_config
+
+
+# ============================================================================
+# CORPORATE SWARM DATA MODELS
+# ============================================================================
+
+
+class BaseCorporateAgent(ABC):
+    """Base class for corporate agents."""
+    
+    @abstractmethod
+    def run(self, task: str, **kwargs) -> Any:
+        """Synchronous execution method."""
+        pass
+    
+    @abstractmethod
+    async def arun(self, task: str, **kwargs) -> Any:
+        """Asynchronous execution method."""
+        pass
+    
+    def __call__(self, task: str, **kwargs) -> Any:
+        """Callable interface."""
+        return self.run(task, **kwargs)
 
 
 class CorporateRole(str, Enum):
     """Corporate roles and positions."""
-    CEO = "ceo"
-    CFO = "cfo"
-    CTO = "cto"
-    COO = "coo"
-    BOARD_CHAIR = "board_chair"
-    BOARD_VICE_CHAIR = "board_vice_chair"
-    BOARD_MEMBER = "board_member"
-    INDEPENDENT_DIRECTOR = "independent_director"
-    EXECUTIVE_DIRECTOR = "executive_director"
-    NON_EXECUTIVE_DIRECTOR = "non_executive_director"
-    COMMITTEE_CHAIR = "committee_chair"
-    COMMITTEE_MEMBER = "committee_member"
-    DEPARTMENT_HEAD = "department_head"
-    MANAGER = "manager"
-    EMPLOYEE = "employee"
-    INVESTOR = "investor"
-    ADVISOR = "advisor"
-    AUDITOR = "auditor"
-    SECRETARY = "secretary"
+    CEO, CFO, CTO, COO = "ceo", "cfo", "cto", "coo"
+    BOARD_CHAIR, BOARD_VICE_CHAIR, BOARD_MEMBER = "board_chair", "board_vice_chair", "board_member"
+    INDEPENDENT_DIRECTOR, EXECUTIVE_DIRECTOR, NON_EXECUTIVE_DIRECTOR = "independent_director", "executive_director", "non_executive_director"
+    COMMITTEE_CHAIR, COMMITTEE_MEMBER = "committee_chair", "committee_member"
+    DEPARTMENT_HEAD, MANAGER, EMPLOYEE = "department_head", "manager", "employee"
+    INVESTOR, ADVISOR, AUDITOR, SECRETARY = "investor", "advisor", "auditor", "secretary"
 
 
 class DepartmentType(str, Enum):
     """Corporate department types."""
-    FINANCE = "finance"
-    OPERATIONS = "operations"
-    MARKETING = "marketing"
-    HUMAN_RESOURCES = "human_resources"
-    LEGAL = "legal"
-    TECHNOLOGY = "technology"
-    RESEARCH_DEVELOPMENT = "research_development"
-    SALES = "sales"
-    CUSTOMER_SERVICE = "customer_service"
-    COMPLIANCE = "compliance"
+    FINANCE, OPERATIONS, MARKETING, HUMAN_RESOURCES = "finance", "operations", "marketing", "human_resources"
+    LEGAL, TECHNOLOGY, RESEARCH_DEVELOPMENT = "legal", "technology", "research_development"
+    SALES, CUSTOMER_SERVICE, COMPLIANCE = "sales", "customer_service", "compliance"
 
 
 class ProposalType(str, Enum):
     """Types of corporate proposals."""
-    STRATEGIC_INITIATIVE = "strategic_initiative"
-    BUDGET_ALLOCATION = "budget_allocation"
-    HIRING_DECISION = "hiring_decision"
-    PRODUCT_LAUNCH = "product_launch"
-    PARTNERSHIP = "partnership"
-    MERGER_ACQUISITION = "merger_acquisition"
-    POLICY_CHANGE = "policy_change"
-    INVESTMENT = "investment"
-    OPERATIONAL_CHANGE = "operational_change"
-    COMPLIANCE_UPDATE = "compliance_update"
-    BOARD_RESOLUTION = "board_resolution"
-    EXECUTIVE_COMPENSATION = "executive_compensation"
-    DIVIDEND_DECLARATION = "dividend_declaration"
-    SHARE_ISSUANCE = "share_issuance"
-    AUDIT_APPOINTMENT = "audit_appointment"
-    RISK_MANAGEMENT = "risk_management"
-    SUCCESSION_PLANNING = "succession_planning"
+    STRATEGIC_INITIATIVE, BUDGET_ALLOCATION, HIRING_DECISION = "strategic_initiative", "budget_allocation", "hiring_decision"
+    PRODUCT_LAUNCH, PARTNERSHIP, MERGER_ACQUISITION = "product_launch", "partnership", "merger_acquisition"
+    POLICY_CHANGE, INVESTMENT, OPERATIONAL_CHANGE = "policy_change", "investment", "operational_change"
+    COMPLIANCE_UPDATE, BOARD_RESOLUTION, EXECUTIVE_COMPENSATION = "compliance_update", "board_resolution", "executive_compensation"
+    DIVIDEND_DECLARATION, SHARE_ISSUANCE, AUDIT_APPOINTMENT = "dividend_declaration", "share_issuance", "audit_appointment"
+    RISK_MANAGEMENT, SUCCESSION_PLANNING = "risk_management", "succession_planning"
 
 
 class VoteResult(str, Enum):
     """Voting result outcomes."""
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    TABLED = "tabled"
-    FAILED = "failed"
-    UNANIMOUS = "unanimous"
-    MAJORITY = "majority"
-    MINORITY = "minority"
-    ABSTAINED = "abstained"
+    APPROVED, REJECTED, TABLED, FAILED = "approved", "rejected", "tabled", "failed"
+    UNANIMOUS, MAJORITY, MINORITY, ABSTAINED = "unanimous", "majority", "minority", "abstained"
 
 
 class BoardCommitteeType(str, Enum):
     """Types of board committees."""
-    AUDIT = "audit"
-    COMPENSATION = "compensation"
-    NOMINATING = "nominating"
-    GOVERNANCE = "governance"
-    RISK = "risk"
-    TECHNOLOGY = "technology"
-    STRATEGIC = "strategic"
-    FINANCE = "finance"
-    COMPLIANCE = "compliance"
+    AUDIT, COMPENSATION, NOMINATING, GOVERNANCE = "audit", "compensation", "nominating", "governance"
+    RISK, TECHNOLOGY, STRATEGIC, FINANCE = "risk", "technology", "strategic", "finance"
+    COMPLIANCE, ESG, SUSTAINABILITY, CYBERSECURITY = "compliance", "esg", "sustainability", "cybersecurity"
+    INNOVATION, STAKEHOLDER, CRISIS_MANAGEMENT = "innovation", "stakeholder", "crisis_management"
+    AI_ETHICS, DATA_PRIVACY = "ai_ethics", "data_privacy"
 
 
 class MeetingType(str, Enum):
     """Types of board meetings."""
-    REGULAR_BOARD = "regular_board"
-    SPECIAL_BOARD = "special_board"
-    ANNUAL_GENERAL = "annual_general"
-    COMMITTEE_MEETING = "committee_meeting"
-    EXECUTIVE_SESSION = "executive_session"
-    EMERGENCY_MEETING = "emergency_meeting"
+    REGULAR_BOARD, SPECIAL_BOARD, ANNUAL_GENERAL = "regular_board", "special_board", "annual_general"
+    COMMITTEE_MEETING, EXECUTIVE_SESSION, EMERGENCY_MEETING = "committee_meeting", "executive_session", "emergency_meeting"
+    ESG_REVIEW, RISK_ASSESSMENT, CRISIS_RESPONSE = "esg_review", "risk_assessment", "crisis_response"
+    STAKEHOLDER_ENGAGEMENT, INNOVATION_REVIEW, COMPLIANCE_AUDIT = "stakeholder_engagement", "innovation_review", "compliance_audit"
+    SUSTAINABILITY_REPORTING, AI_ETHICS_REVIEW = "sustainability_reporting", "ai_ethics_review"
 
 
 @dataclass
 class BoardCommittee:
-    """
-    Represents a board committee with specific governance responsibilities.
-    
-    Attributes:
-        committee_id: Unique identifier for the committee
-        name: Name of the committee
-        committee_type: Type of board committee
-        chair: Committee chair member ID
-        members: List of committee member IDs
-        responsibilities: Committee responsibilities and scope
-        meeting_schedule: Regular meeting schedule
-        quorum_required: Minimum members required for quorum
-        metadata: Additional committee information
-    """
+    """Board committee with governance responsibilities."""
     committee_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     name: str = ""
     committee_type: BoardCommitteeType = BoardCommitteeType.GOVERNANCE
@@ -161,21 +328,7 @@ class BoardCommittee:
 
 @dataclass
 class BoardMeeting:
-    """
-    Represents a board meeting with agenda and minutes.
-    
-    Attributes:
-        meeting_id: Unique identifier for the meeting
-        meeting_type: Type of board meeting
-        date: Meeting date and time
-        location: Meeting location (physical or virtual)
-        attendees: List of attendee member IDs
-        agenda: Meeting agenda items
-        minutes: Meeting minutes and decisions
-        quorum_met: Whether quorum was met
-        resolutions: Board resolutions passed
-        metadata: Additional meeting information
-    """
+    """Board meeting with agenda and minutes."""
     meeting_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     meeting_type: MeetingType = MeetingType.REGULAR_BOARD
     date: float = field(default_factory=time.time)
@@ -188,86 +341,42 @@ class BoardMeeting:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass
-class CorporateMember:
-    """
-    Represents a corporate stakeholder with specific role and responsibilities.
+class CorporateMember(BaseModel):
+    """Corporate stakeholder with role, expertise, and governance responsibilities."""
     
-    Attributes:
-        member_id: Unique identifier for the member
-        name: Full name of the member
-        role: Corporate role and position
-        department: Department affiliation
-        expertise_areas: Areas of professional expertise
-        voting_weight: Weight of vote in corporate decisions
-        board_committees: List of board committees the member serves on
-        independence_status: Whether the member is independent
-        term_start: When the member's term started
-        term_end: When the member's term ends
-        compensation: Member compensation information
-        agent: AI agent representing this member
-        metadata: Additional member information
-    """
-    member_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    name: str = ""
-    role: CorporateRole = CorporateRole.EMPLOYEE
-    department: DepartmentType = DepartmentType.OPERATIONS
-    expertise_areas: List[str] = field(default_factory=list)
-    voting_weight: float = 1.0
-    board_committees: List[str] = field(default_factory=list)
-    independence_status: bool = False
-    term_start: float = field(default_factory=time.time)
-    term_end: Optional[float] = None
-    compensation: Dict[str, Any] = field(default_factory=dict)
-    agent: Optional[Agent] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    member_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str = Field(default="")
+    role: CorporateRole = Field(default=CorporateRole.EMPLOYEE)
+    department: DepartmentType = Field(default=DepartmentType.OPERATIONS)
+    expertise_areas: List[str] = Field(default_factory=list)
+    voting_weight: float = Field(default=1.0, ge=0.0, le=5.0)
+    board_committees: List[str] = Field(default_factory=list)
+    independence_status: bool = Field(default=False)
+    term_start: float = Field(default_factory=time.time)
+    term_end: Optional[float] = Field(default=None)
+    compensation: Dict[str, Any] = Field(default_factory=dict)
+    agent: Optional[Agent] = Field(default=None)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
-@dataclass
-class CorporateProposal:
-    """
-    Represents a corporate proposal requiring decision-making.
+class CorporateProposal(BaseModel):
+    """Corporate proposal requiring decision-making with financial impact."""
     
-    Attributes:
-        proposal_id: Unique identifier for the proposal
-        title: Title of the proposal
-        description: Detailed description of the proposal
-        proposal_type: Type of corporate proposal
-        sponsor: Member who sponsored the proposal
-        department: Department responsible for implementation
-        budget_impact: Financial impact of the proposal
-        timeline: Implementation timeline
-        status: Current status of the proposal
-        metadata: Additional proposal information
-    """
-    proposal_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    title: str = ""
-    description: str = ""
-    proposal_type: ProposalType = ProposalType.STRATEGIC_INITIATIVE
-    sponsor: str = ""
-    department: DepartmentType = DepartmentType.OPERATIONS
-    budget_impact: float = 0.0
-    timeline: str = ""
-    status: str = "pending"
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    proposal_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str = Field(default="")
+    description: str = Field(default="")
+    proposal_type: ProposalType = Field(default=ProposalType.STRATEGIC_INITIATIVE)
+    sponsor: str = Field(default="")
+    department: DepartmentType = Field(default=DepartmentType.OPERATIONS)
+    budget_impact: float = Field(default=0.0, ge=0.0)
+    timeline: str = Field(default="")
+    status: str = Field(default="pending")
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
 @dataclass
 class CorporateDepartment:
-    """
-    Represents a corporate department with specific functions.
-    
-    Attributes:
-        department_id: Unique identifier for the department
-        name: Name of the department
-        department_type: Type of department
-        head: Department head member
-        members: List of department members
-        budget: Department budget allocation
-        objectives: Department objectives and goals
-        current_projects: Active projects in the department
-        metadata: Additional department information
-    """
+    """Corporate department with specific functions and budget."""
     department_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     name: str = ""
     department_type: DepartmentType = DepartmentType.OPERATIONS
@@ -279,98 +388,106 @@ class CorporateDepartment:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass
-class CorporateVote:
-    """
-    Represents a corporate voting session and results.
+class CorporateVote(BaseModel):
+    """Corporate voting session with individual votes and analysis."""
     
-    Attributes:
-        vote_id: Unique identifier for the vote
-        proposal: Proposal being voted on
-        participants: Members participating in the vote
-        individual_votes: Individual member votes and reasoning
-        political_group_analysis: Analysis by corporate groups
-        result: Final voting result
-        timestamp: When the vote was conducted
-        metadata: Additional voting information
-    """
-    vote_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    proposal: CorporateProposal = field(default_factory=CorporateProposal)
-    participants: List[str] = field(default_factory=list)
-    individual_votes: Dict[str, Dict[str, Any]] = field(default_factory=dict)
-    political_group_analysis: Dict[str, Any] = field(default_factory=dict)
-    result: VoteResult = VoteResult.FAILED
-    timestamp: float = field(default_factory=time.time)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    vote_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    proposal: CorporateProposal = Field(default_factory=CorporateProposal)
+    participants: List[str] = Field(default_factory=list)
+    individual_votes: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    political_group_analysis: Dict[str, Any] = Field(default_factory=dict)
+    result: VoteResult = Field(default=VoteResult.FAILED)
+    timestamp: float = Field(default_factory=time.time)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
-class CorporateSwarm:
-    """
-    A comprehensive corporate governance system with democratic decision-making.
+class ESGScore(BaseModel):
+    """Environmental, Social, and Governance scoring model."""
     
-    This class orchestrates a complete corporate structure including board governance,
-    executive leadership, departmental operations, and strategic decision-making.
-    Built on the foundation of EuroSwarm Parliament with corporate-specific enhancements.
+    environmental_score: float = Field(default=0.0, ge=0.0, le=100.0)
+    social_score: float = Field(default=0.0, ge=0.0, le=100.0)
+    governance_score: float = Field(default=0.0, ge=0.0, le=100.0)
+    overall_score: float = Field(default=0.0, ge=0.0, le=100.0)
+    carbon_footprint: float = Field(default=0.0, ge=0.0)
+    diversity_index: float = Field(default=0.0, ge=0.0, le=1.0)
+    stakeholder_satisfaction: float = Field(default=0.0, ge=0.0, le=100.0)
+    sustainability_goals: List[str] = Field(default_factory=list)
+    last_updated: float = Field(default_factory=time.time)
+
+
+class RiskAssessment(BaseModel):
+    """Comprehensive risk assessment model for corporate governance."""
     
-    Attributes:
-        name: Name of the corporate entity
-        description: Description of the corporate structure
-        members: Dictionary of corporate members
-        departments: Dictionary of corporate departments
-        proposals: List of active proposals
-        votes: List of voting sessions
-        board_members: List of board of directors members
-        executive_team: List of executive leadership
-        max_loops: Maximum number of decision-making loops
-        enable_democratic_discussion: Enable democratic discussion features
-        enable_departmental_work: Enable departmental collaboration
-        enable_financial_oversight: Enable financial oversight features
-        verbose: Enable detailed logging
-        conversation: Conversation history tracker
-        democratic_swarm: Democratic decision-making swarm
-    """
+    risk_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    risk_category: str = Field(default="operational")
+    risk_level: str = Field(default="medium")
+    probability: float = Field(default=0.5, ge=0.0, le=1.0)
+    impact: float = Field(default=0.5, ge=0.0, le=1.0)
+    risk_score: float = Field(default=0.25, ge=0.0, le=1.0)
+    mitigation_strategies: List[str] = Field(default_factory=list)
+    owner: str = Field(default="")
+    status: str = Field(default="active")
+    last_reviewed: float = Field(default_factory=time.time)
+
+
+class StakeholderEngagement(BaseModel):
+    """Stakeholder engagement and management model."""
+    
+    stakeholder_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    stakeholder_type: str = Field(default="investor")
+    name: str = Field(default="")
+    influence_level: str = Field(default="medium")
+    interest_level: str = Field(default="medium")
+    engagement_frequency: str = Field(default="quarterly")
+    satisfaction_score: float = Field(default=0.0, ge=0.0, le=100.0)
+    concerns: List[str] = Field(default_factory=list)
+    last_engagement: float = Field(default_factory=time.time)
+
+
+class ComplianceFramework(BaseModel):
+    """Regulatory compliance and audit framework model."""
+    
+    compliance_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    regulation_name: str = Field(default="")
+    regulation_type: str = Field(default="financial")
+    compliance_status: str = Field(default="compliant")
+    compliance_score: float = Field(default=100.0, ge=0.0, le=100.0)
+    requirements: List[str] = Field(default_factory=list)
+    controls: List[str] = Field(default_factory=list)
+    audit_findings: List[str] = Field(default_factory=list)
+    next_audit_date: float = Field(default_factory=lambda: time.time() + (365 * 24 * 60 * 60))
+    responsible_officer: str = Field(default="")
+
+
+class CorporateSwarm(BaseCorporateAgent):
+    """Autonomous corporate governance system with democratic decision-making."""
     
     def __init__(
         self,
         name: str = "CorporateSwarm",
         description: str = "A comprehensive corporate governance system with democratic decision-making",
         max_loops: int = 1,
-        enable_democratic_discussion: bool = True,
-        enable_departmental_work: bool = True,
-        enable_financial_oversight: bool = True,
-        enable_lazy_loading: bool = True,
-        enable_caching: bool = True,
-        batch_size: int = 25,
-        budget_limit: float = 200.0,
+        output_type: OutputType = "dict-all-except-first",
+        corporate_model_name: str = "gpt-4o-mini",
         verbose: bool = False,
-    ):
-        """
-        Initialize the CorporateSwarm with corporate governance capabilities.
-        
-        Args:
-            name: Name of the corporate entity
-            description: Description of the corporate structure
-            max_loops: Maximum number of decision-making loops
-            enable_democratic_discussion: Enable democratic discussion features
-            enable_departmental_work: Enable departmental collaboration
-            enable_financial_oversight: Enable financial oversight features
-            enable_lazy_loading: Enable lazy loading of member agents
-            enable_caching: Enable response caching
-            batch_size: Number of members to process in batches
-            budget_limit: Maximum budget in dollars
-            verbose: Enable detailed logging
-        """
+        config_file_path: Optional[str] = None,
+        config_data: Optional[Dict[str, Any]] = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize CorporateSwarm with corporate governance capabilities."""
         self.name = name
         self.description = description
         self.max_loops = max_loops
-        self.enable_democratic_discussion = enable_democratic_discussion
-        self.enable_departmental_work = enable_departmental_work
-        self.enable_financial_oversight = enable_financial_oversight
-        self.enable_lazy_loading = enable_lazy_loading
-        self.enable_caching = enable_caching
-        self.batch_size = batch_size
-        self.budget_limit = budget_limit
+        self.output_type = output_type
+        self.corporate_model_name = corporate_model_name
         self.verbose = verbose
+        
+        # Load configuration
+        self.config = CorporateConfig(
+            config_file_path=config_file_path,
+            config_data=config_data
+        ).get_config()
         
         # Initialize corporate structure
         self.members: Dict[str, CorporateMember] = {}
@@ -384,25 +501,209 @@ class CorporateSwarm:
         self.independent_directors: List[str] = []
         self.executive_directors: List[str] = []
         
+        # Advanced governance frameworks
+        self.esg_scores: Dict[str, ESGScore] = {}
+        self.risk_assessments: Dict[str, RiskAssessment] = {}
+        self.stakeholder_engagements: Dict[str, StakeholderEngagement] = {}
+        self.compliance_frameworks: Dict[str, ComplianceFramework] = {}
+        self.crisis_management_plans: Dict[str, Dict[str, Any]] = {}
+        self.innovation_pipeline: List[Dict[str, Any]] = []
+        self.audit_trails: List[Dict[str, Any]] = []
+        self.performance_metrics: Dict[str, Any] = {}
+        self.sustainability_targets: Dict[str, Any] = {}
+        self.ai_ethics_framework: Dict[str, Any] = {}
+        
         # Initialize conversation and democratic systems
-        self.conversation = Conversation()
+        self.conversation = Conversation(time_enabled=False)
         self.democratic_swarm = None
         
         # Cost tracking
-        self.cost_tracker = CostTracker(budget_limit)
+        self.cost_tracker = CostTracker(self.config.budget_limit)
         
+        # Performance settings
+        self.max_workers = os.cpu_count()
+        
+        # Initialize the corporate swarm
+        self._init_corporate_swarm()
+    
+    def _init_corporate_swarm(self) -> None:
+        """Initialize CorporateSwarm structure and perform reliability checks."""
+        try:
+            if self.verbose:
+                CORPORATE_LOGGER.info(
+                    f"Initializing CorporateSwarm: {self.name}"
+                )
+                CORPORATE_LOGGER.info(
+                    f"Configuration - Max loops: {self.max_loops}"
+                )
+
+            # Perform reliability checks
+            self._perform_reliability_checks()
+
+            # Initialize default corporate structure
+            self._initialize_default_structure()
+
+            # Initialize democratic swarm if enabled
+            if self.config.enable_democratic_discussion:
+                self._initialize_democratic_swarm()
+
+            if self.verbose:
+                CORPORATE_LOGGER.success(
+                    f"CorporateSwarm initialized successfully: {self.name}"
+                )
+
+        except Exception as e:
+            CORPORATE_LOGGER.error(f"Failed to initialize CorporateSwarm: {str(e)}")
+            raise
+
+    def _perform_reliability_checks(self) -> None:
+        """Validate critical requirements and configuration parameters."""
+        try:
+            if self.verbose:
+                CORPORATE_LOGGER.info(
+                    f"Running reliability checks for CorporateSwarm: {self.name}"
+                )
+
+            if self.max_loops <= 0:
+                raise ValueError(
+                    "Max loops must be greater than 0. Please set a valid number of loops."
+                )
+
+            if (
+                self.config.decision_threshold < 0.0
+                or self.config.decision_threshold > 1.0
+            ):
+                raise ValueError(
+                    "Decision threshold must be between 0.0 and 1.0."
+                )
+
+            if self.config.budget_limit < 0:
+                raise ValueError(
+                    "Budget limit must be non-negative."
+                )
+
+            if self.verbose:
+                CORPORATE_LOGGER.success(
+                    f"Reliability checks passed for CorporateSwarm: {self.name}"
+                )
+
+        except Exception as e:
+            CORPORATE_LOGGER.error(f"Failed reliability checks: {str(e)}")
+            raise
+    
+    @classmethod
+    def create_simple_corporation(
+        cls,
+        name: str = "SimpleCorp",
+        num_board_members: int = 5,
+        num_executives: int = 4,
+        verbose: bool = False
+    ) -> "CorporateSwarm":
+        """Create a simple corporation with basic structure."""
+        return cls(
+            name=name,
+            max_loops=1,
+            enable_democratic_discussion=True,
+            enable_departmental_work=True,
+            enable_financial_oversight=True,
+            verbose=verbose
+        )
+    
+    def run(
+        self,
+        task: str,
+        **kwargs
+    ) -> Union[str, Dict[str, Any]]:
+        """
+        Main execution method - processes corporate tasks through democratic decision-making.
+        
+        Implements intelligent task routing and performance optimization via concurrency.
+        
+        Args:
+            task: The corporate task or proposal to process
+            **kwargs: Additional parameters for task processing
+            
+        Returns:
+            Union[str, Dict[str, Any]]: Task results or decision outcomes
+            
+        Example:
+            >>> corporate = CorporateSwarm()
+            >>> result = corporate.run("Should we invest in AI technology?")
+            >>> print(result['vote_result'])
+        """
         if self.verbose:
-            logger.info(f"Initializing CorporateSwarm: {self.name}")
-            logger.debug(f"CorporateSwarm parameters: max_loops={max_loops}, "
-                        f"democratic_discussion={enable_democratic_discussion}, "
-                        f"departmental_work={enable_departmental_work}")
+            CORPORATE_LOGGER.info(f"CorporateSwarm processing task: {task[:100]}...")
         
-        # Initialize default corporate structure
-        self._initialize_default_structure()
+        # Check budget before starting
+        if not self.cost_tracker.check_budget():
+            CORPORATE_LOGGER.warning(f"Budget limit exceeded for task: {task[:50]}...")
+            return {
+                "status": "failed",
+                "reason": "Budget limit exceeded",
+                "task": task
+            }
         
-        # Initialize democratic swarm if enabled
-        if self.enable_democratic_discussion:
-            self._initialize_democratic_swarm()
+        try:
+            # Determine task type and route accordingly with performance optimization
+            task_lower = task.lower()
+            
+            if any(keyword in task_lower for keyword in ["proposal", "vote", "decision"]):
+                return self._process_proposal_task(task, **kwargs)
+            elif any(keyword in task_lower for keyword in ["meeting", "board", "committee"]):
+                return self._process_meeting_task(task, **kwargs)
+            elif any(keyword in task_lower for keyword in ["strategic", "planning", "initiative"]):
+                return self._process_strategic_task(task, **kwargs)
+            else:
+                return self._process_general_task(task, **kwargs)
+                
+        except Exception as e:
+            CORPORATE_LOGGER.error(f"Error processing task '{task[:50]}...': {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "task": task
+            }
+    
+    async def arun(
+        self,
+        task: str,
+        **kwargs
+    ) -> Union[str, Dict[str, Any]]:
+        """
+        Asynchronous version of run method with concurrency optimization.
+        
+        Args:
+            task: The corporate task or proposal to process
+            **kwargs: Additional parameters for task processing
+            
+        Returns:
+            Union[str, Dict[str, Any]]: Task results or decision outcomes
+        """
+        if self.verbose:
+            logger.info(f"CorporateSwarm async processing task: {task[:100]}...")
+        
+        # Check budget before starting
+        if not self.cost_tracker.check_budget():
+            logger.warning(f"Budget limit exceeded for async task: {task[:50]}...")
+            return {
+                "status": "failed",
+                "reason": "Budget limit exceeded",
+                "task": task
+            }
+        
+        try:
+            # Run in thread pool for I/O bound operations
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(None, self.run, task, **kwargs)
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error in async processing task '{task[:50]}...': {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "task": task
+            }
     
     def _initialize_default_structure(self) -> None:
         """Initialize default corporate structure with key positions."""
@@ -503,6 +804,14 @@ class CorporateSwarm:
             (BoardCommitteeType.NOMINATING, "Nominating Committee", ["board_nominations", "governance_policies", "director_evaluations"]),
             (BoardCommitteeType.RISK, "Risk Committee", ["risk_management", "cybersecurity", "operational_risk"]),
             (BoardCommitteeType.TECHNOLOGY, "Technology Committee", ["technology_strategy", "digital_transformation", "innovation"]),
+            (BoardCommitteeType.ESG, "ESG Committee", ["environmental_sustainability", "social_responsibility", "governance_oversight"]),
+            (BoardCommitteeType.SUSTAINABILITY, "Sustainability Committee", ["carbon_neutrality", "renewable_energy", "sustainable_practices"]),
+            (BoardCommitteeType.CYBERSECURITY, "Cybersecurity Committee", ["cyber_risk_management", "data_protection", "incident_response"]),
+            (BoardCommitteeType.INNOVATION, "Innovation Committee", ["r_and_d_strategy", "digital_transformation", "emerging_technologies"]),
+            (BoardCommitteeType.STAKEHOLDER, "Stakeholder Committee", ["stakeholder_engagement", "community_relations", "investor_relations"]),
+            (BoardCommitteeType.CRISIS_MANAGEMENT, "Crisis Management Committee", ["crisis_response", "business_continuity", "reputation_management"]),
+            (BoardCommitteeType.AI_ETHICS, "AI Ethics Committee", ["ai_governance", "algorithmic_fairness", "responsible_ai"]),
+            (BoardCommitteeType.DATA_PRIVACY, "Data Privacy Committee", ["data_protection", "privacy_compliance", "gdpr_oversight"]),
         ]
         
         for committee_type, name, responsibilities in committee_configs:
@@ -694,22 +1003,7 @@ When participating in corporate decisions, always provide:
         timeline: str = "",
         **kwargs
     ) -> str:
-        """
-        Create a new corporate proposal.
-        
-        Args:
-            title: Title of the proposal
-            description: Detailed description of the proposal
-            proposal_type: Type of corporate proposal
-            sponsor_id: ID of the member sponsoring the proposal
-            department: Department responsible for implementation
-            budget_impact: Financial impact of the proposal
-            timeline: Implementation timeline
-            **kwargs: Additional proposal attributes
-            
-        Returns:
-            str: Proposal ID of the created proposal
-        """
+        """Create a new corporate proposal."""
         if sponsor_id not in self.members:
             raise ValueError(f"Sponsor {sponsor_id} not found in corporate members")
         
@@ -736,16 +1030,7 @@ When participating in corporate decisions, always provide:
         proposal_id: str,
         participants: List[str] = None
     ) -> CorporateVote:
-        """
-        Conduct a democratic vote on a corporate proposal.
-        
-        Args:
-            proposal_id: ID of the proposal to vote on
-            participants: List of member IDs to participate in the vote
-            
-        Returns:
-            CorporateVote: Vote results and analysis
-        """
+        """Conduct a democratic vote on a corporate proposal."""
         # Find the proposal
         proposal = None
         for p in self.proposals:
@@ -1031,16 +1316,7 @@ Your voting weight: {member.voting_weight}
         meeting_id: str,
         discussion_topics: List[str] = None
     ) -> BoardMeeting:
-        """
-        Conduct a board meeting with discussion and decisions.
-        
-        Args:
-            meeting_id: ID of the meeting to conduct
-            discussion_topics: List of topics to discuss
-            
-        Returns:
-            BoardMeeting: Updated meeting with minutes and resolutions
-        """
+        """Conduct a board meeting with discussion and decisions."""
         # Find the meeting
         meeting = None
         for m in self.board_meetings:
@@ -1107,17 +1383,7 @@ Your voting weight: {member.voting_weight}
         meeting_type: MeetingType = MeetingType.COMMITTEE_MEETING,
         agenda: List[str] = None
     ) -> Dict[str, Any]:
-        """
-        Conduct a committee meeting with real API calls.
-        
-        Args:
-            committee_id: ID of the committee
-            meeting_type: Type of meeting
-            agenda: List of agenda items
-            
-        Returns:
-            Dict[str, Any]: Committee meeting results with issues discussed and recommendations
-        """
+        """Conduct a committee meeting with real API calls."""
         if committee_id not in self.board_committees:
             raise ValueError(f"Committee {committee_id} not found")
         
@@ -1222,12 +1488,7 @@ Your voting weight: {member.voting_weight}
             }
     
     def evaluate_board_performance(self) -> Dict[str, Any]:
-        """
-        Evaluate board performance and governance effectiveness.
-        
-        Returns:
-            Dict[str, Any]: Board performance metrics and analysis
-        """
+        """Evaluate board performance and governance effectiveness."""
         if self.verbose:
             logger.info("Evaluating board performance")
         
@@ -1280,6 +1541,504 @@ Your voting weight: {member.voting_weight}
         
         return performance_metrics
     
+    def calculate_esg_score(self) -> ESGScore:
+        """Calculate comprehensive ESG (Environmental, Social, Governance) score."""
+        if self.verbose:
+            CORPORATE_LOGGER.info("Calculating ESG score for corporate governance")
+        
+        # Calculate environmental score
+        environmental_score = self._calculate_environmental_score()
+        
+        # Calculate social score
+        social_score = self._calculate_social_score()
+        
+        # Calculate governance score
+        governance_score = self._calculate_governance_score()
+        
+        # Calculate overall score
+        overall_score = (environmental_score + social_score + governance_score) / 3
+        
+        # Calculate diversity index
+        diversity_index = self._calculate_diversity_index()
+        
+        # Calculate stakeholder satisfaction
+        stakeholder_satisfaction = self._calculate_stakeholder_satisfaction()
+        
+        esg_score = ESGScore(
+            environmental_score=environmental_score,
+            social_score=social_score,
+            governance_score=governance_score,
+            overall_score=overall_score,
+            carbon_footprint=self._calculate_carbon_footprint(),
+            diversity_index=diversity_index,
+            stakeholder_satisfaction=stakeholder_satisfaction,
+            sustainability_goals=self._get_sustainability_goals()
+        )
+        
+        # Store ESG score
+        self.esg_scores[str(time.time())] = esg_score
+        
+        return esg_score
+    
+    def _calculate_environmental_score(self) -> float:
+        """Calculate environmental performance score."""
+        # Base score from sustainability practices
+        base_score = 70.0
+        
+        # Adjust based on sustainability targets
+        if self.sustainability_targets:
+            target_achievement = len([t for t in self.sustainability_targets.values() if t.get('achieved', False)])
+            total_targets = len(self.sustainability_targets)
+            if total_targets > 0:
+                base_score += (target_achievement / total_targets) * 30
+        
+        return min(100.0, base_score)
+    
+    def _calculate_social_score(self) -> float:
+        """Calculate social performance score."""
+        # Base score from stakeholder engagement
+        base_score = 75.0
+        
+        # Adjust based on stakeholder satisfaction
+        if self.stakeholder_engagements:
+            avg_satisfaction = sum(s.satisfaction_score for s in self.stakeholder_engagements.values()) / len(self.stakeholder_engagements)
+            base_score = avg_satisfaction
+        
+        return min(100.0, base_score)
+    
+    def _calculate_governance_score(self) -> float:
+        """Calculate governance performance score."""
+        # Base score from board performance
+        base_score = 80.0
+        
+        # Adjust based on board performance metrics
+        if hasattr(self, 'performance_metrics') and self.performance_metrics:
+            governance_metrics = self.performance_metrics.get('governance', {})
+            if governance_metrics:
+                base_score = governance_metrics.get('governance_score', base_score)
+        
+        return min(100.0, base_score)
+    
+    def _calculate_diversity_index(self) -> float:
+        """Calculate board diversity index."""
+        if not self.board_members:
+            return 0.0
+        
+        # Simple diversity calculation based on different expertise areas
+        unique_expertise = set()
+        for member_id in self.board_members:
+            if member_id in self.members:
+                unique_expertise.update(self.members[member_id].expertise_areas)
+        
+        # Normalize to 0-1 scale
+        max_possible_diversity = 10  # Assume max 10 different expertise areas
+        diversity_index = min(1.0, len(unique_expertise) / max_possible_diversity)
+        
+        return diversity_index
+    
+    def _calculate_stakeholder_satisfaction(self) -> float:
+        """Calculate overall stakeholder satisfaction score."""
+        if not self.stakeholder_engagements:
+            return 75.0  # Default score
+        
+        avg_satisfaction = sum(s.satisfaction_score for s in self.stakeholder_engagements.values()) / len(self.stakeholder_engagements)
+        return avg_satisfaction
+    
+    def _calculate_carbon_footprint(self) -> float:
+        """Calculate corporate carbon footprint."""
+        # Simplified carbon footprint calculation
+        base_footprint = 100.0  # Base metric tons CO2 equivalent
+        
+        # Adjust based on sustainability practices
+        if self.sustainability_targets:
+            carbon_reduction = len([t for t in self.sustainability_targets.values() if 'carbon' in t.get('type', '').lower()])
+            base_footprint -= carbon_reduction * 10
+        
+        return max(0.0, base_footprint)
+    
+    def _get_sustainability_goals(self) -> List[str]:
+        """Get current sustainability goals."""
+        if not self.sustainability_targets:
+            return ["Carbon neutrality by 2030", "100% renewable energy", "Zero waste to landfill"]
+        
+        return [goal.get('description', '') for goal in self.sustainability_targets.values()]
+    
+    def conduct_risk_assessment(self, risk_category: str = "comprehensive") -> Dict[str, RiskAssessment]:
+        """Conduct comprehensive risk assessment across all corporate areas."""
+        if self.verbose:
+            CORPORATE_LOGGER.info(f"Conducting {risk_category} risk assessment")
+        
+        risk_categories = [
+            "operational", "financial", "strategic", "compliance", 
+            "cybersecurity", "reputation", "environmental", "regulatory"
+        ]
+        
+        assessments = {}
+        
+        for category in risk_categories:
+            if risk_category == "comprehensive" or risk_category == category:
+                assessment = self._assess_risk_category(category)
+                assessments[category] = assessment
+                self.risk_assessments[assessment.risk_id] = assessment
+        
+        return assessments
+    
+    def _assess_risk_category(self, category: str) -> RiskAssessment:
+        """Assess risk for a specific category."""
+        # Simplified risk assessment logic
+        risk_levels = {"operational": 0.3, "financial": 0.4, "strategic": 0.5, "compliance": 0.2}
+        probabilities = {"operational": 0.6, "financial": 0.4, "strategic": 0.3, "compliance": 0.7}
+        
+        probability = probabilities.get(category, 0.5)
+        impact = risk_levels.get(category, 0.4)
+        risk_score = probability * impact
+        
+        risk_level = "low" if risk_score < 0.3 else "medium" if risk_score < 0.6 else "high"
+        
+        return RiskAssessment(
+            risk_category=category,
+            risk_level=risk_level,
+            probability=probability,
+            impact=impact,
+            risk_score=risk_score,
+            mitigation_strategies=self._get_mitigation_strategies(category),
+            owner=self._get_risk_owner(category)
+        )
+    
+    def _get_mitigation_strategies(self, category: str) -> List[str]:
+        """Get mitigation strategies for risk category."""
+        strategies = {
+            "operational": ["Process optimization", "Backup systems", "Training programs"],
+            "financial": ["Diversification", "Hedging strategies", "Cash reserves"],
+            "strategic": ["Market research", "Competitive analysis", "Scenario planning"],
+            "compliance": ["Regular audits", "Training programs", "Compliance monitoring"],
+            "cybersecurity": ["Security protocols", "Incident response", "Regular updates"],
+            "reputation": ["Crisis management", "Stakeholder communication", "Brand monitoring"],
+            "environmental": ["Sustainability initiatives", "Environmental monitoring", "Green practices"],
+            "regulatory": ["Legal compliance", "Regulatory monitoring", "Policy updates"]
+        }
+        return strategies.get(category, ["General risk mitigation", "Monitoring", "Response planning"])
+    
+    def _get_risk_owner(self, category: str) -> str:
+        """Get risk owner for category."""
+        owners = {
+            "operational": "COO",
+            "financial": "CFO", 
+            "strategic": "CEO",
+            "compliance": "General Counsel",
+            "cybersecurity": "CTO",
+            "reputation": "CEO",
+            "environmental": "Sustainability Officer",
+            "regulatory": "Compliance Officer"
+        }
+        return owners.get(category, "Board of Directors")
+    
+    def manage_stakeholder_engagement(self, stakeholder_type: str = "all") -> Dict[str, StakeholderEngagement]:
+        """
+        Manage comprehensive stakeholder engagement across all stakeholder groups.
+        
+        Args:
+            stakeholder_type: Type of stakeholders to engage with
+            
+        Returns:
+            Dict[str, StakeholderEngagement]: Stakeholder engagement records
+        """
+        if self.verbose:
+            CORPORATE_LOGGER.info(f"Managing stakeholder engagement for {stakeholder_type}")
+        
+        stakeholder_types = ["investor", "customer", "employee", "community", "supplier", "regulator"]
+        engagements = {}
+        
+        for stype in stakeholder_types:
+            if stakeholder_type == "all" or stakeholder_type == stype:
+                engagement = self._create_stakeholder_engagement(stype)
+                engagements[stype] = engagement
+                self.stakeholder_engagements[engagement.stakeholder_id] = engagement
+        
+        return engagements
+    
+    def _create_stakeholder_engagement(self, stakeholder_type: str) -> StakeholderEngagement:
+        """Create stakeholder engagement record."""
+        # Simplified stakeholder engagement logic
+        satisfaction_scores = {
+            "investor": 85.0,
+            "customer": 80.0,
+            "employee": 75.0,
+            "community": 70.0,
+            "supplier": 78.0,
+            "regulator": 90.0
+        }
+        
+        return StakeholderEngagement(
+            stakeholder_type=stakeholder_type,
+            name=f"{stakeholder_type.title()} Group",
+            influence_level="high" if stakeholder_type in ["investor", "regulator"] else "medium",
+            interest_level="high" if stakeholder_type in ["investor", "customer"] else "medium",
+            satisfaction_score=satisfaction_scores.get(stakeholder_type, 75.0),
+            concerns=self._get_stakeholder_concerns(stakeholder_type)
+        )
+    
+    def _get_stakeholder_concerns(self, stakeholder_type: str) -> List[str]:
+        """Get common concerns for stakeholder type."""
+        concerns = {
+            "investor": ["ROI", "Risk management", "Growth prospects"],
+            "customer": ["Product quality", "Customer service", "Pricing"],
+            "employee": ["Work-life balance", "Career development", "Compensation"],
+            "community": ["Environmental impact", "Local employment", "Community support"],
+            "supplier": ["Payment terms", "Partnership stability", "Fair treatment"],
+            "regulator": ["Compliance", "Transparency", "Risk management"]
+        }
+        return concerns.get(stakeholder_type, ["General concerns", "Communication", "Transparency"])
+    
+    def establish_compliance_framework(self, regulation_type: str = "comprehensive") -> Dict[str, ComplianceFramework]:
+        """Establish comprehensive compliance framework for regulatory adherence."""
+        if self.verbose:
+            CORPORATE_LOGGER.info(f"Establishing compliance framework for {regulation_type}")
+        
+        regulations = [
+            ("SOX", "financial", ["Internal controls", "Financial reporting", "Audit requirements"]),
+            ("GDPR", "data_privacy", ["Data protection", "Privacy rights", "Consent management"]),
+            ("ISO 27001", "cybersecurity", ["Information security", "Risk management", "Security controls"]),
+            ("ESG", "sustainability", ["Environmental reporting", "Social responsibility", "Governance standards"]),
+            ("HIPAA", "healthcare", ["Patient privacy", "Data security", "Compliance monitoring"])
+        ]
+        
+        frameworks = {}
+        
+        for reg_name, reg_type, requirements in regulations:
+            if regulation_type == "comprehensive" or regulation_type == reg_type:
+                framework = ComplianceFramework(
+                    regulation_name=reg_name,
+                    regulation_type=reg_type,
+                    requirements=requirements,
+                    controls=self._get_compliance_controls(reg_type),
+                    responsible_officer=self._get_compliance_officer(reg_type)
+                )
+                frameworks[reg_name] = framework
+                self.compliance_frameworks[framework.compliance_id] = framework
+        
+        return frameworks
+    
+    def _get_compliance_controls(self, regulation_type: str) -> List[str]:
+        """Get compliance controls for regulation type."""
+        controls = {
+            "financial": ["Internal audit", "Financial controls", "Reporting systems"],
+            "data_privacy": ["Data encryption", "Access controls", "Privacy policies"],
+            "cybersecurity": ["Security monitoring", "Incident response", "Access management"],
+            "sustainability": ["Environmental monitoring", "Sustainability reporting", "Goal tracking"],
+            "healthcare": ["Patient data protection", "Access controls", "Audit trails"]
+        }
+        return controls.get(regulation_type, ["General controls", "Monitoring", "Reporting"])
+    
+    def _get_compliance_officer(self, regulation_type: str) -> str:
+        """Get compliance officer for regulation type."""
+        officers = {
+            "financial": "CFO",
+            "data_privacy": "Data Protection Officer",
+            "cybersecurity": "CISO",
+            "sustainability": "Sustainability Officer",
+            "healthcare": "Compliance Officer"
+        }
+        return officers.get(regulation_type, "Compliance Officer")
+    
+    def _process_proposal_task(self, task: str, **kwargs) -> Dict[str, Any]:
+        """
+        Process proposal-related tasks with performance optimization.
+        
+        Args:
+            task: The proposal task to process
+            **kwargs: Additional parameters for proposal creation
+            
+        Returns:
+            Dict[str, Any]: Proposal processing results
+        """
+        if self.verbose:
+            logger.info("Processing proposal task with democratic voting")
+        
+        try:
+            # Create a proposal from the task
+            proposal_id = self.create_proposal(
+                title=f"Task Proposal: {task[:50]}...",
+                description=task,
+                proposal_type=ProposalType.STRATEGIC_INITIATIVE,
+                sponsor_id=self.executive_team[0] if self.executive_team else self.board_members[0],
+                department=DepartmentType.OPERATIONS,
+                **kwargs
+            )
+            
+            # Conduct democratic vote with error handling
+            vote = self.conduct_corporate_vote(proposal_id)
+            
+            return {
+                "status": "completed",
+                "proposal_id": proposal_id,
+                "vote_result": vote.result.value,
+                "participants": len(vote.participants),
+                "task": task,
+                "timestamp": time.time()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing proposal task: {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "task": task
+            }
+    
+    def _process_meeting_task(self, task: str, **kwargs) -> Dict[str, Any]:
+        """Process meeting-related tasks with board governance."""
+        if self.verbose:
+            logger.info("Processing meeting task with board governance")
+        
+        try:
+            # Schedule and conduct a board meeting
+            meeting_id = self.schedule_board_meeting(
+                meeting_type=MeetingType.REGULAR_BOARD,
+                agenda=[task],
+                **kwargs
+            )
+            
+            meeting = self.conduct_board_meeting(
+                meeting_id=meeting_id,
+                discussion_topics=[task]
+            )
+            
+            return {
+                "status": "completed",
+                "meeting_id": meeting_id,
+                "resolutions": meeting.resolutions,
+                "minutes": meeting.minutes,
+                "task": task,
+                "timestamp": time.time()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing meeting task: {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "task": task
+            }
+    
+    def _process_strategic_task(self, task: str, **kwargs) -> Dict[str, Any]:
+        """
+        Process strategic planning tasks with comprehensive analysis.
+        
+        Args:
+            task: The strategic task to process
+            **kwargs: Additional parameters for strategic planning
+            
+        Returns:
+            Dict[str, Any]: Strategic planning results
+        """
+        if self.verbose:
+            logger.info("Processing strategic task with comprehensive analysis")
+        
+        try:
+            # Run a corporate session for strategic planning
+            session_results = self.run_corporate_session(
+                session_type="strategic_planning",
+                agenda_items=[task],
+                **kwargs
+            )
+            
+            return {
+                "status": "completed",
+                "session_type": session_results["session_type"],
+                "decisions": session_results["decisions"],
+                "task": task,
+                "timestamp": time.time()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing strategic task: {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "task": task
+            }
+    
+    def _process_general_task(self, task: str, **kwargs) -> Union[str, Dict[str, Any]]:
+        """Process general corporate tasks using democratic swarm with performance optimization."""
+        if self.verbose:
+            logger.info("Processing general task through democratic swarm")
+        
+        if self.democratic_swarm is not None:
+            try:
+                result = self.democratic_swarm.run(task)
+                
+                # Handle different result types with robust parsing
+                parsed_result = self._parse_swarm_result(result)
+                
+                return {
+                    "status": "completed",
+                    "result": parsed_result,
+                    "task": task,
+                    "timestamp": time.time()
+                }
+                
+            except Exception as e:
+                logger.error(f"Democratic swarm encountered issue: {e}")
+                return {
+                    "status": "error",
+                    "error": str(e),
+                    "task": task
+                }
+        else:
+            # Fallback to simple task processing
+            logger.warning("Democratic swarm not available, using fallback processing")
+            return {
+                "status": "completed",
+                "result": f"Task processed: {task}",
+                "task": task,
+                "timestamp": time.time()
+            }
+    
+    def _parse_swarm_result(self, result: Any) -> Dict[str, Any]:
+        """Parse swarm result with robust error handling."""
+        try:
+            if isinstance(result, list):
+                if result and len(result) > 0:
+                    first_item = result[0]
+                    if isinstance(first_item, dict) and 'function' in first_item:
+                        function_data = first_item.get('function', {})
+                        if 'arguments' in function_data:
+                            try:
+                                args_str = function_data['arguments']
+                                if isinstance(args_str, str):
+                                    parsed_args = json.loads(args_str)
+                                    return parsed_args
+                                else:
+                                    return args_str
+                            except (json.JSONDecodeError, TypeError):
+                                return function_data.get('arguments', {})
+                        else:
+                            return function_data
+                    else:
+                        return {
+                            'result': 'processed',
+                            'data': result,
+                            'type': 'list_response'
+                        }
+                else:
+                    return {'result': 'empty_response', 'type': 'list_response'}
+            elif isinstance(result, dict):
+                return result
+            else:
+                return {
+                    'result': 'processed',
+                    'data': str(result),
+                    'type': 'string_response'
+                }
+        except Exception as e:
+            logger.warning(f"Error parsing swarm result: {e}")
+            return {
+                'result': 'parse_error',
+                'error': str(e),
+                'raw_data': str(result)
+            }
+    
     def _analyze_vote_results(
         self,
         individual_votes: Dict[str, Dict[str, Any]],
@@ -1323,16 +2082,7 @@ Your voting weight: {member.voting_weight}
         session_type: str = "board_meeting",
         agenda_items: List[str] = None
     ) -> Dict[str, Any]:
-        """
-        Run a corporate governance session.
-        
-        Args:
-            session_type: Type of corporate session
-            agenda_items: List of agenda items to discuss
-            
-        Returns:
-            Dict[str, Any]: Session results and outcomes
-        """
+        """Run a corporate governance session."""
         if not agenda_items:
             agenda_items = ["Strategic planning", "Budget review", "Operational updates"]
         
@@ -1377,14 +2127,21 @@ Your voting weight: {member.voting_weight}
         return session_results
     
     def get_corporate_status(self) -> Dict[str, Any]:
-        """
-        Get current corporate status and metrics.
-        
-        Returns:
-            Dict[str, Any]: Corporate status information
-        """
+        """Get current corporate status and metrics including advanced governance frameworks."""
         # Get board performance metrics
         board_performance = self.evaluate_board_performance()
+        
+        # Calculate ESG score
+        esg_score = self.calculate_esg_score()
+        
+        # Get risk assessment summary
+        risk_summary = self._get_risk_summary()
+        
+        # Get stakeholder engagement summary
+        stakeholder_summary = self._get_stakeholder_summary()
+        
+        # Get compliance status
+        compliance_status = self._get_compliance_status()
         
         return {
             "name": self.name,
@@ -1432,8 +2189,174 @@ Your voting weight: {member.voting_weight}
                     for meeting in self.board_meetings[-3:]  # Last 3 meetings
                 ],
                 "performance_metrics": board_performance
+            },
+            "esg_governance": {
+                "overall_score": esg_score.overall_score,
+                "environmental_score": esg_score.environmental_score,
+                "social_score": esg_score.social_score,
+                "governance_score": esg_score.governance_score,
+                "carbon_footprint": esg_score.carbon_footprint,
+                "diversity_index": esg_score.diversity_index,
+                "stakeholder_satisfaction": esg_score.stakeholder_satisfaction,
+                "sustainability_goals": esg_score.sustainability_goals
+            },
+            "risk_management": risk_summary,
+            "stakeholder_engagement": stakeholder_summary,
+            "compliance_framework": compliance_status,
+            "advanced_governance": {
+                "total_risk_assessments": len(self.risk_assessments),
+                "total_stakeholder_engagements": len(self.stakeholder_engagements),
+                "total_compliance_frameworks": len(self.compliance_frameworks),
+                "crisis_management_plans": len(self.crisis_management_plans),
+                "innovation_pipeline_items": len(self.innovation_pipeline),
+                "audit_trail_entries": len(self.audit_trails)
             }
         }
+    
+    def _get_risk_summary(self) -> Dict[str, Any]:
+        """Get risk management summary."""
+        if not self.risk_assessments:
+            return {"status": "No risk assessments conducted", "total_risks": 0}
+        
+        high_risks = [r for r in self.risk_assessments.values() if r.risk_level == "high"]
+        medium_risks = [r for r in self.risk_assessments.values() if r.risk_level == "medium"]
+        low_risks = [r for r in self.risk_assessments.values() if r.risk_level == "low"]
+        
+        return {
+            "total_risks": len(self.risk_assessments),
+            "high_risks": len(high_risks),
+            "medium_risks": len(medium_risks),
+            "low_risks": len(low_risks),
+            "risk_categories": list(set(r.risk_category for r in self.risk_assessments.values())),
+            "average_risk_score": sum(r.risk_score for r in self.risk_assessments.values()) / len(self.risk_assessments)
+        }
+    
+    def _get_stakeholder_summary(self) -> Dict[str, Any]:
+        """Get stakeholder engagement summary."""
+        if not self.stakeholder_engagements:
+            return {"status": "No stakeholder engagements recorded", "total_stakeholders": 0}
+        
+        stakeholder_types = list(set(s.stakeholder_type for s in self.stakeholder_engagements.values()))
+        avg_satisfaction = sum(s.satisfaction_score for s in self.stakeholder_engagements.values()) / len(self.stakeholder_engagements)
+        
+        return {
+            "total_stakeholders": len(self.stakeholder_engagements),
+            "stakeholder_types": stakeholder_types,
+            "average_satisfaction": avg_satisfaction,
+            "high_influence_stakeholders": len([s for s in self.stakeholder_engagements.values() if s.influence_level == "high"]),
+            "high_interest_stakeholders": len([s for s in self.stakeholder_engagements.values() if s.interest_level == "high"])
+        }
+    
+    def _get_compliance_status(self) -> Dict[str, Any]:
+        """Get compliance framework status."""
+        if not self.compliance_frameworks:
+            return {"status": "No compliance frameworks established", "total_frameworks": 0}
+        
+        compliant_frameworks = [f for f in self.compliance_frameworks.values() if f.compliance_status == "compliant"]
+        non_compliant_frameworks = [f for f in self.compliance_frameworks.values() if f.compliance_status == "non_compliant"]
+        
+        return {
+            "total_frameworks": len(self.compliance_frameworks),
+            "compliant_frameworks": len(compliant_frameworks),
+            "non_compliant_frameworks": len(non_compliant_frameworks),
+            "compliance_rate": len(compliant_frameworks) / len(self.compliance_frameworks) * 100,
+            "regulation_types": list(set(f.regulation_type for f in self.compliance_frameworks.values())),
+            "average_compliance_score": sum(f.compliance_score for f in self.compliance_frameworks.values()) / len(self.compliance_frameworks)
+        }
+    
+    def conduct_comprehensive_governance_review(self) -> Dict[str, Any]:
+        """Conduct a comprehensive governance review across all frameworks."""
+        if self.verbose:
+            CORPORATE_LOGGER.info("Conducting comprehensive governance review")
+        
+        # Calculate ESG score
+        esg_score = self.calculate_esg_score()
+        
+        # Conduct risk assessment
+        risk_assessments = self.conduct_risk_assessment("comprehensive")
+        
+        # Manage stakeholder engagement
+        stakeholder_engagements = self.manage_stakeholder_engagement("all")
+        
+        # Establish compliance framework
+        compliance_frameworks = self.establish_compliance_framework("comprehensive")
+        
+        # Evaluate board performance
+        board_performance = self.evaluate_board_performance()
+        
+        # Get corporate status
+        corporate_status = self.get_corporate_status()
+        
+        return {
+            "review_timestamp": time.time(),
+            "esg_analysis": {
+                "overall_score": esg_score.overall_score,
+                "environmental_score": esg_score.environmental_score,
+                "social_score": esg_score.social_score,
+                "governance_score": esg_score.governance_score,
+                "carbon_footprint": esg_score.carbon_footprint,
+                "diversity_index": esg_score.diversity_index,
+                "stakeholder_satisfaction": esg_score.stakeholder_satisfaction
+            },
+            "risk_analysis": {
+                "total_risks": len(risk_assessments),
+                "high_risk_categories": [cat for cat, risk in risk_assessments.items() if risk.risk_level == "high"],
+                "average_risk_score": sum(risk.risk_score for risk in risk_assessments.values()) / len(risk_assessments) if risk_assessments else 0
+            },
+            "stakeholder_analysis": {
+                "total_stakeholders": len(stakeholder_engagements),
+                "average_satisfaction": sum(eng.satisfaction_score for eng in stakeholder_engagements.values()) / len(stakeholder_engagements) if stakeholder_engagements else 0,
+                "stakeholder_types": list(stakeholder_engagements.keys())
+            },
+            "compliance_analysis": {
+                "total_frameworks": len(compliance_frameworks),
+                "compliance_rate": len([f for f in compliance_frameworks.values() if f.compliance_status == "compliant"]) / len(compliance_frameworks) * 100 if compliance_frameworks else 0,
+                "regulation_types": list(set(f.regulation_type for f in compliance_frameworks.values()))
+            },
+            "board_performance": board_performance,
+            "corporate_status": corporate_status,
+            "governance_recommendations": self._generate_governance_recommendations(esg_score, risk_assessments, stakeholder_engagements, compliance_frameworks)
+        }
+    
+    def _generate_governance_recommendations(
+        self, 
+        esg_score: ESGScore, 
+        risk_assessments: Dict[str, RiskAssessment], 
+        stakeholder_engagements: Dict[str, StakeholderEngagement], 
+        compliance_frameworks: Dict[str, ComplianceFramework]
+    ) -> List[str]:
+        """Generate governance recommendations based on analysis."""
+        recommendations = []
+        
+        # ESG recommendations
+        if esg_score.overall_score < 70:
+            recommendations.append("Improve overall ESG performance through enhanced sustainability initiatives")
+        if esg_score.environmental_score < 70:
+            recommendations.append("Implement stronger environmental sustainability programs")
+        if esg_score.social_score < 70:
+            recommendations.append("Enhance social responsibility and stakeholder engagement")
+        if esg_score.governance_score < 70:
+            recommendations.append("Strengthen corporate governance practices and board oversight")
+        
+        # Risk recommendations
+        high_risks = [risk for risk in risk_assessments.values() if risk.risk_level == "high"]
+        if high_risks:
+            recommendations.append(f"Address {len(high_risks)} high-risk areas with immediate mitigation strategies")
+        
+        # Stakeholder recommendations
+        low_satisfaction_stakeholders = [eng for eng in stakeholder_engagements.values() if eng.satisfaction_score < 70]
+        if low_satisfaction_stakeholders:
+            recommendations.append("Improve stakeholder satisfaction through enhanced engagement programs")
+        
+        # Compliance recommendations
+        non_compliant = [f for f in compliance_frameworks.values() if f.compliance_status == "non_compliant"]
+        if non_compliant:
+            recommendations.append(f"Address {len(non_compliant)} non-compliant regulatory frameworks")
+        
+        if not recommendations:
+            recommendations.append("Maintain current governance excellence and continue monitoring")
+        
+        return recommendations
 
 
 class CostTracker:
