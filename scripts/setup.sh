@@ -38,36 +38,90 @@ print_status "Starting Swarms development environment setup..."
 
 # Check Python version
 print_status "Checking Python version..."
-if command_exists python3; then
-    PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
-    print_status "Found Python $PYTHON_VERSION"
+
+# Try to find Python executable (check both python and python3)
+PYTHON_CMD=""
+if command_exists python; then
+    # Check if python is version 3.x
+    if python -c 'import sys; exit(0 if sys.version_info[0] == 3 else 1)' 2>/dev/null; then
+        PYTHON_CMD="python"
+    fi
+elif command_exists python3; then
+    PYTHON_CMD="python3"
+fi
+
+if [ -n "$PYTHON_CMD" ]; then
+    PYTHON_VERSION=$($PYTHON_CMD -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+    print_status "Found Python $PYTHON_VERSION using '$PYTHON_CMD'"
     
     # Check if Python version meets requirements (>=3.10)
-    if python3 -c 'import sys; exit(0 if sys.version_info >= (3, 10) else 1)'; then
+    if $PYTHON_CMD -c 'import sys; exit(0 if sys.version_info >= (3, 10) else 1)'; then
         print_success "Python version is compatible (>=3.10)"
     else
         print_error "Python 3.10 or higher is required. Please install a compatible Python version."
         exit 1
     fi
 else
-    print_error "Python3 is not installed. Please install Python 3.10 or higher."
+    print_error "Python is not installed or not found. Please install Python 3.10 or higher."
+    print_error "Make sure Python is in your PATH and accessible as 'python' or 'python3'"
     exit 1
 fi
 
 # Install Poetry if not present
 if ! command_exists poetry; then
     print_status "Poetry not found. Installing Poetry..."
-    curl -sSL https://install.python-poetry.org | python3 -
+    
+    # Detect OS for Poetry installation
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "win32" ]]; then
+        # Windows/GitBash specific installation
+        print_status "Detected Windows environment, using pip to install Poetry..."
+        $PYTHON_CMD -m pip install --user poetry
+    else
+        # Unix-like systems
+        curl -sSL https://install.python-poetry.org | $PYTHON_CMD -
+    fi
     
     # Add Poetry to PATH for current session
-    export PATH="$HOME/.local/bin:$PATH"
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "win32" ]]; then
+        # Windows: Add Python Scripts directory to PATH
+        export PATH="$HOME/AppData/Roaming/Python/Scripts:$PATH"
+    else
+        # Unix-like systems
+        export PATH="$HOME/.local/bin:$PATH"
+    fi
     
     # Check if installation was successful
     if command_exists poetry; then
         print_success "Poetry installed successfully"
     else
-        print_error "Failed to install Poetry. Please install manually from https://python-poetry.org/"
-        exit 1
+        # Try to find poetry in common Windows locations
+        if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "win32" ]]; then
+            POETRY_PATH=""
+            for path in "$HOME/AppData/Roaming/Python/Scripts/poetry" "$HOME/.local/bin/poetry" "$APPDATA/Python/Scripts/poetry"; do
+                if [ -f "$path" ] || [ -f "$path.exe" ]; then
+                    POETRY_PATH="$path"
+                    break
+                fi
+            done
+            
+            if [ -n "$POETRY_PATH" ]; then
+                print_status "Found Poetry at $POETRY_PATH, adding to PATH..."
+                export PATH="$(dirname "$POETRY_PATH"):$PATH"
+                if command_exists poetry; then
+                    print_success "Poetry found and added to PATH"
+                else
+                    print_error "Failed to add Poetry to PATH. Please add it manually."
+                    exit 1
+                fi
+            else
+                print_error "Failed to install Poetry. Please install manually from https://python-poetry.org/"
+                print_error "For Windows, you can also try: pip install poetry"
+                exit 1
+            fi
+        else
+            print_error "Failed to install Poetry. Please install manually from https://python-poetry.org/"
+            exit 1
+        fi
     fi
 else
     print_success "Poetry is already installed"
@@ -77,7 +131,14 @@ fi
 # Configure Poetry to create virtual environments in project directory
 print_status "Configuring Poetry..."
 poetry config virtualenvs.in-project true
-poetry config virtualenvs.prefer-active-python true
+
+# Check if the prefer-active-python config option exists before setting it
+if poetry config --list | grep -q "virtualenvs.prefer-active-python"; then
+    poetry config virtualenvs.prefer-active-python true
+    print_status "Set virtualenvs.prefer-active-python to true"
+else
+    print_warning "virtualenvs.prefer-active-python option not available in this Poetry version, skipping..."
+fi
 
 # Install dependencies
 print_status "Installing project dependencies..."

@@ -1,7 +1,8 @@
-from typing import Dict, Union, Any
 import os
-import requests
 from enum import Enum
+from typing import Any, Dict, Union
+
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()

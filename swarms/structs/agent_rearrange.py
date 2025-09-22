@@ -4,6 +4,8 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.multi_agent_exec import run_agents_concurrently
+from swarms.structs.swarm_id import swarm_id
 from swarms.telemetry.main import log_agent_data
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.history_output_formatter import (
@@ -11,12 +13,75 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
-from swarms.structs.swarm_id import swarm_id
 
 logger = initialize_logger(log_folder="rearrange")
 
 
 class AgentRearrange:
+    """
+    A sophisticated multi-agent system for task rearrangement and orchestration.
+
+    The AgentRearrange class enables complex workflows where multiple agents can work
+    sequentially or concurrently based on a defined flow pattern. It supports both
+    sequential execution (using '->') and concurrent execution (using ',') within
+    the same workflow.
+
+    Key Features:
+    - Sequential and concurrent agent execution
+    - Custom flow patterns with arrow (->) and comma (,) syntax
+    - Team awareness and sequential flow information
+    - Human-in-the-loop integration
+    - Memory system support
+    - Batch and concurrent processing capabilities
+    - Comprehensive error handling and logging
+
+    Flow Syntax:
+    - Use '->' to define sequential execution: "agent1 -> agent2 -> agent3"
+    - Use ',' to define concurrent execution: "agent1, agent2 -> agent3"
+    - Combine both: "agent1 -> agent2, agent3 -> agent4"
+    - Use 'H' for human-in-the-loop: "agent1 -> H -> agent2"
+
+    Attributes:
+        id (str): Unique identifier for the agent rearrange system
+        name (str): Human-readable name for the system
+        description (str): Description of the system's purpose
+        agents (Dict[str, Agent]): Dictionary mapping agent names to Agent objects
+        flow (str): Flow pattern defining agent execution order
+        max_loops (int): Maximum number of execution loops
+        verbose (bool): Whether to enable verbose logging
+        memory_system (Any): Optional memory system for persistence
+        human_in_the_loop (bool): Whether to enable human interaction
+        custom_human_in_the_loop (Callable): Custom human interaction handler
+        output_type (OutputType): Format for output results
+        autosave (bool): Whether to automatically save execution data
+        rules (str): System rules and constraints
+        team_awareness (bool): Whether agents are aware of team structure
+        time_enabled (bool): Whether to track timestamps
+        message_id_on (bool): Whether to include message IDs
+        conversation (Conversation): Conversation history management
+
+    Example:
+        >>> from swarms import Agent, AgentRearrange
+        >>>
+        >>> # Create agents
+        >>> agent1 = Agent(name="researcher", ...)
+        >>> agent2 = Agent(name="writer", ...)
+        >>> agent3 = Agent(name="reviewer", ...)
+        >>>
+        >>> # Define flow: agent1 runs first, then agent2 and agent3 run concurrently
+        >>> flow = "researcher -> writer, reviewer"
+        >>>
+        >>> # Create rearrange system
+        >>> rearrange_system = AgentRearrange(
+        ...     agents=[agent1, agent2, agent3],
+        ...     flow=flow,
+        ...     max_loops=1,
+        ...     team_awareness=True
+        ... )
+        >>>
+        >>> # Execute task
+        >>> result = rearrange_system.run("Research and write a report")
+    """
 
     def __init__(
         self,
@@ -38,9 +103,55 @@ class AgentRearrange:
         team_awareness: bool = False,
         time_enabled: bool = False,
         message_id_on: bool = False,
-        *args,
-        **kwargs,
     ):
+        """
+        Initialize the AgentRearrange system.
+
+        Args:
+            id (str): Unique identifier for the agent rearrange system.
+                Defaults to a generated swarm ID.
+            name (str): Human-readable name for the system.
+                Defaults to "AgentRearrange".
+            description (str): Description of the system's purpose.
+                Defaults to "A swarm of agents for rearranging tasks.".
+            agents (List[Union[Agent, Callable]], optional): List of agents to include
+                in the system. Can be Agent objects or callable functions.
+                Defaults to None.
+            flow (str, optional): Flow pattern defining agent execution order.
+                Uses '->' for sequential and ',' for concurrent execution.
+                Defaults to None.
+            max_loops (int): Maximum number of execution loops. Must be > 0.
+                Defaults to 1.
+            verbose (bool): Whether to enable verbose logging.
+                Defaults to True.
+            memory_system (Any, optional): Optional memory system for persistence.
+                Defaults to None.
+            human_in_the_loop (bool): Whether to enable human interaction points.
+                Defaults to False.
+            custom_human_in_the_loop (Callable[[str], str], optional): Custom function
+                for handling human interaction. Takes input string, returns response.
+                Defaults to None.
+            output_type (OutputType): Format for output results. Can be "all", "final",
+                "list", or "dict". Defaults to "all".
+            autosave (bool): Whether to automatically save execution data.
+                Defaults to True.
+            rules (str, optional): System rules and constraints to add to conversation.
+                Defaults to None.
+            team_awareness (bool): Whether agents should be aware of team structure
+                and sequential flow. Defaults to False.
+            time_enabled (bool): Whether to track timestamps in conversations.
+                Defaults to False.
+            message_id_on (bool): Whether to include message IDs in conversations.
+                Defaults to False.
+
+        Raises:
+            ValueError: If agents list is None or empty, max_loops is 0,
+                flow is None or empty, or output_type is None or empty.
+
+        Note:
+            The agents parameter is converted to a dictionary mapping agent names
+            to Agent objects for efficient lookup during execution.
+        """
         self.name = name
         self.description = description
         self.id = id
@@ -80,6 +191,23 @@ class AgentRearrange:
         self.reliability_check()
 
     def reliability_check(self):
+        """
+        Validates the configuration parameters to ensure the system can run properly.
+
+        Performs comprehensive validation checks on critical parameters including
+        agents list, max_loops, flow pattern, and output_type to prevent runtime errors.
+
+        Raises:
+            ValueError: If any of the following conditions are met:
+                - agents list is None or empty
+                - max_loops is 0
+                - flow is None or empty string
+                - output_type is None or empty string
+
+        Note:
+            This method is called automatically during initialization to ensure
+            the system is properly configured before execution.
+        """
         if self.agents is None or len(self.agents) == 0:
             raise ValueError("Agents list cannot be None or empty")
 
@@ -93,6 +221,24 @@ class AgentRearrange:
             raise ValueError("output_type cannot be None or empty")
 
     def set_custom_flow(self, flow: str):
+        """
+        Sets a custom flow pattern for agent execution.
+
+        Allows dynamic modification of the execution flow after initialization.
+        The flow pattern defines how agents should be executed in sequence or
+        parallel using the standard syntax ('->' for sequential, ',' for concurrent).
+
+        Args:
+            flow (str): The new flow pattern to use for agent execution.
+                Must follow the syntax: "agent1 -> agent2, agent3 -> agent4"
+
+        Note:
+            The flow will be validated on the next execution. If invalid,
+            a ValueError will be raised during the run() method.
+
+        Example:
+            >>> rearrange_system.set_custom_flow("researcher -> writer, editor")
+        """
         self.flow = flow
         logger.info(f"Custom flow set: {flow}")
 
@@ -111,6 +257,20 @@ class AgentRearrange:
         agent_name: str,
         result: str,
     ):
+        """
+        Tracks the execution history for a specific agent.
+
+        Records the result of an agent's execution in the swarm history
+        for later analysis or debugging purposes.
+
+        Args:
+            agent_name (str): The name of the agent whose result to track.
+            result (str): The result/output from the agent's execution.
+
+        Note:
+            This method is typically called internally during agent execution
+            to maintain a complete history of all agent activities.
+        """
         self.swarm_history[agent_name].append(result)
 
     def remove_agent(self, agent_name: str):
@@ -306,6 +466,120 @@ class AgentRearrange:
         """
         return self._get_sequential_flow_info()
 
+    def _run_concurrent_workflow(
+        self,
+        agent_names: List[str],
+        img: str = None,
+        *args,
+        **kwargs,
+    ) -> Dict[str, str]:
+        """
+        Executes agents concurrently when comma is detected in the flow.
+
+        This method handles the parallel execution of multiple agents when they
+        are separated by commas in the flow pattern. All specified agents run
+        simultaneously and their results are collected and returned.
+
+        Args:
+            agent_names (List[str]): List of agent names to run concurrently.
+                These agents will execute in parallel.
+            img (str, optional): Image input for agents that support it.
+                Defaults to None.
+            *args: Additional positional arguments passed to agent execution.
+            **kwargs: Additional keyword arguments passed to agent execution.
+
+        Returns:
+            Dict[str, str]: Dictionary mapping agent names to their execution results.
+                Keys are agent names, values are their respective outputs.
+
+        Note:
+            This method uses the run_agents_concurrently utility function
+            to handle the actual parallel execution and result collection.
+        """
+        logger.info(f"Running agents in parallel: {agent_names}")
+
+        # Get agent objects for concurrent execution
+        agents_to_run = [
+            self.agents[agent_name] for agent_name in agent_names
+        ]
+
+        # Run agents concurrently
+        results = run_agents_concurrently(
+            agents=agents_to_run,
+            task=self.conversation.get_str(),
+        )
+
+        # Process results and update conversation
+        response_dict = {}
+        for i, agent_name in enumerate(agent_names):
+            result = results[i]
+
+            # print(f"Result: {result}")
+
+            self.conversation.add(agent_name, result)
+            response_dict[agent_name] = result
+            logger.debug(f"Agent {agent_name} output: {result}")
+
+        return response_dict
+
+    def _run_sequential_workflow(
+        self,
+        agent_name: str,
+        tasks: List[str],
+        img: str = None,
+        *args,
+        **kwargs,
+    ) -> str:
+        """
+        Executes a single agent sequentially.
+
+        This method handles the sequential execution of a single agent in the flow.
+        It provides sequential awareness information to the agent if team_awareness
+        is enabled, allowing the agent to understand its position in the workflow.
+
+        Args:
+            agent_name (str): Name of the agent to run sequentially.
+            tasks (List[str]): List of all tasks in the flow for awareness context.
+                Used to determine the agent's position and provide awareness info.
+            img (str, optional): Image input for agents that support it.
+                Defaults to None.
+            *args: Additional positional arguments passed to agent execution.
+            **kwargs: Additional keyword arguments passed to agent execution.
+
+        Returns:
+            str: The result from the agent's execution, converted to string format.
+
+        Note:
+            If team_awareness is enabled, this method will add sequential awareness
+            information to the conversation before executing the agent, informing
+            the agent about its position in the workflow sequence.
+        """
+        logger.info(f"Running agent sequentially: {agent_name}")
+
+        agent = self.agents[agent_name]
+
+        # Add sequential awareness information for the agent
+        awareness_info = self._get_sequential_awareness(
+            agent_name, tasks
+        )
+        if awareness_info:
+            self.conversation.add("system", awareness_info)
+            logger.info(
+                f"Added sequential awareness for {agent_name}: {awareness_info}"
+            )
+
+        current_task = agent.run(
+            task=self.conversation.get_str(),
+            img=img,
+            *args,
+            **kwargs,
+        )
+        current_task = any_to_str(current_task)
+
+        self.conversation.add(agent.agent_name, current_task)
+
+        return current_task
+
     def _run(
         self,
         task: str = None,
@@ -315,27 +589,39 @@ class AgentRearrange:
         **kwargs,
     ):
         """
-        Runs the swarm to rearrange the tasks.
+        Runs the swarm to rearrange the tasks according to the defined flow.
+
+        This is the core execution method that orchestrates the entire workflow.
+        It processes the flow pattern, executes agents sequentially or concurrently
+        as specified, and returns the results in the requested format.
 
         Args:
-            task (str, optional): The initial task to be processed. Defaults to None.
-            img (str, optional): Image input for agents that support it. Defaults to None.
-            custom_tasks (Dict[str, str], optional): Custom tasks for specific agents. Defaults to None.
-            output_type (str, optional): Format of the output. Can be:
+            task (str, optional): The initial task to be processed by the swarm.
+                This is added to the conversation history. Defaults to None.
+            img (str, optional): Image input for agents that support it.
+                Defaults to None.
+            custom_tasks (Dict[str, str], optional): Custom tasks for specific agents.
+                Allows overriding the main task for specific agents in the flow.
+                Defaults to None.
+            *args: Additional positional arguments passed to agent execution.
+            **kwargs: Additional keyword arguments passed to agent execution.
+
+        Returns:
+            Union[str, List[str], Dict[str, str]]: The processed output in the format
+                specified by output_type:
                 - "all": String containing all agent responses concatenated
                 - "final": Only the final agent's response
                 - "list": List of all agent responses
                 - "dict": Dict mapping agent names to their responses
-                Defaults to "final".
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
-
-        Returns:
-            Union[str, List[str], Dict[str, str]]: The processed output in the specified format
 
         Raises:
-            ValueError: If flow validation fails
-            Exception: For any other errors during execution
+            ValueError: If flow validation fails or configuration is invalid.
+            Exception: For any other errors during execution.
+
+        Note:
+            This method handles both sequential and concurrent execution patterns
+            based on the flow syntax. It also supports custom task injection
+            and multiple execution loops as configured.
         """
         try:
             self.conversation.add("User", task)
@@ -345,14 +631,13 @@ class AgentRearrange:
                 return "Invalid flow configuration."
 
             tasks = self.flow.split("->")
-            current_task = task
             response_dict = {}
 
             logger.info(
                 f"Starting task execution with {len(tasks)} steps"
             )
 
-            # # Handle custom tasks
+            # Handle custom tasks
             if custom_tasks is not None:
                 logger.info("Processing custom tasks")
                 c_agent_name, c_task = next(
@@ -377,68 +662,28 @@ class AgentRearrange:
                     ]
 
                     if len(agent_names) > 1:
-                        # Parallel processing
-                        logger.info(
-                            f"Running agents in parallel: {agent_names}"
-                        )
-
-                        for agent_name in agent_names:
-                            agent = self.agents[agent_name]
-                            result = agent.run(
-                                task=self.conversation.get_str(),
+                        # Concurrent processing - comma detected
+                        concurrent_results = (
+                            self._run_concurrent_workflow(
+                                agent_names=agent_names,
                                 img=img,
                                 *args,
                                 **kwargs,
                             )
-                            result = any_to_str(result)
-
-                            self.conversation.add(
-                                agent.agent_name, result
-                            )
-
-                            response_dict[agent_name] = result
-                            logger.debug(
-                                f"Agent {agent_name} output: {result}"
-                            )
-
-                        ",".join(agent_names)
+                        )
+                        response_dict.update(concurrent_results)
 
                     else:
                         # Sequential processing
-                        logger.info(
-                            f"Running agent sequentially: {agent_names[0]}"
-                        )
                         agent_name = agent_names[0]
-
-                        agent = self.agents[agent_name]
-
-                        # Add sequential awareness information for the agent
-                        awareness_info = (
-                            self._get_sequential_awareness(
-                                agent_name, tasks
-                            )
-                        )
-                        if awareness_info:
-                            self.conversation.add(
-                                "system", awareness_info
-                            )
-                            logger.info(
-                                f"Added sequential awareness for {agent_name}: {awareness_info}"
-                            )
-
-                        current_task = agent.run(
-                            task=self.conversation.get_str(),
+                        result = self._run_sequential_workflow(
+                            agent_name=agent_name,
+                            tasks=tasks,
                             img=img,
                             *args,
                             **kwargs,
                         )
-                        current_task = any_to_str(current_task)
-
-                        self.conversation.add(
-                            agent.agent_name, current_task
-                        )
-
-                        response_dict[agent_name] = current_task
+                        response_dict[agent_name] = result
 
                 loop_count += 1
 
@@ -453,11 +698,28 @@ class AgentRearrange:
             self._catch_error(e)
 
     def _catch_error(self, e: Exception):
+        """
+        Handles errors that occur during swarm execution.
+
+        Provides comprehensive error handling including logging, data persistence,
+        and error reporting. This method is called whenever an exception occurs
+        during the execution of the swarm.
+
+        Args:
+            e (Exception): The exception that occurred during execution.
+
+        Returns:
+            Exception: The original exception for potential re-raising.
+
+        Note:
+            If autosave is enabled, the current state of the swarm will be
+            automatically saved to the logging system before error reporting.
+        """
         if self.autosave is True:
             log_agent_data(self.to_dict())
 
         logger.error(
-            f"An error occurred with your swarm {self.name}: Error: {e} Traceback: {e.__traceback__}"
+            f"AgentRearrange: Id: {self.id}, Name: {self.name}. An error occurred with your agent '{self.name}': Error: {e}. Traceback: {e.__traceback__}"
         )
 
         return e
@@ -470,16 +732,28 @@ class AgentRearrange:
         **kwargs,
     ):
         """
-        Execute the agent rearrangement task with specified compute resources.
+        Execute the agent rearrangement task with comprehensive logging and error handling.
+
+        This is the main public method for executing tasks through the agent rearrange
+        system. It provides telemetry logging, error handling, and delegates to the
+        internal _run method for actual execution.
 
         Args:
-            task (str, optional): The task to execute. Defaults to None.
-            img (str, optional): Path to input image if required. Defaults to None.
-            *args: Additional positional arguments passed to _run().
-            **kwargs: Additional keyword arguments passed to _run().
+            task (str, optional): The task to execute through the agent workflow.
+                Defaults to None.
+            img (str, optional): Path to input image if required by any agents.
+                Defaults to None.
+            *args: Additional positional arguments passed to the internal _run() method.
+            **kwargs: Additional keyword arguments passed to the internal _run() method.
 
         Returns:
-            The result from executing the task through the cluster operations wrapper.
+            The result from executing the task through the agent rearrange system.
+            The format depends on the configured output_type.
+
+        Note:
+            This method automatically logs agent data before and after execution
+            for telemetry and debugging purposes. Any exceptions are caught and
+            handled by the _catch_error method.
         """
         try:
             log_agent_data(self.to_dict())
@@ -502,13 +776,20 @@ class AgentRearrange:
         """
         Make the class callable by executing the run() method.
 
+        Enables the AgentRearrange instance to be called directly as a function,
+        providing a convenient interface for task execution.
+
         Args:
-            task (str): The task to execute.
+            task (str): The task to execute through the agent workflow.
             *args: Additional positional arguments passed to run().
             **kwargs: Additional keyword arguments passed to run().
 
         Returns:
-            The result from executing run().
+            The result from executing the task through the agent rearrange system.
+
+        Example:
+            >>> rearrange_system = AgentRearrange(agents=[agent1, agent2], flow="agent1 -> agent2")
+            >>> result = rearrange_system("Process this data")
         """
         try:
             return self.run(task=task, *args, **kwargs)
@@ -525,19 +806,29 @@ class AgentRearrange:
         **kwargs,
     ) -> List[str]:
         """
-        Process multiple tasks in batches.
+        Process multiple tasks in batches for efficient execution.
+
+        This method allows processing multiple tasks by dividing them into
+        smaller batches and processing each batch sequentially. This is useful
+        for managing memory usage and resource allocation when dealing with
+        large numbers of tasks.
 
         Args:
-            tasks: List of tasks to process
-            img: Optional list of images corresponding to tasks
-            batch_size: Number of tasks to process simultaneously
-            device: Computing device to use
-            device_id: Specific device ID if applicable
-            all_cores: Whether to use all CPU cores
-            all_gpus: Whether to use all available GPUs
+            tasks (List[str]): List of tasks to process through the agent workflow.
+            img (Optional[List[str]]): Optional list of images corresponding to tasks.
+                Must be the same length as tasks list. Defaults to None.
+            batch_size (int): Number of tasks to process simultaneously in each batch.
+                Defaults to 10.
+            *args: Additional positional arguments passed to individual task execution.
+            **kwargs: Additional keyword arguments passed to individual task execution.
 
         Returns:
-            List of results corresponding to input tasks
+            List[str]: List of results corresponding to input tasks in the same order.
+
+        Note:
+            This method processes tasks in batches to manage resource usage.
+            Each batch is processed sequentially, but individual tasks within
+            a batch may run concurrently depending on the flow configuration.
         """
         try:
             results = []
@@ -576,17 +867,27 @@ class AgentRearrange:
         """
         Process multiple tasks concurrently using ThreadPoolExecutor.
 
+        This method enables true parallel processing of multiple tasks by using
+        Python's ThreadPoolExecutor to run tasks simultaneously across multiple
+        threads. This is ideal for I/O-bound tasks or when you want maximum
+        parallelization.
+
         Args:
-            tasks: List of tasks to process
-            img: Optional list of images corresponding to tasks
-            max_workers: Maximum number of worker threads
-            device: Computing device to use
-            device_id: Specific device ID if applicable
-            all_cores: Whether to use all CPU cores
-            all_gpus: Whether to use all available GPUs
+            tasks (List[str]): List of tasks to process through the agent workflow.
+            img (Optional[List[str]]): Optional list of images corresponding to tasks.
+                Must be the same length as tasks list. Defaults to None.
+            max_workers (Optional[int]): Maximum number of worker threads to use.
+                If None, uses the default ThreadPoolExecutor behavior. Defaults to None.
+            *args: Additional positional arguments passed to individual task execution.
+            **kwargs: Additional keyword arguments passed to individual task execution.
 
         Returns:
-            List of results corresponding to input tasks
+            List[str]: List of results corresponding to input tasks in the same order.
+
+        Note:
+            This method uses ThreadPoolExecutor for true parallel execution.
+            The number of concurrent executions is limited by max_workers parameter.
+            Each task runs independently through the full agent workflow.
         """
         try:
             with ThreadPoolExecutor(
@@ -613,11 +914,19 @@ class AgentRearrange:
         """
         Serializes callable attributes by extracting their name and docstring.
 
+        This helper method handles the serialization of callable objects (functions,
+        methods, etc.) by extracting their metadata for storage or logging purposes.
+
         Args:
-            attr_value (Callable): The callable to serialize.
+            attr_value (Callable): The callable object to serialize.
 
         Returns:
-            Dict[str, Any]: Dictionary with name and docstring of the callable.
+            Dict[str, Any]: Dictionary containing the callable's name and docstring.
+                Keys are "name" and "doc", values are the corresponding attributes.
+
+        Note:
+            This method is used internally by to_dict() to handle non-serializable
+            callable attributes in a graceful manner.
         """
         return {
             "name": getattr(
@@ -630,12 +939,22 @@ class AgentRearrange:
         """
         Serializes an individual attribute, handling non-serializable objects.
 
+        This helper method attempts to serialize individual attributes for storage
+        or logging. It handles different types of objects including callables,
+        objects with to_dict methods, and basic serializable types.
+
         Args:
-            attr_name (str): The name of the attribute.
-            attr_value (Any): The value of the attribute.
+            attr_name (str): The name of the attribute being serialized.
+            attr_value (Any): The value of the attribute to serialize.
 
         Returns:
-            Any: The serialized value of the attribute.
+            Any: The serialized value of the attribute. For non-serializable objects,
+                returns a string representation indicating the object type.
+
+        Note:
+            This method is used internally by to_dict() to handle various types
+            of attributes in a robust manner, ensuring the serialization process
+            doesn't fail on complex objects.
         """
         try:
             if callable(attr_value):
@@ -655,10 +974,21 @@ class AgentRearrange:
     def to_dict(self) -> Dict[str, Any]:
         """
         Converts all attributes of the class, including callables, into a dictionary.
-        Handles non-serializable attributes by converting them or skipping them.
+
+        This method provides a comprehensive serialization of the AgentRearrange
+        instance, converting all attributes into a dictionary format suitable for
+        storage, logging, or transmission. It handles complex objects gracefully
+        by using helper methods for serialization.
 
         Returns:
-            Dict[str, Any]: A dictionary representation of the class attributes.
+            Dict[str, Any]: A dictionary representation of all class attributes.
+                Non-serializable objects are converted to string representations
+                or serialized using their to_dict method if available.
+
+        Note:
+            This method is used for telemetry logging and state persistence.
+            It recursively handles nested objects and provides fallback handling
+            for objects that cannot be directly serialized.
         """
         return {
             attr_name: self._serialize_attr(attr_name, attr_value)
@@ -677,23 +1007,45 @@ def rearrange(
     **kwargs,
 ):
     """
-    Rearranges the given list of agents based on the specified flow.
+    Convenience function to create and execute an AgentRearrange system in one call.
+
+    This function provides a simplified interface for creating an AgentRearrange
+    instance and immediately executing a task with it. It's useful for quick
+    prototyping or when you don't need to reuse the rearrange system.
 
     Parameters:
-        agents (List[Agent]): The list of agents to be rearranged.
-        flow (str): The flow used for rearranging the agents.
-        task (str, optional): The task to be performed during rearrangement. Defaults to None.
-        *args: Additional positional arguments.
-        **kwargs: Additional keyword arguments.
+        name (str, optional): Name for the agent rearrange system.
+            Defaults to None (uses AgentRearrange default).
+        description (str, optional): Description of the system.
+            Defaults to None (uses AgentRearrange default).
+        agents (List[Agent]): The list of agents to be included in the system.
+        flow (str): The flow pattern defining agent execution order.
+            Uses '->' for sequential and ',' for concurrent execution.
+        task (str, optional): The task to be performed during rearrangement.
+            Defaults to None.
+        img (str, optional): Image input for agents that support it.
+            Defaults to None.
+        *args: Additional positional arguments passed to AgentRearrange constructor.
+        **kwargs: Additional keyword arguments passed to AgentRearrange constructor.
 
     Returns:
         The result of running the agent system with the specified task.
+        The format depends on the output_type configuration.
 
     Example:
-        agents = [agent1, agent2, agent3]
-        flow = "agent1 -> agent2, agent3"
-        task = "Perform a task"
-        rearrange(agents, flow, task)
+        >>> from swarms import Agent, rearrange
+        >>>
+        >>> # Create agents
+        >>> agent1 = Agent(name="researcher", ...)
+        >>> agent2 = Agent(name="writer", ...)
+        >>> agent3 = Agent(name="reviewer", ...)
+        >>>
+        >>> # Execute task with flow
+        >>> result = rearrange(
+        ...     agents=[agent1, agent2, agent3],
+        ...     flow="researcher -> writer, reviewer",
+        ...     task="Research and write a report"
+        ... )
     """
     agent_system = AgentRearrange(
         name=name,

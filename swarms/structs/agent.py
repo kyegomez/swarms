@@ -14,7 +14,9 @@ from typing import (
     Callable,
     Dict,
     List,
+    Literal,
     Optional,
+    Sequence,
     Tuple,
     Union,
 )
@@ -22,6 +24,11 @@ from typing import (
 import toml
 import yaml
 from litellm import model_list
+from litellm.exceptions import (
+    AuthenticationError,
+    BadRequestError,
+    InternalServerError,
+)
 from litellm.utils import (
     get_max_tokens,
     supports_function_calling,
@@ -57,14 +64,15 @@ from swarms.schemas.mcp_schemas import (
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
+from swarms.structs.multi_agent_router import MultiAgentRouter
+from swarms.structs.safe_loading import (
+    SafeLoaderUtils,
+    SafeStateManager,
+)
 from swarms.structs.transforms import (
     MessageTransforms,
     TransformConfig,
     handle_transforms,
-)
-from swarms.structs.safe_loading import (
-    SafeLoaderUtils,
-    SafeStateManager,
 )
 from swarms.telemetry.main import log_agent_data
 from swarms.tools.base_tool import BaseTool
@@ -202,6 +210,8 @@ class Agent:
         list_of_pdf (str): The list of pdf
         tokenizer (Any): The tokenizer
         long_term_memory (BaseVectorDatabase): The long term memory
+        fallback_model_name (str): The fallback model name to use if primary model fails
+        fallback_models (List[str]): List of model names to try in order. First model is primary, rest are fallbacks
         preset_stopping_token (bool): Enable preset stopping token
         traceback (Any): The traceback
         traceback_handlers (Any): The traceback handlers
@@ -302,6 +312,14 @@ class Agent:
     >>> response = agent.run("Tell me a long story.")  # Will stream in real-time
     >>> print(response)  # Final complete response
 
+    >>> # Fallback model example
+    >>> agent = Agent(
+    ...     fallback_models=["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"],
+    ...     max_loops=1
+    ... )
+    >>> response = agent.run("Generate a report on the financials.")
+    >>> # Will try gpt-4o first, then gpt-4o-mini, then gpt-3.5-turbo if each fails
+
     """
 
     def __init__(
@@ -340,6 +358,7 @@ class Agent:
         tokenizer: Optional[Any] = None,
         long_term_memory: Optional[Union[Callable, Any]] = None,
         fallback_model_name: Optional[str] = None,
+        fallback_models: Optional[List[str]] = None,
         preset_stopping_token: Optional[bool] = False,
         traceback: Optional[Any] = None,
         traceback_handlers: Optional[Any] = None,
@@ -444,6 +463,9 @@ class Agent:
         drop_params: bool = True,
         thinking_tokens: int = None,
         reasoning_enabled: bool = False,
+        handoffs: Optional[Union[Sequence[Callable], Any]] = None,
+        capabilities: Optional[List[str]] = None,
+        mode: Literal["interactive", "fast", "standard"] = "standard",
         *args,
         **kwargs,
     ):
@@ -466,19 +488,6 @@ class Agent:
         self.dynamic_loops = dynamic_loops
         self.user_name = user_name
         self.context_length = context_length
-
-        # Initialize transforms
-        if transforms is None:
-            self.transforms = None
-        elif isinstance(transforms, TransformConfig):
-            self.transforms = MessageTransforms(transforms)
-        elif isinstance(transforms, dict):
-            config = TransformConfig(**transforms)
-            self.transforms = MessageTransforms(config)
-        else:
-            raise ValueError(
-                "transforms must be a TransformConfig object or a dictionary"
-            )
 
         self.sop = sop
         self.sop_list = sop_list
@@ -605,6 +614,28 @@ class Agent:
         self.thinking_tokens = thinking_tokens
         self.reasoning_enabled = reasoning_enabled
         self.fallback_model_name = fallback_model_name
+        self.handoffs = handoffs
+        self.capabilities = capabilities
+        self.mode = mode
+
+        # Initialize transforms
+        if transforms is None:
+            self.transforms = None
+        elif isinstance(transforms, TransformConfig):
+            self.transforms = MessageTransforms(transforms)
+        elif isinstance(transforms, dict):
+            config = TransformConfig(**transforms)
+            self.transforms = MessageTransforms(config)
+        else:
+            pass
+
+        self.fallback_models = fallback_models or []
+        self.current_model_index = 0
+        self.model_attempts = {}
+
+        # If fallback_models is provided, use the first model as the primary model
+        if self.fallback_models and not self.model_name:
+            self.model_name = self.fallback_models[0]
 
         # self.init_handling()
         self.setup_config()
@@ -654,6 +685,22 @@ class Agent:
             self.print_dashboard()
 
         self.reliability_check()
+
+        if self.mode == "fast":
+            self.print_on = False
+            self.verbose = False
+
+    def handle_handoffs(self, task: Optional[str] = None):
+        router = MultiAgentRouter(
+            name=self.agent_name,
+            description=self.agent_description,
+            agents=self.handoffs,
+            model=self.model_name,
+            temperature=self.temperature,
+            output_type=self.output_type,
+        )
+
+        return router.run(task=task)
 
     def setup_tools(self):
         return BaseTool(
@@ -729,6 +776,12 @@ class Agent:
         if self.model_name is None:
             self.model_name = "gpt-4o-mini"
 
+        # Use current model (which may be a fallback) only if fallbacks are configured
+        if self.fallback_models:
+            current_model = self.get_current_model()
+        else:
+            current_model = self.model_name
+
         # Determine if parallel tool calls should be enabled
         if exists(self.tools) and len(self.tools) >= 2:
             parallel_tool_calls = True
@@ -742,7 +795,7 @@ class Agent:
         try:
             # Base configuration that's always included
             common_args = {
-                "model_name": self.model_name,
+                "model_name": current_model,
                 "temperature": self.temperature,
                 "max_tokens": self.max_tokens,
                 "system_prompt": self.system_prompt,
@@ -1278,7 +1331,12 @@ class Agent:
 
                         success = True  # Mark as successful to exit the retry loop
 
-                    except Exception as e:
+                    except (
+                        BadRequestError,
+                        InternalServerError,
+                        AuthenticationError,
+                        Exception,
+                    ) as e:
 
                         if self.autosave is True:
                             log_agent_data(self.to_dict())
@@ -2551,9 +2609,16 @@ class Agent:
 
                 return out
 
-        except AgentLLMError as e:
+        except (
+            AgentLLMError,
+            BadRequestError,
+            InternalServerError,
+            AuthenticationError,
+            Exception,
+        ) as e:
             logger.error(
-                f"Error calling LLM: {e}. Task: {task}, Args: {args}, Kwargs: {kwargs} Traceback: {traceback.format_exc()}"
+                f"Error calling LLM with model '{self.get_current_model()}': {e}. "
+                f"Task: {task}, Args: {args}, Kwargs: {kwargs} Traceback: {traceback.format_exc()}"
             )
             raise e
 
@@ -2621,6 +2686,8 @@ class Agent:
                     *args,
                     **kwargs,
                 )
+            elif exists(self.handoffs):
+                output = self.handle_handoffs(task=task)
             else:
                 output = self._run(
                     task=task,
@@ -2632,8 +2699,78 @@ class Agent:
 
             return output
 
-        except AgentRunError as e:
-            self._handle_run_error(e)
+        except (
+            AgentRunError,
+            AgentLLMError,
+            BadRequestError,
+            InternalServerError,
+            AuthenticationError,
+            Exception,
+        ) as e:
+            # Try fallback models if available
+            if (
+                self.is_fallback_available()
+                and self.switch_to_next_model()
+            ):
+                # Always log fallback events, regardless of verbose setting
+                if self.verbose:
+                    logger.warning(
+                        f"⚠️  [FALLBACK] Agent '{self.agent_name}' failed with model '{self.get_current_model()}'. "
+                        f"Switching to fallback model '{self.get_current_model()}' (attempt {self.current_model_index + 1}/{len(self.get_available_models())})"
+                    )
+                try:
+                    # Recursive call to run() with the new model
+                    result = self.run(
+                        task=task,
+                        img=img,
+                        imgs=imgs,
+                        correct_answer=correct_answer,
+                        streaming_callback=streaming_callback,
+                        *args,
+                        **kwargs,
+                    )
+                    if self.verbose:
+                        # Log successful completion with fallback model
+                        logger.info(
+                            f"✅ [FALLBACK SUCCESS] Agent '{self.agent_name}' successfully completed task "
+                            f"using fallback model '{self.get_current_model()}'"
+                        )
+                    return result
+                except Exception as fallback_error:
+                    logger.error(
+                        f"Fallback model '{self.get_current_model()}' also failed: {fallback_error}"
+                    )
+                    # Continue to next fallback or raise if no more models
+                    if (
+                        self.is_fallback_available()
+                        and self.switch_to_next_model()
+                    ):
+                        return self.run(
+                            task=task,
+                            img=img,
+                            imgs=imgs,
+                            correct_answer=correct_answer,
+                            streaming_callback=streaming_callback,
+                            *args,
+                            **kwargs,
+                        )
+                    else:
+                        if self.verbose:
+                            logger.error(
+                                f"❌ [FALLBACK EXHAUSTED] Agent '{self.agent_name}' has exhausted all available models. "
+                                f"Tried {len(self.get_available_models())} models: {self.get_available_models()}"
+                            )
+
+                        self._handle_run_error(e)
+            else:
+                if self.verbose:
+                    # No fallback available
+                    logger.error(
+                        f"❌ [NO FALLBACK] Agent '{self.agent_name}' failed with model '{self.get_current_model()}' "
+                        f"and no fallback models are configured. Error: {str(e)[:100]}{'...' if len(str(e)) > 100 else ''}"
+                    )
+
+                self._handle_run_error(e)
 
         except KeyboardInterrupt:
             logger.warning(
@@ -2975,6 +3112,98 @@ class Agent:
             base_url=self.llm_base_url,
             api_key=self.llm_api_key,
         )
+
+    def get_available_models(self) -> List[str]:
+        """
+        Get the list of available models including primary and fallback models.
+
+        Returns:
+            List[str]: List of model names in order of preference
+        """
+        models = []
+
+        # If fallback_models is specified, use it as the primary list
+        if self.fallback_models:
+            models = self.fallback_models.copy()
+        else:
+            # Otherwise, build the list from individual parameters
+            if self.model_name:
+                models.append(self.model_name)
+            if (
+                self.fallback_model_name
+                and self.fallback_model_name not in models
+            ):
+                models.append(self.fallback_model_name)
+
+        return models
+
+    def get_current_model(self) -> str:
+        """
+        Get the current model being used.
+
+        Returns:
+            str: Current model name
+        """
+        available_models = self.get_available_models()
+        if self.current_model_index < len(available_models):
+            return available_models[self.current_model_index]
+        return (
+            available_models[0] if available_models else "gpt-4o-mini"
+        )
+
+    def switch_to_next_model(self) -> bool:
+        """
+        Switch to the next available model in the fallback list.
+
+        Returns:
+            bool: True if successfully switched to next model, False if no more models available
+        """
+        available_models = self.get_available_models()
+
+        if self.current_model_index + 1 < len(available_models):
+            previous_model = (
+                available_models[self.current_model_index]
+                if self.current_model_index < len(available_models)
+                else "Unknown"
+            )
+            self.current_model_index += 1
+            new_model = available_models[self.current_model_index]
+
+            # Always log model switches
+            logger.warning(
+                f"🔄 [MODEL SWITCH] Agent '{self.agent_name}' switching from '{previous_model}' to fallback model: '{new_model}' "
+                f"(attempt {self.current_model_index + 1}/{len(available_models)})"
+            )
+
+            # Update the model name and reinitialize LLM
+            self.model_name = new_model
+            self.llm = self.llm_handling()
+
+            return True
+        else:
+            logger.error(
+                f"❌ [NO MORE MODELS] Agent '{self.agent_name}' has exhausted all available models. "
+                f"Tried {len(available_models)} models: {available_models}"
+            )
+            return False
+
+    def reset_model_index(self) -> None:
+        """Reset the model index to use the primary model."""
+        self.current_model_index = 0
+        available_models = self.get_available_models()
+        if available_models:
+            self.model_name = available_models[0]
+            self.llm = self.llm_handling()
+
+    def is_fallback_available(self) -> bool:
+        """
+        Check if fallback models are available.
+
+        Returns:
+            bool: True if fallback models are configured
+        """
+        available_models = self.get_available_models()
+        return len(available_models) > 1
 
     def execute_tools(self, response: any, loop_count: int):
         # Handle None response gracefully

@@ -1,12 +1,9 @@
 # SpreadSheetSwarm Documentation
 
+## Overview
 
+The `SpreadSheetSwarm` is a concurrent processing system that manages multiple agents to execute tasks simultaneously. It supports both pre-configured agents and CSV-based agent loading, with automatic metadata tracking and file output capabilities.
 
-## Class Definition
-
-```python
-class SpreadSheetSwarm:
-```
 
 ## Full Path
 
@@ -14,38 +11,64 @@ class SpreadSheetSwarm:
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 ```
 
-### Attributes
 
-The `SpreadSheetSwarm` class contains several attributes that define its behavior and configuration. These attributes are initialized in the constructor (`__init__` method) and are used throughout the class to manage the swarm's operations.
+## Constructor
 
-| Attribute          | Type                              | Description                                                                                 |
-|--------------------|-----------------------------------|---------------------------------------------------------------------------------------------|
-| `name`             | `str`                             | The name of the swarm.                                                                      |
-| `description`      | `str`                             | A description of the swarm's purpose.                                                       |
-| `agents`           | `Union[Agent, List[Agent]]`       | The agents participating in the swarm. Can be a single agent or a list of agents.           |
-| `autosave_on`      | `bool`                            | Flag indicating whether autosave is enabled.                                                |
-| `save_file_path`   | `str`                             | The file path where the swarm data will be saved.                                           |
-| `task_queue`       | `queue.Queue`                     | The queue that stores tasks to be processed by the agents.                                  |
-| `lock`             | `threading.Lock`                  | A lock used for thread synchronization to prevent race conditions.                          |
-| `metadata`         | `SwarmRunMetadata`                | Metadata for the swarm run, including start time, end time, tasks completed, and outputs.   |
-| `run_all_agents`   | `bool`                            | Flag indicating whether to run all agents or just one.                                      |
-| `max_loops`     | `int`                             | The number of times to repeat the task.                                                     |
-| `workspace_dir`    | `str`                             | The directory where the workspace is located, retrieved from environment variables.         |
+### `__init__`
 
-### Parameters
+```python
+def __init__(
+    self,
+    name: str = "Spreadsheet-Swarm",
+    description: str = "A swarm that processes tasks concurrently using multiple agents and saves the metadata to a CSV file.",
+    agents: List[AgentType] = None,
+    autosave: bool = True,
+    save_file_path: str = None,
+    max_loops: int = 1,
+    workspace_dir: str = os.getenv("WORKSPACE_DIR"),
+    load_path: str = None,
+    verbose: bool = False,
+    *args,
+    **kwargs,
+):
+```
 
-- **`name`** (`str`, optional): The name of the swarm. Default is `"Spreadsheet-Swarm"`.
-- **`description`** (`str`, optional): A brief description of the swarm. Default is `"A swarm that processes tasks from a queue using multiple agents on different threads."`.
-- **`agents`** (`Union[Agent, List[Agent]]`, optional): The agents participating in the swarm. Default is an empty list.
-- **`autosave_on`** (`bool`, optional): A flag to indicate if autosave is enabled. Default is `True`.
-- **`save_file_path`** (`str`, optional): The file path where swarm data will be saved. Default is `"spreedsheet_swarm.csv"`.
-- **`run_all_agents`** (`bool`, optional): Flag to determine if all agents should run. Default is `True`.
-- **`max_loops`** (`int`, optional): The number of times to repeat the task. Default is `1`.
-- **`workspace_dir`** (`str`, optional): The directory where the workspace is located. Default is retrieved from environment variable `WORKSPACE_DIR`.
+#### Parameters
 
-### Constructor (`__init__`)
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `name` | `str` | `"Spreadsheet-Swarm"` | The name of the swarm |
+| `description` | `str` | `"A swarm that processes tasks concurrently using multiple agents and saves the metadata to a CSV file."` | Description of the swarm's purpose |
+| `agents` | `List[AgentType]` | `None` | List of agents participating in the swarm. If `None`, agents will be loaded from `load_path` |
+| `autosave` | `bool` | `True` | Whether to enable autosave of swarm metadata |
+| `save_file_path` | `str` | `None` | File path to save swarm metadata as CSV. If `None`, auto-generated based on workspace_dir |
+| `max_loops` | `int` | `1` | Number of times to repeat the swarm tasks |
+| `workspace_dir` | `str` | `os.getenv("WORKSPACE_DIR")` | Directory path of the workspace |
+| `load_path` | `str` | `None` | Path to CSV file containing agent configurations. Required if `agents` is `None` |
+| `verbose` | `bool` | `False` | Whether to enable verbose logging |
+| `*args` | `Any` | - | Additional positional arguments |
+| `**kwargs` | `Any` | - | Additional keyword arguments |
 
-The constructor initializes the `SpreadSheetSwarm` with the provided parameters. It sets up the task queue, locks for thread synchronization, and initializes the metadata.
+#### Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `name` | `str` | The name of the swarm |
+| `description` | `str` | Description of the swarm's purpose |
+| `agents` | `List[AgentType]` | List of agents participating in the swarm |
+| `autosave` | `bool` | Whether autosave is enabled |
+| `save_file_path` | `str` | File path where swarm metadata is saved |
+| `max_loops` | `int` | Number of times to repeat tasks |
+| `workspace_dir` | `str` | Directory path of the workspace |
+| `load_path` | `str` | Path to CSV file for agent configurations |
+| `verbose` | `bool` | Whether verbose logging is enabled |
+| `outputs` | `List[Dict]` | List of completed task outputs |
+| `tasks_completed` | `int` | Counter for completed tasks |
+| `agent_tasks` | `Dict[str, str]` | Mapping of agent names to their tasks |
+
+#### Note
+
+Either `agents` or `load_path` must be provided. If both are provided, `agents` will be used.
 
 ---
 
@@ -54,16 +77,16 @@ The constructor initializes the `SpreadSheetSwarm` with the provided parameters.
 ### `reliability_check`
 
 ```python
-def reliability_check(self):
+def reliability_check(self) -> None
 ```
 
 #### Description
 
-The `reliability_check` method performs a series of checks to ensure that the swarm is properly configured before it begins processing tasks. It verifies that there are agents available and that a valid file path is provided for saving the swarm's data. If any of these checks fail, an exception is raised.
+Performs reliability checks to ensure the swarm is properly configured before processing tasks. Verifies that agents are provided and max_loops is set.
 
 #### Raises
 
-- **`ValueError`**: Raised if no agents are provided or if no save file path is specified.
+- **`ValueError`**: If no agents are provided or if max_loops is not provided.
 
 #### Example
 
@@ -77,24 +100,71 @@ swarm.reliability_check()
 ### `run`
 
 ```python
-def run(self, task: str, *args, **kwargs):
+def run(self, task: str = None, *args, **kwargs) -> Dict[str, Any]
 ```
 
-#### Description
+#### Run Description
 
-The `run` method starts the task processing using the swarm. Depending on the configuration, it can either run all agents or a specific subset of them. The method tracks the start and end times of the task, executes the task multiple times if specified, and logs the results.
+Main method to run the swarm with a specified task or using configured tasks. Handles both single task execution and CSV-based configuration.
 
-#### Parameters
+#### Run Parameters
 
-- **`task`** (`str`): The task to be executed by the swarm.
+- **`task`** (`str`, optional): The task to be executed by all agents. If `None`, uses tasks from config.
 - **`*args`**: Additional positional arguments to pass to the agents.
 - **`**kwargs`**: Additional keyword arguments to pass to the agents.
 
-#### Example
+#### Run Returns
+
+- **`Dict[str, Any]`**: Summary of the swarm execution containing run_id, name, description, start_time, end_time, tasks_completed, number_of_agents, and outputs.
+
+#### Run Example
 
 ```python
 swarm = SpreadSheetSwarm(agents=[agent1, agent2])
-swarm.run("Process Data")
+result = swarm.run("Process Data")
+print(result)
+```
+
+---
+
+### `run_from_config`
+
+```python
+def run_from_config(self) -> Dict[str, Any]
+```
+
+#### Run From Config Description
+
+Runs all agents with their configured tasks concurrently. Loads agents from CSV if needed and executes tasks based on the agent-task mapping.
+
+#### Run From Config Returns
+
+- **`Dict[str, Any]`**: Summary of the swarm execution.
+
+#### Run From Config Example
+
+```python
+swarm = SpreadSheetSwarm(load_path="agents.csv")
+result = swarm.run_from_config()
+```
+
+---
+
+### `load_from_csv`
+
+```python
+def load_from_csv(self) -> None
+```
+
+#### Load From CSV Description
+
+Loads agent configurations from a CSV file. Expected CSV format includes columns: agent_name, description, system_prompt, task, model_name, docs, max_loops, user_name, stopping_token.
+
+#### Load From CSV Example
+
+```python
+swarm = SpreadSheetSwarm(load_path="agents.csv")
+swarm.load_from_csv()
 ```
 
 ---
@@ -102,18 +172,18 @@ swarm.run("Process Data")
 ### `export_to_json`
 
 ```python
-def export_to_json(self):
+def export_to_json(self) -> str
 ```
 
-#### Description
+#### Export To JSON Description
 
-The `export_to_json` method generates a JSON representation of the swarm's metadata. This can be useful for exporting the results to an external system or for logging purposes.
+Exports the swarm outputs to JSON format. Useful for external system integration or logging purposes.
 
-#### Returns
+#### Export To JSON Returns
 
-- **`str`**: The JSON representation of the swarm's metadata.
+- **`str`**: JSON representation of the swarm's metadata.
 
-#### Example
+#### Export To JSON Example
 
 ```python
 json_data = swarm.export_to_json()
@@ -125,14 +195,14 @@ print(json_data)
 ### `data_to_json_file`
 
 ```python
-def data_to_json_file(self):
+def data_to_json_file(self) -> None
 ```
 
-#### Description
+#### Data To JSON File Description
 
-The `data_to_json_file` method saves the swarm's metadata as a JSON file in the specified workspace directory. The file name is generated using the swarm's name and run ID.
+Saves the swarm's metadata as a JSON file in the specified workspace directory. File name is generated using the swarm's name and run ID.
 
-#### Example
+#### Data To JSON File Example
 
 ```python
 swarm.data_to_json_file()
@@ -143,23 +213,23 @@ swarm.data_to_json_file()
 ### `_track_output`
 
 ```python
-def _track_output(self, agent: Agent, task: str, result: str):
+def _track_output(self, agent_name: str, task: str, result: str) -> None
 ```
 
-#### Description
+#### Track Output Description
 
-The `_track_output` method is used internally to record the results of tasks executed by the agents. It updates the metadata with the completed tasks and their results.
+Internal method to track the output of a completed task. Updates the outputs list and increments the tasks_completed counter.
 
-#### Parameters
+#### Track Output Parameters
 
-- **`agent`** (`Agent`): The agent that executed the task.
-- **`task`** (`str`): The task that was executed.
-- **`result`** (`str`): The result of the task execution.
+- **`agent_name`** (`str`): The name of the agent that completed the task.
+- **`task`** (`str`): The task that was completed.
+- **`result`** (`str`): The result of the completed task.
 
-#### Example
+#### Track Output Example
 
 ```python
-swarm._track_output(agent1, "Process Data", "Success")
+swarm._track_output("Agent1", "Process Data", "Success")
 ```
 
 ---
@@ -167,14 +237,14 @@ swarm._track_output(agent1, "Process Data", "Success")
 ### `_save_to_csv`
 
 ```python
-def _save_to_csv(self):
+def _save_to_csv(self) -> None
 ```
 
-#### Description
+#### Save To CSV Description
 
-The `_save_to_csv` method saves the swarm's metadata to a CSV file. It logs each task and its result before writing them to the file. The file is saved in the location specified by `save_file_path`.
+Saves the swarm's metadata to a CSV file. Creates the file with headers if it doesn't exist, then appends task results.
 
-#### Example
+#### Save To CSV Example
 
 ```python
 swarm._save_to_csv()
@@ -184,199 +254,164 @@ swarm._save_to_csv()
 
 ## Usage Examples
 
-### Example 1: Basic Swarm Initialization
+### Example 1: Basic Financial Analysis Swarm
 
 ```python
-import os
+from swarms import Agent
+from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 
-from swarms import Agent, SpreadSheetSwarm
-from swarms.prompts.finance_agent_sys_prompt import (
-    FINANCIAL_AGENT_SYS_PROMPT,
-)
-
-
-# Initialize your agents (assuming the Agent class and model are already defined)
+# Example 1: Using pre-configured agents
 agents = [
     Agent(
-        agent_name=f"Financial-Analysis-Agent-spreesheet-swarm:{i}",
-        system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-        model_name="gpt-4.1",
-        max_loops=1,
+        agent_name="Research-Agent",
+        agent_description="Specialized in market research and analysis",
+        model_name="claude-sonnet-4-20250514",
         dynamic_temperature_enabled=True,
-        saved_state_path="finance_agent.json",
-        user_name="swarms_corp",
-        retry_attempts=1,
-    )
-    for i in range(10)
+        max_loops=1,
+        streaming_on=False,
+    ),
+    Agent(
+        agent_name="Technical-Agent",
+        agent_description="Expert in technical analysis and trading strategies",
+        model_name="claude-sonnet-4-20250514",
+        dynamic_temperature_enabled=True,
+        max_loops=1,
+        streaming_on=False,
+    ),
+    Agent(
+        agent_name="Risk-Agent",
+        agent_description="Focused on risk assessment and portfolio management",
+        model_name="claude-sonnet-4-20250514",
+        dynamic_temperature_enabled=True,
+        max_loops=1,
+        streaming_on=False,
+    ),
 ]
 
-# Create a Swarm with the list of agents
+# Initialize the SpreadSheetSwarm with agents
 swarm = SpreadSheetSwarm(
-    name="Finance-Spreadsheet-Swarm",
-    description="A swarm that processes tasks from a queue using multiple agents on different threads.",
+    name="Financial-Analysis-Swarm",
+    description="A swarm of specialized financial analysis agents",
     agents=agents,
-    autosave_on=True,
-    save_file_path="financial_spreed_sheet_swarm_demo.csv",
-    run_all_agents=False,
     max_loops=1,
+    autosave=False,
+    workspace_dir="./swarm_outputs",
 )
 
-# Run the swarm
-swarm.run(
-    task="Analyze the states with the least taxes for LLCs. Provide an overview of all tax rates and add them with a comprehensive analysis"
-)
+# Run all agents with the same task
+task = "What are the top 3 energy stocks to invest in for 2024? Provide detailed analysis."
+result = swarm.run(task=task)
 
+print(result)
 ```
 
-### Example 2: QR Code Generator
+### Example 2: CSV-Based Agent Configuration
 
 ```python
-import os
-from swarms import Agent, SpreadSheetSwarm
+from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 
-# Define custom system prompts for QR code generation
-QR_CODE_AGENT_1_SYS_PROMPT = """
-You are a Python coding expert. Your task is to write a Python script to generate a QR code for the link: https://lu.ma/jjc1b2bo. The code should save the QR code as an image file.
-"""
+# Create a CSV file with agent configurations
+csv_content = """agent_name,description,system_prompt,task,model_name
+Research-Agent,Market research specialist,You are a market research expert.,Analyze market trends,claude-sonnet-4-20250514
+Technical-Agent,Technical analysis expert,You are a technical analysis expert.,Perform technical analysis,claude-sonnet-4-20250514
+Risk-Agent,Risk assessment specialist,You are a risk assessment expert.,Evaluate investment risks,claude-sonnet-4-20250514"""
 
-QR_CODE_AGENT_2_SYS_PROMPT = """
-You are a Python coding expert. Your task is to write a Python script to generate a QR code for the link: https://github.com/The-Swarm-Corporation/Cookbook. The code should save the QR code as an image file.
-"""
+with open("agents.csv", "w") as f:
+    f.write(csv_content)
 
-
-# Initialize your agents for QR code generation
-agents = [
-    Agent(
-        agent_name="QR-Code-Generator-Agent-Luma",
-        system_prompt=QR_CODE_AGENT_1_SYS_PROMPT,
-        model_name="gpt-4.1",
-        max_loops=1,
-        dynamic_temperature_enabled=True,
-        saved_state_path="qr_code_agent_luma.json",
-        user_name="swarms_corp",
-        retry_attempts=1,
-    ),
-    Agent(
-        agent_name="QR-Code-Generator-Agent-Cookbook",
-        system_prompt=QR_CODE_AGENT_2_SYS_PROMPT,
-        model_name="gpt-4.1",
-        max_loops=1,
-        dynamic_temperature_enabled=True,
-        saved_state_path="qr_code_agent_cookbook.json",
-        user_name="swarms_corp",
-        retry_attempts=1,
-    ),
-]
-
-# Create a Swarm with the list of agents
+# Initialize swarm with CSV configuration
 swarm = SpreadSheetSwarm(
-    name="QR-Code-Generation-Swarm",
-    description="A swarm that generates Python scripts to create QR codes for specific links.",
-    agents=agents,
-    autosave_on=True,
-    save_file_path="qr_code_generation_results.csv",
-    run_all_agents=False,
+    name="CSV-Configured-Swarm",
+    description="A swarm loaded from CSV configuration",
+    load_path="agents.csv",
     max_loops=1,
+    autosave=True,
+    workspace_dir="./csv_swarm_outputs",
 )
 
-# Run the swarm
-swarm.run(
-    task="Generate Python scripts to create QR codes for the provided links and save them as image files."
-)
+# Run agents with their configured tasks
+result = swarm.run_from_config()
+print(result)
 ```
 
-
-## Example 3: Social Media Marketing
+### Example 3: Multi-Loop Task Execution
 
 ```python
+from swarms import Agent
+from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 
-import os
-from swarms import Agent, SpreadSheetSwarm
-
-# Define custom system prompts for each social media platform
-TWITTER_AGENT_SYS_PROMPT = """
-You are a Twitter marketing expert. Your task is to create engaging, concise tweets and analyze trends to maximize engagement. Consider hashtags, timing, and content relevance.
-"""
-
-INSTAGRAM_AGENT_SYS_PROMPT = """
-You are an Instagram marketing expert. Your task is to create visually appealing and engaging content, including captions and hashtags, tailored to a specific audience.
-"""
-
-FACEBOOK_AGENT_SYS_PROMPT = """
-You are a Facebook marketing expert. Your task is to craft posts that are optimized for engagement and reach on Facebook, including using images, links, and targeted messaging.
-"""
-
-EMAIL_AGENT_SYS_PROMPT = """
-You are an Email marketing expert. Your task is to write compelling email campaigns that drive conversions, focusing on subject lines, personalization, and call-to-action strategies.
-"""
-
-# Example usage:
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Model
-model = OpenAIChat(
-    openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
-)
-
-# Initialize your agents for different social media platforms
+# Create specialized agents
 agents = [
     Agent(
-        agent_name="Twitter-Marketing-Agent",
-        system_prompt=TWITTER_AGENT_SYS_PROMPT,
-        model_name="gpt-4.1",
-        max_loops=1,
+        agent_name="Content-Agent",
+        agent_description="Content creation specialist",
+        model_name="claude-sonnet-4-20250514",
         dynamic_temperature_enabled=True,
-        saved_state_path="twitter_agent.json",
-        user_name="swarms_corp",
-        retry_attempts=1,
+        max_loops=1,
     ),
     Agent(
-        agent_name="Instagram-Marketing-Agent",
-        system_prompt=INSTAGRAM_AGENT_SYS_PROMPT,
-        model_name="gpt-4.1",
-        max_loops=1,
+        agent_name="SEO-Agent",
+        agent_description="SEO optimization expert",
+        model_name="claude-sonnet-4-20250514",
         dynamic_temperature_enabled=True,
-        saved_state_path="instagram_agent.json",
-        user_name="swarms_corp",
-        retry_attempts=1,
-    ),
-    Agent(
-        agent_name="Facebook-Marketing-Agent",
-        system_prompt=FACEBOOK_AGENT_SYS_PROMPT,
-        model_name="gpt-4.1",
         max_loops=1,
-        dynamic_temperature_enabled=True,
-        saved_state_path="facebook_agent.json",
-        user_name="swarms_corp",
-        retry_attempts=1,
-    ),
-    Agent(
-        agent_name="Email-Marketing-Agent",
-        system_prompt=EMAIL_AGENT_SYS_PROMPT,
-        model_name="gpt-4.1",
-        max_loops=1,
-        dynamic_temperature_enabled=True,
-        saved_state_path="email_agent.json",
-        user_name="swarms_corp",
-        retry_attempts=1,
     ),
 ]
 
-# Create a Swarm with the list of agents
+# Initialize swarm with multiple loops
 swarm = SpreadSheetSwarm(
-    name="Social-Media-Marketing-Swarm",
-    description="A swarm that processes social media marketing tasks using multiple agents on different threads.",
+    name="Content-Creation-Swarm",
+    description="A swarm for content creation and optimization",
     agents=agents,
-    autosave_on=True,
-    save_file_path="social_media_marketing_spreadsheet.csv",
-    run_all_agents=False,
-    max_loops=2,
+    max_loops=3,  # Each agent will run the task 3 times
+    autosave=True,
+    workspace_dir="./content_outputs",
 )
 
-# Run the swarm
-swarm.run(
-    task="Create posts to promote hack nights in miami beach for developers, engineers, and tech enthusiasts. Include relevant hashtags, images, and engaging captions."
+# Run the same task multiple times
+task = "Create a blog post about AI trends in 2024"
+result = swarm.run(task=task)
+
+print(f"Tasks completed: {result['tasks_completed']}")
+print(f"Number of agents: {result['number_of_agents']}")
+```
+
+### Example 4: JSON Export and Metadata Tracking
+
+```python
+from swarms import Agent
+from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
+
+agents = [
+    Agent(
+        agent_name="Data-Analyst",
+        agent_description="Data analysis specialist",
+        model_name="claude-sonnet-4-20250514",
+        dynamic_temperature_enabled=True,
+        max_loops=1,
+    ),
+]
+
+swarm = SpreadSheetSwarm(
+    name="Data-Analysis-Swarm",
+    description="A swarm for data analysis tasks",
+    agents=agents,
+    max_loops=1,
+    autosave=True,
+    workspace_dir="./data_analysis_outputs",
 )
+
+# Run the task
+result = swarm.run("Analyze the provided dataset and generate insights")
+
+# Export to JSON
+json_data = swarm.export_to_json()
+print("JSON Export:")
+print(json_data)
+
+# Save metadata to JSON file
+swarm.data_to_json_file()
+print("Metadata saved to JSON file")
 ```
 
 ---
@@ -385,9 +420,45 @@ swarm.run(
 
 | Tip/Feature            | Description                                                                                                                                                                                                                 |
 |------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Thread Synchronization** | When working with multiple agents in a concurrent environment, it's crucial to ensure that access to shared resources is properly synchronized using locks to avoid race conditions.                                      |
-| **Autosave Feature**       | If you enable the `autosave_on` flag, ensure that the file path provided is correct and writable. This feature is handy for long-running tasks where you want to periodically save the state.                            |
-| **Error Handling**         | Implementing proper error handling within your agents can prevent the swarm from crashing during execution. Consider catching exceptions in the `run` method and logging errors appropriately.                            |
-| **Custom Agents**          | You can extend the `Agent` class to create custom agents that perform specific tasks tailored to your application's needs.                                                                                               |
+| **Concurrent Execution** | The swarm uses `run_agents_with_different_tasks` for concurrent execution of multiple agents. This provides better performance compared to sequential execution.                                                              |
+| **Autosave Feature**       | When `autosave=True`, the swarm automatically saves metadata to both CSV and JSON files. CSV files are saved with unique run IDs to prevent conflicts.                                                                      |
+| **CSV Configuration**      | You can load agent configurations from CSV files with columns: agent_name, description, system_prompt, task, model_name, docs, max_loops, user_name, stopping_token.                                                      |
+| **Workspace Management**   | The swarm automatically creates workspace directories and generates unique file names using UUIDs and timestamps to prevent file conflicts.                                                                                |
+| **Error Handling**         | The `run` method includes try-catch error handling and logging. Check the logs for detailed error information if execution fails.                                                                                        |
+| **Metadata Tracking**      | All task executions are tracked with timestamps, agent names, tasks, and results. This data is available in both the return value and saved files.                                                                        |
+| **Flexible Task Assignment** | You can either provide a single task for all agents or use CSV configuration to assign different tasks to different agents.                                                                                            |
+
+## CSV File Format
+
+When using CSV-based agent configuration, the file should have the following columns:
+
+| Column | Required | Description | Default Value |
+|--------|----------|-------------|---------------|
+| `agent_name` | Yes | Unique name for the agent | - |
+| `description` | Yes | Description of the agent's purpose | - |
+| `system_prompt` | Yes | System prompt for the agent | - |
+| `task` | Yes | Task to be executed by the agent | - |
+| `model_name` | No | Model to use for the agent | `"openai/gpt-4o"` |
+| `docs` | No | Documentation for the agent | `""` |
+| `max_loops` | No | Maximum loops for the agent | `1` |
+| `user_name` | No | Username for the agent | `"user"` |
+| `stopping_token` | No | Token to stop agent execution | `None` |
+
+## Return Value Structure
+
+The `run` method returns a dictionary with the following structure:
+
+```python
+{
+    "run_id": str,           # Unique identifier for this run
+    "name": str,             # Name of the swarm
+    "description": str,      # Description of the swarm
+    "start_time": str,       # ISO timestamp of start time
+    "end_time": str,         # ISO timestamp of end time
+    "tasks_completed": int,  # Number of tasks completed
+    "number_of_agents": int, # Number of agents in the swarm
+    "outputs": List[Dict]    # List of task outputs with agent_name, task, result, timestamp
+}
+```
 
 ---
