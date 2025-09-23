@@ -783,7 +783,7 @@ class HeavySwarm:
             Each loop builds upon the previous results, enabling iterative refinement.
         """
         if self.verbose:
-            logger.info(f"Starting HeavySwarm execution with {self.max_loops} loops")
+            logger.info("Starting HeavySwarm execution")
 
         current_loop = 0
         last_output = None
@@ -791,9 +791,8 @@ class HeavySwarm:
         if self.show_dashboard:
             self.console.print(
                 Panel(
-                    f"[bold red]⚡ HEAVYSWARM MULTI-LOOP EXECUTION[/bold red]\n"
-                    f"[white]Task: {task}[/white]\n"
-                    f"[white]Max Loops: {self.max_loops}[/white]",
+                    f"[bold red]⚡ Completing Task[/bold red]\n"
+                    f"[white]Task: {task}[/white]",
                     title="[bold red]Initializing HeavySwarm[/bold red]",
                     border_style="red",
                 )
@@ -812,17 +811,9 @@ class HeavySwarm:
             while current_loop < self.max_loops:
                 try:
                     if self.verbose:
-                        logger.info(f"Executing loop {current_loop + 1}/{self.max_loops}")
+                        logger.info("Processing task iteration")
 
-                    if self.show_dashboard:
-                        self.console.print(
-                            Panel(
-                                f"[bold red]⚡ LOOP {current_loop + 1}/{self.max_loops}[/bold red]\n"
-                                f"[white]Processing task iteration[/white]",
-                                title="[bold red]LOOP EXECUTION[/bold red]",
-                                border_style="red",
-                            )
-                        )
+                    # No additional per-loop panels; keep dashboard output minimal and original-style
 
                     # Determine the task for this loop
                     if current_loop == 0:
@@ -854,7 +845,7 @@ class HeavySwarm:
                                 console=self.console,
                             ) as progress:
                                 task_gen = progress.add_task(
-                                    f"[red]⚡ LOOP {current_loop + 1}: GENERATING SPECIALIZED QUESTIONS...",
+                                    "[red]⚡ GENERATING SPECIALIZED QUESTIONS...",
                                     total=100,
                                 )
                                 progress.update(task_gen, advance=30)
@@ -890,7 +881,7 @@ class HeavySwarm:
                         if self.show_dashboard:
                             self.console.print(
                                 Panel(
-                                    f"[bold red]LOOP {current_loop + 1}: LAUNCHING SPECIALIZED AGENTS[/bold red]\n"
+                                    "[bold red]⚡ LAUNCHING SPECIALIZED AGENTS[/bold red]\n"
                                     "[white]Executing 4 agents in parallel for comprehensive analysis[/white]",
                                     title="[bold red]AGENT EXECUTION PHASE[/bold red]",
                                     border_style="red",
@@ -919,19 +910,19 @@ class HeavySwarm:
                                 console=self.console,
                             ) as progress:
                                 synthesis_task = progress.add_task(
-                                    f"[red]LOOP {current_loop + 1} - Agent 5: SYNTHESIZING COMPREHENSIVE ANALYSIS",
+                                    "[red]Agent 5: SYNTHESIZING COMPREHENSIVE ANALYSIS ••••••••••••••••••••••••••••••••",
                                     total=None,
                                 )
 
                                 progress.update(
                                     synthesis_task,
-                                    description=f"[red]LOOP {current_loop + 1} - Agent 5: INTEGRATING AGENT RESULTS",
+                                    description="[red]Agent 5: INTEGRATING AGENT RESULTS ••••••••••••••••••••••••••••••••",
                                 )
                                 time.sleep(0.5)
 
                                 progress.update(
                                     synthesis_task,
-                                    description=f"[red]LOOP {current_loop + 1} - Agent 5: Summarizing Results",
+                                    description="[red]Agent 5: Summarizing Results ••••••••••••••••••••••••••••••••",
                                 )
 
                                 final_result = self._synthesize_results(
@@ -942,21 +933,21 @@ class HeavySwarm:
 
                                 progress.update(
                                     synthesis_task,
-                                    description=f"[white]LOOP {current_loop + 1} - Agent 5: GENERATING FINAL REPORT",
+                                    description="[white]Agent 5: GENERATING FINAL REPORT ••••••••••••••••••••••••••••••••",
                                 )
                                 time.sleep(0.3)
 
                                 progress.update(
                                     synthesis_task,
-                                    description=f"[bold white]LOOP {current_loop + 1} - Agent 5: COMPLETE!",
+                                    description="[bold white]Agent 5: COMPLETE! ••••••••••••••••••••••••••••••••",
                                 )
                                 time.sleep(0.5)
 
                             self.console.print(
                                 Panel(
-                                    f"[bold red]LOOP {current_loop + 1} ANALYSIS COMPLETE![/bold red]\n"
+                                    "[bold red]⚡ HEAVYSWARM ANALYSIS COMPLETE![/bold red]\n"
                                     "[white]Comprehensive multi-agent analysis delivered successfully[/white]",
-                                    title="[bold red]LOOP COMPLETED[/bold red]",
+                                    title="[bold red]MISSION ACCOMPLISHED[/bold red]",
                                     border_style="red",
                                 )
                             )
@@ -985,7 +976,7 @@ class HeavySwarm:
                     current_loop += 1
 
                     if self.verbose:
-                        logger.success(f"Loop {current_loop} completed successfully")
+                        logger.success("Task iteration completed successfully")
 
                 except Exception as e:
                     error_msg = f"Failed to execute loop {current_loop + 1}: {str(e)}"
@@ -1003,8 +994,8 @@ class HeavySwarm:
         if self.show_dashboard:
             self.console.print(
                 Panel(
-                    "[bold red]ALL LOOPS COMPLETED![/bold red]\n"
-                    "[white]HeavySwarm multi-loop analysis finished successfully[/white]",
+                    "[bold red]⚡ HEAVYSWARM ANALYSIS COMPLETE![/bold red]\n"
+                    "[white]Comprehensive multi-agent analysis delivered successfully[/white]",
                     title="[bold red]MISSION ACCOMPLISHED[/bold red]",
                     border_style="red",
                 )
@@ -1012,7 +1003,7 @@ class HeavySwarm:
             self.console.print()
 
         if self.verbose:
-            logger.success(f"HeavySwarm execution completed after {self.max_loops} loops")
+            logger.success("HeavySwarm execution completed")
 
 
         return history_output_formatter(
