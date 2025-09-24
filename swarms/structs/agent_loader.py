@@ -2,9 +2,9 @@ import os
 from typing import List, Union
 
 from swarms.agents.create_agents_from_yaml import (
-    ReturnTypes,
     create_agents_from_yaml,
 )
+from swarms.utils.types import ReturnTypes
 from swarms.structs.agent import Agent
 from swarms.structs.csv_to_agent import CSVAgentLoader
 from swarms.utils.agent_loader_markdown import (

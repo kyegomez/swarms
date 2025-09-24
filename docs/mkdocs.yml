@@ -386,6 +386,7 @@ nav:
             - Azure OpenAI: "swarms/examples/azure.md"
             - VLLM: "swarms/examples/vllm_integration.md"
             - Llama4: "swarms/examples/llama4.md"
+            - Custom Base URL & API Keys: "swarms/examples/custom_base_url_example.md"
           - MultiModal Models:
             - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
             - Multi Modal Models Available: "swarms/models/multimodal_models.md"
