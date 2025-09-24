@@ -10,14 +10,20 @@ from typing import Dict, List, Optional
 from loguru import logger
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import (Progress, SpinnerColumn, TextColumn,
-                           TimeElapsedColumn)
+from rich.progress import (
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 from rich.table import Table
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.tools.tool_type import tool_type
 from swarms.utils.formatter import formatter
-from swarms.utils.history_output_formatter import history_output_formatter
+from swarms.utils.history_output_formatter import (
+    history_output_formatter,
+)
 from swarms.utils.litellm_wrapper import LiteLLM
 
 RESEARCH_AGENT_PROMPT = """
@@ -641,11 +647,17 @@ class HeavySwarm:
         info_table.add_row("Swarm Name", self.name)
         info_table.add_row("Description", self.description)
         info_table.add_row("Timeout", f"{self.timeout}s")
-        info_table.add_row("Loops per Agent", str(self.loops_per_agent))
-        info_table.add_row("Question Model", self.question_agent_model_name)
+        info_table.add_row(
+            "Loops per Agent", str(self.loops_per_agent)
+        )
+        info_table.add_row(
+            "Question Model", self.question_agent_model_name
+        )
         info_table.add_row("Worker Model", self.worker_model_name)
         info_table.add_row("Max Workers", str(self.max_workers))
-        info_table.add_row("Aggregation Strategy", self.aggregation_strategy)
+        info_table.add_row(
+            "Aggregation Strategy", self.aggregation_strategy
+        )
 
         # Display dashboard with professional Arasaka styling
         self.console.print(
@@ -686,7 +698,9 @@ class HeavySwarm:
         if self.show_dashboard:
             with Progress(
                 SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
+                TextColumn(
+                    "[progress.description]{task.description}"
+                ),
                 transient=True,
                 console=self.console,
             ) as progress:
@@ -834,7 +848,9 @@ class HeavySwarm:
                         # First loop: use the original task
                         loop_task = task
                         if self.verbose:
-                            logger.info("First loop: Using original task")
+                            logger.info(
+                                "First loop: Using original task"
+                            )
                     else:
                         # Subsequent loops: combine previous results with original task
                         loop_task = (
@@ -865,8 +881,10 @@ class HeavySwarm:
                                     total=100,
                                 )
                                 progress.update(task_gen, advance=30)
-                                questions = self.execute_question_generation(
-                                    loop_task
+                                questions = (
+                                    self.execute_question_generation(
+                                        loop_task
+                                    )
                                 )
                                 progress.update(
                                     task_gen,
@@ -875,8 +893,10 @@ class HeavySwarm:
                                 )
                                 time.sleep(0.5)
                         else:
-                            questions = self.execute_question_generation(
-                                loop_task
+                            questions = (
+                                self.execute_question_generation(
+                                    loop_task
+                                )
                             )
 
                         self.conversation.add(
@@ -893,7 +913,9 @@ class HeavySwarm:
                     except Exception as e:
                         error_msg = f"Failed to generate questions in loop {current_loop + 1}: {str(e)}"
                         logger.error(error_msg)
-                        logger.error(f"Traceback: {traceback.format_exc()}")
+                        logger.error(
+                            f"Traceback: {traceback.format_exc()}"
+                        )
                         return error_msg
 
                     # Agent execution phase
@@ -917,7 +939,9 @@ class HeavySwarm:
                     except Exception as e:
                         error_msg = f"Failed to execute agents in loop {current_loop + 1}: {str(e)}"
                         logger.error(error_msg)
-                        logger.error(f"Traceback: {traceback.format_exc()}")
+                        logger.error(
+                            f"Traceback: {traceback.format_exc()}"
+                        )
                         return error_msg
 
                     # Synthesis phase
@@ -947,10 +971,12 @@ class HeavySwarm:
                                     description="[red]Agent 5: Summarizing Results ••••••••••••••••••••••••••••••••",
                                 )
 
-                                final_result = self._synthesize_results(
-                                    original_task=loop_task,
-                                    questions=questions,
-                                    agent_results=agent_results,
+                                final_result = (
+                                    self._synthesize_results(
+                                        original_task=loop_task,
+                                        questions=questions,
+                                        agent_results=agent_results,
+                                    )
                                 )
 
                                 progress.update(
@@ -990,7 +1016,9 @@ class HeavySwarm:
                     except Exception as e:
                         error_msg = f"Failed to synthesize results in loop {current_loop + 1}: {str(e)}"
                         logger.error(error_msg)
-                        logger.error(f"Traceback: {traceback.format_exc()}")
+                        logger.error(
+                            f"Traceback: {traceback.format_exc()}"
+                        )
                         return error_msg
 
                     # Store the result for next loop context
@@ -998,18 +1026,22 @@ class HeavySwarm:
                     current_loop += 1
 
                     if self.verbose:
-                        logger.success("Task iteration completed successfully")
+                        logger.success(
+                            "Task iteration completed successfully"
+                        )
 
                 except Exception as e:
-                    error_msg = (
-                        f"Failed to execute loop {current_loop + 1}: {str(e)}"
-                    )
+                    error_msg = f"Failed to execute loop {current_loop + 1}: {str(e)}"
                     logger.error(error_msg)
-                    logger.error(f"Traceback: {traceback.format_exc()}")
+                    logger.error(
+                        f"Traceback: {traceback.format_exc()}"
+                    )
                     return error_msg
 
         except Exception as e:
-            error_msg = f"Critical error in HeavySwarm execution: {str(e)}"
+            error_msg = (
+                f"Critical error in HeavySwarm execution: {str(e)}"
+            )
             logger.error(error_msg)
             logger.error(f"Traceback: {traceback.format_exc()}")
             return error_msg
@@ -1188,7 +1220,9 @@ class HeavySwarm:
         """
 
         if self.show_dashboard:
-            return self._execute_agents_with_dashboard(questions, agents, img)
+            return self._execute_agents_with_dashboard(
+                questions, agents, img
+            )
         else:
             return self._execute_agents_basic(questions, agents, img)
 
@@ -1286,10 +1320,14 @@ class HeavySwarm:
             }
 
             # Collect results as they complete
-            for future in concurrent.futures.as_completed(future_to_agent):
+            for future in concurrent.futures.as_completed(
+                future_to_agent
+            ):
                 agent_type = future_to_agent[future]
                 try:
-                    agent_name, result = future.result(timeout=self.timeout)
+                    agent_name, result = future.result(
+                        timeout=self.timeout
+                    )
                     results[agent_name.lower()] = result
                 except concurrent.futures.TimeoutError:
                     logger.error(
@@ -1302,7 +1340,9 @@ class HeavySwarm:
                     logger.error(
                         f"❌ Exception in {agent_type} Agent: {str(e)}"
                     )
-                    results[agent_type.lower()] = f"Exception: {str(e)}"
+                    results[agent_type.lower()] = (
+                        f"Exception: {str(e)}"
+                    )
 
         return results
 
@@ -1493,12 +1533,16 @@ class HeavySwarm:
             ) as executor:
                 # Submit all agent tasks
                 future_to_agent = {
-                    executor.submit(execute_agent_with_progress, task): task[1]
+                    executor.submit(
+                        execute_agent_with_progress, task
+                    ): task[1]
                     for task in agent_tasks
                 }
 
                 # Collect results as they complete
-                for future in concurrent.futures.as_completed(future_to_agent):
+                for future in concurrent.futures.as_completed(
+                    future_to_agent
+                ):
                     agent_key = future_to_agent[future]
                     try:
                         agent_name, result = future.result(
@@ -1651,8 +1695,12 @@ class HeavySwarm:
 
             return {
                 "thinking": arguments.get("thinking", ""),
-                "research_question": arguments.get("research_question", ""),
-                "analysis_question": arguments.get("analysis_question", ""),
+                "research_question": arguments.get(
+                    "research_question", ""
+                ),
+                "analysis_question": arguments.get(
+                    "analysis_question", ""
+                ),
                 "alternatives_question": arguments.get(
                     "alternatives_question", ""
                 ),
@@ -1671,7 +1719,9 @@ class HeavySwarm:
                 "function_name": tool_call.function.name,
             }
 
-    def execute_question_generation(self, task: str) -> Dict[str, str]:
+    def execute_question_generation(
+        self, task: str
+    ) -> Dict[str, str]:
         """
         Execute the question generation using the schema with a language model.
 
@@ -1761,8 +1811,12 @@ class HeavySwarm:
         return {
             "research_question": result.get("research_question", ""),
             "analysis_question": result.get("analysis_question", ""),
-            "alternatives_question": result.get("alternatives_question", ""),
-            "verification_question": result.get("verification_question", ""),
+            "alternatives_question": result.get(
+                "alternatives_question", ""
+            ),
+            "verification_question": result.get(
+                "verification_question", ""
+            ),
         }
 
     def get_questions_as_list(self, task: str) -> List[str]:

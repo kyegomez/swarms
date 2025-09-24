@@ -16,7 +16,9 @@ agent = Agent(
     dynamic_context_window=True,
     streaming_on=True,
     llm_base_url="https://openrouter.ai/api/v1",  # Grok API base URL
-    llm_api_key=os.getenv("OPENROUTER_API_KEY"),    # Use the correct Grok API key environment variable
+    llm_api_key=os.getenv(
+        "OPENROUTER_API_KEY"
+    ),  # Use the correct Grok API key environment variable
 )
 
 # Run the agent on the specified task
