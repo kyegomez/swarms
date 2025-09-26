@@ -408,7 +408,6 @@ nav:
         - Agents as Tools: "swarms/examples/agents_as_tools.md"
         - Aggregate Multi-Agent Responses: "swarms/examples/aggregate.md"
         - Interactive GroupChat Example: "swarms/examples/igc_example.md"
-        - Hiring Swarm: "
         - BatchedGridWorkflow Examples:
           - Simple BatchedGridWorkflow: "swarms/examples/batched_grid_simple_example.md"
           - Advanced BatchedGridWorkflow: "swarms/examples/batched_grid_advanced_example.md"
