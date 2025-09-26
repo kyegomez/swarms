@@ -9,34 +9,34 @@ The Hiring Swarm is a sophisticated multi-agent system designed to automate and 
 The Hiring Swarm consists of five specialized agents, each responsible for a critical stage of the recruitment process:
 
 1. **Talent Acquisition Agent (Elena)**
-   - Identifies staffing needs
-   - Develops job descriptions
-   - Sources candidates through multiple channels
-   - Creates comprehensive recruitment strategies
+   * Identifies staffing needs
+   * Develops job descriptions
+   * Sources candidates through multiple channels
+   * Creates comprehensive recruitment strategies
 
 2. **Candidate Screening Agent (Marcus)**
-   - Reviews resumes and application materials
-   - Conducts preliminary interviews
-   - Ranks and shortlists top candidates
-   - Utilizes AI-based screening tools
+   * Reviews resumes and application materials
+   * Conducts preliminary interviews
+   * Ranks and shortlists top candidates
+   * Utilizes AI-based screening tools
 
 3. **Interview Coordination Agent (Olivia)**
-   - Schedules and manages interviews
-   - Coordinates logistics
-   - Collects and organizes interviewer and candidate feedback
-   - Facilitates follow-up interviews
+   * Schedules and manages interviews
+   * Coordinates logistics
+   * Collects and organizes interviewer and candidate feedback
+   * Facilitates follow-up interviews
 
 4. **Onboarding and Training Agent (Nathan)**
-   - Prepares onboarding materials
-   - Coordinates workspace and access setup
-   - Organizes training sessions
-   - Monitors initial employee integration
+   * Prepares onboarding materials
+   * Coordinates workspace and access setup
+   * Organizes training sessions
+   * Monitors initial employee integration
 
 5. **Employee Engagement Agent (Sophia)**
-   - Develops engagement strategies
-   - Organizes team-building activities
-   - Administers feedback surveys
-   - Monitors and improves employee satisfaction
+   * Develops engagement strategies
+   * Organizes team-building activities
+   * Administers feedback surveys
+   * Monitors and improves employee satisfaction
 
 ## Installation
 
