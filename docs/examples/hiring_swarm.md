@@ -8,35 +8,13 @@ The Hiring Swarm is a sophisticated multi-agent system designed to automate and 
 
 The Hiring Swarm consists of five specialized agents, each responsible for a critical stage of the recruitment process:
 
-1. **Talent Acquisition Agent (Elena)**
-   * Identifies staffing needs
-   * Develops job descriptions
-   * Sources candidates through multiple channels
-   * Creates comprehensive recruitment strategies
+| Talent Acquisition Agent | Candidate Screening Agent | Interview Coordination Agent | Onboarding and Training Agent | Employee Engagement Agent |
+|--------------------------|---------------------------|------------------------------|-------------------------------|----------------------------|
+| Identifies staffing needs | Reviews resumes and application materials | Schedules and manages interviews | Prepares onboarding materials | Develops engagement strategies |
+| Develops job descriptions | Conducts preliminary interviews | Coordinates logistics | Coordinates workspace and access setup | Organizes team-building activities |
+| Sources candidates through multiple channels | Ranks and shortlists top candidates | Collects and organizes interviewer and candidate feedback | Organizes training sessions | Administers feedback surveys |
+| Creates comprehensive recruitment strategies | Utilizes AI-based screening tools | Facilitates follow-up interviews | Monitors initial employee integration | Monitors and improves employee satisfaction |
 
-2. **Candidate Screening Agent (Marcus)**
-   * Reviews resumes and application materials
-   * Conducts preliminary interviews
-   * Ranks and shortlists top candidates
-   * Utilizes AI-based screening tools
-
-3. **Interview Coordination Agent (Olivia)**
-   * Schedules and manages interviews
-   * Coordinates logistics
-   * Collects and organizes interviewer and candidate feedback
-   * Facilitates follow-up interviews
-
-4. **Onboarding and Training Agent (Nathan)**
-   * Prepares onboarding materials
-   * Coordinates workspace and access setup
-   * Organizes training sessions
-   * Monitors initial employee integration
-
-5. **Employee Engagement Agent (Sophia)**
-   * Develops engagement strategies
-   * Organizes team-building activities
-   * Administers feedback surveys
-   * Monitors and improves employee satisfaction
 
 ## Installation
 
