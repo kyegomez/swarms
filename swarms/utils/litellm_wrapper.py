@@ -411,7 +411,7 @@ class LiteLLM:
     #             response_dict = response.model_dump()
     #         else:
     #             response_dict = response
-                
+
     #         print(f"Response dict: {response_dict}")
 
     #         # Check if tool_calls exists and is not None
@@ -458,7 +458,7 @@ class LiteLLM:
     #             }
     #     except Exception as e:
     #         logger.error(f"Error processing tool calls: {str(e)} Traceback: {traceback.format_exc()}")
-    
+
     def output_for_tools(self, response: any):
         """
         Process and extract tool call information from the LLM response.

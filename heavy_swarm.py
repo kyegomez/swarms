@@ -1,4 +1,3 @@
-from swarms_tools import exa_search
 
 from swarms import HeavySwarm
 
@@ -10,7 +9,7 @@ swarm = HeavySwarm(
     question_agent_model_name="gpt-4.1",
     loops_per_agent=1,
     agent_prints_on=False,
-    worker_tools=[exa_search],
+    # worker_tools=[exa_search],
     random_loops_per_agent=False,
 )
 
