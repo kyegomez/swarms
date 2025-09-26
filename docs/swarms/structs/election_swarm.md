@@ -2,6 +2,14 @@
 
 The `ElectionSwarm` is a sophisticated multi-agent orchestrator selection system that implements AGENTSNET communication protocols for democratic decision-making. It enables agent voters to elect the best orchestrator candidate through various coordination algorithms, providing a structured approach to leadership selection in multi-agent workflows.
 
+## Quick Start
+
+```python
+from swarms.structs import ElectionSwarm
+# or
+from swarms.structs.election_swarm import ElectionSwarm
+```
+
 ## Overview
 
 The ElectionSwarm follows a democratic election workflow pattern:
