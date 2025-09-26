@@ -1,17 +1,16 @@
-import os
+import json
 import traceback
-from typing import List, Literal, Optional
+from typing import List, Optional
 
 from dotenv import load_dotenv
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from swarms.prompts.reasoning_prompt import INTERNAL_MONOLGUE_PROMPT
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.structs.swarm_router import SwarmRouter, SwarmType
-from swarms.utils.function_caller_model import OpenAIFunctionCaller
+from swarms.utils.litellm_wrapper import LiteLLM
 
 load_dotenv()
 
@@ -128,6 +127,14 @@ When creating a multi-agent system, provide:
 """
 
 
+execution_types = [
+    "return-agents",
+    "execute-swarm-router",
+    "return-swarm-router-config",
+    "return-agent-configurations",
+]
+
+
 class AgentConfig(BaseModel):
     """Configuration for an individual agent in a swarm"""
 
@@ -201,34 +208,6 @@ class SwarmRouterConfig(BaseModel):
         arbitrary_types_allowed = True
 
 
-def reasoning_agent_run(
-    task: str,
-    img: Optional[str] = None,
-    name: str = None,
-    model_name: str = "gpt-4.1",
-    system_prompt: str = None,
-):
-    """
-    Run a reasoning agent to analyze the task before the main director processes it.
-
-    Args:
-        task (str): The task to reason about
-        img (Optional[str]): Optional image input
-
-    Returns:
-        str: The reasoning output from the agent
-    """
-    agent = Agent(
-        agent_name=name,
-        agent_description=f"You're the {name} agent that is responsible for reasoning about the task and creating a plan for the swarm to accomplish the task.",
-        model_name=model_name,
-        system_prompt=INTERNAL_MONOLGUE_PROMPT + system_prompt,
-        max_loops=1,
-    )
-
-    return agent.run(task=task, img=img)
-
-
 class AutoSwarmBuilder:
     """A class that automatically builds and manages swarms of AI agents.
 
@@ -250,17 +229,11 @@ class AutoSwarmBuilder:
         description: str = "Auto Swarm Builder",
         verbose: bool = True,
         max_loops: int = 1,
-        random_models: bool = False,
-        return_agents: bool = False,
         model_name: str = "gpt-4.1",
         generate_router_config: bool = False,
         interactive: bool = False,
         max_tokens: int = 8000,
-        execution_type: Literal[
-            "return-agents",
-            "execute-swarm-router",
-            "return-agent-configurations",
-        ] = "return-agents",
+        execution_type: execution_types = "return-agents",
     ):
         """Initialize the AutoSwarmBuilder.
 
@@ -275,8 +248,6 @@ class AutoSwarmBuilder:
         self.description = description
         self.verbose = verbose
         self.max_loops = max_loops
-        self.random_models = random_models
-        self.return_agents = return_agents
         self.model_name = model_name
         self.generate_router_config = generate_router_config
         self.interactive = interactive
@@ -302,7 +273,7 @@ class AutoSwarmBuilder:
 
         agents = self.create_agents(task)
 
-        if self.random_models:
+        if self.execution_type == "return-agents":
             logger.info("Setting random models for agents")
             agents = set_random_models_for_agents(agents=agents)
 
@@ -324,9 +295,9 @@ class AutoSwarmBuilder:
         """
         try:
 
-            if self.generate_router_config:
+            if self.execution_type == "return-swarm-router-config":
                 return self.create_router_config(task)
-            elif self.return_agents:
+            elif self.execution_type == "return-agent-configurations":
                 return self.create_agents(task)
             else:
                 return self._execute_task(task)
@@ -337,41 +308,6 @@ class AutoSwarmBuilder:
                 exc_info=True,
             )
             raise
-
-    # def run(
-    #     self, task: str, correct_answer: str = None, *args, **kwargs
-    # ):
-    #     """
-    #     Executes the swarm on the given task. If correct_answer is provided, the method will retry until this answer is found in the output, up to max_loops times.
-    #     If correct_answer is not provided, the method will execute the task once and return the output.
-
-    #     Args:
-    #         task (str): The task to execute.
-    #         correct_answer (str, optional): If provided, the method will retry until this answer is found in the output.
-    #         *args: Additional positional arguments.
-    #         **kwargs: Additional keyword arguments.
-
-    #     Returns:
-    #         Any: The output of the swarm execution, or the output containing the correct answer if specified.
-    #     """
-    #     if correct_answer is None:
-    #         # If no correct_answer is specified, just run once and return the output
-    #         return self._run(task, *args, **kwargs)
-    #     else:
-    #         # If correct_answer is specified, retry up to max_loops times
-    #         for attempt in range(1, self.max_loops + 1):
-    #             output = self._run(task, *args, **kwargs)
-    #             if correct_answer in str(output):
-    #                 logger.info(
-    #                     f"AutoSwarmBuilder: Correct answer found on attempt {attempt}."
-    #                 )
-    #                 return output
-    #             else:
-    #                 logger.info(
-    #                     f"AutoSwarmBuilder: Attempt {attempt} did not yield the correct answer, retrying..."
-    #                 )
-    #         # If correct_answer was not found after max_loops, return the last output
-    #         return output
 
     def dict_to_agent(self, output: dict):
         agents = []
@@ -402,7 +338,9 @@ class AutoSwarmBuilder:
                 f"Create the multi-agent team for the following task: {task}"
             )
 
-            return output.model_dump()
+            output = json.loads(output)
+
+            return output
 
         except Exception as e:
             logger.error(
@@ -412,12 +350,19 @@ class AutoSwarmBuilder:
             raise e
 
     def build_llm_agent(self, config: BaseModel):
-        return OpenAIFunctionCaller(
-            system_prompt=BOSS_SYSTEM_PROMPT,
-            api_key=os.getenv("OPENAI_API_KEY"),
-            temperature=0.5,
-            base_model=config,
+        # return OpenAIFunctionCaller(
+        #     system_prompt=BOSS_SYSTEM_PROMPT,
+        #     api_key=os.getenv("OPENAI_API_KEY"),
+        #     temperature=0.5,
+        #     base_model=config,
+        #     model_name=self.model_name,
+        #     max_tokens=self.max_tokens,
+        # )
+        return LiteLLM(
             model_name=self.model_name,
+            system_prompt=BOSS_SYSTEM_PROMPT,
+            temperature=0.5,
+            response_format=config,
             max_tokens=self.max_tokens,
         )
 
@@ -440,10 +385,7 @@ class AutoSwarmBuilder:
                 f"Create the agents for the following task: {task}"
             )
 
-            if self.return_agents:
-                output = output.model_dump()
-            else:
-                output = self.dict_to_agent(output)
+            output = json.loads(output)
 
             return output
 
@@ -477,7 +419,7 @@ class AutoSwarmBuilder:
         try:
             agent = Agent(
                 agent_name=agent_name,
-                description=agent_description,
+                agent_description=agent_description,
                 system_prompt=agent_system_prompt,
                 verbose=self.verbose,
                 dynamic_temperature_enabled=False,
@@ -508,16 +450,14 @@ class AutoSwarmBuilder:
             logger.info("Initializing swarm router")
             model = self.build_llm_agent(config=SwarmRouterConfig)
 
-            logger.info("Creating swarm specification")
             swarm_spec = model.run(
                 f"Create the swarm spec for the following task: {task}"
             )
-            logger.debug(
-                f"Received swarm specification: {swarm_spec.model_dump()}"
-            )
-            swarm_spec = swarm_spec.model_dump()
 
-            logger.info("Initializing SwarmRouter")
+            print(swarm_spec)
+
+            print(type(swarm_spec))
+
             swarm_router = SwarmRouter(
                 name=swarm_spec["name"],
                 description=swarm_spec["description"],
@@ -555,3 +495,6 @@ class AutoSwarmBuilder:
         """
 
         return [self.run(task) for task in tasks]
+
+    def list_types(self):
+        return execution_types

@@ -47,7 +47,7 @@ class SequentialWorkflow:
         max_loops: int = 1,
         output_type: OutputType = "dict",
         shared_memory_system: callable = None,
-        multi_agent_collab_prompt: bool = True,
+        multi_agent_collab_prompt: bool = False,
         team_awareness: bool = False,
         *args,
         **kwargs,
@@ -110,7 +110,14 @@ class SequentialWorkflow:
 
         if self.multi_agent_collab_prompt is True:
             for agent in self.agents:
-                agent.system_prompt += MULTI_AGENT_COLLAB_PROMPT
+                if hasattr(agent, "system_prompt"):
+                    if agent.system_prompt is None:
+                        agent.system_prompt = ""
+                    agent.system_prompt += MULTI_AGENT_COLLAB_PROMPT
+                else:
+                    logger.warning(
+                        f"Agent {getattr(agent, 'name', str(agent))} does not have a 'system_prompt' attribute."
+                    )
 
         logger.info(
             f"Sequential Workflow Name: {self.name} is ready to run."

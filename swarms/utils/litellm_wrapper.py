@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import litellm
+from pydantic import BaseModel
 import requests
 from litellm import completion, supports_vision
 from loguru import logger
@@ -394,74 +395,108 @@ class LiteLLM:
                 # Store other types of runtime_args for debugging
                 completion_params["runtime_args"] = runtime_args
 
+    # def output_for_tools(self, response: any):
+    #     """
+    #     Process tool calls from the LLM response and return formatted output.
+
+    #     Args:
+    #         response: The response object from the LLM API call
+
+    #     Returns:
+    #         dict or list: Formatted tool call data, or default response if no tool calls
+    #     """
+    #     try:
+    #         # Convert response to dict if it's a Pydantic model
+    #         if hasattr(response, "model_dump"):
+    #             response_dict = response.model_dump()
+    #         else:
+    #             response_dict = response
+                
+    #         print(f"Response dict: {response_dict}")
+
+    #         # Check if tool_calls exists and is not None
+    #         if (
+    #             response_dict.get("choices")
+    #             and response_dict["choices"][0].get("message")
+    #             and response_dict["choices"][0]["message"].get(
+    #                 "tool_calls"
+    #             )
+    #             and len(
+    #                 response_dict["choices"][0]["message"][
+    #                     "tool_calls"
+    #                 ]
+    #             )
+    #             > 0
+    #         ):
+    #             tool_call = response_dict["choices"][0]["message"][
+    #                 "tool_calls"
+    #             ][0]
+    #             if "function" in tool_call:
+    #                 return {
+    #                     "function": {
+    #                         "name": tool_call["function"].get(
+    #                             "name", ""
+    #                         ),
+    #                         "arguments": tool_call["function"].get(
+    #                             "arguments", "{}"
+    #                         ),
+    #                     }
+    #                 }
+    #             else:
+    #                 # Handle case where tool_call structure is different
+    #                 return tool_call
+    #         else:
+    #             # Return a default response when no tool calls are present
+    #             logger.warning(
+    #                 "No tool calls found in response, returning default response"
+    #             )
+    #             return {
+    #                 "function": {
+    #                     "name": "no_tool_call",
+    #                     "arguments": "{}",
+    #                 }
+    #             }
+    #     except Exception as e:
+    #         logger.error(f"Error processing tool calls: {str(e)} Traceback: {traceback.format_exc()}")
+    
     def output_for_tools(self, response: any):
         """
-        Process tool calls from the LLM response and return formatted output.
+        Process and extract tool call information from the LLM response.
+
+        This function handles the output for tool-based responses, supporting both
+        MCP (Multi-Call Protocol) and standard tool call formats. It extracts the
+        relevant function name and arguments from the response, handling both
+        BaseModel and dictionary outputs.
 
         Args:
-            response: The response object from the LLM API call
+            response (any): The response object returned by the LLM API call.
 
         Returns:
-            dict or list: Formatted tool call data, or default response if no tool calls
+            dict or list: A dictionary containing the function name and arguments
+                if MCP call is used, or the tool calls output (as a dict or list)
+                for standard tool call responses.
         """
-        try:
-            # Convert response to dict if it's a Pydantic model
-            if hasattr(response, "model_dump"):
-                response_dict = response.model_dump()
-            else:
-                response_dict = response
+        if self.mcp_call is True:
+            out = response.choices[0].message.tool_calls[0].function
 
-            # Check if tool_calls exists and is not None
-            if (
-                response_dict.get("choices")
-                and response_dict["choices"][0].get("message")
-                and response_dict["choices"][0]["message"].get(
-                    "tool_calls"
-                )
-                and len(
-                    response_dict["choices"][0]["message"][
-                        "tool_calls"
-                    ]
-                )
-                > 0
-            ):
-                tool_call = response_dict["choices"][0]["message"][
-                    "tool_calls"
-                ][0]
-                if "function" in tool_call:
-                    return {
-                        "function": {
-                            "name": tool_call["function"].get(
-                                "name", ""
-                            ),
-                            "arguments": tool_call["function"].get(
-                                "arguments", "{}"
-                            ),
-                        }
-                    }
-                else:
-                    # Handle case where tool_call structure is different
-                    return tool_call
+            if len(out) > 1:
+                return out
             else:
-                # Return a default response when no tool calls are present
-                logger.warning(
-                    "No tool calls found in response, returning default response"
-                )
-                return {
-                    "function": {
-                        "name": "no_tool_call",
-                        "arguments": "{}",
-                    }
-                }
-        except Exception as e:
-            logger.error(f"Error processing tool calls: {str(e)}")
-            # Return a safe default response
-            return {
+                out = out[0]
+
+            output = {
                 "function": {
-                    "name": "error_processing_tool_calls",
-                    "arguments": f'{{"error": "{str(e)}"}}',
+                    "name": out.name,
+                    "arguments": out.arguments,
                 }
             }
+            return output
+        else:
+            out = response.choices[0].message.tool_calls
+
+            if isinstance(out, BaseModel):
+                out = out.model_dump()
+            return out
 
     def output_for_reasoning(self, response: any):
         """
