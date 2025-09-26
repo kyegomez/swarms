@@ -408,6 +408,7 @@ nav:
         - Agents as Tools: "swarms/examples/agents_as_tools.md"
         - Aggregate Multi-Agent Responses: "swarms/examples/aggregate.md"
         - Interactive GroupChat Example: "swarms/examples/igc_example.md"
+        - Hiring Swarm: "
         - BatchedGridWorkflow Examples:
           - Simple BatchedGridWorkflow: "swarms/examples/batched_grid_simple_example.md"
           - Advanced BatchedGridWorkflow: "swarms/examples/batched_grid_advanced_example.md"
@@ -416,6 +417,7 @@ nav:
           - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
           - Hiearchical Marketing Team: "examples/marketing_team.md"
           - Gold ETF Research with HeavySwarm: "examples/gold_etf_research.md"
+          - Hiring Swarm: "examples/hiring_swarm.md"
     
     - Tools & Integrations:
       - Web Search with Exa: "examples/exa_search.md"
