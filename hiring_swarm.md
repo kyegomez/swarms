@@ -49,7 +49,7 @@ pip install swarms
 ## Example Usage
 
 ```python
-from swarms import HiringSwarm
+from examples.demos.apps.hiring_swarm import HiringSwarm
 
 # Initialize the Hiring Swarm
 hiring_swarm = HiringSwarm(
