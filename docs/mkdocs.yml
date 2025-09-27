@@ -416,6 +416,7 @@ nav:
           - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
           - Hiearchical Marketing Team: "examples/marketing_team.md"
           - Gold ETF Research with HeavySwarm: "examples/gold_etf_research.md"
+          - Hiring Swarm: "examples/hiring_swarm.md"
     
     - Tools & Integrations:
       - Web Search with Exa: "examples/exa_search.md"
