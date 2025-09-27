@@ -25,5 +25,6 @@ aiohttp
 mcp
 numpy
 openai
+orjson
 schedule
 uvloop

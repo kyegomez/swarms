@@ -1,4 +1,3 @@
-
 from swarms import HeavySwarm
 
 swarm = HeavySwarm(

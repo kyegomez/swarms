@@ -422,7 +422,6 @@ class SwarmRouter:
             agents=self.agents,
             max_loops=self.max_loops,
             flow=self.rearrange_flow,
-            return_json=self.return_json,
             output_type=self.output_type,
             return_entire_history=self.return_entire_history,
             *args,
@@ -536,8 +535,6 @@ class SwarmRouter:
             max_loops=self.max_loops,
             shared_memory_system=self.shared_memory_system,
             output_type=self.output_type,
-            return_json=self.return_json,
-            return_entire_history=self.return_entire_history,
             *args,
             **kwargs,
         )

@@ -91,8 +91,6 @@ class SequentialWorkflow:
             max_loops=self.max_loops,
             output_type=self.output_type,
             team_awareness=self.team_awareness,
-            *args,
-            **kwargs,
         )
 
     def reliability_check(self):

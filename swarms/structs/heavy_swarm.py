@@ -1191,7 +1191,7 @@ class HeavySwarm:
             streaming_on=False,
             verbose=False,
             dynamic_temperature_enabled=True,
-            print_on=self.agent_prints_on,
+            print_on=True,
             tools=tools,
         )
 
