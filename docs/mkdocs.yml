@@ -295,6 +295,7 @@ nav:
           - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
           - Swarm Matcher: "swarms/structs/swarm_matcher.md"
           - Board of Directors: "swarms/structs/BoardOfDirectors.md"
+          - Election Swarm: "swarms/structs/election_swarm.md"
 
 
         - Routers:
@@ -385,8 +386,8 @@ nav:
             - XAI: "swarms/examples/xai.md"
             - Azure OpenAI: "swarms/examples/azure.md"
             - VLLM: "swarms/examples/vllm_integration.md"
-            - Llama4: "swarms/examples/llama4.md"
             - Custom Base URL & API Keys: "swarms/examples/custom_base_url_example.md"
+            - Llama4: "swarms/examples/llama4.md"
           - MultiModal Models:
             - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
             - Multi Modal Models Available: "swarms/models/multimodal_models.md"
