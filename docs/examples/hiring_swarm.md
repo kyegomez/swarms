@@ -24,35 +24,6 @@ Ensure you have the Swarms library installed:
 pip install swarms
 ```
 
-## Example Usage
-
-```python
-from examples.demos.apps.hiring_swarm import HiringSwarm
-
-# Initialize the Hiring Swarm
-hiring_swarm = HiringSwarm(
-    max_loops=1,
-    name="TechCorp Hiring Solutions",
-    description="Comprehensive AI-driven hiring workflow",
-    user_name="HR Director",
-    job_role="Software Engineer",
-    output_type="json"
-)
-
-# Define hiring task with specific requirements
-hiring_task = """
-We are looking to hire a Software Engineer for our AI research team.
-Key requirements:
-- Advanced degree in Computer Science
-- 3+ years of experience in machine learning
-- Strong Python and PyTorch skills
-- Experience with large language model development
-"""
-
-# Run the hiring workflow
-result = hiring_swarm.run(task=hiring_task)
-```
-
 ## Workflow Stages
 
 The Hiring Swarm processes recruitment through five key stages:
