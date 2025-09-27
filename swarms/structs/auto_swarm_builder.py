@@ -212,15 +212,19 @@ class AutoSwarmBuilder:
     """A class that automatically builds and manages swarms of AI agents.
 
     This class handles the creation, coordination and execution of multiple AI agents working
-    together as a swarm to accomplish complex tasks. It uses a boss agent to delegate work
-    and create new specialized agents as needed.
+    together as a swarm to accomplish complex tasks. It uses a sophisticated boss agent system
+    to delegate work and create new specialized agents as needed.
 
     Args:
-        name (str): The name of the swarm
-        description (str): A description of the swarm's purpose
-        verbose (bool, optional): Whether to output detailed logs. Defaults to True.
-        max_loops (int, optional): Maximum number of execution loops. Defaults to 1.
-        random_models (bool, optional): Whether to use random models for agents. Defaults to True.
+        name (str): The name of the swarm. Defaults to "auto-swarm-builder".
+        description (str): A description of the swarm's purpose. Defaults to "Auto Swarm Builder".
+        verbose (bool): Whether to output detailed logs. Defaults to True.
+        max_loops (int): Maximum number of execution loops. Defaults to 1.
+        model_name (str): The LLM model to use for the boss agent. Defaults to "gpt-4.1".
+        generate_router_config (bool): Whether to generate router configuration. Defaults to False.
+        interactive (bool): Whether to enable interactive mode. Defaults to False.
+        max_tokens (int): Maximum tokens for the LLM responses. Defaults to 8000.
+        execution_type (str): Type of execution to perform. Defaults to "return-agents".
     """
 
     def __init__(
@@ -242,7 +246,11 @@ class AutoSwarmBuilder:
             description (str): A description of the swarm's purpose
             verbose (bool): Whether to output detailed logs
             max_loops (int): Maximum number of execution loops
-            random_models (bool): Whether to use random models for agents
+            model_name (str): The LLM model to use for the boss agent
+            generate_router_config (bool): Whether to generate router configuration
+            interactive (bool): Whether to enable interactive mode
+            max_tokens (int): Maximum tokens for the LLM responses
+            execution_type (str): Type of execution to perform
         """
         self.name = name
         self.description = description

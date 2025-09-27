@@ -13,7 +13,9 @@ from typing import List
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
-from swarms.utils.history_output_formatter import history_output_formatter
+from swarms.utils.history_output_formatter import (
+    history_output_formatter,
+)
 
 # System prompts for each agent
 
@@ -131,6 +133,7 @@ Provide an employee engagement report:
 5. Plan for ongoing engagement efforts
 """
 
+
 class HiringSwarm:
     def __init__(
         self,
@@ -157,8 +160,8 @@ class HiringSwarm:
         self.conversation.add(
             role=self.user_name,
             content=f"Company: {self.name}\n"
-                    f"Description: {self.description}\n"
-                    f"Job Role: {self.job_role}"
+            f"Description: {self.description}\n"
+            f"Job Role: {self.job_role}",
         )
 
     def _initialize_agents(self) -> List[Agent]:
@@ -232,7 +235,9 @@ class HiringSwarm:
         )
 
     def interview_coordination(self):
-        olivia_agent = self.find_agent_by_name("Interview-Coordinator")
+        olivia_agent = self.find_agent_by_name(
+            "Interview-Coordinator"
+        )
         olivia_output = olivia_agent.run(
             f"History: {self.conversation.get_str()}\n"
             f"Schedule and coordinate interviews for shortlisted {self.job_role} candidates, manage logistics, and collect feedback."
@@ -242,7 +247,9 @@ class HiringSwarm:
         )
 
     def onboarding_preparation(self):
-        nathan_agent = self.find_agent_by_name("Onboarding-Specialist")
+        nathan_agent = self.find_agent_by_name(
+            "Onboarding-Specialist"
+        )
         nathan_output = nathan_agent.run(
             f"History: {self.conversation.get_str()}\n"
             f"Prepare onboarding materials and schedule, coordinate setup, and organize training for the new {self.job_role} hire."
@@ -278,6 +285,7 @@ class HiringSwarm:
             self.conversation, type=self.output_type
         )
 
+
 def main():
     # Initialize the swarm
     hiring_swarm = HiringSwarm(
@@ -301,6 +309,7 @@ def main():
 
     # Run the swarm
     hiring_swarm.run(task=sample_task)
+
 
 if __name__ == "__main__":
     main()
