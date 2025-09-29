@@ -218,7 +218,7 @@ Always respond in a strict JSON format as described below. Ensure your responses
 
 # Initialize the LiteLLM
 model = LiteLLM(
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt=SYSTEM_PROMPT,
     max_tokens=4000,
     temperature=0.9,
