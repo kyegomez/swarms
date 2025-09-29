@@ -9,7 +9,7 @@ Todo
 import os
 from dotenv import load_dotenv
 from swarms import Agent, AgentRearrange
-from swarm_models import OpenAIChat, OpenAIFunctionCaller
+from swarms.utils.litellm_wrapper import LiteLLM
 from pydantic import BaseModel
 from typing import List
 
@@ -31,10 +31,8 @@ load_dotenv()
 api_key = os.getenv("GROQ_API_KEY")
 
 # Initialize the model
-model = OpenAIChat(
-    openai_api_base="https://api.groq.com/openai/v1",
-    openai_api_key=api_key,
-    model_name="llama-3.1-70b-versatile",
+model = LiteLLM(
+    model_name="groq/llama-3.1-70b-versatile",
     temperature=0.1,
 )
 
@@ -52,11 +50,11 @@ You are a college selection final decision maker. Your role is to:
     
 """
 
-function_caller = OpenAIFunctionCaller(
+function_caller = LiteLLM(
+    model_name="gpt-4o",
     system_prompt=FINAL_AGENT_PROMPT,
-    openai_api_key=os.getenv("OPENAI_API_KEY"),
-    base_model=CollegesRecommendation,
-    parallel_tool_calls=True,
+    response_format=CollegesRecommendation,
+    temperature=0.1,
 )
 
 # Student Profile Analyzer Agent
