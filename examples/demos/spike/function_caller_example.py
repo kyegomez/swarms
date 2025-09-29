@@ -36,7 +36,7 @@ model = LiteLLM(
 )
 
 function_caller = LiteLLM(
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt="""You are a college selection final decision maker. Your role is to:
     - Balance all relevant factors and stakeholder input.
     - Only return the output in the schema format.
