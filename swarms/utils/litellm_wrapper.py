@@ -496,6 +496,7 @@ class LiteLLM:
 
             if isinstance(out, BaseModel):
                 out = out.model_dump()
+                
             return out
 
     def output_for_reasoning(self, response: any):
