@@ -163,7 +163,7 @@ class MemeAgentGenerator:
         """
         logger.info("Creating agents for task")
         model = LiteLLM(
-            model_name="gpt-4o",
+            model_name="gpt-4.1",
             system_prompt=BOSS_SYSTEM_PROMPT,
             temperature=0.1,
             response_format=MemeSwarmConfig,
@@ -227,7 +227,7 @@ class MemeAgentGenerator:
             agent_name=agent_name,
             description=agent_description,
             system_prompt=agent_system_prompt,
-            model_name="gpt-4o-mini",
+            model_name="gpt-4.1",
             max_loops=max_loops,
             autosave=True,
             dashboard=False,
