@@ -154,11 +154,6 @@ flowchart TD
 
 - Covers detailed implementation, constructor arguments, and full examples
 
-### Auto Agent Builder Documentation:
-   
-- [Agent Builder Documentation](https://docs.swarms.world/en/latest/swarms/structs/auto_agent_builder/)
-
-- Includes enterprise use cases, best practices, and integration patterns
 
 3. SwarmRouter Documentation:
 
