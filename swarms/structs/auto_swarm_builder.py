@@ -1,6 +1,6 @@
 import json
 import traceback
-from typing import List, Optional
+from typing import Any, List, Optional, Tuple
 
 from dotenv import load_dotenv
 from loguru import logger
@@ -127,11 +127,57 @@ When creating a multi-agent system, provide:
 """
 
 
+class AgentSpec(BaseModel):
+    """Configuration for an individual agent specification."""
+    
+    agent_name: Optional[str] = Field(
+        None,
+        description="The unique name assigned to the agent, which identifies its role and functionality within the swarm.",
+    )
+    description: Optional[str] = Field(
+        None,
+        description="A detailed explanation of the agent's purpose, capabilities, and any specific tasks it is designed to perform.",
+    )
+    system_prompt: Optional[str] = Field(
+        None,
+        description="The initial instruction or context provided to the agent, guiding its behavior and responses during execution.",
+    )
+    model_name: Optional[str] = Field(
+        description="The name of the AI model that the agent will utilize for processing tasks and generating outputs. For example: gpt-4o, gpt-4o-mini, openai/o3-mini"
+    )
+    auto_generate_prompt: Optional[bool] = Field(
+        description="A flag indicating whether the agent should automatically create prompts based on the task requirements."
+    )
+    max_tokens: Optional[int] = Field(
+        None,
+        description="The maximum number of tokens that the agent is allowed to generate in its responses, limiting output length.",
+    )
+    temperature: Optional[float] = Field(
+        description="A parameter that controls the randomness of the agent's output; lower values result in more deterministic responses."
+    )
+    role: Optional[str] = Field(
+        description="The designated role of the agent within the swarm, which influences its behavior and interaction with other agents."
+    )
+    max_loops: Optional[int] = Field(
+        description="The maximum number of times the agent is allowed to repeat its task, enabling iterative processing if necessary."
+    )
+
+
+class Agents(BaseModel):
+    """Configuration for a collection of agents that work together as a swarm to accomplish tasks."""
+
+    agents: List[AgentSpec] = Field(
+        description="A list containing the specifications of each agent that will participate in the swarm, detailing their roles and functionalities."
+    )
+
+
 execution_types = [
     "return-agents",
     "execute-swarm-router",
     "return-swarm-router-config",
     "return-agent-configurations",
+    "return-agent-specs",
+    "return-agent-dictionary",
 ]
 
 
@@ -225,6 +271,8 @@ class AutoSwarmBuilder:
         interactive (bool): Whether to enable interactive mode. Defaults to False.
         max_tokens (int): Maximum tokens for the LLM responses. Defaults to 8000.
         execution_type (str): Type of execution to perform. Defaults to "return-agents".
+        return_dictionary (bool): Whether to return dictionary format for agent specs. Defaults to True.
+        system_prompt (str): System prompt for the boss agent. Defaults to BOSS_SYSTEM_PROMPT.
     """
 
     def __init__(
@@ -238,6 +286,8 @@ class AutoSwarmBuilder:
         interactive: bool = False,
         max_tokens: int = 8000,
         execution_type: execution_types = "return-agents",
+        return_dictionary: bool = True,
+        system_prompt: str = BOSS_SYSTEM_PROMPT,
     ):
         """Initialize the AutoSwarmBuilder.
 
@@ -251,6 +301,8 @@ class AutoSwarmBuilder:
             interactive (bool): Whether to enable interactive mode
             max_tokens (int): Maximum tokens for the LLM responses
             execution_type (str): Type of execution to perform
+            return_dictionary (bool): Whether to return dictionary format for agent specs
+            system_prompt (str): System prompt for the boss agent
         """
         self.name = name
         self.description = description
@@ -261,7 +313,10 @@ class AutoSwarmBuilder:
         self.interactive = interactive
         self.max_tokens = max_tokens
         self.execution_type = execution_type
+        self.return_dictionary = return_dictionary
+        self.system_prompt = system_prompt
         self.conversation = Conversation()
+        self.agents_pool = []
 
         self.reliability_check()
 
@@ -307,6 +362,10 @@ class AutoSwarmBuilder:
                 return self.create_router_config(task)
             elif self.execution_type == "return-agent-configurations":
                 return self.create_agents(task)
+            elif self.execution_type == "return-agent-specs":
+                return self._create_agent_specs(task)
+            elif self.execution_type == "return-agent-dictionary":
+                return self._create_agent_dictionary(task)
             else:
                 return self._execute_task(task)
 
@@ -358,7 +417,6 @@ class AutoSwarmBuilder:
             raise e
 
     def build_llm_agent(self, config: BaseModel):
-        # Legacy OpenAIFunctionCaller code removed - now using LiteLLM for multi-provider support
         return LiteLLM(
             model_name=self.model_name,
             system_prompt=BOSS_SYSTEM_PROMPT,
@@ -496,6 +554,147 @@ class AutoSwarmBuilder:
         """
 
         return [self.run(task) for task in tasks]
+
+    def _create_agent_specs(self, task: str) -> Tuple[List[Agent], int]:
+        """Create agent specifications for a given task.
+
+        Args:
+            task (str): The task to create agents for
+
+        Returns:
+            Tuple[List[Agent], int]: List of created agents and count
+        """
+        logger.info("Creating agent specifications for task")
+        agents = self._create_agents_from_specs(task)
+        return agents, len(agents)
+
+    def _create_agent_dictionary(self, task: str):
+        """Create agent dictionary for a given task.
+
+        Args:
+            task (str): The task to create agents for
+
+        Returns:
+            dict: Dictionary containing agent configurations
+        """
+        logger.info("Creating agent dictionary for task")
+        agents_dictionary = self._create_agents_from_specs(task, return_dict=True)
+        return agents_dictionary
+
+    def _create_agents_from_specs(self, task: str, return_dict: bool = False):
+        """Create agents from specifications.
+
+        Args:
+            task (str): The task to create agents for
+            return_dict (bool): Whether to return dictionary format
+
+        Returns:
+            List[Agent] or dict: Created agents or dictionary
+        """
+        logger.info("Creating agents from specifications")
+        model = LiteLLM(
+            model_name=self.model_name,
+            system_prompt=self.system_prompt,
+            temperature=0.1,
+            response_format=Agents,
+            max_tokens=8192,
+        )
+
+        agents_dictionary = model.run(task)
+        print(agents_dictionary)
+        print(type(agents_dictionary))
+        logger.info("Agents successfully created")
+        logger.info(f"Agents: {len(agents_dictionary.agents)}")
+
+        if return_dict or self.return_dictionary:
+            logger.info("Returning dictionary")
+            # Convert swarm config to dictionary
+            agents_dictionary = agents_dictionary.model_dump()
+            return agents_dictionary
+        else:
+            logger.info("Returning agents")
+            return self.create_agents_from_specs(agents_dictionary)
+
+    def create_agents_from_specs(self, agents_dictionary: Any) -> List[Agent]:
+        """Create agents from agent specifications.
+
+        Args:
+            agents_dictionary: Dictionary containing agent specifications
+
+        Returns:
+            List[Agent]: List of created agents
+        """
+        # Create agents from config
+        agents = []
+        for agent_config in agents_dictionary.agents:
+            # Convert dict to AgentSpec if needed
+            if isinstance(agent_config, dict):
+                agent_config = AgentSpec(**agent_config)
+
+            agent = self.build_agent_from_spec(
+                agent_name=agent_config.agent_name,
+                agent_description=agent_config.description,
+                agent_system_prompt=agent_config.system_prompt,
+                model_name=agent_config.model_name,
+                max_loops=agent_config.max_loops,
+                dynamic_temperature_enabled=True,
+                auto_generate_prompt=agent_config.auto_generate_prompt,
+                role=agent_config.role,
+                max_tokens=agent_config.max_tokens,
+                temperature=agent_config.temperature,
+            )
+            agents.append(agent)
+
+        return agents
+
+    def build_agent_from_spec(
+        self,
+        agent_name: str,
+        agent_description: str,
+        agent_system_prompt: str,
+        max_loops: int = 1,
+        model_name: str = "gpt-4o",
+        dynamic_temperature_enabled: bool = True,
+        auto_generate_prompt: bool = False,
+        role: str = "worker",
+        max_tokens: int = 8192,
+        temperature: float = 0.5,
+    ) -> Agent:
+        """Build a single agent from agent specification.
+
+        Args:
+            agent_name (str): Name of the agent
+            agent_description (str): Description of the agent's purpose
+            agent_system_prompt (str): The system prompt for the agent
+            max_loops (int): Maximum number of loops
+            model_name (str): Model name to use
+            dynamic_temperature_enabled (bool): Whether to enable dynamic temperature
+            auto_generate_prompt (bool): Whether to auto-generate prompts
+            role (str): Role of the agent
+            max_tokens (int): Maximum tokens
+            temperature (float): Temperature setting
+
+        Returns:
+            Agent: The constructed agent instance
+        """
+        logger.info(f"Building agent from spec: {agent_name}")
+        agent = Agent(
+            agent_name=agent_name,
+            description=agent_description,
+            system_prompt=agent_system_prompt,
+            model_name=model_name,
+            max_loops=max_loops,
+            dynamic_temperature_enabled=dynamic_temperature_enabled,
+            context_length=200000,
+            output_type="str",
+            streaming_on=False,
+            auto_generate_prompt=auto_generate_prompt,
+            role=role,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+
+        return agent
 
     def list_types(self):
         return execution_types
