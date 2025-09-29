@@ -358,14 +358,7 @@ class AutoSwarmBuilder:
             raise e
 
     def build_llm_agent(self, config: BaseModel):
-        # return OpenAIFunctionCaller(
-        #     system_prompt=BOSS_SYSTEM_PROMPT,
-        #     api_key=os.getenv("OPENAI_API_KEY"),
-        #     temperature=0.5,
-        #     base_model=config,
-        #     model_name=self.model_name,
-        #     max_tokens=self.max_tokens,
-        # )
+        # Legacy OpenAIFunctionCaller code removed - now using LiteLLM for multi-provider support
         return LiteLLM(
             model_name=self.model_name,
             system_prompt=BOSS_SYSTEM_PROMPT,
