@@ -159,7 +159,7 @@ def write_markdown_report(
 def create_test_agent(
     name: str,
     system_prompt: str = None,
-    model_name: str = "gpt-4o-mini",
+    model_name: str = "gpt-4.1",
     tools: List[Callable] = None,
     **kwargs,
 ) -> Agent:
@@ -463,9 +463,7 @@ def test_spreadsheet_swarm():
 def test_hierarchical_swarm():
     """Test HierarchicalSwarm structure"""
     try:
-        from swarms.utils.function_caller_model import (
-            OpenAIFunctionCaller,
-        )
+        from swarms.utils.litellm_wrapper import LiteLLM
         from swarms.structs.hiearchical_swarm import SwarmSpec
 
         # Create worker agents
@@ -481,9 +479,9 @@ def test_hierarchical_swarm():
         ]
 
         # Create director agent with explicit knowledge of available agents
-        director = OpenAIFunctionCaller(
-            base_model=SwarmSpec,
-            api_key=API_KEY,
+        director = LiteLLM(
+            model_name="gpt-4.1",
+            response_format=SwarmSpec,
             system_prompt=(
                 "As the Director of this Hierarchical Agent Swarm, you coordinate tasks among agents. "
                 "You must ONLY assign tasks to the following available agents:\n"

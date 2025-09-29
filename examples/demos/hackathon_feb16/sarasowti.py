@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 from swarms import Agent
-from swarms.utils.function_caller_model import OpenAIFunctionCaller
+from swarms.utils.litellm_wrapper import LiteLLM
 from pydantic import BaseModel, Field
 from swarms.structs.conversation import Conversation
 
@@ -180,8 +180,9 @@ Maintain a warm, friendly, and authentic presence while ensuring all interaction
 # Initialize Agents using swarms
 ########################################
 
-model = OpenAIFunctionCaller(
-    base_model=CallLog,
+model = LiteLLM(
+    model_name="gpt-4.1",
+    response_format=CallLog,
     system_prompt=MASTER_AGENT_SYS_PROMPT,
 )
 
@@ -192,7 +193,7 @@ counselor_agent = Agent(
     agent_description="Provides empathetic and effective college counseling and guidance.",
     system_prompt=COUNSELOR_AGENT_SYS_PROMPT,
     max_loops=1,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     dynamic_temperature_enabled=True,
 )
 
@@ -202,7 +203,7 @@ buddy_agent = Agent(
     agent_description="Acts as a supportive, friendly companion to the student.",
     system_prompt=BUDDY_AGENT_SYS_PROMPT,
     max_loops=1,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     dynamic_temperature_enabled=True,
 )
 
