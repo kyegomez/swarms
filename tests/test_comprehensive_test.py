@@ -480,7 +480,7 @@ def test_hierarchical_swarm():
 
         # Create director agent with explicit knowledge of available agents
         director = LiteLLM(
-            model_name="gpt-4o",
+            model_name="gpt-4.1",
             response_format=SwarmSpec,
             system_prompt=(
                 "As the Director of this Hierarchical Agent Swarm, you coordinate tasks among agents. "
