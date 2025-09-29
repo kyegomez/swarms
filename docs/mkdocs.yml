@@ -429,7 +429,17 @@ nav:
         - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
 
     - RAG:
-      - RAG with Qdrant: "swarms/RAG/qdrant_rag.md"
+      - Overview: "rag/overview.md"
+      - ChromaDB Integration: "rag/chromadb.md"
+      - FAISS Integration: "rag/faiss.md"
+      - Milvus Cloud Integration: "rag/milvus-cloud.md"
+      - Milvus Local Integration: "rag/milvus-local.md"
+      - Pinecone Integration: "rag/pinecone.md"
+      - Qdrant Integration: "rag/qdrant.md"
+      - Weaviate Cloud Integration: "rag/weaviate-cloud.md"
+      - Weaviate Local Integration: "rag/weaviate-local.md"
+      - Zyphra RAG Integration: "rag/zyphra-rag.md"
+      - SingleStore Integration: "rag/singlestore.md"
 
     - Apps:
       - Web Scraper Agents: "developer_guides/web_scraper.md"
