@@ -5,7 +5,7 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
-from swarms.utils.function_caller_model import OpenAIFunctionCaller
+from swarms.utils.litellm_wrapper import LiteLLM
 
 BOSS_SYSTEM_PROMPT = """
 # Swarm Intelligence Orchestrator
@@ -193,12 +193,11 @@ class AgentsBuilder:
             list: List of created agents
         """
         logger.info("Creating agents for task")
-        model = OpenAIFunctionCaller(
-            system_prompt=self.system_prompt,
-            api_key=os.getenv("OPENAI_API_KEY"),
-            temperature=0.1,
-            base_model=Agents,
+        model = LiteLLM(
             model_name=self.model_name,
+            system_prompt=self.system_prompt,
+            temperature=0.1,
+            response_format=Agents,
             max_tokens=8192,
         )
 
