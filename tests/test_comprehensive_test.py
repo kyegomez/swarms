@@ -159,7 +159,7 @@ def write_markdown_report(
 def create_test_agent(
     name: str,
     system_prompt: str = None,
-    model_name: str = "gpt-4o-mini",
+    model_name: str = "gpt-4.1",
     tools: List[Callable] = None,
     **kwargs,
 ) -> Agent:
