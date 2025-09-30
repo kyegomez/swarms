@@ -114,6 +114,9 @@ class AOP:
             logger.info(f"Adding {len(agents)} initial agents")
             self.add_agents_batch(agents)
 
+        # Register the agent discovery tool
+        self._register_agent_discovery_tool()
+
     def add_agent(
         self,
         agent: AgentType,
@@ -242,6 +245,9 @@ class AOP:
         # Register the tool with the MCP server
         self._register_tool(tool_name, agent)
 
+        # Re-register the discovery tool to include the new agent
+        self._register_agent_discovery_tool()
+
         logger.info(
             f"Added agent '{agent.agent_name}' as tool '{tool_name}' (verbose={verbose}, traceback={traceback_enabled})"
         )
@@ -343,6 +349,9 @@ class AOP:
                 traceback_enabled=traceback_enabled,
             )
             registered_tools.append(tool_name)
+
+        # Re-register the discovery tool to include all new agents
+        self._register_agent_discovery_tool()
 
         logger.info(
             f"Added {len(agents)} agents as tools: {registered_tools}"
@@ -594,6 +603,373 @@ class AOP:
         if self.verbose:
             logger.debug(
                 f"Retrieved info for agent tool '{tool_name}': {info}"
+            )
+
+        return info
+
+    def _register_agent_discovery_tool(self) -> None:
+        """
+        Register the agent discovery tools that allow agents to learn about each other.
+        """
+
+        @self.mcp_server.tool(
+            name="discover_agents",
+            description="Discover information about other agents in the cluster including their name, description, system prompt (truncated to 200 chars), and tags.",
+        )
+        def discover_agents(agent_name: str = None) -> Dict[str, Any]:
+            """
+            Discover information about agents in the cluster.
+
+            Args:
+                agent_name: Optional specific agent name to get info for. If None, returns info for all agents.
+
+            Returns:
+                Dict containing agent information for discovery
+            """
+            try:
+                if agent_name:
+                    # Get specific agent info
+                    if agent_name not in self.agents:
+                        return {
+                            "success": False,
+                            "error": f"Agent '{agent_name}' not found",
+                            "agents": [],
+                        }
+
+                    agent_info = self._get_agent_discovery_info(
+                        agent_name
+                    )
+                    return {
+                        "success": True,
+                        "agents": [agent_info] if agent_info else [],
+                    }
+                else:
+                    # Get all agents info
+                    all_agents_info = []
+                    for tool_name in self.agents.keys():
+                        agent_info = self._get_agent_discovery_info(
+                            tool_name
+                        )
+                        if agent_info:
+                            all_agents_info.append(agent_info)
+
+                    return {
+                        "success": True,
+                        "agents": all_agents_info,
+                    }
+
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(
+                    f"Error in discover_agents tool: {error_msg}"
+                )
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "agents": [],
+                }
+
+        @self.mcp_server.tool(
+            name="get_agent_details",
+            description="Get detailed information about a single agent by name including configuration, capabilities, and metadata.",
+        )
+        def get_agent_details(agent_name: str) -> Dict[str, Any]:
+            """
+            Get detailed information about a specific agent.
+
+            Args:
+                agent_name: Name of the agent to get information for.
+
+            Returns:
+                Dict containing detailed agent information
+            """
+            try:
+                if agent_name not in self.agents:
+                    return {
+                        "success": False,
+                        "error": f"Agent '{agent_name}' not found",
+                        "agent_info": None,
+                    }
+
+                agent_info = self.get_agent_info(agent_name)
+                discovery_info = self._get_agent_discovery_info(
+                    agent_name
+                )
+
+                return {
+                    "success": True,
+                    "agent_info": agent_info,
+                    "discovery_info": discovery_info,
+                }
+
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(
+                    f"Error in get_agent_details tool: {error_msg}"
+                )
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "agent_info": None,
+                }
+
+        @self.mcp_server.tool(
+            name="get_agents_info",
+            description="Get detailed information about multiple agents by providing a list of agent names.",
+        )
+        def get_agents_info(agent_names: List[str]) -> Dict[str, Any]:
+            """
+            Get detailed information about multiple agents.
+
+            Args:
+                agent_names: List of agent names to get information for.
+
+            Returns:
+                Dict containing detailed information for all requested agents
+            """
+            try:
+                if not agent_names:
+                    return {
+                        "success": False,
+                        "error": "No agent names provided",
+                        "agents_info": [],
+                    }
+
+                agents_info = []
+                not_found = []
+
+                for agent_name in agent_names:
+                    if agent_name in self.agents:
+                        agent_info = self.get_agent_info(agent_name)
+                        discovery_info = (
+                            self._get_agent_discovery_info(agent_name)
+                        )
+                        agents_info.append(
+                            {
+                                "agent_name": agent_name,
+                                "agent_info": agent_info,
+                                "discovery_info": discovery_info,
+                            }
+                        )
+                    else:
+                        not_found.append(agent_name)
+
+                return {
+                    "success": True,
+                    "agents_info": agents_info,
+                    "not_found": not_found,
+                    "total_found": len(agents_info),
+                    "total_requested": len(agent_names),
+                }
+
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(
+                    f"Error in get_agents_info tool: {error_msg}"
+                )
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "agents_info": [],
+                }
+
+        @self.mcp_server.tool(
+            name="list_agents",
+            description="Get a simple list of all available agent names in the cluster.",
+        )
+        def list_agents() -> Dict[str, Any]:
+            """
+            Get a list of all available agent names.
+
+            Returns:
+                Dict containing the list of agent names
+            """
+            try:
+                agent_names = self.list_agents()
+                return {
+                    "success": True,
+                    "agent_names": agent_names,
+                    "total_count": len(agent_names),
+                }
+
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(
+                    f"Error in list_agents tool: {error_msg}"
+                )
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "agent_names": [],
+                }
+
+        @self.mcp_server.tool(
+            name="search_agents",
+            description="Search for agents by name, description, tags, or capabilities using keyword matching.",
+        )
+        def search_agents(
+            query: str, search_fields: List[str] = None
+        ) -> Dict[str, Any]:
+            """
+            Search for agents using keyword matching.
+
+            Args:
+                query: Search query string
+                search_fields: Optional list of fields to search in (name, description, tags, capabilities).
+                              If None, searches all fields.
+
+            Returns:
+                Dict containing matching agents
+            """
+            try:
+                if not query:
+                    return {
+                        "success": False,
+                        "error": "No search query provided",
+                        "matching_agents": [],
+                    }
+
+                # Default search fields
+                if search_fields is None:
+                    search_fields = [
+                        "name",
+                        "description",
+                        "tags",
+                        "capabilities",
+                    ]
+
+                query_lower = query.lower()
+                matching_agents = []
+
+                for tool_name in self.agents.keys():
+                    discovery_info = self._get_agent_discovery_info(
+                        tool_name
+                    )
+                    if not discovery_info:
+                        continue
+
+                    match_found = False
+
+                    # Search in specified fields
+                    for field in search_fields:
+                        if (
+                            field == "name"
+                            and query_lower
+                            in discovery_info.get(
+                                "agent_name", ""
+                            ).lower()
+                        ):
+                            match_found = True
+                            break
+                        elif (
+                            field == "description"
+                            and query_lower
+                            in discovery_info.get(
+                                "description", ""
+                            ).lower()
+                        ):
+                            match_found = True
+                            break
+                        elif field == "tags":
+                            tags = discovery_info.get("tags", [])
+                            if any(
+                                query_lower in tag.lower()
+                                for tag in tags
+                            ):
+                                match_found = True
+                                break
+                        elif field == "capabilities":
+                            capabilities = discovery_info.get(
+                                "capabilities", []
+                            )
+                            if any(
+                                query_lower in capability.lower()
+                                for capability in capabilities
+                            ):
+                                match_found = True
+                                break
+
+                    if match_found:
+                        matching_agents.append(discovery_info)
+
+                return {
+                    "success": True,
+                    "matching_agents": matching_agents,
+                    "total_matches": len(matching_agents),
+                    "query": query,
+                    "search_fields": search_fields,
+                }
+
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(
+                    f"Error in search_agents tool: {error_msg}"
+                )
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "matching_agents": [],
+                }
+
+    def _get_agent_discovery_info(
+        self, tool_name: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get discovery information for a specific agent.
+
+        Args:
+            tool_name: Name of the agent tool
+
+        Returns:
+            Dict containing agent discovery information, or None if not found
+        """
+        if tool_name not in self.agents:
+            return None
+
+        agent = self.agents[tool_name]
+
+        # Get system prompt and truncate to 200 characters
+        system_prompt = getattr(agent, "system_prompt", "")
+        short_system_prompt = (
+            system_prompt[:200] + "..."
+            if len(system_prompt) > 200
+            else system_prompt
+        )
+
+        # Get tags (if available)
+        tags = getattr(agent, "tags", [])
+        if not tags:
+            tags = []
+
+        # Get capabilities (if available)
+        capabilities = getattr(agent, "capabilities", [])
+        if not capabilities:
+            capabilities = []
+
+        # Get role (if available)
+        role = getattr(agent, "role", "worker")
+
+        # Get model name
+        model_name = getattr(agent, "model_name", "Unknown")
+
+        info = {
+            "tool_name": tool_name,
+            "agent_name": agent.agent_name,
+            "description": agent.agent_description
+            or "No description available",
+            "short_system_prompt": short_system_prompt,
+            "tags": tags,
+            "capabilities": capabilities,
+            "role": role,
+            "model_name": model_name,
+            "max_loops": getattr(agent, "max_loops", 1),
+            "temperature": getattr(agent, "temperature", 0.5),
+            "max_tokens": getattr(agent, "max_tokens", 4096),
+        }
+
+        if self.verbose:
+            logger.debug(
+                f"Retrieved discovery info for agent '{tool_name}': {info}"
             )
 
         return info

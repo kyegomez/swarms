@@ -90,7 +90,7 @@ financial_agent = Agent(
 )
 
 # Basic usage - individual agent addition
-deployer = AOP("MyAgentServer", verbose=True)
+deployer = AOP("MyAgentServer", verbose=True, port=5932)
 
 agents = [
     research_agent,
@@ -102,17 +102,5 @@ agents = [
 
 deployer.add_agents_batch(agents)
 
-# Example usage with different parameters
-# The tools now accept: task, img, imgs, correct_answer parameters
-# task: str (required) - The main task or prompt
-# img: str (optional) - Single image to process
-# imgs: List[str] (optional) - Multiple images to process
-# correct_answer: str (optional) - Correct answer for validation
-
-# Example calls that would be made to the MCP tools:
-# research_tool(task="Research the latest AI trends")
-# analysis_tool(task="Analyze this data", img="path/to/image.jpg")
-# writing_tool(task="Write a blog post", imgs=["img1.jpg", "img2.jpg"])
-# code_tool(task="Debug this code", correct_answer="expected_output")
 
 deployer.run()

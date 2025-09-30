@@ -34,13 +34,15 @@ Main class for deploying agents as tools in an MCP server.
 |-----------|------|---------|-------------|
 | `server_name` | `str` | `"AOP Cluster"` | Name for the MCP server |
 | `description` | `str` | `"A cluster that enables you to deploy multiple agents as tools in an MCP server."` | Server description |
-| `agents` | `List[Agent]` | `None` | Optional list of agents to add initially |
+| `agents` | `any` | `None` | Optional list of agents to add initially |
 | `port` | `int` | `8000` | Port for the MCP server |
 | `transport` | `str` | `"streamable-http"` | Transport type for the MCP server |
 | `verbose` | `bool` | `False` | Enable verbose logging |
 | `traceback_enabled` | `bool` | `True` | Enable traceback logging for errors |
 | `host` | `str` | `"localhost"` | Host to bind the server to |
 | `log_level` | `str` | `"INFO"` | Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) |
+| `*args` | `Any` | - | Additional positional arguments passed to FastMCP |
+| `**kwargs` | `Any` | - | Additional keyword arguments passed to FastMCP |
 
 #### Methods
 
@@ -119,6 +121,203 @@ Run the MCP server (alias for start_server).
 Get information about the MCP server and registered tools.
 
 **Returns:** `Dict[str, Any]` - Server information
+
+##### _register_tool()
+
+Register a single agent as an MCP tool (internal method).
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tool_name` | `str` | Name of the tool to register |
+| `agent` | `AgentType` | The agent instance to register |
+
+##### _execute_agent_with_timeout()
+
+Execute an agent with a timeout and all run method parameters (internal method).
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `agent` | `AgentType` | Required | The agent to execute |
+| `task` | `str` | Required | The task to execute |
+| `timeout` | `int` | Required | Maximum execution time in seconds |
+| `img` | `str` | `None` | Optional image to be processed by the agent |
+| `imgs` | `List[str]` | `None` | Optional list of images to be processed by the agent |
+| `correct_answer` | `str` | `None` | Optional correct answer for validation or comparison |
+
+**Returns:** `str` - The agent's response
+
+**Raises:** `TimeoutError` if execution exceeds timeout, `Exception` if agent execution fails
+
+##### _get_agent_discovery_info()
+
+Get discovery information for a specific agent (internal method).
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tool_name` | `str` | Name of the agent tool |
+
+**Returns:** `Optional[Dict[str, Any]]` - Agent discovery information, or None if not found
+
+## Discovery Tools
+
+AOP automatically registers several discovery tools that allow agents to learn about each other and enable dynamic agent discovery within the cluster.
+
+### discover_agents
+
+Discover information about agents in the cluster including their name, description, system prompt (truncated to 200 chars), and tags.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `agent_name` | `str` | `None` | Optional specific agent name to get info for. If None, returns info for all agents. |
+
+**Returns:** `Dict[str, Any]` - Agent information for discovery
+
+**Response Format:**
+
+```json
+{
+  "success": true,
+  "agents": [
+    {
+      "tool_name": "agent_name",
+      "agent_name": "Agent Name",
+      "description": "Agent description",
+      "short_system_prompt": "Truncated system prompt...",
+      "tags": ["tag1", "tag2"],
+      "capabilities": ["capability1", "capability2"],
+      "role": "worker",
+      "model_name": "model_name",
+      "max_loops": 1,
+      "temperature": 0.5,
+      "max_tokens": 4096
+    }
+  ]
+}
+```
+
+### get_agent_details
+
+Get detailed information about a single agent by name including configuration, capabilities, and metadata.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `agent_name` | `str` | Name of the agent to get information for. |
+
+**Returns:** `Dict[str, Any]` - Detailed agent information
+
+**Response Format:**
+
+```json
+{
+  "success": true,
+  "agent_info": {
+    "tool_name": "agent_name",
+    "agent_name": "Agent Name",
+    "agent_description": "Agent description",
+    "model_name": "model_name",
+    "max_loops": 1,
+    "tool_description": "Tool description",
+    "timeout": 30,
+    "max_retries": 3,
+    "verbose": false,
+    "traceback_enabled": true
+  },
+  "discovery_info": {
+    "tool_name": "agent_name",
+    "agent_name": "Agent Name",
+    "description": "Agent description",
+    "short_system_prompt": "Truncated system prompt...",
+    "tags": ["tag1", "tag2"],
+    "capabilities": ["capability1", "capability2"],
+    "role": "worker",
+    "model_name": "model_name",
+    "max_loops": 1,
+    "temperature": 0.5,
+    "max_tokens": 4096
+  }
+}
+```
+
+### get_agents_info
+
+Get detailed information about multiple agents by providing a list of agent names.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `agent_names` | `List[str]` | List of agent names to get information for. |
+
+**Returns:** `Dict[str, Any]` - Detailed information for all requested agents
+
+**Response Format:**
+
+```json
+{
+  "success": true,
+  "agents_info": [
+    {
+      "agent_name": "agent_name",
+      "agent_info": { /* detailed agent info */ },
+      "discovery_info": { /* discovery info */ }
+    }
+  ],
+  "not_found": ["missing_agent"],
+  "total_found": 1,
+  "total_requested": 2
+}
+```
+
+### list_agents
+
+Get a simple list of all available agent names in the cluster.
+
+**Returns:** `Dict[str, Any]` - List of agent names
+
+**Response Format:**
+
+```json
+{
+  "success": true,
+  "agent_names": ["agent1", "agent2", "agent3"],
+  "total_count": 3
+}
+```
+
+### search_agents
+
+Search for agents by name, description, tags, or capabilities using keyword matching.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `query` | `str` | Required | Search query string |
+| `search_fields` | `List[str]` | `["name", "description", "tags", "capabilities"]` | Optional list of fields to search in. If None, searches all fields. |
+
+**Returns:** `Dict[str, Any]` - Matching agents
+
+**Response Format:**
+
+```json
+{
+  "success": true,
+  "matching_agents": [
+    {
+      "tool_name": "agent_name",
+      "agent_name": "Agent Name",
+      "description": "Agent description",
+      "short_system_prompt": "Truncated system prompt...",
+      "tags": ["tag1", "tag2"],
+      "capabilities": ["capability1", "capability2"],
+      "role": "worker",
+      "model_name": "model_name",
+      "max_loops": 1,
+      "temperature": 0.5,
+      "max_tokens": 4096
+    }
+  ],
+  "total_matches": 1,
+  "query": "search_term",
+  "search_fields": ["name", "description", "tags", "capabilities"]
+}
+```
 
 ### AOPCluster Class
 
@@ -275,18 +474,22 @@ print(f"Added {len(tool_names)} agents: {tool_names}")
 deployer.run()
 ```
 
-### Advanced Configuration
+### Advanced Configuration with Tags and Capabilities
 
 ```python
 from swarms import Agent
 from swarms.structs.aop import AOP
 
-# Create agent with custom configuration
+# Create agent with custom configuration, tags, and capabilities
 research_agent = Agent(
     agent_name="Research-Agent",
     agent_description="Expert in research and data collection",
     model_name="anthropic/claude-sonnet-4-5",
     max_loops=1,
+    # Add tags and capabilities for better discovery
+    tags=["research", "data-collection", "analysis"],
+    capabilities=["web-search", "data-gathering", "report-generation"],
+    role="researcher"
 )
 
 # Create AOP with custom settings
@@ -405,6 +608,141 @@ else:
     print("Research-Agent tool not found")
 ```
 
+### Discovery Tools Examples
+
+The AOP server automatically provides discovery tools that allow agents to learn about each other. Here are examples of how to use these tools:
+
+```python
+# Example discovery tool calls (these would be made by MCP clients)
+
+# Discover all agents in the cluster
+all_agents = discover_agents()
+print(f"Found {len(all_agents['agents'])} agents in the cluster")
+
+# Discover a specific agent
+research_agent_info = discover_agents(agent_name="Research-Agent")
+if research_agent_info['success']:
+    agent = research_agent_info['agents'][0]
+    print(f"Agent: {agent['agent_name']}")
+    print(f"Description: {agent['description']}")
+    print(f"Tags: {agent['tags']}")
+    print(f"Capabilities: {agent['capabilities']}")
+
+# Get detailed information about a specific agent
+agent_details = get_agent_details(agent_name="Research-Agent")
+if agent_details['success']:
+    print("Agent Info:", agent_details['agent_info'])
+    print("Discovery Info:", agent_details['discovery_info'])
+
+# Get information about multiple agents
+multiple_agents = get_agents_info(agent_names=["Research-Agent", "Analysis-Agent"])
+print(f"Found {multiple_agents['total_found']} out of {multiple_agents['total_requested']} agents")
+print("Not found:", multiple_agents['not_found'])
+
+# List all available agents
+agent_list = list_agents()
+print(f"Available agents: {agent_list['agent_names']}")
+
+# Search for agents by keyword
+search_results = search_agents(query="research")
+print(f"Found {search_results['total_matches']} agents matching 'research'")
+
+# Search in specific fields only
+tag_search = search_agents(
+    query="data", 
+    search_fields=["tags", "capabilities"]
+)
+print(f"Found {tag_search['total_matches']} agents with 'data' in tags or capabilities")
+```
+
+### Dynamic Agent Discovery Example
+
+Here's a practical example of how agents can use discovery tools to find and collaborate with other agents:
+
+```python
+from swarms import Agent
+from swarms.structs.aop import AOP
+
+# Create a coordinator agent that can discover and use other agents
+coordinator = Agent(
+    agent_name="Coordinator-Agent",
+    agent_description="Coordinates tasks between different specialized agents",
+    model_name="anthropic/claude-sonnet-4-5",
+    max_loops=1,
+    tags=["coordination", "orchestration", "management"],
+    capabilities=["agent-discovery", "task-distribution", "workflow-management"],
+    role="coordinator"
+)
+
+# Create specialized agents
+research_agent = Agent(
+    agent_name="Research-Agent",
+    agent_description="Expert in research and data collection",
+    model_name="anthropic/claude-sonnet-4-5",
+    max_loops=1,
+    tags=["research", "data-collection", "analysis"],
+    capabilities=["web-search", "data-gathering", "report-generation"],
+    role="researcher"
+)
+
+analysis_agent = Agent(
+    agent_name="Analysis-Agent",
+    agent_description="Expert in data analysis and insights",
+    model_name="anthropic/claude-sonnet-4-5",
+    max_loops=1,
+    tags=["analysis", "data-processing", "insights"],
+    capabilities=["statistical-analysis", "pattern-recognition", "visualization"],
+    role="analyst"
+)
+
+# Create AOP server
+deployer = AOP(
+    server_name="DynamicAgentCluster",
+    port=8000,
+    verbose=True
+)
+
+# Add all agents
+deployer.add_agent(coordinator)
+deployer.add_agent(research_agent)
+deployer.add_agent(analysis_agent)
+
+# The coordinator can now discover other agents and use them
+# This would be done through MCP tool calls in practice
+def coordinate_research_task(task_description):
+    """
+    Example of how the coordinator might use discovery tools
+    """
+    # 1. Discover available research agents
+    research_agents = discover_agents()
+    research_agents = [a for a in research_agents['agents'] if 'research' in a['tags']]
+    
+    # 2. Get detailed info about the best research agent
+    if research_agents:
+        best_agent = research_agents[0]
+        agent_details = get_agent_details(agent_name=best_agent['agent_name'])
+        
+        # 3. Use the research agent for the task
+        research_result = research_agent.run(task=task_description)
+        
+        # 4. Find analysis agents for processing the research
+        analysis_agents = search_agents(query="analysis", search_fields=["tags"])
+        if analysis_agents['matching_agents']:
+            analysis_agent_name = analysis_agents['matching_agents'][0]['agent_name']
+            analysis_result = analysis_agent.run(task=f"Analyze this research: {research_result}")
+            
+            return {
+                "research_result": research_result,
+                "analysis_result": analysis_result,
+                "agents_used": [best_agent['agent_name'], analysis_agent_name]
+            }
+    
+    return {"error": "No suitable agents found"}
+
+# Start the server
+deployer.run()
+```
+
 ### Tool Execution Examples
 
 Once your AOP server is running, you can call the tools using MCP clients. Here are examples of how the tools would be called:
@@ -460,6 +798,10 @@ AOP provides comprehensive error handling:
 | **Handle Errors**            | Always check the `success` field in tool responses                 |
 | **Resource Management**      | Monitor server resources when running multiple agents              |
 | **Security**                 | Use appropriate host/port settings for your deployment environment |
+| **Use Tags and Capabilities** | Add meaningful tags and capabilities to agents for better discovery |
+| **Define Agent Roles**       | Use the `role` attribute to categorize agents (coordinator, worker, etc.) |
+| **Leverage Discovery Tools** | Use built-in discovery tools for dynamic agent collaboration |
+| **Design for Scalability**   | Plan for adding/removing agents dynamically using discovery tools |
 
 ## Integration with Other Systems
 
