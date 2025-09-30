@@ -112,8 +112,8 @@ swarm = HeavySwarm(
     description="Comprehensive multi-agent analysis system",
     timeout=600,
     loops_per_agent=2,
-    question_agent_model_name="gpt-4o",
-    worker_model_name="gpt-4o",
+    question_agent_model_name="gpt-4.1",
+    worker_model_name="gpt-4.1",
     verbose=True,
     max_workers=8,
     show_dashboard=True,
@@ -335,8 +335,8 @@ from swarms.structs.heavy_swarm import HeavySwarm
 swarm = HeavySwarm(
     name="AdvancedMarketAnalysis",
     description="Deep market analysis with multiple iterations",
-    worker_model_name="gpt-4o",
-    question_agent_model_name="gpt-4o",
+    worker_model_name="gpt-4.1",
+    question_agent_model_name="gpt-4.1",
     show_dashboard=True,
     loops_per_agent=3,  # Multiple iterations for depth
     timeout=600,
@@ -366,7 +366,7 @@ from swarms.structs.heavy_swarm import HeavySwarm
 # Configure for question generation
 swarm = HeavySwarm(
     name="QuestionGenerator",
-    question_agent_model_name="gpt-4o",
+    question_agent_model_name="gpt-4.1",
     worker_model_name="gpt-4o-mini",
     show_dashboard=False
 )
@@ -463,7 +463,7 @@ from swarms_tools import exa_search, calculator
 swarm = HeavySwarm(
     name="CustomToolsSwarm",
     description="HeavySwarm with enhanced tool capabilities",
-    worker_model_name="gpt-4o",
+    worker_model_name="gpt-4.1",
     worker_tools=[exa_search, calculator],
     show_dashboard=True,
     timeout=600
@@ -491,8 +491,8 @@ from swarms.structs.heavy_swarm import HeavySwarm
 swarm = HeavySwarm(
     name="EnterpriseAnalysis",
     description="High-performance enterprise analysis",
-    worker_model_name="gpt-4o",  # Highest quality
-    question_agent_model_name="gpt-4o",
+    worker_model_name="gpt-4.1",  # Highest quality
+    question_agent_model_name="gpt-4.1",
     show_dashboard=True,
     loops_per_agent=5,  # Maximum depth
     timeout=1800,  # 30 minutes
@@ -523,7 +523,7 @@ from swarms.structs.heavy_swarm import HeavySwarm
 swarm = HeavySwarm(
     name="DiverseAnalysis",
     description="Analysis with random iteration depth",
-    worker_model_name="gpt-4o",
+    worker_model_name="gpt-4.1",
     question_agent_model_name="gpt-4o-mini",
     show_dashboard=True,
     loops_per_agent=1,  # Base loops

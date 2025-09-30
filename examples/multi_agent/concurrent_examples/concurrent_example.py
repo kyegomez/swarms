@@ -21,7 +21,7 @@ delaware_ccorp_agent = Agent(
     corporate law and ensure that all hiring practices are in compliance with 
     state and federal regulations.
     """,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -41,7 +41,7 @@ indian_foreign_agent = Agent(
     implications of hiring foreign nationals and the requirements for obtaining 
     necessary visas and work permits.
     """,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 

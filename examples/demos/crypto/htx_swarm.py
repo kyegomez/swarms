@@ -29,7 +29,7 @@ Emphasize objective technical analysis without making direct price predictions.
 technical_agent = Agent(
     agent_name="Technical-Analyst",
     system_prompt=TECHNICAL_ANALYST_PROMPT,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
     verbose=True,
     dynamic_temperature_enabled=True,
@@ -79,7 +79,7 @@ Focus on identifying both obvious and subtle risk factors.
 risk_agent = Agent(
     agent_name="Risk-Manager",
     system_prompt=RISK_MANAGER_PROMPT,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
     verbose=True,
     dynamic_temperature_enabled=True,
@@ -108,7 +108,7 @@ Focus on identifying major market-moving factors and trends.
 macro_agent = Agent(
     agent_name="Macro-Analyst",
     system_prompt=MACRO_ANALYST_PROMPT,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
     verbose=True,
     dynamic_temperature_enabled=True,

@@ -1,33 +1,37 @@
 # AutoSwarmBuilder Documentation
 
-The `AutoSwarmBuilder` is a powerful class that automatically builds and manages swarms of AI agents to accomplish complex tasks. It uses a sophisticated boss agent system to delegate work and create specialized agents as needed.
-
-## Overview
+The `AutoSwarmBuilder` is a powerful class that automatically builds and manages swarms of AI agents to accomplish complex tasks. It uses a sophisticated boss agent system with comprehensive design principles to delegate work and create specialized agents as needed.
 
 The AutoSwarmBuilder is designed to:
 
 | Feature | Description |
 |---------|-------------|
-| Automatic Agent Creation | Automatically create and coordinate multiple AI agents |
-| Task Delegation | Delegate tasks to specialized agents based on task requirements |
-| Agent Communication Management | Manage communication between agents through a swarm router |
-| Complex Workflow Handling | Handle complex workflows with various execution types |
-| Architecture Pattern Support | Support different multi-agent architecture patterns |
-| Error Handling & Logging | Provide comprehensive error handling and logging |
+| **Automatic Agent Creation** | Automatically create and coordinate multiple AI agents with distinct personalities and capabilities |
+| **Intelligent Task Delegation** | Delegate tasks to specialized agents based on comprehensive task analysis and requirements |
+| **Advanced Agent Communication** | Manage sophisticated communication protocols between agents through a swarm router |
+| **Multiple Execution Types** | Support 6 different execution types for various use cases and workflows |
+| **Comprehensive Architecture Support** | Support 13+ different multi-agent architecture patterns and coordination strategies |
+| **Robust Error Handling** | Provide comprehensive error handling, logging, and recovery procedures |
+| **Dynamic Agent Specification** | Create agents with detailed specifications including roles, personalities, and capabilities |
+| **Flexible Configuration** | Support extensive configuration options for models, tokens, temperature, and behavior |
+| **Batch Processing** | Handle multiple tasks efficiently with batch processing capabilities |
+| **Interactive Mode** | Support real-time interactive collaboration and decision-making |
 
 ## Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| name | str | "auto-swarm-builder" | The name of the swarm |
-| description | str | "Auto Swarm Builder" | A description of the swarm's purpose |
-| verbose | bool | True | Whether to output detailed logs |
-| max_loops | int | 1 | Maximum number of execution loops |
-| model_name | str | "gpt-4.1" | The LLM model to use for the boss agent |
-| generate_router_config | bool | False | Whether to generate router configuration |
-| interactive | bool | False | Whether to enable interactive mode |
-| max_tokens | int | 8000 | Maximum tokens for the LLM responses |
-| execution_type | str | "return-agents" | Type of execution to perform |
+| `name` | str | "auto-swarm-builder" | The name of the swarm |
+| `description` | str | "Auto Swarm Builder" | A description of the swarm's purpose |
+| `verbose` | bool | True | Whether to output detailed logs |
+| `max_loops` | int | 1 | Maximum number of execution loops |
+| `model_name` | str | "gpt-4.1" | The LLM model to use for the boss agent |
+| `generate_router_config` | bool | False | Whether to generate router configuration |
+| `interactive` | bool | False | Whether to enable interactive mode |
+| `max_tokens` | int | 8000 | Maximum tokens for the LLM responses |
+| `execution_type` | str | "return-agents" | Type of execution to perform (see Execution Types) |
+| `return_dictionary` | bool | True | Whether to return dictionary format for agent specs |
+| `system_prompt` | str | BOSS_SYSTEM_PROMPT | System prompt for the boss agent |
 
 ## Execution Types
 
@@ -39,6 +43,8 @@ The `execution_type` parameter controls how the AutoSwarmBuilder operates:
 | **"execute-swarm-router"**       | Executes the swarm router with the created agents         |
 | **"return-swarm-router-config"** | Returns the swarm router configuration as a dictionary    |
 | **"return-agent-configurations"**| Returns agent configurations as a dictionary              |
+| **"return-agent-specs"**         | Returns agent specifications as a tuple (agents, count)   |
+| **"return-agent-dictionary"**    | Returns agent configurations as a dictionary format       |
 
 ## Core Methods
 
@@ -156,6 +162,78 @@ Returns the available execution types.
 
 - `List[str]`: List of available execution types
 
+### _create_agent_specs(task: str)
+
+Create agent specifications for a given task.
+
+**Parameters:**
+
+- `task` (str): The task to create agents for
+
+**Returns:**
+
+- `Tuple[List[Agent], int]`: List of created agents and count
+
+### _create_agent_dictionary(task: str)
+
+Create agent dictionary for a given task.
+
+**Parameters:**
+
+- `task` (str): The task to create agents for
+
+**Returns:**
+
+- `dict`: Dictionary containing agent configurations
+
+### _create_agents_from_specs(task: str, return_dict: bool = False)
+
+Create agents from specifications using the boss agent system.
+
+**Parameters:**
+
+- `task` (str): The task to create agents for
+- `return_dict` (bool): Whether to return dictionary format
+
+**Returns:**
+
+- `List[Agent]` or `dict`: Created agents or dictionary
+
+### create_agents_from_specs(agents_dictionary: Any)
+
+Create agents from agent specifications.
+
+**Parameters:**
+
+- `agents_dictionary`: Dictionary containing agent specifications
+
+**Returns:**
+
+- `List[Agent]`: List of created agents
+
+### build_agent_from_spec(agent_name: str, agent_description: str, agent_system_prompt: str, max_loops: int = 1, model_name: str = "gpt-4.1", dynamic_temperature_enabled: bool = True, auto_generate_prompt: bool = False, role: str = "worker", max_tokens: int = 8192, temperature: float = 0.5)
+
+Build a single agent from agent specification with comprehensive configuration options.
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `agent_name` | str | - | Name of the agent |
+| `agent_description` | str | - | Description of the agent's purpose |
+| `agent_system_prompt` | str | - | The system prompt for the agent |
+| `max_loops` | int | 1 | Maximum number of loops |
+| `model_name` | str | "gpt-4.1" | Model name to use |
+| `dynamic_temperature_enabled` | bool | True | Whether to enable dynamic temperature |
+| `auto_generate_prompt` | bool | False | Whether to auto-generate prompts |
+| `role` | str | "worker" | Role of the agent |
+| `max_tokens` | int | 8192 | Maximum tokens |
+| `temperature` | float | 0.5 | Temperature setting |
+
+**Returns:**
+
+- `Agent`: The constructed agent instance
+
 ### dict_to_agent(output: dict)
 
 Converts a dictionary output to a list of Agent objects.
@@ -189,6 +267,32 @@ Performs reliability checks on the AutoSwarmBuilder configuration.
 - `ValueError`: If max_loops is set to 0
 
 ## Configuration Classes
+
+### AgentSpec
+
+Configuration for an individual agent specification with comprehensive options.
+
+**Fields:**
+
+| Field                | Type    | Description                                                                                   |
+|----------------------|---------|-----------------------------------------------------------------------------------------------|
+| `agent_name`         | str     | Unique name assigned to the agent, identifying its role and functionality                    |
+| `description`        | str     | Detailed explanation of the agent's purpose, capabilities, and specific tasks                |
+| `system_prompt`      | str     | Initial instruction or context provided to guide agent behavior and responses               |
+| `model_name`         | str     | AI model name for processing tasks (e.g., 'gpt-4o', 'gpt-4o-mini', 'openai/o3-mini')      |
+| `auto_generate_prompt`| bool   | Flag indicating whether the agent should automatically create prompts                        |
+| `max_tokens`         | int     | Maximum number of tokens allowed in agent responses                                          |
+| `temperature`        | float   | Parameter controlling randomness of agent output (lower = more deterministic)               |
+| `role`               | str     | Designated role within the swarm influencing behavior and interactions                       |
+| `max_loops`          | int     | Maximum number of times the agent can repeat its task for iterative processing              |
+
+### Agents
+
+Configuration for a collection of agents that work together as a swarm.
+
+**Fields:**
+
+- `agents` (List[AgentSpec]): List containing specifications of each agent participating in the swarm
 
 ### AgentConfig
 
@@ -249,6 +353,67 @@ The AutoSwarmBuilder supports various multi-agent architecture patterns:
 | **InteractiveGroupChat** | Dynamic group interactions                                |
 | **HeavySwarm**           | High-capacity processing with multiple agents             |
 
+## Boss System Prompt
+
+The AutoSwarmBuilder uses a comprehensive `BOSS_SYSTEM_PROMPT` that embodies sophisticated multi-agent architecture design principles. This system prompt guides the boss agent in creating highly effective agent teams.
+
+### Core Design Principles
+
+The boss system prompt includes six fundamental design principles:
+
+1. **Comprehensive Task Analysis**
+   - Thoroughly deconstruct tasks into fundamental components and sub-tasks
+   - Identify specific skills, knowledge domains, and personality traits required
+   - Analyze challenges, dependencies, and coordination requirements
+   - Map optimal workflows, information flow patterns, and decision-making hierarchies
+
+2. **Agent Design Excellence**
+   - Create agents with crystal-clear, specific purposes and domain expertise
+   - Design distinct, complementary personalities that enhance team dynamics
+   - Ensure agents are self-aware of limitations and know when to seek assistance
+   - Create agents that effectively communicate progress, challenges, and insights
+
+3. **Comprehensive Agent Framework**
+   - **Role & Purpose**: Precise description of responsibilities and authority
+   - **Personality Profile**: Distinct characteristics influencing thinking patterns
+   - **Expertise Matrix**: Specific knowledge domains, skill sets, and capabilities
+   - **Communication Protocol**: How agents present information and interact
+   - **Decision-Making Framework**: Systematic approach to problem-solving
+   - **Limitations & Boundaries**: Clear constraints and operational boundaries
+   - **Collaboration Strategy**: How agents work together and share knowledge
+
+4. **Advanced System Prompt Engineering**
+   - Detailed role and purpose explanations with context and scope
+   - Rich personality descriptions with behavioral guidelines
+   - Comprehensive capabilities, tools, and resource specifications
+   - Detailed communication protocols and reporting requirements
+   - Systematic problem-solving approaches with decision-making frameworks
+   - Collaboration guidelines and conflict resolution procedures
+   - Quality standards, success criteria, and performance metrics
+   - Error handling, recovery procedures, and escalation protocols
+
+5. **Multi-Agent Coordination Architecture**
+   - Design robust communication channels and protocols between agents
+   - Establish clear task handoff procedures and information sharing mechanisms
+   - Create feedback loops for continuous improvement and adaptation
+   - Implement comprehensive error handling and recovery procedures
+   - Define escalation paths for complex issues and decision-making hierarchies
+
+6. **Quality Assurance & Governance**
+   - Set measurable success criteria for each agent and the overall system
+   - Implement verification steps, validation procedures, and quality checks
+   - Create mechanisms for self-assessment, peer review, and continuous improvement
+   - Establish protocols for handling edge cases and unexpected situations
+   - Design governance structures for oversight, accountability, and performance management
+
+### Output Requirements
+
+The boss system prompt ensures that when creating multi-agent systems, the following are provided:
+
+1. **Agent Specifications**: Comprehensive role statements, personality profiles, capabilities, limitations, communication styles, and collaboration strategies
+2. **System Prompts**: Complete, detailed prompts embodying each agent's identity and capabilities
+3. **Architecture Design**: Team structure, communication flow patterns, task distribution strategies, quality control measures, and error handling procedures
+
 ## Examples
 
 ### Example 1: Basic Content Creation Swarm
@@ -278,7 +443,7 @@ from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 swarm = AutoSwarmBuilder(
     name="Data Analysis Swarm",
     description="A swarm specialized in data analysis and visualization",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_tokens=12000,
     verbose=True,
     execution_type="return-agents"
@@ -384,41 +549,204 @@ result = swarm.run(
 )
 ```
 
+### Example 7: Getting Agent Specifications
+
+```python
+from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
+
+# Initialize to return agent specifications
+swarm = AutoSwarmBuilder(
+    name="Specification Swarm",
+    description="A swarm for generating agent specifications",
+    execution_type="return-agent-specs"
+)
+
+# Get agent specifications with count
+agents, count = swarm.run(
+    "Create a team of agents for analyzing customer feedback and generating actionable insights"
+)
+
+print(f"Created {count} agents:")
+for agent in agents:
+    print(f"- {agent.agent_name}: {agent.description}")
+```
+
+### Example 8: Getting Agent Dictionary
+
+```python
+from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
+
+# Initialize to return agent dictionary
+swarm = AutoSwarmBuilder(
+    name="Dictionary Swarm",
+    description="A swarm for generating agent dictionaries",
+    execution_type="return-agent-dictionary"
+)
+
+# Get agent configurations as dictionary
+agent_dict = swarm.run(
+    "Create a marketing team to develop a comprehensive social media strategy"
+)
+
+print("Agent Dictionary:")
+for agent in agent_dict["agents"]:
+    print(f"- {agent['agent_name']}: {agent['description']}")
+    print(f"  Model: {agent['model_name']}")
+    print(f"  Role: {agent['role']}")
+    print(f"  Temperature: {agent['temperature']}")
+```
+
+### Example 9: Custom System Prompt
+
+```python
+from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
+
+# Custom system prompt for specialized domain
+custom_prompt = """
+You are an expert in financial analysis and risk assessment. 
+Create specialized agents for financial modeling, risk analysis, 
+and investment strategy development. Focus on quantitative analysis, 
+regulatory compliance, and market research capabilities.
+"""
+
+# Initialize with custom system prompt
+swarm = AutoSwarmBuilder(
+    name="Financial Analysis Swarm",
+    description="A specialized swarm for financial analysis",
+    system_prompt=custom_prompt,
+    model_name="gpt-4.1",
+    max_tokens=12000
+)
+
+# Run with custom prompt
+result = swarm.run(
+    "Analyze the financial health of a tech startup and provide investment recommendations"
+)
+```
+
+### Example 10: Advanced Agent Configuration
+
+```python
+from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
+
+# Initialize with advanced configuration
+swarm = AutoSwarmBuilder(
+    name="Advanced Swarm",
+    description="A highly configured swarm with advanced settings",
+    model_name="gpt-4.1",
+    max_tokens=16000,
+    temperature=0.3,
+    return_dictionary=True,
+    verbose=True,
+    interactive=False
+)
+
+# Create agents with detailed specifications
+agent_specs = swarm._create_agents_from_specs(
+    "Develop a comprehensive cybersecurity strategy for a mid-size company",
+    return_dict=True
+)
+
+# Build agents from specifications
+agents = swarm.create_agents_from_specs(agent_specs)
+
+# Use the agents directly
+for agent in agents:
+    print(f"Agent: {agent.agent_name}")
+    print(f"Description: {agent.description}")
+    print(f"Model: {agent.model_name}")
+    print(f"Max Loops: {agent.max_loops}")
+    print("---")
+```
+
 ## Best Practices
 
 !!! tip "Task Definition"
-    - Provide clear, specific task descriptions
-    - Include any relevant context or constraints
-    - Specify expected output format if needed
+    - Provide clear, specific task descriptions with context and constraints
+    - Include expected output format and success criteria
     - Break complex tasks into smaller, manageable components
+    - Consider task dependencies and coordination requirements
+    - Use domain-specific terminology for better agent specialization
 
 !!! note "Configuration"
-    - Set appropriate `max_loops` based on task complexity
+    - Set appropriate `max_loops` based on task complexity (typically 1)
     - Use `verbose=True` during development for debugging
     - Choose the right `execution_type` for your use case:
-        - Use `"return-agents"` for direct agent interaction
-        - Use `"return-agent-configurations"` for inspection
-        - Use `"return-swarm-router-config"` for configuration analysis
+        - Use `"return-agents"` for direct agent interaction and execution
+        - Use `"return-agent-configurations"` for inspecting agent setups
+        - Use `"return-swarm-router-config"` for analyzing swarm architecture
+        - Use `"return-agent-specs"` for getting agent specifications with counts
+        - Use `"return-agent-dictionary"` for dictionary-format configurations
     - Set `max_tokens` appropriately based on expected response length
     - Use `interactive=True` for real-time collaboration scenarios
+    - Set `return_dictionary=True` for easier data manipulation
 
 !!! note "Model Selection"
     - Choose appropriate `model_name` based on task requirements
-    - Consider model capabilities and token limits
-    - Use more powerful models for complex reasoning tasks
+    - Consider model capabilities, token limits, and cost
+    - Use more powerful models (GPT-4.1, Claude-3) for complex reasoning
+    - Use efficient models (GPT-4o-mini) for simple tasks
     - Balance performance with cost considerations
+    - Test different models for optimal results
+
+!!! note "Agent Design"
+    - Leverage the comprehensive BOSS_SYSTEM_PROMPT for optimal agent creation
+    - Use custom system prompts for domain-specific applications
+    - Consider agent personality and role diversity for better collaboration
+    - Set appropriate temperature values (0.1-0.7) for task requirements
+    - Use `auto_generate_prompt=True` for dynamic prompt generation
+    - Configure `max_tokens` based on expected response complexity
+
+!!! note "Swarm Architecture"
+    - Choose appropriate swarm types based on task requirements
+    - Use `AgentRearrange` for dynamic task allocation
+    - Use `MixtureOfAgents` for parallel processing
+    - Use `GroupChat` for collaborative decision-making
+    - Use `SequentialWorkflow` for linear task progression
+    - Consider `HeavySwarm` for high-capacity processing
 
 !!! warning "Error Handling"
-    - The class includes comprehensive error handling
-    - All methods include try-catch blocks with detailed logging
-    - Errors are propagated with full stack traces for debugging
-    - Always handle exceptions in your calling code
+    - Always wrap AutoSwarmBuilder calls in try-catch blocks
+    - Implement appropriate fallback strategies for failures
+    - Monitor error patterns and adjust configurations
+    - Use comprehensive logging for debugging
+    - Handle API rate limits and token limits gracefully
 
 !!! info "Performance Optimization"
     - Use `batch_run()` for processing multiple similar tasks
     - Consider using `generate_router_config=True` for complex workflows
     - Monitor token usage with `max_tokens` parameter
     - Use appropriate `swarm_type` for your specific use case
+    - Implement caching for repeated operations
+    - Use parallel processing where appropriate
+
+!!! info "Production Deployment"
+    - Implement proper logging and monitoring
+    - Use environment variables for sensitive configuration
+    - Set up health checks and circuit breakers
+    - Monitor resource usage and performance metrics
+    - Implement graceful shutdown procedures
+    - Use proper error reporting and alerting systems
+
+### Best Practices for Error Handling
+
+!!! warning "Always Handle Exceptions"
+    - Wrap AutoSwarmBuilder calls in try-catch blocks
+    - Log errors with appropriate detail levels
+    - Implement appropriate fallback strategies
+    - Monitor error patterns and adjust configurations
+
+!!! tip "Debugging Configuration Issues"
+    - Use `verbose=True` during development
+    - Test with simple tasks first
+    - Validate model names and API keys
+    - Check token limits and rate limits
+
+!!! note "Production Considerations"
+    - Implement circuit breakers for external API calls
+    - Use health checks to monitor system status
+    - Set up proper logging and monitoring
+    - Implement graceful shutdown procedures
 
 ## Notes
 

@@ -94,13 +94,13 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 research_agent = Agent(
     agent_name="Research-Specialist",
     agent_description="Expert in market research and analysis",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 financial_agent = Agent(
     agent_name="Financial-Analyst",
     agent_description="Specialist in financial analysis and valuation",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the hierarchical swarm
@@ -196,13 +196,13 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 frontend_agent = Agent(
     agent_name="Frontend-Developer",
     agent_description="Expert in React and modern web development",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 backend_agent = Agent(
     agent_name="Backend-Developer",
     agent_description="Specialist in Node.js and API development",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the swarm
@@ -246,13 +246,13 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 market_agent = Agent(
     agent_name="Market-Analyst",
     agent_description="Expert in market analysis and trends",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 technical_agent = Agent(
     agent_name="Technical-Analyst",
     agent_description="Specialist in technical analysis and patterns",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the swarm

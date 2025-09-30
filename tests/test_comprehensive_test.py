@@ -246,7 +246,7 @@ def test_tool_execution_with_agent():
 def test_multimodal_execution():
     """Test agent's ability to process images"""
     agent = create_test_agent(
-        "VisionAgent", model_name="gpt-4o", multi_modal=True
+        "VisionAgent", model_name="gpt-4.1", multi_modal=True
     )
 
     try:

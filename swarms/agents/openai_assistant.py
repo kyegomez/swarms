@@ -47,7 +47,7 @@ class OpenAIAssistant(Agent):
         >>> assistant = OpenAIAssistant(
         ...     name="Math Tutor",
         ...     instructions="You are a personal math tutor.",
-        ...     model="gpt-4o",
+        ...     model="gpt-4.1",
         ...     tools=[{"type": "code_interpreter"}]
         ... )
         >>> response = assistant.run("Solve 3x + 11 = 14")
@@ -58,7 +58,7 @@ class OpenAIAssistant(Agent):
         name: str,
         description: str = "Standard openai assistant wrapper",
         instructions: Optional[str] = None,
-        model: str = "gpt-4o",
+        model: str = "gpt-4.1",
         tools: Optional[List[Dict[str, Any]]] = None,
         file_ids: Optional[List[str]] = None,
         metadata: Optional[Dict[str, Any]] = None,

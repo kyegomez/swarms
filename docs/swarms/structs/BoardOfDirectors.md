@@ -179,13 +179,13 @@ board_members = [
 research_agent = Agent(
     agent_name="Research-Specialist",
     agent_description="Expert in market research and analysis",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 financial_agent = Agent(
     agent_name="Financial-Analyst",
     agent_description="Specialist in financial analysis and valuation",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the Board of Directors swarm
@@ -215,7 +215,7 @@ print(result)
 market_research_agent = Agent(
     agent_name="Market-Research-Specialist",
     agent_description="Expert in market research, competitive analysis, and industry trends",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt="""You are a Market Research Specialist. Your responsibilities include:
 1. Conducting comprehensive market research and analysis
 2. Identifying market trends, opportunities, and risks
@@ -229,7 +229,7 @@ You should be thorough, analytical, and objective in your research."""
 financial_analyst_agent = Agent(
     agent_name="Financial-Analyst",
     agent_description="Specialist in financial analysis, valuation, and investment assessment",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt="""You are a Financial Analyst. Your responsibilities include:
 1. Conducting financial analysis and valuation
 2. Assessing investment opportunities and risks
@@ -243,7 +243,7 @@ You should be financially astute, analytical, and focused on value creation."""
 technical_assessor_agent = Agent(
     agent_name="Technical-Assessor",
     agent_description="Expert in technical feasibility and implementation assessment",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt="""You are a Technical Assessor. Your responsibilities include:
 1. Evaluating technical feasibility and requirements
 2. Assessing implementation challenges and risks
@@ -327,7 +327,7 @@ print(json.dumps(result, indent=2))
 tech_strategy_agent = Agent(
     agent_name="Tech-Strategy-Specialist",
     agent_description="Expert in technology strategy and digital transformation",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt="""You are a Technology Strategy Specialist. Your responsibilities include:
 1. Developing technology roadmaps and strategies
 2. Assessing digital transformation opportunities
@@ -341,7 +341,7 @@ You should be strategic, forward-thinking, and technology-savvy."""
 implementation_planner_agent = Agent(
     agent_name="Implementation-Planner",
     agent_description="Expert in implementation planning and project management",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt="""You are an Implementation Planner. Your responsibilities include:
 1. Creating detailed implementation plans
 2. Assessing resource requirements and timelines
@@ -391,7 +391,7 @@ print(json.dumps(result, indent=2))
 crisis_coordinator_agent = Agent(
     agent_name="Crisis-Coordinator",
     agent_description="Expert in crisis management and emergency response",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt="""You are a Crisis Coordinator. Your responsibilities include:
 1. Coordinating crisis response efforts
 2. Assessing crisis severity and impact
@@ -405,7 +405,7 @@ You should be calm, decisive, and action-oriented."""
 communications_specialist_agent = Agent(
     agent_name="Communications-Specialist",
     agent_description="Expert in crisis communications and stakeholder management",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt="""You are a Communications Specialist. Your responsibilities include:
 1. Developing crisis communication strategies
 2. Managing stakeholder communications

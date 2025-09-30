@@ -9,7 +9,7 @@ from swarms.utils.formatter import formatter
 from swarms.utils.litellm_wrapper import LiteLLM
 
 model_recommendations = {
-    "gpt-4o": {
+    "gpt-4.1": {
         "description": "Fast and efficient for simple tasks and general queries",
         "best_for": [
             "Simple queries",

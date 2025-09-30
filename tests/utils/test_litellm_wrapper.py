@@ -93,7 +93,7 @@ def run_test_suite():
     try:
         logger.info("Testing basic initialization")
         llm = LiteLLM()
-        assert llm.model_name == "gpt-4o"
+        assert llm.model_name == "gpt-4.1"
         assert llm.temperature == 0.5
         assert llm.max_tokens == 4000
         log_test_result("Basic Initialization", True)
@@ -204,7 +204,7 @@ def run_test_suite():
     # Test 8: Vision Support Check
     try:
         logger.info("Testing vision support check")
-        llm = LiteLLM(model_name="gpt-4o")
+        llm = LiteLLM(model_name="gpt-4.1")
         # This should not raise an error for vision-capable models
         llm.check_if_model_supports_vision(img="test.jpg")
         log_test_result("Vision Support Check", True)
@@ -214,7 +214,7 @@ def run_test_suite():
     # Test 9: Direct URL Processing
     try:
         logger.info("Testing direct URL processing")
-        llm = LiteLLM(model_name="gpt-4o")
+        llm = LiteLLM(model_name="gpt-4.1")
         test_url = "https://github.com/kyegomez/swarms/blob/master/swarms_logo_new.png?raw=true"
         should_use_direct = llm._should_use_direct_url(test_url)
         assert isinstance(should_use_direct, bool)
@@ -225,7 +225,7 @@ def run_test_suite():
     # Test 10: Message Preparation with Image
     try:
         logger.info("Testing message preparation with image")
-        llm = LiteLLM(model_name="gpt-4o")
+        llm = LiteLLM(model_name="gpt-4.1")
         # Mock image URL to test message structure
         test_img = "https://github.com/kyegomez/swarms/blob/master/swarms_logo_new.png?raw=true"
         messages = llm._prepare_messages(
@@ -247,7 +247,7 @@ def run_test_suite():
     # Test 11: Vision Processing Methods
     try:
         logger.info("Testing vision processing methods")
-        llm = LiteLLM(model_name="gpt-4o")
+        llm = LiteLLM(model_name="gpt-4.1")
         messages = []
 
         # Test OpenAI vision processing
@@ -278,7 +278,7 @@ def run_test_suite():
     # Test 12: Local vs URL Detection
     try:
         logger.info("Testing local vs URL detection")
-        llm = LiteLLM(model_name="gpt-4o")
+        llm = LiteLLM(model_name="gpt-4.1")
 
         # Test URL detection
         url_test = "https://github.com/kyegomez/swarms/blob/master/swarms_logo_new.png?raw=true"
@@ -302,7 +302,7 @@ def run_test_suite():
     # Test 13: Vision Message Structure
     try:
         logger.info("Testing vision message structure")
-        llm = LiteLLM(model_name="gpt-4o")
+        llm = LiteLLM(model_name="gpt-4.1")
         messages = []
 
         # Test message structure for image input

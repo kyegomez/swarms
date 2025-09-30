@@ -301,6 +301,9 @@ nav:
           - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
           - ModelRouter: "swarms/structs/model_router.md"
 
+        - Agent Orchestration Protocol (AOP):
+          - AOP Overview: "swarms/structs/aop.md"
+
         - Rearrangers:
           - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
           - AgentRearrange: "swarms/structs/agent_rearrange.md"
@@ -327,6 +330,7 @@ nav:
       - BaseTool Reference: "swarms/tools/base_tool.md"
       - MCP Client Utils: "swarms/tools/mcp_client_call.md"
       - MCP Agent Tool: "swarms/tools/mcp_agent_tool.md"
+      - Agent Orchestration Protocol (AOP): "swarms/structs/aop.md"
 
       - Vertical Tools:
         - Finance: "swarms_tools/finance.md"
@@ -344,6 +348,9 @@ nav:
         - Deploy on Google Cloud Run: "swarms_cloud/cloud_run.md"
         - Deploy on Phala: "swarms_cloud/phala_deploy.md"
         - Deploy on Cloudflare Workers: "swarms_cloud/cloudflare_workers.md"
+      - Agent Orchestration Protocol (AOP):
+        - AOP Server Setup: "swarms/examples/aop_server_example.md"
+        - AOP Cluster Example: "swarms/examples/aop_cluster_example.md"
 
     
   - Examples:

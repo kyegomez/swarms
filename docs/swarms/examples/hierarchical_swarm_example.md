@@ -19,7 +19,7 @@ market_research_agent = Agent(
     - Industry report generation
     - Market opportunity identification
     - Risk assessment and mitigation strategies""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 financial_analyst_agent = Agent(
@@ -32,7 +32,7 @@ financial_analyst_agent = Agent(
     - Financial modeling and forecasting
     - Risk assessment and portfolio analysis
     - ESG (Environmental, Social, Governance) analysis""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the hierarchical swarm
@@ -67,7 +67,7 @@ frontend_developer_agent = Agent(
     - State management (Redux, Zustand, Context API)
     - Web performance optimization
     - Accessibility (WCAG) and SEO best practices""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 backend_developer_agent = Agent(
@@ -80,7 +80,7 @@ backend_developer_agent = Agent(
     - API design and REST/GraphQL implementation
     - Authentication and authorization systems
     - Microservices architecture and containerization""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the development swarm
@@ -108,13 +108,13 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 market_agent = Agent(
     agent_name="Market-Analyst",
     agent_description="Expert in market analysis and trends",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 technical_agent = Agent(
     agent_name="Technical-Analyst",
     agent_description="Specialist in technical analysis and patterns",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the swarm
@@ -142,13 +142,13 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 market_agent = Agent(
     agent_name="Market-Analyst",
     agent_description="Expert in market analysis and trends",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 technical_agent = Agent(
     agent_name="Technical-Analyst",
     agent_description="Specialist in technical analysis and patterns",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the swarm
@@ -183,21 +183,21 @@ research_manager = Agent(
     agent_name="Research-Manager",
     agent_description="Manages research operations and coordinates research tasks",
     system_prompt="You are a research manager responsible for overseeing research projects and coordinating research efforts.",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 data_analyst = Agent(
     agent_name="Data-Analyst",
     agent_description="Analyzes data and generates insights",
     system_prompt="You are a data analyst specializing in processing and analyzing data to extract meaningful insights.",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 research_assistant = Agent(
     agent_name="Research-Assistant",
     agent_description="Assists with research tasks and data collection",
     system_prompt="You are a research assistant who helps gather information and support research activities.",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the research swarm

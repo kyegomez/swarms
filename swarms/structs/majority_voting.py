@@ -64,7 +64,7 @@ def default_consensus_agent(
     name: str = "Consensus-Agent",
     system_prompt: str = None,
     description: str = "An agent that uses consensus to generate a final answer.",
-    model_name: str = "gpt-4o",
+    model_name: str = "gpt-4.1",
     *args,
     **kwargs,
 ):
@@ -111,7 +111,7 @@ class MajorityVoting:
         consensus_agent_prompt: str = CONSENSUS_AGENT_PROMPT,
         consensus_agent_name: str = "Consensus-Agent",
         consensus_agent_description: str = "An agent that uses consensus to generate a final answer.",
-        consensus_agent_model_name: str = "gpt-4o",
+        consensus_agent_model_name: str = "gpt-4.1",
         additional_consensus_agent_kwargs: dict = {},
         *args,
         **kwargs,

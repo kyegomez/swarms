@@ -301,7 +301,7 @@ reporter = SwarmsIssueReporter(
 try:
     # This will raise an error since the input isn't valid
     # Create an agent that might have issues
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
     agent = Agent(agent_name="Test-Agent", max_loops=1)
 
     result = agent.run(None)

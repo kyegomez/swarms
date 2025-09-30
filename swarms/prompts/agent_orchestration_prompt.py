@@ -1,4 +1,3 @@
-
 BOSS_SYSTEM_PROMPT = """
 # Swarm Intelligence Orchestrator
 

@@ -201,7 +201,7 @@ class ChartElement:
 class VisionAPI:
     def __init__(
         self,
-        model_name: str = "gpt-4o",
+        model_name: str = "gpt-4.1",
         max_tokens: int = 1000,
         temperature: float = 0.5,
     ):
@@ -246,7 +246,7 @@ class VisionAPI:
 class ChartCitor:
     def __init__(
         self,
-        model_name: str = "gpt-4o",
+        model_name: str = "gpt-4.1",
         saved_state_path: str = "chartcitor_state.json",
         max_retries: int = 3,
         max_loops: int = 1,

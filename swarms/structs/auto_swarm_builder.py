@@ -129,7 +129,7 @@ When creating a multi-agent system, provide:
 
 class AgentSpec(BaseModel):
     """Configuration for an individual agent specification."""
-    
+
     agent_name: Optional[str] = Field(
         None,
         description="The unique name assigned to the agent, which identifies its role and functionality within the swarm.",
@@ -555,7 +555,9 @@ class AutoSwarmBuilder:
 
         return [self.run(task) for task in tasks]
 
-    def _create_agent_specs(self, task: str) -> Tuple[List[Agent], int]:
+    def _create_agent_specs(
+        self, task: str
+    ) -> Tuple[List[Agent], int]:
         """Create agent specifications for a given task.
 
         Args:
@@ -578,10 +580,14 @@ class AutoSwarmBuilder:
             dict: Dictionary containing agent configurations
         """
         logger.info("Creating agent dictionary for task")
-        agents_dictionary = self._create_agents_from_specs(task, return_dict=True)
+        agents_dictionary = self._create_agents_from_specs(
+            task, return_dict=True
+        )
         return agents_dictionary
 
-    def _create_agents_from_specs(self, task: str, return_dict: bool = False):
+    def _create_agents_from_specs(
+        self, task: str, return_dict: bool = False
+    ):
         """Create agents from specifications.
 
         Args:
@@ -615,7 +621,9 @@ class AutoSwarmBuilder:
             logger.info("Returning agents")
             return self.create_agents_from_specs(agents_dictionary)
 
-    def create_agents_from_specs(self, agents_dictionary: Any) -> List[Agent]:
+    def create_agents_from_specs(
+        self, agents_dictionary: Any
+    ) -> List[Agent]:
         """Create agents from agent specifications.
 
         Args:
@@ -653,7 +661,7 @@ class AutoSwarmBuilder:
         agent_description: str,
         agent_system_prompt: str,
         max_loops: int = 1,
-        model_name: str = "gpt-4o",
+        model_name: str = "gpt-4.1",
         dynamic_temperature_enabled: bool = True,
         auto_generate_prompt: bool = False,
         role: str = "worker",
