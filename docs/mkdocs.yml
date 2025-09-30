@@ -301,9 +301,6 @@ nav:
           - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
           - ModelRouter: "swarms/structs/model_router.md"
 
-        - Agent Orchestration Protocol (AOP):
-          - AOP Overview: "swarms/structs/aop.md"
-
         - Rearrangers:
           - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
           - AgentRearrange: "swarms/structs/agent_rearrange.md"
@@ -349,6 +346,7 @@ nav:
         - Deploy on Phala: "swarms_cloud/phala_deploy.md"
         - Deploy on Cloudflare Workers: "swarms_cloud/cloudflare_workers.md"
       - Agent Orchestration Protocol (AOP):
+        - AOP Reference: "swarms/structs/aop.md"
         - AOP Server Setup: "swarms/examples/aop_server_example.md"
         - AOP Cluster Example: "swarms/examples/aop_cluster_example.md"
 
