@@ -290,6 +290,7 @@ nav:
           - Overview: "swarms/structs/multi_swarm_orchestration.md"
           - HierarchicalSwarm: "swarms/structs/hierarchical_swarm.md"
           - Hierarchical Structured Communication Framework: "swarms/structs/hierarchical_structured_communication_framework.md"
+          - Auto Agent Builder: "swarms/structs/auto_agent_builder.md"
           - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
           - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
           - Swarm Matcher: "swarms/structs/swarm_matcher.md"
@@ -300,7 +301,6 @@ nav:
           - SwarmRouter: "swarms/structs/swarm_router.md"
           - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
           - ModelRouter: "swarms/structs/model_router.md"
-
 
         - Rearrangers:
           - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
@@ -345,10 +345,6 @@ nav:
         - Deploy on Google Cloud Run: "swarms_cloud/cloud_run.md"
         - Deploy on Phala: "swarms_cloud/phala_deploy.md"
         - Deploy on Cloudflare Workers: "swarms_cloud/cloudflare_workers.md"
-      - Agent Orchestration Protocol (AOP):
-        - AOP Reference: "swarms/structs/aop.md"
-        - AOP Server Setup: "swarms/examples/aop_server_example.md"
-        - AOP Cluster Example: "swarms/examples/aop_cluster_example.md"
 
     
   - Examples:
@@ -421,6 +417,8 @@ nav:
           - Hiearchical Marketing Team: "examples/marketing_team.md"
           - Gold ETF Research with HeavySwarm: "examples/gold_etf_research.md"
           - Hiring Swarm: "examples/hiring_swarm.md"
+          - Real Estate Swarm: "examples/realestate_swarm.md"
+          - Job Finding Swarm: "examples/job_finding.md"
     
     - Tools & Integrations:
       - Web Search with Exa: "examples/exa_search.md"
