@@ -1043,7 +1043,7 @@ A Pydantic model representing a delta update for messages in chat applications.
 A Pydantic model representing a request for chat completion.
 
 **Attributes**:  
-- `model` (`str`): The model to use for completing the chat (default is "gpt-4o").
+- `model` (`str`): The model to use for completing the chat (default is "gpt-4.1").
 
 - `messages` (`List[ChatMessageInput]`): A list of input messages for the chat.
 

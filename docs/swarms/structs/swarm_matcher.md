@@ -32,7 +32,8 @@ flowchart TD
 SwarmMatcher is included in the Swarms package. To use it, simply import it from the library:
 
 ```python
-from swarms.structs.swarm_matcher import SwarmMatcher, SwarmMatcherConfig, SwarmType
+from swarms_utils.swarm_matcher import SwarmMatcher, SwarmMatcherConfig, SwarmType
+
 ```
 
 ## Basic Usage
@@ -50,7 +51,8 @@ print(f"Selected swarm type: {swarm_type}")
 For more control over the matching process, you can create and configure your own SwarmMatcher instance:
 
 ```python
-from swarms.structs.swarm_matcher import SwarmMatcher, SwarmMatcherConfig, SwarmType, initialize_swarm_types
+from swarms_utils.swarm_matcher import SwarmMatcher, SwarmMatcherConfig, SwarmType
+, initialize_swarm_types
 
 # Create a configuration
 config = SwarmMatcherConfig(
@@ -210,7 +212,8 @@ for task in tasks:
 ### Custom Swarm Types
 
 ```python
-from swarms.structs.swarm_matcher import SwarmMatcher, SwarmMatcherConfig, SwarmType
+from swarms_utils.swarm_matcher import SwarmMatcher, SwarmMatcherConfig, SwarmType
+
 
 # Create configuration and matcher
 config = SwarmMatcherConfig()

@@ -64,7 +64,7 @@ class DeltaMessage(BaseModel):
 
 
 class ChatCompletionRequest(BaseModel):
-    model: str = "gpt-4o"
+    model: str = "gpt-4.1"
     messages: List[ChatMessageInput]
     temperature: Optional[float] = 0.8
     top_p: Optional[float] = 0.8

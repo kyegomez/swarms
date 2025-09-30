@@ -1,17 +1,16 @@
-import os
+import json
 import traceback
-from typing import List, Literal, Optional
+from typing import Any, List, Optional, Tuple
 
 from dotenv import load_dotenv
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from swarms.prompts.reasoning_prompt import INTERNAL_MONOLGUE_PROMPT
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.structs.swarm_router import SwarmRouter, SwarmType
-from swarms.utils.function_caller_model import OpenAIFunctionCaller
+from swarms.utils.litellm_wrapper import LiteLLM
 
 load_dotenv()
 
@@ -128,6 +127,60 @@ When creating a multi-agent system, provide:
 """
 
 
+class AgentSpec(BaseModel):
+    """Configuration for an individual agent specification."""
+
+    agent_name: Optional[str] = Field(
+        None,
+        description="The unique name assigned to the agent, which identifies its role and functionality within the swarm.",
+    )
+    description: Optional[str] = Field(
+        None,
+        description="A detailed explanation of the agent's purpose, capabilities, and any specific tasks it is designed to perform.",
+    )
+    system_prompt: Optional[str] = Field(
+        None,
+        description="The initial instruction or context provided to the agent, guiding its behavior and responses during execution.",
+    )
+    model_name: Optional[str] = Field(
+        description="The name of the AI model that the agent will utilize for processing tasks and generating outputs. For example: gpt-4o, gpt-4o-mini, openai/o3-mini"
+    )
+    auto_generate_prompt: Optional[bool] = Field(
+        description="A flag indicating whether the agent should automatically create prompts based on the task requirements."
+    )
+    max_tokens: Optional[int] = Field(
+        None,
+        description="The maximum number of tokens that the agent is allowed to generate in its responses, limiting output length.",
+    )
+    temperature: Optional[float] = Field(
+        description="A parameter that controls the randomness of the agent's output; lower values result in more deterministic responses."
+    )
+    role: Optional[str] = Field(
+        description="The designated role of the agent within the swarm, which influences its behavior and interaction with other agents."
+    )
+    max_loops: Optional[int] = Field(
+        description="The maximum number of times the agent is allowed to repeat its task, enabling iterative processing if necessary."
+    )
+
+
+class Agents(BaseModel):
+    """Configuration for a collection of agents that work together as a swarm to accomplish tasks."""
+
+    agents: List[AgentSpec] = Field(
+        description="A list containing the specifications of each agent that will participate in the swarm, detailing their roles and functionalities."
+    )
+
+
+execution_types = [
+    "return-agents",
+    "execute-swarm-router",
+    "return-swarm-router-config",
+    "return-agent-configurations",
+    "return-agent-specs",
+    "return-agent-dictionary",
+]
+
+
 class AgentConfig(BaseModel):
     """Configuration for an individual agent in a swarm"""
 
@@ -201,47 +254,25 @@ class SwarmRouterConfig(BaseModel):
         arbitrary_types_allowed = True
 
 
-def reasoning_agent_run(
-    task: str,
-    img: Optional[str] = None,
-    name: str = None,
-    model_name: str = "gpt-4.1",
-    system_prompt: str = None,
-):
-    """
-    Run a reasoning agent to analyze the task before the main director processes it.
-
-    Args:
-        task (str): The task to reason about
-        img (Optional[str]): Optional image input
-
-    Returns:
-        str: The reasoning output from the agent
-    """
-    agent = Agent(
-        agent_name=name,
-        agent_description=f"You're the {name} agent that is responsible for reasoning about the task and creating a plan for the swarm to accomplish the task.",
-        model_name=model_name,
-        system_prompt=INTERNAL_MONOLGUE_PROMPT + system_prompt,
-        max_loops=1,
-    )
-
-    return agent.run(task=task, img=img)
-
-
 class AutoSwarmBuilder:
     """A class that automatically builds and manages swarms of AI agents.
 
     This class handles the creation, coordination and execution of multiple AI agents working
-    together as a swarm to accomplish complex tasks. It uses a boss agent to delegate work
-    and create new specialized agents as needed.
+    together as a swarm to accomplish complex tasks. It uses a sophisticated boss agent system
+    to delegate work and create new specialized agents as needed.
 
     Args:
-        name (str): The name of the swarm
-        description (str): A description of the swarm's purpose
-        verbose (bool, optional): Whether to output detailed logs. Defaults to True.
-        max_loops (int, optional): Maximum number of execution loops. Defaults to 1.
-        random_models (bool, optional): Whether to use random models for agents. Defaults to True.
+        name (str): The name of the swarm. Defaults to "auto-swarm-builder".
+        description (str): A description of the swarm's purpose. Defaults to "Auto Swarm Builder".
+        verbose (bool): Whether to output detailed logs. Defaults to True.
+        max_loops (int): Maximum number of execution loops. Defaults to 1.
+        model_name (str): The LLM model to use for the boss agent. Defaults to "gpt-4.1".
+        generate_router_config (bool): Whether to generate router configuration. Defaults to False.
+        interactive (bool): Whether to enable interactive mode. Defaults to False.
+        max_tokens (int): Maximum tokens for the LLM responses. Defaults to 8000.
+        execution_type (str): Type of execution to perform. Defaults to "return-agents".
+        return_dictionary (bool): Whether to return dictionary format for agent specs. Defaults to True.
+        system_prompt (str): System prompt for the boss agent. Defaults to BOSS_SYSTEM_PROMPT.
     """
 
     def __init__(
@@ -250,17 +281,13 @@ class AutoSwarmBuilder:
         description: str = "Auto Swarm Builder",
         verbose: bool = True,
         max_loops: int = 1,
-        random_models: bool = False,
-        return_agents: bool = False,
         model_name: str = "gpt-4.1",
         generate_router_config: bool = False,
         interactive: bool = False,
         max_tokens: int = 8000,
-        execution_type: Literal[
-            "return-agents",
-            "execute-swarm-router",
-            "return-agent-configurations",
-        ] = "return-agents",
+        execution_type: execution_types = "return-agents",
+        return_dictionary: bool = True,
+        system_prompt: str = BOSS_SYSTEM_PROMPT,
     ):
         """Initialize the AutoSwarmBuilder.
 
@@ -269,20 +296,27 @@ class AutoSwarmBuilder:
             description (str): A description of the swarm's purpose
             verbose (bool): Whether to output detailed logs
             max_loops (int): Maximum number of execution loops
-            random_models (bool): Whether to use random models for agents
+            model_name (str): The LLM model to use for the boss agent
+            generate_router_config (bool): Whether to generate router configuration
+            interactive (bool): Whether to enable interactive mode
+            max_tokens (int): Maximum tokens for the LLM responses
+            execution_type (str): Type of execution to perform
+            return_dictionary (bool): Whether to return dictionary format for agent specs
+            system_prompt (str): System prompt for the boss agent
         """
         self.name = name
         self.description = description
         self.verbose = verbose
         self.max_loops = max_loops
-        self.random_models = random_models
-        self.return_agents = return_agents
         self.model_name = model_name
         self.generate_router_config = generate_router_config
         self.interactive = interactive
         self.max_tokens = max_tokens
         self.execution_type = execution_type
+        self.return_dictionary = return_dictionary
+        self.system_prompt = system_prompt
         self.conversation = Conversation()
+        self.agents_pool = []
 
         self.reliability_check()
 
@@ -302,7 +336,7 @@ class AutoSwarmBuilder:
 
         agents = self.create_agents(task)
 
-        if self.random_models:
+        if self.execution_type == "return-agents":
             logger.info("Setting random models for agents")
             agents = set_random_models_for_agents(agents=agents)
 
@@ -324,10 +358,14 @@ class AutoSwarmBuilder:
         """
         try:
 
-            if self.generate_router_config:
+            if self.execution_type == "return-swarm-router-config":
                 return self.create_router_config(task)
-            elif self.return_agents:
+            elif self.execution_type == "return-agent-configurations":
                 return self.create_agents(task)
+            elif self.execution_type == "return-agent-specs":
+                return self._create_agent_specs(task)
+            elif self.execution_type == "return-agent-dictionary":
+                return self._create_agent_dictionary(task)
             else:
                 return self._execute_task(task)
 
@@ -337,41 +375,6 @@ class AutoSwarmBuilder:
                 exc_info=True,
             )
             raise
-
-    # def run(
-    #     self, task: str, correct_answer: str = None, *args, **kwargs
-    # ):
-    #     """
-    #     Executes the swarm on the given task. If correct_answer is provided, the method will retry until this answer is found in the output, up to max_loops times.
-    #     If correct_answer is not provided, the method will execute the task once and return the output.
-
-    #     Args:
-    #         task (str): The task to execute.
-    #         correct_answer (str, optional): If provided, the method will retry until this answer is found in the output.
-    #         *args: Additional positional arguments.
-    #         **kwargs: Additional keyword arguments.
-
-    #     Returns:
-    #         Any: The output of the swarm execution, or the output containing the correct answer if specified.
-    #     """
-    #     if correct_answer is None:
-    #         # If no correct_answer is specified, just run once and return the output
-    #         return self._run(task, *args, **kwargs)
-    #     else:
-    #         # If correct_answer is specified, retry up to max_loops times
-    #         for attempt in range(1, self.max_loops + 1):
-    #             output = self._run(task, *args, **kwargs)
-    #             if correct_answer in str(output):
-    #                 logger.info(
-    #                     f"AutoSwarmBuilder: Correct answer found on attempt {attempt}."
-    #                 )
-    #                 return output
-    #             else:
-    #                 logger.info(
-    #                     f"AutoSwarmBuilder: Attempt {attempt} did not yield the correct answer, retrying..."
-    #                 )
-    #         # If correct_answer was not found after max_loops, return the last output
-    #         return output
 
     def dict_to_agent(self, output: dict):
         agents = []
@@ -402,7 +405,9 @@ class AutoSwarmBuilder:
                 f"Create the multi-agent team for the following task: {task}"
             )
 
-            return output.model_dump()
+            output = json.loads(output)
+
+            return output
 
         except Exception as e:
             logger.error(
@@ -412,12 +417,11 @@ class AutoSwarmBuilder:
             raise e
 
     def build_llm_agent(self, config: BaseModel):
-        return OpenAIFunctionCaller(
-            system_prompt=BOSS_SYSTEM_PROMPT,
-            api_key=os.getenv("OPENAI_API_KEY"),
-            temperature=0.5,
-            base_model=config,
+        return LiteLLM(
             model_name=self.model_name,
+            system_prompt=BOSS_SYSTEM_PROMPT,
+            temperature=0.5,
+            response_format=config,
             max_tokens=self.max_tokens,
         )
 
@@ -440,10 +444,7 @@ class AutoSwarmBuilder:
                 f"Create the agents for the following task: {task}"
             )
 
-            if self.return_agents:
-                output = output.model_dump()
-            else:
-                output = self.dict_to_agent(output)
+            output = json.loads(output)
 
             return output
 
@@ -477,7 +478,7 @@ class AutoSwarmBuilder:
         try:
             agent = Agent(
                 agent_name=agent_name,
-                description=agent_description,
+                agent_description=agent_description,
                 system_prompt=agent_system_prompt,
                 verbose=self.verbose,
                 dynamic_temperature_enabled=False,
@@ -508,16 +509,14 @@ class AutoSwarmBuilder:
             logger.info("Initializing swarm router")
             model = self.build_llm_agent(config=SwarmRouterConfig)
 
-            logger.info("Creating swarm specification")
             swarm_spec = model.run(
                 f"Create the swarm spec for the following task: {task}"
             )
-            logger.debug(
-                f"Received swarm specification: {swarm_spec.model_dump()}"
-            )
-            swarm_spec = swarm_spec.model_dump()
 
-            logger.info("Initializing SwarmRouter")
+            print(swarm_spec)
+
+            print(type(swarm_spec))
+
             swarm_router = SwarmRouter(
                 name=swarm_spec["name"],
                 description=swarm_spec["description"],
@@ -555,3 +554,155 @@ class AutoSwarmBuilder:
         """
 
         return [self.run(task) for task in tasks]
+
+    def _create_agent_specs(
+        self, task: str
+    ) -> Tuple[List[Agent], int]:
+        """Create agent specifications for a given task.
+
+        Args:
+            task (str): The task to create agents for
+
+        Returns:
+            Tuple[List[Agent], int]: List of created agents and count
+        """
+        logger.info("Creating agent specifications for task")
+        agents = self._create_agents_from_specs(task)
+        return agents, len(agents)
+
+    def _create_agent_dictionary(self, task: str):
+        """Create agent dictionary for a given task.
+
+        Args:
+            task (str): The task to create agents for
+
+        Returns:
+            dict: Dictionary containing agent configurations
+        """
+        logger.info("Creating agent dictionary for task")
+        agents_dictionary = self._create_agents_from_specs(
+            task, return_dict=True
+        )
+        return agents_dictionary
+
+    def _create_agents_from_specs(
+        self, task: str, return_dict: bool = False
+    ):
+        """Create agents from specifications.
+
+        Args:
+            task (str): The task to create agents for
+            return_dict (bool): Whether to return dictionary format
+
+        Returns:
+            List[Agent] or dict: Created agents or dictionary
+        """
+        logger.info("Creating agents from specifications")
+        model = LiteLLM(
+            model_name=self.model_name,
+            system_prompt=self.system_prompt,
+            temperature=0.1,
+            response_format=Agents,
+            max_tokens=8192,
+        )
+
+        agents_dictionary = model.run(task)
+        print(agents_dictionary)
+        print(type(agents_dictionary))
+        logger.info("Agents successfully created")
+        logger.info(f"Agents: {len(agents_dictionary.agents)}")
+
+        if return_dict or self.return_dictionary:
+            logger.info("Returning dictionary")
+            # Convert swarm config to dictionary
+            agents_dictionary = agents_dictionary.model_dump()
+            return agents_dictionary
+        else:
+            logger.info("Returning agents")
+            return self.create_agents_from_specs(agents_dictionary)
+
+    def create_agents_from_specs(
+        self, agents_dictionary: Any
+    ) -> List[Agent]:
+        """Create agents from agent specifications.
+
+        Args:
+            agents_dictionary: Dictionary containing agent specifications
+
+        Returns:
+            List[Agent]: List of created agents
+        """
+        # Create agents from config
+        agents = []
+        for agent_config in agents_dictionary.agents:
+            # Convert dict to AgentSpec if needed
+            if isinstance(agent_config, dict):
+                agent_config = AgentSpec(**agent_config)
+
+            agent = self.build_agent_from_spec(
+                agent_name=agent_config.agent_name,
+                agent_description=agent_config.description,
+                agent_system_prompt=agent_config.system_prompt,
+                model_name=agent_config.model_name,
+                max_loops=agent_config.max_loops,
+                dynamic_temperature_enabled=True,
+                auto_generate_prompt=agent_config.auto_generate_prompt,
+                role=agent_config.role,
+                max_tokens=agent_config.max_tokens,
+                temperature=agent_config.temperature,
+            )
+            agents.append(agent)
+
+        return agents
+
+    def build_agent_from_spec(
+        self,
+        agent_name: str,
+        agent_description: str,
+        agent_system_prompt: str,
+        max_loops: int = 1,
+        model_name: str = "gpt-4.1",
+        dynamic_temperature_enabled: bool = True,
+        auto_generate_prompt: bool = False,
+        role: str = "worker",
+        max_tokens: int = 8192,
+        temperature: float = 0.5,
+    ) -> Agent:
+        """Build a single agent from agent specification.
+
+        Args:
+            agent_name (str): Name of the agent
+            agent_description (str): Description of the agent's purpose
+            agent_system_prompt (str): The system prompt for the agent
+            max_loops (int): Maximum number of loops
+            model_name (str): Model name to use
+            dynamic_temperature_enabled (bool): Whether to enable dynamic temperature
+            auto_generate_prompt (bool): Whether to auto-generate prompts
+            role (str): Role of the agent
+            max_tokens (int): Maximum tokens
+            temperature (float): Temperature setting
+
+        Returns:
+            Agent: The constructed agent instance
+        """
+        logger.info(f"Building agent from spec: {agent_name}")
+        agent = Agent(
+            agent_name=agent_name,
+            description=agent_description,
+            system_prompt=agent_system_prompt,
+            model_name=model_name,
+            max_loops=max_loops,
+            dynamic_temperature_enabled=dynamic_temperature_enabled,
+            context_length=200000,
+            output_type="str",
+            streaming_on=False,
+            auto_generate_prompt=auto_generate_prompt,
+            role=role,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+
+        return agent
+
+    def list_types(self):
+        return execution_types

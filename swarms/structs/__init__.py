@@ -1,5 +1,4 @@
 from swarms.structs.agent import Agent
-from swarms.structs.agent_builder import AgentsBuilder
 from swarms.structs.agent_loader import AgentLoader
 from swarms.structs.agent_rearrange import AgentRearrange, rearrange
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
@@ -155,7 +154,6 @@ __all__ = [
     "MultiAgentRouter",
     "MemeAgentGenerator",
     "ModelRouter",
-    "AgentsBuilder",
     "MALT",
     "HybridHierarchicalClusterSwarm",
     "get_agents_info",

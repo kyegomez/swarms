@@ -32,7 +32,7 @@ class ReasoningDuo:
         agent_description: str = "A highly intelligent and thoughtful AI designed to provide accurate and well-reasoned answers to the user's questions.",
         model_name: str = "gpt-4o-mini",
         description: str = "A highly intelligent and thoughtful AI designed to provide accurate and well-reasoned answers to the user's questions.",
-        model_names: list[str] = ["gpt-4o-mini", "gpt-4o"],
+        model_names: list[str] = ["gpt-4o-mini", "gpt-4.1"],
         system_prompt: str = "You are a helpful assistant that can answer questions and help with tasks.",
         output_type: OutputType = "dict-all-except-first",
         reasoning_model_name: Optional[

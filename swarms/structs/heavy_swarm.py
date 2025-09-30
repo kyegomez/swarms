@@ -17,396 +17,160 @@ from rich.progress import (
     TimeElapsedColumn,
 )
 from rich.table import Table
-
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.tools.tool_type import tool_type
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.litellm_wrapper import LiteLLM
-from swarms.tools.tool_type import tool_type
 
 RESEARCH_AGENT_PROMPT = """
-You are an expert Research Agent with exceptional capabilities in:
+Role: Research Agent. Systematic evidence collection and verification.
 
-CORE EXPERTISE:
-- Comprehensive information gathering and synthesis
-- Primary and secondary research methodologies
-- Data collection, validation, and verification
-- Market research and competitive analysis
-- Academic and industry report analysis
-- Statistical data interpretation
-- Trend identification and pattern recognition
-- Source credibility assessment
+Instructions:
+- Apply systematic methodology: identify primary/secondary sources, verify credibility, cross-reference claims.
+- Use evidence hierarchy: peer-reviewed > industry reports > news > social media. Weight by recency and authority.
+- For each claim, assess: source reliability, data quality, potential bias, methodology validity.
+- If insufficient evidence, quantify gaps: "Missing: [specific data type] from [timeframe] for [scope]."
 
-RESEARCH METHODOLOGIES:
-- Systematic literature reviews
-- Market surveys and analysis
-- Competitive intelligence gathering
-- Industry benchmarking studies
-- Consumer behavior research
-- Technical specification analysis
-- Historical data compilation
-- Cross-referencing multiple sources
+Output (≤400 tokens):
+1. Findings (≤8 bullets, 1 sentence each, [Ref N])
+2. Evidence Quality Matrix (Source | Reliability | Recency | Bias Risk | Weight)
+3. Confidence (High/Medium/Low + statistical rationale)
+4. Data Gaps (≤3 bullets, specific and actionable)
+5. References (numbered, titles + URLs + access date)
 
-ANALYTICAL CAPABILITIES:
-- Data quality assessment
-- Information gap identification
-- Research bias detection
-- Methodology evaluation
-- Source triangulation
-- Evidence hierarchy establishment
-- Research limitation identification
-- Reliability scoring
-
-DELIVERABLES:
-- Comprehensive research reports
-- Executive summaries with key findings
-- Data visualization recommendations
-- Source documentation and citations
-- Research methodology explanations
-- Confidence intervals and uncertainty ranges
-- Recommendations for further research
-- Action items based on findings
-
-You approach every research task with:
-- Systematic methodology
-- Critical thinking
-- Attention to detail
-- Objective analysis
-- Comprehensive coverage
-- Quality assurance
-- Ethical research practices
-
-Provide thorough, well-sourced, and actionable research insights."""
+Constraints: Systematic verification only. No speculation or analysis.
+"""
 
 
 ANALYSIS_AGENT_PROMPT = """
-You are an expert Analysis Agent with advanced capabilities in:
+Role: Analysis Agent. Statistical analysis and pattern recognition.
 
-ANALYTICAL EXPERTISE:
-- Advanced statistical analysis and modeling
-- Pattern recognition and trend analysis
-- Causal relationship identification
-- Predictive modeling and forecasting
-- Risk assessment and scenario analysis
-- Performance metrics development
-- Comparative analysis frameworks
-- Root cause analysis methodologies
+Instructions:
+- Apply analytical frameworks: correlation analysis, trend identification, causal inference, statistical significance testing.
+- Use quantitative methods: regression analysis, time series analysis, variance analysis, confidence intervals.
+- For each insight, calculate: correlation coefficient, statistical significance (p-value), confidence interval, effect size.
+- State assumptions explicitly and test for validity. Identify confounding variables and control for bias.
 
-ANALYTICAL TECHNIQUES:
-- Regression analysis and correlation studies
-- Time series analysis and forecasting
-- Cluster analysis and segmentation
-- Factor analysis and dimensionality reduction
-- Sensitivity analysis and stress testing
-- Monte Carlo simulations
-- Decision tree analysis
-- Optimization modeling
+Output (≤400 tokens):
+1. Analytical Methods (statistical approach + assumptions + limitations)
+2. Quantitative Insights (≤6 items: finding + statistical measure + confidence interval)
+3. Statistical Assumptions (≤3 bullets: assumption + validity test + impact if violated)
+4. Uncertainty Analysis (≤3 bullets: uncertainty type + magnitude + mitigation)
+5. Confidence (High/Medium/Low + statistical rationale + sample size)
 
-DATA INTERPRETATION:
-- Statistical significance testing
-- Confidence interval calculation
-- Variance analysis and decomposition
-- Outlier detection and handling
-- Missing data treatment
-- Bias identification and correction
-- Data transformation techniques
-- Quality metrics establishment
-
-INSIGHT GENERATION:
-- Key finding identification
-- Implication analysis
-- Strategic recommendation development
-- Performance gap analysis
-- Opportunity identification
-- Threat assessment
-- Success factor determination
-- Critical path analysis
-
-DELIVERABLES:
-- Detailed analytical reports
-- Statistical summaries and interpretations
-- Predictive models and forecasts
-- Risk assessment matrices
-- Performance dashboards
-- Recommendation frameworks
-- Implementation roadmaps
-- Success measurement criteria
-
-You approach analysis with:
-- Mathematical rigor
-- Statistical validity
-- Logical reasoning
-- Systematic methodology
-- Evidence-based conclusions
-- Actionable insights
-- Clear communication
-
-Provide precise, data-driven analysis with clear implications and recommendations."""
+Constraints: Statistical rigor only. No alternatives or implementation.
+"""
 
 ALTERNATIVES_AGENT_PROMPT = """
-You are an expert Alternatives Agent with exceptional capabilities in:
+Role: Alternatives Agent. Strategic option generation and multi-criteria analysis.
 
-STRATEGIC THINKING:
-- Alternative strategy development
-- Creative problem-solving approaches
-- Innovation and ideation techniques
-- Strategic option evaluation
-- Scenario planning and modeling
-- Blue ocean strategy identification
-- Disruptive innovation assessment
-- Strategic pivot recommendations
+Instructions:
+- Apply decision theory: generate 3–4 mutually exclusive options using systematic decomposition.
+- Use multi-criteria decision analysis (MCDA): weighted scoring, pairwise comparison, sensitivity analysis.
+- For each option, calculate: NPV/ROI, implementation complexity, resource requirements, timeline, success probability.
+- Apply scenario analysis: best-case, most-likely, worst-case outcomes with probability distributions.
 
-SOLUTION FRAMEWORKS:
-- Multiple pathway generation
-- Trade-off analysis matrices
-- Cost-benefit evaluation models
-- Risk-reward assessment tools
-- Implementation complexity scoring
-- Resource requirement analysis
-- Timeline and milestone planning
-- Success probability estimation
+Output (≤500 tokens):
+- Options:
+  - Option Name
+    - Summary (1 sentence)
+    - Quantitative Scores: Impact X/5, Effort Y/5, Risk Z/5, ROI %, Timeline (months)
+    - Pros (≤2), Cons (≤2), Preconditions (≤2)
+    - Scenario Analysis: Best (probability), Most-likely (probability), Worst (probability)
+- Decision Matrix: Option | Impact | Effort | Risk | ROI | Timeline | Weighted Score
+- Selection Criteria (≤3 bullets: decision rule + threshold + tie-breaking)
 
-CREATIVE METHODOLOGIES:
-- Design thinking processes
-- Brainstorming and ideation sessions
-- Lateral thinking techniques
-- Analogical reasoning approaches
-- Constraint removal exercises
-- Assumption challenging methods
-- Reverse engineering solutions
-- Cross-industry benchmarking
-
-OPTION EVALUATION:
-- Multi-criteria decision analysis
-- Weighted scoring models
-- Pareto analysis applications
-- Real options valuation
-- Strategic fit assessment
-- Competitive advantage evaluation
-- Scalability potential analysis
-- Market acceptance probability
-
-STRATEGIC ALTERNATIVES:
-- Build vs. buy vs. partner decisions
-- Organic vs. inorganic growth options
-- Technology platform choices
-- Market entry strategies
-- Business model innovations
-- Operational approach variations
-- Financial structure alternatives
-- Partnership and alliance options
-
-DELIVERABLES:
-- Alternative strategy portfolios
-- Option evaluation matrices
-- Implementation roadmaps
-- Risk mitigation plans
-- Resource allocation models
-- Timeline and milestone charts
-- Success measurement frameworks
-- Contingency planning guides
-
-You approach alternatives generation with:
-- Creative thinking
-- Strategic insight
-- Practical feasibility
-- Innovation mindset
-- Risk awareness
-- Implementation focus
-- Value optimization
-
-Provide innovative, practical, and well-evaluated alternative approaches and solutions.
+Constraints: Systematic analysis only. No feasibility verification.
 """
 
 
 VERIFICATION_AGENT_PROMPT = """
-You are an expert Verification Agent with comprehensive capabilities in:
+Role: Verification Agent. Systematic validation and risk assessment.
 
-VALIDATION EXPERTISE:
-- Fact-checking and source verification
-- Data accuracy and integrity assessment
-- Methodology validation and review
-- Assumption testing and challenge
-- Logic and reasoning verification
-- Completeness and gap analysis
-- Consistency checking across sources
-- Evidence quality evaluation
+Instructions:
+- Apply verification methodology: source triangulation, fact-checking protocols, evidence validation.
+- Use risk assessment frameworks: probability × impact matrix, failure mode analysis, sensitivity analysis.
+- For each claim, assess: evidence quality, source credibility, logical consistency, empirical validity.
+- Identify logical fallacies, cognitive biases, and methodological errors. Flag contradictions with statistical confidence.
 
-FEASIBILITY ASSESSMENT:
-- Technical feasibility evaluation
-- Economic viability analysis
-- Operational capability assessment
-- Resource availability verification
-- Timeline realism evaluation
-- Risk factor identification
-- Constraint and limitation analysis
-- Implementation barrier assessment
+Output (≤400 tokens):
+1. Verification Matrix (Claim | Status | Evidence Quality | Source Credibility | Confidence | P-value)
+2. Risk Assessment (Risk | Probability | Impact | Mitigation | Residual Risk)
+3. Logical Consistency Check (Contradiction | Severity | Resolution | Confidence)
+4. Feasibility Analysis (Constraint | Impact | Workaround | Probability of Success)
 
-QUALITY ASSURANCE:
-- Information reliability scoring
-- Source credibility evaluation
-- Bias detection and mitigation
-- Error identification and correction
-- Standard compliance verification
-- Best practice alignment check
-- Performance criteria validation
-- Success measurement verification
-
-VERIFICATION METHODOLOGIES:
-- Independent source triangulation
-- Peer review and expert validation
-- Benchmarking against standards
-- Historical precedent analysis
-- Stress testing and scenario modeling
-- Sensitivity analysis performance
-- Cross-functional review processes
-- Stakeholder feedback integration
-
-RISK ASSESSMENT:
-- Implementation risk evaluation
-- Market acceptance risk analysis
-- Technical risk identification
-- Financial risk assessment
-- Operational risk evaluation
-- Regulatory compliance verification
-- Competitive response assessment
-- Timeline and delivery risk analysis
-
-COMPLIANCE VERIFICATION:
-- Regulatory requirement checking
-- Industry standard compliance
-- Legal framework alignment
-- Ethical guideline adherence
-- Safety standard verification
-- Quality management compliance
-- Environmental impact assessment
-- Social responsibility validation
-
-DELIVERABLES:
-- Verification and validation reports
-- Feasibility assessment summaries
-- Risk evaluation matrices
-- Compliance checklists
-- Quality assurance scorecards
-- Recommendation refinements
-- Implementation guardrails
-- Success probability assessments
-
-You approach verification with:
-- Rigorous methodology
-- Critical evaluation
-- Attention to detail
-- Objective assessment
-- Risk awareness
-- Quality focus
-- Practical realism
-
-Provide thorough, objective verification with clear feasibility assessments and risk evaluations."""
+Constraints: Systematic validation only. Objective and evidence-based.
+"""
 
 SYNTHESIS_AGENT_PROMPT = """
-You are an expert Synthesis Agent with advanced capabilities in:
+Role: Synthesis Agent. Multi-criteria decision synthesis and optimization.
 
-INTEGRATION EXPERTISE:
-- Multi-perspective synthesis and integration
-- Cross-functional analysis and coordination
-- Holistic view development and presentation
-- Complex information consolidation
-- Stakeholder perspective integration
-- Strategic alignment and coherence
-- Comprehensive solution development
-- Executive summary creation
+Instructions:
+- Apply synthesis methodology: weighted factor analysis, conflict resolution algorithms, optimization modeling.
+- Use decision frameworks: multi-criteria decision analysis (MCDA), analytic hierarchy process (AHP), Pareto optimization.
+- For each recommendation, calculate: expected value, risk-adjusted return, implementation probability, resource efficiency.
+- Reconcile conflicts using evidence hierarchy: statistical significance > source credibility > recency > sample size.
 
-SYNTHESIS METHODOLOGIES:
-- Information architecture development
-- Priority matrix creation and application
-- Weighted factor analysis
-- Multi-criteria decision frameworks
-- Consensus building techniques
-- Conflict resolution approaches
-- Trade-off optimization strategies
-- Value proposition development
+Output (≤600 tokens):
+1. Executive Summary (≤6 bullets: key findings + confidence + action items)
+2. Integrated Analysis (≤8 bullets: insight + statistical measure + agent attribution + confidence)
+3. Conflict Resolution Matrix (Contradiction | Evidence Weight | Resolution | Confidence)
+4. Optimized Recommendations (table: Recommendation | Expected Value | Risk Score | Implementation Probability | Resource Efficiency | Priority)
+5. Risk-Optimized Portfolio (Risk | Probability | Impact | Mitigation | Residual Risk | Cost)
+6. Implementation Roadmap (Step | Owner | Timeline | Dependencies | Success Metrics | Probability)
 
-COMPREHENSIVE ANALYSIS:
-- End-to-end solution evaluation
-- Impact assessment across dimensions
-- Cost-benefit comprehensive analysis
-- Risk-reward optimization models
-- Implementation roadmap development
-- Success factor identification
-- Critical path analysis
-- Milestone and deliverable planning
-
-STRATEGIC INTEGRATION:
-- Vision and mission alignment
-- Strategic objective integration
-- Resource optimization across initiatives
-- Timeline synchronization and coordination
-- Stakeholder impact assessment
-- Change management consideration
-- Performance measurement integration
-- Continuous improvement frameworks
-
-DELIVERABLE CREATION:
-- Executive summary development
-- Strategic recommendation reports
-- Implementation action plans
-- Risk mitigation strategies
-- Performance measurement frameworks
-- Communication and rollout plans
-- Success criteria and metrics
-- Follow-up and review schedules
-
-COMMUNICATION EXCELLENCE:
-- Clear and concise reporting
-- Executive-level presentation skills
-- Technical detail appropriate scaling
-- Visual and narrative integration
-- Stakeholder-specific customization
-- Action-oriented recommendations
-- Decision-support optimization
-- Implementation-focused guidance
-
-You approach synthesis with:
-- Holistic thinking
-- Strategic perspective
-- Integration mindset
-- Communication clarity
-- Action orientation
-- Value optimization
-- Implementation focus
-
-Provide comprehensive, integrated analysis with clear, actionable recommendations and detailed implementation guidance."""
+Constraints: Systematic optimization only. Evidence-based decision support.
+"""
 
 schema = {
     "type": "function",
     "function": {
         "name": "generate_specialized_questions",
-        "description": "Generate 4 specialized questions for different agent roles to comprehensively analyze a given task",
+        "description": (
+            "Generate 4 specialized questions for different agent roles to "
+            "comprehensively analyze a given task"
+        ),
         "parameters": {
             "type": "object",
             "properties": {
                 "thinking": {
                     "type": "string",
-                    "description": "Your reasoning process for how to break down this task into 4 specialized questions for different agent roles",
+                    "description": (
+                        "Your reasoning process for how to break down this task "
+                        "into 4 specialized questions for different agent roles"
+                    ),
                 },
                 "research_question": {
                     "type": "string",
-                    "description": "A detailed research question for the Research Agent to gather comprehensive background information and data",
+                    "description": (
+                        "A detailed research question for the Research Agent to "
+                        "gather comprehensive background information and data"
+                    ),
                 },
                 "analysis_question": {
                     "type": "string",
-                    "description": "An analytical question for the Analysis Agent to examine patterns, trends, and insights",
+                    "description": (
+                        "An analytical question for the Analysis Agent to examine "
+                        "patterns, trends, and insights"
+                    ),
                 },
                 "alternatives_question": {
                     "type": "string",
-                    "description": "A strategic question for the Alternatives Agent to explore different approaches, options, and solutions",
+                    "description": (
+                        "A strategic question for the Alternatives Agent to explore "
+                        "different approaches, options, and solutions"
+                    ),
                 },
                 "verification_question": {
                     "type": "string",
-                    "description": "A verification question for the Verification Agent to validate findings, check accuracy, and assess feasibility",
+                    "description": (
+                        "A verification question for the Verification Agent to "
+                        "validate findings, check accuracy, and assess feasibility"
+                    ),
                 },
             },
             "required": [
@@ -425,9 +189,11 @@ schema = [schema]
 
 class HeavySwarm:
     """
-    HeavySwarm is a sophisticated multi-agent orchestration system that decomposes complex tasks
-    into specialized questions and executes them using four specialized agents: Research, Analysis,
-    Alternatives, and Verification. The results are then synthesized into a comprehensive response.
+    HeavySwarm is a sophisticated multi-agent orchestration system that
+    decomposes complex tasks into specialized questions and executes them
+    using four specialized agents: Research, Analysis, Alternatives, and
+    Verification. The results are then synthesized into a comprehensive
+    response.
 
     This swarm architecture provides robust task analysis through:
     - Intelligent question generation for specialized agent roles
@@ -435,17 +201,28 @@ class HeavySwarm:
     - Comprehensive synthesis of multi-perspective results
     - Real-time progress monitoring with rich dashboard displays
     - Reliability checks and validation systems
+    - Multi-loop iterative refinement with context preservation
 
     The HeavySwarm follows a structured workflow:
     1. Task decomposition into specialized questions
     2. Parallel execution by specialized agents
     3. Result synthesis and integration
     4. Comprehensive final report generation
+    5. Optional iterative refinement through multiple loops
+
+    Key Features:
+    - **Multi-loop Execution**: The max_loops parameter enables iterative
+      refinement where each subsequent loop builds upon the context and
+      results from previous loops
+    - **Context Preservation**: Conversation history is maintained across
+      all loops, allowing for deeper analysis and refinement
+    - **Iterative Refinement**: Each loop can refine, improve, or complete
+      aspects of the analysis based on previous results
 
     Attributes:
         name (str): Name identifier for the swarm instance
         description (str): Description of the swarm's purpose
-        agents (List[Agent]): List of agent instances (currently unused, agents are created internally)
+        agents (Dict[str, Agent]): Dictionary of specialized agent instances (created internally)
         timeout (int): Maximum execution time per agent in seconds
         aggregation_strategy (str): Strategy for result aggregation (currently 'synthesis')
         loops_per_agent (int): Number of execution loops per agent
@@ -455,6 +232,7 @@ class HeavySwarm:
         max_workers (int): Maximum number of concurrent worker threads
         show_dashboard (bool): Enable rich dashboard with progress visualization
         agent_prints_on (bool): Enable individual agent output printing
+        max_loops (int): Maximum number of execution loops for iterative refinement
         conversation (Conversation): Conversation history tracker
         console (Console): Rich console for dashboard output
 
@@ -464,15 +242,20 @@ class HeavySwarm:
         ...     description="Market analysis swarm",
         ...     question_agent_model_name="gpt-4o-mini",
         ...     worker_model_name="gpt-4o-mini",
-        ...     show_dashboard=True
+        ...     show_dashboard=True,
+        ...     max_loops=3
         ... )
         >>> result = swarm.run("Analyze the current cryptocurrency market trends")
+        >>> # The swarm will run 3 iterations, each building upon the previous results
     """
 
     def __init__(
         self,
         name: str = "HeavySwarm",
-        description: str = "A swarm of agents that can analyze a task and generate specialized questions for each agent role",
+        description: str = (
+            "A swarm of agents that can analyze a task and generate "
+            "specialized questions for each agent role"
+        ),
         timeout: int = 300,
         aggregation_strategy: str = "synthesis",
         loops_per_agent: int = 1,
@@ -483,10 +266,10 @@ class HeavySwarm:
         show_dashboard: bool = False,
         agent_prints_on: bool = False,
         output_type: str = "dict-all-except-first",
-        worker_tools: tool_type = None,
+        worker_tools: Optional[tool_type] = None,
         random_loops_per_agent: bool = False,
         max_loops: int = 1,
-    ):
+    ) -> None:
         """
         Initialize the HeavySwarm with configuration parameters.
 
@@ -499,19 +282,28 @@ class HeavySwarm:
             timeout (int, optional): Maximum execution time per agent in seconds. Defaults to 300.
             aggregation_strategy (str, optional): Strategy for aggregating results. Currently only
                 'synthesis' is supported. Defaults to "synthesis".
-            loops_per_agent (int, optional): Number of execution loops each agent should perform.
-                Must be greater than 0. Defaults to 1.
-            question_agent_model_name (str, optional): Language model for question generation.
-                Defaults to "gpt-4o-mini".
-            worker_model_name (str, optional): Language model for specialized worker agents.
-                Defaults to "gpt-4o-mini".
+            loops_per_agent (int, optional): Number of execution loops each
+                agent should perform. Must be greater than 0. Defaults to 1.
+            question_agent_model_name (str, optional): Language model for
+                question generation. Defaults to "gpt-4o-mini".
+            worker_model_name (str, optional): Language model for specialized
+                worker agents. Defaults to "gpt-4o-mini".
             verbose (bool, optional): Enable detailed logging and debug output. Defaults to False.
-            max_workers (int, optional): Maximum concurrent workers for parallel execution.
-                Defaults to 90% of CPU count.
-            show_dashboard (bool, optional): Enable rich dashboard with progress visualization.
-                Defaults to False.
-            agent_prints_on (bool, optional): Enable individual agent output printing.
-                Defaults to False.
+            max_workers (int, optional): Maximum concurrent workers for
+                parallel execution. Defaults to 90% of CPU count.
+            show_dashboard (bool, optional): Enable rich dashboard with
+                progress visualization. Defaults to False.
+            agent_prints_on (bool, optional): Enable individual agent
+                output printing. Defaults to False.
+            output_type (str, optional): Output format type for conversation
+                history. Defaults to "dict-all-except-first".
+            worker_tools (tool_type, optional): Tools available to worker
+                agents for enhanced functionality. Defaults to None.
+            random_loops_per_agent (bool, optional): Enable random number of
+                loops per agent (1-10 range). Defaults to False.
+            max_loops (int, optional): Maximum number of execution loops for
+                the entire swarm. Each loop builds upon previous results for
+                iterative refinement. Defaults to 1.
 
         Raises:
             ValueError: If loops_per_agent is 0 or negative
@@ -519,7 +311,10 @@ class HeavySwarm:
 
         Note:
             The swarm automatically performs reliability checks during initialization
-            to ensure all required parameters are properly configured.
+            to ensure all required parameters are properly configured. The max_loops
+            parameter enables iterative refinement by allowing the swarm to process
+            the same task multiple times, with each subsequent loop building upon
+            the context and results from previous loops.
         """
         self.name = name
         self.description = description
@@ -732,17 +527,38 @@ class HeavySwarm:
                 title="Reliability Check",
             )
 
-    def run(self, task: str, img: str = None):
+    def run(self, task: str, img: Optional[str] = None) -> str:
         """
-        Execute the complete HeavySwarm orchestration flow.
+        Execute the complete HeavySwarm orchestration flow with multi-loop functionality.
+
+        This method implements the max_loops feature, allowing the HeavySwarm to iterate
+        multiple times on the same task, with each subsequent loop building upon the
+        context and results from previous loops. This enables iterative refinement and
+        deeper analysis of complex tasks.
+
+        The method follows this workflow:
+        1. For the first loop: Execute the original task with full HeavySwarm orchestration
+        2. For subsequent loops: Combine previous results with original task as context
+        3. Maintain conversation history across all loops for context preservation
+        4. Return the final synthesized result from the last loop
 
         Args:
-            task (str): The main task to analyze
-            img (str, optional): Image input if needed
+            task (str): The main task to analyze and iterate upon
+            img (str, optional): Image input if needed for visual analysis tasks
 
         Returns:
-            str: Comprehensive final answer from synthesis agent
+            str: Comprehensive final answer from synthesis agent after all loops complete
+
+        Note:
+            The max_loops parameter controls how many iterations the swarm will perform.
+            Each loop builds upon the previous results, enabling iterative refinement.
         """
+        if self.verbose:
+            logger.info("Starting HeavySwarm execution")
+
+        current_loop = 0
+        last_output = None
+
         if self.show_dashboard:
             self.console.print(
                 Panel(
@@ -754,151 +570,227 @@ class HeavySwarm:
             )
             self.console.print()
 
+        # Add initial task to conversation
         self.conversation.add(
             role="User",
             content=task,
             category="input",
         )
 
-        # Question generation with dashboard
-        if self.show_dashboard:
-            with Progress(
-                SpinnerColumn(),
-                TextColumn(
-                    "[progress.description]{task.description}"
-                ),
-                transient=True,
-                console=self.console,
-            ) as progress:
-                task_gen = progress.add_task(
-                    "[red]⚡ GENERATING SPECIALIZED QUESTIONS...",
-                    total=100,
-                )
-                progress.update(task_gen, advance=30)
-                questions = self.execute_question_generation(task)
-                progress.update(
-                    task_gen,
-                    advance=70,
-                    description="[white]✓ QUESTIONS GENERATED SUCCESSFULLY!",
-                )
-                time.sleep(0.5)
-        else:
-            questions = self.execute_question_generation(task)
+        # Main execution loop with comprehensive error handling
+        try:
+            while current_loop < self.max_loops:
+                try:
+                    if self.verbose:
+                        logger.info("Processing task iteration")
 
-        # if self.show_dashboard:
-        #     # Create questions table
-        #     questions_table = Table(
-        #         title="⚡ GENERATED QUESTIONS FOR SPECIALIZED AGENTS",
-        #         show_header=True,
-        #         header_style="bold red",
-        #     )
-        #     questions_table.add_column(
-        #         "Agent", style="white", width=20
-        #     )
-        #     questions_table.add_column(
-        #         "Specialized Question", style="bright_white", width=60
-        #     )
+                    # No additional per-loop panels; keep dashboard output minimal and original-style
 
-        #     questions_table.add_row(
-        #         "Agent 1",
-        #         questions.get("research_question", "N/A"),
-        #     )
-        #     questions_table.add_row(
-        #         "Agent 2",
-        #         questions.get("analysis_question", "N/A"),
-        #     )
-        #     questions_table.add_row(
-        #         "Agent 3",
-        #         questions.get("alternatives_question", "N/A"),
-        #     )
-        #     questions_table.add_row(
-        #         "Agent 4",
-        #         questions.get("verification_question", "N/A"),
-        #     )
+                    # Determine the task for this loop
+                    if current_loop == 0:
+                        # First loop: use the original task
+                        loop_task = task
+                        if self.verbose:
+                            logger.info(
+                                "First loop: Using original task"
+                            )
+                    else:
+                        # Subsequent loops: combine previous results with original task
+                        loop_task = (
+                            f"Previous loop results: {last_output}\n\n"
+                            f"Original task: {task}\n\n"
+                            "Based on the previous results and analysis, continue with the next iteration. "
+                            "Refine, improve, or complete any remaining aspects of the analysis. "
+                            "Build upon the insights from the previous loop to provide deeper analysis."
+                        )
+                        if self.verbose:
+                            logger.info(
+                                "Subsequent loop: Building upon previous results"
+                            )
 
-        #     self.console.print(
-        #         Panel(
-        #             questions_table,
-        #             title="[bold red]QUESTION GENERATION COMPLETE[/bold red]",
-        #             border_style="red",
-        #         )
-        #     )
-        #     self.console.print()
-        # else:
-        #     formatter.print_panel(
-        #         content=json.dumps(questions, indent=4),
-        #         title="Questions",
-        #     )
+                    # Question generation with dashboard
+                    try:
+                        if self.show_dashboard:
+                            with Progress(
+                                SpinnerColumn(),
+                                TextColumn(
+                                    "[progress.description]{task.description}"
+                                ),
+                                transient=True,
+                                console=self.console,
+                            ) as progress:
+                                task_gen = progress.add_task(
+                                    "[red]⚡ GENERATING SPECIALIZED QUESTIONS...",
+                                    total=100,
+                                )
+                                progress.update(task_gen, advance=30)
+                                questions = (
+                                    self.execute_question_generation(
+                                        loop_task
+                                    )
+                                )
+                                progress.update(
+                                    task_gen,
+                                    advance=70,
+                                    description="[white]✓ QUESTIONS GENERATED SUCCESSFULLY!",
+                                )
+                                time.sleep(0.5)
+                        else:
+                            questions = (
+                                self.execute_question_generation(
+                                    loop_task
+                                )
+                            )
 
-        self.conversation.add(
-            role="Question Generator Agent",
-            content=questions,
-            category="output",
-        )
+                        self.conversation.add(
+                            role="Question Generator Agent",
+                            content=questions,
+                            category="output",
+                        )
 
-        if "error" in questions:
-            return (
-                f"Error in question generation: {questions['error']}"
+                        if "error" in questions:
+                            error_msg = f"Error in question generation: {questions['error']}"
+                            logger.error(error_msg)
+                            return error_msg
+
+                    except Exception as e:
+                        error_msg = f"Failed to generate questions in loop {current_loop + 1}: {str(e)}"
+                        logger.error(error_msg)
+                        logger.error(
+                            f"Traceback: {traceback.format_exc()}"
+                        )
+                        return error_msg
+
+                    # Agent execution phase
+                    try:
+                        if self.show_dashboard:
+                            self.console.print(
+                                Panel(
+                                    "[bold red]⚡ LAUNCHING SPECIALIZED AGENTS[/bold red]\n"
+                                    "[white]Executing 4 agents in parallel for comprehensive analysis[/white]",
+                                    title="[bold red]AGENT EXECUTION PHASE[/bold red]",
+                                    border_style="red",
+                                )
+                            )
+
+                        agent_results = self._execute_agents_parallel(
+                            questions=questions,
+                            agents=self.agents,
+                            img=img,
+                        )
+
+                    except Exception as e:
+                        error_msg = f"Failed to execute agents in loop {current_loop + 1}: {str(e)}"
+                        logger.error(error_msg)
+                        logger.error(
+                            f"Traceback: {traceback.format_exc()}"
+                        )
+                        return error_msg
+
+                    # Synthesis phase
+                    try:
+                        if self.show_dashboard:
+                            with Progress(
+                                SpinnerColumn(),
+                                TextColumn(
+                                    "[progress.description]{task.description}"
+                                ),
+                                TimeElapsedColumn(),
+                                console=self.console,
+                            ) as progress:
+                                synthesis_task = progress.add_task(
+                                    "[red]Agent 5: SYNTHESIZING COMPREHENSIVE ANALYSIS ••••••••••••••••••••••••••••••••",
+                                    total=None,
+                                )
+
+                                progress.update(
+                                    synthesis_task,
+                                    description="[red]Agent 5: INTEGRATING AGENT RESULTS ••••••••••••••••••••••••••••••••",
+                                )
+                                time.sleep(0.5)
+
+                                progress.update(
+                                    synthesis_task,
+                                    description="[red]Agent 5: Summarizing Results ••••••••••••••••••••••••••••••••",
+                                )
+
+                                final_result = (
+                                    self._synthesize_results(
+                                        original_task=loop_task,
+                                        questions=questions,
+                                        agent_results=agent_results,
+                                    )
+                                )
+
+                                progress.update(
+                                    synthesis_task,
+                                    description="[white]Agent 5: GENERATING FINAL REPORT ••••••••••••••••••••••••••••••••",
+                                )
+                                time.sleep(0.3)
+
+                                progress.update(
+                                    synthesis_task,
+                                    description="[bold white]Agent 5: COMPLETE! ••••••••••••••••••••••••••••••••",
+                                )
+                                time.sleep(0.5)
+
+                            self.console.print(
+                                Panel(
+                                    "[bold red]⚡ HEAVYSWARM ANALYSIS COMPLETE![/bold red]\n"
+                                    "[white]Comprehensive multi-agent analysis delivered successfully[/white]",
+                                    title="[bold red]MISSION ACCOMPLISHED[/bold red]",
+                                    border_style="red",
+                                )
+                            )
+                            self.console.print()
+                        else:
+                            final_result = self._synthesize_results(
+                                original_task=loop_task,
+                                questions=questions,
+                                agent_results=agent_results,
+                            )
+
+                        self.conversation.add(
+                            role="Synthesis Agent",
+                            content=final_result,
+                            category="output",
+                        )
+
+                    except Exception as e:
+                        error_msg = f"Failed to synthesize results in loop {current_loop + 1}: {str(e)}"
+                        logger.error(error_msg)
+                        logger.error(
+                            f"Traceback: {traceback.format_exc()}"
+                        )
+                        return error_msg
+
+                    # Store the result for next loop context
+                    last_output = final_result
+                    current_loop += 1
+
+                    if self.verbose:
+                        logger.success(
+                            "Task iteration completed successfully"
+                        )
+
+                except Exception as e:
+                    error_msg = f"Failed to execute loop {current_loop + 1}: {str(e)}"
+                    logger.error(error_msg)
+                    logger.error(
+                        f"Traceback: {traceback.format_exc()}"
+                    )
+                    return error_msg
+
+        except Exception as e:
+            error_msg = (
+                f"Critical error in HeavySwarm execution: {str(e)}"
             )
+            logger.error(error_msg)
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return error_msg
 
+        # Final completion message
         if self.show_dashboard:
-            self.console.print(
-                Panel(
-                    "[bold red]⚡ LAUNCHING SPECIALIZED AGENTS[/bold red]\n"
-                    "[white]Executing 4 agents in parallel for comprehensive analysis[/white]",
-                    title="[bold red]AGENT EXECUTION PHASE[/bold red]",
-                    border_style="red",
-                )
-            )
-
-        agent_results = self._execute_agents_parallel(
-            questions=questions, agents=self.agents, img=img
-        )
-
-        # Synthesis with dashboard
-        if self.show_dashboard:
-            with Progress(
-                SpinnerColumn(),
-                TextColumn(
-                    "[progress.description]{task.description}"
-                ),
-                TimeElapsedColumn(),
-                console=self.console,
-            ) as progress:
-                synthesis_task = progress.add_task(
-                    "[red]Agent 5: SYNTHESIZING COMPREHENSIVE ANALYSIS ••••••••••••••••••••••••••••••••",
-                    total=None,
-                )
-
-                progress.update(
-                    synthesis_task,
-                    description="[red]Agent 5: INTEGRATING AGENT RESULTS ••••••••••••••••••••••••••••••••",
-                )
-                time.sleep(0.5)
-
-                progress.update(
-                    synthesis_task,
-                    description="[red]Agent 5: Summarizing Results ••••••••••••••••••••••••••••••••",
-                )
-
-                final_result = self._synthesize_results(
-                    original_task=task,
-                    questions=questions,
-                    agent_results=agent_results,
-                )
-
-                progress.update(
-                    synthesis_task,
-                    description="[white]Agent 5: GENERATING FINAL REPORT ••••••••••••••••••••••••••••••••",
-                )
-                time.sleep(0.3)
-
-                progress.update(
-                    synthesis_task,
-                    description="[bold white]Agent 5: ✅ COMPLETE! ••••••••••••••••••••••••••••••••",
-                )
-                time.sleep(0.5)
-
             self.console.print(
                 Panel(
                     "[bold red]⚡ HEAVYSWARM ANALYSIS COMPLETE![/bold red]\n"
@@ -908,18 +800,9 @@ class HeavySwarm:
                 )
             )
             self.console.print()
-        else:
-            final_result = self._synthesize_results(
-                original_task=task,
-                questions=questions,
-                agent_results=agent_results,
-            )
 
-        self.conversation.add(
-            role="Synthesis Agent",
-            content=final_result,
-            category="output",
-        )
+        if self.verbose:
+            logger.success("HeavySwarm execution completed")
 
         return history_output_formatter(
             conversation=self.conversation,
@@ -1051,7 +934,7 @@ class HeavySwarm:
             streaming_on=False,
             verbose=False,
             dynamic_temperature_enabled=True,
-            print_on=self.agent_prints_on,
+            print_on=True,
             tools=tools,
         )
 
@@ -1485,11 +1368,11 @@ class HeavySwarm:
         - Use bullet points, numbered lists, and section headings where appropriate for clarity and readability.
 
         You may reference the conversation history for additional context:
-        
+
         \n\n
-        
+
         {self.conversation.return_history_as_string()}
-        
+
         \n\n
 
         Please present your synthesis in the following structure:
@@ -1594,16 +1477,23 @@ class HeavySwarm:
 
         # Create the prompt for question generation
         prompt = f"""
-        You are an expert task analyzer. Your job is to break down the following task into 4 specialized questions for different agent roles:
+        System: Technical task analyzer. Generate 4 non-overlapping analytical questions via function tool.
 
-        1. Research Agent: Focuses on gathering information, data, and background context
-        2. Analysis Agent: Focuses on examining patterns, trends, and deriving insights  
-        3. Alternatives Agent: Focuses on exploring different approaches and solutions
-        4. Verification Agent: Focuses on validating findings and checking feasibility
+        Roles:
+        - Research: systematic evidence collection, source verification, data quality assessment
+        - Analysis: statistical analysis, pattern recognition, quantitative insights, correlation analysis
+        - Alternatives: strategic option generation, multi-criteria analysis, scenario planning, decision modeling
+        - Verification: systematic validation, risk assessment, feasibility analysis, logical consistency
 
-        Task to analyze: {task}
+        Requirements:
+        - Each question ≤30 words, technically precise, action-oriented
+        - No duplication across roles. No meta text in questions
+        - Ambiguity notes only in "thinking" field (≤40 words)
+        - Focus on systematic methodology and quantitative analysis
 
-        Use the generate_specialized_questions function to create targeted questions for each agent role.
+        Task: {task}
+
+        Use generate_specialized_questions function only.
         """
 
         question_agent = LiteLLM(

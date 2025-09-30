@@ -361,7 +361,7 @@ class MessageTransforms:
         model_limits = {
             "gpt-4": 8192,
             "gpt-4-turbo": 128000,
-            "gpt-4o": 128000,
+            "gpt-4.1": 128000,
             "gpt-4o-mini": 128000,
             "gpt-3.5-turbo": 16385,
             "claude-3-opus": 200000,
@@ -475,7 +475,7 @@ def apply_transforms_to_messages(
 def handle_transforms(
     transforms: MessageTransforms,
     short_memory: Conversation = None,
-    model_name: Optional[str] = "gpt-4o",
+    model_name: Optional[str] = "gpt-4.1",
 ) -> str:
     """
     Handle message transforms and return a formatted task prompt.

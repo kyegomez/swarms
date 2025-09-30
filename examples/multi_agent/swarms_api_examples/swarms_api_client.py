@@ -12,7 +12,7 @@ agents = [
         description="Conducts medical research and analysis",
         system_prompt="You are a medical researcher specializing in clinical studies.",
         max_loops=1,
-        model_name="gpt-4o",
+        model_name="gpt-4.1",
         role="worker",
     ),
     AgentInput(
@@ -20,7 +20,7 @@ agents = [
         description="Provides medical diagnoses based on symptoms and test results",
         system_prompt="You are a medical diagnostician with expertise in identifying diseases.",
         max_loops=1,
-        model_name="gpt-4o",
+        model_name="gpt-4.1",
         role="worker",
     ),
     AgentInput(
@@ -28,7 +28,7 @@ agents = [
         description="Advises on pharmaceutical treatments and drug interactions",
         system_prompt="You are a pharmaceutical expert knowledgeable about medications and their effects.",
         max_loops=1,
-        model_name="gpt-4o",
+        model_name="gpt-4.1",
         role="worker",
     ),
 ]

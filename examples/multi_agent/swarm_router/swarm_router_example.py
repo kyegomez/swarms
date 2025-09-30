@@ -19,7 +19,7 @@ portfolio_analyzer = Agent(
     6. Review fund manager track record and strategy consistency
     
     Maintain focus on cost-efficiency and alignment with investment objectives.""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
     saved_state_path="portfolio_analyzer.json",
     user_name="investment_team",
@@ -47,7 +47,7 @@ allocation_strategist = Agent(
     6. Account for correlation between assets
     
     Focus on creating well-diversified portfolios aligned with client goals and risk tolerance.""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
     saved_state_path="allocation_strategist.json",
     user_name="investment_team",
@@ -75,7 +75,7 @@ risk_manager = Agent(
     6. Monitor factor exposures
     
     Focus on maintaining appropriate risk levels while maximizing risk-adjusted returns.""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
     saved_state_path="risk_manager.json",
     user_name="investment_team",
@@ -103,7 +103,7 @@ implementation_specialist = Agent(
     6. Monitor tracking error
     
     Maintain focus on minimizing costs and maximizing tax efficiency during implementation.""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
     saved_state_path="implementation_specialist.json",
     user_name="investment_team",
@@ -131,7 +131,7 @@ monitoring_specialist = Agent(
     6. Generate performance attribution reports
     
     Ensure continuous alignment with investment objectives while maintaining optimal portfolio efficiency.""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
     saved_state_path="monitoring_specialist.json",
     user_name="investment_team",

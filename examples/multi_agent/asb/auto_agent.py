@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, Optional, Type, Union
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, ValidationError, create_model
-from swarm_models.openai_function_caller import OpenAIFunctionCaller
+from swarms.utils.litellm_wrapper import LiteLLM
 
 
 class DynamicParser:
@@ -216,14 +216,13 @@ Your role is to make decisions and complete tasks independently without seeking 
 Always respond in a strict JSON format as described below. Ensure your responses can be parsed with Python's `json.loads`:
 """
 
-# Initialize the OpenAIFunctionCaller
-model = OpenAIFunctionCaller(
+# Initialize the LiteLLM
+model = LiteLLM(
+    model_name="gpt-4.1",
     system_prompt=SYSTEM_PROMPT,
     max_tokens=4000,
     temperature=0.9,
-    base_model=AgentResponse,  # Pass the Pydantic schema as the base model
-    parallel_tool_calls=False,
-    openai_api_key=os.getenv("OPENAI_API_KEY"),
+    response_format=AgentResponse,  # Pass the Pydantic schema as the response format
 )
 
 # Example usage

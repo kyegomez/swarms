@@ -1,6 +1,6 @@
 import os
 import traceback
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import yaml
 from pydantic import (
@@ -18,6 +18,7 @@ from tenacity import (
 
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import SwarmRouter
+from swarms.utils.types import ReturnTypes
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="create_agents_from_yaml")
@@ -83,11 +84,6 @@ class YAMLConfig(BaseModel):
 
     agents: List[AgentConfig] = Field(..., min_length=1)
     swarm_architecture: Optional[SwarmConfig] = None
-
-
-ReturnTypes = Literal[
-    "auto", "swarm", "agents", "both", "tasks", "run_swarm"
-]
 
 
 def load_yaml_safely(

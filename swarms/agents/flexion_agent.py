@@ -606,7 +606,7 @@ Based on the original response, evaluation, and reflection, provide an improved 
 #     # Initialize the Reflexion Agent
 #     agent = ReflexionAgent(
 #         agent_name="reflexion-agent",
-#         model_name="gpt-4o",  # Using OpenAI's model
+#         model_name="gpt-4.1",  # Using OpenAI's model
 #         max_loops=1,  # Maximum of 3 reflection iterations
 #     )
 

@@ -21,28 +21,28 @@ def create_financial_services_forest():
             budgeting, debt management, and financial goal setting. I help individuals create 
             comprehensive financial plans and make informed decisions about their money.""",
             agent_name="Personal Financial Planner",
-            model_name="gpt-4o",
+            model_name="gpt-4.1",
         ),
         TreeAgent(
             system_prompt="""I am a tax preparation specialist with expertise in individual and 
             small business tax returns. I help clients maximize deductions, understand tax laws, 
             and file taxes accurately and on time.""",
             agent_name="Tax Preparation Specialist",
-            model_name="gpt-4o",
+            model_name="gpt-4.1",
         ),
         TreeAgent(
             system_prompt="""I am a retirement planning expert who helps individuals and families 
             plan for retirement. I specialize in 401(k)s, IRAs, Social Security optimization, 
             and creating sustainable retirement income strategies.""",
             agent_name="Retirement Planning Expert",
-            model_name="gpt-4o",
+            model_name="gpt-4.1",
         ),
         TreeAgent(
             system_prompt="""I am a debt management counselor who helps individuals and families 
             get out of debt and build financial stability. I provide strategies for debt 
             consolidation, negotiation, and creating sustainable repayment plans.""",
             agent_name="Debt Management Counselor",
-            model_name="gpt-4o",
+            model_name="gpt-4.1",
         ),
     ]
 
@@ -54,28 +54,28 @@ def create_financial_services_forest():
             fundamentals, market conditions, and economic indicators to help investors make 
             informed decisions.""",
             agent_name="Stock Market Analyst",
-            model_name="gpt-4o",
+            model_name="gpt-4.1",
         ),
         TreeAgent(
             system_prompt="""I am an investment strategist specializing in portfolio diversification, 
             risk management, and asset allocation. I help investors create balanced portfolios 
             that align with their risk tolerance and financial goals.""",
             agent_name="Investment Strategist",
-            model_name="gpt-4o",
+            model_name="gpt-4.1",
         ),
         TreeAgent(
             system_prompt="""I am a cryptocurrency and blockchain expert who provides insights on 
             digital assets, DeFi protocols, and emerging blockchain technologies. I help 
             investors understand the risks and opportunities in the crypto market.""",
             agent_name="Cryptocurrency Expert",
-            model_name="gpt-4o",
+            model_name="gpt-4.1",
         ),
         TreeAgent(
             system_prompt="""I am a real estate investment advisor who helps investors evaluate 
             real estate opportunities, understand market trends, and build real estate 
             portfolios for long-term wealth building.""",
             agent_name="Real Estate Investment Advisor",
-            model_name="gpt-4o",
+            model_name="gpt-4.1",
         ),
     ]
 
@@ -86,14 +86,14 @@ def create_financial_services_forest():
             business valuation, mergers and acquisitions, and strategic financial planning 
             for small to medium-sized businesses.""",
             agent_name="Business Financial Advisor",
-            model_name="gpt-4o",
+            model_name="gpt-4.1",
         ),
         TreeAgent(
             system_prompt="""I am a Delaware incorporation specialist with deep knowledge of 
             corporate formation, tax benefits, legal requirements, and ongoing compliance 
             for businesses incorporating in Delaware.""",
             agent_name="Delaware Incorporation Specialist",
-            model_name="gpt-4o",
+            model_name="gpt-4.1",
         ),
         TreeAgent(
             system_prompt="""I am a startup funding advisor who helps entrepreneurs secure 
@@ -101,14 +101,14 @@ def create_financial_services_forest():
             financing options. I provide guidance on business plans, pitch decks, and 
             investor relations.""",
             agent_name="Startup Funding Advisor",
-            model_name="gpt-4o",
+            model_name="gpt-4.1",
         ),
         TreeAgent(
             system_prompt="""I am a business tax strategist who helps businesses optimize their 
             tax position through strategic planning, entity structure optimization, and 
             compliance with federal, state, and local tax laws.""",
             agent_name="Business Tax Strategist",
-            model_name="gpt-4o",
+            model_name="gpt-4.1",
         ),
     ]
 

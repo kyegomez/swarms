@@ -302,19 +302,19 @@ class Agent:
 
     Examples:
     >>> from swarms import Agent
-    >>> agent = Agent(model_name="gpt-4o", max_loops=1)
+    >>> agent = Agent(model_name="gpt-4.1", max_loops=1)
     >>> response = agent.run("Generate a report on the financials.")
     >>> print(response)
     >>> # Generate a report on the financials.
 
     >>> # Real-time streaming example
-    >>> agent = Agent(model_name="gpt-4o", max_loops=1, streaming_on=True)
+    >>> agent = Agent(model_name="gpt-4.1", max_loops=1, streaming_on=True)
     >>> response = agent.run("Tell me a long story.")  # Will stream in real-time
     >>> print(response)  # Final complete response
 
     >>> # Fallback model example
     >>> agent = Agent(
-    ...     fallback_models=["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"],
+    ...     fallback_models=["gpt-4.1", "gpt-4o-mini", "gpt-3.5-turbo"],
     ...     max_loops=1
     ... )
     >>> response = agent.run("Generate a report on the financials.")

@@ -24,7 +24,6 @@ from swarms.structs.malt import MALT
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.multi_agent_router import MultiAgentRouter
 from swarms.structs.sequential_workflow import SequentialWorkflow
-from swarms.structs.swarm_matcher import swarm_matcher
 from swarms.telemetry.log_executions import log_execution
 from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.loguru_logger import initialize_logger
@@ -423,7 +422,6 @@ class SwarmRouter:
             agents=self.agents,
             max_loops=self.max_loops,
             flow=self.rearrange_flow,
-            return_json=self.return_json,
             output_type=self.output_type,
             return_entire_history=self.return_entire_history,
             *args,
@@ -537,8 +535,6 @@ class SwarmRouter:
             max_loops=self.max_loops,
             shared_memory_system=self.shared_memory_system,
             output_type=self.output_type,
-            return_json=self.return_json,
-            return_entire_history=self.return_entire_history,
             *args,
             **kwargs,
         )
@@ -574,19 +570,6 @@ class SwarmRouter:
         Raises:
             ValueError: If an invalid swarm type is provided.
         """
-        # Handle auto swarm type selection
-        if self.swarm_type == "auto":
-            try:
-                matched_swarm_type = str(swarm_matcher(task))
-                self.swarm_type = matched_swarm_type
-                logger.info(
-                    f"Auto-selected swarm type: {matched_swarm_type}"
-                )
-            except Exception as e:
-                logger.warning(
-                    f"Auto-selection failed: {e}, falling back to SequentialWorkflow"
-                )
-                self.swarm_type = "SequentialWorkflow"
 
         # Check cache first for better performance
         cache_key = (

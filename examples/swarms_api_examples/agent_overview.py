@@ -20,7 +20,7 @@ result = client.agent.run(
             "explaining their clinical significance, and recommending next diagnostic or treatment steps. "
             "Provide clear, evidence-based explanations and consider differential diagnoses based on blood test findings."
         ),
-        "model_name": "groq/moonshotai/kimi-k2-instruct",
+        "model_name": "gpt-4.1",
         "max_loops": 1,
         "max_tokens": 1000,
         "temperature": 0.5,

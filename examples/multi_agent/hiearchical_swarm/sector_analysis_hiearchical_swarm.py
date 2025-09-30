@@ -33,16 +33,17 @@ agents = [
 ]
 
 # Create hierarchical swarm system
-majority_voting = HierarchicalSwarm(
+hiearchical_swarm = HierarchicalSwarm(
     name="Sector-Investment-Advisory-System",
     description="System for sector analysis and optimal allocations.",
     agents=agents,
-    max_loops=2,
-    output_type="dict",
+    max_loops=1,
+    output_type="all",
+    director_feedback_on=True,
 )
 
 
-result = majority_voting.run(
+result = hiearchical_swarm.run(
     task=(
         "Simulate the allocation of a $50B fund specifically for the pharmaceutical sector. "
         "Provide specific tickers (e.g., PFE, MRK, JNJ, LLY, BMY, etc.) and a clear rationale for why funds should be allocated to each company. "

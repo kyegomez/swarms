@@ -334,7 +334,7 @@ agent = Agent(
         "clear, accurate financial insights and recommendations. Always format "
         "responses in markdown for better readability."
     ),
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=3,
     autosave=True,
     dashboard=False,
@@ -519,7 +519,7 @@ agent = Agent(
         "data and provide comprehensive financial insights. Always present data "
         "in a clear, professional format with actionable recommendations."
     ),
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=3,
     autosave=True,
     dashboard=False,

@@ -29,7 +29,7 @@ AgentConfigType = TypeVar(
 class ModelName(str, Enum):
     """Valid model names for swarms agents"""
 
-    GPT4O = "gpt-4o"
+    GPT4O = "gpt-4.1"
     GPT4O_MINI = "gpt-4o-mini"
     GPT4 = "gpt-4"
     GPT35_TURBO = "gpt-3.5-turbo"
