@@ -301,6 +301,7 @@ nav:
           - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
           - ModelRouter: "swarms/structs/model_router.md"
 
+
         - Rearrangers:
           - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
           - AgentRearrange: "swarms/structs/agent_rearrange.md"
@@ -327,7 +328,6 @@ nav:
       - BaseTool Reference: "swarms/tools/base_tool.md"
       - MCP Client Utils: "swarms/tools/mcp_client_call.md"
       - MCP Agent Tool: "swarms/tools/mcp_agent_tool.md"
-      - Agent Orchestration Protocol (AOP): "swarms/structs/aop.md"
 
       - Vertical Tools:
         - Finance: "swarms_tools/finance.md"
