@@ -39,12 +39,14 @@ def check_pydantic_name(pydantic_type: type[BaseModel]) -> str:
 
 def base_model_to_openai_function(
     pydantic_type: type[BaseModel],
+    output_str: bool = False,
 ) -> dict[str, Any]:
     """
     Convert a Pydantic model to a dictionary representation of functions.
 
     Args:
         pydantic_type (type[BaseModel]): The Pydantic model type to convert.
+        output_str (bool): Whether to return string output format. Defaults to False.
 
     Returns:
         dict[str, Any]: A dictionary representation of the functions.
@@ -85,7 +87,7 @@ def base_model_to_openai_function(
     _remove_a_key(parameters, "title")
     _remove_a_key(parameters, "additionalProperties")
 
-    return {
+    result = {
         "function_call": {
             "name": name,
         },
@@ -97,6 +99,14 @@ def base_model_to_openai_function(
             },
         ],
     }
+
+    # Handle output_str parameter
+    if output_str:
+        import json
+
+        return json.dumps(result, indent=2)
+
+    return result
 
 
 def multi_base_model_to_openai_function(
@@ -114,13 +124,21 @@ def multi_base_model_to_openai_function(
 
     """
     functions: list[dict[str, Any]] = [
-        base_model_to_openai_function(pydantic_type, output_str)[
-            "functions"
-        ][0]
+        base_model_to_openai_function(
+            pydantic_type, output_str=False
+        )["functions"][0]
         for pydantic_type in pydantic_types
     ]
 
-    return {
+    result = {
         "function_call": "auto",
         "functions": functions,
     }
+
+    # Handle output_str parameter
+    if output_str:
+        import json
+
+        return json.dumps(result, indent=2)
+
+    return result

@@ -983,21 +983,23 @@ class AOP:
             port: Port to bind the server to
         """
         logger.info(
-            f"Starting MCP server '{self.server_name}' on {self.host}:{self.port}"
+            f"Starting MCP server '{self.server_name}' on {self.host}:{self.port}\n"
+            f"Transport: {self.transport}\n"
+            f"Log level: {self.log_level}\n"
+            f"Verbose mode: {self.verbose}\n"
+            f"Traceback enabled: {self.traceback_enabled}\n"
+            f"Available tools: {self.list_agents()}"
         )
-        logger.info(f"Transport: {self.transport}")
-        logger.info(f"Log level: {self.log_level}")
-        logger.info(f"Verbose mode: {self.verbose}")
-        logger.info(f"Traceback enabled: {self.traceback_enabled}")
-        logger.info(f"Available tools: {self.list_agents()}")
 
         if self.verbose:
-            logger.debug("Server configuration:")
-            logger.debug(f"  - Server name: {self.server_name}")
-            logger.debug(f"  - Host: {self.host}")
-            logger.debug(f"  - Port: {self.port}")
-            logger.debug(f"  - Transport: {self.transport}")
-            logger.debug(f"  - Total agents: {len(self.agents)}")
+            logger.debug(
+                "Server configuration:\n"
+                f"  - Server name: {self.server_name}\n"
+                f"  - Host: {self.host}\n"
+                f"  - Port: {self.port}\n"
+                f"  - Transport: {self.transport}\n"
+                f"  - Total agents: {len(self.agents)}"
+            )
             for tool_name, config in self.tool_configs.items():
                 logger.debug(
                     f"  - Tool '{tool_name}': timeout={config.timeout}s, verbose={config.verbose}, traceback={config.traceback_enabled}"
@@ -1005,12 +1007,12 @@ class AOP:
 
         self.mcp_server.run(transport=self.transport)
 
-        # Note: FastMCP doesn't have a direct start method in the current implementation
-        # This would need to be implemented based on the specific MCP server setup
-        print(
+        logger.info(
             f"MCP Server '{self.server_name}' is ready with {len(self.agents)} tools"
         )
-        print(f"Tools available: {', '.join(self.list_agents())}")
+        logger.info(
+            f"Tools available: {', '.join(self.list_agents())}"
+        )
 
     def run(self) -> None:
         """
