@@ -92,6 +92,8 @@ extra:
     "Tools":
       - title: "Tools and MCP"
         url: "https://docs.swarms.world/en/latest/swarms/tools/tools_examples/"
+      - title: "MCP (Model Context Protocol)"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/agent_with_mcp/"
       - title: "OpenAI Tools & Function Calling"
         url: "https://docs.swarms.world/en/latest/swarms/examples/agent_structured_outputs/"
       - title: "Web Search (Exa, Serper)"
@@ -112,6 +114,8 @@ extra:
         url: "https://docs.swarms.world/en/latest/examples/templates/"
       - title: "Financial Analysis Swarms"
         url: "https://docs.swarms.world/en/latest/swarms/examples/swarms_api_finance/"
+      - title: "Deep Research Swarm"
+        url: "https://docs.swarms.world/en/latest/swarms/structs/deep_research_swarm/"
       - title: "Medical Diagnosis Systems"
         url: "https://docs.swarms.world/en/latest/swarms/examples/swarms_api_medical/"
       - title: "DAO Governance"
@@ -278,6 +282,7 @@ nav:
         - ForestSwarm: "swarms/structs/forest_swarm.md"
         - MALT: "swarms/structs/malt.md"
         - Multi-Agent Execution Utilities: "swarms/structs/various_execution_methods.md"
+        - Deep Research Swarm: "swarms/structs/deep_research_swarm.md"
         - Council of Judges: "swarms/structs/council_of_judges.md"
         - Heavy Swarm: "swarms/structs/heavy_swarm.md"
 
@@ -285,6 +290,7 @@ nav:
           - Overview: "swarms/structs/multi_swarm_orchestration.md"
           - HierarchicalSwarm: "swarms/structs/hierarchical_swarm.md"
           - Hierarchical Structured Communication Framework: "swarms/structs/hierarchical_structured_communication_framework.md"
+          - Auto Agent Builder: "swarms/structs/auto_agent_builder.md"
           - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
           - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
           - Swarm Matcher: "swarms/structs/swarm_matcher.md"
@@ -295,7 +301,6 @@ nav:
           - SwarmRouter: "swarms/structs/swarm_router.md"
           - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
           - ModelRouter: "swarms/structs/model_router.md"
-
 
         - Rearrangers:
           - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
@@ -322,6 +327,7 @@ nav:
       - Overview: "swarms_tools/overview.md"
       - BaseTool Reference: "swarms/tools/base_tool.md"
       - MCP Client Utils: "swarms/tools/mcp_client_call.md"
+      - MCP Agent Tool: "swarms/tools/mcp_agent_tool.md"
 
       - Vertical Tools:
         - Finance: "swarms_tools/finance.md"
@@ -339,10 +345,6 @@ nav:
         - Deploy on Google Cloud Run: "swarms_cloud/cloud_run.md"
         - Deploy on Phala: "swarms_cloud/phala_deploy.md"
         - Deploy on Cloudflare Workers: "swarms_cloud/cloudflare_workers.md"
-      - Agent Orchestration Protocol (AOP):
-        - AOP Reference: "swarms/structs/aop.md"
-        - AOP Server Setup: "swarms/examples/aop_server_example.md"
-        - AOP Cluster Example: "swarms/examples/aop_cluster_example.md"
 
     
   - Examples:
@@ -371,6 +373,7 @@ nav:
           - Agent with Gemini Nano Banana: "swarms/examples/jarvis_agent.md"
         - LLM Providers:
           - Language Models:
+            - How to Create A Custom Language Model: "swarms/models/custom_model.md"
             - Overview: "swarms/examples/model_providers.md"
             - OpenAI: "swarms/examples/openai_example.md"
             - Anthropic: "swarms/examples/claude.md"
@@ -384,6 +387,10 @@ nav:
             - VLLM: "swarms/examples/vllm_integration.md"
             - Llama4: "swarms/examples/llama4.md"
             - Custom Base URL & API Keys: "swarms/examples/custom_base_url_example.md"
+          - MultiModal Models:
+            - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
+            - Multi Modal Models Available: "swarms/models/multimodal_models.md"
+            - GPT4VisionAPI: "swarms/models/gpt4v.md"
 
 
 
@@ -410,6 +417,9 @@ nav:
           - Hiearchical Marketing Team: "examples/marketing_team.md"
           - Gold ETF Research with HeavySwarm: "examples/gold_etf_research.md"
           - Hiring Swarm: "examples/hiring_swarm.md"
+          - Real Estate Swarm: "examples/realestate_swarm.md"
+          - Job Finding Swarm: "examples/job_finding.md"
+          - Mergers & Aquisition (M&A) Advisory Swarm: "examples/ma_swarm.md"
     
     - Tools & Integrations:
       - Web Search with Exa: "examples/exa_search.md"
@@ -420,6 +430,7 @@ nav:
       
       - MCP: 
         - Multi-MCP Agent Integration: "swarms/examples/multi_mcp_agent.md"
+        - Agent With MCP Integration: "swarms/examples/agent_with_mcp.md"
 
     - RAG:
       - RAG with Qdrant: "swarms/RAG/qdrant_rag.md"
