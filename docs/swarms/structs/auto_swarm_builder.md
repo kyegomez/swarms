@@ -30,8 +30,8 @@ The AutoSwarmBuilder is designed to:
 | `interactive` | bool | False | Whether to enable interactive mode |
 | `max_tokens` | int | 8000 | Maximum tokens for the LLM responses |
 | `execution_type` | str | "return-agents" | Type of execution to perform (see Execution Types) |
-| `return_dictionary` | bool | True | Whether to return dictionary format for agent specs |
 | `system_prompt` | str | BOSS_SYSTEM_PROMPT | System prompt for the boss agent |
+| `additional_llm_args` | dict | {} | Additional arguments to pass to the LLM |
 
 ## Execution Types
 
@@ -39,12 +39,10 @@ The `execution_type` parameter controls how the AutoSwarmBuilder operates:
 
 | Execution Type                  | Description                                               |
 |----------------------------------|-----------------------------------------------------------|
-| **"return-agents"**              | Creates and returns a list of Agent objects (default)     |
+| **"return-agents"**              | Creates and returns agent specifications as a dictionary (default) |
 | **"execute-swarm-router"**       | Executes the swarm router with the created agents         |
 | **"return-swarm-router-config"** | Returns the swarm router configuration as a dictionary    |
-| **"return-agent-configurations"**| Returns agent configurations as a dictionary              |
-| **"return-agent-specs"**         | Returns agent specifications as a tuple (agents, count)   |
-| **"return-agent-dictionary"**    | Returns agent configurations as a dictionary format       |
+| **"return-agents-objects"**     | Returns agent objects created from specifications         |
 
 ## Core Methods
 
@@ -83,26 +81,6 @@ Creates specialized agents for a given task using the boss agent system.
 **Raises:**
 
 - `Exception`: If there's an error during agent creation
-
-### build_agent(agent_name: str, agent_description: str, agent_system_prompt: str)
-
-Builds a single agent with specified parameters and enhanced error handling.
-
-**Parameters:**
-
-| Parameter             | Type  | Description                    |
-|-----------------------|-------|--------------------------------|
-| `agent_name`          | str   | Name of the agent              |
-| `agent_description`   | str   | Description of the agent       |
-| `agent_system_prompt` | str   | System prompt for the agent    |
-
-**Returns:**
-
-- `Agent`: The constructed agent
-
-**Raises:**
-
-- `Exception`: If there's an error during agent construction
 
 ### create_router_config(task: str)
 
@@ -162,43 +140,6 @@ Returns the available execution types.
 
 - `List[str]`: List of available execution types
 
-### _create_agent_specs(task: str)
-
-Create agent specifications for a given task.
-
-**Parameters:**
-
-- `task` (str): The task to create agents for
-
-**Returns:**
-
-- `Tuple[List[Agent], int]`: List of created agents and count
-
-### _create_agent_dictionary(task: str)
-
-Create agent dictionary for a given task.
-
-**Parameters:**
-
-- `task` (str): The task to create agents for
-
-**Returns:**
-
-- `dict`: Dictionary containing agent configurations
-
-### _create_agents_from_specs(task: str, return_dict: bool = False)
-
-Create agents from specifications using the boss agent system.
-
-**Parameters:**
-
-- `task` (str): The task to create agents for
-- `return_dict` (bool): Whether to return dictionary format
-
-**Returns:**
-
-- `List[Agent]` or `dict`: Created agents or dictionary
-
 ### create_agents_from_specs(agents_dictionary: Any)
 
 Create agents from agent specifications.
@@ -211,29 +152,6 @@ Create agents from agent specifications.
 
 - `List[Agent]`: List of created agents
 
-### build_agent_from_spec(agent_name: str, agent_description: str, agent_system_prompt: str, max_loops: int = 1, model_name: str = "gpt-4.1", dynamic_temperature_enabled: bool = True, auto_generate_prompt: bool = False, role: str = "worker", max_tokens: int = 8192, temperature: float = 0.5)
-
-Build a single agent from agent specification with comprehensive configuration options.
-
-**Parameters:**
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `agent_name` | str | - | Name of the agent |
-| `agent_description` | str | - | Description of the agent's purpose |
-| `agent_system_prompt` | str | - | The system prompt for the agent |
-| `max_loops` | int | 1 | Maximum number of loops |
-| `model_name` | str | "gpt-4.1" | Model name to use |
-| `dynamic_temperature_enabled` | bool | True | Whether to enable dynamic temperature |
-| `auto_generate_prompt` | bool | False | Whether to auto-generate prompts |
-| `role` | str | "worker" | Role of the agent |
-| `max_tokens` | int | 8192 | Maximum tokens |
-| `temperature` | float | 0.5 | Temperature setting |
-
-**Returns:**
-
-- `Agent`: The constructed agent instance
-
 ### dict_to_agent(output: dict)
 
 Converts a dictionary output to a list of Agent objects.
@@ -245,6 +163,18 @@ Converts a dictionary output to a list of Agent objects.
 **Returns:**
 
 - `List[Agent]`: List of constructed agents
+
+### _execute_task(task: str)
+
+Execute a task by creating agents and initializing the swarm router.
+
+**Parameters:**
+
+- `task` (str): The task to execute
+
+**Returns:**
+
+- `Any`: The result of the swarm router execution
 
 ### build_llm_agent(config: BaseModel)
 
@@ -285,6 +215,7 @@ Configuration for an individual agent specification with comprehensive options.
 | `temperature`        | float   | Parameter controlling randomness of agent output (lower = more deterministic)               |
 | `role`               | str     | Designated role within the swarm influencing behavior and interactions                       |
 | `max_loops`          | int     | Maximum number of times the agent can repeat its task for iterative processing              |
+| `goal`               | str     | The primary objective or desired outcome the agent is tasked with achieving                  |
 
 ### Agents
 
@@ -302,7 +233,7 @@ Configuration model for individual agents in a swarm.
 
 | Field           | Type    | Description                                                                                   |
 |-----------------|---------|-----------------------------------------------------------------------------------------------|
-| `name`          | str     | Unique identifier for the agent                                                               |
+| `agent_name`    | str     | Unique identifier for the agent                                                               |
 | `description`   | str     | Comprehensive description of the agent's purpose and capabilities                             |
 | `system_prompt` | str     | Detailed system prompt defining agent behavior                                                |
 | `goal`          | str     | Primary objective the agent is tasked with achieving                                          |
@@ -465,7 +396,7 @@ from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 swarm = AutoSwarmBuilder(
     name="Marketing Swarm",
     description="A swarm for marketing strategy development",
-    execution_type="return-agent-configurations"
+    execution_type="return-agents"
 )
 
 # Get agent configurations without executing
@@ -475,7 +406,7 @@ agent_configs = swarm.run(
 
 print("Generated agents:")
 for agent in agent_configs["agents"]:
-    print(f"- {agent['name']}: {agent['description']}")
+    print(f"- {agent['agent_name']}: {agent['description']}")
 ```
 
 ### Example 4: Getting Swarm Router Configuration
@@ -549,24 +480,24 @@ result = swarm.run(
 )
 ```
 
-### Example 7: Getting Agent Specifications
+### Example 7: Getting Agent Objects
 
 ```python
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 
-# Initialize to return agent specifications
+# Initialize to return agent objects
 swarm = AutoSwarmBuilder(
     name="Specification Swarm",
     description="A swarm for generating agent specifications",
-    execution_type="return-agent-specs"
+    execution_type="return-agents-objects"
 )
 
-# Get agent specifications with count
-agents, count = swarm.run(
+# Get agent objects
+agents = swarm.run(
     "Create a team of agents for analyzing customer feedback and generating actionable insights"
 )
 
-print(f"Created {count} agents:")
+print(f"Created {len(agents)} agents:")
 for agent in agents:
     print(f"- {agent.agent_name}: {agent.description}")
 ```
@@ -580,7 +511,7 @@ from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 swarm = AutoSwarmBuilder(
     name="Dictionary Swarm",
     description="A swarm for generating agent dictionaries",
-    execution_type="return-agent-dictionary"
+    execution_type="return-agents"
 )
 
 # Get agent configurations as dictionary
@@ -635,16 +566,14 @@ swarm = AutoSwarmBuilder(
     description="A highly configured swarm with advanced settings",
     model_name="gpt-4.1",
     max_tokens=16000,
-    temperature=0.3,
-    return_dictionary=True,
+    additional_llm_args={"temperature": 0.3},
     verbose=True,
     interactive=False
 )
 
 # Create agents with detailed specifications
-agent_specs = swarm._create_agents_from_specs(
-    "Develop a comprehensive cybersecurity strategy for a mid-size company",
-    return_dict=True
+agent_specs = swarm.run(
+    "Develop a comprehensive cybersecurity strategy for a mid-size company"
 )
 
 # Build agents from specifications
@@ -672,14 +601,13 @@ for agent in agents:
     - Set appropriate `max_loops` based on task complexity (typically 1)
     - Use `verbose=True` during development for debugging
     - Choose the right `execution_type` for your use case:
-        - Use `"return-agents"` for direct agent interaction and execution
-        - Use `"return-agent-configurations"` for inspecting agent setups
+        - Use `"return-agents"` for getting agent specifications as dictionary (default)
+        - Use `"execute-swarm-router"` for executing the swarm router with created agents
         - Use `"return-swarm-router-config"` for analyzing swarm architecture
-        - Use `"return-agent-specs"` for getting agent specifications with counts
-        - Use `"return-agent-dictionary"` for dictionary-format configurations
+        - Use `"return-agents-objects"` for getting agent objects created from specifications
     - Set `max_tokens` appropriately based on expected response length
     - Use `interactive=True` for real-time collaboration scenarios
-    - Set `return_dictionary=True` for easier data manipulation
+    - Use `additional_llm_args` for passing custom parameters to the LLM
 
 !!! note "Model Selection"
     - Choose appropriate `model_name` based on task requirements
