@@ -67,7 +67,6 @@ tenacity = "*"
 psutil = "*"
 python-dotenv = "*"
 PyYAML = "*"
-docstring_parser = "0.16" # TODO:
 networkx = "*"
 aiofiles = "*"
 rich = "*"

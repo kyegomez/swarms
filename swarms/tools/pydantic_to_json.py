@@ -1,6 +1,6 @@
 from typing import Any, List
 
-from docstring_parser import parse
+from swarms.utils.docstring_parser import parse
 from pydantic import BaseModel
 from swarms.utils.loguru_logger import initialize_logger
 
