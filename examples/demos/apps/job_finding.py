@@ -1,79 +1,9 @@
 from typing import List
-import os
-from dotenv import load_dotenv
 from loguru import logger
-import httpx
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import history_output_formatter
-from swarms.utils.any_to_str import any_to_str
-
-# --- Exa Search Tool Integration ---
-def exa_search(
-    query: str,
-    characters: int = 500,
-    sources: int = 3,
-) -> str:
-    """
-    Perform a highly summarized Exa web search for job listings and career information.
-
-    Args:
-        query (str): Search query for jobs or career info.
-        characters (int): Max characters for summary.
-        sources (int): Number of sources.
-
-    Returns:
-        str: Condensed summary of search results.
-    """
-    api_key = os.getenv("EXA_API_KEY")
-    if not api_key:
-        raise ValueError("EXA_API_KEY environment variable is not set")
-
-    headers = {
-        "x-api-key": api_key,
-        "content-type": "application/json",
-    }
-
-    payload = {
-        "query": query,
-        "type": "auto",
-        "numResults": sources,
-        "contents": {
-            "text": True,
-            "summary": {
-                "schema": {
-                    "type": "object",
-                    "required": ["answer"],
-                    "additionalProperties": False,
-                    "properties": {
-                        "answer": {
-                            "type": "string",
-                            "description": "Highly condensed summary of the search result",
-                        }
-                    },
-                }
-            },
-            "context": {"maxCharacters": characters},
-        },
-    }
-
-    try:
-        logger.info(f"[SEARCH] Exa job search: {query[:50]}...")
-        response = httpx.post(
-            "https://api.exa.ai/search",
-            json=payload,
-            headers=headers,
-            timeout=30,
-        )
-        response.raise_for_status()
-        json_data = response.json()
-        return any_to_str(json_data)
-    except Exception as e:
-        logger.error(f"Exa search failed: {e}")
-        return f"Search failed: {str(e)}. Please try again."
-
-# Load environment variables
-load_dotenv()
+from swarms_tools import exa_search
 
 # System prompts for each agent
 

@@ -25,17 +25,6 @@ To run the AI Job Search Swarm, you'll need to set up your Python environment an
 
 ### Installation Steps
 
-1.  **Clone the repository** (if you haven't already):
-    ```bash
-    git clone https://github.com/kyegomez/swarms.git
-    cd swarms
-    ```
-2.  **Create a virtual environment** and activate it:
-    ```bash
-    python -m venv venv
-    source venv/bin/activate
-    ```
-3.  **Install dependencies**:
     The `job_finding.py` script relies on several libraries. These can be installed using the `requirements.txt` file located at the root of the project.
     ```bash
     pip install -r requirements.txt
@@ -67,282 +56,247 @@ The script is designed to run with a pre-filled user requirement for demonstrati
 
 ```python
 from typing import List
-import os
-from dotenv import load_dotenv
 from loguru import logger
-import httpx
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import history_output_formatter
-from swarms.utils.any_to_str import any_to_str
-
-# --- Exa Search Tool Integration ---
-def exa_search(
-    query: str,
-    characters: int = 500,
-    sources: int = 3,
-) -> str:
-    """
-    Perform a highly summarized Exa web search for job listings and career information.
-
-    Args:
-        query (str): Search query for jobs or career info.
-        characters (int): Max characters for summary.
-        sources (int): Number of sources.
-
-    Returns:
-        str: Condensed summary of search results.
-    """
-    api_key = os.getenv("EXA_API_KEY")
-    if not api_key:
-        raise ValueError("EXA_API_KEY environment variable is not set")
-
-    headers = {
-        "x-api-key": api_key,
-        "content-type": "application/json",
-    }
-
-    payload = {
-        "query": query,
-        "type": "auto",
-        "numResults": sources,
-        "contents": {
-            "text": True,
-            "summary": {
-                "schema": {
-                    "type": "object",
-                    "required": ["answer"],
-                    "additionalProperties": False,
-                    "properties": {
-                        "answer": {
-                            "type": "string",
-                            "description": "Highly condensed summary of the search result",
-                        }
-                    },
-                }
-            },
-            "context": {"maxCharacters": characters},
-        },
-    }
-
-    try:
-        logger.info(f"[SEARCH] Exa job search: {query[:50]}...")
-        response = httpx.post(
-            "https://api.exa.ai/search",
-            json=payload,
-            headers=headers,
-            timeout=30,
-        )
-        response.raise_for_status()
-        json_data = response.json()
-        return any_to_str(json_data)
-    except Exception as e:
-        logger.error(f"Exa search failed: {e}")
-        return f"Search failed: {str(e)}. Please try again."
-
-# Load environment variables
-load_dotenv()
+from swarms_tools import exa_search
 
 # System prompts for each agent
-
-REQUIREMENTS_ANALYZER_PROMPT = """
-You are the Requirements Analyzer Agent for Job Search.
+INTAKE_AGENT_PROMPT = """
+You are an M&A Intake Specialist responsible for gathering comprehensive information about a potential transaction.
 
 ROLE:
-Extract and clarify job search requirements from user input to create optimized search queries.
+Engage with the user to understand the full context of the potential M&A deal, extracting critical details that will guide subsequent analyses.
 
 RESPONSIBILITIES:
-- Engage with the user to understand:
-  * Desired job titles and roles
-  * Required skills and qualifications
-  * Preferred locations (remote, hybrid, on-site)
-  * Salary expectations
-  * Company size and culture preferences
-  * Industry preferences
-  * Experience level
-  * Work authorization status
-  * Career goals and priorities
-
-- Analyze user responses to identify:
-  * Key search terms and keywords
-  * Must-have vs nice-to-have requirements
-  * Deal-breakers or constraints
-  * Priority factors in job selection
-
-- Generate optimized search queries:
-  * Create 3-5 targeted search queries based on user requirements
-  * Combine job titles, skills, locations, and key criteria
-  * Format queries for maximum relevance
+- Conduct a thorough initial interview to understand:
+  * Transaction type (acquisition, merger, divestiture)
+  * Industry and sector specifics
+  * Target company profile and size
+  * Strategic objectives
+  * Buyer/seller perspective
+  * Timeline and urgency
+  * Budget constraints
+  * Specific concerns or focus areas
 
 OUTPUT FORMAT:
-Provide a comprehensive requirements analysis:
-1. User Profile Summary:
-   - Job titles of interest
-   - Key skills and qualifications
-   - Location preferences
-   - Salary range
-   - Priority factors
+Provide a comprehensive Deal Brief that includes:
+1. Transaction Overview
+   - Proposed transaction type
+   - Key parties involved
+   - Initial strategic rationale
 
-2. Search Strategy:
-   - List of 3-5 optimized search queries
-   - Rationale for each query
-   - Expected result types
+2. Stakeholder Context
+   - Buyer's background and motivations
+   - Target company's current position
+   - Key decision-makers
 
-3. Clarifications Needed (if any):
-   - Questions to refine search
-   - Missing information
+3. Initial Assessment
+   - Preliminary strategic fit
+   - Potential challenges or red flags
+   - Recommended focus areas for deeper analysis
+
+4. Information Gaps
+   - Questions that need further clarification
+   - Additional data points required
 
 IMPORTANT:
-- Always include ALL user responses verbatim in your analysis
-- Format search queries clearly for the next agent
-- Be specific and actionable in your recommendations
-- Ask follow-up questions if requirements are unclear
+- Be thorough and systematic
+- Ask probing questions to uncover nuanced details
+- Maintain a neutral, professional tone
+- Prepare a foundation for subsequent in-depth analysis
 """
 
-SEARCH_EXECUTOR_PROMPT = """
-You are the Search Executor Agent for Job Search.
+MARKET_ANALYSIS_PROMPT = """
+You are an M&A Market Intelligence Analyst tasked with conducting comprehensive market research.
 
 ROLE:
-Execute job searches using exa_search and analyze results for relevance.
+Perform an in-depth analysis of market dynamics, competitive landscape, and strategic implications for the potential transaction.
 
 TOOLS:
-You have access to the exa_search tool. Use it to find current job listings and career opportunities.
+You have access to the exa_search tool for gathering real-time market intelligence.
 
 RESPONSIBILITIES:
-- Execute searches using queries from the Requirements Analyzer
-- Use exa_search for EACH query provided
-- Analyze search results for:
-  * Job title match
-  * Skills alignment
-  * Location compatibility
-  * Salary range fit
-  * Company reputation
-  * Role responsibilities
-  * Growth opportunities
+1. Conduct Market Research
+   - Use exa_search to gather current market insights
+   - Analyze industry trends, size, and growth potential
+   - Identify key players and market share distribution
 
-- Categorize results:
-  * Strong Match (80-100% alignment)
-  * Good Match (60-79% alignment)
-  * Moderate Match (40-59% alignment)
-  * Weak Match (<40% alignment)
+2. Competitive Landscape Analysis
+   - Map out competitive ecosystem
+   - Assess target company's market positioning
+   - Identify potential competitive advantages or vulnerabilities
 
-- For each job listing, extract:
-  * Job title and company
-  * Location and work arrangement
-  * Key requirements
-  * Salary range (if available)
-  * Application link or contact
-  * Match score and reasoning
+3. Strategic Fit Evaluation
+   - Analyze alignment with buyer's strategic objectives
+   - Assess potential market entry or expansion opportunities
+   - Evaluate potential for market disruption
+
+4. External Factor Assessment
+   - Examine regulatory environment
+   - Analyze technological disruption potential
+   - Consider macroeconomic impacts
 
 OUTPUT FORMAT:
-Provide structured search results:
-1. Search Execution Summary:
-   - Queries executed
-   - Total results found
-   - Distribution by match category
+Provide a comprehensive Market Analysis Report:
+1. Market Overview
+   - Market size and growth trajectory
+   - Key industry trends
+   - Competitive landscape summary
 
-2. Detailed Job Listings (organized by match strength):
-   For each job:
-   - Company and Job Title
-   - Location and Work Type
-   - Key Requirements
-   - Why it's a match (or not)
-   - Match Score (percentage)
-   - Application link
-   - Source (cite exa_search)
+2. Strategic Fit Assessment
+   - Market attractiveness score (1-10)
+   - Strategic alignment evaluation
+   - Potential synergies and opportunities
 
-3. Search Insights:
-   - Common themes in results
-   - Gap analysis (requirements not met)
-   - Market observations
+3. Risk and Opportunity Mapping
+   - Key market opportunities
+   - Potential competitive threats
+   - Regulatory and technological risk factors
 
-INSTRUCTIONS:
-- Always use exa_search for EVERY query provided
-- Cite exa_search results clearly
-- Be objective in match assessment
-- Provide actionable insights
+4. Recommended Next Steps
+   - Areas requiring deeper investigation
+   - Initial strategic recommendations
 """
 
-RESULTS_CURATOR_PROMPT = """
-You are the Results Curator Agent for Job Search.
-
-ROLE:
-Filter, organize, and present job search results to the user for decision-making.
+FINANCIAL_VALUATION_PROMPT = """
+You are an M&A Financial Analysis and Risk Expert. Perform comprehensive financial evaluation and risk assessment.
 
 RESPONSIBILITIES:
-- Review all search results from the Search Executor
-- Filter and prioritize based on:
-  * Match scores
-  * User requirements
-  * Application deadlines
-  * Job quality indicators
+1. Financial Health Analysis
+   - Analyze revenue trends and quality
+   - Evaluate profitability metrics (EBITDA, margins)
+   - Conduct cash flow analysis
+   - Assess balance sheet strength
+   - Review working capital requirements
 
-- Organize results into:
-  * Top Recommendations (top 3-5 best matches)
-  * Strong Alternatives (next 5-10 options)
-  * Worth Considering (other relevant matches)
+2. Valuation Analysis
+   - Perform comparable company analysis
+   - Conduct precedent transaction analysis
+   - Develop Discounted Cash Flow (DCF) model
+   - Assess asset-based valuation
 
-- For top recommendations, provide:
-  * Detailed comparison
-  * Pros and cons for each
-  * Application strategy suggestions
-  * Next steps
-
-- Engage user for feedback:
-  * Present curated results clearly
-  * Ask which jobs interest them
-  * Identify what's missing
-  * Determine if new search is needed
+3. Synergy and Risk Assessment
+   - Quantify potential revenue and cost synergies
+   - Identify financial and operational risks
+   - Evaluate integration complexity
+   - Assess potential deal-breakers
 
 OUTPUT FORMAT:
-Provide a curated job search report:
-
-1. Executive Summary:
-   - Total jobs reviewed
-   - Number of strong matches
-   - Key findings
-
-2. Top Recommendations (detailed):
-   For each (max 5):
-   - Company & Title
-   - Why it's a top match
-   - Key highlights
-   - Potential concerns
-   - Recommendation strength (1-10)
-   - Application priority (High/Medium/Low)
-
-3. Strong Alternatives (brief list):
-   - Company & Title
-   - One-line match summary
-   - Match score
-
-4. User Decision Point:
-   Ask the user:
-   - "Which of these jobs interest you most?"
-   - "What's missing from these results?"
-   - "Should we refine the search or proceed with applications?"
-   - "Any requirements you'd like to adjust?"
-
-5. Next Steps:
-   Based on user response, either:
-   - Proceed with selected jobs
-   - Run new search with adjusted criteria
-   - Deep dive into specific opportunities
-
-IMPORTANT:
-- Make it easy for users to make decisions
-- Be honest about job fit
-- Provide clear paths forward
-- Always ask for user feedback before concluding
+1. Comprehensive Financial Analysis Report
+2. Valuation Range (low, mid, high scenarios)
+3. Synergy Potential Breakdown
+4. Detailed Risk Matrix
+5. Recommended Pricing Strategy
 """
 
-class JobSearchSwarm:
+DEAL_STRUCTURING_PROMPT = """
+You are an M&A Deal Structuring Advisor. Recommend the optimal transaction structure.
+
+RESPONSIBILITIES:
+1. Transaction Structure Design
+   - Evaluate asset vs stock purchase options
+   - Analyze cash vs stock consideration
+   - Design earnout provisions
+   - Develop contingent payment structures
+
+2. Financing Strategy
+   - Recommend debt/equity mix
+   - Identify optimal financing sources
+   - Assess impact on buyer's capital structure
+
+3. Tax and Legal Optimization
+   - Design tax-efficient structure
+   - Consider jurisdictional implications
+   - Minimize tax liabilities
+
+4. Deal Protection Mechanisms
+   - Develop escrow arrangements
+   - Design representations and warranties
+   - Create indemnification provisions
+   - Recommend non-compete agreements
+
+OUTPUT FORMAT:
+1. Recommended Deal Structure
+2. Detailed Payment Terms
+3. Key Contractual Protections
+4. Tax Optimization Strategy
+5. Rationale for Proposed Structure
+"""
+
+INTEGRATION_PLANNING_PROMPT = """
+You are an M&A Integration Planning Expert. Develop a comprehensive post-merger integration roadmap.
+
+RESPONSIBILITIES:
+1. Immediate Integration Priorities
+   - Define critical day-1 actions
+   - Develop communication strategy
+   - Identify quick win opportunities
+
+2. 100-Day Integration Plan
+   - Design organizational structure alignment
+   - Establish governance framework
+   - Create detailed integration milestones
+
+3. Functional Integration Strategy
+   - Plan operations consolidation
+   - Design systems and technology integration
+   - Align sales and marketing approaches
+   - Develop cultural integration plan
+
+4. Synergy Realization
+   - Create detailed synergy capture timeline
+   - Establish performance tracking mechanisms
+   - Define accountability framework
+
+OUTPUT FORMAT:
+1. Comprehensive Integration Roadmap
+2. Detailed 100-Day Plan
+3. Functional Integration Strategies
+4. Synergy Realization Timeline
+5. Risk Mitigation Recommendations
+"""
+
+FINAL_RECOMMENDATION_PROMPT = """
+You are the Senior M&A Advisory Partner. Synthesize all analyses into a comprehensive recommendation.
+
+RESPONSIBILITIES:
+1. Executive Summary
+   - Summarize transaction overview
+   - Highlight strategic rationale
+   - Articulate key value drivers
+
+2. Investment Thesis Validation
+   - Assess strategic benefits
+   - Evaluate financial attractiveness
+   - Project long-term potential
+
+3. Comprehensive Risk Assessment
+   - Summarize top risks
+   - Provide mitigation strategies
+   - Identify potential deal-breakers
+
+4. Final Recommendation
+   - Provide clear GO/NO-GO recommendation
+   - Specify recommended offer range
+   - Outline key proceeding conditions
+
+OUTPUT FORMAT:
+1. Executive-Level Recommendation Report
+2. Decision Framework
+3. Risk-Adjusted Strategic Perspective
+4. Actionable Next Steps
+5. Recommendation Confidence Level
+"""
+
+class MAAdvisorySwarm:
     def __init__(
         self,
-        name: str = "AI Job Search Swarm",
-        description: str = "An intelligent job search system that finds your ideal role",
+        name: str = "M&A Advisory Swarm",
+        description: str = "Comprehensive AI-driven M&A advisory system",
         max_loops: int = 1,
-        user_name: str = "Job Seeker",
+        user_name: str = "M&A Advisor",
         output_type: str = "json",
     ):
         self.max_loops = max_loops
@@ -356,8 +310,8 @@ class JobSearchSwarm:
         self.exa_search_results = []
         self.search_queries = []
         self.current_iteration = 0
-        self.max_iterations = 10  # Prevent infinite loops
-        self.search_concluded = False
+        self.max_iterations = 1  # Limiting to 1 iteration for full sequential demo
+        self.analysis_concluded = False
         
         self.handle_initial_processing()
 
@@ -366,35 +320,59 @@ class JobSearchSwarm:
             role="System",
             content=f"Company: {self.name}\n"
                     f"Description: {self.description}\n"
-                    f"Mission: Find the perfect job match for {self.user_name}"
+                    f"Mission: Provide comprehensive M&A advisory for {self.user_name}"
         )
 
     def _initialize_agents(self) -> List[Agent]:
         return [
             Agent(
-                agent_name="Sarah-Requirements-Analyzer",
-                agent_description="Analyzes user requirements and creates optimized job search queries.",
-                system_prompt=REQUIREMENTS_ANALYZER_PROMPT,
+                agent_name="Emma-Intake-Specialist",
+                agent_description="Gathers comprehensive initial information about the potential M&A transaction.",
+                system_prompt=INTAKE_AGENT_PROMPT,
                 max_loops=self.max_loops,
                 dynamic_temperature_enabled=True,
                 output_type="final",
             ),
             Agent(
-                agent_name="David-Search-Executor",
-                agent_description="Executes job searches and analyzes results for relevance.",
-                system_prompt=SEARCH_EXECUTOR_PROMPT,
+                agent_name="Marcus-Market-Analyst",
+                agent_description="Conducts in-depth market research and competitive analysis.",
+                system_prompt=MARKET_ANALYSIS_PROMPT,
                 max_loops=self.max_loops,
                 dynamic_temperature_enabled=True,
                 output_type="final",
             ),
             Agent(
-                agent_name="Lisa-Results-Curator",
-                agent_description="Curates and presents job results for user decision-making.",
-                system_prompt=RESULTS_CURATOR_PROMPT,
+                agent_name="Sophia-Financial-Analyst",
+                agent_description="Performs comprehensive financial valuation and risk assessment.",
+                system_prompt=FINANCIAL_VALUATION_PROMPT,
                 max_loops=self.max_loops,
                 dynamic_temperature_enabled=True,
                 output_type="final",
             ),
+            Agent(
+                agent_name="David-Deal-Structuring-Advisor",
+                agent_description="Recommends optimal deal structure and terms.",
+                system_prompt=DEAL_STRUCTURING_PROMPT,
+                max_loops=self.max_loops,
+                dynamic_temperature_enabled=True,
+                output_type="final",
+            ),
+            Agent(
+                agent_name="Nathan-Integration-Planner",
+                agent_description="Develops comprehensive post-merger integration roadmap.",
+                system_prompt=INTEGRATION_PLANNING_PROMPT,
+                max_loops=self.max_loops,
+                dynamic_temperature_enabled=True,
+                output_type="final",
+            ),
+            Agent(
+                agent_name="Alex-Final-Recommendation-Partner",
+                agent_description="Synthesizes all analyses into a comprehensive recommendation.",
+                system_prompt=FINAL_RECOMMENDATION_PROMPT,
+                max_loops=self.max_loops,
+                dynamic_temperature_enabled=True,
+                output_type="final",
+            )
         ]
 
     def find_agent_by_name(self, name: str) -> Agent:
@@ -403,55 +381,51 @@ class JobSearchSwarm:
                 return agent
         return None
 
-    def analyze_requirements(self, user_input: str):
-        """Phase 1: Analyze user requirements and generate search queries"""
-        sarah_agent = self.find_agent_by_name("Requirements-Analyzer")
+    def intake_and_scoping(self, user_input: str):
+        """Phase 1: Intake and initial deal scoping"""
+        emma_agent = self.find_agent_by_name("Intake-Specialist")
         
-        sarah_output = sarah_agent.run(
+        emma_output = emma_agent.run(
             f"User Input: {user_input}\n\n"
             f"Conversation History: {self.conversation.get_str()}\n\n"
-            f"Analyze the user's job search requirements and generate 3-5 optimized search queries. "
+            f"Analyze the potential M&A transaction, extract key details, and prepare a comprehensive deal brief. "
             f"If information is unclear, ask clarifying questions."
         )
         
         self.conversation.add(
-            role="Requirements-Analyzer", content=sarah_output
+            role="Intake-Specialist", content=emma_output
         )
         
-        # Extract search queries from Sarah's output
-        self.search_queries = self._extract_search_queries(sarah_output)
+        # Extract potential search queries for market research
+        self.search_queries = self._extract_search_queries(emma_output)
         
-        return sarah_output
+        return emma_output
 
-    def _extract_search_queries(self, analyzer_output: str) -> List[str]:
-        """Extract search queries from Requirements Analyzer output"""
+    def _extract_search_queries(self, intake_output: str) -> List[str]:
+        """Extract search queries from Intake Specialist output"""
         queries = []
-        lines = analyzer_output.split('\n')
+        lines = intake_output.split('\n')
         
-        # Look for lines that appear to be search queries
+        # Look for lines that could be good search queries
         for line in lines:
             line = line.strip()
-            # Simple heuristic: lines with certain keywords or patterns
-            if any(keyword in line.lower() for keyword in ['query:', 'search:', 'query']):
-                # Extract the actual query
-                if ':' in line:
-                    query = line.split(':', 1)[1].strip()
-                    if query and len(query) > 10:
-                        queries.append(query)
+            # Simple heuristic: lines with potential research keywords
+            if any(keyword in line.lower() for keyword in ['market', 'industry', 'trend', 'competitor', 'analysis']):
+                if len(line) > 20:  # Ensure query is substantial
+                    queries.append(line)
         
-        # If no queries found, create default ones based on common patterns
+        # Fallback queries if none found
         if not queries:
-            logger.warning("No explicit queries found, generating fallback queries")
             queries = [
-                "software engineer jobs remote",
-                "data scientist positions",
-                "product manager opportunities"
+                "M&A trends in technology sector",
+                "Market analysis for potential business acquisition",
+                "Competitive landscape in enterprise software"
             ]
         
-        return queries[:5]  # Limit to 5 queries
+        return queries[:3]  # Limit to 3 queries
 
-    def execute_searches(self):
-        """Phase 2: Execute searches using exa_search and analyze results"""
+    def market_research(self):
+        """Phase 2: Conduct market research using exa_search"""
         # Execute exa_search for each query
         self.exa_search_results = []
         for query in self.search_queries:
@@ -461,107 +435,138 @@ class JobSearchSwarm:
                 "exa_result": result
             })
         
-        # Pass results to Search Executor agent
-        david_agent = self.find_agent_by_name("Search-Executor")
+        # Pass results to Market Analysis agent
+        marcus_agent = self.find_agent_by_name("Market-Analyst")
         
         # Build exa context
-        exa_context = "\n\n[Exa Search Results]\n"
+        exa_context = "\n\n[Exa Market Research Results]\n"
         for item in self.exa_search_results:
             exa_context += f"Query: {item['query']}\nResults: {item['exa_result']}\n\n"
         
-        david_output = david_agent.run(
+        marcus_output = marcus_agent.run(
             f"Conversation History: {self.conversation.get_str()}\n\n"
             f"{exa_context}\n"
-            f"Analyze these job search results. Categorize each job by match strength and provide detailed analysis."
+            f"Analyze these market research results. Provide comprehensive market intelligence and strategic insights."
         )
         
         self.conversation.add(
-            role="Search-Executor", content=david_output
+            role="Market-Analyst", content=marcus_output
+        )
+        
+        return marcus_output
+
+    def financial_valuation(self):
+        """Phase 3: Perform comprehensive financial valuation and risk assessment"""
+        sophia_agent = self.find_agent_by_name("Financial-Analyst")
+        
+        sophia_output = sophia_agent.run(
+            f"Conversation History: {self.conversation.get_str()}\n\n"
+            f"Perform comprehensive financial analysis and risk assessment based on previous insights."
+        )
+        
+        self.conversation.add(
+            role="Financial-Analyst", content=sophia_output
+        )
+        
+        return sophia_output
+
+    def deal_structuring(self):
+        """Phase 4: Recommend optimal deal structure"""
+        david_agent = self.find_agent_by_name("Deal-Structuring-Advisor")
+        
+        david_output = david_agent.run(
+            f"Conversation History: {self.conversation.get_str()}\n\n"
+            f"Recommend the optimal transaction structure and terms based on all prior analyses."
+        )
+        
+        self.conversation.add(
+            role="Deal-Structuring-Advisor", content=david_output
         )
         
         return david_output
 
-    def curate_results(self) -> str:
-        """Phase 3: Curate results and get user feedback"""
-        lisa_agent = self.find_agent_by_name("Results-Curator")
+    def integration_planning(self):
+        """Phase 5: Develop post-merger integration roadmap"""
+        nathan_agent = self.find_agent_by_name("Integration-Planner")
         
-        lisa_output = lisa_agent.run(
+        nathan_output = nathan_agent.run(
             f"Conversation History: {self.conversation.get_str()}\n\n"
-            f"Curate the job search results, present top recommendations, and ask the user for feedback. "
-            f"Determine if we should continue searching or if the user has found suitable options."
+            f"Create a comprehensive integration plan to realize deal value."
         )
         
         self.conversation.add(
-            role="Results-Curator", content=lisa_output
+            role="Integration-Planner", content=nathan_output
         )
         
-        return lisa_output
+        return nathan_output
 
-    def end(self) -> tuple[bool, str]:
-        """
-        Conclude the job search without user interaction.
+    def final_recommendation(self):
+        """Phase 6: Synthesize all analyses into a comprehensive recommendation"""
+        alex_agent = self.find_agent_by_name("Final-Recommendation-Partner")
         
-        Returns:
-            tuple[bool, str]: (needs_refinement, user_feedback)
-        """
-        return False, "Search completed successfully."
+        alex_output = alex_agent.run(
+            f"Conversation History: {self.conversation.get_str()}\n\n"
+            f"Synthesize all agent analyses into a comprehensive, actionable M&A recommendation."
+        )
+        
+        self.conversation.add(
+            role="Final-Recommendation-Partner", content=alex_output
+        )
+        
+        return alex_output
+
 
     def run(self, initial_user_input: str):
         """
-        Run the job search swarm with continuous optimization.
+        Run the M&A advisory swarm with continuous analysis.
         
         Args:
-            initial_user_input: User's initial job search requirements
+            initial_user_input: User's initial M&A transaction details
         """
         self.conversation.add(role=self.user_name, content=initial_user_input)
         
-        user_input = initial_user_input
-        
-        while not self.search_concluded and self.current_iteration < self.max_iterations:
+        while not self.analysis_concluded and self.current_iteration < self.max_iterations:
             self.current_iteration += 1
-            logger.info(f"Starting search iteration {self.current_iteration}")
+            logger.info(f"Starting analysis iteration {self.current_iteration}")
             
-            # Phase 1: Analyze requirements
+            # Phase 1: Intake and Scoping
             print(f"\n{'='*60}")
-            print(f"ITERATION {self.current_iteration} - ANALYZING REQUIREMENTS")
+            print("ITERATION - INTAKE AND SCOPING")
             print(f"{'='*60}\n")
-            self.analyze_requirements(user_input)
-
+            self.intake_and_scoping(initial_user_input)
             
-            # Phase 2: Execute searches
+            # Phase 2: Market Research (with exa_search)
             print(f"\n{'='*60}")
-            print(f"ITERATION {self.current_iteration} - EXECUTING JOB SEARCHES")
+            print("ITERATION - MARKET RESEARCH")
             print(f"{'='*60}\n")
-            self.execute_searches()
+            self.market_research()
             
-            # Phase 3: Curate and present results
+            # Phase 3: Financial Valuation
             print(f"\n{'='*60}")
-            print(f"ITERATION {self.current_iteration} - CURATING RESULTS")
+            print("ITERATION - FINANCIAL VALUATION")
             print(f"{'='*60}\n")
-            self.curate_results()
+            self.financial_valuation()
             
-            # Phase 4: Get user feedback
-            needs_refinement, user_feedback = self.end()
+            # Phase 4: Deal Structuring
+            print(f"\n{'='*60}")
+            print("ITERATION - DEAL STRUCTURING")
+            print(f"{'='*60}\n")
+            self.deal_structuring()
             
-            # Add user feedback to conversation
-            self.conversation.add(
-                role=self.user_name, 
-                content=f"User Feedback: {user_feedback}"
-            )
+            # Phase 5: Integration Planning
+            print(f"\n{'='*60}")
+            print("ITERATION - INTEGRATION PLANNING")
+            print(f"{'='*60}\n")
+            self.integration_planning()
             
-            # Check if we should continue
-            if not needs_refinement:
-                self.search_concluded = True
-                print(f"\n{'='*60}")
-                print("SEARCH CONCLUDED - USER SATISFIED WITH RESULTS")
-                print(f"{'='*60}\n")
-            else:
-                # In production, get new user input here
-                print(f"\n{'='*60}")
-                print("SEARCH REQUIRES REFINEMENT")
-                print(f"{'='*60}\n")
-                # For demo, we'll stop after first iteration
-                self.search_concluded = True
+            # Phase 6: Final Recommendation
+            print(f"\n{'='*60}")
+            print("ITERATION - FINAL RECOMMENDATION")
+            print(f"{'='*60}\n")
+            self.final_recommendation()
+            
+            # Conclude analysis after one full sequence for demo purposes
+            self.analysis_concluded = True
         
         # Return formatted conversation history
         return history_output_formatter(
@@ -569,38 +574,43 @@ class JobSearchSwarm:
         )
 
 def main():
-    """Main entry point for job search swarm"""
+    """Main entry point for M&A advisory swarm"""
     
-    # Example 1: Pre-filled user requirements (for testing)
-    user_requirements = """
-    I'm looking for a senior software engineer position with the following requirements:
-    - Job Title: Senior Software Engineer or Staff Engineer
-    - Skills: Python, distributed systems, cloud architecture (AWS/GCP), Kubernetes
-    - Location: Remote (US-based) or San Francisco Bay Area
-    - Salary: $180k - $250k
-    - Company: Mid-size to large tech companies, prefer companies with strong engineering culture
-    - Experience Level: 7+ years
-    - Industry: SaaS, Cloud Infrastructure, or Developer Tools
-    - Work Authorization: US Citizen
-    - Priorities: Technical challenges, work-life balance, remote flexibility, equity upside
-    - Deal-breakers: No pure management roles, no strict return-to-office policies
+    # Example M&A transaction details
+    transaction_details = """
+    We are exploring a potential acquisition of DataPulse Analytics by TechNova Solutions.
+    
+    Transaction Context:
+    - Buyer: TechNova Solutions (NASDAQ: TNVA) - $500M annual revenue enterprise software company
+    - Target: DataPulse Analytics - Series B AI-driven analytics startup based in San Francisco
+    - Primary Objectives:
+      * Expand predictive analytics capabilities in healthcare and financial services
+      * Accelerate AI-powered business intelligence product roadmap
+      * Acquire top-tier machine learning engineering talent
+    
+    Key Considerations:
+    - Deep integration of DataPulse's proprietary AI models into TechNova's existing platform
+    - Retention of key DataPulse leadership and engineering team
+    - Projected 3-year ROI and synergy potential
+    - Regulatory and compliance alignment
+    - Technology stack compatibility
     """
     
     # Initialize the swarm
-    job_search_swarm = JobSearchSwarm(
-        name="AI-Powered Job Search Engine",
-        description="Intelligent job search system that continuously refines results until the perfect match is found",
-        user_name="Job Seeker",
+    ma_advisory_swarm = MAAdvisorySwarm(
+        name="AI-Powered M&A Advisory System",
+        description="Comprehensive AI-driven M&A advisory and market intelligence platform",
+        user_name="Corporate Development Team",
         output_type="json",
         max_loops=1,
     )
     
     # Run the swarm
     print("\n" + "="*60)
-    print("INITIALIZING JOB SEARCH SWARM")
+    print("INITIALIZING M&A ADVISORY SWARM")
     print("="*60 + "\n")
     
-    job_search_swarm.run(initial_user_input=user_requirements)
+    ma_advisory_swarm.run(initial_user_input=transaction_details)
 
 if __name__ == "__main__":
     main()
