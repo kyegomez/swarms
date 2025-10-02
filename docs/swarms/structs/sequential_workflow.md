@@ -283,9 +283,8 @@ The `run` method now includes enhanced logging to track the sequential awareness
 
 The SequentialWorkflow with sequential awareness represents a significant advancement in multi-agent coordination, enabling more sophisticated and professional workflows that closely mirror human team collaboration patterns.
 
-# SequentialWorkflow Streaming Callback Documentation
+## **NEW: SequentialWorkflow Streaming Callback Documentation**
 
-## **NEW: Streaming Callback Feature**
 
 The SequentialWorkflow now includes a powerful **streaming callback** feature that allows you to receive and process tokens in real-time as the workflow executes. This enables real-time streaming of agent responses, making it ideal for interactive applications and live monitoring of workflow progress.
 
