@@ -23,22 +23,12 @@ To set up and run the Real Estate Swarm, follow these steps:
 *   An Exa API Key (for the `exa_search` tool)
 
 ### Installation
-
-1.  **Clone the Swarms repository:**
-    ```bash
-    git clone https://github.com/kyegomez/swarms.git
-    cd swarms
-    ```
-2.  **Install dependencies:**
-    If using Poetry:
-    ```bash
-    poetry install
-    ```
-    If using pip:
+1.  **Install dependencies:**
+    Use the following command to download all dependencies.
     ```bash
     pip install -r requirements.txt
     ```
-3.  **Set up Exa API Key:**
+2.  **Set up Exa API Key:**
     The `Property Research Agent` utilizes the `exa_search` tool, which requires an `EXA_API_KEY`.
     Create a `.env` file in the root directory of your project (or wherever your application loads environment variables) and add your Exa API key:
     ```
@@ -62,78 +52,7 @@ from swarms.utils.history_output_formatter import history_output_formatter
 
 # --- Exa Search Tool Integration ---
 # Import and define exa_search as a callable tool for property research.
-import os
-from dotenv import load_dotenv
-from loguru import logger
-import httpx
-from swarms.utils.any_to_str import any_to_str
-
-def exa_search(
-    query: str,
-    characters: int = 100,
-    sources: int = 1,
-) -> str:
-    """
-    Perform a highly summarized Exa web search.
-
-    Args:
-        query (str): Search query.
-        characters (int): Max characters for summary.
-        sources (int): Number of sources.
-
-    Returns:
-        str: Most concise summary of search results.
-    """
-    api_key = os.getenv("EXA_API_KEY")
-    if not api_key:
-        raise ValueError("EXA_API_KEY environment variable is not set")
-
-    headers = {
-        "x-api-key": api_key,
-        "content-type": "application/json",
-    }
-
-    payload = {
-        "query": query,
-        "type": "auto",
-        "numResults": sources,
-        "contents": {
-            "text": True,
-            "summary": {
-                "schema": {
-                    "type": "object",
-                    "required": ["answer"],
-                    "additionalProperties": False,
-                    "properties": {
-                        "answer": {
-                            "type": "string",
-                            "description": "Highly condensed summary of the search result",
-                        }
-                    },
-                }
-            },
-            "context": {"maxCharacters": characters},
-        },
-    }
-
-    try:
-        logger.info(f"[SEARCH] Exa summarized search: {query[:50]}...")
-        response = httpx.post(
-            "https://api.exa.ai/search",
-            json=payload,
-            headers=headers,
-            timeout=30,
-        )
-        response.raise_for_status()
-        json_data = response.json()
-        return any_to_str(json_data)
-    except Exception as e:
-        logger.error(f"Exa search failed: {e}")
-        return f"Search failed: {str(e)}. Please try again."
-
-# Load environment variables for Exa API key
-load_dotenv()
-
+from swarms_tools import exa_search
 # System prompts for each agent
 
 LEAD_GENERATION_PROMPT = """
