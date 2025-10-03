@@ -78,6 +78,7 @@ aiohttp = "*"
 orjson = "*"
 schedule = "*"
 uvloop = {version = "*", markers = "sys_platform != 'win32'"}
+winloop = {version = "*", markers = "sys_platform == 'win32'"}
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"
