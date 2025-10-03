@@ -211,7 +211,7 @@ def run_agents_with_different_tasks(
     return results
 
 
-def run_agents_concurrently_optimized(
+def run_agents_concurrently_uvloop(
     agents: List[AgentType],
     task: str,
     max_workers: Optional[int] = None,
@@ -324,7 +324,7 @@ def run_agents_concurrently_optimized(
             raise
 
 
-def run_agents_with_tasks_optimized(
+def run_agents_with_tasks_uvloop(
     agents: List[AgentType],
     tasks: List[str],
     max_workers: Optional[int] = None,
