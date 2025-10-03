@@ -23,16 +23,9 @@ To set up and run the M&A Advisory Swarm, follow these steps:
 *   Python 3.8+
 *   An Exa API Key (for the `exa_search` tool)
 
-### Installation
+### Setup
 
-1.  **Install dependencies:**
-    The `ma_advisory.py` script relies on several libraries. These can be installed using the `requirements.txt` file located at the root of your project:
-    ```bash
-    pip install -r requirements.txt
-    ```
-    This will install `httpx`, `python-dotenv`, `loguru`, and other necessary packages.
-
-2.  **Set up Exa API Key:**
+   **Set up Exa API Key:**
     The `Market & Strategic Analysis Agent` utilizes the `exa_search` tool, which requires an `EXA_API_KEY`.
     Create a `.env` file in the root directory of your project (or wherever your application loads environment variables) and add your Exa API key:
     ```
