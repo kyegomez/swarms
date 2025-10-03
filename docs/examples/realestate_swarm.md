@@ -22,13 +22,8 @@ To set up and run the Real Estate Swarm, follow these steps:
 *   Poetry (or pip) for dependency management
 *   An Exa API Key (for the `exa_search` tool)
 
-### Installation
-1.  **Install dependencies:**
-    Use the following command to download all dependencies.
-    ```bash
-    pip install -r requirements.txt
-    ```
-2.  **Set up Exa API Key:**
+### Setup
+   **Set up Exa API Key:**
     The `Property Research Agent` utilizes the `exa_search` tool, which requires an `EXA_API_KEY`.
     Create a `.env` file in the root directory of your project (or wherever your application loads environment variables) and add your Exa API key:
     ```
