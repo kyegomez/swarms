@@ -19,7 +19,6 @@ To set up and run the Real Estate Swarm, follow these steps:
 ### Prerequisites
 
 *   Python 3.8+
-*   Poetry (or pip) for dependency management
 *   An Exa API Key (for the `exa_search` tool)
 
 ### Setup
