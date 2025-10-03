@@ -77,7 +77,8 @@ mcp = "*"
 aiohttp = "*"
 orjson = "*"
 schedule = "*"
-uvloop = {version = "*", markers = "sys_platform != 'win32'"}
+uvloop = {version = "*", markers = "sys_platform == 'linux' or sys_platform == 'darwin'"}
+winloop = {version = "*", markers = "sys_platform == 'win32'"}
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"

@@ -7,6 +7,7 @@ from concurrent.futures import (
 from typing import Any, Callable, List, Optional, Union
 
 import uvloop
+import sys
 from loguru import logger
 
 from swarms.structs.agent import Agent
@@ -216,11 +217,10 @@ def run_agents_concurrently_uvloop(
     max_workers: Optional[int] = None,
 ) -> List[Any]:
     """
-    Run multiple agents concurrently using uvloop for optimized async performance.
+    Run multiple agents concurrently using optimized async performance.
 
-    uvloop is a fast, drop-in replacement for asyncio's event loop, implemented in Cython.
-    It's designed to be significantly faster than the standard asyncio event loop,
-    especially beneficial for I/O-bound tasks and concurrent operations.
+    Uses uvloop on Linux/macOS and winloop on Windows for enhanced performance.
+    Falls back to standard asyncio if optimized event loops are not available.
 
     Args:
         agents: List of Agent instances to run concurrently
@@ -231,21 +231,40 @@ def run_agents_concurrently_uvloop(
         List of outputs from each agent
 
     Raises:
-        ImportError: If uvloop is not installed
-        RuntimeError: If uvloop cannot be set as the event loop policy
+        ImportError: If neither uvloop nor winloop is available
+        RuntimeError: If event loop policy cannot be set
     """
-    try:
-        # Set uvloop as the default event loop policy for better performance
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-    except ImportError:
-        logger.warning(
-            "uvloop not available, falling back to standard asyncio. "
-            "Install uvloop with: pip install uvloop"
-        )
-    except RuntimeError as e:
-        logger.warning(
-            f"Could not set uvloop policy: {e}. Using default asyncio."
-        )
+    # Platform-specific event loop policy setup
+    if sys.platform in ('win32', 'cygwin'):
+        # Windows: Try to use winloop
+        try:
+            import winloop
+            asyncio.set_event_loop_policy(winloop.EventLoopPolicy())
+            logger.info("Using winloop for enhanced Windows performance")
+        except ImportError:
+            logger.warning(
+                "winloop not available, falling back to standard asyncio. "
+                "Install winloop with: pip install winloop"
+            )
+        except RuntimeError as e:
+            logger.warning(
+                f"Could not set winloop policy: {e}. Using default asyncio."
+            )
+    else:
+        # Linux/macOS: Try to use uvloop
+        try:
+            import uvloop
+            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+            logger.info("Using uvloop for enhanced Unix performance")
+        except ImportError:
+            logger.warning(
+                "uvloop not available, falling back to standard asyncio. "
+                "Install uvloop with: pip install uvloop"
+            )
+        except RuntimeError as e:
+            logger.warning(
+                f"Could not set uvloop policy: {e}. Using default asyncio."
+            )
 
     if max_workers is None:
         # Use 95% of available CPU cores for optimal performance
@@ -311,10 +330,10 @@ def run_agents_with_tasks_uvloop(
     max_workers: Optional[int] = None,
 ) -> List[Any]:
     """
-    Run multiple agents with different tasks concurrently using uvloop.
+    Run multiple agents with different tasks concurrently using optimized performance.
 
     This function pairs each agent with a specific task and runs them concurrently
-    using uvloop for optimized performance.
+    using uvloop on Linux/macOS and winloop on Windows for optimized performance.
 
     Args:
         agents: List of Agent instances to run
@@ -332,25 +351,44 @@ def run_agents_with_tasks_uvloop(
             f"Number of agents ({len(agents)}) must match number of tasks ({len(tasks)})"
         )
 
-    try:
-        # Set uvloop as the default event loop policy
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-    except ImportError:
-        logger.warning(
-            "uvloop not available, falling back to standard asyncio. "
-            "Install uvloop with: pip install uvloop"
-        )
-    except RuntimeError as e:
-        logger.warning(
-            f"Could not set uvloop policy: {e}. Using default asyncio."
-        )
+    # Platform-specific event loop policy setup
+    if sys.platform in ('win32', 'cygwin'):
+        # Windows: Try to use winloop
+        try:
+            import winloop
+            asyncio.set_event_loop_policy(winloop.EventLoopPolicy())
+            logger.info("Using winloop for enhanced Windows performance")
+        except ImportError:
+            logger.warning(
+                "winloop not available, falling back to standard asyncio. "
+                "Install winloop with: pip install winloop"
+            )
+        except RuntimeError as e:
+            logger.warning(
+                f"Could not set winloop policy: {e}. Using default asyncio."
+            )
+    else:
+        # Linux/macOS: Try to use uvloop
+        try:
+            import uvloop
+            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+            logger.info("Using uvloop for enhanced Unix performance")
+        except ImportError:
+            logger.warning(
+                "uvloop not available, falling back to standard asyncio. "
+                "Install uvloop with: pip install uvloop"
+            )
+        except RuntimeError as e:
+            logger.warning(
+                f"Could not set uvloop policy: {e}. Using default asyncio."
+            )
 
     if max_workers is None:
         num_cores = os.cpu_count()
         max_workers = int(num_cores * 0.95) if num_cores else 1
 
-    logger.inufo(
-        f"Running {len(agents)} agents with {len(tasks)} tasks using uvloop (max_workers: {max_workers})"
+    logger.info(
+        f"Running {len(agents)} agents with {len(tasks)} tasks using optimized event loop (max_workers: {max_workers})"
     )
 
     async def run_agents_with_tasks_async():
