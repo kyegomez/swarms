@@ -23,14 +23,6 @@ To run the AI Job Search Swarm, you'll need to set up your Python environment an
 *   Python 3.8+
 *   An Exa API Key
 
-### Installation Steps
-
-    The `job_finding.py` script relies on several libraries. These can be installed using the `requirements.txt` file located at the root of the project.
-    ```bash
-    pip install -r requirements.txt
-    ```
-    This will install `httpx`, `python-dotenv`, `loguru`, and other necessary packages.
-
 ### API Key Configuration
 
 The `exa_search` tool used by the Search Executor Agent requires an `EXA_API_KEY`.
