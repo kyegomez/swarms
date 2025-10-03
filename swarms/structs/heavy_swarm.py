@@ -238,9 +238,7 @@ class HeavySwarm:
     - **Multi-loop Execution**: The max_loops parameter enables iterative
       refinement where each subsequent loop builds upon the context and
       results from previous loops
-    - **Context Preservation**: Conversation history is maintained across
-      all loops, allowing for deeper analysis and refinement
-    - **Iterative Refinement**: Each loop can refine, improve, or complete
+S **Iterative Refinement**: Each loop can refine, improve, or complete
       aspects of the analysis based on previous results
 
     Attributes:
