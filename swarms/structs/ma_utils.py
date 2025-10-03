@@ -131,11 +131,9 @@ def set_random_models_for_agents(
         return random.choice(model_names)
 
     if isinstance(agents, list):
-        return [
+        for agent in agents:
             setattr(agent, "model_name", random.choice(model_names))
-            or agent
-            for agent in agents
-        ]
+        return agents
     else:
         setattr(agents, "model_name", random.choice(model_names))
         return agents
