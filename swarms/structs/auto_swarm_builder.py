@@ -407,6 +407,10 @@ class AutoSwarmBuilder:
             model = self.build_llm_agent(config=Agents)
 
             agents_dictionary = model.run(task)
+            
+            # Parse JSON string if needed
+            if isinstance(agents_dictionary, str):
+                agents_dictionary = json.loads(agents_dictionary)
 
             return agents_dictionary
 
@@ -437,6 +441,10 @@ class AutoSwarmBuilder:
             swarm_spec = model.run(
                 f"Create the swarm spec for the following task: {task}"
             )
+            
+            # Parse JSON string if needed
+            if isinstance(swarm_spec, str):
+                swarm_spec = json.loads(swarm_spec)
 
             print(swarm_spec)
 
@@ -503,8 +511,16 @@ class AutoSwarmBuilder:
             # Convert dict to AgentSpec if needed
             if isinstance(agent_config, dict):
                 agent_config = AgentSpec(**agent_config)
+            
+            # Convert AgentSpec to dict for Agent constructor
+            if hasattr(agent_config, 'dict'):
+                agent_dict = agent_config.dict()
+            elif hasattr(agent_config, 'model_dump'):
+                agent_dict = agent_config.model_dump()
+            else:
+                agent_dict = agent_config
 
-            agent = Agent(**agent_config)
+            agent = Agent(**agent_dict)
             agents.append(agent)
 
         return agents
@@ -535,6 +551,8 @@ class AutoSwarmBuilder:
 
             if self.execution_type == "return-agents":
                 return self.create_agents(task)
+            elif self.execution_type == "execute-swarm-router":
+                return self._execute_task(task)
             elif self.execution_type == "return-swarm-router-config":
                 return self.create_router_config(task)
             elif self.execution_type == "return-agents-objects":
