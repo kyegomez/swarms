@@ -213,62 +213,62 @@ schema = [schema]
 
 class HeavySwarm:
     """
-    HeavySwarm is a sophisticated multi-agent orchestration system that
-    decomposes complex tasks into specialized questions and executes them
-    using four specialized agents: Research, Analysis, Alternatives, and
-    Verification. The results are then synthesized into a comprehensive
-    response.
+        HeavySwarm is a sophisticated multi-agent orchestration system that
+        decomposes complex tasks into specialized questions and executes them
+        using four specialized agents: Research, Analysis, Alternatives, and
+        Verification. The results are then synthesized into a comprehensive
+        response.
 
-    This swarm architecture provides robust task analysis through:
-    - Intelligent question generation for specialized agent roles
-    - Parallel execution of specialized agents for efficiency
-    - Comprehensive synthesis of multi-perspective results
-    - Real-time progress monitoring with rich dashboard displays
-    - Reliability checks and validation systems
-    - Multi-loop iterative refinement with context preservation
+        This swarm architecture provides robust task analysis through:
+        - Intelligent question generation for specialized agent roles
+        - Parallel execution of specialized agents for efficiency
+        - Comprehensive synthesis of multi-perspective results
+        - Real-time progress monitoring with rich dashboard displays
+        - Reliability checks and validation systems
+        - Multi-loop iterative refinement with context preservation
 
-    The HeavySwarm follows a structured workflow:
-    1. Task decomposition into specialized questions
-    2. Parallel execution by specialized agents
-    3. Result synthesis and integration
-    4. Comprehensive final report generation
-    5. Optional iterative refinement through multiple loops
+        The HeavySwarm follows a structured workflow:
+        1. Task decomposition into specialized questions
+        2. Parallel execution by specialized agents
+        3. Result synthesis and integration
+        4. Comprehensive final report generation
+        5. Optional iterative refinement through multiple loops
 
-    Key Features:
-    - **Multi-loop Execution**: The max_loops parameter enables iterative
-      refinement where each subsequent loop builds upon the context and
-      results from previous loops
-S **Iterative Refinement**: Each loop can refine, improve, or complete
-      aspects of the analysis based on previous results
+        Key Features:
+        - **Multi-loop Execution**: The max_loops parameter enables iterative
+          refinement where each subsequent loop builds upon the context and
+          results from previous loops
+    S **Iterative Refinement**: Each loop can refine, improve, or complete
+          aspects of the analysis based on previous results
 
-    Attributes:
-        name (str): Name identifier for the swarm instance
-        description (str): Description of the swarm's purpose
-        agents (Dict[str, Agent]): Dictionary of specialized agent instances (created internally)
-        timeout (int): Maximum execution time per agent in seconds
-        aggregation_strategy (str): Strategy for result aggregation (currently 'synthesis')
-        loops_per_agent (int): Number of execution loops per agent
-        question_agent_model_name (str): Model name for question generation
-        worker_model_name (str): Model name for specialized worker agents
-        verbose (bool): Enable detailed logging output
-        max_workers (int): Maximum number of concurrent worker threads
-        show_dashboard (bool): Enable rich dashboard with progress visualization
-        agent_prints_on (bool): Enable individual agent output printing
-        max_loops (int): Maximum number of execution loops for iterative refinement
-        conversation (Conversation): Conversation history tracker
-        console (Console): Rich console for dashboard output
+        Attributes:
+            name (str): Name identifier for the swarm instance
+            description (str): Description of the swarm's purpose
+            agents (Dict[str, Agent]): Dictionary of specialized agent instances (created internally)
+            timeout (int): Maximum execution time per agent in seconds
+            aggregation_strategy (str): Strategy for result aggregation (currently 'synthesis')
+            loops_per_agent (int): Number of execution loops per agent
+            question_agent_model_name (str): Model name for question generation
+            worker_model_name (str): Model name for specialized worker agents
+            verbose (bool): Enable detailed logging output
+            max_workers (int): Maximum number of concurrent worker threads
+            show_dashboard (bool): Enable rich dashboard with progress visualization
+            agent_prints_on (bool): Enable individual agent output printing
+            max_loops (int): Maximum number of execution loops for iterative refinement
+            conversation (Conversation): Conversation history tracker
+            console (Console): Rich console for dashboard output
 
-    Example:
-        >>> swarm = HeavySwarm(
-        ...     name="AnalysisSwarm",
-        ...     description="Market analysis swarm",
-        ...     question_agent_model_name="gpt-4o-mini",
-        ...     worker_model_name="gpt-4o-mini",
-        ...     show_dashboard=True,
-        ...     max_loops=3
-        ... )
-        >>> result = swarm.run("Analyze the current cryptocurrency market trends")
-        >>> # The swarm will run 3 iterations, each building upon the previous results
+        Example:
+            >>> swarm = HeavySwarm(
+            ...     name="AnalysisSwarm",
+            ...     description="Market analysis swarm",
+            ...     question_agent_model_name="gpt-4o-mini",
+            ...     worker_model_name="gpt-4o-mini",
+            ...     show_dashboard=True,
+            ...     max_loops=3
+            ... )
+            >>> result = swarm.run("Analyze the current cryptocurrency market trends")
+            >>> # The swarm will run 3 iterations, each building upon the previous results
     """
 
     def __init__(
