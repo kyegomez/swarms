@@ -16,25 +16,37 @@ The `RealEstateSwarm` operates as a **sequential workflow**, where each agent's 
 
 To set up and run the Real Estate Swarm, follow these steps:
 
+## Step 1: Setup and Installation
+
 ### Prerequisites
 
-*   Python 3.8+
-*   An Exa API Key (for the `exa_search` tool)
+| Requirement           |
+|-----------------------|
+| Python 3.8 or higher  |
+| pip package manager   |
 
-### Setup
-   **Set up Exa API Key:**
+1.  **Install dependencies:**
+    Use the following command to download all dependencies.
+    ```bash
+    # Install Swarms framework
+    pip install swarms
+
+    # Install environment and logging dependencies
+    pip install python-dotenv loguru
+
+    # Install HTTP client and tools
+    pip install httpx swarms_tools
+    ```
+2.  **Set up API Keys:**
     The `Property Research Agent` utilizes the `exa_search` tool, which requires an `EXA_API_KEY`.
-    Create a `.env` file in the root directory of your project (or wherever your application loads environment variables) and add your Exa API key:
+    Create a `.env` file in the root directory of your project (or wherever your application loads environment variables) and add your API keys:
     ```
     EXA_API_KEY="YOUR_EXA_API_KEY"
+    OPENAI_API_KEY="OPENAI_API_KEY"
     ```
-    Replace `"YOUR_EXA_API_KEY"` with your actual Exa API key.
+    Replace `"YOUR_EXA_API_KEY"` & `"OPENAI_API_KEY"` with your actual API keys.
 
-## How to Run
-
-Navigate to the `examples/demos/real_estate/` directory and run the `realestate_swarm.py` script.
-
-OR run the following code
+## Step 2: Running the Real Estate Swarm
 
 ```python
 
