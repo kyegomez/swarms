@@ -18,30 +18,37 @@ The `MAAdvisorySwarm` operates as a **sequential workflow**, where each agent's 
 
 To set up and run the M&A Advisory Swarm, follow these steps:
 
+## Step 1: Setup and Installation
+
 ### Prerequisites
 
-*   Python 3.8+
-*   An Exa API Key (for the `exa_search` tool)
+| Requirement           |
+|-----------------------|
+| Python 3.8 or higher  |
+| pip package manager   |
 
-### Setup
+1.  **Install dependencies:**
+    Use the following command to download all dependencies.
+    ```bash
+    # Install Swarms framework
+    pip install swarms
 
-   **Set up Exa API Key:**
-    The `Market & Strategic Analysis Agent` utilizes the `exa_search` tool, which requires an `EXA_API_KEY`.
-    Create a `.env` file in the root directory of your project (or wherever your application loads environment variables) and add your Exa API key:
+    # Install environment and logging dependencies
+    pip install python-dotenv loguru
+
+    # Install HTTP client and tools
+    pip install httpx swarms_tools
+    ```
+2.  **Set up API Keys:**
+    The `Property Research Agent` utilizes the `exa_search` tool, which requires an `EXA_API_KEY`.
+    Create a `.env` file in the root directory of your project (or wherever your application loads environment variables) and add your API keys:
     ```
     EXA_API_KEY="YOUR_EXA_API_KEY"
+    OPENAI_API_KEY="OPENAI_API_KEY"
     ```
-    Replace `"YOUR_EXA_API_KEY"` with your actual Exa API key.
+    Replace `"YOUR_EXA_API_KEY"` & `"OPENAI_API_KEY"` with your actual API keys.
 
-## How to Run
-
-Navigate to the `examples/demos/apps/` directory and run the `ma_advisory.py` script.
-
-```bash
-python examples/demos/apps/ma_advisory.py
-```
-
-OR, you can execute the following Python code directly (ensure all dependencies and the `.env` file are correctly set up):
+## Step 2: Running the Mergers & Acquisitions Advisory Swarm
 
 ```python
 from typing import List
