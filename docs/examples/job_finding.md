@@ -1,50 +1,50 @@
-# AI Job Search Swarm
+# Job Finding Swarm
 
 ## Overview
 
-The AI Job Search Swarm is an intelligent multi-agent system designed to automate and streamline the job search process using the Swarms framework. It leverages specialized AI agents to analyze user requirements, execute comprehensive job searches, and curate relevant opportunities, transforming traditional job hunting into an intelligent, collaborative process.
+The Job Finding Swarm is an intelligent multi-agent system designed to automate and streamline the job search process using the Swarms framework. It leverages specialized AI agents to analyze user requirements, execute comprehensive job searches, and curate relevant opportunities, transforming traditional job hunting into an intelligent, collaborative process.
 
 ## Key Components
 
-The Job Search Swarm consists of three specialized agents, each responsible for a critical stage of the job search process:
+The Job Finding Swarm consists of three specialized agents, each responsible for a critical stage of the job search process:
 
-| Agent Name                | Role                                                       | Responsibilities                                                                                               |
-| :------------------------ | :--------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------- |
-| **Sarah-Requirements-Analyzer** | Extracts and clarifies job search requirements.            | Engages with the user to understand job titles, skills, locations, salary, company preferences, experience level, work authorization, and career goals. Analyzes user responses to identify key search terms, must-haves, deal-breakers, and priority factors. Generates 3-5 optimized search queries. |
-| **David-Search-Executor** | Executes job searches and analyzes results for relevance.  | Uses the `exa_search` tool for each query provided. Analyzes results for job title, skills, location, salary, company reputation, responsibilities, and growth opportunities. Categorizes results by match strength (Strong, Good, Moderate, Weak) and extracts key job details. |
-| **Lisa-Results-Curator**  | Filters, organizes, and presents job search results.      | Reviews all search results. Filters and prioritizes based on match scores, user requirements, and job quality. Organizes results into "Top Recommendations," "Strong Alternatives," and "Worth Considering." Provides detailed comparisons for top recommendations and engages the user for feedback to refine the search. |
+| Agent Name                  | Role                        | Responsibilities                                                                                  |
+| :-------------------------- | :-------------------------- | :----------------------------------------------------------------------------------------------- |
+| **Sarah-Requirements-Analyzer** | Clarifies requirements      | Gathers and analyzes user job preferences; generates 3-5 search queries.                         |
+| **David-Search-Executor**   | Runs job searches           | Uses `exa_search` for each query; analyzes and categorizes job results by match strength.        |
+| **Lisa-Results-Curator**    | Organizes results           | Filters, prioritizes, and presents jobs; provides top picks and refines search with user input.  |
 
-## Installation
-
-To run the AI Job Search Swarm, you'll need to set up your Python environment and configure necessary API keys.
+## Step 1: Setup and Installation
 
 ### Prerequisites
 
-*   Python 3.8+
-*   An Exa API Key
+| Requirement           |
+|-----------------------|
+| Python 3.8 or higher  |
+| pip package manager   |
 
-### API Key Configuration
+1.  **Install dependencies:**
+    Use the following command to download all dependencies.
+    ```bash
+    # Install Swarms framework
+    pip install swarms
 
-The `exa_search` tool used by the Search Executor Agent requires an `EXA_API_KEY`.
+    # Install environment and logging dependencies
+    pip install python-dotenv loguru
 
-1.  **Obtain an Exa API Key**: Visit [Exa AI](https://exa.ai/) to get your API key.
-2.  **Create a `.env` file**: In the root directory of your project, create a file named `.env` and add your Exa API key to it:
+    # Install HTTP client and tools
+    pip install httpx swarms_tools
     ```
-    EXA_API_KEY="your_exa_api_key_here"
+2.  **Set up API Keys:**
+    The `Property Research Agent` utilizes the `exa_search` tool, which requires an `EXA_API_KEY`.
+    Create a `.env` file in the root directory of your project (or wherever your application loads environment variables) and add your API keys:
     ```
-    Replace `"your_exa_api_key_here"` with your actual Exa API Key. The `python-dotenv` library will automatically load this key into your environment.
+    EXA_API_KEY="YOUR_EXA_API_KEY"
+    OPENAI_API_KEY="OPENAI_API_KEY"
+    ```
+    Replace `"YOUR_EXA_API_KEY"` & `"OPENAI_API_KEY"` with your actual API keys.
 
-## Example Usage
-
-To run the job search swarm, execute the `job_finding.py` script from your terminal.
-
-```bash
-python examples/demos/apps/job_finding.py
-```
-
-The script is designed to run with a pre-filled user requirement for demonstration purposes. You can modify the `user_requirements` string in the `main()` function within `examples/demos/apps/job_finding.py` to test different job search scenarios.
-
-**Example User Requirements (from `main()` function):**
+## Step 2: Running the Job Finding Swarm
 
 ```python
 from typing import List
@@ -639,7 +639,7 @@ You can customize the `JobSearchSwarm` by modifying the `JobSearchSwarm` class p
 
 ## Best Practices
 
-To get the most out of the AI Job Search Swarm:
+To get the most out of the AI Job Finding Swarm:
 
 *   **Provide Clear Requirements**: Start with a detailed and unambiguous `initial_user_input` to help the Requirements Analyzer generate effective queries.
 *   **Iterate and Refine**: In a live application, leverage the user feedback loop to continuously refine search criteria and improve result relevance.
