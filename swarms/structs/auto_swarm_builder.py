@@ -489,6 +489,10 @@ class AutoSwarmBuilder:
 
         Returns:
             List[Agent]: List of created agents
+
+        Notes:
+            - Handles both dict and Pydantic AgentSpec inputs
+            - Maps 'description' field to 'agent_description' for Agent compatibility
         """
         # Create agents from config
         agents = []
@@ -504,7 +508,23 @@ class AutoSwarmBuilder:
             if isinstance(agent_config, dict):
                 agent_config = AgentSpec(**agent_config)
 
-            agent = Agent(**agent_config)
+            # Convert Pydantic model to dict for Agent initialization
+            if isinstance(agent_config, BaseModel):
+                agent_data = agent_config.model_dump()
+            else:
+                agent_data = agent_config
+
+            # Handle parameter name mapping: description -> agent_description
+            if (
+                "description" in agent_data
+                and "agent_description" not in agent_data
+            ):
+                agent_data["agent_description"] = agent_data.pop(
+                    "description"
+                )
+
+            # Create agent from processed data
+            agent = Agent(**agent_data)
             agents.append(agent)
 
         return agents
