@@ -12,7 +12,7 @@ def simulate_agent_discovery():
     """Simulate how an agent would use the discovery tool."""
 
     # Create a sample agent that will use the discovery tool
-    coordinator_agent = Agent(
+    Agent(
         agent_name="ProjectCoordinator",
         agent_description="Coordinates projects and assigns tasks to other agents",
         system_prompt="You are a project coordinator who helps organize work and delegate tasks to the most appropriate team members. You can discover information about other agents to make better decisions.",
@@ -118,34 +118,6 @@ def simulate_agent_discovery():
 
     # Show what the MCP tool response would look like
     print("📡 Sample MCP tool response structure:")
-    sample_response = {
-        "success": True,
-        "agents": [
-            {
-                "tool_name": "data_specialist",
-                "agent_name": "DataSpecialist",
-                "description": "Handles all data-related tasks and analysis",
-                "short_system_prompt": "You are a data specialist with expertise in data processing, analysis, and visualization...",
-                "tags": [
-                    "data",
-                    "analysis",
-                    "python",
-                    "sql",
-                    "statistics",
-                ],
-                "capabilities": [
-                    "data_processing",
-                    "statistical_analysis",
-                    "visualization",
-                ],
-                "role": "specialist",
-                "model_name": "gpt-4o-mini",
-                "max_loops": 1,
-                "temperature": 0.5,
-                "max_tokens": 4096,
-            }
-        ],
-    }
 
     print("   discover_agents() -> {")
     print("     'success': True,")

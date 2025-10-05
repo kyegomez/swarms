@@ -1377,7 +1377,7 @@ class AOPBenchmarkSuite:
             # Execute with first available agent
             agent_name = available_agents[0]
             try:
-                response = aop._execute_agent_with_timeout(
+                aop._execute_agent_with_timeout(
                     agent_name, task, timeout=30
                 )
                 execution_time = time.time() - execution_start
@@ -1485,7 +1485,7 @@ class AOPBenchmarkSuite:
                     "data": [response2],
                     "analysis_type": "classification",
                 }
-                response3 = aop._execute_agent_with_timeout(
+                aop._execute_agent_with_timeout(
                     available_agents[2], task3, timeout=30
                 )
 
@@ -1664,7 +1664,7 @@ class AOPBenchmarkSuite:
             initial_memory = (
                 psutil.Process().memory_info().rss / 1024 / 1024
             )
-            initial_cpu = psutil.cpu_percent()
+            psutil.cpu_percent()
 
             # Execute some tasks
             available_agents = aop.list_agents()
@@ -1813,7 +1813,7 @@ class AOPBenchmarkSuite:
                 tool_start = time.time()
                 try:
                     # Execute tool test
-                    response = aop._execute_agent_with_timeout(
+                    aop._execute_agent_with_timeout(
                         available_agents[0], test, timeout=15
                     )
                     tool_time = time.time() - tool_start
@@ -2501,7 +2501,7 @@ class AOPBenchmarkSuite:
 
         # 3. Tool Quality vs Cost by Model
         ax3 = axes[1, 0]
-        scatter = ax3.scatter(
+        ax3.scatter(
             df["cost_usd"],
             df["response_quality_score"],
             s=100,

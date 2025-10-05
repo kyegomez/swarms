@@ -15,7 +15,7 @@ async def demonstrate_new_agent_tools():
     """Demonstrate the new agent information tools."""
 
     # Create AOP cluster connection
-    aop_cluster = AOPCluster(
+    AOPCluster(
         urls=["http://localhost:5932/mcp"],
         transport="streamable-http",
     )
@@ -77,7 +77,7 @@ async def demonstrate_new_agent_tools():
         if isinstance(result, list) and len(result) > 0:
             data = result[0]
             if data.get("success"):
-                agent_info = data.get("agent_info", {})
+                data.get("agent_info", {})
                 discovery_info = data.get("discovery_info", {})
                 print(
                     f"   Agent: {discovery_info.get('agent_name', 'Unknown')}"

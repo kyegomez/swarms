@@ -8,7 +8,6 @@ Bug: https://github.com/kyegomez/swarms/issues/1115
 """
 
 import pytest
-from pydantic import BaseModel
 
 from swarms.structs.agent import Agent
 from swarms.structs.auto_swarm_builder import (
