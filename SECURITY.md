@@ -27,7 +27,7 @@
 
 * * * * *
 
-If you discover a security vulnerability in any of the above versions, please report it immediately to our security team by sending an email to kye@apac.ai. We take security vulnerabilities seriously and appreciate your efforts in disclosing them responsibly.
+If you discover a security vulnerability in any of the above versions, please report it immediately to our security team by sending an email to kye@swarms.world. We take security vulnerabilities seriously and appreciate your efforts in disclosing them responsibly.
 
 Please provide detailed information on the vulnerability, including steps to reproduce, potential impact, and any known mitigations. Our security team will acknowledge receipt of your report within 24 hours and will provide regular updates on the progress of the investigation.
 
