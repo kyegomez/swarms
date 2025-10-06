@@ -25,5 +25,5 @@ mcp
 numpy
 orjson
 schedule
-uvloop
-winloop
+uvloop; sys_platform == 'linux' or sys_platform == 'darwin' # linux or macos only
+winloop; sys_platform == 'win32' # windows only
