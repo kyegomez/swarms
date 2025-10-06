@@ -428,6 +428,9 @@ nav:
       - Web Scraper Agents: "developer_guides/web_scraper.md"
       - Smart Database: "examples/smart_database.md"
 
+    - AOP:
+      - Medical AOP Example: "examples/aop_medical.md"
+
 
   - Swarms Cloud API:
     - Overview: "swarms_cloud/migration.md"
