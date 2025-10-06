@@ -1,16 +1,15 @@
 import orjson
-from dotenv import load_dotenv
 
-from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
+from swarms import AutoSwarmBuilder
 
-load_dotenv()
 
 swarm = AutoSwarmBuilder(
     name="My Swarm",
     description="My Swarm Description",
     verbose=True,
     max_loops=1,
-    return_agents=True,
+    execution_type="return-agents",
+    model_name="gpt-4.1",
 )
 
 result = swarm.run(
