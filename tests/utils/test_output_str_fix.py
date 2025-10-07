@@ -1,3 +1,15 @@
+import sys
+import importlib
+
+# Remove any cached imports - MUST be done before importing
+if 'swarms.tools.pydantic_to_json' in sys.modules:
+    del sys.modules['swarms.tools.pydantic_to_json']
+if 'swarms.tools.base_tool' in sys.modules:
+    del sys.modules['swarms.tools.base_tool']
+if 'swarms.tools' in sys.modules:
+    del sys.modules['swarms.tools']
+
+# Now import after clearing cache
 from pydantic import BaseModel
 from swarms.tools.pydantic_to_json import (
     base_model_to_openai_function,
@@ -97,6 +109,12 @@ def test_agent_integration():
     """Test that the Agent class can use the fixed methods without errors."""
     print("\nTesting Agent integration...")
     try:
+        # Clear Agent module cache too
+        if 'swarms.structs.agent' in sys.modules:
+            del sys.modules['swarms.structs.agent']
+        if 'swarms' in sys.modules:
+            importlib.reload(sys.modules['swarms'])
+            
         from swarms import Agent
 
         # Create a simple agent with a tool schema
@@ -115,8 +133,43 @@ def test_agent_integration():
 
     except Exception as e:
         print(f"✗ Agent integration failed: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
+    return True
+
+
+def verify_function_signature():
+    """Verify that the imported function has the correct signature."""
+    import inspect
+    
+    print("\n" + "=" * 60)
+    print("Verifying function signatures...")
+    print("=" * 60)
+    
+    sig = inspect.signature(base_model_to_openai_function)
+    print(f"\nbase_model_to_openai_function signature: {sig}")
+    print(f"Parameters: {list(sig.parameters.keys())}")
+    
+    if 'output_str' in sig.parameters:
+        print("✓ output_str parameter found!")
+    else:
+        print("✗ output_str parameter NOT found!")
+        print("\nFunction location:")
+        print(inspect.getfile(base_model_to_openai_function))
+        return False
+    
+    sig2 = inspect.signature(multi_base_model_to_openai_function)
+    print(f"\nmulti_base_model_to_openai_function signature: {sig2}")
+    print(f"Parameters: {list(sig2.parameters.keys())}")
+    
+    if 'output_str' in sig2.parameters:
+        print("✓ output_str parameter found!")
+    else:
+        print("✗ output_str parameter NOT found!")
+        return False
+    
     return True
 
 
@@ -126,6 +179,15 @@ if __name__ == "__main__":
     print("=" * 60)
 
     try:
+        # First verify the functions have the correct signature
+        if not verify_function_signature():
+            print("\n" + "=" * 60)
+            print("❌ Function signatures are incorrect!")
+            print("The imported functions don't have the output_str parameter.")
+            print("Please check the actual file being imported.")
+            print("=" * 60)
+            sys.exit(1)
+        
         test_base_model_to_openai_function()
         test_multi_base_model_to_openai_function()
         test_base_tool_methods()
@@ -146,5 +208,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Test failed with error: {e}")
         import traceback
-
         traceback.print_exc()
