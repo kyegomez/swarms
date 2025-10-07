@@ -13,7 +13,7 @@ Run this to see agents naturally forming groups and having multi-party conversat
 
 
 from swarms import Agent
-from simulations.agent_map_simulation import (
+from examples.multi_agent.simulations.agent_map.agent_map_simulation import (
     AgentMapSimulation,
     Position,
 )

@@ -1,7 +1,6 @@
-import orjson
+import json
 
 from swarms import AutoSwarmBuilder
-
 
 swarm = AutoSwarmBuilder(
     name="My Swarm",
@@ -16,4 +15,4 @@ result = swarm.run(
     task="Build a swarm to write a research paper on the topic of AI"
 )
 
-print(orjson.dumps(result, option=orjson.OPT_INDENT_2).decode())
+print(json.dumps(result, indent=2))
