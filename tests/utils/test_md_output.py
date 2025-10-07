@@ -1,21 +1,17 @@
-#!/usr/bin/env python3
-"""
-Test script demonstrating markdown output functionality with a real swarm
-Uses the current state of formatter.py to show agent markdown output capabilities
-"""
-
 import os
+
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-from swarms import Agent
-from swarms.structs import (
-    SequentialWorkflow,
+from swarms import (
+    Agent,
     ConcurrentWorkflow,
     GroupChat,
+    SequentialWorkflow,
 )
+
 from swarms.utils.formatter import Formatter
 
 

@@ -3,14 +3,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-## [OPTIONAL] REGISTER MODEL - not all ollama models support function calling, litellm defaults to json mode tool calls if native tool calling not supported.
-
-# litellm.register_model(model_cost={
-#                 "ollama_chat/llama3.1": {
-#                   "supports_function_calling": true
-#                 },
-#             })
-
 tools = [
     {
         "type": "function",
