@@ -84,6 +84,10 @@ winloop = {version = "*", markers = "sys_platform == 'win32'"}
 swarms = "swarms.cli.main:main"
 
 
+# Optional dependencies for experimental features
+[tool.poetry.extras]
+experimental = ["matplotlib"]
+
 [tool.poetry.group.lint.dependencies]
 black = ">=23.1,<26.0"
 ruff = ">=0.5.1,<0.12.13"
