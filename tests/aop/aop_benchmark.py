@@ -1,36 +1,36 @@
-#!/usr/bin/env python3
-"""
-AOP Framework Benchmarking Suite
+import gc
+import json
+import os
+import random
+import statistics
+import time
+import uuid
+import warnings
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Tuple
 
-This comprehensive benchmarking suite tests the scaling laws of the AOP (Agent Orchestration Platform)
-framework by measuring latency, throughput, memory usage, and other performance metrics across different
-agent counts and configurations.
+import matplotlib.pyplot as plt
+import numpy as np
+import openpyxl
+import pandas as pd
+import psutil
+import seaborn as sns
+from dotenv import load_dotenv
+from loguru import logger
+from openpyxl.styles import Font
+from openpyxl.utils.dataframe import dataframe_to_rows
 
-Features:
-- Scaling law analysis (1 to 100+ agents)
-- Latency and throughput measurements
-- Memory usage profiling
-- Concurrent execution testing
-- Error rate analysis
-- Performance visualization with charts
-- Statistical analysis and reporting
-- Real agent testing with actual LLM calls
+from swarms.structs.agent import Agent
+from swarms.structs.aop import AOP
+from swarms.utils.litellm_wrapper import LiteLLM
 
-Usage:
-1. Set your OpenAI API key: export OPENAI_API_KEY="your-key-here"
-2. Install required dependencies: pip install swarms
-3. Run the benchmark: python aop_benchmark.py
-4. Check results in the generated charts and reports
+# Suppress warnings for cleaner output
+warnings.filterwarnings("ignore")
 
-Configuration:
-- Edit BENCHMARK_CONFIG at the top of the file to customize settings
-- Adjust model_name, max_agents, and other parameters as needed
-- This benchmark ONLY uses real agents with actual LLM calls
-
-Author: AI Assistant
-Date: 2024
-"""
-
+# Load environment variables
+load_dotenv()
 # Configuration
 BENCHMARK_CONFIG = {
     "models": [
@@ -60,47 +60,6 @@ BENCHMARK_CONFIG = {
     "detailed_logging": True,  # Enable detailed logging
 }
 
-import gc
-import json
-import os
-import psutil
-import random
-import statistics
-import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, asdict
-from typing import Any, Dict, List, Tuple
-import warnings
-from datetime import datetime, timedelta
-import uuid
-
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-from loguru import logger
-from dotenv import load_dotenv
-import openpyxl
-from openpyxl.styles import Font
-from openpyxl.utils.dataframe import dataframe_to_rows
-
-# Suppress warnings for cleaner output
-warnings.filterwarnings("ignore")
-
-# Load environment variables
-load_dotenv()
-
-# Import AOP framework components
-from swarms.structs.aop import AOP
-
-# Import swarms Agent directly to avoid uvloop dependency
-try:
-    from swarms.structs.agent import Agent
-    from swarms.utils.litellm_wrapper import LiteLLM
-
-    SWARMS_AVAILABLE = True
-except ImportError:
-    SWARMS_AVAILABLE = False
 
 
 @dataclass
@@ -415,12 +374,6 @@ class AOPBenchmarkSuite:
             if not self.swarms_api_key:
                 raise ValueError(
                     "SWARMS_API_KEY or OPENAI_API_KEY environment variable is required for real agent testing"
-                )
-
-            # Check if swarms is available
-            if not SWARMS_AVAILABLE:
-                raise ImportError(
-                    "Swarms not available - install swarms: pip install swarms"
                 )
 
             # Create LiteLLM instance for the specific model
@@ -2952,33 +2905,6 @@ def main():
     print(f"   Max Tokens: {BENCHMARK_CONFIG['max_tokens']}")
     print(f"   Context Length: {BENCHMARK_CONFIG['context_length']}")
     print()
-
-    # Check for required environment variables
-    api_key = os.getenv("SWARMS_API_KEY") or os.getenv(
-        "OPENAI_API_KEY"
-    )
-    if not api_key:
-        print(
-            "❌  Error: SWARMS_API_KEY or OPENAI_API_KEY not found in environment variables"
-        )
-        print(
-            "   This benchmark requires real LLM calls for accurate performance testing"
-        )
-        print(
-            "   Set your API key: export SWARMS_API_KEY='your-key-here' or export OPENAI_API_KEY='your-key-here'"
-        )
-        return 1
-
-    # Check for required imports
-    if not SWARMS_AVAILABLE:
-        print("❌  Error: swarms not available")
-        print(
-            "   Install required dependencies: pip install swarms openpyxl"
-        )
-        print(
-            "   This benchmark requires swarms framework and Excel support"
-        )
-        return 1
 
     # Initialize benchmark suite
     benchmark = AOPBenchmarkSuite(

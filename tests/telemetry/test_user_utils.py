@@ -40,13 +40,11 @@ def test_get_machine_id_edge_case():
     assert len(machine_ids) == 100  # Ensure generated IDs are unique
 
 
-
 def test_all():
     test_generate_user_id()
     test_get_machine_id()
     test_generate_user_id_edge_case()
     test_get_machine_id_edge_case()
-
 
 
 test_all()

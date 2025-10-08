@@ -1,4 +1,3 @@
-# Define a simple testing framework
 from swarms.tools.tool_parse_exec import parse_and_execute_json
 
 

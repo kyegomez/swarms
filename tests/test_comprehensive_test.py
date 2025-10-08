@@ -6,7 +6,6 @@ from typing import Any, Callable, Dict, List
 from dotenv import load_dotenv
 from loguru import logger
 
-# Basic Imports for Swarms
 from swarms.structs import (
     Agent,
     AgentRearrange,
@@ -27,20 +26,7 @@ from swarms.structs.tree_swarm import ForestSwarm, Tree, TreeAgent
 # Load environment variables
 load_dotenv()
 
-# --- Constants and Configuration ---
 API_KEY = os.getenv("OPENAI_API_KEY")
-
-# GitHub Issue Creation (commented out for later use)
-# GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-# GITHUB_REPO_OWNER = os.getenv("GITHUB_REPO_OWNER", "kyegomez")
-# GITHUB_REPO_NAME = os.getenv("GITHUB_REPO_NAME", "swarms")
-# BASE_URL = "https://api.github.com"
-# GITHUB_HEADERS = {
-#     "Authorization": f"token {GITHUB_TOKEN}",
-#     "Accept": "application/vnd.github.v3+json",
-# }
-
-# --- Helper Functions ---
 
 
 def generate_timestamp() -> str:
