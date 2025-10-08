@@ -8,7 +8,7 @@ that all components work correctly without requiring a GUI.
 
 import time
 from swarms import Agent
-from simulations.agent_map_simulation import (
+from examples.multi_agent.simulations.agent_map.agent_map_simulation import (
     AgentMapSimulation,
     Position,
 )

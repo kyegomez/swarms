@@ -1,12 +1,18 @@
 # AOP Server Setup Example
 
-This example demonstrates how to set up an AOP (Agent Orchestration Protocol) server with multiple specialized agents.
+This example demonstrates how to set up an Agent Orchestration Protocol (AOP) server with multiple specialized agents.
 
-## Complete Server Setup
+## Overview
+
+The AOP server allows you to deploy multiple agents that can be discovered and called by other agents or clients in the network. This example shows how to create a server with specialized agents for different tasks.
+
+## Code Example
 
 ```python
 from swarms import Agent
-from swarms.structs.aop import AOP
+from swarms.structs.aop import (
+    AOP,
+)
 
 # Create specialized agents
 research_agent = Agent(
@@ -94,15 +100,9 @@ financial_agent = Agent(
     Always provide accurate, well-reasoned financial analysis.""",
 )
 
-# Create AOP instance
-deployer = AOP(
-    server_name="MyAgentServer",
-    port=8000,
-    verbose=True,
-    log_level="INFO"
-)
+# Basic usage - individual agent addition
+deployer = AOP("MyAgentServer", verbose=True, port=5932)
 
-# Add all agents at once
 agents = [
     research_agent,
     analysis_agent,
@@ -111,216 +111,54 @@ agents = [
     financial_agent,
 ]
 
-tool_names = deployer.add_agents_batch(agents)
-print(f"Added {len(tool_names)} agents: {tool_names}")
+deployer.add_agents_batch(agents)
 
-# Display server information
-server_info = deployer.get_server_info()
-print(f"Server: {server_info['server_name']}")
-print(f"Total tools: {server_info['total_tools']}")
-print(f"Available tools: {server_info['tools']}")
-
-# Start the server
-print("Starting AOP server...")
 deployer.run()
 ```
 
-## Running the Server
+## Key Components
 
-1. Save the code above to a file (e.g., `aop_server.py`)
-2. Install required dependencies:
+### 1. Agent Creation
 
-   ```bash
-   pip install swarms
-   ```
+Each agent is created with:
 
-3. Run the server:
+- **agent_name**: Unique identifier for the agent
+- **agent_description**: Brief description of the agent's capabilities
+- **model_name**: The language model to use
+- **system_prompt**: Detailed instructions defining the agent's role and behavior
 
-   ```bash
-   python aop_server.py
-   ```
+### 2. AOP Server Setup
 
-The server will start on `http://localhost:8000` and make all agents available as MCP tools.
+- **Server Name**: "MyAgentServer" - identifies your server
+- **Port**: 5932 - the port where the server will run
+- **Verbose**: True - enables detailed logging
 
-## Tool Usage Examples
+### 3. Agent Registration
 
-Once the server is running, you can call the tools using MCP clients:
+- **add_agents_batch()**: Registers multiple agents at once
+- Agents become available for discovery and remote calls
 
-### Research Agent
+## Usage
 
-```python
-# Call the research agent
-result = research_tool(task="Research the latest AI trends in 2024")
-print(result)
-```
+1. **Start the Server**: Run the script to start the AOP server
+2. **Agent Discovery**: Other agents or clients can discover available agents
+3. **Remote Calls**: Agents can be called remotely by their names
 
-### Analysis Agent with Image
+## Server Features
 
-```python
-# Call the analysis agent with an image
-result = analysis_tool(
-    task="Analyze this chart and provide insights",
-    img="path/to/chart.png"
-)
-print(result)
-```
+- **Agent Discovery**: Automatically registers agents for network discovery
+- **Remote Execution**: Agents can be called from other network nodes
+- **Load Balancing**: Distributes requests across available agents
+- **Health Monitoring**: Tracks agent status and availability
 
-### Writing Agent with Multiple Images
+## Configuration Options
 
-```python
-# Call the writing agent with multiple images
-result = writing_tool(
-    task="Write a comprehensive report based on these images",
-    imgs=["image1.jpg", "image2.jpg", "image3.jpg"]
-)
-print(result)
-```
+- **Port**: Change the port number as needed
+- **Verbose**: Set to False for reduced logging
+- **Server Name**: Use a descriptive name for your server
 
-### Code Agent with Validation
+## Next Steps
 
-```python
-# Call the code agent with expected output
-result = code_tool(
-    task="Debug this Python function",
-    correct_answer="Expected output: Hello World"
-)
-print(result)
-```
-
-### Financial Agent
-
-```python
-# Call the financial agent
-result = financial_tool(task="Analyze the current market trends for tech stocks")
-print(result)
-```
-
-## Response Format
-
-All tools return a standardized response:
-
-```json
-{
-  "result": "The agent's response to the task",
-  "success": true,
-  "error": null
-}
-```
-
-## Advanced Configuration
-
-### Custom Timeouts and Retries
-
-```python
-# Add agent with custom configuration
-deployer.add_agent(
-    agent=research_agent,
-    tool_name="custom_research_tool",
-    tool_description="Research tool with extended timeout",
-    timeout=120,  # 2 minutes
-    max_retries=5,
-    verbose=True
-)
-```
-
-### Custom Input/Output Schemas
-
-```python
-# Define custom schemas
-custom_input_schema = {
-    "type": "object",
-    "properties": {
-        "task": {"type": "string", "description": "The research task"},
-        "sources": {
-            "type": "array",
-            "items": {"type": "string"},
-            "description": "Specific sources to research"
-        },
-        "depth": {
-            "type": "string",
-            "enum": ["shallow", "medium", "deep"],
-            "description": "Research depth level"
-        }
-    },
-    "required": ["task"]
-}
-
-# Add agent with custom schemas
-deployer.add_agent(
-    agent=research_agent,
-    tool_name="advanced_research_tool",
-    input_schema=custom_input_schema,
-    timeout=60
-)
-```
-
-## Monitoring and Debugging
-
-### Enable Verbose Logging
-
-```python
-deployer = AOP(
-    server_name="DebugServer",
-    verbose=True,
-    traceback_enabled=True,
-    log_level="DEBUG"
-)
-```
-
-### Check Server Status
-
-```python
-# List all registered agents
-agents = deployer.list_agents()
-print(f"Registered agents: {agents}")
-
-# Get detailed agent information
-for agent_name in agents:
-    info = deployer.get_agent_info(agent_name)
-    print(f"Agent {agent_name}: {info}")
-
-# Get server information
-server_info = deployer.get_server_info()
-print(f"Server info: {server_info}")
-```
-
-## Production Deployment
-
-### External Access
-
-```python
-deployer = AOP(
-    server_name="ProductionServer",
-    host="0.0.0.0",  # Allow external connections
-    port=8000,
-    verbose=False,  # Disable verbose logging in production
-    log_level="WARNING"
-)
-```
-
-### Multiple Servers
-
-```python
-# Server 1: Research and Analysis
-research_deployer = AOP("ResearchServer", port=8000)
-research_deployer.add_agent(research_agent)
-research_deployer.add_agent(analysis_agent)
-
-# Server 2: Writing and Code
-content_deployer = AOP("ContentServer", port=8001)
-content_deployer.add_agent(writing_agent)
-content_deployer.add_agent(code_agent)
-
-# Server 3: Financial
-finance_deployer = AOP("FinanceServer", port=8002)
-finance_deployer.add_agent(financial_agent)
-
-# Start all servers
-import threading
-
-threading.Thread(target=research_deployer.run).start()
-threading.Thread(target=content_deployer.run).start()
-threading.Thread(target=finance_deployer.run).start()
-```
-
-This example demonstrates a complete AOP server setup with multiple specialized agents, proper configuration, and production-ready deployment options.
+- See [AOP Cluster Example](aop_cluster_example.md) for multi-server setups
+- Check [AOP Reference](../structs/aop.md) for advanced configuration options
+- Explore agent communication patterns in the examples directory

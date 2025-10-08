@@ -1,11 +1,12 @@
-from typing import Dict, List, Any, Optional, Union, Callable
 import random
+from functools import lru_cache
+from typing import Any, Callable, Dict, List, Optional, Union
+
+from loguru import logger
+
 from swarms.prompts.collaborative_prompts import (
     get_multi_agent_collaboration_prompt_one,
 )
-from functools import lru_cache
-
-from loguru import logger
 
 
 def list_all_agents(
@@ -131,11 +132,9 @@ def set_random_models_for_agents(
         return random.choice(model_names)
 
     if isinstance(agents, list):
-        return [
+        for agent in agents:
             setattr(agent, "model_name", random.choice(model_names))
-            or agent
-            for agent in agents
-        ]
+        return agents
     else:
         setattr(agents, "model_name", random.choice(model_names))
         return agents

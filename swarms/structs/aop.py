@@ -1,8 +1,13 @@
 import asyncio
 import sys
 import traceback
-from dataclasses import dataclass
+import threading
+import time
+from collections import deque
+from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Dict, List, Literal, Optional
+from uuid import uuid4
 
 from loguru import logger
 from mcp.server.fastmcp import FastMCP
@@ -12,6 +17,507 @@ from swarms.structs.omni_agent_types import AgentType
 from swarms.tools.mcp_client_tools import (
     get_tools_for_multiple_mcp_servers,
 )
+
+
+class TaskStatus(Enum):
+    """Status of a task in the queue."""
+
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class QueueStatus(Enum):
+    """Status of a task queue."""
+
+    RUNNING = "running"
+    PAUSED = "paused"
+    STOPPED = "stopped"
+
+
+@dataclass
+class Task:
+    """
+    Represents a task to be executed by an agent.
+
+    Attributes:
+        task_id: Unique identifier for the task
+        task: The task or prompt to execute
+        img: Optional image to be processed
+        imgs: Optional list of images to be processed
+        correct_answer: Optional correct answer for validation
+        priority: Task priority (higher number = higher priority)
+        created_at: Timestamp when task was created
+        status: Current status of the task
+        result: Result of task execution
+        error: Error message if task failed
+        retry_count: Number of times task has been retried
+        max_retries: Maximum number of retries allowed
+    """
+
+    task_id: str = field(default_factory=lambda: str(uuid4()))
+    task: str = ""
+    img: Optional[str] = None
+    imgs: Optional[List[str]] = None
+    correct_answer: Optional[str] = None
+    priority: int = 0
+    created_at: float = field(default_factory=time.time)
+    status: TaskStatus = TaskStatus.PENDING
+    result: Optional[str] = None
+    error: Optional[str] = None
+    retry_count: int = 0
+    max_retries: int = 3
+
+
+@dataclass
+class QueueStats:
+    """
+    Statistics for a task queue.
+
+    Attributes:
+        total_tasks: Total number of tasks processed
+        completed_tasks: Number of successfully completed tasks
+        failed_tasks: Number of failed tasks
+        pending_tasks: Number of tasks currently pending
+        processing_tasks: Number of tasks currently being processed
+        average_processing_time: Average time to process a task
+        queue_size: Current size of the queue
+    """
+
+    total_tasks: int = 0
+    completed_tasks: int = 0
+    failed_tasks: int = 0
+    pending_tasks: int = 0
+    processing_tasks: int = 0
+    average_processing_time: float = 0.0
+    queue_size: int = 0
+
+
+class TaskQueue:
+    """
+    A thread-safe task queue for managing agent tasks.
+
+    This class provides functionality to:
+    1. Add tasks to the queue with priority support
+    2. Process tasks in background workers
+    3. Handle task retries and error management
+    4. Provide queue statistics and monitoring
+    """
+
+    def __init__(
+        self,
+        agent_name: str,
+        agent: AgentType,
+        max_workers: int = 1,
+        max_queue_size: int = 1000,
+        processing_timeout: int = 30,
+        retry_delay: float = 1.0,
+        verbose: bool = False,
+    ):
+        """
+        Initialize the task queue.
+
+        Args:
+            agent_name: Name of the agent this queue belongs to
+            agent: The agent instance to execute tasks
+            max_workers: Maximum number of worker threads
+            max_queue_size: Maximum number of tasks in queue
+            processing_timeout: Timeout for task processing in seconds
+            retry_delay: Delay between retries in seconds
+            verbose: Enable verbose logging
+        """
+        self.agent_name = agent_name
+        self.agent = agent
+        self.max_workers = max_workers
+        self.max_queue_size = max_queue_size
+        self.processing_timeout = processing_timeout
+        self.retry_delay = retry_delay
+        self.verbose = verbose
+
+        # Queue management
+        self._queue = deque()
+        self._lock = threading.RLock()
+        self._status = QueueStatus.STOPPED
+        self._workers = []
+        self._stop_event = threading.Event()
+
+        # Statistics
+        self._stats = QueueStats()
+        self._processing_times = deque(
+            maxlen=100
+        )  # Keep last 100 processing times
+
+        # Task tracking
+        self._tasks = {}  # task_id -> Task
+        self._processing_tasks = (
+            set()
+        )  # Currently processing task IDs
+
+        logger.info(
+            f"Initialized TaskQueue for agent '{agent_name}' with {max_workers} workers"
+        )
+
+    def add_task(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        correct_answer: Optional[str] = None,
+        priority: int = 0,
+        max_retries: int = 3,
+    ) -> str:
+        """
+        Add a task to the queue.
+
+        Args:
+            task: The task or prompt to execute
+            img: Optional image to be processed
+            imgs: Optional list of images to be processed
+            correct_answer: Optional correct answer for validation
+            priority: Task priority (higher number = higher priority)
+            max_retries: Maximum number of retries allowed
+
+        Returns:
+            str: Task ID
+
+        Raises:
+            ValueError: If queue is full or task is invalid
+        """
+        if not task:
+            raise ValueError("Task cannot be empty")
+
+        with self._lock:
+            if len(self._queue) >= self.max_queue_size:
+                raise ValueError(
+                    f"Queue is full (max size: {self.max_queue_size})"
+                )
+
+            task_obj = Task(
+                task=task,
+                img=img,
+                imgs=imgs,
+                correct_answer=correct_answer,
+                priority=priority,
+                max_retries=max_retries,
+            )
+
+            # Insert task based on priority (higher priority first)
+            inserted = False
+            for i, existing_task in enumerate(self._queue):
+                if task_obj.priority > existing_task.priority:
+                    self._queue.insert(i, task_obj)
+                    inserted = True
+                    break
+
+            if not inserted:
+                self._queue.append(task_obj)
+
+            self._tasks[task_obj.task_id] = task_obj
+            self._stats.total_tasks += 1
+            self._stats.pending_tasks += 1
+            self._stats.queue_size = len(self._queue)
+
+            if self.verbose:
+                logger.debug(
+                    f"Added task '{task_obj.task_id}' to queue for agent '{self.agent_name}'"
+                )
+
+            return task_obj.task_id
+
+    def get_task(self, task_id: str) -> Optional[Task]:
+        """
+        Get a task by ID.
+
+        Args:
+            task_id: The task ID
+
+        Returns:
+            Task object or None if not found
+        """
+        with self._lock:
+            return self._tasks.get(task_id)
+
+    def cancel_task(self, task_id: str) -> bool:
+        """
+        Cancel a task.
+
+        Args:
+            task_id: The task ID to cancel
+
+        Returns:
+            bool: True if task was cancelled, False if not found or already processed
+        """
+        with self._lock:
+            if task_id not in self._tasks:
+                return False
+
+            task = self._tasks[task_id]
+            if task.status in [
+                TaskStatus.COMPLETED,
+                TaskStatus.FAILED,
+                TaskStatus.CANCELLED,
+            ]:
+                return False
+
+            # Remove from queue if still pending
+            if task.status == TaskStatus.PENDING:
+                try:
+                    self._queue.remove(task)
+                    self._stats.pending_tasks -= 1
+                    self._stats.queue_size = len(self._queue)
+                except ValueError:
+                    pass  # Task not in queue
+
+            # Mark as cancelled
+            task.status = TaskStatus.CANCELLED
+            self._processing_tasks.discard(task_id)
+
+            if self.verbose:
+                logger.debug(
+                    f"Cancelled task '{task_id}' for agent '{self.agent_name}'"
+                )
+
+            return True
+
+    def start_workers(self) -> None:
+        """Start the background worker threads."""
+        with self._lock:
+            if self._status != QueueStatus.STOPPED:
+                logger.warning(
+                    f"Workers for agent '{self.agent_name}' are already running"
+                )
+                return
+
+            self._status = QueueStatus.RUNNING
+            self._stop_event.clear()
+
+            for i in range(self.max_workers):
+                worker = threading.Thread(
+                    target=self._worker_loop,
+                    name=f"Worker-{self.agent_name}-{i}",
+                    daemon=True,
+                )
+                worker.start()
+                self._workers.append(worker)
+
+            logger.info(
+                f"Started {self.max_workers} workers for agent '{self.agent_name}'"
+            )
+
+    def stop_workers(self) -> None:
+        """Stop the background worker threads."""
+        with self._lock:
+            if self._status == QueueStatus.STOPPED:
+                return
+
+            self._status = QueueStatus.STOPPED
+            self._stop_event.set()
+
+            # Wait for workers to finish
+            for worker in self._workers:
+                worker.join(timeout=5.0)
+
+            self._workers.clear()
+            logger.info(
+                f"Stopped workers for agent '{self.agent_name}'"
+            )
+
+    def pause_workers(self) -> None:
+        """Pause the workers (they will finish current tasks but not start new ones)."""
+        with self._lock:
+            if self._status == QueueStatus.RUNNING:
+                self._status = QueueStatus.PAUSED
+                logger.info(
+                    f"Paused workers for agent '{self.agent_name}'"
+                )
+
+    def resume_workers(self) -> None:
+        """Resume the workers."""
+        with self._lock:
+            if self._status == QueueStatus.PAUSED:
+                self._status = QueueStatus.RUNNING
+                logger.info(
+                    f"Resumed workers for agent '{self.agent_name}'"
+                )
+
+    def clear_queue(self) -> int:
+        """
+        Clear all pending tasks from the queue.
+
+        Returns:
+            int: Number of tasks cleared
+        """
+        with self._lock:
+            cleared_count = len(self._queue)
+            self._queue.clear()
+            self._stats.pending_tasks = 0
+            self._stats.queue_size = 0
+
+            # Mark all pending tasks as cancelled
+            for task in self._tasks.values():
+                if task.status == TaskStatus.PENDING:
+                    task.status = TaskStatus.CANCELLED
+
+            if self.verbose:
+                logger.debug(
+                    f"Cleared {cleared_count} tasks from queue for agent '{self.agent_name}'"
+                )
+
+            return cleared_count
+
+    def get_stats(self) -> QueueStats:
+        """Get current queue statistics."""
+        with self._lock:
+            # Update current stats
+            self._stats.pending_tasks = len(
+                [
+                    t
+                    for t in self._tasks.values()
+                    if t.status == TaskStatus.PENDING
+                ]
+            )
+            self._stats.processing_tasks = len(self._processing_tasks)
+            self._stats.queue_size = len(self._queue)
+
+            # Calculate average processing time
+            if self._processing_times:
+                self._stats.average_processing_time = sum(
+                    self._processing_times
+                ) / len(self._processing_times)
+
+            return QueueStats(
+                total_tasks=self._stats.total_tasks,
+                completed_tasks=self._stats.completed_tasks,
+                failed_tasks=self._stats.failed_tasks,
+                pending_tasks=self._stats.pending_tasks,
+                processing_tasks=self._stats.processing_tasks,
+                average_processing_time=self._stats.average_processing_time,
+                queue_size=self._stats.queue_size,
+            )
+
+    def get_status(self) -> QueueStatus:
+        """Get current queue status."""
+        return self._status
+
+    def _worker_loop(self) -> None:
+        """Main worker loop for processing tasks."""
+        while not self._stop_event.is_set():
+            try:
+                # Check if we should process tasks
+                with self._lock:
+                    if (
+                        self._status != QueueStatus.RUNNING
+                        or not self._queue
+                    ):
+                        self._stop_event.wait(0.1)
+                        continue
+
+                    # Get next task
+                    task = self._queue.popleft()
+                    self._processing_tasks.add(task.task_id)
+                    task.status = TaskStatus.PROCESSING
+                    self._stats.pending_tasks -= 1
+                    self._stats.processing_tasks += 1
+
+                # Process the task
+                self._process_task(task)
+
+            except Exception as e:
+                logger.error(
+                    f"Error in worker loop for agent '{self.agent_name}': {e}"
+                )
+                if self.verbose:
+                    logger.error(traceback.format_exc())
+                time.sleep(0.1)
+
+    def _process_task(self, task: Task) -> None:
+        """
+        Process a single task.
+
+        Args:
+            task: The task to process
+        """
+        start_time = time.time()
+
+        try:
+            if self.verbose:
+                logger.debug(
+                    f"Processing task '{task.task_id}' for agent '{self.agent_name}'"
+                )
+
+            # Execute the agent
+            result = self.agent.run(
+                task=task.task,
+                img=task.img,
+                imgs=task.imgs,
+                correct_answer=task.correct_answer,
+            )
+
+            # Update task with result
+            task.result = result
+            task.status = TaskStatus.COMPLETED
+
+            # Update statistics
+            processing_time = time.time() - start_time
+            self._processing_times.append(processing_time)
+
+            with self._lock:
+                self._stats.completed_tasks += 1
+                self._stats.processing_tasks -= 1
+                self._processing_tasks.discard(task.task_id)
+
+            if self.verbose:
+                logger.debug(
+                    f"Completed task '{task.task_id}' in {processing_time:.2f}s"
+                )
+
+        except Exception as e:
+            error_msg = str(e)
+            task.error = error_msg
+            task.retry_count += 1
+
+            if self.verbose:
+                logger.error(
+                    f"Error processing task '{task.task_id}': {error_msg}"
+                )
+                logger.error(traceback.format_exc())
+
+            # Handle retries
+            if task.retry_count <= task.max_retries:
+                if self.verbose:
+                    logger.debug(
+                        f"Retrying task '{task.task_id}' (attempt {task.retry_count + 1})"
+                    )
+
+                # Re-queue the task with a delay
+                time.sleep(self.retry_delay)
+
+                with self._lock:
+                    if self._status == QueueStatus.RUNNING:
+                        task.status = TaskStatus.PENDING
+                        self._queue.append(
+                            task
+                        )  # Add to end of queue
+                        self._stats.pending_tasks += 1
+                        self._stats.queue_size = len(self._queue)
+                    else:
+                        task.status = TaskStatus.FAILED
+                        self._stats.failed_tasks += 1
+            else:
+                # Max retries exceeded
+                task.status = TaskStatus.FAILED
+
+                with self._lock:
+                    self._stats.failed_tasks += 1
+                    self._stats.processing_tasks -= 1
+                    self._processing_tasks.discard(task.task_id)
+
+                if self.verbose:
+                    logger.error(
+                        f"Task '{task.task_id}' failed after {task.max_retries} retries"
+                    )
 
 
 @dataclass
@@ -49,12 +555,15 @@ class AOP:
     2. Deploy multiple agents as individual tools
     3. Handle tool execution with proper error handling
     4. Manage the MCP server lifecycle
+    5. Queue-based task execution for improved performance and reliability
 
     Attributes:
         mcp_server: The FastMCP server instance
         agents: Dictionary mapping tool names to agent instances
         tool_configs: Dictionary mapping tool names to their configurations
+        task_queues: Dictionary mapping tool names to their task queues
         server_name: Name of the MCP server
+        queue_enabled: Whether queue-based execution is enabled
     """
 
     def __init__(
@@ -68,6 +577,11 @@ class AOP:
         traceback_enabled: bool = True,
         host: str = "localhost",
         log_level: str = "INFO",
+        queue_enabled: bool = True,
+        max_workers_per_agent: int = 1,
+        max_queue_size_per_agent: int = 1000,
+        processing_timeout: int = 30,
+        retry_delay: float = 1.0,
         *args,
         **kwargs,
     ):
@@ -76,21 +590,36 @@ class AOP:
 
         Args:
             server_name: Name for the MCP server
+            description: Description of the AOP cluster
             agents: Optional list of agents to add initially
             port: Port for the MCP server
             transport: Transport type for the MCP server
             verbose: Enable verbose logging
             traceback_enabled: Enable traceback logging for errors
+            host: Host to bind the server to
             log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+            queue_enabled: Enable queue-based task execution
+            max_workers_per_agent: Maximum number of workers per agent
+            max_queue_size_per_agent: Maximum queue size per agent
+            processing_timeout: Timeout for task processing in seconds
+            retry_delay: Delay between retries in seconds
         """
         self.server_name = server_name
+        self.description = description
         self.verbose = verbose
         self.traceback_enabled = traceback_enabled
         self.log_level = log_level
         self.host = host
         self.port = port
+        self.queue_enabled = queue_enabled
+        self.max_workers_per_agent = max_workers_per_agent
+        self.max_queue_size_per_agent = max_queue_size_per_agent
+        self.processing_timeout = processing_timeout
+        self.retry_delay = retry_delay
+
         self.agents: Dict[str, Agent] = {}
         self.tool_configs: Dict[str, AgentToolConfig] = {}
+        self.task_queues: Dict[str, TaskQueue] = {}
         self.transport = transport
         self.mcp_server = FastMCP(
             name=server_name, port=port, *args, **kwargs
@@ -113,6 +642,13 @@ class AOP:
         if agents:
             logger.info(f"Adding {len(agents)} initial agents")
             self.add_agents_batch(agents)
+
+        # Register the agent discovery tool
+        self._register_agent_discovery_tool()
+
+        # Register queue management tools if queue is enabled
+        if self.queue_enabled:
+            self._register_queue_management_tools()
 
     def add_agent(
         self,
@@ -239,11 +775,28 @@ class AOP:
             traceback_enabled=traceback_enabled,
         )
 
+        # Create task queue if queue is enabled
+        if self.queue_enabled:
+            self.task_queues[tool_name] = TaskQueue(
+                agent_name=tool_name,
+                agent=agent,
+                max_workers=self.max_workers_per_agent,
+                max_queue_size=self.max_queue_size_per_agent,
+                processing_timeout=self.processing_timeout,
+                retry_delay=self.retry_delay,
+                verbose=verbose,
+            )
+            # Start the queue workers
+            self.task_queues[tool_name].start_workers()
+
         # Register the tool with the MCP server
         self._register_tool(tool_name, agent)
 
+        # Re-register the discovery tool to include the new agent
+        self._register_agent_discovery_tool()
+
         logger.info(
-            f"Added agent '{agent.agent_name}' as tool '{tool_name}' (verbose={verbose}, traceback={traceback_enabled})"
+            f"Added agent '{agent.agent_name}' as tool '{tool_name}' (verbose={verbose}, traceback={traceback_enabled}, queue_enabled={self.queue_enabled})"
         )
         return tool_name
 
@@ -344,6 +897,9 @@ class AOP:
             )
             registered_tools.append(tool_name)
 
+        # Re-register the discovery tool to include all new agents
+        self._register_agent_discovery_tool()
+
         logger.info(
             f"Added {len(agents)} agents as tools: {registered_tools}"
         )
@@ -369,6 +925,7 @@ class AOP:
             img: str = None,
             imgs: List[str] = None,
             correct_answer: str = None,
+            max_retries: int = None,
         ) -> Dict[str, Any]:
             """
             Execute the agent with the provided parameters.
@@ -378,7 +935,7 @@ class AOP:
                 img: Optional image to be processed by the agent
                 imgs: Optional list of images to be processed by the agent
                 correct_answer: Optional correct answer for validation or comparison
-                **kwargs: Additional parameters passed to the agent
+                max_retries: Maximum number of retries (uses config default if None)
 
             Returns:
                 Dict containing the agent's response and execution status
@@ -417,31 +974,49 @@ class AOP:
                         "error": error_msg,
                     }
 
-                # Execute the agent with timeout and all parameters
-                result = self._execute_agent_with_timeout(
-                    agent,
-                    task,
-                    config.timeout,
-                    img,
-                    imgs,
-                    correct_answer,
-                )
-
-                if config.verbose and start_time:
-                    execution_time = (
-                        asyncio.get_event_loop().time() - start_time
-                        if asyncio.get_event_loop().is_running()
-                        else 0
+                # Use queue-based execution if enabled
+                if (
+                    self.queue_enabled
+                    and tool_name in self.task_queues
+                ):
+                    return self._execute_with_queue(
+                        tool_name,
+                        task,
+                        img,
+                        imgs,
+                        correct_answer,
+                        0,
+                        max_retries,
+                        True,
+                        config,
                     )
-                    logger.debug(
-                        f"Tool '{tool_name}' completed successfully in {execution_time:.2f}s"
+                else:
+                    # Fallback to direct execution
+                    result = self._execute_agent_with_timeout(
+                        agent,
+                        task,
+                        config.timeout,
+                        img,
+                        imgs,
+                        correct_answer,
                     )
 
-                return {
-                    "result": str(result),
-                    "success": True,
-                    "error": None,
-                }
+                    if config.verbose and start_time:
+                        execution_time = (
+                            asyncio.get_event_loop().time()
+                            - start_time
+                            if asyncio.get_event_loop().is_running()
+                            else 0
+                        )
+                        logger.debug(
+                            f"Tool '{tool_name}' completed successfully in {execution_time:.2f}s"
+                        )
+
+                    return {
+                        "result": str(result),
+                        "success": True,
+                        "error": None,
+                    }
 
             except Exception as e:
                 error_msg = str(e)
@@ -468,6 +1043,133 @@ class AOP:
                     "success": False,
                     "error": error_msg,
                 }
+
+    def _execute_with_queue(
+        self,
+        tool_name: str,
+        task: str,
+        img: Optional[str],
+        imgs: Optional[List[str]],
+        correct_answer: Optional[str],
+        priority: int,
+        max_retries: Optional[int],
+        wait_for_completion: bool,
+        config: AgentToolConfig,
+    ) -> Dict[str, Any]:
+        """
+        Execute a task using the queue system.
+
+        Args:
+            tool_name: Name of the tool/agent
+            task: The task to execute
+            img: Optional image to process
+            imgs: Optional list of images to process
+            correct_answer: Optional correct answer for validation
+            priority: Task priority
+            max_retries: Maximum number of retries
+            wait_for_completion: Whether to wait for completion
+            config: Tool configuration
+
+        Returns:
+            Dict containing the result or task information
+        """
+        try:
+            # Use config max_retries if not specified
+            if max_retries is None:
+                max_retries = config.max_retries
+
+            # Add task to queue
+            task_id = self.task_queues[tool_name].add_task(
+                task=task,
+                img=img,
+                imgs=imgs,
+                correct_answer=correct_answer,
+                priority=priority,
+                max_retries=max_retries,
+            )
+
+            if not wait_for_completion:
+                # Return task ID immediately
+                return {
+                    "task_id": task_id,
+                    "status": "queued",
+                    "success": True,
+                    "message": f"Task '{task_id}' queued for agent '{tool_name}'",
+                }
+
+            # Wait for task completion
+            return self._wait_for_task_completion(
+                tool_name, task_id, config.timeout
+            )
+
+        except Exception as e:
+            error_msg = str(e)
+            logger.error(
+                f"Error adding task to queue for '{tool_name}': {error_msg}"
+            )
+            return {
+                "result": "",
+                "success": False,
+                "error": error_msg,
+            }
+
+    def _wait_for_task_completion(
+        self, tool_name: str, task_id: str, timeout: int
+    ) -> Dict[str, Any]:
+        """
+        Wait for a task to complete.
+
+        Args:
+            tool_name: Name of the tool/agent
+            task_id: ID of the task to wait for
+            timeout: Maximum time to wait in seconds
+
+        Returns:
+            Dict containing the task result
+        """
+        start_time = time.time()
+
+        while time.time() - start_time < timeout:
+            task = self.task_queues[tool_name].get_task(task_id)
+            if not task:
+                return {
+                    "result": "",
+                    "success": False,
+                    "error": f"Task '{task_id}' not found",
+                }
+
+            if task.status == TaskStatus.COMPLETED:
+                return {
+                    "result": task.result or "",
+                    "success": True,
+                    "error": None,
+                    "task_id": task_id,
+                }
+            elif task.status == TaskStatus.FAILED:
+                return {
+                    "result": "",
+                    "success": False,
+                    "error": task.error or "Task failed",
+                    "task_id": task_id,
+                }
+            elif task.status == TaskStatus.CANCELLED:
+                return {
+                    "result": "",
+                    "success": False,
+                    "error": "Task was cancelled",
+                    "task_id": task_id,
+                }
+
+            # Wait a bit before checking again
+            time.sleep(0.1)
+
+        # Timeout reached
+        return {
+            "result": "",
+            "success": False,
+            "error": f"Task '{task_id}' timed out after {timeout} seconds",
+            "task_id": task_id,
+        }
 
     def _execute_agent_with_timeout(
         self,
@@ -536,6 +1238,11 @@ class AOP:
             bool: True if agent was removed, False if not found
         """
         if tool_name in self.agents:
+            # Stop and remove task queue if it exists
+            if tool_name in self.task_queues:
+                self.task_queues[tool_name].stop_workers()
+                del self.task_queues[tool_name]
+
             del self.agents[tool_name]
             del self.tool_configs[tool_name]
             logger.info(f"Removed agent tool '{tool_name}'")
@@ -598,6 +1305,884 @@ class AOP:
 
         return info
 
+    def get_queue_stats(
+        self, tool_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Get queue statistics for agents.
+
+        Args:
+            tool_name: Optional specific agent name. If None, returns stats for all agents.
+
+        Returns:
+            Dict containing queue statistics
+        """
+        if not self.queue_enabled:
+            return {
+                "success": False,
+                "error": "Queue system is not enabled",
+                "stats": {},
+            }
+
+        try:
+            if tool_name:
+                if tool_name not in self.task_queues:
+                    return {
+                        "success": False,
+                        "error": f"Agent '{tool_name}' not found or has no queue",
+                        "stats": {},
+                    }
+
+                stats = self.task_queues[tool_name].get_stats()
+                return {
+                    "success": True,
+                    "agent_name": tool_name,
+                    "stats": {
+                        "total_tasks": stats.total_tasks,
+                        "completed_tasks": stats.completed_tasks,
+                        "failed_tasks": stats.failed_tasks,
+                        "pending_tasks": stats.pending_tasks,
+                        "processing_tasks": stats.processing_tasks,
+                        "average_processing_time": stats.average_processing_time,
+                        "queue_size": stats.queue_size,
+                        "queue_status": self.task_queues[tool_name]
+                        .get_status()
+                        .value,
+                    },
+                }
+            else:
+                # Get stats for all agents
+                all_stats = {}
+                for name, queue in self.task_queues.items():
+                    stats = queue.get_stats()
+                    all_stats[name] = {
+                        "total_tasks": stats.total_tasks,
+                        "completed_tasks": stats.completed_tasks,
+                        "failed_tasks": stats.failed_tasks,
+                        "pending_tasks": stats.pending_tasks,
+                        "processing_tasks": stats.processing_tasks,
+                        "average_processing_time": stats.average_processing_time,
+                        "queue_size": stats.queue_size,
+                        "queue_status": queue.get_status().value,
+                    }
+
+                return {
+                    "success": True,
+                    "stats": all_stats,
+                    "total_agents": len(all_stats),
+                }
+
+        except Exception as e:
+            error_msg = str(e)
+            logger.error(f"Error getting queue stats: {error_msg}")
+            return {
+                "success": False,
+                "error": error_msg,
+                "stats": {},
+            }
+
+    def pause_agent_queue(self, tool_name: str) -> bool:
+        """
+        Pause the task queue for a specific agent.
+
+        Args:
+            tool_name: Name of the agent tool
+
+        Returns:
+            bool: True if paused successfully, False if not found
+        """
+        if not self.queue_enabled:
+            logger.warning("Queue system is not enabled")
+            return False
+
+        if tool_name not in self.task_queues:
+            logger.warning(
+                f"Agent '{tool_name}' not found or has no queue"
+            )
+            return False
+
+        try:
+            self.task_queues[tool_name].pause_workers()
+            logger.info(f"Paused queue for agent '{tool_name}'")
+            return True
+        except Exception as e:
+            logger.error(
+                f"Error pausing queue for agent '{tool_name}': {e}"
+            )
+            return False
+
+    def resume_agent_queue(self, tool_name: str) -> bool:
+        """
+        Resume the task queue for a specific agent.
+
+        Args:
+            tool_name: Name of the agent tool
+
+        Returns:
+            bool: True if resumed successfully, False if not found
+        """
+        if not self.queue_enabled:
+            logger.warning("Queue system is not enabled")
+            return False
+
+        if tool_name not in self.task_queues:
+            logger.warning(
+                f"Agent '{tool_name}' not found or has no queue"
+            )
+            return False
+
+        try:
+            self.task_queues[tool_name].resume_workers()
+            logger.info(f"Resumed queue for agent '{tool_name}'")
+            return True
+        except Exception as e:
+            logger.error(
+                f"Error resuming queue for agent '{tool_name}': {e}"
+            )
+            return False
+
+    def clear_agent_queue(self, tool_name: str) -> int:
+        """
+        Clear all pending tasks from an agent's queue.
+
+        Args:
+            tool_name: Name of the agent tool
+
+        Returns:
+            int: Number of tasks cleared, -1 if error
+        """
+        if not self.queue_enabled:
+            logger.warning("Queue system is not enabled")
+            return -1
+
+        if tool_name not in self.task_queues:
+            logger.warning(
+                f"Agent '{tool_name}' not found or has no queue"
+            )
+            return -1
+
+        try:
+            cleared_count = self.task_queues[tool_name].clear_queue()
+            logger.info(
+                f"Cleared {cleared_count} tasks from queue for agent '{tool_name}'"
+            )
+            return cleared_count
+        except Exception as e:
+            logger.error(
+                f"Error clearing queue for agent '{tool_name}': {e}"
+            )
+            return -1
+
+    def get_task_status(
+        self, tool_name: str, task_id: str
+    ) -> Dict[str, Any]:
+        """
+        Get the status of a specific task.
+
+        Args:
+            tool_name: Name of the agent tool
+            task_id: ID of the task
+
+        Returns:
+            Dict containing task status information
+        """
+        if not self.queue_enabled:
+            return {
+                "success": False,
+                "error": "Queue system is not enabled",
+                "task": None,
+            }
+
+        if tool_name not in self.task_queues:
+            return {
+                "success": False,
+                "error": f"Agent '{tool_name}' not found or has no queue",
+                "task": None,
+            }
+
+        try:
+            task = self.task_queues[tool_name].get_task(task_id)
+            if not task:
+                return {
+                    "success": False,
+                    "error": f"Task '{task_id}' not found",
+                    "task": None,
+                }
+
+            return {
+                "success": True,
+                "task": {
+                    "task_id": task.task_id,
+                    "status": task.status.value,
+                    "created_at": task.created_at,
+                    "result": task.result,
+                    "error": task.error,
+                    "retry_count": task.retry_count,
+                    "max_retries": task.max_retries,
+                    "priority": task.priority,
+                },
+            }
+        except Exception as e:
+            logger.error(f"Error getting task status: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "task": None,
+            }
+
+    def cancel_task(self, tool_name: str, task_id: str) -> bool:
+        """
+        Cancel a specific task.
+
+        Args:
+            tool_name: Name of the agent tool
+            task_id: ID of the task to cancel
+
+        Returns:
+            bool: True if cancelled successfully, False otherwise
+        """
+        if not self.queue_enabled:
+            logger.warning("Queue system is not enabled")
+            return False
+
+        if tool_name not in self.task_queues:
+            logger.warning(
+                f"Agent '{tool_name}' not found or has no queue"
+            )
+            return False
+
+        try:
+            success = self.task_queues[tool_name].cancel_task(task_id)
+            if success:
+                logger.info(
+                    f"Cancelled task '{task_id}' for agent '{tool_name}'"
+                )
+            else:
+                logger.warning(
+                    f"Could not cancel task '{task_id}' for agent '{tool_name}'"
+                )
+            return success
+        except Exception as e:
+            logger.error(f"Error cancelling task '{task_id}': {e}")
+            return False
+
+    def pause_all_queues(self) -> Dict[str, bool]:
+        """
+        Pause all agent queues.
+
+        Returns:
+            Dict mapping agent names to success status
+        """
+        if not self.queue_enabled:
+            logger.warning("Queue system is not enabled")
+            return {}
+
+        results = {}
+        for tool_name in self.task_queues.keys():
+            results[tool_name] = self.pause_agent_queue(tool_name)
+
+        logger.info(
+            f"Paused {sum(results.values())} out of {len(results)} agent queues"
+        )
+        return results
+
+    def resume_all_queues(self) -> Dict[str, bool]:
+        """
+        Resume all agent queues.
+
+        Returns:
+            Dict mapping agent names to success status
+        """
+        if not self.queue_enabled:
+            logger.warning("Queue system is not enabled")
+            return {}
+
+        results = {}
+        for tool_name in self.task_queues.keys():
+            results[tool_name] = self.resume_agent_queue(tool_name)
+
+        logger.info(
+            f"Resumed {sum(results.values())} out of {len(results)} agent queues"
+        )
+        return results
+
+    def clear_all_queues(self) -> Dict[str, int]:
+        """
+        Clear all agent queues.
+
+        Returns:
+            Dict mapping agent names to number of tasks cleared
+        """
+        if not self.queue_enabled:
+            logger.warning("Queue system is not enabled")
+            return {}
+
+        results = {}
+        total_cleared = 0
+        for tool_name in self.task_queues.keys():
+            cleared = self.clear_agent_queue(tool_name)
+            results[tool_name] = cleared
+            if cleared > 0:
+                total_cleared += cleared
+
+        logger.info(
+            f"Cleared {total_cleared} tasks from all agent queues"
+        )
+        return results
+
+    def _register_agent_discovery_tool(self) -> None:
+        """
+        Register the agent discovery tools that allow agents to learn about each other.
+        """
+
+        @self.mcp_server.tool(
+            name="discover_agents",
+            description="Discover information about other agents in the cluster including their name, description, system prompt (truncated to 200 chars), and tags.",
+        )
+        def discover_agents(agent_name: str = None) -> Dict[str, Any]:
+            """
+            Discover information about agents in the cluster.
+
+            Args:
+                agent_name: Optional specific agent name to get info for. If None, returns info for all agents.
+
+            Returns:
+                Dict containing agent information for discovery
+            """
+            try:
+                if agent_name:
+                    # Get specific agent info
+                    if agent_name not in self.agents:
+                        return {
+                            "success": False,
+                            "error": f"Agent '{agent_name}' not found",
+                            "agents": [],
+                        }
+
+                    agent_info = self._get_agent_discovery_info(
+                        agent_name
+                    )
+                    return {
+                        "success": True,
+                        "agents": [agent_info] if agent_info else [],
+                    }
+                else:
+                    # Get all agents info
+                    all_agents_info = []
+                    for tool_name in self.agents.keys():
+                        agent_info = self._get_agent_discovery_info(
+                            tool_name
+                        )
+                        if agent_info:
+                            all_agents_info.append(agent_info)
+
+                    return {
+                        "success": True,
+                        "agents": all_agents_info,
+                    }
+
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(
+                    f"Error in discover_agents tool: {error_msg}"
+                )
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "agents": [],
+                }
+
+        @self.mcp_server.tool(
+            name="get_agent_details",
+            description="Get detailed information about a single agent by name including configuration, capabilities, and metadata.",
+        )
+        def get_agent_details(agent_name: str) -> Dict[str, Any]:
+            """
+            Get detailed information about a specific agent.
+
+            Args:
+                agent_name: Name of the agent to get information for.
+
+            Returns:
+                Dict containing detailed agent information
+            """
+            try:
+                if agent_name not in self.agents:
+                    return {
+                        "success": False,
+                        "error": f"Agent '{agent_name}' not found",
+                        "agent_info": None,
+                    }
+
+                agent_info = self.get_agent_info(agent_name)
+                discovery_info = self._get_agent_discovery_info(
+                    agent_name
+                )
+
+                return {
+                    "success": True,
+                    "agent_info": agent_info,
+                    "discovery_info": discovery_info,
+                }
+
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(
+                    f"Error in get_agent_details tool: {error_msg}"
+                )
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "agent_info": None,
+                }
+
+        @self.mcp_server.tool(
+            name="get_agents_info",
+            description="Get detailed information about multiple agents by providing a list of agent names.",
+        )
+        def get_agents_info(agent_names: List[str]) -> Dict[str, Any]:
+            """
+            Get detailed information about multiple agents.
+
+            Args:
+                agent_names: List of agent names to get information for.
+
+            Returns:
+                Dict containing detailed information for all requested agents
+            """
+            try:
+                if not agent_names:
+                    return {
+                        "success": False,
+                        "error": "No agent names provided",
+                        "agents_info": [],
+                    }
+
+                agents_info = []
+                not_found = []
+
+                for agent_name in agent_names:
+                    if agent_name in self.agents:
+                        agent_info = self.get_agent_info(agent_name)
+                        discovery_info = (
+                            self._get_agent_discovery_info(agent_name)
+                        )
+                        agents_info.append(
+                            {
+                                "agent_name": agent_name,
+                                "agent_info": agent_info,
+                                "discovery_info": discovery_info,
+                            }
+                        )
+                    else:
+                        not_found.append(agent_name)
+
+                return {
+                    "success": True,
+                    "agents_info": agents_info,
+                    "not_found": not_found,
+                    "total_found": len(agents_info),
+                    "total_requested": len(agent_names),
+                }
+
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(
+                    f"Error in get_agents_info tool: {error_msg}"
+                )
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "agents_info": [],
+                }
+
+        @self.mcp_server.tool(
+            name="list_agents",
+            description="Get a simple list of all available agent names in the cluster.",
+        )
+        def list_agents() -> Dict[str, Any]:
+            """
+            Get a list of all available agent names.
+
+            Returns:
+                Dict containing the list of agent names
+            """
+            try:
+                agent_names = self.list_agents()
+                return {
+                    "success": True,
+                    "agent_names": agent_names,
+                    "total_count": len(agent_names),
+                }
+
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(
+                    f"Error in list_agents tool: {error_msg}"
+                )
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "agent_names": [],
+                }
+
+        @self.mcp_server.tool(
+            name="search_agents",
+            description="Search for agents by name, description, tags, or capabilities using keyword matching.",
+        )
+        def search_agents(
+            query: str, search_fields: List[str] = None
+        ) -> Dict[str, Any]:
+            """
+            Search for agents using keyword matching.
+
+            Args:
+                query: Search query string
+                search_fields: Optional list of fields to search in (name, description, tags, capabilities).
+                              If None, searches all fields.
+
+            Returns:
+                Dict containing matching agents
+            """
+            try:
+                if not query:
+                    return {
+                        "success": False,
+                        "error": "No search query provided",
+                        "matching_agents": [],
+                    }
+
+                # Default search fields
+                if search_fields is None:
+                    search_fields = [
+                        "name",
+                        "description",
+                        "tags",
+                        "capabilities",
+                    ]
+
+                query_lower = query.lower()
+                matching_agents = []
+
+                for tool_name in self.agents.keys():
+                    discovery_info = self._get_agent_discovery_info(
+                        tool_name
+                    )
+                    if not discovery_info:
+                        continue
+
+                    match_found = False
+
+                    # Search in specified fields
+                    for field in search_fields:
+                        if (
+                            field == "name"
+                            and query_lower
+                            in discovery_info.get(
+                                "agent_name", ""
+                            ).lower()
+                        ):
+                            match_found = True
+                            break
+                        elif (
+                            field == "description"
+                            and query_lower
+                            in discovery_info.get(
+                                "description", ""
+                            ).lower()
+                        ):
+                            match_found = True
+                            break
+                        elif field == "tags":
+                            tags = discovery_info.get("tags", [])
+                            if any(
+                                query_lower in tag.lower()
+                                for tag in tags
+                            ):
+                                match_found = True
+                                break
+                        elif field == "capabilities":
+                            capabilities = discovery_info.get(
+                                "capabilities", []
+                            )
+                            if any(
+                                query_lower in capability.lower()
+                                for capability in capabilities
+                            ):
+                                match_found = True
+                                break
+
+                    if match_found:
+                        matching_agents.append(discovery_info)
+
+                return {
+                    "success": True,
+                    "matching_agents": matching_agents,
+                    "total_matches": len(matching_agents),
+                    "query": query,
+                    "search_fields": search_fields,
+                }
+
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(
+                    f"Error in search_agents tool: {error_msg}"
+                )
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "matching_agents": [],
+                }
+
+    def _register_queue_management_tools(self) -> None:
+        """
+        Register queue management tools for the MCP server.
+        """
+
+        @self.mcp_server.tool(
+            name="get_queue_stats",
+            description="Get queue statistics for agents including task counts, processing times, and queue status.",
+        )
+        def get_queue_stats(agent_name: str = None) -> Dict[str, Any]:
+            """
+            Get queue statistics for agents.
+
+            Args:
+                agent_name: Optional specific agent name. If None, returns stats for all agents.
+
+            Returns:
+                Dict containing queue statistics
+            """
+            return self.get_queue_stats(agent_name)
+
+        @self.mcp_server.tool(
+            name="pause_agent_queue",
+            description="Pause the task queue for a specific agent.",
+        )
+        def pause_agent_queue(agent_name: str) -> Dict[str, Any]:
+            """
+            Pause the task queue for a specific agent.
+
+            Args:
+                agent_name: Name of the agent tool
+
+            Returns:
+                Dict containing success status
+            """
+            success = self.pause_agent_queue(agent_name)
+            return {
+                "success": success,
+                "message": f"Queue for agent '{agent_name}' {'paused' if success else 'not found or already paused'}",
+            }
+
+        @self.mcp_server.tool(
+            name="resume_agent_queue",
+            description="Resume the task queue for a specific agent.",
+        )
+        def resume_agent_queue(agent_name: str) -> Dict[str, Any]:
+            """
+            Resume the task queue for a specific agent.
+
+            Args:
+                agent_name: Name of the agent tool
+
+            Returns:
+                Dict containing success status
+            """
+            success = self.resume_agent_queue(agent_name)
+            return {
+                "success": success,
+                "message": f"Queue for agent '{agent_name}' {'resumed' if success else 'not found or already running'}",
+            }
+
+        @self.mcp_server.tool(
+            name="clear_agent_queue",
+            description="Clear all pending tasks from an agent's queue.",
+        )
+        def clear_agent_queue(agent_name: str) -> Dict[str, Any]:
+            """
+            Clear all pending tasks from an agent's queue.
+
+            Args:
+                agent_name: Name of the agent tool
+
+            Returns:
+                Dict containing number of tasks cleared
+            """
+            cleared_count = self.clear_agent_queue(agent_name)
+            return {
+                "success": cleared_count >= 0,
+                "cleared_tasks": cleared_count,
+                "message": (
+                    f"Cleared {cleared_count} tasks from queue for agent '{agent_name}'"
+                    if cleared_count >= 0
+                    else f"Failed to clear queue for agent '{agent_name}'"
+                ),
+            }
+
+        @self.mcp_server.tool(
+            name="get_task_status",
+            description="Get the status of a specific task by task ID.",
+        )
+        def get_task_status(
+            agent_name: str, task_id: str
+        ) -> Dict[str, Any]:
+            """
+            Get the status of a specific task.
+
+            Args:
+                agent_name: Name of the agent tool
+                task_id: ID of the task
+
+            Returns:
+                Dict containing task status information
+            """
+            return self.get_task_status(agent_name, task_id)
+
+        @self.mcp_server.tool(
+            name="cancel_task",
+            description="Cancel a specific task by task ID.",
+        )
+        def cancel_task(
+            agent_name: str, task_id: str
+        ) -> Dict[str, Any]:
+            """
+            Cancel a specific task.
+
+            Args:
+                agent_name: Name of the agent tool
+                task_id: ID of the task to cancel
+
+            Returns:
+                Dict containing success status
+            """
+            success = self.cancel_task(agent_name, task_id)
+            return {
+                "success": success,
+                "message": f"Task '{task_id}' {'cancelled' if success else 'not found or already processed'}",
+            }
+
+        @self.mcp_server.tool(
+            name="pause_all_queues",
+            description="Pause all agent queues.",
+        )
+        def pause_all_queues() -> Dict[str, Any]:
+            """
+            Pause all agent queues.
+
+            Returns:
+                Dict containing results for each agent
+            """
+            results = self.pause_all_queues()
+            return {
+                "success": True,
+                "results": results,
+                "total_agents": len(results),
+                "successful_pauses": sum(results.values()),
+            }
+
+        @self.mcp_server.tool(
+            name="resume_all_queues",
+            description="Resume all agent queues.",
+        )
+        def resume_all_queues() -> Dict[str, Any]:
+            """
+            Resume all agent queues.
+
+            Returns:
+                Dict containing results for each agent
+            """
+            results = self.resume_all_queues()
+            return {
+                "success": True,
+                "results": results,
+                "total_agents": len(results),
+                "successful_resumes": sum(results.values()),
+            }
+
+        @self.mcp_server.tool(
+            name="clear_all_queues",
+            description="Clear all agent queues.",
+        )
+        def clear_all_queues() -> Dict[str, Any]:
+            """
+            Clear all agent queues.
+
+            Returns:
+                Dict containing results for each agent
+            """
+            results = self.clear_all_queues()
+            total_cleared = sum(results.values())
+            return {
+                "success": True,
+                "results": results,
+                "total_agents": len(results),
+                "total_cleared": total_cleared,
+            }
+
+    def _get_agent_discovery_info(
+        self, tool_name: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get discovery information for a specific agent.
+
+        Args:
+            tool_name: Name of the agent tool
+
+        Returns:
+            Dict containing agent discovery information, or None if not found
+        """
+        if tool_name not in self.agents:
+            return None
+
+        agent = self.agents[tool_name]
+
+        # Get system prompt and truncate to 200 characters
+        system_prompt = getattr(agent, "system_prompt", "")
+        short_system_prompt = (
+            system_prompt[:200] + "..."
+            if len(system_prompt) > 200
+            else system_prompt
+        )
+
+        # Get tags (if available)
+        tags = getattr(agent, "tags", [])
+        if not tags:
+            tags = []
+
+        # Get capabilities (if available)
+        capabilities = getattr(agent, "capabilities", [])
+        if not capabilities:
+            capabilities = []
+
+        # Get role (if available)
+        role = getattr(agent, "role", "worker")
+
+        # Get model name
+        model_name = getattr(agent, "model_name", "Unknown")
+
+        info = {
+            "tool_name": tool_name,
+            "agent_name": agent.agent_name,
+            "description": agent.agent_description
+            or "No description available",
+            "short_system_prompt": short_system_prompt,
+            "tags": tags,
+            "capabilities": capabilities,
+            "role": role,
+            "model_name": model_name,
+            "max_loops": getattr(agent, "max_loops", 1),
+            "temperature": getattr(agent, "temperature", 0.5),
+            "max_tokens": getattr(agent, "max_tokens", 4096),
+        }
+
+        if self.verbose:
+            logger.debug(
+                f"Retrieved discovery info for agent '{tool_name}': {info}"
+            )
+
+        return info
+
     def start_server(self) -> None:
         """
         Start the MCP server.
@@ -607,34 +2192,67 @@ class AOP:
             port: Port to bind the server to
         """
         logger.info(
-            f"Starting MCP server '{self.server_name}' on {self.host}:{self.port}"
+            f"Starting MCP server '{self.server_name}' on {self.host}:{self.port}\n"
+            f"Transport: {self.transport}\n"
+            f"Log level: {self.log_level}\n"
+            f"Verbose mode: {self.verbose}\n"
+            f"Traceback enabled: {self.traceback_enabled}\n"
+            f"Queue enabled: {self.queue_enabled}\n"
+            f"Available tools: {self.list_agents()}"
         )
-        logger.info(f"Transport: {self.transport}")
-        logger.info(f"Log level: {self.log_level}")
-        logger.info(f"Verbose mode: {self.verbose}")
-        logger.info(f"Traceback enabled: {self.traceback_enabled}")
-        logger.info(f"Available tools: {self.list_agents()}")
 
         if self.verbose:
-            logger.debug("Server configuration:")
-            logger.debug(f"  - Server name: {self.server_name}")
-            logger.debug(f"  - Host: {self.host}")
-            logger.debug(f"  - Port: {self.port}")
-            logger.debug(f"  - Transport: {self.transport}")
-            logger.debug(f"  - Total agents: {len(self.agents)}")
+            logger.debug(
+                "Server configuration:\n"
+                f"  - Server name: {self.server_name}\n"
+                f"  - Host: {self.host}\n"
+                f"  - Port: {self.port}\n"
+                f"  - Transport: {self.transport}\n"
+                f"  - Queue enabled: {self.queue_enabled}\n"
+                f"  - Total agents: {len(self.agents)}"
+            )
             for tool_name, config in self.tool_configs.items():
                 logger.debug(
                     f"  - Tool '{tool_name}': timeout={config.timeout}s, verbose={config.verbose}, traceback={config.traceback_enabled}"
                 )
 
-        self.mcp_server.run(transport=self.transport)
+            if self.queue_enabled:
+                logger.debug(
+                    f"  - Max workers per agent: {self.max_workers_per_agent}"
+                )
+                logger.debug(
+                    f"  - Max queue size per agent: {self.max_queue_size_per_agent}"
+                )
+                logger.debug(
+                    f"  - Processing timeout: {self.processing_timeout}s"
+                )
+                logger.debug(f"  - Retry delay: {self.retry_delay}s")
 
-        # Note: FastMCP doesn't have a direct start method in the current implementation
-        # This would need to be implemented based on the specific MCP server setup
-        print(
+        try:
+            self.mcp_server.run(transport=self.transport)
+        except KeyboardInterrupt:
+            logger.info("Server interrupted by user")
+        finally:
+            # Clean up queues when server stops
+            if self.queue_enabled:
+                logger.info("Stopping all agent queues...")
+                for tool_name in list(self.task_queues.keys()):
+                    try:
+                        self.task_queues[tool_name].stop_workers()
+                        logger.debug(
+                            f"Stopped queue for agent '{tool_name}'"
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Error stopping queue for agent '{tool_name}': {e}"
+                        )
+
+        logger.info(
             f"MCP Server '{self.server_name}' is ready with {len(self.agents)} tools"
         )
-        print(f"Tools available: {', '.join(self.list_agents())}")
+        logger.info(
+            f"Tools available: {', '.join(self.list_agents())}"
+        )
 
     def run(self) -> None:
         """
@@ -651,17 +2269,48 @@ class AOP:
         """
         info = {
             "server_name": self.server_name,
+            "description": self.description,
             "total_tools": len(self.agents),
             "tools": self.list_agents(),
             "verbose": self.verbose,
             "traceback_enabled": self.traceback_enabled,
             "log_level": self.log_level,
             "transport": self.transport,
+            "queue_enabled": self.queue_enabled,
             "tool_details": {
                 tool_name: self.get_agent_info(tool_name)
                 for tool_name in self.agents.keys()
             },
         }
+
+        # Add queue information if enabled
+        if self.queue_enabled:
+            info["queue_config"] = {
+                "max_workers_per_agent": self.max_workers_per_agent,
+                "max_queue_size_per_agent": self.max_queue_size_per_agent,
+                "processing_timeout": self.processing_timeout,
+                "retry_delay": self.retry_delay,
+            }
+
+            # Add queue stats for each agent
+            queue_stats = {}
+            for tool_name in self.agents.keys():
+                if tool_name in self.task_queues:
+                    stats = self.task_queues[tool_name].get_stats()
+                    queue_stats[tool_name] = {
+                        "status": self.task_queues[tool_name]
+                        .get_status()
+                        .value,
+                        "total_tasks": stats.total_tasks,
+                        "completed_tasks": stats.completed_tasks,
+                        "failed_tasks": stats.failed_tasks,
+                        "pending_tasks": stats.pending_tasks,
+                        "processing_tasks": stats.processing_tasks,
+                        "average_processing_time": stats.average_processing_time,
+                        "queue_size": stats.queue_size,
+                    }
+
+            info["queue_stats"] = queue_stats
 
         if self.verbose:
             logger.debug(f"Retrieved server info: {info}")

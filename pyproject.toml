@@ -5,10 +5,10 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "8.4.0"
+version = "8.4.1"
 description = "Swarms - TGSC"
 license = "MIT"
-authors = ["Kye Gomez <kye@apac.ai>"]
+authors = ["Kye Gomez <kye@swarms.world>"]
 homepage = "https://github.com/kyegomez/swarms"
 documentation = "https://docs.swarms.world"
 readme = "README.md"
@@ -67,7 +67,6 @@ tenacity = "*"
 psutil = "*"
 python-dotenv = "*"
 PyYAML = "*"
-docstring_parser = "0.16" # TODO:
 networkx = "*"
 aiofiles = "*"
 rich = "*"
@@ -78,7 +77,8 @@ mcp = "*"
 aiohttp = "*"
 orjson = "*"
 schedule = "*"
-uvloop = {version = "*", markers = "sys_platform != 'win32'"}
+uvloop = {version = "*", markers = "sys_platform == 'linux' or sys_platform == 'darwin'"}
+winloop = {version = "*", markers = "sys_platform == 'win32'"}
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"

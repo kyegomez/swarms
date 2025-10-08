@@ -1,36 +1,28 @@
-import os
 import json
+import os
 from datetime import datetime
-from typing import List, Dict, Any, Callable
+from typing import Any, Callable, Dict, List
 
 from dotenv import load_dotenv
+from loguru import logger
 
 # Basic Imports for Swarms
 from swarms.structs import (
     Agent,
-    SequentialWorkflow,
-    ConcurrentWorkflow,
     AgentRearrange,
-    MixtureOfAgents,
-    SpreadSheetSwarm,
+    ConcurrentWorkflow,
     GroupChat,
-    MultiAgentRouter,
-    MajorityVoting,
-    SwarmRouter,
-    RoundRobinSwarm,
     InteractiveGroupChat,
+    MajorityVoting,
+    MixtureOfAgents,
+    MultiAgentRouter,
+    RoundRobinSwarm,
+    SequentialWorkflow,
+    SpreadSheetSwarm,
+    SwarmRouter,
 )
-
-# Import swarms not in __init__.py directly
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 from swarms.structs.tree_swarm import ForestSwarm, Tree, TreeAgent
-
-# Setup Logging
-from loguru import logger
-
-logger.add(
-    "test_runs/test_failures.log", rotation="10 MB", level="ERROR"
-)
 
 # Load environment variables
 load_dotenv()
@@ -463,8 +455,8 @@ def test_spreadsheet_swarm():
 def test_hierarchical_swarm():
     """Test HierarchicalSwarm structure"""
     try:
-        from swarms.utils.litellm_wrapper import LiteLLM
         from swarms.structs.hiearchical_swarm import SwarmSpec
+        from swarms.utils.litellm_wrapper import LiteLLM
 
         # Create worker agents
         workers = [

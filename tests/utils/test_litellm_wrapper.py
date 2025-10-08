@@ -1,20 +1,8 @@
 import asyncio
-import sys
 
 from loguru import logger
 
 from swarms.utils.litellm_wrapper import LiteLLM
-
-# Configure loguru logger
-logger.remove()  # Remove default handler
-logger.add(
-    "test_litellm.log",
-    rotation="1 MB",
-    format="{time} | {level} | {message}",
-    level="DEBUG",
-)
-logger.add(sys.stdout, level="INFO")
-
 
 tools = [
     {
