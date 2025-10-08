@@ -97,7 +97,7 @@ def create_functional_agents() -> List[Agent]:
 
     try:
         model = OpenAIChat(
-            api_key=api_key, model_name="gpt-4o", temperature=0.1
+            api_key=api_key, model_name="gpt-4.1", temperature=0.1
         )
 
         # Create boss agent

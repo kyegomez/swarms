@@ -39,7 +39,7 @@ legal_expert = Agent(
     3. Ensuring regulatory compliance
     4. Providing legal recommendations
     5. Drafting and reviewing legal documents""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -51,7 +51,7 @@ financial_expert = Agent(
     3. Assessing financial risks
     4. Providing financial projections
     5. Recommending financial strategies""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -63,7 +63,7 @@ business_expert = Agent(
     3. Assessing competitive advantages
     4. Providing strategic recommendations
     5. Planning business development""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -76,7 +76,7 @@ aggregator = Agent(
     3. Prioritizing recommendations
     4. Providing coherent final decisions
     5. Ensuring comprehensive coverage of all aspects""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 ```
@@ -184,7 +184,7 @@ market_analyst = Agent(
     3. Customer segments
     4. Market trends
     5. Entry barriers""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -196,7 +196,7 @@ financial_analyst = Agent(
     3. Cash flow analysis
     4. Investment requirements
     5. ROI projections""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -208,7 +208,7 @@ risk_analyst = Agent(
     3. Financial risks
     4. Regulatory risks
     5. Strategic risks""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -221,7 +221,7 @@ aggregator = Agent(
     3. Evaluating trade-offs
     4. Making recommendations
     5. Providing action plans""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 

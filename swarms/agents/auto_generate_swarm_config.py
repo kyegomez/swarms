@@ -181,7 +181,7 @@ swarm_architecture:
 def generate_swarm_config(
     task: str,
     file_name: str = "swarm_config_output.yaml",
-    model_name: str = "gpt-4o",
+    model_name: str = "gpt-4.1",
     *args,
     **kwargs,
 ):
@@ -194,7 +194,7 @@ def generate_swarm_config(
     Args:
         task (str): The task to be performed by the swarm.
         file_name (str, optional): The file name for the output YAML configuration. Defaults to "swarm_config_output.yaml".
-        model_name (str, optional): The name of the model to use for the agent. Defaults to "gpt-4o".
+        model_name (str, optional): The name of the model to use for the agent. Defaults to "gpt-4.1".
         *args: Additional positional arguments to be passed to the agent's run method.
         **kwargs: Additional keyword arguments to be passed to the agent's run method.
 

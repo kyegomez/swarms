@@ -110,7 +110,7 @@ for doc in documents:
 agent = Agent(
     agent_name="RAG-Agent",
     agent_description="Agent with Qdrant-powered RAG for enhanced knowledge retrieval",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
     dynamic_temperature_enabled=True,
     long_term_memory=rag_db
@@ -186,7 +186,7 @@ for i, result in enumerate(results_with_metadata):
 agent = Agent(
     agent_name="Advanced-RAG-Agent",
     agent_description="Advanced agent with metadata-enhanced RAG capabilities",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
     dynamic_temperature_enabled=True,
     long_term_memory=rag_db
@@ -330,7 +330,7 @@ for doc in company_documents:
 agent = Agent(
     agent_name="Company-DocQA-Agent",
     agent_description="Intelligent document Q&A system for company information",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     long_term_memory=rag_db
 )
 
@@ -355,7 +355,7 @@ class KnowledgeBaseAgent:
         self.agent = Agent(
             agent_name="KB-Management-Agent",
             agent_description="Knowledge base management and retrieval system",
-            model_name="gpt-4o",
+            model_name="gpt-4.1",
             long_term_memory=self.rag_db
         )
     

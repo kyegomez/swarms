@@ -51,12 +51,12 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 research_agent = Agent(
     agent_name="Research-Specialist",
     agent_description="Expert in market research and analysis",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 financial_agent = Agent(
     agent_name="Financial-Analyst",
     agent_description="Specialist in financial analysis and valuation",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the hierarchical swarm

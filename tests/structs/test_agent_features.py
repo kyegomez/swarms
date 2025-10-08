@@ -14,7 +14,7 @@ def test_basic_agent_functionality():
     """Test basic agent initialization and simple task execution"""
     print("\nTesting basic agent functionality...")
 
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
     agent = Agent(agent_name="Test-Agent", llm=model, max_loops=1)
 
     response = agent.run("What is 2+2?")
@@ -34,7 +34,7 @@ def test_memory_management():
     """Test agent memory management functionality"""
     print("\nTesting memory management...")
 
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
     agent = Agent(
         agent_name="Memory-Test-Agent",
         llm=model,
@@ -63,7 +63,7 @@ def test_agent_output_formats():
     """Test all available output formats"""
     print("\nTesting all output formats...")
 
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
     test_task = "Say hello!"
 
     output_types = {
@@ -110,7 +110,7 @@ def test_agent_state_management():
     """Test comprehensive state management functionality"""
     print("\nTesting state management...")
 
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
 
     # Create temporary directory for test files
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -175,7 +175,7 @@ def test_agent_tools_and_execution():
         """Sample tool that adds two numbers"""
         return x + y
 
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
     agent = Agent(
         agent_name="Tools-Test-Agent",
         llm=model,
@@ -202,7 +202,7 @@ def test_agent_concurrent_execution():
     """Test agent concurrent execution capabilities"""
     print("\nTesting concurrent execution...")
 
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
     agent = Agent(
         agent_name="Concurrent-Test-Agent", llm=model, max_loops=1
     )
@@ -235,7 +235,7 @@ def test_agent_error_handling():
     """Test agent error handling and recovery"""
     print("\nTesting error handling...")
 
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
     agent = Agent(
         agent_name="Error-Test-Agent",
         llm=model,
@@ -262,7 +262,7 @@ def test_agent_configuration():
     """Test agent configuration and parameters"""
     print("\nTesting agent configuration...")
 
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
     agent = Agent(
         agent_name="Config-Test-Agent",
         llm=model,
@@ -301,7 +301,7 @@ def test_agent_with_stopping_condition():
     def custom_stopping_condition(response: str) -> bool:
         return "STOP" in response.upper()
 
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
     agent = Agent(
         agent_name="Stopping-Condition-Agent",
         llm=model,
@@ -318,7 +318,7 @@ def test_agent_with_retry_mechanism():
     """Test agent retry mechanism"""
     print("\nTesting agent retry mechanism...")
 
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
     agent = Agent(
         agent_name="Retry-Test-Agent",
         llm=model,
@@ -336,7 +336,7 @@ def test_bulk_and_filtered_operations():
     """Test bulk operations and response filtering"""
     print("\nTesting bulk and filtered operations...")
 
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
     agent = Agent(
         agent_name="Bulk-Filter-Test-Agent", llm=model, max_loops=1
     )
@@ -368,7 +368,7 @@ async def test_async_operations():
     """Test asynchronous operations"""
     print("\nTesting async operations...")
 
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
     agent = Agent(
         agent_name="Async-Test-Agent", llm=model, max_loops=1
     )
@@ -397,7 +397,7 @@ def test_memory_and_state_persistence():
         state_path = os.path.join(temp_dir, "test_state.json")
 
         # Create agent with memory configuration
-        model = OpenAIChat(model_name="gpt-4o")
+        model = OpenAIChat(model_name="gpt-4.1")
         agent1 = Agent(
             agent_name="Memory-State-Test-Agent",
             llm=model,
@@ -445,7 +445,7 @@ def test_sentiment_and_evaluation():
         """Mock evaluator that checks response quality"""
         return "GOOD" if len(response) > 10 else "BAD"
 
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
     agent = Agent(
         agent_name="Sentiment-Eval-Test-Agent",
         llm=model,
@@ -476,7 +476,7 @@ def test_tool_management():
         """Sample tool 2"""
         return x + 2
 
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
     agent = Agent(
         agent_name="Tool-Test-Agent",
         llm=model,
@@ -503,7 +503,7 @@ def test_system_prompt_and_configuration():
     """Test system prompt and configuration updates"""
     print("\nTesting system prompt and configuration...")
 
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
     agent = Agent(
         agent_name="Config-Test-Agent", llm=model, max_loops=1
     )
@@ -535,7 +535,7 @@ def test_agent_with_dynamic_temperature():
     """Test agent with dynamic temperature"""
     print("\nTesting agent with dynamic temperature...")
 
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
     agent = Agent(
         agent_name="Dynamic-Temp-Agent",
         llm=model,

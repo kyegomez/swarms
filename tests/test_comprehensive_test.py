@@ -1,36 +1,28 @@
-import os
 import json
+import os
 from datetime import datetime
-from typing import List, Dict, Any, Callable
+from typing import Any, Callable, Dict, List
 
 from dotenv import load_dotenv
+from loguru import logger
 
 # Basic Imports for Swarms
 from swarms.structs import (
     Agent,
-    SequentialWorkflow,
-    ConcurrentWorkflow,
     AgentRearrange,
-    MixtureOfAgents,
-    SpreadSheetSwarm,
+    ConcurrentWorkflow,
     GroupChat,
-    MultiAgentRouter,
-    MajorityVoting,
-    SwarmRouter,
-    RoundRobinSwarm,
     InteractiveGroupChat,
+    MajorityVoting,
+    MixtureOfAgents,
+    MultiAgentRouter,
+    RoundRobinSwarm,
+    SequentialWorkflow,
+    SpreadSheetSwarm,
+    SwarmRouter,
 )
-
-# Import swarms not in __init__.py directly
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 from swarms.structs.tree_swarm import ForestSwarm, Tree, TreeAgent
-
-# Setup Logging
-from loguru import logger
-
-logger.add(
-    "test_runs/test_failures.log", rotation="10 MB", level="ERROR"
-)
 
 # Load environment variables
 load_dotenv()
@@ -159,7 +151,7 @@ def write_markdown_report(
 def create_test_agent(
     name: str,
     system_prompt: str = None,
-    model_name: str = "gpt-4o-mini",
+    model_name: str = "gpt-4.1",
     tools: List[Callable] = None,
     **kwargs,
 ) -> Agent:
@@ -246,7 +238,7 @@ def test_tool_execution_with_agent():
 def test_multimodal_execution():
     """Test agent's ability to process images"""
     agent = create_test_agent(
-        "VisionAgent", model_name="gpt-4o", multi_modal=True
+        "VisionAgent", model_name="gpt-4.1", multi_modal=True
     )
 
     try:
@@ -463,10 +455,8 @@ def test_spreadsheet_swarm():
 def test_hierarchical_swarm():
     """Test HierarchicalSwarm structure"""
     try:
-        from swarms.utils.function_caller_model import (
-            OpenAIFunctionCaller,
-        )
         from swarms.structs.hiearchical_swarm import SwarmSpec
+        from swarms.utils.litellm_wrapper import LiteLLM
 
         # Create worker agents
         workers = [
@@ -481,9 +471,9 @@ def test_hierarchical_swarm():
         ]
 
         # Create director agent with explicit knowledge of available agents
-        director = OpenAIFunctionCaller(
-            base_model=SwarmSpec,
-            api_key=API_KEY,
+        director = LiteLLM(
+            model_name="gpt-4.1",
+            response_format=SwarmSpec,
             system_prompt=(
                 "As the Director of this Hierarchical Agent Swarm, you coordinate tasks among agents. "
                 "You must ONLY assign tasks to the following available agents:\n"

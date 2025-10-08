@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-"""Test script to verify the improved formatter markdown rendering."""
-
 from swarms.utils.formatter import Formatter
 
 

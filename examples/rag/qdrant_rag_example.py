@@ -87,7 +87,7 @@ for doc in documents:
 agent = Agent(
     agent_name="RAG-Agent",
     agent_description="Agent with Qdrant-powered RAG for enhanced knowledge retrieval",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
     dynamic_temperature_enabled=True,
     long_term_memory=rag_db,

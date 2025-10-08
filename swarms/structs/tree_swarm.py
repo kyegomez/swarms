@@ -134,7 +134,7 @@ class TreeAgent(Agent):
         name: str = None,
         description: str = None,
         system_prompt: str = None,
-        model_name: str = "gpt-4o",
+        model_name: str = "gpt-4.1",
         agent_name: Optional[str] = None,
         embedding_model_name: str = "text-embedding-ada-002",
         *args,

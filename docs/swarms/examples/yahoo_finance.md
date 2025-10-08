@@ -42,7 +42,7 @@ agent = Agent(
     agent_description="Personal finance advisor agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     max_loops=1,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     tools=[yahoo_finance_api],
 )
 

@@ -18,12 +18,12 @@ If you're adding a new integration, please include:
 
 
 Maintainer responsibilities:
-  - General / Misc / if you don't know who to tag: kye@apac.ai
-  - DataLoaders / VectorStores / Retrievers: kye@apac.ai
-  - swarms.models: kye@apac.ai
-  - swarms.memory: kye@apac.ai
-  - swarms.structures: kye@apac.ai
+  - General / Misc / if you don't know who to tag: kye@swarms.world
+  - DataLoaders / VectorStores / Retrievers: kye@swarms.world
+  - swarms.models: kye@swarms.world
+  - swarms.memory: kye@swarms.world
+  - swarms.structures: kye@swarms.world
 
-If no one reviews your PR within a few days, feel free to email Kye at kye@apac.ai
+If no one reviews your PR within a few days, feel free to email Kye at kye@swarms.world
 
 See contribution guidelines for more information on how to write/run tests, lint, etc: https://github.com/kyegomez/swarms

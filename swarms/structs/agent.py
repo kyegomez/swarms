@@ -302,19 +302,19 @@ class Agent:
 
     Examples:
     >>> from swarms import Agent
-    >>> agent = Agent(model_name="gpt-4o", max_loops=1)
+    >>> agent = Agent(model_name="gpt-4.1", max_loops=1)
     >>> response = agent.run("Generate a report on the financials.")
     >>> print(response)
     >>> # Generate a report on the financials.
 
     >>> # Real-time streaming example
-    >>> agent = Agent(model_name="gpt-4o", max_loops=1, streaming_on=True)
+    >>> agent = Agent(model_name="gpt-4.1", max_loops=1, streaming_on=True)
     >>> response = agent.run("Tell me a long story.")  # Will stream in real-time
     >>> print(response)  # Final complete response
 
     >>> # Fallback model example
     >>> agent = Agent(
-    ...     fallback_models=["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"],
+    ...     fallback_models=["gpt-4.1", "gpt-4o-mini", "gpt-3.5-turbo"],
     ...     max_loops=1
     ... )
     >>> response = agent.run("Generate a report on the financials.")
@@ -2406,12 +2406,14 @@ class Agent:
             Dict[str, Any]: A dictionary representation of the class attributes.
         """
 
-        # Remove the llm object from the dictionary
-        self.__dict__.pop("llm", None)
+        # Create a copy of the dict to avoid mutating the original object
+        # Remove the llm object from the copy since it's not serializable
+        dict_copy = self.__dict__.copy()
+        dict_copy.pop("llm", None)
 
         return {
             attr_name: self._serialize_attr(attr_name, attr_value)
-            for attr_name, attr_value in self.__dict__.items()
+            for attr_name, attr_value in dict_copy.items()
         }
 
     def to_json(self, indent: int = 4, *args, **kwargs):

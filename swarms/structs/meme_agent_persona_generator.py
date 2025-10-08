@@ -1,5 +1,4 @@
 import json
-import os
 from typing import List
 
 
@@ -9,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import SwarmRouter
-from swarms.utils.function_caller_model import OpenAIFunctionCaller
+from swarms.utils.litellm_wrapper import LiteLLM
 
 load_dotenv()
 
@@ -162,11 +161,11 @@ class MemeAgentGenerator:
             list: List of created agents
         """
         logger.info("Creating agents for task")
-        model = OpenAIFunctionCaller(
+        model = LiteLLM(
+            model_name="gpt-4.1",
             system_prompt=BOSS_SYSTEM_PROMPT,
-            api_key=os.getenv("OPENAI_API_KEY"),
             temperature=0.1,
-            base_model=MemeSwarmConfig,
+            response_format=MemeSwarmConfig,
         )
 
         agents_dictionary = model.run(task)
@@ -227,7 +226,7 @@ class MemeAgentGenerator:
             agent_name=agent_name,
             description=agent_description,
             system_prompt=agent_system_prompt,
-            model_name="gpt-4o-mini",
+            model_name="gpt-4.1",
             max_loops=max_loops,
             autosave=True,
             dashboard=False,

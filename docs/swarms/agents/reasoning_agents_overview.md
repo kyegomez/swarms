@@ -377,7 +377,7 @@ consistency_agent = SelfConsistencyAgent(
 
 # Reasoning Duo for collaborative analysis workflows
 duo_agent = ReasoningDuo(
-    model_names=["gpt-4o-mini", "gpt-4o"]
+    model_names=["gpt-4o-mini", "gpt-4.1"]
 )
 
 # Reflexion Agent for adaptive learning scenarios

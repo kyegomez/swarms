@@ -210,7 +210,7 @@ class LiteLLM:
 
     def __init__(
         self,
-        model_name: str = "gpt-4o",
+        model_name: str = "gpt-4.1",
         system_prompt: str = None,
         stream: bool = False,
         temperature: float = 0.5,
@@ -243,7 +243,7 @@ class LiteLLM:
         Initialize the LiteLLM with the given parameters.
 
         Args:
-            model_name (str, optional): The name of the model to use. Defaults to "gpt-4o".
+            model_name (str, optional): The name of the model to use. Defaults to "gpt-4.1".
             system_prompt (str, optional): The system prompt to use. Defaults to None.
             stream (bool, optional): Whether to stream the output. Defaults to False.
             temperature (float, optional): The temperature for the model. Defaults to 0.5.
@@ -496,6 +496,7 @@ class LiteLLM:
 
             if isinstance(out, BaseModel):
                 out = out.model_dump()
+
             return out
 
     def output_for_reasoning(self, response: any):

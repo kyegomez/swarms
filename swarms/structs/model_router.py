@@ -4,13 +4,12 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 from pydantic import BaseModel, Field
 
-from swarms.utils.function_caller_model import OpenAIFunctionCaller
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.formatter import formatter
 from swarms.utils.litellm_wrapper import LiteLLM
 
 model_recommendations = {
-    "gpt-4o": {
+    "gpt-4.1": {
         "description": "Fast and efficient for simple tasks and general queries",
         "best_for": [
             "Simple queries",
@@ -174,7 +173,7 @@ class ModelRouter:
         temperature (float): Temperature parameter for model randomness
         max_workers (int): Maximum concurrent workers for batch processing
         model_output (ModelOutput): Pydantic model for structured outputs
-        model_caller (OpenAIFunctionCaller): Function calling interface
+        model_caller (LiteLLM): Function calling interface
     """
 
     def __init__(
@@ -210,11 +209,11 @@ class ModelRouter:
             if self.max_workers == "auto":
                 self.max_workers = os.cpu_count()
 
-            self.model_caller = OpenAIFunctionCaller(
-                base_model=ModelOutput,
+            self.model_caller = LiteLLM(
+                model_name="gpt-4o",
+                response_format=ModelOutput,
                 temperature=self.temperature,
                 system_prompt=self.system_prompt,
-                api_key=api_key,
             )
         except Exception as e:
             raise RuntimeError(

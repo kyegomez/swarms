@@ -107,19 +107,19 @@ from swarms import Agent, SequentialWorkflow
 agent1 = Agent(
   agent_name="ICD-10 Code Analyzer",
   system_prompt="Analyze medical data and provide relevant ICD-10 codes.",
-  model_name="gpt-4o",
+  model_name="gpt-4.1",
   max_loops=1,
 )
 agent2 = Agent(
   agent_name="ICD-10 Code Summarizer",
   system_prompt="Summarize the findings and suggest ICD-10 codes.",
-  model_name="gpt-4o",
+  model_name="gpt-4.1",
   max_loops=1,
 )
 agent3 = Agent(
   agent_name="ICD-10 Code Validator",
   system_prompt="Validate and finalize the ICD-10 code recommendations.",
-  model_name="gpt-4o",
+  model_name="gpt-4.1",
   max_loops=1,
 )
 

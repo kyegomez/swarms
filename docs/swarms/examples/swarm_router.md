@@ -35,21 +35,21 @@ from swarms.structs.swarm_router import SwarmRouter, SwarmType
 data_extractor_agent = Agent(
     agent_name="Data-Extractor",
     system_prompt="You are a data extraction specialist...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
 summarizer_agent = Agent(
     agent_name="Document-Summarizer",
     system_prompt="You are a document summarization expert...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
 financial_analyst_agent = Agent(
     agent_name="Financial-Analyst",
     system_prompt="You are a financial analysis specialist...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 ```
@@ -193,21 +193,21 @@ from swarms.structs.swarm_router import SwarmRouter, SwarmType
 research_agent = Agent(
     agent_name="ResearchAgent",
     system_prompt="You are a research specialist...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1
 )
 
 analysis_agent = Agent(
     agent_name="AnalysisAgent",
     system_prompt="You are an analysis expert...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1
 )
 
 summary_agent = Agent(
     agent_name="SummaryAgent",
     system_prompt="You are a summarization specialist...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1
 )
 

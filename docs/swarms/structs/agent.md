@@ -894,7 +894,7 @@ agent = Agent(
     output_type="json",
     
     # LLM Configuration
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     temperature=0.3,
     max_tokens=8000,
     top_p=0.95,

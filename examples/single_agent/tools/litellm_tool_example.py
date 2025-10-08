@@ -40,7 +40,7 @@ tool_schema = BaseTool(
 tool_schema = tool_schema["functions"][0]
 
 llm = LiteLLM(
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 print(

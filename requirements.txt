@@ -9,7 +9,6 @@ rich
 psutil
 python-dotenv
 PyYAML
-docstring_parser==0.16
 black
 ruff
 types-toml>=0.10.8.1
@@ -24,7 +23,7 @@ httpx
 aiohttp
 mcp
 numpy
-openai
 orjson
 schedule
-uvloop
+uvloop; sys_platform == 'linux' or sys_platform == 'darwin' # linux or macos only
+winloop; sys_platform == 'win32' # windows only

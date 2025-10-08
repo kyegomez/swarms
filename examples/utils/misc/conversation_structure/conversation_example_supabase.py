@@ -130,7 +130,7 @@ def create_aggregator_agent() -> Agent:
         - Detailed Analysis
         - Key Recommendations
         - Implementation Steps""",
-        model_name="gpt-4o",
+        model_name="gpt-4.1",
         max_loops=1,
         verbose=True,
         output_type="string",
@@ -141,7 +141,7 @@ def aggregate_with_supabase(
     workers: List[Agent],
     task: str = None,
     type: HistoryOutputType = "all",
-    aggregator_model_name: str = "gpt-4o",
+    aggregator_model_name: str = "gpt-4.1",
     # Backend parameters for conversation storage
     backend: str = "supabase",
     supabase_url: str = None,

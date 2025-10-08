@@ -27,7 +27,7 @@ lead_analyst = Agent(
     - Negotiation Points
     - Recommended Actions
     - Areas Requiring Specialist Review""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -62,7 +62,7 @@ safe_specialist = Agent(
     - Conversion mechanics explanation
     - Risk assessment for non-standard terms
     - Recommendations for negotiations""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -103,7 +103,7 @@ term_sheet_analyst = Agent(
     - Founder impact analysis
     - Investor rights summary
     - Governance implications""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -144,7 +144,7 @@ legal_analyst = Agent(
     - Required disclosures list
     - Recommended legal modifications
     - Jurisdiction-specific concerns""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -184,7 +184,7 @@ market_analyst = Agent(
     - Trend implications
     - Negotiation leverage points
     - Recommended modifications""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 

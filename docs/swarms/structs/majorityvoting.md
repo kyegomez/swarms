@@ -57,7 +57,7 @@ class MajorityVoting:
         consensus_agent_prompt: str = CONSENSUS_AGENT_PROMPT,
         consensus_agent_name: str = "Consensus-Agent",
         consensus_agent_description: str = "An agent that uses consensus to generate a final answer.",
-        consensus_agent_model_name: str = "gpt-4o",
+        consensus_agent_model_name: str = "gpt-4.1",
         additional_consensus_agent_kwargs: dict = {},
         *args,
         **kwargs,
@@ -79,7 +79,7 @@ class MajorityVoting:
 | `consensus_agent_prompt` | `str` | `CONSENSUS_AGENT_PROMPT` | System prompt for the consensus agent. |
 | `consensus_agent_name` | `str` | `"Consensus-Agent"` | Name for the automatically created consensus agent. |
 | `consensus_agent_description` | `str` | `"An agent that uses consensus to generate a final answer."` | Description for the consensus agent. |
-| `consensus_agent_model_name` | `str` | `"gpt-4o"` | Model name for the consensus agent. |
+| `consensus_agent_model_name` | `str` | `"gpt-4.1"` | Model name for the consensus agent. |
 | `additional_consensus_agent_kwargs` | `dict` | `{}` | Additional keyword arguments passed to the consensus agent. |
 | `*args`          | `Any`             | -             | Variable length argument list passed to Conversation.                      |
 | `**kwargs`       | `Any`             | -             | Arbitrary keyword arguments passed to Conversation.                        |
@@ -619,7 +619,7 @@ technical_agent = Agent(
     agent_description="Specialized in technical analysis, chart patterns, and trading signals",
     system_prompt=TECHNICAL_ANALYSIS_PROMPT,
     max_loops=1,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 fundamental_agent = Agent(
@@ -627,7 +627,7 @@ fundamental_agent = Agent(
     agent_description="Specialized in financial statement analysis and company valuation",
     system_prompt=FUNDAMENTAL_ANALYSIS_PROMPT,
     max_loops=1,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 risk_agent = Agent(
@@ -635,7 +635,7 @@ risk_agent = Agent(
     agent_description="Specialized in portfolio optimization and risk management strategies",
     system_prompt=RISK_MANAGEMENT_PROMPT,
     max_loops=1,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Create the majority voting swarm with the three specialized quant agents
@@ -671,21 +671,21 @@ agents = [
         agent_description="Market trend analyst",
         system_prompt="You are a market analyst specializing in identifying growth opportunities and market trends.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     ),
     Agent(
         agent_name="Risk-Assessment-Agent",
         agent_description="Risk analysis expert",
         system_prompt="You are a risk assessment expert focused on evaluating investment risks and volatility.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     ),
     Agent(
         agent_name="Portfolio-Strategy-Agent",
         agent_description="Portfolio optimization specialist",
         system_prompt="You are a portfolio strategist focused on diversification and long-term growth strategies.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     )
 ]
 
@@ -726,28 +726,28 @@ content_agents = [
         agent_description="Creative content specialist",
         system_prompt="You are a creative writer who produces engaging, story-driven content with vivid descriptions.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     ),
     Agent(
         agent_name="Technical-Writer",
         agent_description="Technical content specialist",
         system_prompt="You are a technical writer who focuses on clarity, accuracy, and structured information.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     ),
     Agent(
         agent_name="SEO-Optimized-Writer",
         agent_description="SEO content specialist",
         system_prompt="You are an SEO specialist who creates content optimized for search engines while maintaining quality.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     ),
     Agent(
         agent_name="Conversational-Writer",
         agent_description="Conversational content specialist",
         system_prompt="You are a conversational writer who creates relatable, engaging content that connects with readers.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     )
 ]
 
@@ -791,35 +791,35 @@ research_agents = [
         agent_description="Quantitative research specialist",
         system_prompt="You are a quantitative researcher who analyzes data, statistics, and numerical evidence.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     ),
     Agent(
         agent_name="Qualitative-Researcher",
         agent_description="Qualitative research specialist",
         system_prompt="You are a qualitative researcher who focuses on patterns, themes, and contextual understanding.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     ),
     Agent(
         agent_name="Literature-Review-Specialist",
         agent_description="Literature review expert",
         system_prompt="You are a literature review specialist who synthesizes existing research and identifies knowledge gaps.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     ),
     Agent(
         agent_name="Methodology-Expert",
         agent_description="Research methodology specialist",
         system_prompt="You are a methodology expert who evaluates research design, validity, and reliability.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     ),
     Agent(
         agent_name="Ethics-Reviewer",
         agent_description="Research ethics specialist",
         system_prompt="You are an ethics reviewer who ensures research practices are responsible and unbiased.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     )
 ]
 

@@ -102,7 +102,7 @@ def initialize_agent() -> Agent:
     Initialize the Swarms agent with OpenAI model.
     """
     logger.info("Initializing the agent with GPT-4o")
-    model = OpenAIChat(model_name="gpt-4o")
+    model = OpenAIChat(model_name="gpt-4.1")
 
     agent = Agent(
         agent_name="Commit-Summarization-Agent",

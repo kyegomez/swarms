@@ -1,4 +1,3 @@
-import os
 from dotenv import load_dotenv
 
 # Swarm imports
@@ -7,7 +6,7 @@ from swarms.structs.hiearchical_swarm import (
     HierarchicalSwarm,
     SwarmSpec,
 )
-from swarms.utils.function_caller_model import OpenAIFunctionCaller
+from swarms.utils.litellm_wrapper import LiteLLM
 
 load_dotenv()
 
@@ -15,9 +14,9 @@ load_dotenv()
 # ------------------------------------------------------------------------------
 # Director LLM: Responsible for orchestrating tasks among the agents
 # ------------------------------------------------------------------------------
-llm = OpenAIFunctionCaller(
-    base_model=SwarmSpec,
-    api_key=os.getenv("OPENAI_API_KEY"),
+llm = LiteLLM(
+    model_name="gpt-4.1",
+    response_format=SwarmSpec,
     system_prompt=(
         "As the Director of this Hierarchical Agent Swarm, you are in charge of "
         "coordinating and overseeing all tasks, ensuring that each is executed "
@@ -57,7 +56,7 @@ def main():
     # --------------------------------------------------------------------------
     analysis_agent = Agent(
         agent_name="Stock-Analysis-Agent",
-        model_name="gpt-4o",
+        model_name="gpt-4.1",
         max_loops=1,
         interactive=False,
         streaming_on=False,

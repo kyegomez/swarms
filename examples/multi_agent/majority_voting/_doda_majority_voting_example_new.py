@@ -97,7 +97,7 @@ technical_agent = Agent(
     agent_description="Specialized in technical analysis, chart patterns, and trading signals",
     system_prompt=TECHNICAL_ANALYSIS_PROMPT,
     max_loops=1,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 fundamental_agent = Agent(
@@ -105,7 +105,7 @@ fundamental_agent = Agent(
     agent_description="Specialized in financial statement analysis and company valuation",
     system_prompt=FUNDAMENTAL_ANALYSIS_PROMPT,
     max_loops=1,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 risk_agent = Agent(
@@ -113,7 +113,7 @@ risk_agent = Agent(
     agent_description="Specialized in portfolio optimization and risk management strategies",
     system_prompt=RISK_MANAGEMENT_PROMPT,
     max_loops=1,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Create the majority voting swarm with the three specialized quant agents

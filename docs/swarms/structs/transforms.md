@@ -78,12 +78,12 @@ from swarms.structs.transforms import TransformConfig
 agent = Agent(
     agent_name="Trading-Agent",
     agent_description="Financial analysis agent",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
     transforms=TransformConfig(
         enabled=True,
         method="middle-out",
-        model_name="gpt-4o",
+        model_name="gpt-4.1",
         preserve_system_messages=True,
         preserve_recent_messages=3,
     ),
@@ -160,7 +160,7 @@ Built-in knowledge of popular models:
 # Supported models include:
 "gpt-4": 8192 tokens
 "gpt-4-turbo": 128000 tokens
-"gpt-4o": 128000 tokens
+"gpt-4.1": 128000 tokens
 "claude-3-opus": 200000 tokens
 "claude-3-sonnet": 200000 tokens
 # ... and many more
@@ -213,7 +213,7 @@ from swarms.structs.transforms import apply_transforms_to_messages
 # Apply transforms to messages directly
 result = apply_transforms_to_messages(
     messages=my_messages,
-    model_name="gpt-4o"
+    model_name="gpt-4.1"
 )
 ```
 
@@ -226,7 +226,7 @@ Transforms work seamlessly with conversation memory systems:
 def handle_transforms(
     transforms: MessageTransforms,
     short_memory: Conversation,
-    model_name: str = "gpt-4o"
+    model_name: str = "gpt-4.1"
 ) -> str:
     """Apply transforms to conversation memory."""
     messages = short_memory.return_messages_as_dictionary()
@@ -333,7 +333,7 @@ research_agent = Agent(
 # Support bot maintaining conversation history
 support_agent = Agent(
     agent_name="Support-Agent",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     transforms=TransformConfig(
         enabled=True,
         preserve_system_messages=True,
