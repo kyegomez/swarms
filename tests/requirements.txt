@@ -1,0 +1,4 @@
+swarms
+pytest
+matplotlib
+loguru
