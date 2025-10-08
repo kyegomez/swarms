@@ -183,6 +183,15 @@ $ docker-compose up -d
 
 For more Docker options and advanced usage, see our [Docker documentation](/scripts/docker/DOCKER.md).
 
+### Experimental Features
+
+Install Swarms with experimental features:
+
+```bash
+# Install with experimental features
+$ pip install swarms[experimental]
+```
+
 ---
 
 ## Environment Configuration
