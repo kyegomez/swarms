@@ -19,7 +19,9 @@ CASE: 34-year-old female with sudden severe headache
 from typing import List
 
 from swarms import Agent
-from simulations.agent_map_simulation import AgentMapSimulation
+from examples.multi_agent.simulations.agent_map.agent_map_simulation import (
+    AgentMapSimulation,
+)
 
 
 def create_medical_agent(

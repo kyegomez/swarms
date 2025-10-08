@@ -1,4 +1,4 @@
-from swarms.utils import math_eval
+from swarms.utils.math_eval import math_eval
 
 
 def func1_no_exception(x):

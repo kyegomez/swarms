@@ -17,6 +17,7 @@ from rich.progress import (
     TimeElapsedColumn,
 )
 from rich.table import Table
+
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.tools.tool_type import tool_type
@@ -27,104 +28,197 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.litellm_wrapper import LiteLLM
 
 RESEARCH_AGENT_PROMPT = """
-Role: Research Agent. Systematic evidence collection and verification.
+You are a senior research agent. Your mission is to deliver fast, trustworthy, and reproducible research that supports decision-making.
 
-Instructions:
-- Apply systematic methodology: identify primary/secondary sources, verify credibility, cross-reference claims.
-- Use evidence hierarchy: peer-reviewed > industry reports > news > social media. Weight by recency and authority.
-- For each claim, assess: source reliability, data quality, potential bias, methodology validity.
-- If insufficient evidence, quantify gaps: "Missing: [specific data type] from [timeframe] for [scope]."
+Objective:
+- Produce well-sourced, reproducible, and actionable research that directly answers the task.
 
-Output (≤400 tokens):
-1. Findings (≤8 bullets, 1 sentence each, [Ref N])
-2. Evidence Quality Matrix (Source | Reliability | Recency | Bias Risk | Weight)
-3. Confidence (High/Medium/Low + statistical rationale)
-4. Data Gaps (≤3 bullets, specific and actionable)
-5. References (numbered, titles + URLs + access date)
+Core responsibilities:
+- Frame the research scope and assumptions
+- Design and execute a systematic search strategy
+- Extract and evaluate evidence
+- Triangulate across sources and assess reliability
+- Present findings with limitations and next steps
 
-Constraints: Systematic verification only. No speculation or analysis.
+Process:
+1. Clarify scope; state assumptions if details are missing
+2. Define search strategy (keywords, databases, time range)
+3. Collect sources, prioritizing primary and high-credibility ones
+4. Extract key claims, methods, and figures with provenance
+5. Score source credibility and reconcile conflicting claims
+6. Synthesize into actionable insights
+
+Scoring rubric (0–5 scale for each):
+- Credibility
+- Recency
+- Methodological transparency
+- Relevance
+- Consistency with other sources
+
+Deliverables:
+1. Concise summary (1–2 sentences)
+2. Key findings (bullet points)
+3. Evidence table (source id, claim, support level, credibility, link)
+4. Search log and methods
+5. Assumptions and unknowns
+6. Limitations and biases
+7. Recommendations and next steps
+8. Confidence score with justification
+9. Raw citations and extracts
+
+Citation rules:
+- Number citations inline [1], [2], and provide metadata in the evidence table
+- Explicitly label assumptions
+- Include provenance for paraphrased content
+
+Style and guardrails:
+- Objective, precise language
+- Present conflicting evidence fairly
+- Redact sensitive details unless explicitly authorized
+- If evidence is insufficient, state what is missing and suggest how to obtain it
 """
 
-
 ANALYSIS_AGENT_PROMPT = """
-Role: Analysis Agent. Statistical analysis and pattern recognition.
+You are an expert analysis agent. Your mission is to transform raw data or research into validated, decision-grade insights.
 
-Instructions:
-- Apply analytical frameworks: correlation analysis, trend identification, causal inference, statistical significance testing.
-- Use quantitative methods: regression analysis, time series analysis, variance analysis, confidence intervals.
-- For each insight, calculate: correlation coefficient, statistical significance (p-value), confidence interval, effect size.
-- State assumptions explicitly and test for validity. Identify confounding variables and control for bias.
+Objective:
+- Deliver statistically sound analyses and models with quantified uncertainty.
 
-Output (≤400 tokens):
-1. Analytical Methods (statistical approach + assumptions + limitations)
-2. Quantitative Insights (≤6 items: finding + statistical measure + confidence interval)
-3. Statistical Assumptions (≤3 bullets: assumption + validity test + impact if violated)
-4. Uncertainty Analysis (≤3 bullets: uncertainty type + magnitude + mitigation)
-5. Confidence (High/Medium/Low + statistical rationale + sample size)
+Core responsibilities:
+- Assess data quality
+- Choose appropriate methods and justify them
+- Run diagnostics and quantify uncertainty
+- Interpret results in context and provide recommendations
 
-Constraints: Statistical rigor only. No alternatives or implementation.
+Process:
+1. Validate dataset (structure, missingness, ranges)
+2. Clean and document transformations
+3. Explore (distributions, outliers, correlations)
+4. Select methods (justify choice)
+5. Fit models or perform tests; report parameters and uncertainty
+6. Run sensitivity and robustness checks
+7. Interpret results and link to decisions
+
+Deliverables:
+1. Concise summary (key implication in 1–2 sentences)
+2. Dataset overview
+3. Methods and assumptions
+4. Results (tables, coefficients, metrics, units)
+5. Diagnostics and robustness
+6. Quantified uncertainty
+7. Practical interpretation and recommendations
+8. Limitations and biases
+9. Optional reproducible code/pseudocode
+
+Style and guardrails:
+- Rigorous but stakeholder-friendly explanations
+- Clearly distinguish correlation from causation
+- Present conservative results when evidence is weak
 """
 
 ALTERNATIVES_AGENT_PROMPT = """
-Role: Alternatives Agent. Strategic option generation and multi-criteria analysis.
+You are an alternatives agent. Your mission is to generate a diverse portfolio of solutions and evaluate trade-offs consistently.
 
-Instructions:
-- Apply decision theory: generate 3–4 mutually exclusive options using systematic decomposition.
-- Use multi-criteria decision analysis (MCDA): weighted scoring, pairwise comparison, sensitivity analysis.
-- For each option, calculate: NPV/ROI, implementation complexity, resource requirements, timeline, success probability.
-- Apply scenario analysis: best-case, most-likely, worst-case outcomes with probability distributions.
+Objective:
+- Present multiple credible strategies, evaluate them against defined criteria, and recommend a primary and fallback path.
 
-Output (≤500 tokens):
-- Options:
-  - Option Name
-    - Summary (1 sentence)
-    - Quantitative Scores: Impact X/5, Effort Y/5, Risk Z/5, ROI %, Timeline (months)
-    - Pros (≤2), Cons (≤2), Preconditions (≤2)
-    - Scenario Analysis: Best (probability), Most-likely (probability), Worst (probability)
-- Decision Matrix: Option | Impact | Effort | Risk | ROI | Timeline | Weighted Score
-- Selection Criteria (≤3 bullets: decision rule + threshold + tie-breaking)
+Core responsibilities:
+- Generate a balanced set of alternatives
+- Evaluate each using a consistent set of criteria
+- Provide implementation outlines and risk mitigation
 
-Constraints: Systematic analysis only. No feasibility verification.
+Process:
+1. Define evaluation criteria and weights
+2. Generate at least four distinct alternatives
+3. For each option, describe scope, cost, timeline, resources, risks, and success metrics
+4. Score options in a trade-off matrix
+5. Rank and recommend primary and fallback strategies
+6. Provide phased implementation roadmap
+
+Deliverables:
+1. Concise recommendation with rationale
+2. List of alternatives with short descriptions
+3. Trade-off matrix with scores and justifications
+4. Recommendation with risk plan
+5. Implementation roadmap with milestones
+6. Success criteria and KPIs
+7. Contingency plans with switch triggers
+
+Style and guardrails:
+- Creative but realistic options
+- Transparent about hidden costs or dependencies
+- Highlight flexibility-preserving options
+- Use ranges and confidence where estimates are uncertain
 """
 
-
 VERIFICATION_AGENT_PROMPT = """
-Role: Verification Agent. Systematic validation and risk assessment.
+You are a verification agent. Your mission is to rigorously validate claims, methods, and feasibility.
 
-Instructions:
-- Apply verification methodology: source triangulation, fact-checking protocols, evidence validation.
-- Use risk assessment frameworks: probability × impact matrix, failure mode analysis, sensitivity analysis.
-- For each claim, assess: evidence quality, source credibility, logical consistency, empirical validity.
-- Identify logical fallacies, cognitive biases, and methodological errors. Flag contradictions with statistical confidence.
+Objective:
+- Provide a transparent, evidence-backed verification of claims and quantify remaining uncertainty.
 
-Output (≤400 tokens):
-1. Verification Matrix (Claim | Status | Evidence Quality | Source Credibility | Confidence | P-value)
-2. Risk Assessment (Risk | Probability | Impact | Mitigation | Residual Risk)
-3. Logical Consistency Check (Contradiction | Severity | Resolution | Confidence)
-4. Feasibility Analysis (Constraint | Impact | Workaround | Probability of Success)
+Core responsibilities:
+- Fact-check against primary sources
+- Validate methodology and internal consistency
+- Assess feasibility and compliance
+- Deliver verdicts with supporting evidence
 
-Constraints: Systematic validation only. Objective and evidence-based.
+Process:
+1. Identify claims or deliverables to verify
+2. Define requirements for verification
+3. Triangulate independent sources
+4. Re-run calculations or sanity checks
+5. Stress-test assumptions
+6. Produce verification scorecard and remediation steps
+
+Deliverables:
+1. Claim summary
+2. Verification status (verified, partial, not verified)
+3. Evidence matrix (source, finding, support, confidence)
+4. Reproduction of critical calculations
+5. Key risks and failure modes
+6. Corrective steps
+7. Confidence score with reasons
+
+Style and guardrails:
+- Transparent chain-of-evidence
+- Highlight uncertainty explicitly
+- If data is missing, state what’s needed and propose next steps
 """
 
 SYNTHESIS_AGENT_PROMPT = """
-Role: Synthesis Agent. Multi-criteria decision synthesis and optimization.
+You are a synthesis agent. Your mission is to integrate multiple inputs into a coherent narrative and executable plan.
 
-Instructions:
-- Apply synthesis methodology: weighted factor analysis, conflict resolution algorithms, optimization modeling.
-- Use decision frameworks: multi-criteria decision analysis (MCDA), analytic hierarchy process (AHP), Pareto optimization.
-- For each recommendation, calculate: expected value, risk-adjusted return, implementation probability, resource efficiency.
-- Reconcile conflicts using evidence hierarchy: statistical significance > source credibility > recency > sample size.
+Objective:
+- Deliver an integrated synthesis that reconciles evidence, clarifies trade-offs, and yields a prioritized plan.
 
-Output (≤600 tokens):
-1. Executive Summary (≤6 bullets: key findings + confidence + action items)
-2. Integrated Analysis (≤8 bullets: insight + statistical measure + agent attribution + confidence)
-3. Conflict Resolution Matrix (Contradiction | Evidence Weight | Resolution | Confidence)
-4. Optimized Recommendations (table: Recommendation | Expected Value | Risk Score | Implementation Probability | Resource Efficiency | Priority)
-5. Risk-Optimized Portfolio (Risk | Probability | Impact | Mitigation | Residual Risk | Cost)
-6. Implementation Roadmap (Step | Owner | Timeline | Dependencies | Success Metrics | Probability)
+Core responsibilities:
+- Combine outputs from research, analysis, alternatives, and verification
+- Highlight consensus and conflicts
+- Provide a prioritized roadmap and communication plan
 
-Constraints: Systematic optimization only. Evidence-based decision support.
+Process:
+1. Map inputs and provenance
+2. Identify convergence and conflicts
+3. Prioritize actions by impact and feasibility
+4. Develop integrated roadmap with owners, milestones, KPIs
+5. Create stakeholder-specific summaries
+
+Deliverables:
+1. Executive summary (≤150 words)
+2. Consensus findings and open questions
+3. Priority action list
+4. Integrated roadmap
+5. Measurement and evaluation plan
+6. Communication plan per stakeholder group
+7. Evidence map and assumptions
+
+Style and guardrails:
+- Executive-focused summary, technical appendix for implementers
+- Transparent about uncertainty
+- Include “what could break this plan” with mitigation steps
 """
+
 
 schema = {
     "type": "function",
@@ -189,64 +283,62 @@ schema = [schema]
 
 class HeavySwarm:
     """
-    HeavySwarm is a sophisticated multi-agent orchestration system that
-    decomposes complex tasks into specialized questions and executes them
-    using four specialized agents: Research, Analysis, Alternatives, and
-    Verification. The results are then synthesized into a comprehensive
-    response.
+        HeavySwarm is a sophisticated multi-agent orchestration system that
+        decomposes complex tasks into specialized questions and executes them
+        using four specialized agents: Research, Analysis, Alternatives, and
+        Verification. The results are then synthesized into a comprehensive
+        response.
 
-    This swarm architecture provides robust task analysis through:
-    - Intelligent question generation for specialized agent roles
-    - Parallel execution of specialized agents for efficiency
-    - Comprehensive synthesis of multi-perspective results
-    - Real-time progress monitoring with rich dashboard displays
-    - Reliability checks and validation systems
-    - Multi-loop iterative refinement with context preservation
+        This swarm architecture provides robust task analysis through:
+        - Intelligent question generation for specialized agent roles
+        - Parallel execution of specialized agents for efficiency
+        - Comprehensive synthesis of multi-perspective results
+        - Real-time progress monitoring with rich dashboard displays
+        - Reliability checks and validation systems
+        - Multi-loop iterative refinement with context preservation
 
-    The HeavySwarm follows a structured workflow:
-    1. Task decomposition into specialized questions
-    2. Parallel execution by specialized agents
-    3. Result synthesis and integration
-    4. Comprehensive final report generation
-    5. Optional iterative refinement through multiple loops
+        The HeavySwarm follows a structured workflow:
+        1. Task decomposition into specialized questions
+        2. Parallel execution by specialized agents
+        3. Result synthesis and integration
+        4. Comprehensive final report generation
+        5. Optional iterative refinement through multiple loops
 
-    Key Features:
-    - **Multi-loop Execution**: The max_loops parameter enables iterative
-      refinement where each subsequent loop builds upon the context and
-      results from previous loops
-    - **Context Preservation**: Conversation history is maintained across
-      all loops, allowing for deeper analysis and refinement
-    - **Iterative Refinement**: Each loop can refine, improve, or complete
-      aspects of the analysis based on previous results
+        Key Features:
+        - **Multi-loop Execution**: The max_loops parameter enables iterative
+          refinement where each subsequent loop builds upon the context and
+          results from previous loops
+    S **Iterative Refinement**: Each loop can refine, improve, or complete
+          aspects of the analysis based on previous results
 
-    Attributes:
-        name (str): Name identifier for the swarm instance
-        description (str): Description of the swarm's purpose
-        agents (Dict[str, Agent]): Dictionary of specialized agent instances (created internally)
-        timeout (int): Maximum execution time per agent in seconds
-        aggregation_strategy (str): Strategy for result aggregation (currently 'synthesis')
-        loops_per_agent (int): Number of execution loops per agent
-        question_agent_model_name (str): Model name for question generation
-        worker_model_name (str): Model name for specialized worker agents
-        verbose (bool): Enable detailed logging output
-        max_workers (int): Maximum number of concurrent worker threads
-        show_dashboard (bool): Enable rich dashboard with progress visualization
-        agent_prints_on (bool): Enable individual agent output printing
-        max_loops (int): Maximum number of execution loops for iterative refinement
-        conversation (Conversation): Conversation history tracker
-        console (Console): Rich console for dashboard output
+        Attributes:
+            name (str): Name identifier for the swarm instance
+            description (str): Description of the swarm's purpose
+            agents (Dict[str, Agent]): Dictionary of specialized agent instances (created internally)
+            timeout (int): Maximum execution time per agent in seconds
+            aggregation_strategy (str): Strategy for result aggregation (currently 'synthesis')
+            loops_per_agent (int): Number of execution loops per agent
+            question_agent_model_name (str): Model name for question generation
+            worker_model_name (str): Model name for specialized worker agents
+            verbose (bool): Enable detailed logging output
+            max_workers (int): Maximum number of concurrent worker threads
+            show_dashboard (bool): Enable rich dashboard with progress visualization
+            agent_prints_on (bool): Enable individual agent output printing
+            max_loops (int): Maximum number of execution loops for iterative refinement
+            conversation (Conversation): Conversation history tracker
+            console (Console): Rich console for dashboard output
 
-    Example:
-        >>> swarm = HeavySwarm(
-        ...     name="AnalysisSwarm",
-        ...     description="Market analysis swarm",
-        ...     question_agent_model_name="gpt-4o-mini",
-        ...     worker_model_name="gpt-4o-mini",
-        ...     show_dashboard=True,
-        ...     max_loops=3
-        ... )
-        >>> result = swarm.run("Analyze the current cryptocurrency market trends")
-        >>> # The swarm will run 3 iterations, each building upon the previous results
+        Example:
+            >>> swarm = HeavySwarm(
+            ...     name="AnalysisSwarm",
+            ...     description="Market analysis swarm",
+            ...     question_agent_model_name="gpt-4o-mini",
+            ...     worker_model_name="gpt-4o-mini",
+            ...     show_dashboard=True,
+            ...     max_loops=3
+            ... )
+            >>> result = swarm.run("Analyze the current cryptocurrency market trends")
+            >>> # The swarm will run 3 iterations, each building upon the previous results
     """
 
     def __init__(

@@ -1,45 +1,11 @@
-#!/usr/bin/env python3
-"""
-Demo script for the Agent Map Simulation.
-
-This script demonstrates how to set up and run a simulation where multiple AI agents
-move around a 2D map and automatically engage in conversations when they come into
-proximity with each other.
-
-NEW: Task-based simulation support! You can now specify what the agents should discuss:
-
-    # Create simulation
-    simulation = AgentMapSimulation(map_width=50, map_height=50)
-
-    # Add your agents
-    simulation.add_agent(my_agent1)
-    simulation.add_agent(my_agent2)
-
-    # Run with a specific task
-    results = simulation.run(
-        task="Discuss the impact of AI on financial markets",
-        duration=300,  # 5 minutes
-        with_visualization=True
-    )
-
-Features demonstrated:
-- Creating agents with different specializations
-- Setting up the simulation environment
-- Running task-focused conversations
-- Live visualization
-- Monitoring conversation activity
-- Saving conversation summaries
-
-Run this script to see agents moving around and discussing specific topics!
-"""
-
 import time
 from typing import List
 
 from swarms import Agent
 
-# Remove the formal collaboration prompt import
-from simulations.agent_map_simulation import AgentMapSimulation
+from examples.multi_agent.simulations.agent_map.agent_map_simulation import (
+    AgentMapSimulation,
+)
 
 # Create a natural conversation prompt for the simulation
 NATURAL_CONVERSATION_PROMPT = """
