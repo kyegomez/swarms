@@ -1,9 +1,11 @@
 # Import medical agents defined in the demo module
-from examples.demos.medical.medical_coder_agent import (chief_medical_officer,
-                                                        internist,
-                                                        medical_coder,
-                                                        synthesizer,
-                                                        virologist)
+from examples.demos.medical.medical_coder_agent import (
+    chief_medical_officer,
+    internist,
+    medical_coder,
+    synthesizer,
+    virologist,
+)
 from swarms.structs.aop import AOP
 
 

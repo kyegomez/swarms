@@ -1,8 +1,8 @@
 import asyncio
 import sys
-import traceback
 import threading
 import time
+import traceback
 from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum

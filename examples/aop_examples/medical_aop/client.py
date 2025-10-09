@@ -1,5 +1,4 @@
 import asyncio
-import json
 from typing import Dict
 
 import requests
@@ -68,7 +67,9 @@ def main() -> None:
 
     # Build a real payload for "Medical Coder" and execute the tool call
     tool_name = "Medical Coder"
-    payload: Dict[str, object] = _example_payload_from_schema(tools, tool_name)
+    payload: Dict[str, object] = _example_payload_from_schema(
+        tools, tool_name
+    )
 
     # Enrich with public keyless data (epidemiology context via disease.sh)
     try:

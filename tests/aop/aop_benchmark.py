@@ -61,7 +61,6 @@ BENCHMARK_CONFIG = {
 }
 
 
-
 @dataclass
 class BenchmarkResult:
     """Data class for storing benchmark results."""
