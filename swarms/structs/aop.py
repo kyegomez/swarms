@@ -2319,6 +2319,15 @@ class AOP:
 
 
 class AOPCluster:
+    """
+    AOPCluster manages a cluster of MCP servers, allowing for the retrieval and searching
+    of tools (agents) across multiple endpoints.
+
+    Attributes:
+        urls (List[str]): List of MCP server URLs to connect to.
+        transport (str): The transport protocol to use (default: "streamable-http").
+    """
+
     def __init__(
         self,
         urls: List[str],
@@ -2326,12 +2335,31 @@ class AOPCluster:
         *args,
         **kwargs,
     ):
+        """
+        Initialize the AOPCluster.
+
+        Args:
+            urls (List[str]): List of MCP server URLs.
+            transport (str, optional): Transport protocol to use. Defaults to "streamable-http".
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+        """
         self.urls = urls
         self.transport = transport
 
     def get_tools(
         self, output_type: Literal["json", "dict", "str"] = "dict"
     ) -> List[Dict[str, Any]]:
+        """
+        Retrieve the list of tools (agents) from all MCP servers in the cluster.
+
+        Args:
+            output_type (Literal["json", "dict", "str"], optional): The format of the output.
+                Can be "json", "dict", or "str". Defaults to "dict".
+
+        Returns:
+            List[Dict[str, Any]]: A list of tool information dictionaries.
+        """
         return get_tools_for_multiple_mcp_servers(
             urls=self.urls,
             format="openai",
@@ -2346,12 +2374,13 @@ class AOPCluster:
         Find a tool by its server name (function name).
 
         Args:
-            server_name: The name of the tool/function to find
+            server_name (str): The name of the tool/function to find.
 
         Returns:
-            Dict containing the tool information, or None if not found
+            Dict[str, Any]: Dictionary containing the tool information, or None if not found.
         """
         for tool in self.get_tools(output_type="dict"):
             if tool.get("function", {}).get("name") == server_name:
                 return tool
         return None
+
