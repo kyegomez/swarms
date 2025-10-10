@@ -109,7 +109,7 @@ def test_basic_import() -> bool:
     print("\n🧪 Testing basic GraphWorkflow import...")
 
     try:
-        from swarms.structs.graph_workflow import GraphWorkflow
+        from swarms.structs.graph_workflow import GraphWorkflow  # noqa: F401
 
         print("✅ GraphWorkflow imported successfully")
         return True
@@ -123,7 +123,7 @@ def test_agent_import() -> bool:
     print("\n🧪 Testing Agent import...")
 
     try:
-        from swarms import Agent
+        from swarms import Agent  # noqa: F401
 
         print("✅ Agent imported successfully")
         return True

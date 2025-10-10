@@ -25,7 +25,6 @@ warnings.filterwarnings("ignore")
 
 # Third-party model imports
 try:
-    import timm
     from segment_anything import (
         SamAutomaticMaskGenerator,
         sam_model_registry,

@@ -7,18 +7,11 @@ This example shows how to use the new MCP tools for getting agent information.
 
 import json
 import asyncio
-from swarms.structs.aop import AOPCluster
 from swarms.tools.mcp_client_tools import execute_tool_call_simple
 
 
 async def demonstrate_new_agent_tools():
     """Demonstrate the new agent information tools."""
-
-    # Create AOP cluster connection
-    AOPCluster(
-        urls=["http://localhost:5932/mcp"],
-        transport="streamable-http",
-    )
 
     print("🔧 New AOP Agent Information Tools Demo")
     print("=" * 50)
@@ -77,7 +70,6 @@ async def demonstrate_new_agent_tools():
         if isinstance(result, list) and len(result) > 0:
             data = result[0]
             if data.get("success"):
-                data.get("agent_info", {})
                 discovery_info = data.get("discovery_info", {})
                 print(
                     f"   Agent: {discovery_info.get('agent_name', 'Unknown')}"

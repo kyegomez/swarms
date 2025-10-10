@@ -2,9 +2,6 @@ import os
 
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
 from swarms import (
     Agent,
     ConcurrentWorkflow,
@@ -13,6 +10,9 @@ from swarms import (
 )
 
 from swarms.utils.formatter import Formatter
+
+# Load environment variables
+load_dotenv()
 
 
 class MarkdownTestSwarm:

@@ -92,7 +92,7 @@ class SwarmsIssueReporter:
             import swarms
 
             return swarms.__version__
-        except:
+        except Exception:
             return "Unknown"
 
     def _get_system_info(self) -> SwarmSystemInfo:
@@ -185,7 +185,7 @@ class SwarmsIssueReporter:
             for dist in pkg_resources.working_set:
                 deps.append(f"- {dist.key} {dist.version}")
             return "\n".join(deps)
-        except:
+        except Exception:
             return "Unable to fetch dependency information"
 
     # First, add this method to your SwarmsIssueReporter class

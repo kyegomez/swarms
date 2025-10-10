@@ -250,7 +250,7 @@ def main():
             if simulation.fig is not None:
                 try:
                     simulation.update_visualization()
-                except:
+                except Exception:
                     pass  # Ignore visualization errors
 
             # Check if we have enough conversations to make it interesting

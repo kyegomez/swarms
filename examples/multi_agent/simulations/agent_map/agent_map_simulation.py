@@ -1202,7 +1202,7 @@ class AgentMapSimulation:
                 self.fig.canvas.manager.window.wm_attributes(
                     "-topmost", 0
                 )
-            except:
+            except Exception:
                 pass  # Not all backends support this
 
             plt.show(block=False)
@@ -1535,7 +1535,7 @@ class AgentMapSimulation:
                 if with_visualization and self.fig is not None:
                     try:
                         self.update_visualization()
-                    except:
+                    except Exception:
                         pass  # Ignore visualization errors
 
                 # Print status every 10 seconds
