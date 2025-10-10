@@ -22,7 +22,7 @@ def test_swarms_import() -> Dict[str, Any]:
         )
 
         # Test basic functionality
-        from swarms import Agent
+        from swarms import Agent  # noqa: F401
 
         print(" Agent class imported successfully")
 

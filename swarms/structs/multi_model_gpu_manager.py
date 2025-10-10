@@ -34,7 +34,7 @@ from contextlib import contextmanager
 # Try to import transformers, but don't fail if not available
 try:
     import transformers
-    from transformers import AutoModel, AutoTokenizer
+    from transformers import AutoModel
 
     TRANSFORMERS_AVAILABLE = True
 except ImportError:

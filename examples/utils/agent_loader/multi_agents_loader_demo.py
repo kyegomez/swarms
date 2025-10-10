@@ -1,4 +1,5 @@
 from swarms.utils import load_agents_from_markdown
+from swarms.structs.sequential_workflow import SequentialWorkflow
 
 agents = load_agents_from_markdown(
     [
@@ -9,7 +10,6 @@ agents = load_agents_from_markdown(
 )
 
 # Example 3: Use agents in a workflow
-from swarms.structs.sequential_workflow import SequentialWorkflow
 
 workflow = SequentialWorkflow(agents=agents, max_loops=1)
 

@@ -117,7 +117,6 @@ def process_audio_with_model(
         from litellm import (
             completion,
             supports_audio_input,
-            supports_audio_output,
         )
 
         if not supports_audio_input(model):

@@ -337,7 +337,7 @@ def step_4_advanced_patterns():
     print("\n📊 Workflow structure:")
     try:
         advanced_workflow.visualize_simple()
-    except:
+    except Exception:
         print("   (Text visualization not available)")
 
     # Execute advanced workflow
