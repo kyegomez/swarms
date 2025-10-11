@@ -2383,4 +2383,3 @@ class AOPCluster:
             if tool.get("function", {}).get("name") == server_name:
                 return tool
         return None
-

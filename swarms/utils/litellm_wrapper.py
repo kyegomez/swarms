@@ -477,20 +477,30 @@ class LiteLLM:
                 for standard tool call responses.
         """
         if self.mcp_call is True:
-            out = response.choices[0].message.tool_calls[0].function
-
-            if len(out) > 1:
-                return out
+            tool_calls = response.choices[0].message.tool_calls
+            
+            # Check if there are multiple tool calls
+            if len(tool_calls) > 1:
+                # Return all tool calls if there are multiple
+                return [
+                    {
+                        "function": {
+                            "name": tool_call.function.name,
+                            "arguments": tool_call.function.arguments,
+                        }
+                    }
+                    for tool_call in tool_calls
+                ]
             else:
-                out = out[0]
-
-            output = {
-                "function": {
-                    "name": out.name,
-                    "arguments": out.arguments,
+                # Single tool call
+                out = tool_calls[0].function
+                output = {
+                    "function": {
+                        "name": out.name,
+                        "arguments": out.arguments,
+                    }
                 }
-            }
-            return output
+                return output
         else:
             out = response.choices[0].message.tool_calls
 

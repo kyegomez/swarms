@@ -1,12 +1,39 @@
 import yaml
-from typing import Union, List, Dict, Any
+from typing import Any
 from swarms.utils.xml_utils import to_xml_string
 from swarms.utils.output_types import HistoryOutputType
 
 
 def history_output_formatter(
     conversation: callable, type: HistoryOutputType = "list"
-) -> Union[List[Dict[str, Any]], Dict[str, Any], str]:
+) -> Any:
+    """
+    Formats the output of a conversation object into various formats.
+
+    Args:
+        conversation (callable): The conversation object that provides various output methods.
+        type (HistoryOutputType, optional): The desired output format.
+            Supported values:
+                - "list": Returns the conversation as a list of message dicts.
+                - "dict" or "dictionary": Returns the conversation as a dictionary.
+                - "string" or "str": Returns the conversation as a string.
+                - "final" or "last": Returns the content of the final message.
+                - "json": Returns the conversation as a JSON string.
+                - "all": Returns the conversation as a string (same as "string").
+                - "yaml": Returns the conversation as a YAML string.
+                - "dict-all-except-first": Returns all messages except the first as a dictionary.
+                - "list-final": Returns the final message as a list.
+                - "str-all-except-first": Returns all messages except the first as a string.
+                - "dict-final": Returns the final message as a dictionary.
+                - "xml": Returns the conversation as an XML string.
+            Defaults to "list".
+
+    Returns:
+        Union[List[Dict[str, Any]], Dict[str, Any], str]: The formatted conversation output.
+
+    Raises:
+        ValueError: If an invalid type is provided.
+    """
     if type == "list":
         return conversation.return_messages_as_list()
     elif type in ["dict", "dictionary"]:

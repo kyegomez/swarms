@@ -42,9 +42,6 @@ from swarms.structs.majority_voting import (
     MajorityVoting,
 )
 from swarms.structs.malt import MALT
-from swarms.structs.meme_agent_persona_generator import (
-    MemeAgentGenerator,
-)
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.model_router import ModelRouter
 from swarms.structs.multi_agent_exec import (
@@ -153,7 +150,6 @@ __all__ = [
     "GroupChat",
     "expertise_based",
     "MultiAgentRouter",
-    "MemeAgentGenerator",
     "ModelRouter",
     "MALT",
     "HybridHierarchicalClusterSwarm",

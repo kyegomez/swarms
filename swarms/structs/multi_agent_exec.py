@@ -98,66 +98,104 @@ async def run_agents_concurrently_async(
 
 
 def run_agents_concurrently(
-    agents: List[AgentType],
+    agents: List["AgentType"],
     task: str,
+    img: Optional[str] = None,
     max_workers: Optional[int] = None,
-) -> List[Any]:
+    return_agent_output_dict: bool = False,
+) -> Any:
     """
-    Run multiple agents concurrently using ThreadPoolExecutor for optimal performance.
+    Execute multiple agents concurrently using a ThreadPoolExecutor.
 
-    This function executes multiple agents concurrently using a thread pool executor,
-    which provides better performance than asyncio for CPU-bound tasks. It automatically
-    determines the optimal number of worker threads based on available CPU cores.
+    This function runs agent tasks in parallel threads, benefitting I/O-bound or mixed-load scenarios.
+    Each agent receives the same 'task' (and optional 'img' argument) and runs its .run() method.
+    The number of worker threads defaults to 95% of the available CPU cores, unless otherwise specified.
 
     Args:
-        agents (List[AgentType]): List of agent instances to run concurrently
-        task (str): The task string to be executed by all agents
-        max_workers (Optional[int]): Maximum number of threads in the executor.
-                                   Defaults to 95% of available CPU cores for optimal performance
+        agents (List[AgentType]): List of agent instances to execute concurrently.
+        task (str): Task string to pass to all agent run() methods.
+        img (Optional[str]): Optional image data to pass to agent run() if supported.
+        max_workers (Optional[int]): Maximum threads for the executor (default: 95% of CPU cores).
+        return_agent_output_dict (bool): If True, returns a dict mapping agent names to outputs.
+                                         Otherwise returns a list of results in completion order.
 
     Returns:
-        List[Any]: List of results from each agent. If an agent fails, the exception
-                  is included in the results list instead of the result.
+        List[Any] or Dict[str, Any]: List of results from each agent's run() method in completion order,
+                                     or a dict of agent names to results (preserving agent order)
+                                     if return_agent_output_dict is True.
+                                     If an agent fails, the corresponding result is the Exception.
 
-    Note:
-        - Uses 95% of CPU cores by default for optimal resource utilization
-        - Handles exceptions gracefully by including them in the results
-        - Results may not be in the same order as input agents due to concurrent execution
+    Notes:
+        - ThreadPoolExecutor is used for efficient, parallel execution.
+        - By default, utilizes nearly all available CPU cores for optimal performance.
+        - Any Exception during agent execution is caught and included in the results.
+        - If return_agent_output_dict is True, the results dict preserves agent input order.
+        - Otherwise, the results list is in order of completion (not input order).
 
     Example:
-        >>> agents = [Agent1(), Agent2(), Agent3()]
-        >>> results = run_agents_concurrently(agents, "Process data")
-        >>> for i, result in enumerate(results):
-        ...     if isinstance(result, Exception):
-        ...         print(f"Agent {i+1} failed: {result}")
-        ...     else:
-        ...         print(f"Agent {i+1} result: {result}")
+        >>> agents = [Agent1(), Agent2()]
+        >>> # As list
+        >>> results = run_agents_concurrently(agents, task="Summarize", img=None)
+        >>> # As dict
+        >>> results_dict = run_agents_concurrently(
+        ...    agents, task="Summarize", return_agent_output_dict=True)
+        >>> for name, val in results_dict.items():
+        ...     print(f"Result from {name}: {val}")
     """
-    if max_workers is None:
-        # 95% of the available CPU cores
-        num_cores = os.cpu_count()
-        max_workers = int(num_cores * 0.95) if num_cores else 1
+    try:
+        if max_workers is None:
+            num_cores = os.cpu_count()
+            max_workers = int(num_cores * 0.95) if num_cores else 1
 
-    results = []
+        futures = []
+        agent_id_map = {}
 
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=max_workers
-    ) as executor:
-        # Submit all tasks and get futures
-        futures = [
-            executor.submit(agent.run, task) for agent in agents
-        ]
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
+            for agent in agents:
+                agent_kwargs = {}
+                if task is not None:
+                    agent_kwargs["task"] = task
+                if img is not None:
+                    agent_kwargs["img"] = img
+                future = executor.submit(agent.run, **agent_kwargs)
+                futures.append(future)
+                agent_id_map[future] = agent
 
-        # Wait for all futures to complete and get results
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                result = future.result()
-                results.append(result)
-            except Exception as e:
-                # Append the error if an agent fails
-                results.append(e)
+            if return_agent_output_dict:
+                # Use agent name as key, preserve input order
+                output_dict = {}
+                for agent, future in zip(agents, futures):
+                    try:
+                        result = future.result()
+                    except Exception as e:
+                        result = e
+                    # Prefer .agent_name or .name, fallback to str(agent)
+                    name = (
+                        getattr(agent, "agent_name", None)
+                        or getattr(agent, "name", None)
+                        or str(agent)
+                    )
+                    output_dict[name] = result
+                return output_dict
+            else:
+                results = []
+                for future in concurrent.futures.as_completed(
+                    futures
+                ):
+                    try:
+                        result = future.result()
+                        results.append(result)
+                    except Exception as e:
+                        results.append(e)
+                return results
 
-    return results
+    except Exception as e:
+        logger.error(
+            f"Error running_agents_concurrently: {e} Traceback: {e.__traceback__}"
+        )
+        raise e
 
 
 def run_agents_concurrently_multiprocess(
