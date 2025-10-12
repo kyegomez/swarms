@@ -29,9 +29,9 @@ models_to_test = [
     "gpt-4o",
     "gpt-3.5-turbo",
     "gpt-4-turbo",
-    "o3-mini",              # Groq
-    "claude-3-5-sonnet",    # Anthropic Claude
-    "claude-3-opus",        # Anthropic Claude
+    "o3-mini",             
+    "claude-3-5-sonnet",   
+    "claude-3-opus",      
     "gemini-pro",
 ]
 
@@ -49,7 +49,7 @@ for model_name in models_to_test:
         print(f"Run completed successfully for {model_name}")
         model_logs.append({"model": model_name, "status": "✅ Success"})
     except Exception as e:
-        print(f"An error occurred for {model_name}: {e}")
+        print(f"An error occurred for {model_name}")
         model_logs.append({"model": model_name, "status": f"❌ Error: {e}"})
 
 print("\n===== Model Run Summary =====")
