@@ -478,7 +478,7 @@ class LiteLLM:
         """
         if self.mcp_call is True:
             tool_calls = response.choices[0].message.tool_calls
-            
+
             # Check if there are multiple tool calls
             if len(tool_calls) > 1:
                 # Return all tool calls if there are multiple

@@ -2,8 +2,8 @@ from swarms import Agent
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
-from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.prompts.moa_prompt import MOA_AGGREGATOR_SYSTEM_PROMPT
+from swarms.structs.mixture_of_agents import MixtureOfAgents
 
 # Initialize the equity analyst agents
 equity_analyst_1 = Agent(

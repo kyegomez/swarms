@@ -729,9 +729,13 @@ class Agent:
         if self.agent_name is not None:
             prompt_dict["name"] = f"Your Name: {self.agent_name}"
         if self.agent_description is not None:
-            prompt_dict["description"] = f"Your Description: {self.agent_description}"
+            prompt_dict["description"] = (
+                f"Your Description: {self.agent_description}"
+            )
         if self.system_prompt is not None:
-            prompt_dict["instructions"] = f"Your Instructions: {self.system_prompt}"
+            prompt_dict["instructions"] = (
+                f"Your Instructions: {self.system_prompt}"
+            )
 
         # Compose prompt, prioritizing adding everything present in the dict
         # (entries are newline separated, order: name → description → instructions)
