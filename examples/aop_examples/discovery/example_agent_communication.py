@@ -11,15 +11,6 @@ from swarms.structs.aop import AOP
 def simulate_agent_discovery():
     """Simulate how an agent would use the discovery tool."""
 
-    # Create a sample agent that will use the discovery tool
-    Agent(
-        agent_name="ProjectCoordinator",
-        agent_description="Coordinates projects and assigns tasks to other agents",
-        system_prompt="You are a project coordinator who helps organize work and delegate tasks to the most appropriate team members. You can discover information about other agents to make better decisions.",
-        model_name="gpt-4o-mini",
-        temperature=0.4,
-    )
-
     # Create the AOP cluster
     aop = AOP(
         server_name="Project Team",

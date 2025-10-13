@@ -213,7 +213,7 @@ def test_file_save_load():
     try:
         os.remove("test_workflow.json")
         print("\n🧹 Cleaned up test file")
-    except:
+    except Exception:
         pass
 
 
