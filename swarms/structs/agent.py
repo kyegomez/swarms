@@ -723,26 +723,29 @@ class Agent:
         )
 
     def short_memory_init(self):
-        prompt = ""
+        # Assemble initial prompt context as a dict, update conditionally, then compose as string
+        prompt_dict = {}
 
-        # Add agent name, description, and instructions to the prompt
         if self.agent_name is not None:
-            prompt += f"\n Your Name: {self.agent_name} \n"
-        elif self.agent_description is not None:
-            prompt += (
-                f"\n Your Description: {self.agent_description} \n"
-            )
-        elif self.system_prompt is not None:
-            prompt += f"\n Your Instructions: {self.system_prompt} \n"
-        else:
-            prompt = self.system_prompt
+            prompt_dict["name"] = f"Your Name: {self.agent_name}"
+        if self.agent_description is not None:
+            prompt_dict["description"] = f"Your Description: {self.agent_description}"
+        if self.system_prompt is not None:
+            prompt_dict["instructions"] = f"Your Instructions: {self.system_prompt}"
+
+        # Compose prompt, prioritizing adding everything present in the dict
+        # (entries are newline separated, order: name → description → instructions)
+        prompt = ""
+        for key in ["name", "description", "instructions"]:
+            if key in prompt_dict:
+                prompt += f"\n {prompt_dict[key]} \n"
 
         if self.safety_prompt_on is True:
             prompt += SAFETY_PROMPT
 
         # Initialize the short term memory
         memory = Conversation(
-            name=f"{self.agent_name}_conversation",
+            name=f"{self.agent_name}_id_{self.id}_conversation",
             system_prompt=prompt,
             user=self.user_name,
             rules=self.rules,
