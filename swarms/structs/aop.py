@@ -576,12 +576,14 @@ class AOP:
         verbose: bool = False,
         traceback_enabled: bool = True,
         host: str = "localhost",
-        log_level: str = "INFO",
         queue_enabled: bool = True,
         max_workers_per_agent: int = 1,
         max_queue_size_per_agent: int = 1000,
         processing_timeout: int = 30,
         retry_delay: float = 1.0,
+        log_level: Literal[
+            "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
+        ] = "INFO",
         *args,
         **kwargs,
     ):
@@ -622,7 +624,11 @@ class AOP:
         self.task_queues: Dict[str, TaskQueue] = {}
         self.transport = transport
         self.mcp_server = FastMCP(
-            name=server_name, port=port, *args, **kwargs
+            name=server_name,
+            port=port,
+            log_level=log_level,
+            *args,
+            **kwargs,
         )
 
         # Configure logger
