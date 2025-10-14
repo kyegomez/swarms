@@ -676,6 +676,81 @@ This architecture is perfect for financial analysis, strategic planning, researc
 
 ---
 
+### Agent Orchestration Protocol (AOP)
+
+The **Agent Orchestration Protocol (AOP)** is a powerful framework for deploying and managing agents as distributed services. AOP enables agents to be discovered, managed, and executed through a standardized protocol, making it perfect for building scalable multi-agent systems. [Learn more about AOP](https://docs.swarms.world/en/latest/swarms/structs/aop/)
+
+```python
+from swarms import Agent
+from swarms.structs.aop import AOP
+
+# Create specialized agents
+research_agent = Agent(
+    agent_name="Research-Agent",
+    agent_description="Expert in research and data collection",
+    model_name="anthropic/claude-sonnet-4-5",
+    max_loops=1,
+    tags=["research", "data-collection", "analysis"],
+    capabilities=["web-search", "data-gathering", "report-generation"],
+    role="researcher"
+)
+
+analysis_agent = Agent(
+    agent_name="Analysis-Agent", 
+    agent_description="Expert in data analysis and insights",
+    model_name="anthropic/claude-sonnet-4-5",
+    max_loops=1,
+    tags=["analysis", "data-processing", "insights"],
+    capabilities=["statistical-analysis", "pattern-recognition", "visualization"],
+    role="analyst"
+)
+
+# Create AOP server
+deployer = AOP(
+    server_name="ResearchCluster",
+    port=8000,
+    verbose=True
+)
+
+# Add agents to the server
+deployer.add_agent(
+    agent=research_agent,
+    tool_name="research_tool",
+    tool_description="Research and data collection tool",
+    timeout=30,
+    max_retries=3
+)
+
+deployer.add_agent(
+    agent=analysis_agent,
+    tool_name="analysis_tool", 
+    tool_description="Data analysis and insights tool",
+    timeout=30,
+    max_retries=3
+)
+
+# List all registered agents
+print("Registered agents:", deployer.list_agents())
+
+# Start the AOP server
+deployer.run()
+```
+
+AOP provides:
+
+| Feature                       | Description                                                              |
+|-------------------------------|--------------------------------------------------------------------------|
+| **Distributed Agent Deployment** | Deploy agents as independent services                                     |
+| **Agent Discovery**              | Built-in discovery tools for finding and connecting to agents             |
+| **Standardized Protocol**        | MCP-compatible interface for seamless integration                        |
+| **Dynamic Management**           | Add, remove, and manage agents at runtime                                |
+| **Scalable Architecture**        | Support for multiple agent clusters and load balancing                   |
+| **Enterprise Integration**       | Easy integration with existing systems and workflows                     |
+
+Perfect for deploying large scale multi-agent systems. [Read the complete AOP documentation](https://docs.swarms.world/en/latest/swarms/structs/aop/)
+
+---
+
 ## Documentation
 
 Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
@@ -722,6 +797,7 @@ Explore comprehensive examples and tutorials to learn how to use Swarms effectiv
 | **Multi-Agent Architecture** | Agents as Tools | Using agents as tools in workflows | [Agents as Tools](https://docs.swarms.world/en/latest/swarms/examples/agents_as_tools/) |
 | **Multi-Agent Architecture** | Aggregate Responses | Combining multiple agent outputs | [Aggregate Examples](https://docs.swarms.world/en/latest/swarms/examples/aggregate/) |
 | **Multi-Agent Architecture** | Interactive GroupChat | Real-time agent interactions | [Interactive GroupChat](https://docs.swarms.world/en/latest/swarms/examples/igc_example/) |
+| **Deployment Solutions** | Agent Orchestration Protocol (AOP) | Deploy agents as distributed services with discovery and management | [AOP Reference](https://docs.swarms.world/en/latest/swarms/structs/aop/) |
 | **Applications** | Advanced Research System | Multi-agent research system inspired by Anthropic's research methodology | [AdvancedResearch](https://github.com/The-Swarm-Corporation/AdvancedResearch) |
 | **Applications** | Hospital Simulation | Healthcare simulation system using multi-agent architecture | [HospitalSim](https://github.com/The-Swarm-Corporation/HospitalSim) |
 | **Applications** | Browser Agents | Web automation with agents | [Browser Agents](https://docs.swarms.world/en/latest/swarms/examples/swarms_of_browser_agents/) |
