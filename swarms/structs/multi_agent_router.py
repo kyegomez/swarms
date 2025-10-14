@@ -160,15 +160,39 @@ class MultiAgentRouter:
         )
         router_system_prompt += self._create_boss_system_prompt()
 
+        # Conditionally enable structured outputs only on supported models
+        # Avoids errors on models like `gpt-3.5-turbo` which don't support json_schema
+        def _supports_structured_outputs(model_name: str) -> bool:
+            name = (model_name or "").lower()
+            return any(
+                prefix in name
+                for prefix in [
+                    "gpt-4.1",
+                    "openai/gpt-4.1", 
+                    "gpt-4o",
+                    "openai/gpt-4o",
+                    "o3-",
+                    "openai/o3-",
+                    "o4-",
+                    "openai/o4-",
+                ]
+            )
+
+        # Build LiteLLM kwargs with conditional response_format
+        lite_llm_kwargs = {
+            "model_name": self.model,
+            "system_prompt": router_system_prompt,
+            "temperature": self.temperature,
+            "tool_choice": "auto",
+            "parallel_tool_calls": True,
+        }
+        
+        if _supports_structured_outputs(self.model):
+            lite_llm_kwargs["response_format"] = MultipleHandOffsResponse
+
         self.function_caller = LiteLLM(
-            model_name=self.model,
-            system_prompt=router_system_prompt,
-            temperature=self.temperature,
-            tool_choice="auto",
-            parallel_tool_calls=True,
-            response_format=MultipleHandOffsResponse,
             *args,
-            **kwargs,
+            **{**lite_llm_kwargs, **kwargs},
         )
 
     def __repr__(self):
@@ -312,7 +336,19 @@ class MultiAgentRouter:
             # Get boss decision using function calling
             boss_response_str = self.function_caller.run(task)
 
-            boss_response_str = orjson.loads(boss_response_str)
+            # Handle JSON parsing with fallback for models without structured outputs
+            try:
+                boss_response_str = orjson.loads(boss_response_str)
+            except (orjson.JSONDecodeError, TypeError):
+                # Fallback: route to first agent when JSON parsing fails
+                first_agent = list(self.agents.keys())[0]
+                boss_response_str = {
+                    "handoffs": [{
+                        "reasoning": "Fallback routing due to JSON parsing error",
+                        "agent_name": first_agent,
+                        "task": task
+                    }]
+                }
 
             if self.print_on:
                 formatter.print_panel(
