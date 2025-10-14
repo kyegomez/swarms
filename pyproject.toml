@@ -79,7 +79,6 @@ orjson = "*"
 schedule = "*"
 uvloop = {version = "*", markers = "sys_platform == 'linux' or sys_platform == 'darwin'"}
 winloop = {version = "*", markers = "sys_platform == 'win32'"}
-google-generativeai = "*"
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"
 
