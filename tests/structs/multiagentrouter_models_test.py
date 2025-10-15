@@ -23,16 +23,18 @@ agents = [
     ),
 ]
 
-# Logging status of model runs
 models_to_test = [
     "gpt-4.1",
     "gpt-4o",
-    "gpt-3.5-turbo",
-    "gpt-4-turbo",
-    "o3-mini",             
-    "claude-3-5-sonnet",   
-    "claude-3-opus",      
-    "gemini-pro",
+    "gpt-5-nano-2025-08-07",
+    "gpt-5-mini",
+    "o4-mini", 
+    "o3",            
+    "claude-opus-4-20250514",   
+    "claude-sonnet-4-20250514",
+    "claude-3-7-sonnet-20250219",   
+    "gemini/gemini-2.5-flash",
+    "gemini/gemini-2.5-pro",
 ]
 
 task = "Use all the agents available to you to remake the Fibonacci function in Python, providing both an explanation and code."
