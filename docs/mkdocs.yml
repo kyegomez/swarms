@@ -274,6 +274,7 @@ nav:
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
         - Mixture of Agents: "swarms/structs/moa.md"
+        - SelfMoASeq: "swarms/structs/self_moa_seq.md"
         - SpreadSheetSwarm: "swarms/structs/spreadsheet_swarm.md"
         - ForestSwarm: "swarms/structs/forest_swarm.md"
         - MALT: "swarms/structs/malt.md"

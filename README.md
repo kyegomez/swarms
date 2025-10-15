@@ -923,13 +923,12 @@ If you use **swarms** in your research, please cite the project by referencing t
 
 ```bibtex
 @misc{SWARMS_2022,
-  author  = {Gomez, Kye and Pliny and More, Harshal and Swarms Community},
+  author  = {Kye Gomez and Pliny and Zack Bradshaw and Ilumn and Harshal and the Swarms Community},
   title   = {{Swarms: Production-Grade Multi-Agent Infrastructure Platform}},
   year    = {2022},
   howpublished = {\url{https://github.com/kyegomez/swarms}},
   note    = {Documentation available at \url{https://docs.swarms.world}},
   version = {latest}
-}
 ```
 
 # License
