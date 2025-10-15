@@ -78,6 +78,4 @@ social_alg = SocialAlgorithms(
     verbose=True,
 )
 
-result = social_alg.run(
-    "Design a sustainable city planning strategy"
-)
+result = social_alg.run("Design a sustainable city planning strategy")

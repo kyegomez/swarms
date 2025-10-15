@@ -37,7 +37,7 @@ def competitive_evaluation_algorithm(
         ] = result
 
     # Judge evaluates all solutions
-    evaluation_prompt = f"Evaluate these solutions and rank them:\n\n"
+    evaluation_prompt = "Evaluate these solutions and rank them:\n\n"
     for name, result in competitor_results.items():
         evaluation_prompt += f"{name}:\n{result}\n\n"
 

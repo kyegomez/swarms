@@ -91,6 +91,4 @@ social_alg = SocialAlgorithms(
     verbose=True,
 )
 
-result = social_alg.run(
-    "Innovative solutions for climate change"
-)
+result = social_alg.run("Innovative solutions for climate change")

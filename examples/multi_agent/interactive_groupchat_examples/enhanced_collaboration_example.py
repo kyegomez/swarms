@@ -1,15 +1,4 @@
-"""
-Enhanced Collaborative InteractiveGroupChat Example
 
-This example demonstrates the improved collaborative behavior where agents:
-1. Read and understand all previous responses
-2. Acknowledge what other agents have said
-3. Build upon their insights rather than repeating information
-4. Synthesize multiple perspectives
-5. Delegate appropriately using @mentions
-
-The enhanced prompts ensure agents work as a true collaborative team.
-"""
 
 from swarms import Agent
 from swarms.structs.interactive_groupchat import (

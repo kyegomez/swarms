@@ -475,13 +475,17 @@ class SocialAlgorithms:
                 "algorithm_name": self.name,
                 "task": task,
                 "agent_count": len(self.agents),
-                "agent_names": [agent.agent_name for agent in self.agents],
+                "agent_names": [
+                    agent.agent_name for agent in self.agents
+                ],
                 "max_execution_time": self.max_execution_time,
-            }
+            },
         )
 
         # Clear previous communication history
-        self._log_execution_step("Clearing previous communication history")
+        self._log_execution_step(
+            "Clearing previous communication history"
+        )
         self.clear_communication_history()
 
         # Prepare algorithm arguments
@@ -490,18 +494,22 @@ class SocialAlgorithms:
             {
                 "algorithm_args": algorithm_args,
                 "additional_kwargs": kwargs,
-            }
+            },
         )
         algorithm_kwargs = algorithm_args or {}
         algorithm_kwargs.update(kwargs)
 
         # Add communication logging wrapper if enabled
         if self.enable_communication_logging:
-            self._log_execution_step("Wrapping algorithm with communication logging")
+            self._log_execution_step(
+                "Wrapping algorithm with communication logging"
+            )
             wrapped_algorithm = self._wrap_algorithm_with_logging()
             wrapped_algorithm.social_algorithms_instance = self
         else:
-            self._log_execution_step("Using algorithm without communication logging")
+            self._log_execution_step(
+                "Using algorithm without communication logging"
+            )
             wrapped_algorithm = self.social_algorithm
 
         start_time = time.time()
@@ -513,7 +521,7 @@ class SocialAlgorithms:
             if self.max_execution_time > 0:
                 self._log_execution_step(
                     "Executing algorithm with timeout",
-                    {"timeout_seconds": self.max_execution_time}
+                    {"timeout_seconds": self.max_execution_time},
                 )
                 result = self._execute_with_timeout(
                     wrapped_algorithm,
@@ -522,7 +530,9 @@ class SocialAlgorithms:
                     **algorithm_kwargs,
                 )
             else:
-                self._log_execution_step("Executing algorithm without timeout")
+                self._log_execution_step(
+                    "Executing algorithm without timeout"
+                )
                 result = wrapped_algorithm(
                     self.agents, task, **algorithm_kwargs
                 )
@@ -532,22 +542,24 @@ class SocialAlgorithms:
                 "Algorithm execution completed successfully",
                 {
                     "successful_steps": successful_steps,
-                    "communication_steps": len(self.communication_history),
-                }
+                    "communication_steps": len(
+                        self.communication_history
+                    ),
+                },
             )
 
         except TimeoutError:
             self._log_execution_step(
                 "Algorithm execution timed out",
                 {"timeout_seconds": self.max_execution_time},
-                level="error"
+                level="error",
             )
             raise
         except Exception as e:
             self._log_execution_step(
                 "Algorithm execution failed",
                 {"error": str(e), "error_type": type(e).__name__},
-                level="error"
+                level="error",
             )
             failed_steps = 1
             raise
@@ -556,8 +568,7 @@ class SocialAlgorithms:
 
         # Format the output
         self._log_execution_step(
-            "Formatting output",
-            {"output_type": self.output_type}
+            "Formatting output", {"output_type": self.output_type}
         )
         formatted_result = self._format_output(result)
 
@@ -578,10 +589,12 @@ class SocialAlgorithms:
             "Algorithm execution completed",
             {
                 "execution_time": f"{execution_time:.2f} seconds",
-                "total_communication_steps": len(self.communication_history),
+                "total_communication_steps": len(
+                    self.communication_history
+                ),
                 "successful_steps": successful_steps,
                 "failed_steps": failed_steps,
-            }
+            },
         )
 
         return algorithm_result
