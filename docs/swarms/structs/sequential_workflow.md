@@ -288,7 +288,7 @@ The SequentialWorkflow with sequential awareness represents a significant advanc
 
 The SequentialWorkflow now includes a powerful **streaming callback** feature that allows you to receive and process tokens in real-time as the workflow executes, helping you monitor execution progress from agents and create interactive chat applications/live demos. This enables real-time streaming of agent responses, making it ideal for interactive applications and live monitoring of workflow progress.
 
-###Parameter
+##**Parameter**
 ## `streaming_callback: Optional[Callable[[str, str, bool], None]] = None`
 
 -  The function should accept a single string parameter (the token) and return None. Defaults to `None`.
