@@ -26,7 +26,6 @@ agents = [
 models_to_test = [
     "gpt-4.1",
     "gpt-4o",
-    "gpt-5-nano-2025-08-07",
     "gpt-5-mini",
     "o4-mini", 
     "o3",            
