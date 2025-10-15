@@ -701,9 +701,21 @@ def research_analysis_synthesis_algorithm(agents, task, **kwargs):
     }
 
 # Create agents
-researcher = Agent(agent_name="Researcher", model_name="gpt-4o-mini")
-analyst = Agent(agent_name="Analyst", model_name="gpt-4o-mini")
-synthesizer = Agent(agent_name="Synthesizer", model_name="gpt-4o-mini")
+researcher = Agent(
+  agent_name="Researcher",
+  agent_description="Expert in comprehensive research and information gathering.",
+  model_name="gpt-4.1"
+)
+analyst = Agent(
+  agent_name="Analyst",
+  agent_description="Specialist in analyzing and interpreting data.",
+  model_name="gpt-4.1"
+)
+synthesizer = Agent(
+  agent_name="Synthesizer",
+  agent_description="Focused on synthesizing and integrating research insights.",
+  model_name="gpt-4.1"
+)
 
 # Create social algorithm
 social_alg = SocialAlgorithms(
@@ -717,17 +729,6 @@ social_alg = SocialAlgorithms(
 result = social_alg.run("The impact of AI on healthcare")
 print(result.final_outputs)
 ```
-
-Social Algorithms provide:
-
-| Feature | Description |
-|---------|-------------|
-| **Custom Communication Patterns** | Define any arbitrary sequence of agent interactions |
-| **Flexible Algorithm Upload** | Upload callable functions that define communication flows |
-| **Communication Logging** | Track all agent interactions and communication steps |
-| **Timeout Protection** | Prevent algorithms from running indefinitely |
-| **Parallel Execution** | Support for concurrent agent execution where possible |
-| **Rich Metadata** | Detailed execution results and communication history |
 
 Perfect for implementing complex multi-agent workflows, collaborative problem-solving, and custom communication protocols.
 
@@ -792,17 +793,6 @@ print("Registered agents:", deployer.list_agents())
 # Start the AOP server
 deployer.run()
 ```
-
-AOP provides:
-
-| Feature                       | Description                                                              |
-|-------------------------------|--------------------------------------------------------------------------|
-| **Distributed Agent Deployment** | Deploy agents as independent services                                     |
-| **Agent Discovery**              | Built-in discovery tools for finding and connecting to agents             |
-| **Standardized Protocol**        | MCP-compatible interface for seamless integration                        |
-| **Dynamic Management**           | Add, remove, and manage agents at runtime                                |
-| **Scalable Architecture**        | Support for multiple agent clusters and load balancing                   |
-| **Enterprise Integration**       | Easy integration with existing systems and workflows                     |
 
 Perfect for deploying large scale multi-agent systems. [Read the complete AOP documentation](https://docs.swarms.world/en/latest/swarms/structs/aop/)
 
