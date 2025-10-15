@@ -98,6 +98,7 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
+from swarms.structs.self_moa_seq import SelfMoASeq
 
 __all__ = [
     "Agent",
@@ -182,4 +183,5 @@ __all__ = [
     "AgentLoader",
     "BatchedGridWorkflow",
     "AOP",
+    "SelfMoASeq",
 ]

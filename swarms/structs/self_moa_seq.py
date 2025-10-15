@@ -54,8 +54,6 @@ class SelfMoASeq:
     - Phase 1: Generate initial samples from the proposer model
     - Phase 2: Aggregate outputs using sliding window with synthesized bias
     - Phase 3: Iterate until all samples are processed
-
-
     """
 
     def __init__(

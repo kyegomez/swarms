@@ -90,7 +90,7 @@ financial_agent = Agent(
 )
 
 # Basic usage - individual agent addition
-deployer = AOP("MyAgentServer", verbose=True, port=5932)
+deployer = AOP(server_name="MyAgentServer", verbose=True, port=5932)
 
 agents = [
     research_agent,

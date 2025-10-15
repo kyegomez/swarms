@@ -676,6 +676,63 @@ This architecture is perfect for financial analysis, strategic planning, researc
 
 ---
 
+### Social Algorithms
+
+**Social Algorithms** provide a flexible framework for defining custom communication patterns between agents. You can upload any arbitrary social algorithm as a callable that defines the sequence of communication, enabling agents to talk to each other in sophisticated ways. [Learn more about Social Algorithms](https://docs.swarms.world/en/latest/swarms/structs/social_algorithms/)
+
+```python
+from swarms import Agent, SocialAlgorithms
+
+# Define a custom social algorithm
+def research_analysis_synthesis_algorithm(agents, task, **kwargs):
+    # Agent 1 researches the topic
+    research_result = agents[0].run(f"Research: {task}")
+    
+    # Agent 2 analyzes the research
+    analysis = agents[1].run(f"Analyze this research: {research_result}")
+    
+    # Agent 3 synthesizes the findings
+    synthesis = agents[2].run(f"Synthesize: {research_result} + {analysis}")
+    
+    return {
+        "research": research_result,
+        "analysis": analysis,
+        "synthesis": synthesis
+    }
+
+# Create agents
+researcher = Agent(agent_name="Researcher", model_name="gpt-4o-mini")
+analyst = Agent(agent_name="Analyst", model_name="gpt-4o-mini")
+synthesizer = Agent(agent_name="Synthesizer", model_name="gpt-4o-mini")
+
+# Create social algorithm
+social_alg = SocialAlgorithms(
+    name="Research-Analysis-Synthesis",
+    agents=[researcher, analyst, synthesizer],
+    social_algorithm=research_analysis_synthesis_algorithm,
+    verbose=True
+)
+
+# Run the algorithm
+result = social_alg.run("The impact of AI on healthcare")
+print(result.final_outputs)
+```
+
+Social Algorithms provide:
+
+| Feature | Description |
+|---------|-------------|
+| **Custom Communication Patterns** | Define any arbitrary sequence of agent interactions |
+| **Flexible Algorithm Upload** | Upload callable functions that define communication flows |
+| **Communication Logging** | Track all agent interactions and communication steps |
+| **Timeout Protection** | Prevent algorithms from running indefinitely |
+| **Parallel Execution** | Support for concurrent agent execution where possible |
+| **Rich Metadata** | Detailed execution results and communication history |
+
+Perfect for implementing complex multi-agent workflows, collaborative problem-solving, and custom communication protocols.
+
+---
+
 ### Agent Orchestration Protocol (AOP)
 
 The **Agent Orchestration Protocol (AOP)** is a powerful framework for deploying and managing agents as distributed services. AOP enables agents to be discovered, managed, and executed through a standardized protocol, making it perfect for building scalable multi-agent systems. [Learn more about AOP](https://docs.swarms.world/en/latest/swarms/structs/aop/)

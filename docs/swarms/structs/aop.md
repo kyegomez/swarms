@@ -24,6 +24,82 @@ Configuration dataclass for converting an agent to an MCP tool.
 | `verbose` | `bool` | `False` | Enable verbose logging for this tool |
 | `traceback_enabled` | `bool` | `True` | Enable traceback logging for errors |
 
+### Task
+
+Represents a task to be executed by an agent.
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `task_id` | `str` | Auto-generated | Unique identifier for the task |
+| `task` | `str` | `""` | The task or prompt to execute |
+| `img` | `Optional[str]` | `None` | Optional image to be processed |
+| `imgs` | `Optional[List[str]]` | `None` | Optional list of images to be processed |
+| `correct_answer` | `Optional[str]` | `None` | Optional correct answer for validation |
+| `priority` | `int` | `0` | Task priority (higher number = higher priority) |
+| `created_at` | `float` | Auto-generated | Timestamp when task was created |
+| `status` | `TaskStatus` | `PENDING` | Current status of the task |
+| `result` | `Optional[str]` | `None` | Result of task execution |
+| `error` | `Optional[str]` | `None` | Error message if task failed |
+| `retry_count` | `int` | `0` | Number of times task has been retried |
+| `max_retries` | `int` | `3` | Maximum number of retries allowed |
+
+### TaskStatus
+
+Enum representing the status of a task in the queue.
+
+| Value | Description |
+|-------|-------------|
+| `PENDING` | Task is waiting to be processed |
+| `PROCESSING` | Task is currently being processed |
+| `COMPLETED` | Task has been completed successfully |
+| `FAILED` | Task failed during execution |
+| `CANCELLED` | Task was cancelled |
+
+### QueueStatus
+
+Enum representing the status of a task queue.
+
+| Value | Description |
+|-------|-------------|
+| `RUNNING` | Queue is actively processing tasks |
+| `PAUSED` | Queue is paused and not processing tasks |
+| `STOPPED` | Queue is stopped |
+
+### QueueStats
+
+Statistics for a task queue.
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `total_tasks` | `int` | `0` | Total number of tasks processed |
+| `completed_tasks` | `int` | `0` | Number of successfully completed tasks |
+| `failed_tasks` | `int` | `0` | Number of failed tasks |
+| `pending_tasks` | `int` | `0` | Number of tasks currently pending |
+| `processing_tasks` | `int` | `0` | Number of tasks currently being processed |
+| `average_processing_time` | `float` | `0.0` | Average time to process a task |
+| `queue_size` | `int` | `0` | Current size of the queue |
+
+### TaskQueue
+
+A thread-safe task queue for managing agent tasks.
+
+**Key Features:**
+
+- Priority-based task ordering
+- Configurable worker threads
+- Automatic retry logic
+- Comprehensive statistics tracking
+- Thread-safe operations
+
+**Methods:**
+
+- `add_task()` - Add a task to the queue
+- `get_stats()` - Get queue statistics
+- `pause_workers()` - Pause queue processing
+- `resume_workers()` - Resume queue processing
+- `clear_queue()` - Clear all pending tasks
+- `get_status()` - Get current queue status
+
 ### AOP Class
 
 Main class for deploying agents as tools in an MCP server.
@@ -40,6 +116,11 @@ Main class for deploying agents as tools in an MCP server.
 | `verbose` | `bool` | `False` | Enable verbose logging |
 | `traceback_enabled` | `bool` | `True` | Enable traceback logging for errors |
 | `host` | `str` | `"localhost"` | Host to bind the server to |
+| `queue_enabled` | `bool` | `True` | Enable queue-based task execution for improved performance |
+| `max_workers_per_agent` | `int` | `1` | Maximum number of worker threads per agent |
+| `max_queue_size_per_agent` | `int` | `1000` | Maximum queue size per agent |
+| `processing_timeout` | `int` | `30` | Timeout for processing tasks in seconds |
+| `retry_delay` | `float` | `1.0` | Delay between retries in seconds |
 | `log_level` | `str` | `"INFO"` | Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) |
 | `*args` | `Any` | - | Additional positional arguments passed to FastMCP |
 | `**kwargs` | `Any` | - | Additional keyword arguments passed to FastMCP |
@@ -158,9 +239,151 @@ Get discovery information for a specific agent (internal method).
 
 **Returns:** `Optional[Dict[str, Any]]` - Agent discovery information, or None if not found
 
+##### get_queue_stats()
+
+Get queue statistics for agents including task counts, processing times, and queue status.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `tool_name` | `str` | `None` | Optional specific agent name. If None, returns stats for all agents. |
+
+**Returns:** `Dict[str, Any]` - Queue statistics
+
+**Response Format:**
+
+```json
+{
+  "success": true,
+  "agent_name": "agent_name",
+  "stats": {
+    "total_tasks": 10,
+    "completed_tasks": 8,
+    "failed_tasks": 1,
+    "pending_tasks": 1,
+    "processing_tasks": 0,
+    "average_processing_time": 2.5,
+    "queue_size": 1,
+    "queue_status": "running"
+  }
+}
+```
+
+##### pause_agent_queue()
+
+Pause the task queue for a specific agent.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tool_name` | `str` | Name of the agent tool |
+
+**Returns:** `bool` - True if paused successfully, False if not found
+
+##### resume_agent_queue()
+
+Resume the task queue for a specific agent.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tool_name` | `str` | Name of the agent tool |
+
+**Returns:** `bool` - True if resumed successfully, False if not found
+
+##### clear_agent_queue()
+
+Clear all pending tasks from an agent's queue.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tool_name` | `str` | Name of the agent tool |
+
+**Returns:** `int` - Number of tasks cleared, -1 if error
+
+##### get_task_status()
+
+Get the status of a specific task by task ID.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tool_name` | `str` | Name of the agent tool |
+| `task_id` | `str` | ID of the task |
+
+**Returns:** `Dict[str, Any]` - Task status information
+
+**Response Format:**
+
+```json
+{
+  "success": true,
+  "task": {
+    "task_id": "uuid",
+    "task": "task description",
+    "status": "completed",
+    "result": "task result",
+    "error": null,
+    "retry_count": 0,
+    "created_at": 1234567890.0
+  }
+}
+```
+
 ## Discovery Tools
 
 AOP automatically registers several discovery tools that allow agents to learn about each other and enable dynamic agent discovery within the cluster.
+
+## Queue Management Tools
+
+When queue-based execution is enabled, AOP automatically registers several queue management tools that allow monitoring and control of task queues.
+
+### get_queue_stats
+
+Get queue statistics for agents including task counts, processing times, and queue status.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `agent_name` | `str` | `None` | Optional specific agent name. If None, returns stats for all agents. |
+
+**Returns:** `Dict[str, Any]` - Queue statistics
+
+### pause_agent_queue
+
+Pause the task queue for a specific agent.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `agent_name` | `str` | Name of the agent tool |
+
+**Returns:** `Dict[str, Any]` - Success status and message
+
+### resume_agent_queue
+
+Resume the task queue for a specific agent.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `agent_name` | `str` | Name of the agent tool |
+
+**Returns:** `Dict[str, Any]` - Success status and message
+
+### clear_agent_queue
+
+Clear all pending tasks from an agent's queue.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `agent_name` | `str` | Name of the agent tool |
+
+**Returns:** `Dict[str, Any]` - Number of tasks cleared and success status
+
+### get_task_status
+
+Get the status of a specific task by task ID.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `agent_name` | `str` | Name of the agent tool |
+| `task_id` | `str` | ID of the task |
+
+**Returns:** `Dict[str, Any]` - Task status information
 
 ### discover_agents
 
@@ -576,6 +799,67 @@ print("Server info:", server_info)
 deployer.run()
 ```
 
+### Queue Management Configuration
+
+```python
+from swarms import Agent
+from swarms.structs.aop import AOP
+
+# Create agents
+research_agent = Agent(
+    agent_name="Research-Agent",
+    agent_description="Expert in research and data collection",
+    model_name="anthropic/claude-sonnet-4-5",
+    max_loops=1,
+)
+
+analysis_agent = Agent(
+    agent_name="Analysis-Agent",
+    agent_description="Expert in data analysis",
+    model_name="anthropic/claude-sonnet-4-5",
+    max_loops=1,
+)
+
+# Create AOP with queue management enabled
+deployer = AOP(
+    server_name="QueueManagedServer",
+    port=8000,
+    queue_enabled=True,  # Enable queue-based execution
+    max_workers_per_agent=2,  # 2 worker threads per agent
+    max_queue_size_per_agent=500,  # Max 500 tasks per agent queue
+    processing_timeout=60,  # 60 second timeout for processing
+    retry_delay=2.0,  # 2 second delay between retries
+    verbose=True
+)
+
+# Add agents
+deployer.add_agent(research_agent)
+deployer.add_agent(analysis_agent)
+
+# Get queue statistics
+stats = deployer.get_queue_stats()
+print("Queue stats:", stats)
+
+# Get stats for specific agent
+research_stats = deployer.get_queue_stats("Research-Agent")
+print("Research agent stats:", research_stats)
+
+# Pause an agent's queue
+deployer.pause_agent_queue("Research-Agent")
+print("Research agent queue paused")
+
+# Resume the queue
+deployer.resume_agent_queue("Research-Agent")
+print("Research agent queue resumed")
+
+# Clear all pending tasks for an agent
+cleared_count = deployer.clear_agent_queue("Analysis-Agent")
+print(f"Cleared {cleared_count} tasks from Analysis-Agent queue")
+
+# Start the server
+deployer.run()
+```
+
 ### AOPCluster Usage
 
 ```python
@@ -802,6 +1086,12 @@ AOP provides comprehensive error handling:
 | **Define Agent Roles**       | Use the `role` attribute to categorize agents (coordinator, worker, etc.) |
 | **Leverage Discovery Tools** | Use built-in discovery tools for dynamic agent collaboration |
 | **Design for Scalability**   | Plan for adding/removing agents dynamically using discovery tools |
+| **Enable Queue Management**  | Use queue-based execution for better performance and reliability |
+| **Monitor Queue Stats**      | Regularly check queue statistics to identify bottlenecks |
+| **Configure Workers**        | Set appropriate `max_workers_per_agent` based on your workload |
+| **Set Queue Limits**         | Configure `max_queue_size_per_agent` to prevent memory issues |
+| **Use Priority Tasks**       | Leverage task priority for important tasks that need faster processing |
+| **Monitor Task Status**      | Use `get_task_status()` to track individual task progress |
 
 ## Integration with Other Systems
 

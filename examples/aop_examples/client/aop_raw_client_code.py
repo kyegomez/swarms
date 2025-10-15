@@ -80,7 +80,7 @@ def main():
     """
     Run the helper-based and raw MCP client discovery examples.
     """
-    asyncio.run(discover_agents_example())
+    # asyncio.run(discover_agents_example())
     asyncio.run(raw_mcp_discover_agents_example())
 
 

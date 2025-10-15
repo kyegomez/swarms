@@ -280,6 +280,7 @@ nav:
         - Multi-Agent Execution Utilities: "swarms/structs/various_execution_methods.md"
         - Council of Judges: "swarms/structs/council_of_judges.md"
         - Heavy Swarm: "swarms/structs/heavy_swarm.md"
+        - Social Algorithms: "swarms/structs/social_algorithms.md"
 
         - Hiearchical Architectures:
           - Overview: "swarms/structs/multi_swarm_orchestration.md"
