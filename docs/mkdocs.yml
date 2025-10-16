@@ -413,6 +413,9 @@ nav:
           - Gold ETF Research with HeavySwarm: "examples/gold_etf_research.md"
           - Hiring Swarm: "examples/hiring_swarm.md"
           - Advanced Research: "examples/av.md"
+          - Real Estate Swarm: "examples/realestate_swarm.md"
+          - Job Finding Swarm: "examples/job_finding.md"
+          - Mergers & Aquisition (M&A) Advisory Swarm: "examples/ma_swarm.md"
     
     - Tools & Integrations:
       - Web Search with Exa: "examples/exa_search.md"
@@ -429,7 +432,7 @@ nav:
     - Apps:
       - Web Scraper Agents: "developer_guides/web_scraper.md"
       - Smart Database: "examples/smart_database.md"
-
+      
     - AOP:
       - Medical AOP Example: "examples/aop_medical.md"
 
