@@ -164,19 +164,34 @@ class MultiAgentRouter:
         # Avoids errors on models like `gpt-3.5-turbo` which don't support json_schema
         def _supports_structured_outputs(model_name: str) -> bool:
             name = (model_name or "").lower()
-            return any(
-                prefix in name
-                for prefix in [
-                    "gpt-4.1",
-                    "openai/gpt-4.1", 
-                    "gpt-4o",
-                    "openai/gpt-4o",
-                    "o3-",
-                    "openai/o3-",
-                    "o4-",
-                    "openai/o4-",
-                ]
-            )
+            # Models that DON'T support structured outputs (exclude these)
+            unsupported_models = [
+                "gpt-3.5-turbo",
+                "gpt-4-turbo",
+                "gpt-4",   
+                "text-davinci",
+                "text-curie",
+                "text-babbage",
+                "text-ada",
+                "claude-2",
+                "claude-instant",
+                "claude-v1",
+                "gemini-pro-vision",
+                "text-bison",
+                "chat-bison",
+                "llama-2",
+                "llama-3",
+                "mistral-7b",
+                "mistral-small",
+            ]
+            
+            # If it's in the unsupported list, return False
+            if any(unsupported in name for unsupported in unsupported_models):
+                return False
+                
+            # Otherwise, assume it supports structured outputs
+            # This includes newer Claude, Gemini, and OpenAI models
+            return True
 
         # Build LiteLLM kwargs with conditional response_format
         lite_llm_kwargs = {
