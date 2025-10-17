@@ -284,15 +284,7 @@ The `run` method now includes enhanced logging to track the sequential awareness
 The SequentialWorkflow with sequential awareness represents a significant advancement in multi-agent coordination, enabling more sophisticated and professional workflows that closely mirror human team collaboration patterns.
 
 
-## **NEW: SequentialWorkflow Streaming Callback Documentation**
-
-The SequentialWorkflow now includes a powerful **streaming callback** feature that allows you to receive and process tokens in real-time as the workflow executes, helping you monitor execution progress from agents and create interactive chat applications/live demos. This enables real-time streaming of agent responses, making it ideal for interactive applications and live monitoring of workflow progress.
-
-## `streaming_callback: Optional[Callable[[str, str, bool], None]] = None`
-
--  The function should accept a single string parameter (the token) and return None. Defaults to `None`.
-
-## **Usage Example with Streaming Callback:**
+## **Usage Example with Streaming Callback in Sequential Workflows:**
 
 ```python
 from swarms.structs.agent import Agent
@@ -347,52 +339,3 @@ if __name__ == "__main__":
         streaming_callback=streaming_callback,
     )
 ```
-
-### Expected Output:
-- Output appears in real time, streaming partial results as they are generated.
-- Chunks of text are printed to the terminal as soon as they are available.
-- Each agent's output is shown in sequence (e.g., research findings, then analysis).
-- The final result is printed at the end after all agents have finished.
-- There may be brief pauses between streamed outputs as each agent completes their step.
-
-
-## **Advanced Streaming Examples**
-
-### **Example 1: File Logging with Streaming**
-```python
-def file_logging_callback(token: str) -> None:
-    """Stream tokens to a log file in real-time."""
-    with open("workflow_stream.log", "a", encoding="utf-8") as f:
-        f.write(token)
-
-workflow = SequentialWorkflow(
-    agents=[research_agent, analysis_agent],
-    streaming_callback=file_logging_callback
-)
-```
-
-### **Example 2: Token Filtering and Processing**
-```python
-def smart_callback(token: str) -> None:
-    """Filter and process tokens based on custom logic."""
-    # Skip whitespace-only tokens
-    if token.strip():
-        # Highlight key terms
-        if any(keyword in token.lower() for keyword in ["error", "warning", "success"]):
-            print(f"\033[93m{token}\033[0m", end="", flush=True)  # Yellow highlighting
-        else:
-            print(token, end="", flush=True)
-
-workflow = SequentialWorkflow(
-    agents=[agent1, agent2],
-    streaming_callback=smart_callback
-)
-```
-
-
-## **Notes:**
-
-- **Backward Compatibility**: Existing workflows continue to work without changes when `streaming_callback=None`
-- **Performance**: Streaming adds minimal overhead while providing significant real-time benefits
-- **Error Handling**: Implement proper error handling in your callback function to prevent workflow interruption
-- **Thread Safety**: Ensure your callback function is thread-safe if used in concurrent workflows
