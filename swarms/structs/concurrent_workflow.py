@@ -100,7 +100,9 @@ class ConcurrentWorkflow:
             self.agent_statuses = {}
 
         self.reliability_check()
-        self.conversation = Conversation(name=f"concurrent_workflow_name_{name}_id_{self.id}_conversation")
+        self.conversation = Conversation(
+            name=f"concurrent_workflow_name_{name}_id_{self.id}_conversation"
+        )
 
         if self.show_dashboard is True:
             self.agents = self.fix_agents()

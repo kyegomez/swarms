@@ -76,6 +76,8 @@ class SelfMoASeq:
         retry_delay: float = 1.0,
         retry_backoff_multiplier: float = 2.0,
         retry_max_delay: float = 60.0,
+        additional_kwargs: Dict[str, Any] = {},
+        top_p: Optional[float] = None,
     ):
         # Validate parameters
         if window_size < 2:
@@ -137,6 +139,7 @@ class SelfMoASeq:
             temperature=self.temperature,
             max_loops=1,
             verbose=self.verbose,
+            top_p=top_p,
         )
 
         # Initialize aggregator agent (synthesizes outputs)
@@ -152,6 +155,7 @@ class SelfMoASeq:
             temperature=0.0,  # Deterministic aggregation
             max_loops=1,
             verbose=self.verbose,
+            top_p=top_p,
         )
 
         # Metrics tracking

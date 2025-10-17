@@ -27,11 +27,11 @@ models_to_test = [
     "gpt-4.1",
     "gpt-4o",
     "gpt-5-mini",
-    "o4-mini", 
-    "o3",            
-    "claude-opus-4-20250514",   
+    "o4-mini",
+    "o3",
+    "claude-opus-4-20250514",
     "claude-sonnet-4-20250514",
-    "claude-3-7-sonnet-20250219",   
+    "claude-3-7-sonnet-20250219",
     "gemini/gemini-2.5-flash",
     "gemini/gemini-2.5-pro",
 ]
@@ -43,17 +43,22 @@ model_logs = []
 for model_name in models_to_test:
     print(f"\n--- Testing model: {model_name} ---")
     router_execute = MultiAgentRouter(
-        agents=agents, temperature=0.5, model=model_name,
+        agents=agents,
+        temperature=0.5,
+        model=model_name,
     )
     try:
         result = router_execute.run(task)
         print(f"Run completed successfully for {model_name}")
-        model_logs.append({"model": model_name, "status": "✅ Success"})
+        model_logs.append(
+            {"model": model_name, "status": "✅ Success"}
+        )
     except Exception as e:
         print(f"An error occurred for {model_name}")
-        model_logs.append({"model": model_name, "status": f"❌ Error: {e}"})
+        model_logs.append(
+            {"model": model_name, "status": f"❌ Error: {e}"}
+        )
 
 print("\n===== Model Run Summary =====")
 for log in model_logs:
     print(f"{log['model']}: {log['status']}")
-

@@ -1,10 +1,4 @@
-import os
-
-
 from swarms import Agent, ConcurrentWorkflow
-
-# Fetch the OpenAI API key from the environment variable
-api_key = os.getenv("OPENAI_API_KEY")
 
 # Initialize agents for different roles
 delaware_ccorp_agent = Agent(
@@ -59,7 +53,6 @@ task = """
 # Run agents with tasks concurrently
 swarm = ConcurrentWorkflow(
     agents=agents,
-    return_str_on=False,
     output_type="list",
 )
 

@@ -143,7 +143,7 @@ class SocialAlgorithms:
         max_execution_time: float = 300.0,  # 5 minutes default
         output_type: OutputType = "dict",
         verbose: bool = False,
-        enable_communication_logging: bool = True,
+        enable_communication_logging: bool = False,
         parallel_execution: bool = False,
         max_workers: int = None,
         *args,
@@ -613,24 +613,28 @@ class SocialAlgorithms:
             original_run = Agent.run
 
             def logged_talk_to(
-                self, agent, task, img=None, *args, **kwargs
+                agent_self, agent, task, img=None, *args, **kwargs
             ):
                 # Log the communication
                 self._log_communication(
-                    self.agent_name, agent.agent_name, task
+                    agent_self.agent_name, agent.agent_name, task
                 )
                 # Call original method
                 return original_talk_to(
-                    self, agent, task, img, *args, **kwargs
+                    agent_self, agent, task, img, *args, **kwargs
                 )
 
-            def logged_run(self, task, img=None, *args, **kwargs):
+            def logged_run(
+                agent_self, task, img=None, *args, **kwargs
+            ):
                 # Log the communication (self-communication)
                 self._log_communication(
-                    self.agent_name, self.agent_name, task
+                    agent_self.agent_name, agent_self.agent_name, task
                 )
                 # Call original method
-                return original_run(self, task, img, *args, **kwargs)
+                return original_run(
+                    agent_self, task, img, *args, **kwargs
+                )
 
             # Temporarily replace methods
             Agent.talk_to = logged_talk_to
