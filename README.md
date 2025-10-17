@@ -197,7 +197,6 @@ GROQ_API_KEY=""
 ```
 
 
-
 ### 🤖 Your First Agent
 
 An **Agent** is the fundamental building block of a swarm—an autonomous entity powered by an LLM + Tools + Memory. [Learn more Here](https://docs.swarms.world/en/latest/swarms/structs/agent/)
