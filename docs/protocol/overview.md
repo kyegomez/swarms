@@ -85,7 +85,7 @@ The Swarms protocol is organized into several key layers, each responsible for a
     agents and swarms.
     
     - **Prompts (`swarms/prompts`)**: Houses prompt templates, system prompts, and agent-specific prompts for LLM-based agents. See 
-    [Prompts Management](https://docs.swarms.world/en/latest/swarms/prompts/main/)
+    [Prompts Management](https://github.com/kyegomez/swarms/tree/master/swarms/prompts/)
     
     - **Telemetry (`swarms/telemetry`)**: Handles logging, monitoring, and bootup routines for observability and debugging.
     
@@ -93,7 +93,7 @@ The Swarms protocol is organized into several key layers, each responsible for a
     safety and consistency.
     
     - **CLI (`swarms/cli`)**: Provides command-line utilities for agent creation, management, and orchestration. See [CLI Documentation]
-    (https://docs.swarms.world/en/latest/swarms/cli/main/)
+    (https://docs.swarms.world/en/latest/swarms/cli/cli_reference/)
 
 ---
 
@@ -312,7 +312,7 @@ diy_memory/)
 
 - `prompt.py`, `reasoning_prompt.py`, `multi_agent_collab_prompt.py`, etc.
 
-- [Prompts Management](https://docs.swarms.world/en/latest/swarms/prompts/main/)
+- [Prompts Management](https://github.com/kyegomez/swarms/tree/master/swarms/prompts/)
 
 
 ### `artifacts/`
@@ -359,7 +359,7 @@ diy_memory/)
 
 - `main.py`, `create_agent.py`, `onboarding_process.py`.
 
-- [CLI Documentation](https://docs.swarms.world/en/latest/swarms/cli/main/)
+- [CLI Documentation](https://docs.swarms.world/en/latest/swarms/cli/cli_reference/)
 
 
 ---
@@ -381,7 +381,7 @@ For example, a typical workflow might involve:
 - Logging all actions and outputs for traceability and debugging.
 
 
-For more advanced examples, see the [Examples Overview](https://docs.swarms.world/en/latest/examples/index/).
+For more advanced examples, see the [Examples Overview](https://docs.swarms.world/en/latest/examples/).
 
 ---
 
@@ -415,9 +415,9 @@ For more on the philosophy and architecture, see [Development Philosophy & Princ
 | BaseTool Reference                   | [BaseTool Reference](https://docs.swarms.world/en/latest/swarms/tools/base_tool/)      | Reference for the BaseTool class                 |
 | Reasoning Agents Overview            | [Reasoning Agents Overview](https://docs.swarms.world/en/latest/swarms/agents/reasoning_agents_overview/) | Overview of reasoning agents                     |
 | Multi-Agent Architectures Overview   | [Multi-Agent Architectures Overview](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/) | Multi-agent system architectures                 |
-| Examples Overview                    | [Examples Overview](https://docs.swarms.world/en/latest/examples/index/)               | Example projects and use cases                   |
-| CLI Documentation                    | [CLI Documentation](https://docs.swarms.world/en/latest/swarms/cli/main/)              | Command-line interface documentation             |
-| Prompts Management                   | [Prompts Management](https://docs.swarms.world/en/latest/swarms/prompts/main/)         | Managing and customizing prompts                 |
+| Examples Overview                    | [Examples Overview](https://docs.swarms.world/en/latest/examples/)               | Example projects and use cases                   |
+| CLI Documentation                    | [CLI Documentation](https://docs.swarms.world/en/latest/swarms/cli/cli_reference/)              | Command-line interface documentation             |
+| Prompts Management                   | [Prompts Management](https://github.com/kyegomez/swarms/tree/master/swarms/prompts/)         | Managing and customizing prompts                 |
 | Development Philosophy & Principles  | [Development Philosophy & Principles](https://docs.swarms.world/en/latest/swarms/concept/philosophy/) | Framework philosophy and guiding principles      |
 | Understanding Swarms Architecture    | [Understanding Swarms Architecture](https://docs.swarms.world/en/latest/swarms/concept/framework_architecture/) | In-depth look at Swarms architecture             |
 | SIP Guidelines and Template          | [SIP Guidelines and Template](https://docs.swarms.world/en/latest/protocol/sip/)       | Swarms Improvement Proposal process and template |
