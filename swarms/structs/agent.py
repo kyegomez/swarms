@@ -822,7 +822,17 @@ class Agent:
                 tools_list.extend(self.tools_list_dictionary)
 
             if exists(self.mcp_url) or exists(self.mcp_urls):
-                tools_list.extend(self.add_mcp_tools_to_memory())
+                if self.verbose:
+                    logger.info(
+                        f"Adding MCP tools to memory for {self.agent_name}"
+                    )
+                # tools_list.extend(self.add_mcp_tools_to_memory())
+                mcp_tools = self.add_mcp_tools_to_memory()
+
+                if self.verbose:
+                    logger.info(f"MCP tools: {mcp_tools}")
+
+                tools_list.extend(mcp_tools)
 
             # Additional arguments for LiteLLM initialization
             additional_args = {}
@@ -888,37 +898,37 @@ class Agent:
             Exception: If there's an error accessing the MCP tools
         """
         try:
+            # Determine which MCP configuration to use
             if exists(self.mcp_url):
                 tools = get_mcp_tools_sync(server_path=self.mcp_url)
             elif exists(self.mcp_config):
                 tools = get_mcp_tools_sync(connection=self.mcp_config)
-                # logger.info(f"Tools: {tools}")
             elif exists(self.mcp_urls):
+                logger.info(
+                    f"Getting MCP tools for multiple MCP servers for {self.agent_name}"
+                )
                 tools = get_tools_for_multiple_mcp_servers(
                     urls=self.mcp_urls,
-                    output_type="str",
                 )
-                # print(f"Tools: {tools} for {self.mcp_urls}")
+
+                if self.verbose:
+                    logger.info(f"MCP tools: {tools}")
             else:
                 raise AgentMCPConnectionError(
                     "mcp_url must be either a string URL or MCPConnection object"
                 )
 
-            if (
-                exists(self.mcp_url)
-                or exists(self.mcp_urls)
-                or exists(self.mcp_config)
-            ):
-                if self.print_on is True:
-                    self.pretty_print(
-                        f"✨ [SYSTEM] Successfully integrated {len(tools)} MCP tools into agent: {self.agent_name} | Status: ONLINE | Time: {time.strftime('%H:%M:%S')} ✨",
-                        loop_count=0,
-                    )
+            # Print success message if any MCP configuration exists
+            if self.print_on:
+                self.pretty_print(
+                    f"✨ [SYSTEM] Successfully integrated {len(tools)} MCP tools into agent: {self.agent_name} | Status: ONLINE | Time: {time.strftime('%H:%M:%S')} ✨",
+                    loop_count=0,
+                )
 
             return tools
         except AgentMCPConnectionError as e:
             logger.error(
-                f"Error in MCP connection: {e} Traceback: {traceback.format_exc()}"
+                f"Error Adding MCP Tools to Agent: {self.agent_name} Error: {e} Traceback: {traceback.format_exc()}"
             )
             raise e
 

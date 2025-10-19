@@ -1,20 +1,3 @@
-#!/usr/bin/env python3
-"""
-Multi-MCP Agent Example
-
-This example demonstrates how to use multiple MCP (Model Context Protocol) servers
-with a single Swarms agent. The agent can access tools from different MCP servers
-simultaneously, enabling powerful cross-server functionality.
-
-Prerequisites:
-1. Start the OKX crypto server: python multi_mcp_guide/okx_crypto_server.py
-2. Start the agent tools server: python multi_mcp_guide/mcp_agent_tool.py
-3. Install required dependencies: pip install swarms mcp fastmcp requests
-
-Usage:
-    python examples/multi_agent/multi_mcp_example.py
-"""
-
 from swarms import Agent
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
