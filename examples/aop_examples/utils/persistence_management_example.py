@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-"""
-AOP Persistence Management Example - Raw Code
-
-This example demonstrates AOP persistence management methods
-for controlling persistence mode at runtime without any print statements or functions.
-"""
-
 import time
 import threading
 from swarms import Agent

@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-"""
-AOP Network Management Example - Raw Code
-
-This example demonstrates AOP network management and monitoring
-with real-time status updates without any print statements or functions.
-"""
-
 import time
 import threading
 from swarms import Agent

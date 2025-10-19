@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-Comprehensive AOP Example - Raw Code
 
-This example demonstrates all AOP features including persistence,
-network error handling, and queue management without any print statements or functions.
-"""
 
 import time
 import threading

@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""
-AOP Persistence Example - Raw Code
-
-This example demonstrates the AOP persistence feature with automatic restart
-and failsafe protection without any print statements or functions.
-"""
 
 from swarms import Agent
 from swarms.structs.aop import AOP

@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-"""
-AOP Network Error Handling Example - Raw Code
-
-This example demonstrates the AOP network error handling feature with
-custom error messages and automatic retry logic without any print statements or functions.
-"""
-
 from swarms import Agent
 from swarms.structs.aop import AOP
 
