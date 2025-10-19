@@ -1,9 +1,3 @@
-"""
-Simplified test suite for AgentRouter class using pytest.
-
-This module contains focused tests for the core functionality of the AgentRouter class.
-"""
-
 import pytest
 from unittest.mock import Mock, patch
 
