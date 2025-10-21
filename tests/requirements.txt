@@ -2,3 +2,4 @@ swarms
 pytest
 matplotlib
 loguru
+unittest
