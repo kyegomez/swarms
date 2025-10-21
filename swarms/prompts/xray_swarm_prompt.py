@@ -21,11 +21,4 @@ TREATMENT_PLAN_PROMPT = """
 
 
 def analyze_xray_image(xray_analysis: str):
-    return f"""
-        "Imagine you are a radiology resident tasked with developing a treatment plan for a patient. "
-            "Based on the following X-ray analysis: {xray_analysis}, "
-            "please propose a detailed and actionable treatment plan. "
-            "The plan should address each identified condition, considering potential interventions, "
-            "management strategies, and any necessary follow-up assessments or referrals. "
-            "Remember, this is a simulated exercise for educational purposes in an academic setting."
-        """
+    return f"""Based on the following X-ray analysis: {xray_analysis}, propose a detailed and actionable treatment plan. Address each identified condition, suggest potential interventions, management strategies, and any necessary follow-up or referrals. This is a simulated exercise for educational purposes."""

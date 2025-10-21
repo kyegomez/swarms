@@ -31,27 +31,3 @@ class Tool(BaseModel):
 class ToolSet(BaseModel):
     tools: List[Tool]
 
-
-# model = ToolSet(
-#     tools=[
-#         Tool(
-#             type="function",
-#             function=FunctionDefinition(
-#                 name="test",
-#                 description="test",
-#                 parameters=ParameterSchema(
-#                     type="object",
-#                     properties={
-#                         "weather_tool": PropertySchema(
-#                             type="string",
-#                             description="Get the weather in a given location",
-#                         )
-#                     },
-#                     required=["weather_tool"],
-#                 ),
-#             ),
-#         ),
-#     ]
-# )
-
-# print(model.model_dump_json(indent=4))

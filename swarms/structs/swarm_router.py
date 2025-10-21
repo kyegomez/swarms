@@ -546,8 +546,6 @@ class SwarmRouter:
             description=self.description,
             agents=self.agents,
             max_loops=self.max_loops,
-            auto_save=self.autosave,
-            return_str_on=self.return_entire_history,
             output_type=self.output_type,
             *args,
             **kwargs,
