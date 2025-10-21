@@ -1,15 +1,3 @@
-#!/usr/bin/env python3
-"""
-Test script to verify that the LiteLLM class properly handles args and kwargs
-from both __init__ and run methods.
-"""
-
-import sys
-import os
-
-# Add the swarms directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "swarms"))
-
 from swarms.utils.litellm_wrapper import LiteLLM
 
 

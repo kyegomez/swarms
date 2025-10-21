@@ -1,14 +1,3 @@
-#!/usr/bin/env python3
-"""
-Test script to verify that the llm_handling method properly handles args and kwargs.
-"""
-
-import sys
-import os
-
-# Add the swarms directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "swarms"))
-
 from swarms.structs.agent import Agent
 
 

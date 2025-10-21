@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-Test script to verify the LiteLLM initialization fix for combined parameters.
-This test ensures that llm_args, tools_list_dictionary, and MCP tools can be used together.
-"""
-
 import sys
 
 

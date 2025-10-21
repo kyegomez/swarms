@@ -939,10 +939,4 @@ def run_all_tests():
 
 
 if __name__ == "__main__":
-    if not API_KEY:
-        logger.error(
-            "OPENAI_API_KEY environment variable not set. Aborting tests."
-        )
-        exit(1)
-    else:
-        run_all_tests()
+    run_all_tests()
