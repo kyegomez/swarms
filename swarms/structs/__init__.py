@@ -9,6 +9,7 @@ from swarms.structs.batch_agent_execution import batch_agent_execution
 from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
+from swarms.structs.social_algorithms import SocialAlgorithms
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.cron_job import CronJob
 from swarms.structs.graph_workflow import (
@@ -105,6 +106,7 @@ __all__ = [
     "BaseStructure",
     "BaseSwarm",
     "ConcurrentWorkflow",
+    "SocialAlgorithms",
     "Conversation",
     "GroupChat",
     "MajorityVoting",
