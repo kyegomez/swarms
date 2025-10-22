@@ -1,11 +1,48 @@
-from typing import List
-from loguru import logger
-from swarms.structs.agent import Agent
-from swarms.structs.conversation import Conversation
-from swarms.utils.history_output_formatter import history_output_formatter
-from swarms_tools import exa_search
+from swarms import Agent, SequentialWorkflow
+import http.client
+import json
+import urllib.parse
 
-# System prompts for each agent
+def get_jobs(query: str, limit: int = 10) -> str:
+    """
+    Fetches real-time jobs using JSearch API based on role, location, and experience.
+    Uses http.client to match verified working example.
+    """
+    # Prepare query string for URL
+    encoded_query = urllib.parse.quote(query)
+    path = f"/search?query={encoded_query}&page=1&num_pages=1&country=us&limit={limit}&date_posted=all"
+    
+    conn = http.client.HTTPSConnection("jsearch.p.rapidapi.com")
+
+    headers = {
+        "x-rapidapi-key": "", #<------- Add your RapidAPI key here otherwise it will not work
+        "x-rapidapi-host": "jsearch.p.rapidapi.com"
+    }
+
+    conn.request("GET", path, headers=headers)
+
+    res = conn.getresponse()
+    data = res.read()
+    decoded = data.decode("utf-8")
+    try:
+        result_dict = json.loads(decoded)
+    except Exception:
+        # fallback for unexpected output
+        return decoded
+
+    results = result_dict.get("data", [])
+    jobs_list = [
+        {
+            "title": job.get("job_title"),
+            "company": job.get("employer_name"),
+            "location": job.get("job_city") or job.get("job_country"),
+            "experience": job.get("job_required_experience", {}).get("required_experience_in_months"),
+            "url": job.get("job_apply_link")
+        }
+        for job in results
+    ]
+    return json.dumps(jobs_list)
+
 
 REQUIREMENTS_ANALYZER_PROMPT = """
 You are the Requirements Analyzer Agent for Job Search.
@@ -33,9 +70,7 @@ RESPONSIBILITIES:
 
 - Generate optimized search queries:
   * Create 3-5 targeted search queries based on user requirements
-  * Combine job titles, skills, locations, and key criteria
-  * Format queries for maximum relevance
-
+  
 OUTPUT FORMAT:
 Provide a comprehensive requirements analysis:
 1. User Profile Summary:
@@ -46,7 +81,7 @@ Provide a comprehensive requirements analysis:
    - Priority factors
 
 2. Search Strategy:
-   - List of 3-5 optimized search queries
+   - List of 3-5 optimized search queries, formatted EXACTLY for linkedin.com/jobs/search/?keywords=...
    - Rationale for each query
    - Expected result types
 
@@ -56,7 +91,7 @@ Provide a comprehensive requirements analysis:
 
 IMPORTANT:
 - Always include ALL user responses verbatim in your analysis
-- Format search queries clearly for the next agent
+- Format search queries clearly for the next agent and fit directly to LinkedIn search URLs
 - Be specific and actionable in your recommendations
 - Ask follow-up questions if requirements are unclear
 """
@@ -65,14 +100,23 @@ SEARCH_EXECUTOR_PROMPT = """
 You are the Search Executor Agent for Job Search.
 
 ROLE:
-Execute job searches using exa_search and analyze results for relevance.
+Your job is to execute a job search by querying the tool EXACTLY ONCE using the following required format (FILL IN WHERE IT HAS [ ] WITH THE QUERY INFO OTHERWISE STATED):
+
+The argument for the query is to be provided as a plain text string in the following format (DO NOT include technical addresses, just the core query string):
+
+    [jobrole] jobs in [geographiclocation/remoteorinpersonorhybrid] 
+
+For example:
+    developer jobs in chicago
+    senior product manager jobs in remote
+    data engineer jobs in new york hybrid
 
 TOOLS:
-You have access to the exa_search tool. Use it to find current job listings and career opportunities.
+You have access to three tools:
+- get_jobs: helps find open job opportunities for your specific job and requirements.
 
 RESPONSIBILITIES:
-- Execute searches using queries from the Requirements Analyzer
-- Use exa_search for EACH query provided
+- Run ONE single query, in the above format, as the argument to get_jobs.
 - Analyze search results for:
   * Job title match
   * Skills alignment
@@ -82,7 +126,7 @@ RESPONSIBILITIES:
   * Role responsibilities
   * Growth opportunities
 
-- Categorize results:
+- Categorize each result into one of:
   * Strong Match (80-100% alignment)
   * Good Match (60-79% alignment)
   * Moderate Match (40-59% alignment)
@@ -97,13 +141,12 @@ RESPONSIBILITIES:
   * Match score and reasoning
 
 OUTPUT FORMAT:
-Provide structured search results:
 1. Search Execution Summary:
-   - Queries executed
+   - The query executed (write ONLY the string argument supplied, e.g., "developer jobs in chicago" or "software engineer jobs in new york remote")
    - Total results found
    - Distribution by match category
 
-2. Detailed Job Listings (organized by match strength):
+2. Detailed Job Listings (grouped by match strength):
    For each job:
    - Company and Job Title
    - Location and Work Type
@@ -111,18 +154,19 @@ Provide structured search results:
    - Why it's a match (or not)
    - Match Score (percentage)
    - Application link
-   - Source (cite exa_search)
+   - Source (specify get_jobs)
 
 3. Search Insights:
-   - Common themes in results
-   - Gap analysis (requirements not met)
+   - Common trends/themes in the results
+   - Gaps between results and requirements
    - Market observations
 
 INSTRUCTIONS:
-- Always use exa_search for EVERY query provided
-- Cite exa_search results clearly
-- Be objective in match assessment
-- Provide actionable insights
+- Run only the single query in the format described above, with no extra path, no technical addresses, and no full URLs.
+- Use all three tools, as applicable, with that exact query argument.
+- Clearly cite which results come from which source.
+- Be objective in match assessment.
+- Provide actionable, structured insights.
 """
 
 RESULTS_CURATOR_PROMPT = """
@@ -198,242 +242,8 @@ IMPORTANT:
 - Always ask for user feedback before concluding
 """
 
-class JobSearchSwarm:
-    def __init__(
-        self,
-        name: str = "AI Job Search Swarm",
-        description: str = "An intelligent job search system that finds your ideal role",
-        max_loops: int = 1,
-        user_name: str = "Job Seeker",
-        output_type: str = "json",
-    ):
-        self.max_loops = max_loops
-        self.name = name
-        self.description = description
-        self.user_name = user_name
-        self.output_type = output_type
-        
-        self.agents = self._initialize_agents()
-        self.conversation = Conversation()
-        self.exa_search_results = []
-        self.search_queries = []
-        self.current_iteration = 0
-        self.max_iterations = 10  # Prevent infinite loops
-        self.search_concluded = False
-        
-        self.handle_initial_processing()
-
-    def handle_initial_processing(self):
-        self.conversation.add(
-            role="System",
-            content=f"Company: {self.name}\n"
-                    f"Description: {self.description}\n"
-                    f"Mission: Find the perfect job match for {self.user_name}"
-        )
-
-    def _initialize_agents(self) -> List[Agent]:
-        return [
-            Agent(
-                agent_name="Sarah-Requirements-Analyzer",
-                agent_description="Analyzes user requirements and creates optimized job search queries.",
-                system_prompt=REQUIREMENTS_ANALYZER_PROMPT,
-                max_loops=self.max_loops,
-                dynamic_temperature_enabled=True,
-                output_type="final",
-            ),
-            Agent(
-                agent_name="David-Search-Executor",
-                agent_description="Executes job searches and analyzes results for relevance.",
-                system_prompt=SEARCH_EXECUTOR_PROMPT,
-                max_loops=self.max_loops,
-                dynamic_temperature_enabled=True,
-                output_type="final",
-            ),
-            Agent(
-                agent_name="Lisa-Results-Curator",
-                agent_description="Curates and presents job results for user decision-making.",
-                system_prompt=RESULTS_CURATOR_PROMPT,
-                max_loops=self.max_loops,
-                dynamic_temperature_enabled=True,
-                output_type="final",
-            ),
-        ]
-
-    def find_agent_by_name(self, name: str) -> Agent:
-        for agent in self.agents:
-            if name in agent.agent_name:
-                return agent
-        return None
-
-    def analyze_requirements(self, user_input: str):
-        """Phase 1: Analyze user requirements and generate search queries"""
-        sarah_agent = self.find_agent_by_name("Requirements-Analyzer")
-        
-        sarah_output = sarah_agent.run(
-            f"User Input: {user_input}\n\n"
-            f"Conversation History: {self.conversation.get_str()}\n\n"
-            f"Analyze the user's job search requirements and generate 3-5 optimized search queries. "
-            f"If information is unclear, ask clarifying questions."
-        )
-        
-        self.conversation.add(
-            role="Requirements-Analyzer", content=sarah_output
-        )
-        
-        # Extract search queries from Sarah's output
-        self.search_queries = self._extract_search_queries(sarah_output)
-        
-        return sarah_output
-
-    def _extract_search_queries(self, analyzer_output: str) -> List[str]:
-        """Extract search queries from Requirements Analyzer output"""
-        queries = []
-        lines = analyzer_output.split('\n')
-        
-        # Look for lines that appear to be search queries
-        for line in lines:
-            line = line.strip()
-            # Simple heuristic: lines with certain keywords or patterns
-            if any(keyword in line.lower() for keyword in ['query:', 'search:', 'query']):
-                # Extract the actual query
-                if ':' in line:
-                    query = line.split(':', 1)[1].strip()
-                    if query and len(query) > 10:
-                        queries.append(query)
-        
-        # If no queries found, create default ones based on common patterns
-        if not queries:
-            logger.warning("No explicit queries found, generating fallback queries")
-            queries = [
-                "software engineer jobs remote",
-                "data scientist positions",
-                "product manager opportunities"
-            ]
-        
-        return queries[:5]  # Limit to 5 queries
-
-    def execute_searches(self):
-        """Phase 2: Execute searches using exa_search and analyze results"""
-        # Execute exa_search for each query
-        self.exa_search_results = []
-        for query in self.search_queries:
-            result = exa_search(query)
-            self.exa_search_results.append({
-                "query": query,
-                "exa_result": result
-            })
-        
-        # Pass results to Search Executor agent
-        david_agent = self.find_agent_by_name("Search-Executor")
-        
-        # Build exa context
-        exa_context = "\n\n[Exa Search Results]\n"
-        for item in self.exa_search_results:
-            exa_context += f"Query: {item['query']}\nResults: {item['exa_result']}\n\n"
-        
-        david_output = david_agent.run(
-            f"Conversation History: {self.conversation.get_str()}\n\n"
-            f"{exa_context}\n"
-            f"Analyze these job search results. Categorize each job by match strength and provide detailed analysis."
-        )
-        
-        self.conversation.add(
-            role="Search-Executor", content=david_output
-        )
-        
-        return david_output
-
-    def curate_results(self) -> str:
-        """Phase 3: Curate results and get user feedback"""
-        lisa_agent = self.find_agent_by_name("Results-Curator")
-        
-        lisa_output = lisa_agent.run(
-            f"Conversation History: {self.conversation.get_str()}\n\n"
-            f"Curate the job search results, present top recommendations, and ask the user for feedback. "
-            f"Determine if we should continue searching or if the user has found suitable options."
-        )
-        
-        self.conversation.add(
-            role="Results-Curator", content=lisa_output
-        )
-        
-        return lisa_output
-
-    def end(self) -> tuple[bool, str]:
-        """
-        Conclude the job search without user interaction.
-        
-        Returns:
-            tuple[bool, str]: (needs_refinement, user_feedback)
-        """
-        return False, "Search completed successfully."
-
-    def run(self, initial_user_input: str):
-        """
-        Run the job search swarm with continuous optimization.
-        
-        Args:
-            initial_user_input: User's initial job search requirements
-        """
-        self.conversation.add(role=self.user_name, content=initial_user_input)
-        
-        user_input = initial_user_input
-        
-        while not self.search_concluded and self.current_iteration < self.max_iterations:
-            self.current_iteration += 1
-            logger.info(f"Starting search iteration {self.current_iteration}")
-            
-            # Phase 1: Analyze requirements
-            print(f"\n{'='*60}")
-            print(f"ITERATION {self.current_iteration} - ANALYZING REQUIREMENTS")
-            print(f"{'='*60}\n")
-            self.analyze_requirements(user_input)
-
-            
-            # Phase 2: Execute searches
-            print(f"\n{'='*60}")
-            print(f"ITERATION {self.current_iteration} - EXECUTING JOB SEARCHES")
-            print(f"{'='*60}\n")
-            self.execute_searches()
-            
-            # Phase 3: Curate and present results
-            print(f"\n{'='*60}")
-            print(f"ITERATION {self.current_iteration} - CURATING RESULTS")
-            print(f"{'='*60}\n")
-            self.curate_results()
-            
-            # Phase 4: Get user feedback
-            needs_refinement, user_feedback = self.end()
-            
-            # Add user feedback to conversation
-            self.conversation.add(
-                role=self.user_name, 
-                content=f"User Feedback: {user_feedback}"
-            )
-            
-            # Check if we should continue
-            if not needs_refinement:
-                self.search_concluded = True
-                print(f"\n{'='*60}")
-                print("SEARCH CONCLUDED - USER SATISFIED WITH RESULTS")
-                print(f"{'='*60}\n")
-            else:
-                # In production, get new user input here
-                print(f"\n{'='*60}")
-                print("SEARCH REQUIRES REFINEMENT")
-                print(f"{'='*60}\n")
-                # For demo, we'll stop after first iteration
-                self.search_concluded = True
-        
-        # Return formatted conversation history
-        return history_output_formatter(
-            self.conversation, type=self.output_type
-        )
-
 def main():
-    """Main entry point for job search swarm"""
-    
-    # Example 1: Pre-filled user requirements (for testing)
+    # User input for job requirements
     user_requirements = """
     I'm looking for a senior software engineer position with the following requirements:
     - Job Title: Senior Software Engineer or Staff Engineer
@@ -447,22 +257,45 @@ def main():
     - Priorities: Technical challenges, work-life balance, remote flexibility, equity upside
     - Deal-breakers: No pure management roles, no strict return-to-office policies
     """
-    
-    # Initialize the swarm
-    job_search_swarm = JobSearchSwarm(
-        name="AI-Powered Job Search Engine",
-        description="Intelligent job search system that continuously refines results until the perfect match is found",
-        user_name="Job Seeker",
-        output_type="json",
+
+    # Define your agents in a list as in the example format
+    agents = [
+        Agent(
+            agent_name="Sarah-Requirements-Analyzer",
+            agent_description="Analyzes user requirements and creates optimized job search queries.",
+            system_prompt=REQUIREMENTS_ANALYZER_PROMPT,
+            model_name="gpt-4.1",
+            max_loops=1,
+            temperature=0.7,
+        ),
+        Agent(
+            agent_name="David-Search-Executor",
+            agent_description="Executes job searches and analyzes results for relevance.",
+            system_prompt=SEARCH_EXECUTOR_PROMPT,
+            model_name="gpt-4.1",
+            max_loops=1,
+            temperature=0.7,
+            tools=[get_jobs],
+        ),
+        Agent(
+            agent_name="Lisa-Results-Curator",
+            agent_description="Curates and presents job results for user decision-making.",
+            system_prompt=RESULTS_CURATOR_PROMPT,
+            model_name="gpt-4.1",
+            max_loops=1,
+            temperature=0.7,
+        ),
+    ]
+
+    # Setup the SequentialWorkflow pipeline (following the style of the ETF example)
+    workflow = SequentialWorkflow(
+        name="job-search-sequential-workflow",
+        agents=agents,
         max_loops=1,
+        team_awareness=True,
     )
-    
-    # Run the swarm
-    print("\n" + "="*60)
-    print("INITIALIZING JOB SEARCH SWARM")
-    print("="*60 + "\n")
-    
-    job_search_swarm.run(initial_user_input=user_requirements)
+
+    workflow.run(user_requirements)
 
 if __name__ == "__main__":
     main()
