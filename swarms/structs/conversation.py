@@ -562,14 +562,11 @@ class Conversation:
                 )
                 return
 
-            # Get the full data including metadata and conversation history
-            data = self.get_init_params()
-
             # Ensure we have a valid save path
             if not self.save_filepath:
                 self.save_filepath = os.path.join(
                     self.conversations_dir or os.getcwd(),
-                    f"conversation_{self.name}.json",
+                    f"conversation_{self.id}.json",
                 )
 
             # Create directory if it doesn't exist
@@ -579,7 +576,12 @@ class Conversation:
 
             # Save with proper formatting
             with open(self.save_filepath, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=4, default=str)
+                json.dump(
+                    self.conversation_history,
+                    f,
+                    indent=4,
+                    default=str,
+                )
 
             logger.info(f"Conversation saved to {self.save_filepath}")
 

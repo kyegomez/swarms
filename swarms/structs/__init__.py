@@ -9,7 +9,6 @@ from swarms.structs.batch_agent_execution import batch_agent_execution
 from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
-from swarms.structs.social_algorithms import SocialAlgorithms
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.cron_job import CronJob
 from swarms.structs.graph_workflow import (
@@ -62,6 +61,7 @@ from swarms.structs.multi_agent_router import MultiAgentRouter
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.self_moa_seq import SelfMoASeq
 from swarms.structs.sequential_workflow import SequentialWorkflow
+from swarms.structs.social_algorithms import SocialAlgorithms
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.stopping_conditions import (
     check_cancelled,
