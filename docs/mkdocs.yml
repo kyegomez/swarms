@@ -116,8 +116,6 @@ extra:
         url: "https://docs.swarms.world/en/latest/swarms/examples/swarms_api_medical/"
       - title: "DAO Governance"
         url: "https://docs.swarms.world/en/latest/swarms/examples/swarms_dao/"
-      - title: "Product Marketing Agency"
-        url: "https://github.com/The-Swarm-Corporation/Product-Marketing-Agency"
       - title: "All Examples Repository"
         url: "https://github.com/kyegomez/swarms/tree/master/examples"
 
@@ -276,12 +274,14 @@ nav:
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
         - Mixture of Agents: "swarms/structs/moa.md"
+        - SelfMoASeq: "swarms/structs/self_moa_seq.md"
         - SpreadSheetSwarm: "swarms/structs/spreadsheet_swarm.md"
         - ForestSwarm: "swarms/structs/forest_swarm.md"
         - MALT: "swarms/structs/malt.md"
         - Multi-Agent Execution Utilities: "swarms/structs/various_execution_methods.md"
         - Council of Judges: "swarms/structs/council_of_judges.md"
         - Heavy Swarm: "swarms/structs/heavy_swarm.md"
+        - Social Algorithms: "swarms/structs/social_algorithms.md"
 
         - Hiearchical Architectures:
           - Overview: "swarms/structs/multi_swarm_orchestration.md"
