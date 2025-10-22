@@ -562,7 +562,6 @@ class Conversation:
                 )
                 return
 
-
             # Ensure we have a valid save path
             if not self.save_filepath:
                 self.save_filepath = os.path.join(
@@ -577,7 +576,12 @@ class Conversation:
 
             # Save with proper formatting
             with open(self.save_filepath, "w", encoding="utf-8") as f:
-                json.dump(self.conversation_history, f, indent=4, default=str)
+                json.dump(
+                    self.conversation_history,
+                    f,
+                    indent=4,
+                    default=str,
+                )
 
             logger.info(f"Conversation saved to {self.save_filepath}")
 
@@ -611,9 +615,14 @@ class Conversation:
             with open(self.save_filepath, "w", encoding="utf-8") as f:
                 yaml.dump(
                     self.conversation_history,
-                    f, indent=4, default_flow_style=False, sort_keys=False
+                    f,
+                    indent=4,
+                    default_flow_style=False,
+                    sort_keys=False,
                 )
-                logger.info(f"Conversation saved to {self.save_filepath}")
+                logger.info(
+                    f"Conversation saved to {self.save_filepath}"
+                )
 
         except Exception as e:
             logger.error(

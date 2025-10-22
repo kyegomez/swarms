@@ -697,6 +697,7 @@ class Agent:
             agents=self.handoffs,
             model=self.model_name,
             temperature=self.temperature,
+            system_prompt=self.system_prompt,
             output_type=self.output_type,
         )
 
