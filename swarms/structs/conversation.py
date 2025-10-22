@@ -562,6 +562,7 @@ class Conversation:
                 )
                 return
 
+
             # Ensure we have a valid save path
             if not self.save_filepath:
                 self.save_filepath = os.path.join(
@@ -576,12 +577,7 @@ class Conversation:
 
             # Save with proper formatting
             with open(self.save_filepath, "w", encoding="utf-8") as f:
-                json.dump(
-                    self.conversation_history,
-                    f,
-                    indent=4,
-                    default=str,
-                )
+                json.dump(self.conversation_history, f, indent=4, default=str)
 
             logger.info(f"Conversation saved to {self.save_filepath}")
 
@@ -590,34 +586,6 @@ class Conversation:
                 f"Failed to save conversation: {str(e)}\nTraceback: {traceback.format_exc()}"
             )
             raise  # Re-raise to ensure the error is visible to the caller
-
-    def get_init_params(self):
-        data = {
-            "metadata": {
-                "id": self.id,
-                "name": self.name,
-                "system_prompt": self.system_prompt,
-                "time_enabled": self.time_enabled,
-                "autosave": self.autosave,
-                "save_filepath": self.save_filepath,
-                "load_filepath": self.load_filepath,
-                "context_length": self.context_length,
-                "rules": self.rules,
-                "custom_rules_prompt": self.custom_rules_prompt,
-                "user": self.user,
-                "save_as_yaml_on": self.save_as_yaml_on,
-                "save_as_json_bool": self.save_as_json_bool,
-                "token_count": self.token_count,
-                "message_id_on": self.message_id_on,
-                "tokenizer_model_name": self.tokenizer_model_name,
-                "conversations_dir": self.conversations_dir,
-                "export_method": self.export_method,
-                "created_at": self.created_at,
-            },
-            "conversation_history": self.conversation_history,
-        }
-
-        return data
 
     def save_as_yaml(self, force: bool = True):
         """Save the conversation history and metadata to a YAML file.
@@ -634,9 +602,6 @@ class Conversation:
                 )
                 return
 
-            # Get the full data including metadata and conversation history
-            data = self.get_init_params()
-
             # Create directory if it doesn't exist
             save_dir = os.path.dirname(self.save_filepath)
             if save_dir:
@@ -645,15 +610,10 @@ class Conversation:
             # Save with proper formatting
             with open(self.save_filepath, "w", encoding="utf-8") as f:
                 yaml.dump(
-                    data,
-                    f,
-                    indent=4,
-                    default_flow_style=False,
-                    sort_keys=False,
+                    self.conversation_history,
+                    f, indent=4, default_flow_style=False, sort_keys=False
                 )
-                logger.info(
-                    f"Conversation saved to {self.save_filepath}"
-                )
+                logger.info(f"Conversation saved to {self.save_filepath}")
 
         except Exception as e:
             logger.error(

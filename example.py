@@ -1,5 +1,6 @@
-from swarms import Agent
 import json
+
+from swarms import Agent
 
 # Initialize the agent
 agent = Agent(
