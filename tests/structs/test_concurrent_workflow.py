@@ -35,7 +35,9 @@ def test_concurrent_workflow_basic_execution():
     )
 
     # Run workflow
-    result = workflow.run("Analyze the potential impact of quantum computing on cybersecurity")
+    result = workflow.run(
+        "Analyze the potential impact of quantum computing on cybersecurity"
+    )
 
     # Verify results - ConcurrentWorkflow returns a list of dictionaries
     assert result is not None
@@ -80,7 +82,9 @@ def test_concurrent_workflow_with_dashboard():
         show_dashboard=True,
     )
 
-    result = workflow.run("Evaluate investment opportunities in renewable energy sector")
+    result = workflow.run(
+        "Evaluate investment opportunities in renewable energy sector"
+    )
 
     assert result is not None
     assert isinstance(result, list)
@@ -117,7 +121,7 @@ def test_concurrent_workflow_batched_execution():
         "Analyze market trends in AI adoption",
         "Evaluate competitive landscape in cloud computing",
         "Assess regulatory impacts on fintech",
-        "Review supply chain vulnerabilities in manufacturing"
+        "Review supply chain vulnerabilities in manufacturing",
     ]
 
     results = workflow.batch_run(tasks)
@@ -136,7 +140,9 @@ def test_concurrent_workflow_error_handling():
     # Test with empty agents list
     try:
         workflow = ConcurrentWorkflow(agents=[])
-        assert False, "Should have raised ValueError for empty agents list"
+        assert (
+            False
+        ), "Should have raised ValueError for empty agents list"
     except ValueError as e:
         assert "No agents provided" in str(e)
 
@@ -256,7 +262,12 @@ def test_concurrent_workflow_real_world_scenario():
     workflow = ConcurrentWorkflow(
         name="Product-Launch-Review-Workflow",
         description="Cross-functional team reviewing new AI product launch strategy",
-        agents=[marketing_agent, product_agent, engineering_agent, sales_agent],
+        agents=[
+            marketing_agent,
+            product_agent,
+            engineering_agent,
+            sales_agent,
+        ],
         max_loops=1,
     )
 
@@ -310,7 +321,12 @@ def test_concurrent_workflow_team_collaboration():
     workflow = ConcurrentWorkflow(
         name="Cross-Functional-Development-Workflow",
         description="Cross-functional team collaborating on feature development",
-        agents=[data_scientist, ux_designer, product_owner, qa_engineer],
+        agents=[
+            data_scientist,
+            ux_designer,
+            product_owner,
+            qa_engineer,
+        ],
         max_loops=1,
     )
 

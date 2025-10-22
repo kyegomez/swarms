@@ -11,12 +11,6 @@ Tests follow the example.py pattern with real agents and multiple agent scenario
 import pytest
 from swarms.structs.board_of_directors_swarm import (
     BoardOfDirectorsSwarm,
-    BoardMember,
-    BoardMemberRole,
-    BoardDecisionType,
-    BoardOrder,
-    BoardDecision,
-    BoardSpec,
 )
 from swarms.structs.agent import Agent
 
@@ -48,11 +42,16 @@ def basic_board_swarm(sample_agents):
     )
 
 
-def test_board_of_directors_swarm_basic_initialization(basic_board_swarm):
+def test_board_of_directors_swarm_basic_initialization(
+    basic_board_swarm,
+):
     """Test basic BoardOfDirectorsSwarm initialization with multiple agents"""
     # Verify initialization
     assert basic_board_swarm.name == "Test-Board-Swarm"
-    assert basic_board_swarm.description == "Test board of directors swarm for comprehensive testing"
+    assert (
+        basic_board_swarm.description
+        == "Test board of directors swarm for comprehensive testing"
+    )
     assert len(basic_board_swarm.agents) == 5
     assert basic_board_swarm.max_loops == 1
     assert basic_board_swarm.verbose is True
@@ -139,7 +138,9 @@ def test_board_of_directors_swarm_error_handling():
     # Test with empty agents list
     try:
         board_swarm = BoardOfDirectorsSwarm(agents=[])
-        assert False, "Should have raised ValueError for empty agents list"
+        assert (
+            False
+        ), "Should have raised ValueError for empty agents list"
     except ValueError as e:
         assert "agents" in str(e).lower() or "empty" in str(e).lower()
 
@@ -152,8 +153,12 @@ def test_board_of_directors_swarm_error_handling():
     )
 
     try:
-        board_swarm = BoardOfDirectorsSwarm(agents=[analyst], max_loops=0)
-        assert False, "Should have raised ValueError for invalid max_loops"
+        board_swarm = BoardOfDirectorsSwarm(
+            agents=[analyst], max_loops=0
+        )
+        assert (
+            False
+        ), "Should have raised ValueError for invalid max_loops"
     except ValueError as e:
         assert "max_loops" in str(e).lower() or "0" in str(e)
 
@@ -200,8 +205,13 @@ def test_board_of_directors_swarm_real_world_scenario():
     executive_board = BoardOfDirectorsSwarm(
         name="Executive-Board-of-Directors",
         description="Executive board for high-level strategic decision making",
-        agents=[chief_strategy_officer, chief_technology_officer, chief_financial_officer,
-                chief_operating_officer, chief_risk_officer],
+        agents=[
+            chief_strategy_officer,
+            chief_technology_officer,
+            chief_financial_officer,
+            chief_operating_officer,
+            chief_risk_officer,
+        ],
         max_loops=3,
         decision_threshold=0.8,  # Require strong consensus
         enable_voting=True,

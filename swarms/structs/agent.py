@@ -2709,7 +2709,7 @@ class Agent:
             elif exists(self.handoffs):
                 output = self.handle_handoffs(task=task)
             elif n > 1:
-                return [self.run(task=task) for _ in range(n)]
+                output = [self.run(task=task) for _ in range(n)]
             else:
                 output = self._run(
                     task=task,

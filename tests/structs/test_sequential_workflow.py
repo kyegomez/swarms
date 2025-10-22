@@ -3,7 +3,6 @@ import pytest
 from swarms import Agent, SequentialWorkflow
 
 
-
 # Test SequentialWorkflow class
 def test_sequential_workflow_initialization():
     workflow = SequentialWorkflow()
@@ -43,7 +42,9 @@ def test_sequential_workflow_initialization_with_agents():
 
     assert isinstance(workflow, SequentialWorkflow)
     assert workflow.name == "Test-Workflow"
-    assert workflow.description == "Test workflow with multiple agents"
+    assert (
+        workflow.description == "Test workflow with multiple agents"
+    )
     assert len(workflow.agents) == 2
     assert workflow.agents[0] == agent1
     assert workflow.agents[1] == agent2
@@ -79,7 +80,9 @@ def test_sequential_workflow_multi_agent_execution():
     )
 
     # Test that the workflow executes successfully
-    result = workflow.run("Analyze the impact of renewable energy on climate change")
+    result = workflow.run(
+        "Analyze the impact of renewable energy on climate change"
+    )
     assert result is not None
     # SequentialWorkflow may return different types based on output_type, just ensure it's not None
 
@@ -109,7 +112,7 @@ def test_sequential_workflow_batched_execution():
     tasks = [
         "Analyze solar energy trends",
         "Evaluate wind power efficiency",
-        "Compare renewable energy sources"
+        "Compare renewable energy sources",
     ]
     results = workflow.run_batched(tasks)
     assert results is not None
@@ -177,15 +180,13 @@ async def test_sequential_workflow_concurrent_execution():
     tasks = [
         "Research quantum computing advances",
         "Analyze blockchain technology trends",
-        "Evaluate machine learning applications"
+        "Evaluate machine learning applications",
     ]
     results = await workflow.run_concurrent(tasks)
     assert results is not None
     # run_concurrent returns a list of results
     assert isinstance(results, list)
     assert len(results) == 3
-
-
 
 
 def test_sequential_workflow_with_multi_agent_collaboration():
@@ -223,17 +224,23 @@ def test_sequential_workflow_with_multi_agent_collaboration():
     assert agent3.system_prompt is not None
 
     # Test execution
-    result = workflow.run("Develop a business strategy for entering the AI market")
+    result = workflow.run(
+        "Develop a business strategy for entering the AI market"
+    )
     assert result is not None
 
 
 def test_sequential_workflow_error_handling():
     """Test SequentialWorkflow error handling"""
     # Test with invalid agents list
-    with pytest.raises(ValueError, match="Agents list cannot be None or empty"):
+    with pytest.raises(
+        ValueError, match="Agents list cannot be None or empty"
+    ):
         SequentialWorkflow(agents=None)
 
-    with pytest.raises(ValueError, match="Agents list cannot be None or empty"):
+    with pytest.raises(
+        ValueError, match="Agents list cannot be None or empty"
+    ):
         SequentialWorkflow(agents=[])
 
     # Test with zero max_loops

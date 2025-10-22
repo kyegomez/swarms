@@ -1,4 +1,3 @@
-import pytest
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.agent import Agent
 
@@ -47,7 +46,10 @@ def test_mixture_of_agents_basic_initialization():
 
     # Verify initialization
     assert moa.name == "Business-Analysis-Mixture"
-    assert moa.description == "Mixture of agents for comprehensive business analysis"
+    assert (
+        moa.description
+        == "Mixture of agents for comprehensive business analysis"
+    )
     assert len(moa.agents) == 3
     assert moa.aggregator_agent == aggregator
     assert moa.layers == 3
@@ -97,14 +99,21 @@ def test_mixture_of_agents_execution():
     moa = MixtureOfAgents(
         name="Comprehensive-Evaluation-Mixture",
         description="Mixture of agents for comprehensive business evaluation",
-        agents=[market_analyst, technical_expert, financial_analyst, risk_assessor],
+        agents=[
+            market_analyst,
+            technical_expert,
+            financial_analyst,
+            risk_assessor,
+        ],
         aggregator_agent=aggregator,
         layers=2,
         max_loops=1,
     )
 
     # Test execution
-    result = moa.run("Evaluate the feasibility of launching an AI-powered healthcare platform")
+    result = moa.run(
+        "Evaluate the feasibility of launching an AI-powered healthcare platform"
+    )
     assert result is not None
 
 
@@ -151,7 +160,9 @@ def test_mixture_of_agents_multiple_layers():
     )
 
     # Test multi-layer execution
-    result = moa.run("Analyze customer behavior patterns and provide strategic insights")
+    result = moa.run(
+        "Analyze customer behavior patterns and provide strategic insights"
+    )
     assert result is not None
 
 
@@ -160,7 +171,9 @@ def test_mixture_of_agents_error_handling():
     # Test with empty agents list
     try:
         moa = MixtureOfAgents(agents=[])
-        assert False, "Should have raised ValueError for empty agents list"
+        assert (
+            False
+        ), "Should have raised ValueError for empty agents list"
     except ValueError as e:
         assert "No agents provided" in str(e)
 
@@ -174,10 +187,11 @@ def test_mixture_of_agents_error_handling():
 
     try:
         moa = MixtureOfAgents(
-            agents=[analyst],
-            aggregator_system_prompt=""
+            agents=[analyst], aggregator_system_prompt=""
         )
-        assert False, "Should have raised ValueError for empty system prompt"
+        assert (
+            False
+        ), "Should have raised ValueError for empty system prompt"
     except ValueError as e:
         assert "No aggregator system prompt" in str(e)
 
@@ -232,7 +246,13 @@ def test_mixture_of_agents_real_world_scenario():
     moa = MixtureOfAgents(
         name="Executive-Board-Mixture",
         description="Mixture of agents representing executive board for strategic decisions",
-        agents=[marketing_director, product_manager, engineering_lead, sales_executive, legal_counsel],
+        agents=[
+            marketing_director,
+            product_manager,
+            engineering_lead,
+            sales_executive,
+            legal_counsel,
+        ],
         aggregator_agent=executive_aggregator,
         layers=3,
         max_loops=1,

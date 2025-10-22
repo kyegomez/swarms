@@ -394,7 +394,9 @@ class TestAutoSwarmBuilderFix:
     @pytest.mark.skip(
         reason="This test requires API key and makes LLM calls"
     )
-    def test_auto_swarm_builder_return_agents_objects_integration(self):
+    def test_auto_swarm_builder_return_agents_objects_integration(
+        self,
+    ):
         """Integration test for AutoSwarmBuilder with execution_type='return-agents-objects'.
 
         This test requires OPENAI_API_KEY and makes actual LLM calls.

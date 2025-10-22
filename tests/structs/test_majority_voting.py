@@ -1,4 +1,3 @@
-import pytest
 from swarms.structs.agent import Agent
 from swarms.structs.majority_voting import MajorityVoting
 
@@ -69,13 +68,19 @@ def test_majority_voting_multiple_loops():
     mv = MajorityVoting(
         name="Multi-Loop-Consensus-System",
         description="Majority voting with iterative consensus refinement",
-        agents=[trivia_expert, research_analyst, subject_matter_expert],
+        agents=[
+            trivia_expert,
+            research_analyst,
+            subject_matter_expert,
+        ],
         max_loops=3,  # Allow multiple iterations
         verbose=True,
     )
 
     # Test multi-loop execution
-    result = mv.run("What are the main causes of climate change and what can be done to mitigate them?")
+    result = mv.run(
+        "What are the main causes of climate change and what can be done to mitigate them?"
+    )
     assert result is not None
 
 
@@ -121,7 +126,13 @@ def test_majority_voting_business_scenario():
     mv = MajorityVoting(
         name="Business-Decision-Consensus",
         description="Majority voting system for business strategic decisions",
-        agents=[market_strategist, financial_analyst, technical_architect, risk_manager, operations_expert],
+        agents=[
+            market_strategist,
+            financial_analyst,
+            technical_architect,
+            risk_manager,
+            operations_expert,
+        ],
         max_loops=2,
         verbose=True,
     )
@@ -141,7 +152,9 @@ def test_majority_voting_error_handling():
     # Test with empty agents list
     try:
         mv = MajorityVoting(agents=[])
-        assert False, "Should have raised ValueError for empty agents list"
+        assert (
+            False
+        ), "Should have raised ValueError for empty agents list"
     except ValueError as e:
         assert "agents" in str(e).lower() or "empty" in str(e).lower()
 
@@ -155,7 +168,9 @@ def test_majority_voting_error_handling():
 
     try:
         mv = MajorityVoting(agents=[analyst], max_loops=0)
-        assert False, "Should have raised ValueError for invalid max_loops"
+        assert (
+            False
+        ), "Should have raised ValueError for invalid max_loops"
     except ValueError as e:
         assert "max_loops" in str(e).lower() or "0" in str(e)
 
@@ -189,10 +204,16 @@ def test_majority_voting_different_output_types():
         mv = MajorityVoting(
             name=f"Output-Type-Test-{output_type}",
             description=f"Testing output type: {output_type}",
-            agents=[security_expert, compliance_officer, privacy_advocate],
+            agents=[
+                security_expert,
+                compliance_officer,
+                privacy_advocate,
+            ],
             max_loops=1,
             output_type=output_type,
         )
 
-        result = mv.run("What are the key considerations for implementing GDPR compliance in our data processing systems?")
+        result = mv.run(
+            "What are the key considerations for implementing GDPR compliance in our data processing systems?"
+        )
         assert result is not None

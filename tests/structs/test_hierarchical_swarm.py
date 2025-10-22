@@ -36,7 +36,10 @@ def test_hierarchical_swarm_basic_initialization():
 
     # Verify initialization
     assert swarm.name == "Research-Analysis-Implementation-Swarm"
-    assert swarm.description == "Hierarchical swarm for comprehensive project execution"
+    assert (
+        swarm.description
+        == "Hierarchical swarm for comprehensive project execution"
+    )
     assert len(swarm.agents) == 3
     assert swarm.max_loops == 1
     assert swarm.director is not None
@@ -116,13 +119,20 @@ def test_hierarchical_swarm_execution():
     swarm = HierarchicalSwarm(
         name="Product-Development-Swarm",
         description="Comprehensive product development hierarchical swarm",
-        agents=[market_researcher, product_strategist, technical_architect, risk_analyst],
+        agents=[
+            market_researcher,
+            product_strategist,
+            technical_architect,
+            risk_analyst,
+        ],
         max_loops=1,
         verbose=True,
     )
 
     # Execute swarm
-    result = swarm.run("Develop a comprehensive strategy for a new AI-powered healthcare platform")
+    result = swarm.run(
+        "Develop a comprehensive strategy for a new AI-powered healthcare platform"
+    )
 
     # Verify result structure
     assert result is not None
@@ -163,7 +173,9 @@ def test_hierarchical_swarm_multiple_loops():
     )
 
     # Execute with multiple loops
-    result = swarm.run("Create a detailed project plan for implementing a machine learning recommendation system")
+    result = swarm.run(
+        "Create a detailed project plan for implementing a machine learning recommendation system"
+    )
 
     assert result is not None
 
@@ -173,7 +185,9 @@ def test_hierarchical_swarm_error_handling():
     # Test with empty agents list
     try:
         swarm = HierarchicalSwarm(agents=[])
-        assert False, "Should have raised ValueError for empty agents list"
+        assert (
+            False
+        ), "Should have raised ValueError for empty agents list"
     except ValueError as e:
         assert "agents" in str(e).lower() or "empty" in str(e).lower()
 
@@ -187,7 +201,9 @@ def test_hierarchical_swarm_error_handling():
 
     try:
         swarm = HierarchicalSwarm(agents=[researcher], max_loops=0)
-        assert False, "Should have raised ValueError for invalid max_loops"
+        assert (
+            False
+        ), "Should have raised ValueError for invalid max_loops"
     except ValueError as e:
         assert "max_loops" in str(e).lower() or "0" in str(e)
 
@@ -223,7 +239,9 @@ def test_hierarchical_swarm_collaboration_prompts():
     assert business_analyst.system_prompt is not None
 
     # Execute swarm
-    result = swarm.run("Analyze customer behavior patterns and provide business recommendations")
+    result = swarm.run(
+        "Analyze customer behavior patterns and provide business recommendations"
+    )
     assert result is not None
 
 
@@ -266,7 +284,9 @@ def test_hierarchical_swarm_with_dashboard():
     assert swarm.interactive is True
 
     # Execute swarm
-    result = swarm.run("Create a comprehensive guide on machine learning best practices")
+    result = swarm.run(
+        "Create a comprehensive guide on machine learning best practices"
+    )
     assert result is not None
 
 
@@ -312,7 +332,13 @@ def test_hierarchical_swarm_real_world_scenario():
     swarm = HierarchicalSwarm(
         name="Enterprise-Strategy-Swarm",
         description="Enterprise-level strategic planning and execution swarm",
-        agents=[market_intelligence, product_strategy, engineering_lead, operations_manager, compliance_officer],
+        agents=[
+            market_intelligence,
+            product_strategy,
+            engineering_lead,
+            operations_manager,
+            compliance_officer,
+        ],
         max_loops=2,
         verbose=True,
         add_collaboration_prompt=True,

@@ -11,11 +11,9 @@ This module provides thorough testing of all GraphWorkflow functionality includi
 Tests follow the example.py pattern with real agents and multiple agent scenarios.
 """
 
-import pytest
 from swarms.structs.graph_workflow import (
     GraphWorkflow,
     Node,
-    Edge,
     NodeType,
 )
 from swarms.structs.agent import Agent
@@ -37,7 +35,9 @@ def create_test_agent(name: str, description: str = None) -> Agent:
 def test_graph_workflow_basic_node_creation():
     """Test basic GraphWorkflow node creation with real agents"""
     # Test basic node creation
-    agent = create_test_agent("TestAgent", "Test agent for node creation")
+    agent = create_test_agent(
+        "TestAgent", "Test agent for node creation"
+    )
     node = Node.from_agent(agent)
     assert node.id == "TestAgent"
     assert node.type == NodeType.AGENT
@@ -53,17 +53,17 @@ def test_graph_workflow_multi_agent_collaboration():
     # Create specialized agents for a business analysis workflow
     market_researcher = create_test_agent(
         "Market-Researcher",
-        "Specialist in market analysis and trend identification"
+        "Specialist in market analysis and trend identification",
     )
 
     data_analyst = create_test_agent(
         "Data-Analyst",
-        "Expert in data processing and statistical analysis"
+        "Expert in data processing and statistical analysis",
     )
 
     strategy_consultant = create_test_agent(
         "Strategy-Consultant",
-        "Senior consultant for strategic planning and recommendations"
+        "Senior consultant for strategic planning and recommendations",
     )
 
     # Create workflow with linear execution path
@@ -77,7 +77,9 @@ def test_graph_workflow_multi_agent_collaboration():
     workflow.add_edge("Data-Analyst", "Strategy-Consultant")
 
     # Test workflow execution
-    result = workflow.run("Analyze market opportunities for AI in healthcare")
+    result = workflow.run(
+        "Analyze market opportunities for AI in healthcare"
+    )
     assert result is not None
 
 
@@ -86,22 +88,20 @@ def test_graph_workflow_parallel_execution():
     # Create agents for parallel analysis
     technical_analyst = create_test_agent(
         "Technical-Analyst",
-        "Technical feasibility and implementation analysis"
+        "Technical feasibility and implementation analysis",
     )
 
     market_analyst = create_test_agent(
         "Market-Analyst",
-        "Market positioning and competitive analysis"
+        "Market positioning and competitive analysis",
     )
 
     financial_analyst = create_test_agent(
-        "Financial-Analyst",
-        "Financial modeling and ROI analysis"
+        "Financial-Analyst", "Financial modeling and ROI analysis"
     )
 
     risk_assessor = create_test_agent(
-        "Risk-Assessor",
-        "Risk assessment and mitigation planning"
+        "Risk-Assessor", "Risk assessment and mitigation planning"
     )
 
     # Create workflow with parallel execution
@@ -112,10 +112,15 @@ def test_graph_workflow_parallel_execution():
     workflow.add_node(risk_assessor)
 
     # Add edges for fan-out execution (one to many)
-    workflow.add_edges_from_source("Technical-Analyst", ["Market-Analyst", "Financial-Analyst", "Risk-Assessor"])
+    workflow.add_edges_from_source(
+        "Technical-Analyst",
+        ["Market-Analyst", "Financial-Analyst", "Risk-Assessor"],
+    )
 
     # Test parallel execution
-    result = workflow.run("Evaluate feasibility of launching a new fintech platform")
+    result = workflow.run(
+        "Evaluate feasibility of launching a new fintech platform"
+    )
     assert result is not None
 
 
@@ -123,33 +128,29 @@ def test_graph_workflow_complex_topology():
     """Test GraphWorkflow with complex node topology"""
     # Create agents for a comprehensive product development workflow
     product_manager = create_test_agent(
-        "Product-Manager",
-        "Product strategy and roadmap management"
+        "Product-Manager", "Product strategy and roadmap management"
     )
 
     ux_designer = create_test_agent(
-        "UX-Designer",
-        "User experience design and research"
+        "UX-Designer", "User experience design and research"
     )
 
     backend_developer = create_test_agent(
         "Backend-Developer",
-        "Backend system architecture and development"
+        "Backend system architecture and development",
     )
 
     frontend_developer = create_test_agent(
         "Frontend-Developer",
-        "Frontend interface and user interaction development"
+        "Frontend interface and user interaction development",
     )
 
     qa_engineer = create_test_agent(
-        "QA-Engineer",
-        "Quality assurance and testing specialist"
+        "QA-Engineer", "Quality assurance and testing specialist"
     )
 
     devops_engineer = create_test_agent(
-        "DevOps-Engineer",
-        "Deployment and infrastructure management"
+        "DevOps-Engineer", "Deployment and infrastructure management"
     )
 
     # Create workflow with complex dependencies
@@ -170,7 +171,9 @@ def test_graph_workflow_complex_topology():
     workflow.add_edge("QA-Engineer", "DevOps-Engineer")
 
     # Test complex workflow execution
-    result = workflow.run("Develop a comprehensive e-commerce platform with AI recommendations")
+    result = workflow.run(
+        "Develop a comprehensive e-commerce platform with AI recommendations"
+    )
     assert result is not None
 
 
@@ -183,7 +186,9 @@ def test_graph_workflow_error_handling():
     assert result is not None
 
     # Test workflow compilation and caching
-    researcher = create_test_agent("Researcher", "Research specialist")
+    researcher = create_test_agent(
+        "Researcher", "Research specialist"
+    )
     workflow.add_node(researcher)
 
     # First run should compile
@@ -199,23 +204,28 @@ def test_graph_workflow_node_metadata():
     """Test GraphWorkflow with node metadata"""
     # Create agents with different priorities and requirements
     high_priority_agent = create_test_agent(
-        "High-Priority-Analyst",
-        "High priority analysis specialist"
+        "High-Priority-Analyst", "High priority analysis specialist"
     )
 
     standard_agent = create_test_agent(
-        "Standard-Analyst",
-        "Standard analysis agent"
+        "Standard-Analyst", "Standard analysis agent"
     )
 
     # Create workflow and add nodes with metadata
     workflow = GraphWorkflow(name="Metadata-Workflow")
-    workflow.add_node(high_priority_agent, metadata={"priority": "high", "timeout": 60})
-    workflow.add_node(standard_agent, metadata={"priority": "normal", "timeout": 30})
+    workflow.add_node(
+        high_priority_agent,
+        metadata={"priority": "high", "timeout": 60},
+    )
+    workflow.add_node(
+        standard_agent, metadata={"priority": "normal", "timeout": 30}
+    )
 
     # Add execution dependency
     workflow.add_edge("High-Priority-Analyst", "Standard-Analyst")
 
     # Test execution with metadata
-    result = workflow.run("Analyze business requirements with different priorities")
+    result = workflow.run(
+        "Analyze business requirements with different priorities"
+    )
     assert result is not None
