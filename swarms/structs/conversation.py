@@ -1,6 +1,5 @@
 import concurrent.futures
 import datetime
-import inspect
 import json
 import os
 import traceback
@@ -95,6 +94,7 @@ class Conversation:
         export_method: str = "json",
         dynamic_context_window: bool = True,
         caching: bool = True,
+        output_metadata: bool = False,
     ):
 
         # Initialize all attributes first
@@ -118,6 +118,7 @@ class Conversation:
         self.export_method = export_method
         self.dynamic_context_window = dynamic_context_window
         self.caching = caching
+        self.output_metadata = output_metadata
 
         if self.name is None:
             self.name = id
@@ -534,7 +535,7 @@ class Conversation:
         """
         return self.return_history_as_string()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[Any, Any]:
         """
         Converts all attributes of the class into a dictionary, including all __init__ parameters
         and conversation history. Automatically extracts parameters from __init__ signature.
@@ -544,43 +545,7 @@ class Conversation:
                 - metadata: All initialization parameters and their current values
                 - conversation_history: The list of conversation messages
         """
-        # Get all parameters from __init__ signature
-        init_signature = inspect.signature(self.__class__.__init__)
-        init_params = [
-            param
-            for param in init_signature.parameters
-            if param not in ["self", "args", "kwargs"]
-        ]
-
-        # Build metadata dictionary from init parameters
-        metadata = {}
-        for param in init_params:
-            # Get the current value of the parameter from instance
-            value = getattr(self, param, None)
-            # Special handling for certain types
-            if value is not None:
-                if isinstance(
-                    value, (str, int, float, bool, list, dict)
-                ):
-                    metadata[param] = value
-                elif hasattr(value, "to_dict"):
-                    metadata[param] = value.to_dict()
-                else:
-                    try:
-                        # Try to convert to string if not directly serializable
-                        metadata[param] = str(value)
-                    except Exception:
-                        # Skip if we can't serialize
-                        continue
-
-        # Add created_at if it exists
-        if hasattr(self, "created_at"):
-            metadata["created_at"] = self.created_at
-
-        return {
-            "metadata": metadata,
-            "conversation_history": self.conversation_history,
-        }
+        return self.conversation_history
 
     def save_as_json(self, force: bool = True):
         """Save the conversation history and metadata to a JSON file.

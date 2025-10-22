@@ -452,7 +452,9 @@ def test_add_agents_batch_with_custom_parameters(
         )
 
 
-def test_add_agents_batch_empty_list(real_agents, aop_instance, mock_fastmcp):
+def test_add_agents_batch_empty_list(
+    real_agents, aop_instance, mock_fastmcp
+):
     """Test adding empty agents list raises ValueError."""
     with patch.object(aop_instance, "_register_agent_discovery_tool"):
         with pytest.raises(
