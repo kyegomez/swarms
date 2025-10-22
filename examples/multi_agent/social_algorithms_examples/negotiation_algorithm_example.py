@@ -58,7 +58,6 @@ def negotiation_algorithm(agents, task, **kwargs):
     # Initialize negotiation state
     negotiation_history = []
     current_positions = {}
-    negotiation_topics = []
     agreement_levels = []
 
     # Phase 1: Initial Position Statements

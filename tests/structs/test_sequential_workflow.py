@@ -1,65 +1,7 @@
-import asyncio
-import os
-from unittest.mock import patch
-
 import pytest
 
-from swarm_models import OpenAIChat
-from swarms.structs.agent import Agent
-from swarms.structs.sequential_workflow import (
-    SequentialWorkflow,
-    Task,
-)
+from swarms import Agent, SequentialWorkflow
 
-# Mock the OpenAI API key using environment variables
-os.environ["OPENAI_API_KEY"] = "mocked_api_key"
-
-
-# Mock OpenAIChat class for testing
-class MockOpenAIChat:
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def run(self, *args, **kwargs):
-        return "Mocked result"
-
-
-# Mock Agent class for testing
-class MockAgent:
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def run(self, *args, **kwargs):
-        return "Mocked result"
-
-
-# Mock SequentialWorkflow class for testing
-class MockSequentialWorkflow:
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def add(self, *args, **kwargs):
-        pass
-
-    def run(self):
-        pass
-
-
-# Test Task class
-def test_task_initialization():
-    description = "Sample Task"
-    agent = MockOpenAIChat()
-    task = Task(description=description, agent=agent)
-    assert task.description == description
-    assert task.agent == agent
-
-
-def test_task_execute():
-    description = "Sample Task"
-    agent = MockOpenAIChat()
-    task = Task(description=description, agent=agent)
-    task.run()
-    assert task.result == "Mocked result"
 
 
 # Test SequentialWorkflow class
@@ -77,263 +19,289 @@ def test_sequential_workflow_initialization():
     assert workflow.dashboard is False
 
 
-def test_sequential_workflow_add_task():
-    workflow = SequentialWorkflow()
-    task_description = "Sample Task"
-    task_flow = MockOpenAIChat()
-    workflow.add(task_description, task_flow)
-    assert len(workflow.tasks) == 1
-    assert workflow.tasks[0].description == task_description
-    assert workflow.tasks[0].agent == task_flow
+def test_sequential_workflow_initialization_with_agents():
+    """Test SequentialWorkflow initialization with agents"""
+    agent1 = Agent(
+        agent_name="Agent-1",
+        agent_description="First test agent",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+    agent2 = Agent(
+        agent_name="Agent-2",
+        agent_description="Second test agent",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
 
+    workflow = SequentialWorkflow(
+        name="Test-Workflow",
+        description="Test workflow with multiple agents",
+        agents=[agent1, agent2],
+        max_loops=1,
+    )
 
-def test_sequential_workflow_reset_workflow():
-    workflow = SequentialWorkflow()
-    task_description = "Sample Task"
-    task_flow = MockOpenAIChat()
-    workflow.add(task_description, task_flow)
-    workflow.reset_workflow()
-    assert workflow.tasks[0].result is None
-
-
-def test_sequential_workflow_get_task_results():
-    workflow = SequentialWorkflow()
-    task_description = "Sample Task"
-    task_flow = MockOpenAIChat()
-    workflow.add(task_description, task_flow)
-    workflow.run()
-    results = workflow.get_task_results()
-    assert len(results) == 1
-    assert task_description in results
-    assert results[task_description] == "Mocked result"
-
-
-def test_sequential_workflow_remove_task():
-    workflow = SequentialWorkflow()
-    task1_description = "Task 1"
-    task2_description = "Task 2"
-    task1_flow = MockOpenAIChat()
-    task2_flow = MockOpenAIChat()
-    workflow.add(task1_description, task1_flow)
-    workflow.add(task2_description, task2_flow)
-    workflow.remove_task(task1_description)
-    assert len(workflow.tasks) == 1
-    assert workflow.tasks[0].description == task2_description
-
-
-def test_sequential_workflow_update_task():
-    workflow = SequentialWorkflow()
-    task_description = "Sample Task"
-    task_flow = MockOpenAIChat()
-    workflow.add(task_description, task_flow)
-    workflow.update_task(task_description, max_tokens=1000)
-    assert workflow.tasks[0].kwargs["max_tokens"] == 1000
-
-
-def test_sequential_workflow_save_workflow_state():
-    workflow = SequentialWorkflow()
-    task_description = "Sample Task"
-    task_flow = MockOpenAIChat()
-    workflow.add(task_description, task_flow)
-    workflow.save_workflow_state("test_state.json")
-    assert os.path.exists("test_state.json")
-    os.remove("test_state.json")
-
-
-def test_sequential_workflow_load_workflow_state():
-    workflow = SequentialWorkflow()
-    task_description = "Sample Task"
-    task_flow = MockOpenAIChat()
-    workflow.add(task_description, task_flow)
-    workflow.save_workflow_state("test_state.json")
-    workflow.load_workflow_state("test_state.json")
-    assert len(workflow.tasks) == 1
-    assert workflow.tasks[0].description == task_description
-    os.remove("test_state.json")
-
-
-def test_sequential_workflow_run():
-    workflow = SequentialWorkflow()
-    task_description = "Sample Task"
-    task_flow = MockOpenAIChat()
-    workflow.add(task_description, task_flow)
-    workflow.run()
-    assert workflow.tasks[0].result == "Mocked result"
-
-
-def test_sequential_workflow_workflow_bootup(capfd):
-    workflow = SequentialWorkflow()
-    workflow.workflow_bootup()
-    out, _ = capfd.readouterr()
-    assert "Sequential Workflow Initializing..." in out
-
-
-def test_sequential_workflow_workflow_dashboard(capfd):
-    workflow = SequentialWorkflow()
-    workflow.workflow_dashboard()
-    out, _ = capfd.readouterr()
-    assert "Sequential Workflow Dashboard" in out
-
-
-# Mock Agent class for async testing
-class MockAsyncAgent:
-    def __init__(self, *args, **kwargs):
-        pass
-
-    async def arun(self, *args, **kwargs):
-        return "Mocked result"
-
-
-# Test async execution in SequentialWorkflow
-@pytest.mark.asyncio
-async def test_sequential_workflow_arun():
-    workflow = SequentialWorkflow()
-    task_description = "Sample Task"
-    task_flow = MockAsyncAgent()
-    workflow.add(task_description, task_flow)
-    await workflow.arun()
-    assert workflow.tasks[0].result == "Mocked result"
-
-
-def test_real_world_usage_with_openai_key():
-    # Initialize the language model
-    llm = OpenAIChat()
-    assert isinstance(llm, OpenAIChat)
-
-
-def test_real_world_usage_with_flow_and_openai_key():
-    # Initialize a agent with the language model
-    agent = Agent(llm=OpenAIChat())
-    assert isinstance(agent, Agent)
-
-
-def test_real_world_usage_with_sequential_workflow():
-    # Initialize a sequential workflow
-    workflow = SequentialWorkflow()
     assert isinstance(workflow, SequentialWorkflow)
+    assert workflow.name == "Test-Workflow"
+    assert workflow.description == "Test workflow with multiple agents"
+    assert len(workflow.agents) == 2
+    assert workflow.agents[0] == agent1
+    assert workflow.agents[1] == agent2
+    assert workflow.max_loops == 1
 
 
-def test_real_world_usage_add_tasks():
-    # Create a sequential workflow and add tasks
-    workflow = SequentialWorkflow()
-    task1_description = "Task 1"
-    task2_description = "Task 2"
-    task1_flow = OpenAIChat()
-    task2_flow = OpenAIChat()
-    workflow.add(task1_description, task1_flow)
-    workflow.add(task2_description, task2_flow)
-    assert len(workflow.tasks) == 2
-    assert workflow.tasks[0].description == task1_description
-    assert workflow.tasks[1].description == task2_description
+def test_sequential_workflow_multi_agent_execution():
+    """Test SequentialWorkflow execution with multiple agents"""
+    agent1 = Agent(
+        agent_name="Research-Agent",
+        agent_description="Agent for research tasks",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+    agent2 = Agent(
+        agent_name="Analysis-Agent",
+        agent_description="Agent for analyzing research results",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+    agent3 = Agent(
+        agent_name="Summary-Agent",
+        agent_description="Agent for summarizing findings",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+
+    workflow = SequentialWorkflow(
+        name="Multi-Agent-Research-Workflow",
+        description="Workflow for comprehensive research, analysis, and summarization",
+        agents=[agent1, agent2, agent3],
+        max_loops=1,
+    )
+
+    # Test that the workflow executes successfully
+    result = workflow.run("Analyze the impact of renewable energy on climate change")
+    assert result is not None
+    # SequentialWorkflow may return different types based on output_type, just ensure it's not None
 
 
-def test_real_world_usage_run_workflow():
-    # Create a sequential workflow, add a task, and run the workflow
-    workflow = SequentialWorkflow()
-    task_description = "Sample Task"
-    task_flow = OpenAIChat()
-    workflow.add(task_description, task_flow)
-    workflow.run()
-    assert workflow.tasks[0].result is not None
+def test_sequential_workflow_batched_execution():
+    """Test batched execution of SequentialWorkflow"""
+    agent1 = Agent(
+        agent_name="Data-Collector",
+        agent_description="Agent for collecting data",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+    agent2 = Agent(
+        agent_name="Data-Processor",
+        agent_description="Agent for processing collected data",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+
+    workflow = SequentialWorkflow(
+        name="Batched-Processing-Workflow",
+        agents=[agent1, agent2],
+        max_loops=1,
+    )
+
+    # Test batched execution
+    tasks = [
+        "Analyze solar energy trends",
+        "Evaluate wind power efficiency",
+        "Compare renewable energy sources"
+    ]
+    results = workflow.run_batched(tasks)
+    assert results is not None
+    # run_batched returns a list of results
+    assert isinstance(results, list)
+    assert len(results) == 3
 
 
-def test_real_world_usage_dashboard_display():
-    # Create a sequential workflow, add tasks, and display the dashboard
-    workflow = SequentialWorkflow()
-    task1_description = "Task 1"
-    task2_description = "Task 2"
-    task1_flow = OpenAIChat()
-    task2_flow = OpenAIChat()
-    workflow.add(task1_description, task1_flow)
-    workflow.add(task2_description, task2_flow)
-    with patch("builtins.print") as mock_print:
-        workflow.workflow_dashboard()
-        mock_print.assert_called()
+@pytest.mark.asyncio
+async def test_sequential_workflow_async_execution():
+    """Test async execution of SequentialWorkflow"""
+    agent1 = Agent(
+        agent_name="Async-Research-Agent",
+        agent_description="Agent for async research tasks",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+    agent2 = Agent(
+        agent_name="Async-Analysis-Agent",
+        agent_description="Agent for async analysis",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+
+    workflow = SequentialWorkflow(
+        name="Async-Workflow",
+        agents=[agent1, agent2],
+        max_loops=1,
+    )
+
+    # Test async execution
+    result = await workflow.run_async("Analyze AI trends in 2024")
+    assert result is not None
 
 
-def test_real_world_usage_async_execution():
-    # Create a sequential workflow, add an async task, and run the workflow asynchronously
-    workflow = SequentialWorkflow()
-    task_description = "Sample Task"
-    async_task_flow = OpenAIChat()
+@pytest.mark.asyncio
+async def test_sequential_workflow_concurrent_execution():
+    """Test concurrent execution of SequentialWorkflow"""
+    agent1 = Agent(
+        agent_name="Concurrent-Research-Agent",
+        agent_description="Agent for concurrent research",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+    agent2 = Agent(
+        agent_name="Concurrent-Analysis-Agent",
+        agent_description="Agent for concurrent analysis",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+    agent3 = Agent(
+        agent_name="Concurrent-Summary-Agent",
+        agent_description="Agent for concurrent summarization",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
 
-    async def async_run_workflow():
-        await workflow.arun()
+    workflow = SequentialWorkflow(
+        name="Concurrent-Workflow",
+        agents=[agent1, agent2, agent3],
+        max_loops=1,
+    )
 
-    workflow.add(task_description, async_task_flow)
-    asyncio.run(async_run_workflow())
-    assert workflow.tasks[0].result is not None
-
-
-def test_real_world_usage_multiple_loops():
-    # Create a sequential workflow with multiple loops, add a task, and run the workflow
-    workflow = SequentialWorkflow(max_loops=3)
-    task_description = "Sample Task"
-    task_flow = OpenAIChat()
-    workflow.add(task_description, task_flow)
-    workflow.run()
-    assert workflow.tasks[0].result is not None
-
-
-def test_real_world_usage_autosave_state():
-    # Create a sequential workflow with autosave, add a task, run the workflow, and check if state is saved
-    workflow = SequentialWorkflow(autosave=True)
-    task_description = "Sample Task"
-    task_flow = OpenAIChat()
-    workflow.add(task_description, task_flow)
-    workflow.run()
-    assert workflow.tasks[0].result is not None
-    assert os.path.exists("sequential_workflow_state.json")
-    os.remove("sequential_workflow_state.json")
-
-
-def test_real_world_usage_load_state():
-    # Create a sequential workflow, add a task, save state, load state, and run the workflow
-    workflow = SequentialWorkflow()
-    task_description = "Sample Task"
-    task_flow = OpenAIChat()
-    workflow.add(task_description, task_flow)
-    workflow.run()
-    workflow.save_workflow_state("test_state.json")
-    workflow.load_workflow_state("test_state.json")
-    workflow.run()
-    assert workflow.tasks[0].result is not None
-    os.remove("test_state.json")
+    # Test concurrent execution
+    tasks = [
+        "Research quantum computing advances",
+        "Analyze blockchain technology trends",
+        "Evaluate machine learning applications"
+    ]
+    results = await workflow.run_concurrent(tasks)
+    assert results is not None
+    # run_concurrent returns a list of results
+    assert isinstance(results, list)
+    assert len(results) == 3
 
 
-def test_real_world_usage_update_task_args():
-    # Create a sequential workflow, add a task, and update task arguments
-    workflow = SequentialWorkflow()
-    task_description = "Sample Task"
-    task_flow = OpenAIChat()
-    workflow.add(task_description, task_flow)
-    workflow.update_task(task_description, max_tokens=1000)
-    assert workflow.tasks[0].kwargs["max_tokens"] == 1000
 
 
-def test_real_world_usage_remove_task():
-    # Create a sequential workflow, add tasks, remove a task, and run the workflow
-    workflow = SequentialWorkflow()
-    task1_description = "Task 1"
-    task2_description = "Task 2"
-    task1_flow = OpenAIChat()
-    task2_flow = OpenAIChat()
-    workflow.add(task1_description, task1_flow)
-    workflow.add(task2_description, task2_flow)
-    workflow.remove_task(task1_description)
-    workflow.run()
-    assert len(workflow.tasks) == 1
-    assert workflow.tasks[0].description == task2_description
+def test_sequential_workflow_with_multi_agent_collaboration():
+    """Test SequentialWorkflow with multi-agent collaboration prompts"""
+    agent1 = Agent(
+        agent_name="Market-Research-Agent",
+        agent_description="Agent for market research",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+    agent2 = Agent(
+        agent_name="Competitive-Analysis-Agent",
+        agent_description="Agent for competitive analysis",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+    agent3 = Agent(
+        agent_name="Strategy-Development-Agent",
+        agent_description="Agent for developing business strategies",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+
+    workflow = SequentialWorkflow(
+        name="Business-Strategy-Workflow",
+        description="Comprehensive business strategy development workflow",
+        agents=[agent1, agent2, agent3],
+        max_loops=1,
+        multi_agent_collab_prompt=True,
+    )
+
+    # Test that collaboration prompt is added
+    assert agent1.system_prompt is not None
+    assert agent2.system_prompt is not None
+    assert agent3.system_prompt is not None
+
+    # Test execution
+    result = workflow.run("Develop a business strategy for entering the AI market")
+    assert result is not None
 
 
-def test_real_world_usage_with_environment_variables():
-    # Ensure that the OpenAI API key is set using environment variables
-    assert "OPENAI_API_KEY" in os.environ
-    assert os.environ["OPENAI_API_KEY"] == "mocked_api_key"
-    del os.environ["OPENAI_API_KEY"]  # Clean up after the test
+def test_sequential_workflow_error_handling():
+    """Test SequentialWorkflow error handling"""
+    # Test with invalid agents list
+    with pytest.raises(ValueError, match="Agents list cannot be None or empty"):
+        SequentialWorkflow(agents=None)
+
+    with pytest.raises(ValueError, match="Agents list cannot be None or empty"):
+        SequentialWorkflow(agents=[])
+
+    # Test with zero max_loops
+    with pytest.raises(ValueError, match="max_loops cannot be 0"):
+        agent1 = Agent(
+            agent_name="Test-Agent",
+            agent_description="Test agent",
+            model_name="gpt-4o",
+            max_loops=1,
+        )
+        SequentialWorkflow(agents=[agent1], max_loops=0)
 
 
-def test_real_world_usage_no_openai_key():
-    # Ensure that an exception is raised when the OpenAI API key is not set
-    with pytest.raises(ValueError):
-        OpenAIChat()  # API key not provided, should raise an exception
+def test_sequential_workflow_agent_names_extraction():
+    """Test that SequentialWorkflow properly extracts agent names for flow"""
+    agent1 = Agent(
+        agent_name="Alpha-Agent",
+        agent_description="First agent",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+    agent2 = Agent(
+        agent_name="Beta-Agent",
+        agent_description="Second agent",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+    agent3 = Agent(
+        agent_name="Gamma-Agent",
+        agent_description="Third agent",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+
+    workflow = SequentialWorkflow(
+        name="Test-Flow-Workflow",
+        agents=[agent1, agent2, agent3],
+        max_loops=1,
+    )
+
+    # Test flow string generation
+    expected_flow = "Alpha-Agent -> Beta-Agent -> Gamma-Agent"
+    assert workflow.flow == expected_flow
+
+
+def test_sequential_workflow_team_awareness():
+    """Test SequentialWorkflow with team awareness enabled"""
+    agent1 = Agent(
+        agent_name="Team-Member-1",
+        agent_description="First team member",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+    agent2 = Agent(
+        agent_name="Team-Member-2",
+        agent_description="Second team member",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+
+    workflow = SequentialWorkflow(
+        name="Team-Aware-Workflow",
+        description="Workflow with team awareness",
+        agents=[agent1, agent2],
+        max_loops=1,
+        team_awareness=True,
+    )
+
+    # Test that workflow initializes successfully with team awareness
+    assert workflow.team_awareness is True
+    assert len(workflow.agents) == 2

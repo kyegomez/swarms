@@ -2663,6 +2663,7 @@ class Agent:
         imgs: Optional[List[str]] = None,
         correct_answer: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        n: int = 1,
         *args,
         **kwargs,
     ) -> Any:
@@ -2707,6 +2708,8 @@ class Agent:
                 )
             elif exists(self.handoffs):
                 output = self.handle_handoffs(task=task)
+            elif n > 1:
+                return [self.run(task=task) for _ in range(n)]
             else:
                 output = self._run(
                     task=task,
@@ -2727,65 +2730,22 @@ class Agent:
             Exception,
         ) as e:
             # Try fallback models if available
-            if (
-                self.is_fallback_available()
-                and self.switch_to_next_model()
-            ):
-                # Always log fallback events, regardless of verbose setting
-                if self.verbose:
-                    logger.warning(
-                        f"⚠️  [FALLBACK] Agent '{self.agent_name}' failed with model '{self.get_current_model()}'. "
-                        f"Switching to fallback model '{self.get_current_model()}' (attempt {self.current_model_index + 1}/{len(self.get_available_models())})"
-                    )
-                try:
-                    # Recursive call to run() with the new model
-                    result = self.run(
-                        task=task,
-                        img=img,
-                        imgs=imgs,
-                        correct_answer=correct_answer,
-                        streaming_callback=streaming_callback,
-                        *args,
-                        **kwargs,
-                    )
-                    if self.verbose:
-                        # Log successful completion with fallback model
-                        logger.info(
-                            f"✅ [FALLBACK SUCCESS] Agent '{self.agent_name}' successfully completed task "
-                            f"using fallback model '{self.get_current_model()}'"
-                        )
-                    return result
-                except Exception as fallback_error:
-                    logger.error(
-                        f"Fallback model '{self.get_current_model()}' also failed: {fallback_error}"
-                    )
-                    # Continue to next fallback or raise if no more models
-                    if (
-                        self.is_fallback_available()
-                        and self.switch_to_next_model()
-                    ):
-                        return self.run(
-                            task=task,
-                            img=img,
-                            imgs=imgs,
-                            correct_answer=correct_answer,
-                            streaming_callback=streaming_callback,
-                            *args,
-                            **kwargs,
-                        )
-                    else:
-                        if self.verbose:
-                            logger.error(
-                                f"❌ [FALLBACK EXHAUSTED] Agent '{self.agent_name}' has exhausted all available models. "
-                                f"Tried {len(self.get_available_models())} models: {self.get_available_models()}"
-                            )
-
-                        self._handle_run_error(e)
+            if self.is_fallback_available():
+                return self._handle_fallback_execution(
+                    task=task,
+                    img=img,
+                    imgs=imgs,
+                    correct_answer=correct_answer,
+                    streaming_callback=streaming_callback,
+                    original_error=e,
+                    *args,
+                    **kwargs,
+                )
             else:
                 if self.verbose:
                     # No fallback available
                     logger.error(
-                        f"❌ [NO FALLBACK] Agent '{self.agent_name}' failed with model '{self.get_current_model()}' "
+                        f"Agent Name: {self.agent_name} [NO FALLBACK] failed with model '{self.get_current_model()}' "
                         f"and no fallback models are configured. Error: {str(e)[:100]}{'...' if len(str(e)) > 100 else ''}"
                     )
 
@@ -2793,12 +2753,110 @@ class Agent:
 
         except KeyboardInterrupt:
             logger.warning(
-                f"Keyboard interrupt detected for agent '{self.agent_name}'. "
+                f"Agent Name: {self.agent_name} Keyboard interrupt detected. "
                 "If autosave is enabled, the agent's state will be saved to the workspace directory. "
                 "To enable autosave, please initialize the agent with Agent(autosave=True)."
                 "For technical support, refer to this document: https://docs.swarms.world/en/latest/swarms/support/"
             )
             raise KeyboardInterrupt
+
+    def _handle_fallback_execution(
+        self,
+        task: Optional[Union[str, Any]] = None,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        correct_answer: Optional[str] = None,
+        streaming_callback: Optional[Callable[[str], None]] = None,
+        original_error: Exception = None,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """
+        Handles fallback execution when the primary model fails.
+
+        This method attempts to execute the task using fallback models when the primary
+        model encounters an error. It will try each available fallback model in sequence
+        until either the task succeeds or all fallback models are exhausted.
+
+        Args:
+            task (Optional[Union[str, Any]], optional): The task to be executed. Defaults to None.
+            img (Optional[str], optional): The image to be processed. Defaults to None.
+            imgs (Optional[List[str]], optional): The list of images to be processed. Defaults to None.
+            correct_answer (Optional[str], optional): The correct answer for continuous run mode. Defaults to None.
+            streaming_callback (Optional[Callable[[str], None]], optional): Callback function to receive streaming tokens in real-time. Defaults to None.
+            original_error (Exception): The original error that triggered the fallback. Defaults to None.
+            *args: Additional positional arguments to be passed to the execution method.
+            **kwargs: Additional keyword arguments to be passed to the execution method.
+
+        Returns:
+            Any: The result of the execution if successful.
+
+        Raises:
+            Exception: If all fallback models fail or no fallback models are available.
+        """
+        # Check if fallback models are available
+        if not self.is_fallback_available():
+            if self.verbose:
+                logger.error(
+                    f"Agent Name: {self.agent_name} [NO FALLBACK] failed with model '{self.get_current_model()}' "
+                    f"and no fallback models are configured. Error: {str(original_error)[:100]}{'...' if len(str(original_error)) > 100 else ''}"
+                )
+            self._handle_run_error(original_error)
+            return None
+
+        # Try to switch to the next fallback model
+        if not self.switch_to_next_model():
+            if self.verbose:
+                logger.error(
+                    f"Agent Name: {self.agent_name} [FALLBACK EXHAUSTED] has exhausted all available models. "
+                    f"Tried {len(self.get_available_models())} models: {self.get_available_models()}"
+                )
+            self._handle_run_error(original_error)
+            return None
+
+        # Log fallback attempt
+        if self.verbose:
+            logger.warning(
+                f"Agent Name: {self.agent_name} [FALLBACK] failed with model '{self.get_current_model()}'. "
+                f"Switching to fallback model '{self.get_current_model()}' (attempt {self.current_model_index + 1}/{len(self.get_available_models())})"
+            )
+
+        try:
+            # Recursive call to run() with the new model
+            result = self.run(
+                task=task,
+                img=img,
+                imgs=imgs,
+                correct_answer=correct_answer,
+                streaming_callback=streaming_callback,
+                *args,
+                **kwargs,
+            )
+
+            if self.verbose:
+                # Log successful completion with fallback model
+                logger.info(
+                    f"Agent Name: {self.agent_name} [FALLBACK SUCCESS] successfully completed task "
+                    f"using fallback model '{self.get_current_model()}'"
+                )
+            return result
+
+        except Exception as fallback_error:
+            logger.error(
+                f"Agent Name: {self.agent_name} Fallback model '{self.get_current_model()}' also failed: {fallback_error}"
+            )
+
+            # Try the next fallback model recursively
+            return self._handle_fallback_execution(
+                task=task,
+                img=img,
+                imgs=imgs,
+                correct_answer=correct_answer,
+                streaming_callback=streaming_callback,
+                original_error=original_error,
+                *args,
+                **kwargs,
+            )
 
     def run_batched(
         self,

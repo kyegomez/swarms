@@ -41,7 +41,7 @@ network_timeout = aop.network_timeout
 def monitor_network_status(aop_instance):
     while True:
         try:
-            network_status = aop_instance.get_network_status()
+            aop_instance.get_network_status()
             persistence_status = aop_instance.get_persistence_status()
 
             # Check if we should stop monitoring

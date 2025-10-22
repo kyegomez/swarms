@@ -2,4 +2,14 @@ swarms
 pytest
 matplotlib
 loguru
-unittest
+psutil
+pyyaml
+python-dotenv
+rich
+pydantic
+numpy
+pandas
+openpyxl
+seaborn
+requests
+swarms-memory
