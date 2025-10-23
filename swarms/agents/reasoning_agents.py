@@ -237,7 +237,6 @@ class ReasoningAgentRouter:
             description=self.description,
             model_name=self.model_name,
             system_prompt=self.system_prompt,
-            max_loops=self.max_loops,
             max_iterations=self.num_samples,
             output_type=self.output_type,
         )
@@ -338,7 +337,4 @@ class ReasoningAgentRouter:
         Returns:
             A list of reasoning process results for each task.
         """
-        results = []
-        for task in tasks:
-            results.append(self.run(task, *args, **kwargs))
-        return results
+        return [self.run(task) for task in tasks]
