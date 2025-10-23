@@ -1,14 +1,14 @@
-import pytest
 from unittest.mock import Mock, patch
 
+import pytest
+
+from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmRouterConfig,
-    SwarmRouterRunError,
     SwarmRouterConfigError,
-    Document,
+    SwarmRouterRunError,
 )
-from swarms.structs.agent import Agent
 
 
 @pytest.fixture
@@ -126,27 +126,6 @@ def test_initialization_with_agent_rearrange_flow(sample_agents):
     assert router.swarm_type == "AgentRearrange"
     assert router.rearrange_flow == flow
 
-
-def test_initialization_with_shared_memory(sample_agents):
-    """Test SwarmRouter with shared memory system."""
-    mock_memory = Mock()
-    router = SwarmRouter(
-        agents=sample_agents,
-        shared_memory_system=mock_memory,
-    )
-
-    assert router.shared_memory_system == mock_memory
-
-
-def test_initialization_with_worker_tools(sample_agents):
-    """Test SwarmRouter with worker tools."""
-    mock_tool = Mock()
-    router = SwarmRouter(
-        agents=sample_agents,
-        worker_tools=[mock_tool],
-    )
-
-    assert router.worker_tools == [mock_tool]
 
 
 def test_invalid_swarm_type():
@@ -660,20 +639,6 @@ def test_handle_rules(sample_agents):
         )
 
 
-def test_activate_shared_memory(sample_agents):
-    """Test activate_shared_memory method."""
-    mock_memory = Mock()
-    router = SwarmRouter(
-        agents=sample_agents,
-        shared_memory_system=mock_memory,
-    )
-
-    router.activate_shared_memory()
-
-    # Check that all agents have the shared memory system
-    for agent in router.agents:
-        assert agent.long_term_memory == mock_memory
-
 
 def test_update_system_prompt_for_agent_in_swarm(sample_agents):
     """Test update_system_prompt_for_agent_in_swarm method."""
@@ -927,13 +892,6 @@ def test_swarm_router_config_model():
     assert config.task == "Test task"
     assert config.multi_agent_collab_prompt is True
 
-
-def test_document_model():
-    """Test Document model."""
-    doc = Document(file_path="test.txt", data="Test document content")
-
-    assert doc.file_path == "test.txt"
-    assert doc.data == "Test document content"
 
 
 if __name__ == "__main__":
