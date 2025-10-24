@@ -64,6 +64,7 @@ class MCPExecutionError(MCPError):
 ########################################################
 def transform_mcp_tool_to_openai_tool(
     mcp_tool: MCPTool,
+    verbose: bool = False,
 ) -> ChatCompletionToolParam:
     """
     Convert an MCP tool to an OpenAI tool.
@@ -72,9 +73,11 @@ def transform_mcp_tool_to_openai_tool(
     Returns:
         ChatCompletionToolParam: The OpenAI-compatible tool parameter.
     """
-    logger.info(
-        f"Transforming MCP tool '{mcp_tool.name}' to OpenAI tool format."
-    )
+    if verbose:
+        logger.info(
+            f"Transforming MCP tool '{mcp_tool.name}' to OpenAI tool format."
+        )
+
     return ChatCompletionToolParam(
         type="function",
         function=FunctionDefinition(
@@ -529,12 +532,15 @@ def get_tools_for_multiple_mcp_servers(
         logger.info(
             f"get_tools_for_multiple_mcp_servers called for {len(urls)} urls."
         )
+
     tools = []
+
     (
         min(32, os.cpu_count() + 4)
         if max_workers is None
         else max_workers
     )
+
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         if exists(connections):
             future_to_url = {

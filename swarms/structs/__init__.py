@@ -59,7 +59,9 @@ from swarms.structs.multi_agent_exec import (
 )
 from swarms.structs.multi_agent_router import MultiAgentRouter
 from swarms.structs.round_robin import RoundRobinSwarm
+from swarms.structs.self_moa_seq import SelfMoASeq
 from swarms.structs.sequential_workflow import SequentialWorkflow
+from swarms.structs.social_algorithms import SocialAlgorithms
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.stopping_conditions import (
     check_cancelled,
@@ -98,13 +100,13 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
-from swarms.structs.self_moa_seq import SelfMoASeq
 
 __all__ = [
     "Agent",
     "BaseStructure",
     "BaseSwarm",
     "ConcurrentWorkflow",
+    "SocialAlgorithms",
     "Conversation",
     "GroupChat",
     "MajorityVoting",

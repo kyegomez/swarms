@@ -86,6 +86,7 @@ The Swarms framework is a powerful multi-agent orchestration platform that enabl
 | [Marketing-Swarm-Template](https://github.com/The-Swarm-Corporation/Marketing-Swarm-Template) | Marketing campaign automation template | Marketing Automation | Business |
 | [Multi-Agent-Marketing-Course](https://github.com/The-Swarm-Corporation/Multi-Agent-Marketing-Course) | Educational course on multi-agent marketing | Marketing Education | Business |
 | [NewsAgent](https://github.com/The-Swarm-Corporation/NewsAgent) | News aggregation and analysis agent | News Analysis | Business |
+|[Product-Marketing-Agency](https://github.com/The-Swarm-Corporation/Product-Marketing-Agency) | Product marketing content generation | Product Marketing | Business |
 
 ### Legal Services
 

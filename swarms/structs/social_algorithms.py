@@ -1,15 +1,7 @@
-"""
-Social Algorithms for Multi-Agent Communication
-
-This module provides a flexible framework for defining custom social algorithms
-that control how agents communicate and interact with each other in multi-agent systems.
-"""
-
 import time
 import uuid
 from typing import Any, Callable, Dict, List, Optional
 from dataclasses import dataclass
-from enum import Enum
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
@@ -17,18 +9,6 @@ from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 
 logger = initialize_logger(log_folder="social_algorithms")
-
-
-class SocialAlgorithmType(Enum):
-    """Types of social algorithms supported."""
-
-    CUSTOM = "custom"
-    SEQUENTIAL = "sequential"
-    CONCURRENT = "concurrent"
-    HIERARCHICAL = "hierarchical"
-    MESH = "mesh"
-    ROUND_ROBIN = "round_robin"
-    BROADCAST = "broadcast"
 
 
 @dataclass

@@ -69,7 +69,6 @@ def swarm_intelligence_algorithm(agents, task, **kwargs):
 
     # Initialize swarm state
     swarm_knowledge = []
-    discovered_solutions = []
     pheromone_trails = (
         {}
     )  # Simulate pheromone trails for solution attractiveness

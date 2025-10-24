@@ -1,6 +1,5 @@
 import concurrent.futures
 import datetime
-import inspect
 import json
 import os
 import traceback
@@ -95,6 +94,7 @@ class Conversation:
         export_method: str = "json",
         dynamic_context_window: bool = True,
         caching: bool = True,
+        output_metadata: bool = False,
     ):
 
         # Initialize all attributes first
@@ -118,6 +118,7 @@ class Conversation:
         self.export_method = export_method
         self.dynamic_context_window = dynamic_context_window
         self.caching = caching
+        self.output_metadata = output_metadata
 
         if self.name is None:
             self.name = id
@@ -534,7 +535,7 @@ class Conversation:
         """
         return self.return_history_as_string()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[Any, Any]:
         """
         Converts all attributes of the class into a dictionary, including all __init__ parameters
         and conversation history. Automatically extracts parameters from __init__ signature.
@@ -544,43 +545,7 @@ class Conversation:
                 - metadata: All initialization parameters and their current values
                 - conversation_history: The list of conversation messages
         """
-        # Get all parameters from __init__ signature
-        init_signature = inspect.signature(self.__class__.__init__)
-        init_params = [
-            param
-            for param in init_signature.parameters
-            if param not in ["self", "args", "kwargs"]
-        ]
-
-        # Build metadata dictionary from init parameters
-        metadata = {}
-        for param in init_params:
-            # Get the current value of the parameter from instance
-            value = getattr(self, param, None)
-            # Special handling for certain types
-            if value is not None:
-                if isinstance(
-                    value, (str, int, float, bool, list, dict)
-                ):
-                    metadata[param] = value
-                elif hasattr(value, "to_dict"):
-                    metadata[param] = value.to_dict()
-                else:
-                    try:
-                        # Try to convert to string if not directly serializable
-                        metadata[param] = str(value)
-                    except Exception:
-                        # Skip if we can't serialize
-                        continue
-
-        # Add created_at if it exists
-        if hasattr(self, "created_at"):
-            metadata["created_at"] = self.created_at
-
-        return {
-            "metadata": metadata,
-            "conversation_history": self.conversation_history,
-        }
+        return self.conversation_history
 
     def save_as_json(self, force: bool = True):
         """Save the conversation history and metadata to a JSON file.
@@ -597,14 +562,11 @@ class Conversation:
                 )
                 return
 
-            # Get the full data including metadata and conversation history
-            data = self.get_init_params()
-
             # Ensure we have a valid save path
             if not self.save_filepath:
                 self.save_filepath = os.path.join(
                     self.conversations_dir or os.getcwd(),
-                    f"conversation_{self.name}.json",
+                    f"conversation_{self.id}.json",
                 )
 
             # Create directory if it doesn't exist
@@ -614,7 +576,12 @@ class Conversation:
 
             # Save with proper formatting
             with open(self.save_filepath, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=4, default=str)
+                json.dump(
+                    self.conversation_history,
+                    f,
+                    indent=4,
+                    default=str,
+                )
 
             logger.info(f"Conversation saved to {self.save_filepath}")
 
@@ -623,34 +590,6 @@ class Conversation:
                 f"Failed to save conversation: {str(e)}\nTraceback: {traceback.format_exc()}"
             )
             raise  # Re-raise to ensure the error is visible to the caller
-
-    def get_init_params(self):
-        data = {
-            "metadata": {
-                "id": self.id,
-                "name": self.name,
-                "system_prompt": self.system_prompt,
-                "time_enabled": self.time_enabled,
-                "autosave": self.autosave,
-                "save_filepath": self.save_filepath,
-                "load_filepath": self.load_filepath,
-                "context_length": self.context_length,
-                "rules": self.rules,
-                "custom_rules_prompt": self.custom_rules_prompt,
-                "user": self.user,
-                "save_as_yaml_on": self.save_as_yaml_on,
-                "save_as_json_bool": self.save_as_json_bool,
-                "token_count": self.token_count,
-                "message_id_on": self.message_id_on,
-                "tokenizer_model_name": self.tokenizer_model_name,
-                "conversations_dir": self.conversations_dir,
-                "export_method": self.export_method,
-                "created_at": self.created_at,
-            },
-            "conversation_history": self.conversation_history,
-        }
-
-        return data
 
     def save_as_yaml(self, force: bool = True):
         """Save the conversation history and metadata to a YAML file.
@@ -667,9 +606,6 @@ class Conversation:
                 )
                 return
 
-            # Get the full data including metadata and conversation history
-            data = self.get_init_params()
-
             # Create directory if it doesn't exist
             save_dir = os.path.dirname(self.save_filepath)
             if save_dir:
@@ -678,7 +614,7 @@ class Conversation:
             # Save with proper formatting
             with open(self.save_filepath, "w", encoding="utf-8") as f:
                 yaml.dump(
-                    data,
+                    self.conversation_history,
                     f,
                     indent=4,
                     default_flow_style=False,

@@ -1,37 +1,3 @@
-"""
-ReasoningAgentRouter: A flexible router for advanced reasoning agent swarms.
-
-This module provides the ReasoningAgentRouter class, which enables dynamic selection and instantiation
-of various advanced reasoning agent types (swarms) for complex problem-solving tasks. It supports
-multiple reasoning strategies, including self-consistency, collaborative duo agents, iterative
-reflection, knowledge prompting, and agent judging.
-
-Key Features:
-- Unified interface for multiple agent types (see `agent_types`)
-- Caching of agent instances for efficiency and memory management
-- Extensible factory-based architecture for easy addition of new agent types
-- Batch and single-task execution
-- Customizable agent configuration (model, prompt, memory, etc.)
-
-Supported Agent Types:
-    - "reasoning-duo" / "reasoning-agent": Dual collaborative agent system
-    - "self-consistency" / "consistency-agent": Multiple independent solutions with consensus
-    - "ire" / "ire-agent": Iterative Reflective Expansion agent
-    - "ReflexionAgent": Reflexion agent with memory
-    - "GKPAgent": Generated Knowledge Prompting agent
-    - "AgentJudge": Agent judge for evaluation/critique
-
-Example usage:
-    >>> router = ReasoningAgentRouter(swarm_type="self-consistency", num_samples=3)
-    >>> result = router.run("What is the capital of France?")
-    >>> print(result)
-
-    >>> # Batch mode
-    >>> results = router.batched_run(["2+2?", "3+3?"])
-    >>> print(results)
-
-"""
-
 import traceback
 from typing import (
     List,
@@ -237,7 +203,6 @@ class ReasoningAgentRouter:
             description=self.description,
             model_name=self.model_name,
             system_prompt=self.system_prompt,
-            max_loops=self.max_loops,
             max_iterations=self.num_samples,
             output_type=self.output_type,
         )
@@ -338,7 +303,4 @@ class ReasoningAgentRouter:
         Returns:
             A list of reasoning process results for each task.
         """
-        results = []
-        for task in tasks:
-            results.append(self.run(task, *args, **kwargs))
-        return results
+        return [self.run(task) for task in tasks]

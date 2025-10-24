@@ -1,87 +1,146 @@
-from typing import List, Optional
+import math
+from typing import Any, Callable, List, Optional, Union
 
+from litellm import embedding
 from tenacity import retry, stop_after_attempt, wait_exponential
-from typing import Union, Callable, Any
-from swarms import Agent
-from swarms.utils.loguru_logger import initialize_logger
-from swarms.utils.auto_download_check_packages import (
-    auto_check_and_download_package,
-)
 
+from swarms.structs.omni_agent_types import AgentType
+from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="agent_router")
 
 
 class AgentRouter:
     """
-    Initialize the AgentRouter.
+    Initialize the AgentRouter using LiteLLM embeddings for agent matching.
 
     Args:
-        collection_name (str): Name of the collection in the vector database.
-        persist_directory (str): Directory to persist the vector database.
+        embedding_model (str): The embedding model to use for generating embeddings.
+            Examples: 'text-embedding-ada-002', 'text-embedding-3-small', 'text-embedding-3-large',
+            'cohere/embed-english-v3.0', 'huggingface/microsoft/codebert-base', etc.
         n_agents (int): Number of agents to return in queries.
-        *args: Additional arguments to pass to the chromadb Client.
-        **kwargs: Additional keyword arguments to pass to the chromadb Client.
+        api_key (str, optional): API key for the embedding service. If not provided,
+            will use environment variables.
+        api_base (str, optional): Custom API base URL for the embedding service.
+        agents (List[AgentType], optional): List of agents to initialize the router with.
     """
 
     def __init__(
         self,
-        collection_name: str = "agents",
-        persist_directory: str = "./vector_db",
+        embedding_model: str = "text-embedding-ada-002",
         n_agents: int = 1,
-        *args,
-        **kwargs,
+        api_key: Optional[str] = None,
+        api_base: Optional[str] = None,
+        agents: Optional[List[AgentType]] = None,
     ):
-        try:
-            import chromadb
-        except ImportError:
-            auto_check_and_download_package(
-                "chromadb", package_manager="pip", upgrade=True
-            )
-            import chromadb
-
-        self.collection_name = collection_name
+        self.embedding_model = embedding_model
         self.n_agents = n_agents
-        self.persist_directory = persist_directory
-        self.client = chromadb.Client(*args, **kwargs)
-        self.collection = self.client.create_collection(
-            collection_name
-        )
-        self.agents: List[Agent] = []
+        self.api_key = api_key
+        self.api_base = api_base
+        self.agents: List[AgentType] = []
+        self.agent_embeddings: List[List[float]] = []
+        self.agent_metadata: List[dict] = []
+
+        # Add agents if provided during initialization
+        if agents:
+            self.add_agents(agents)
+
+    def _generate_embedding(self, text: str) -> List[float]:
+        """
+        Generate embedding for the given text using the specified model.
+
+        Args:
+            text (str): The text to generate embedding for.
+
+        Returns:
+            List[float]: The embedding vector as a list of floats.
+        """
+        try:
+            # Prepare parameters for the embedding call
+            params = {"model": self.embedding_model, "input": [text]}
+
+            if self.api_key:
+                params["api_key"] = self.api_key
+            if self.api_base:
+                params["api_base"] = self.api_base
+
+            response = embedding(**params)
+
+            # Extract the embedding from the response
+            embedding_vector = response.data[0].embedding
+            return embedding_vector
+
+        except Exception as e:
+            logger.error(f"Error generating embedding: {str(e)}")
+            raise
+
+    def _cosine_similarity(
+        self, vec1: List[float], vec2: List[float]
+    ) -> float:
+        """
+        Calculate cosine similarity between two vectors.
+
+        Args:
+            vec1 (List[float]): First vector.
+            vec2 (List[float]): Second vector.
+
+        Returns:
+            float: Cosine similarity between the vectors.
+        """
+        if len(vec1) != len(vec2):
+            raise ValueError("Vectors must have the same length")
+
+        # Calculate dot product
+        dot_product = sum(a * b for a, b in zip(vec1, vec2))
+
+        # Calculate magnitudes
+        magnitude1 = math.sqrt(sum(a * a for a in vec1))
+        magnitude2 = math.sqrt(sum(a * a for a in vec2))
+
+        # Avoid division by zero
+        if magnitude1 == 0 or magnitude2 == 0:
+            return 0.0
+
+        return dot_product / (magnitude1 * magnitude2)
 
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=10),
     )
-    def add_agent(self, agent: Agent) -> None:
+    def add_agent(self, agent: AgentType) -> None:
         """
-        Add an agent to the vector database.
+        Add an agent to the embedding-based agent router.
 
         Args:
             agent (Agent): The agent to add.
 
         Raises:
-            Exception: If there's an error adding the agent to the vector database.
+            Exception: If there's an error adding the agent to the router.
         """
         try:
             agent_text = f"{agent.name} {agent.description} {agent.system_prompt}"
-            self.collection.add(
-                documents=[agent_text],
-                metadatas=[{"name": agent.name}],
-                ids=[agent.name],
-            )
+
+            # Generate embedding for the agent
+            agent_embedding = self._generate_embedding(agent_text)
+
+            # Store agent and its embedding
             self.agents.append(agent)
+            self.agent_embeddings.append(agent_embedding)
+            self.agent_metadata.append(
+                {"name": agent.name, "text": agent_text}
+            )
+
             logger.info(
-                f"Added agent {agent.name} to the vector database."
+                f"Added agent {agent.name} to the embedding-based router."
             )
         except Exception as e:
             logger.error(
-                f"Error adding agent {agent.name} to the vector database: {str(e)}"
+                f"Error adding agent {agent.name} to the router: {str(e)}"
             )
             raise
 
     def add_agents(
-        self, agents: List[Union[Agent, Callable, Any]]
+        self, agents: List[Union[AgentType, Callable, Any]]
     ) -> None:
         """
         Add multiple agents to the vector database.
@@ -94,7 +153,7 @@ class AgentRouter:
 
     def update_agent_history(self, agent_name: str) -> None:
         """
-        Update the agent's entry in the vector database with its interaction history.
+        Update the agent's entry in the router with its interaction history.
 
         Args:
             agent_name (str): The name of the agent to update.
@@ -107,17 +166,39 @@ class AgentRouter:
             history_text = " ".join(history)
             updated_text = f"{agent.name} {agent.description} {agent.system_prompt} {history_text}"
 
-            self.collection.update(
-                ids=[agent_name],
-                documents=[updated_text],
-                metadatas=[{"name": agent_name}],
+            # Find the agent's index
+            agent_index = next(
+                (
+                    i
+                    for i, a in enumerate(self.agents)
+                    if a.name == agent_name
+                ),
+                None,
             )
-            logger.info(
-                f"Updated agent {agent_name} with interaction history."
-            )
+
+            if agent_index is not None:
+                # Generate new embedding with updated text
+                updated_embedding = self._generate_embedding(
+                    updated_text
+                )
+
+                # Update the stored data
+                self.agent_embeddings[agent_index] = updated_embedding
+                self.agent_metadata[agent_index] = {
+                    "name": agent_name,
+                    "text": updated_text,
+                }
+
+                logger.info(
+                    f"Updated agent {agent_name} with interaction history."
+                )
+            else:
+                logger.warning(
+                    f"Agent {agent_name} not found in the agents list."
+                )
         else:
             logger.warning(
-                f"Agent {agent_name} not found in the database."
+                f"Agent {agent_name} not found in the router."
             )
 
     @retry(
@@ -126,14 +207,14 @@ class AgentRouter:
     )
     def find_best_agent(
         self, task: str, *args, **kwargs
-    ) -> Optional[Agent]:
+    ) -> Optional[AgentType]:
         """
-        Find the best agent for a given task.
+        Find the best agent for a given task using cosine similarity.
 
         Args:
             task (str): The task description.
-            *args: Additional arguments to pass to the collection.query method.
-            **kwargs: Additional keyword arguments to pass to the collection.query method.
+            *args: Additional arguments (unused, kept for compatibility).
+            **kwargs: Additional keyword arguments (unused, kept for compatibility).
 
         Returns:
             Optional[Agent]: The best matching agent, if found.
@@ -142,32 +223,32 @@ class AgentRouter:
             Exception: If there's an error finding the best agent.
         """
         try:
-            results = self.collection.query(
-                query_texts=[task],
-                n_results=self.n_agents,
-                *args,
-                **kwargs,
-            )
+            if not self.agents or not self.agent_embeddings:
+                logger.warning("No agents available in the router.")
+                return None
 
-            if results["ids"]:
-                best_match_name = results["ids"][0][0]
-                best_agent = next(
-                    (
-                        a
-                        for a in self.agents
-                        if a.name == best_match_name
-                    ),
-                    None,
+            # Generate embedding for the task
+            task_embedding = self._generate_embedding(task)
+
+            # Calculate cosine similarities
+            similarities = []
+            for agent_embedding in self.agent_embeddings:
+                similarity = self._cosine_similarity(
+                    task_embedding, agent_embedding
                 )
-                if best_agent:
-                    logger.info(
-                        f"Found best matching agent: {best_match_name}"
-                    )
-                    return best_agent
-                else:
-                    logger.warning(
-                        f"Agent {best_match_name} found in index but not in agents list."
-                    )
+                similarities.append(similarity)
+
+            # Find the best matching agent(s)
+            if similarities:
+                # Get index of the best similarity
+                best_index = similarities.index(max(similarities))
+                best_agent = self.agents[best_index]
+                best_similarity = similarities[best_index]
+
+                logger.info(
+                    f"Found best matching agent: {best_agent.name} (similarity: {best_similarity:.4f})"
+                )
+                return best_agent
             else:
                 logger.warning(
                     "No matching agent found for the given task."
