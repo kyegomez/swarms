@@ -142,7 +142,7 @@ jobs:
         poetry run pytest tests/test_main_features.py --cov=swarms --cov-report=xml --cov-report=html
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       with:
         file: ./coverage.xml
         flags: main-features
