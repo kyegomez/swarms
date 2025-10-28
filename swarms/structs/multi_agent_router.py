@@ -160,15 +160,54 @@ class MultiAgentRouter:
         )
         router_system_prompt += self._create_boss_system_prompt()
 
+        # Conditionally enable structured outputs only on supported models
+        # Avoids errors on models like `gpt-3.5-turbo` which don't support json_schema
+        def _supports_structured_outputs(model_name: str) -> bool:
+            name = (model_name or "").lower()
+            # Models that DON'T support structured outputs (exclude these)
+            unsupported_models = [
+                "gpt-3.5-turbo",
+                "gpt-4-turbo",
+                "gpt-4",   
+                "text-davinci",
+                "text-curie",
+                "text-babbage",
+                "text-ada",
+                "claude-2",
+                "claude-instant",
+                "claude-v1",
+                "gemini-pro-vision",
+                "text-bison",
+                "chat-bison",
+                "llama-2",
+                "llama-3",
+                "mistral-7b",
+                "mistral-small",
+            ]
+            
+            # If it's in the unsupported list, return False
+            if any(unsupported in name for unsupported in unsupported_models):
+                return False
+                
+            # Otherwise, assume it supports structured outputs
+            # This includes newer Claude, Gemini, and OpenAI models
+            return True
+
+        # Build LiteLLM kwargs with conditional response_format
+        lite_llm_kwargs = {
+            "model_name": self.model,
+            "system_prompt": router_system_prompt,
+            "temperature": self.temperature,
+            "tool_choice": "auto",
+            "parallel_tool_calls": True,
+        }
+        
+        if _supports_structured_outputs(self.model):
+            lite_llm_kwargs["response_format"] = MultipleHandOffsResponse
+
         self.function_caller = LiteLLM(
-            model_name=self.model,
-            system_prompt=router_system_prompt,
-            temperature=self.temperature,
-            tool_choice="auto",
-            parallel_tool_calls=True,
-            response_format=MultipleHandOffsResponse,
             *args,
-            **kwargs,
+            **{**lite_llm_kwargs, **kwargs},
         )
 
     def __repr__(self):
@@ -312,7 +351,23 @@ class MultiAgentRouter:
             # Get boss decision using function calling
             boss_response_str = self.function_caller.run(task)
 
+
+            # Handle JSON parsing with fallback for models without structured outputs
+            try:
+                boss_response_str = orjson.loads(boss_response_str)
+            except (orjson.JSONDecodeError, TypeError):
+                # Fallback: route to first agent when JSON parsing fails
+                first_agent = list(self.agents.keys())[0]
+                boss_response_str = {
+                    "handoffs": [{
+                        "reasoning": "Fallback routing due to JSON parsing error",
+                        "agent_name": first_agent,
+                        "task": task
+                    }]
+                }
+
             boss_response_str = json.loads(boss_response_str)
+
 
             if self.print_on:
                 formatter.print_panel(
