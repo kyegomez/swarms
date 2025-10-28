@@ -1,9 +1,9 @@
 import concurrent.futures
+import json
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, List, Optional
 
-import orjson
 from loguru import logger
 from pydantic import BaseModel, Field
 
@@ -351,6 +351,7 @@ class MultiAgentRouter:
             # Get boss decision using function calling
             boss_response_str = self.function_caller.run(task)
 
+
             # Handle JSON parsing with fallback for models without structured outputs
             try:
                 boss_response_str = orjson.loads(boss_response_str)
@@ -365,12 +366,12 @@ class MultiAgentRouter:
                     }]
                 }
 
+            boss_response_str = json.loads(boss_response_str)
+
+
             if self.print_on:
                 formatter.print_panel(
-                    # orjson.dumps(boss_response_str, indent=4),
-                    orjson.dumps(
-                        boss_response_str, option=orjson.OPT_INDENT_2
-                    ).decode("utf-8"),
+                    json.dumps(boss_response_str, indent=4),
                     title=self.name,
                 )
 

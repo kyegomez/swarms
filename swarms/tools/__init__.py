@@ -1,8 +1,4 @@
 from swarms.tools.base_tool import BaseTool
-from swarms.tools.cohere_func_call_schema import (
-    CohereFuncSchema,
-    ParameterDefinition,
-)
 from swarms.tools.json_utils import base_model_to_json
 from swarms.tools.mcp_client_tools import (
     _create_server_tool_mapping,
@@ -56,8 +52,6 @@ __all__ = [
     "ToolFunction",
     "tool",
     "BaseTool",
-    "CohereFuncSchema",
-    "ParameterDefinition",
     "ToolStorage",
     "tool_registry",
     "base_model_to_json",

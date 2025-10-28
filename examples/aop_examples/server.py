@@ -79,18 +79,20 @@ financial_agent = Agent(
     max_loops=1,
     top_p=None,
     dynamic_temperature_enabled=True,
-    system_prompt="""You are a financial specialist. Your role is to:
+    system_prompt="""
+    You are a financial specialist. Your role is to:
     1. Analyze financial data and markets
     2. Provide investment insights
     3. Assess risk and opportunities
     4. Create financial reports
     5. Explain complex financial concepts
     
-    Always provide accurate, well-reasoned financial analysis.""",
+    Always provide accurate, well-reasoned financial analysis.
+    """,
 )
 
 # Basic usage - individual agent addition
-deployer = AOP("MyAgentServer", verbose=True, port=5932)
+deployer = AOP(server_name="MyAgentServer", verbose=True, port=5932)
 
 agents = [
     research_agent,

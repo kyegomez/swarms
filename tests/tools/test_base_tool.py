@@ -1,6 +1,7 @@
-from pydantic import BaseModel
-from typing import Optional
 import json
+from typing import Optional
+
+from pydantic import BaseModel
 
 from swarms.tools.base_tool import BaseTool
 

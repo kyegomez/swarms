@@ -274,12 +274,14 @@ nav:
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
         - Mixture of Agents: "swarms/structs/moa.md"
+        - SelfMoASeq: "swarms/structs/self_moa_seq.md"
         - SpreadSheetSwarm: "swarms/structs/spreadsheet_swarm.md"
         - ForestSwarm: "swarms/structs/forest_swarm.md"
         - MALT: "swarms/structs/malt.md"
         - Multi-Agent Execution Utilities: "swarms/structs/various_execution_methods.md"
         - Council of Judges: "swarms/structs/council_of_judges.md"
         - Heavy Swarm: "swarms/structs/heavy_swarm.md"
+        - Social Algorithms: "swarms/structs/social_algorithms.md"
 
         - Hiearchical Architectures:
           - Overview: "swarms/structs/multi_swarm_orchestration.md"

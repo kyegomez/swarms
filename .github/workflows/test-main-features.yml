@@ -1,0 +1,150 @@
+name: Test Main Features
+
+on:
+  push:
+    paths:
+      - 'tests/test_main_features.py'
+      - 'swarms/**'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+    branches: [ "master" ]
+  pull_request:
+    paths:
+      - 'tests/test_main_features.py'
+      - 'swarms/**'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+    branches: [ "master" ]
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  test-main-features:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.10"
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Configure Poetry
+      run: |
+        poetry config virtualenvs.create true
+        poetry config virtualenvs.in-project true
+
+    - name: Install dependencies
+      run: |
+        poetry install --with test --no-dev
+
+    - name: Set up environment variables
+      run: |
+        echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
+        echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> $GITHUB_ENV
+        echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> $GITHUB_ENV
+        echo "COHERE_API_KEY=${{ secrets.COHERE_API_KEY }}" >> $GITHUB_ENV
+        echo "HUGGINGFACE_API_KEY=${{ secrets.HUGGINGFACE_API_KEY }}" >> $GITHUB_ENV
+        echo "REPLICATE_API_KEY=${{ secrets.REPLICATE_API_KEY }}" >> $GITHUB_ENV
+        echo "TOGETHER_API_KEY=${{ secrets.TOGETHER_API_KEY }}" >> $GITHUB_ENV
+
+    - name: Run Main Features Tests
+      run: |
+        cd /Users/swarms_wd/Desktop/research/swarms
+        poetry run python tests/test_main_features.py
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v5
+      if: always()
+      with:
+        name: test-results
+        path: test_runs/
+        retention-days: 7
+
+    - name: Comment on PR with test results
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v8
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          try {
+            // Look for test result files
+            const testRunsDir = 'test_runs';
+            if (fs.existsSync(testRunsDir)) {
+              const files = fs.readdirSync(testRunsDir);
+              const latestReport = files
+                .filter(f => f.endsWith('.md'))
+                .sort()
+                .pop();
+              
+              if (latestReport) {
+                const reportPath = path.join(testRunsDir, latestReport);
+                const reportContent = fs.readFileSync(reportPath, 'utf8');
+                
+                // Extract summary from markdown
+                const summaryMatch = reportContent.match(/## Summary\n\n(.*?)\n\n## Detailed Results/s);
+                const summary = summaryMatch ? summaryMatch[1] : 'Test results available in artifacts';
+                
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: `## Main Features Test Results\n\n${summary}\n\n📊 Full test report available in artifacts.`
+                });
+              }
+            }
+          } catch (error) {
+            console.log('Could not read test results:', error.message);
+          }
+
+  test-coverage:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: test-main-features
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.10"
+
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        poetry install --with test
+
+    - name: Run coverage analysis
+      run: |
+        poetry run pytest tests/test_main_features.py --cov=swarms --cov-report=xml --cov-report=html
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        file: ./coverage.xml
+        flags: main-features
+        name: main-features-coverage
+        fail_ci_if_error: false

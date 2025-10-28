@@ -1,4 +1,5 @@
 import asyncio
+import socket
 import sys
 import threading
 import time
@@ -556,6 +557,7 @@ class AOP:
     3. Handle tool execution with proper error handling
     4. Manage the MCP server lifecycle
     5. Queue-based task execution for improved performance and reliability
+    6. Persistence mode with automatic restart and failsafe protection
 
     Attributes:
         mcp_server: The FastMCP server instance
@@ -564,6 +566,13 @@ class AOP:
         task_queues: Dictionary mapping tool names to their task queues
         server_name: Name of the MCP server
         queue_enabled: Whether queue-based execution is enabled
+        persistence: Whether persistence mode is enabled
+        max_restart_attempts: Maximum number of restart attempts before giving up
+        restart_delay: Delay between restart attempts in seconds
+        network_monitoring: Whether network connection monitoring is enabled
+        max_network_retries: Maximum number of network reconnection attempts
+        network_retry_delay: Delay between network retry attempts in seconds
+        network_timeout: Network connection timeout in seconds
     """
 
     def __init__(
@@ -581,6 +590,13 @@ class AOP:
         max_queue_size_per_agent: int = 1000,
         processing_timeout: int = 30,
         retry_delay: float = 1.0,
+        persistence: bool = False,
+        max_restart_attempts: int = 10,
+        restart_delay: float = 5.0,
+        network_monitoring: bool = True,
+        max_network_retries: int = 5,
+        network_retry_delay: float = 10.0,
+        network_timeout: float = 30.0,
         log_level: Literal[
             "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
         ] = "INFO",
@@ -605,6 +621,13 @@ class AOP:
             max_queue_size_per_agent: Maximum queue size per agent
             processing_timeout: Timeout for task processing in seconds
             retry_delay: Delay between retries in seconds
+            persistence: Enable automatic restart on shutdown (with failsafe)
+            max_restart_attempts: Maximum number of restart attempts before giving up
+            restart_delay: Delay between restart attempts in seconds
+            network_monitoring: Enable network connection monitoring and retry
+            max_network_retries: Maximum number of network reconnection attempts
+            network_retry_delay: Delay between network retry attempts in seconds
+            network_timeout: Network connection timeout in seconds
         """
         self.server_name = server_name
         self.description = description
@@ -618,6 +641,23 @@ class AOP:
         self.max_queue_size_per_agent = max_queue_size_per_agent
         self.processing_timeout = processing_timeout
         self.retry_delay = retry_delay
+        self.persistence = persistence
+        self.max_restart_attempts = max_restart_attempts
+        self.restart_delay = restart_delay
+        self.network_monitoring = network_monitoring
+        self.max_network_retries = max_network_retries
+        self.network_retry_delay = network_retry_delay
+        self.network_timeout = network_timeout
+
+        # Persistence state tracking
+        self._restart_count = 0
+        self._persistence_enabled = persistence
+        self._shutdown_requested = False
+
+        # Network state tracking
+        self._network_retry_count = 0
+        self._last_network_error = None
+        self._network_connected = True
 
         self.agents: Dict[str, Agent] = {}
         self.tool_configs: Dict[str, AgentToolConfig] = {}
@@ -641,7 +681,7 @@ class AOP:
         )
 
         logger.info(
-            f"Initialized AOP with server name: {server_name}, verbose: {verbose}, traceback: {traceback_enabled}"
+            f"Initialized AOP with server name: {server_name}, verbose: {verbose}, traceback: {traceback_enabled}, persistence: {persistence}, network_monitoring: {network_monitoring}"
         )
 
         # Add initial agents if provided
@@ -2262,9 +2302,397 @@ class AOP:
 
     def run(self) -> None:
         """
-        Run the MCP server.
+        Run the MCP server with optional persistence.
+
+        If persistence is enabled, the server will automatically restart
+        when stopped, up to max_restart_attempts times. This includes
+        a failsafe mechanism to prevent infinite restart loops.
         """
-        self.start_server()
+        if not self._persistence_enabled:
+            # Standard run without persistence
+            self.start_server()
+            return
+
+        # Persistence-enabled run
+        logger.info(
+            f"Starting AOP server with persistence enabled (max restarts: {self.max_restart_attempts})"
+        )
+
+        while (
+            not self._shutdown_requested
+            and self._restart_count <= self.max_restart_attempts
+        ):
+            try:
+                if self._restart_count > 0:
+                    logger.info(
+                        f"Restarting server (attempt {self._restart_count}/{self.max_restart_attempts})"
+                    )
+                    # Wait before restarting
+                    time.sleep(self.restart_delay)
+
+                # Reset restart count on successful start
+                self._restart_count = 0
+                self.start_server()
+
+            except KeyboardInterrupt:
+                if (
+                    self._persistence_enabled
+                    and not self._shutdown_requested
+                ):
+                    logger.warning(
+                        "Server interrupted by user, but persistence is enabled. Restarting..."
+                    )
+                    self._restart_count += 1
+                    continue
+                else:
+                    logger.info("Server shutdown requested by user")
+                    break
+
+            except Exception as e:
+                if (
+                    self._persistence_enabled
+                    and not self._shutdown_requested
+                ):
+                    # Check if it's a network error
+                    if self._is_network_error(e):
+                        logger.warning(
+                            "🌐 Network error detected, attempting reconnection..."
+                        )
+                        if self._handle_network_error(e):
+                            # Network retry successful, continue with restart
+                            self._restart_count += 1
+                            continue
+                        else:
+                            # Network retry failed, give up
+                            logger.critical(
+                                "💀 Network reconnection failed permanently"
+                            )
+                            break
+                    else:
+                        # Non-network error, use standard restart logic
+                        logger.error(
+                            f"Server crashed with error: {e}"
+                        )
+                        self._restart_count += 1
+
+                        if (
+                            self._restart_count
+                            > self.max_restart_attempts
+                        ):
+                            logger.critical(
+                                f"Maximum restart attempts ({self.max_restart_attempts}) exceeded. Shutting down permanently."
+                            )
+                            break
+                        else:
+                            logger.info(
+                                f"Will restart in {self.restart_delay} seconds..."
+                            )
+                            continue
+                else:
+                    # Check if it's a network error even without persistence
+                    if self._is_network_error(e):
+                        logger.error(
+                            "🌐 Network error detected but persistence is disabled"
+                        )
+                        if self.network_monitoring:
+                            logger.info(
+                                "🔄 Attempting network reconnection..."
+                            )
+                            if self._handle_network_error(e):
+                                # Try to start server again after network recovery
+                                try:
+                                    self.start_server()
+                                    return
+                                except Exception as retry_error:
+                                    logger.error(
+                                        f"Server failed after network recovery: {retry_error}"
+                                    )
+                                    raise
+                            else:
+                                logger.critical(
+                                    "💀 Network reconnection failed"
+                                )
+                                raise
+                        else:
+                            logger.error(
+                                "Network monitoring is disabled, cannot retry"
+                            )
+                            raise
+                    else:
+                        logger.error(
+                            f"Server failed and persistence is disabled: {e}"
+                        )
+                        raise
+
+        if self._restart_count > self.max_restart_attempts:
+            logger.critical(
+                "Server failed permanently due to exceeding maximum restart attempts"
+            )
+        elif self._shutdown_requested:
+            logger.info("Server shutdown completed as requested")
+        else:
+            logger.info("Server stopped normally")
+
+    def _is_network_error(self, error: Exception) -> bool:
+        """
+        Check if an error is network-related.
+
+        Args:
+            error: The exception to check
+
+        Returns:
+            bool: True if the error is network-related
+        """
+        network_errors = (
+            ConnectionError,
+            ConnectionRefusedError,
+            ConnectionResetError,
+            ConnectionAbortedError,
+            TimeoutError,
+            socket.gaierror,
+            socket.timeout,
+            OSError,
+        )
+
+        # Check if it's a direct network error
+        if isinstance(error, network_errors):
+            return True
+
+        # Check error message for network-related keywords
+        error_msg = str(error).lower()
+        network_keywords = [
+            "connection refused",
+            "connection reset",
+            "connection aborted",
+            "network is unreachable",
+            "no route to host",
+            "timeout",
+            "socket",
+            "network",
+            "connection",
+            "refused",
+            "reset",
+            "aborted",
+            "unreachable",
+            "timeout",
+        ]
+
+        return any(
+            keyword in error_msg for keyword in network_keywords
+        )
+
+    def _get_network_error_message(
+        self, error: Exception, attempt: int
+    ) -> str:
+        """
+        Get a custom error message for network-related errors.
+
+        Args:
+            error: The network error that occurred
+            attempt: Current retry attempt number
+
+        Returns:
+            str: Custom error message
+        """
+        error_type = type(error).__name__
+        error_msg = str(error)
+
+        if isinstance(error, ConnectionRefusedError):
+            return f"🌐 NETWORK ERROR: Connection refused to {self.host}:{self.port} (attempt {attempt}/{self.max_network_retries})"
+        elif isinstance(error, ConnectionResetError):
+            return f"🌐 NETWORK ERROR: Connection was reset by remote host (attempt {attempt}/{self.max_network_retries})"
+        elif isinstance(error, ConnectionAbortedError):
+            return f"🌐 NETWORK ERROR: Connection was aborted (attempt {attempt}/{self.max_network_retries})"
+        elif isinstance(error, TimeoutError):
+            return f"🌐 NETWORK ERROR: Connection timeout after {self.network_timeout}s (attempt {attempt}/{self.max_network_retries})"
+        elif isinstance(error, socket.gaierror):
+            return f"🌐 NETWORK ERROR: Host resolution failed for {self.host} (attempt {attempt}/{self.max_network_retries})"
+        elif isinstance(error, OSError):
+            return f"🌐 NETWORK ERROR: OS-level network error - {error_msg} (attempt {attempt}/{self.max_network_retries})"
+        else:
+            return f"🌐 NETWORK ERROR: {error_type} - {error_msg} (attempt {attempt}/{self.max_network_retries})"
+
+    def _test_network_connectivity(self) -> bool:
+        """
+        Test network connectivity to the server host and port.
+
+        Returns:
+            bool: True if network is reachable, False otherwise
+        """
+        try:
+            # Test if we can resolve the host
+            socket.gethostbyname(self.host)
+
+            # Test if we can connect to the port
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(self.network_timeout)
+            result = sock.connect_ex((self.host, self.port))
+            sock.close()
+
+            return result == 0
+        except Exception as e:
+            if self.verbose:
+                logger.debug(f"Network connectivity test failed: {e}")
+            return False
+
+    def _handle_network_error(self, error: Exception) -> bool:
+        """
+        Handle network errors with retry logic.
+
+        Args:
+            error: The network error that occurred
+
+        Returns:
+            bool: True if should retry, False if should give up
+        """
+        if not self.network_monitoring:
+            return False
+
+        self._network_retry_count += 1
+        self._last_network_error = error
+        self._network_connected = False
+
+        # Get custom error message
+        error_msg = self._get_network_error_message(
+            error, self._network_retry_count
+        )
+        logger.error(error_msg)
+
+        # Check if we should retry
+        if self._network_retry_count <= self.max_network_retries:
+            logger.warning(
+                f"🔄 Attempting to reconnect in {self.network_retry_delay} seconds..."
+            )
+            logger.info(
+                f"📊 Network retry {self._network_retry_count}/{self.max_network_retries}"
+            )
+
+            # Wait before retry
+            time.sleep(self.network_retry_delay)
+
+            # Test connectivity before retry
+            if self._test_network_connectivity():
+                logger.info("✅ Network connectivity restored!")
+                self._network_connected = True
+                self._network_retry_count = (
+                    0  # Reset on successful test
+                )
+                return True
+            else:
+                logger.warning(
+                    "❌ Network connectivity test failed, will retry..."
+                )
+                return True
+        else:
+            logger.critical(
+                f"💀 Maximum network retry attempts ({self.max_network_retries}) exceeded!"
+            )
+            logger.critical(
+                "🚫 Giving up on network reconnection. Server will shut down."
+            )
+            return False
+
+    def get_network_status(self) -> Dict[str, Any]:
+        """
+        Get current network status and statistics.
+
+        Returns:
+            Dict containing network status information
+        """
+        return {
+            "network_monitoring_enabled": self.network_monitoring,
+            "network_connected": self._network_connected,
+            "network_retry_count": self._network_retry_count,
+            "max_network_retries": self.max_network_retries,
+            "network_retry_delay": self.network_retry_delay,
+            "network_timeout": self.network_timeout,
+            "last_network_error": (
+                str(self._last_network_error)
+                if self._last_network_error
+                else None
+            ),
+            "remaining_network_retries": max(
+                0,
+                self.max_network_retries - self._network_retry_count,
+            ),
+            "host": self.host,
+            "port": self.port,
+        }
+
+    def reset_network_retry_count(self) -> None:
+        """
+        Reset the network retry counter.
+
+        This can be useful if you want to give the server a fresh
+        set of network retry attempts.
+        """
+        self._network_retry_count = 0
+        self._last_network_error = None
+        self._network_connected = True
+        logger.info("Network retry counter reset")
+
+    def enable_persistence(self) -> None:
+        """
+        Enable persistence mode for the server.
+
+        This allows the server to automatically restart when stopped,
+        up to the maximum number of restart attempts.
+        """
+        self._persistence_enabled = True
+        logger.info("Persistence mode enabled")
+
+    def disable_persistence(self) -> None:
+        """
+        Disable persistence mode for the server.
+
+        This will allow the server to shut down normally without
+        automatic restarts.
+        """
+        self._persistence_enabled = False
+        self._shutdown_requested = True
+        logger.info(
+            "Persistence mode disabled - server will shut down on next stop"
+        )
+
+    def request_shutdown(self) -> None:
+        """
+        Request a graceful shutdown of the server.
+
+        If persistence is enabled, this will prevent automatic restarts
+        and allow the server to shut down normally.
+        """
+        self._shutdown_requested = True
+        logger.info(
+            "Shutdown requested - server will stop after current operations complete"
+        )
+
+    def get_persistence_status(self) -> Dict[str, Any]:
+        """
+        Get the current persistence status and statistics.
+
+        Returns:
+            Dict containing persistence configuration and status
+        """
+        return {
+            "persistence_enabled": self._persistence_enabled,
+            "shutdown_requested": self._shutdown_requested,
+            "restart_count": self._restart_count,
+            "max_restart_attempts": self.max_restart_attempts,
+            "restart_delay": self.restart_delay,
+            "remaining_restarts": max(
+                0, self.max_restart_attempts - self._restart_count
+            ),
+        }
+
+    def reset_restart_count(self) -> None:
+        """
+        Reset the restart counter.
+
+        This can be useful if you want to give the server a fresh
+        set of restart attempts.
+        """
+        self._restart_count = 0
+        logger.info("Restart counter reset")
 
     def get_server_info(self) -> Dict[str, Any]:
         """
@@ -2283,6 +2711,8 @@ class AOP:
             "log_level": self.log_level,
             "transport": self.transport,
             "queue_enabled": self.queue_enabled,
+            "persistence": self.get_persistence_status(),
+            "network": self.get_network_status(),
             "tool_details": {
                 tool_name: self.get_agent_info(tool_name)
                 for tool_name in self.agents.keys()

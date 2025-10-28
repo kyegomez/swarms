@@ -1,14 +1,8 @@
-"""
-Test suite for the custom docstring parser implementation.
-
-This module contains comprehensive tests to ensure the docstring parser
-works correctly with various docstring formats and edge cases.
-"""
-
 import pytest
+
 from swarms.utils.docstring_parser import (
-    parse,
     DocstringParam,
+    parse,
 )
 
 

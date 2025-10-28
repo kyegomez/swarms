@@ -197,7 +197,6 @@ GROQ_API_KEY=""
 ```
 
 
-
 ### 🤖 Your First Agent
 
 An **Agent** is the fundamental building block of a swarm—an autonomous entity powered by an LLM + Tools + Memory. [Learn more Here](https://docs.swarms.world/en/latest/swarms/structs/agent/)
@@ -676,6 +675,64 @@ This architecture is perfect for financial analysis, strategic planning, researc
 
 ---
 
+### Social Algorithms
+
+**Social Algorithms** provide a flexible framework for defining custom communication patterns between agents. You can upload any arbitrary social algorithm as a callable that defines the sequence of communication, enabling agents to talk to each other in sophisticated ways. [Learn more about Social Algorithms](https://docs.swarms.world/en/latest/swarms/structs/social_algorithms/)
+
+```python
+from swarms import Agent, SocialAlgorithms
+
+# Define a custom social algorithm
+def research_analysis_synthesis_algorithm(agents, task, **kwargs):
+    # Agent 1 researches the topic
+    research_result = agents[0].run(f"Research: {task}")
+    
+    # Agent 2 analyzes the research
+    analysis = agents[1].run(f"Analyze this research: {research_result}")
+    
+    # Agent 3 synthesizes the findings
+    synthesis = agents[2].run(f"Synthesize: {research_result} + {analysis}")
+    
+    return {
+        "research": research_result,
+        "analysis": analysis,
+        "synthesis": synthesis
+    }
+
+# Create agents
+researcher = Agent(
+  agent_name="Researcher",
+  agent_description="Expert in comprehensive research and information gathering.",
+  model_name="gpt-4.1"
+)
+analyst = Agent(
+  agent_name="Analyst",
+  agent_description="Specialist in analyzing and interpreting data.",
+  model_name="gpt-4.1"
+)
+synthesizer = Agent(
+  agent_name="Synthesizer",
+  agent_description="Focused on synthesizing and integrating research insights.",
+  model_name="gpt-4.1"
+)
+
+# Create social algorithm
+social_alg = SocialAlgorithms(
+    name="Research-Analysis-Synthesis",
+    agents=[researcher, analyst, synthesizer],
+    social_algorithm=research_analysis_synthesis_algorithm,
+    verbose=True
+)
+
+# Run the algorithm
+result = social_alg.run("The impact of AI on healthcare")
+print(result.final_outputs)
+```
+
+Perfect for implementing complex multi-agent workflows, collaborative problem-solving, and custom communication protocols.
+
+---
+
 ### Agent Orchestration Protocol (AOP)
 
 The **Agent Orchestration Protocol (AOP)** is a powerful framework for deploying and managing agents as distributed services. AOP enables agents to be discovered, managed, and executed through a standardized protocol, making it perfect for building scalable multi-agent systems. [Learn more about AOP](https://docs.swarms.world/en/latest/swarms/structs/aop/)
@@ -735,17 +792,6 @@ print("Registered agents:", deployer.list_agents())
 # Start the AOP server
 deployer.run()
 ```
-
-AOP provides:
-
-| Feature                       | Description                                                              |
-|-------------------------------|--------------------------------------------------------------------------|
-| **Distributed Agent Deployment** | Deploy agents as independent services                                     |
-| **Agent Discovery**              | Built-in discovery tools for finding and connecting to agents             |
-| **Standardized Protocol**        | MCP-compatible interface for seamless integration                        |
-| **Dynamic Management**           | Add, remove, and manage agents at runtime                                |
-| **Scalable Architecture**        | Support for multiple agent clusters and load balancing                   |
-| **Enterprise Integration**       | Easy integration with existing systems and workflows                     |
 
 Perfect for deploying large scale multi-agent systems. [Read the complete AOP documentation](https://docs.swarms.world/en/latest/swarms/structs/aop/)
 
@@ -876,13 +922,12 @@ If you use **swarms** in your research, please cite the project by referencing t
 
 ```bibtex
 @misc{SWARMS_2022,
-  author  = {Gomez, Kye and Pliny and More, Harshal and Swarms Community},
+  author  = {Kye Gomez and Pliny and Zack Bradshaw and Ilumn and Harshal and the Swarms Community},
   title   = {{Swarms: Production-Grade Multi-Agent Infrastructure Platform}},
   year    = {2022},
   howpublished = {\url{https://github.com/kyegomez/swarms}},
   note    = {Documentation available at \url{https://docs.swarms.world}},
   version = {latest}
-}
 ```
 
 # License

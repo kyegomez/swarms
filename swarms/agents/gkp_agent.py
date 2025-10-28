@@ -1,10 +1,10 @@
-from typing import List, Dict, Any, Union
 import time
+from typing import Any, Dict, List, Union
+
+from loguru import logger
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-
-from loguru import logger
 
 
 class KnowledgeGenerator:
@@ -23,6 +23,7 @@ class KnowledgeGenerator:
     def __init__(
         self,
         agent_name: str = "knowledge-generator",
+        description: str = "Generates factual, relevant knowledge to assist with answering queries",
         model_name: str = "openai/o1",
         num_knowledge_items: int = 2,
     ) -> None:
@@ -525,7 +526,7 @@ class GKPAgent:
 
         return result
 
-    def run(
+    def _run(
         self, queries: List[str], detailed_output: bool = False
     ) -> Union[List[str], List[Dict[str, Any]]]:
         """
@@ -552,6 +553,30 @@ class GKPAgent:
                 )
 
         return results
+
+    def run(self, task: str) -> str:
+        """
+        Run the GKP agent on a single task.
+
+        Args:
+            task (str): The task to process
+
+        Returns:
+            str: The final answer
+        """
+        return self._run([task])[0]
+
+    def __call__(self, task: str) -> str:
+        """
+        Run the GKP agent on a single task.
+
+        Args:
+            task (str): The task to process
+
+        Returns:
+            str: The final answer
+        """
+        return self.run(task)
 
 
 # # Example usage
