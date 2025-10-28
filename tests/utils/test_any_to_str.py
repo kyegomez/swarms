@@ -1,11 +1,7 @@
 import pytest
-import logging
 
+from loguru import logger
 from swarms.utils.any_to_str import any_to_str
-
-# Configure logging for tests
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 
 class TestAnyToStr:

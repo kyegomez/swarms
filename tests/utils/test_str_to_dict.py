@@ -1,12 +1,8 @@
 import pytest
 import json
-import logging
 
+from loguru import logger
 from swarms.utils.str_to_dict import str_to_dict
-
-# Configure logging for tests
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 
 class TestStrToDict:
