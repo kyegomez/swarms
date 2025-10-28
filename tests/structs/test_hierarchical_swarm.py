@@ -8,22 +8,28 @@ def test_hierarchical_swarm_basic_initialization():
     research_agent = Agent(
         agent_name="Research-Specialist",
         agent_description="Specialist in research and data collection",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     analysis_agent = Agent(
         agent_name="Analysis-Expert",
         agent_description="Expert in data analysis and insights",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     implementation_agent = Agent(
         agent_name="Implementation-Manager",
         agent_description="Manager for implementation and execution",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     # Create swarm with agents
@@ -51,23 +57,29 @@ def test_hierarchical_swarm_with_director():
     director = Agent(
         agent_name="Project-Director",
         agent_description="Senior project director with extensive experience",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     # Create worker agents
     developer = Agent(
         agent_name="Senior-Developer",
         agent_description="Senior software developer",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     tester = Agent(
         agent_name="QA-Lead",
         agent_description="Quality assurance lead",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     # Create swarm with custom director
@@ -90,29 +102,37 @@ def test_hierarchical_swarm_execution():
     market_researcher = Agent(
         agent_name="Market-Researcher",
         agent_description="Market research specialist",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     product_strategist = Agent(
         agent_name="Product-Strategist",
         agent_description="Product strategy and planning expert",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     technical_architect = Agent(
         agent_name="Technical-Architect",
         agent_description="Technical architecture and design specialist",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     risk_analyst = Agent(
         agent_name="Risk-Analyst",
         agent_description="Risk assessment and mitigation specialist",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     # Create hierarchical swarm
@@ -145,22 +165,28 @@ def test_hierarchical_swarm_multiple_loops():
     planner = Agent(
         agent_name="Strategic-Planner",
         agent_description="Strategic planning and project management",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     executor = Agent(
         agent_name="Task-Executor",
         agent_description="Task execution and implementation",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     reviewer = Agent(
         agent_name="Quality-Reviewer",
         agent_description="Quality assurance and review specialist",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     # Create swarm with multiple loops for iterative refinement
@@ -184,7 +210,7 @@ def test_hierarchical_swarm_error_handling():
     """Test HierarchicalSwarm error handling"""
     # Test with empty agents list
     try:
-        HierarchicalSwarm(agents=[])
+        swarm = HierarchicalSwarm(agents=[])
         assert (
             False
         ), "Should have raised ValueError for empty agents list"
@@ -195,12 +221,14 @@ def test_hierarchical_swarm_error_handling():
     researcher = Agent(
         agent_name="Test-Researcher",
         agent_description="Test researcher",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     try:
-        HierarchicalSwarm(agents=[researcher], max_loops=0)
+        swarm = HierarchicalSwarm(agents=[researcher], max_loops=0)
         assert (
             False
         ), "Should have raised ValueError for invalid max_loops"
@@ -214,15 +242,19 @@ def test_hierarchical_swarm_collaboration_prompts():
     data_analyst = Agent(
         agent_name="Data-Analyst",
         agent_description="Data analysis specialist",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     business_analyst = Agent(
         agent_name="Business-Analyst",
         agent_description="Business analysis specialist",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     # Create swarm with collaboration prompts
@@ -251,22 +283,28 @@ def test_hierarchical_swarm_with_dashboard():
     content_creator = Agent(
         agent_name="Content-Creator",
         agent_description="Content creation specialist",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     editor = Agent(
         agent_name="Editor",
         agent_description="Content editor and proofreader",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     publisher = Agent(
         agent_name="Publisher",
         agent_description="Publishing and distribution specialist",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     # Create swarm with interactive dashboard
@@ -296,36 +334,46 @@ def test_hierarchical_swarm_real_world_scenario():
     market_intelligence = Agent(
         agent_name="Market-Intelligence-Director",
         agent_description="Director of market intelligence and competitive analysis",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     product_strategy = Agent(
         agent_name="Product-Strategy-Manager",
         agent_description="Product strategy and roadmap manager",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     engineering_lead = Agent(
         agent_name="Engineering-Lead",
         agent_description="Senior engineering lead and technical architect",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     operations_manager = Agent(
         agent_name="Operations-Manager",
         agent_description="Operations and implementation manager",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     compliance_officer = Agent(
         agent_name="Compliance-Officer",
         agent_description="Legal compliance and regulatory specialist",
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
         max_loops=1,
+        verbose=False,
+        print_on=False,
     )
 
     # Create comprehensive hierarchical swarm
@@ -352,3 +400,8 @@ def test_hierarchical_swarm_real_world_scenario():
     )
 
     assert result is not None
+
+
+if __name__ == "__main__":
+    import pytest
+    pytest.main([__file__, "-v"])

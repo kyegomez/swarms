@@ -1,16 +1,4 @@
-"""
-Comprehensive Testing Suite for GraphWorkflow
-
-This module provides thorough testing of all GraphWorkflow functionality including:
-- Node and Edge creation and manipulation
-- Workflow construction and compilation
-- Execution with various parameters
-- Multi-agent collaboration scenarios
-- Error handling and edge cases
-
-Tests follow the example.py pattern with real agents and multiple agent scenarios.
-"""
-
+import pytest
 from swarms.structs.graph_workflow import (
     GraphWorkflow,
     Node,
@@ -27,7 +15,9 @@ def create_test_agent(name: str, description: str = None) -> Agent:
     return Agent(
         agent_name=name,
         agent_description=description,
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini",
+        verbose=False,
+        print_on=False,
         max_loops=1,
     )
 
@@ -229,3 +219,7 @@ def test_graph_workflow_node_metadata():
         "Analyze business requirements with different priorities"
     )
     assert result is not None
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
