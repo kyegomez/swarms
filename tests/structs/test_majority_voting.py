@@ -151,7 +151,7 @@ def test_majority_voting_error_handling():
     """Test MajorityVoting error handling and validation"""
     # Test with empty agents list
     try:
-        mv = MajorityVoting(agents=[])
+        MajorityVoting(agents=[])
         assert (
             False
         ), "Should have raised ValueError for empty agents list"
@@ -167,7 +167,7 @@ def test_majority_voting_error_handling():
     )
 
     try:
-        mv = MajorityVoting(agents=[analyst], max_loops=0)
+        MajorityVoting(agents=[analyst], max_loops=0)
         assert (
             False
         ), "Should have raised ValueError for invalid max_loops"

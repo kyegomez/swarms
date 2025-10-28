@@ -553,7 +553,7 @@ class GKPAgent:
                 )
 
         return results
-    
+
     def run(self, task: str) -> str:
         """
         Run the GKP agent on a single task.
@@ -565,7 +565,7 @@ class GKPAgent:
             str: The final answer
         """
         return self._run([task])[0]
-    
+
     def __call__(self, task: str) -> str:
         """
         Run the GKP agent on a single task.

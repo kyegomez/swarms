@@ -26,6 +26,11 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
+from swarms.utils.litellm_wrapper import (
+    LiteLLM,
+    NetworkConnectionError,
+    LiteLLMException,
+)
 from swarms.utils.output_types import HistoryOutputType
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
@@ -52,4 +57,7 @@ __all__ = [
     "load_agents_from_markdown",
     "dynamic_auto_chunking",
     "MarkdownAgentLoader",
+    "LiteLLM",
+    "NetworkConnectionError",
+    "LiteLLMException",
 ]

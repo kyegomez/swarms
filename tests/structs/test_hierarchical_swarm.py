@@ -184,7 +184,7 @@ def test_hierarchical_swarm_error_handling():
     """Test HierarchicalSwarm error handling"""
     # Test with empty agents list
     try:
-        swarm = HierarchicalSwarm(agents=[])
+        HierarchicalSwarm(agents=[])
         assert (
             False
         ), "Should have raised ValueError for empty agents list"
@@ -200,7 +200,7 @@ def test_hierarchical_swarm_error_handling():
     )
 
     try:
-        swarm = HierarchicalSwarm(agents=[researcher], max_loops=0)
+        HierarchicalSwarm(agents=[researcher], max_loops=0)
         assert (
             False
         ), "Should have raised ValueError for invalid max_loops"

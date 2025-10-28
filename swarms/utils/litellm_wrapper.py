@@ -4,6 +4,7 @@ import traceback
 import uuid
 from pathlib import Path
 from typing import List, Optional
+import socket
 
 import litellm
 from pydantic import BaseModel
@@ -15,6 +16,12 @@ from loguru import logger
 class LiteLLMException(Exception):
     """
     Exception for LiteLLM.
+    """
+
+
+class NetworkConnectionError(Exception):
+    """
+    Exception raised when network connectivity issues are detected.
     """
 
 
@@ -875,6 +882,69 @@ class LiteLLM:
         else:
             return False
 
+    @staticmethod
+    def check_internet_connection(
+        host: str = "8.8.8.8", port: int = 53, timeout: int = 3
+    ) -> bool:
+        """
+        Check if there is an active internet connection.
+
+        This method attempts to establish a socket connection to a DNS server
+        (default is Google's DNS at 8.8.8.8) to verify internet connectivity.
+
+        Args:
+            host (str, optional): The host to connect to for checking connectivity.
+                Defaults to "8.8.8.8" (Google DNS).
+            port (int, optional): The port to use for the connection. Defaults to 53 (DNS).
+            timeout (int, optional): Connection timeout in seconds. Defaults to 3.
+
+        Returns:
+            bool: True if internet connection is available, False otherwise.
+        """
+        try:
+            socket.setdefaulttimeout(timeout)
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(
+                (host, port)
+            )
+            return True
+        except (socket.error, socket.timeout):
+            return False
+
+    @staticmethod
+    def is_local_model(
+        model_name: str, base_url: Optional[str] = None
+    ) -> bool:
+        """
+        Determine if the model is a local model (e.g., Ollama, LlamaCPP).
+
+        Args:
+            model_name (str): The name of the model to check.
+            base_url (str, optional): The base URL if specified. Defaults to None.
+
+        Returns:
+            bool: True if the model is a local model, False otherwise.
+        """
+        local_indicators = [
+            "ollama",
+            "llama-cpp",
+            "local",
+            "localhost",
+            "127.0.0.1",
+            "custom",
+        ]
+
+        model_lower = model_name.lower()
+        is_local_model = any(
+            indicator in model_lower for indicator in local_indicators
+        )
+
+        is_local_url = base_url is not None and any(
+            indicator in base_url.lower()
+            for indicator in local_indicators
+        )
+
+        return is_local_model or is_local_url
+
     def run(
         self,
         task: str,
@@ -1024,10 +1094,74 @@ class LiteLLM:
             else:
                 return response.choices[0].message.content
 
+        except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.RequestException,
+            ConnectionError,
+            TimeoutError,
+        ) as network_error:
+            # Check if this is a local model
+            if self.is_local_model(self.model_name, self.base_url):
+                error_msg = (
+                    f"Network error connecting to local model '{self.model_name}': {str(network_error)}\n\n"
+                    "Troubleshooting steps:\n"
+                    "1. Ensure your local model server (e.g., Ollama, LlamaCPP) is running\n"
+                    "2. Verify the base_url is correct and accessible\n"
+                    "3. Check that the model is properly loaded and available\n"
+                )
+                logger.error(error_msg)
+                raise NetworkConnectionError(
+                    error_msg
+                ) from network_error
+
+            # Check internet connectivity
+            has_internet = self.check_internet_connection()
+
+            if not has_internet:
+                error_msg = (
+                    f"No internet connection detected while trying to use model '{self.model_name}'.\n\n"
+                    "Possible solutions:\n"
+                    "1. Check your internet connection and try again\n"
+                    "2. Reconnect to your network\n"
+                    "3. Use a local model instead (e.g., Ollama):\n"
+                    "   - Install Ollama from https://ollama.ai\n"
+                    "   - Run: ollama pull llama2\n"
+                    "   - Use model_name='ollama/llama2' in your LiteLLM configuration\n"
+                    "\nExample:\n"
+                    "  model = LiteLLM(model_name='ollama/llama2')\n"
+                )
+                logger.error(error_msg)
+                raise NetworkConnectionError(
+                    error_msg
+                ) from network_error
+            else:
+                # Internet is available but request failed
+                error_msg = (
+                    f"Network error occurred while connecting to '{self.model_name}': {str(network_error)}\n\n"
+                    "Possible causes:\n"
+                    "1. The API endpoint may be temporarily unavailable\n"
+                    "2. Connection timeout or slow network\n"
+                    "3. Firewall or proxy blocking the connection\n"
+                    "\nConsider using a local model as a fallback:\n"
+                    "  model = LiteLLM(model_name='ollama/llama2')\n"
+                )
+                logger.error(error_msg)
+                raise NetworkConnectionError(
+                    error_msg
+                ) from network_error
+
         except LiteLLMException as error:
             logger.error(
                 f"Error in LiteLLM run: {str(error)} Traceback: {traceback.format_exc()}"
             )
+            raise
+
+        except Exception as error:
+            logger.error(
+                f"Unexpected error in LiteLLM run: {str(error)} Traceback: {traceback.format_exc()}"
+            )
+            raise
 
     def __call__(self, task: str, *args, **kwargs):
         """

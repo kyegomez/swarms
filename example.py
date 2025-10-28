@@ -19,4 +19,5 @@ out = agent.run(
     task="What are the top five best energy stocks across nuclear, solar, gas, and other energy sources?",
     n=1,
 )
+
 print(json.dumps(out, indent=4))

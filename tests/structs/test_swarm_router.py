@@ -127,7 +127,6 @@ def test_initialization_with_agent_rearrange_flow(sample_agents):
     assert router.rearrange_flow == flow
 
 
-
 def test_invalid_swarm_type():
     """Test error when invalid swarm type is provided."""
     with pytest.raises(ValueError):
@@ -639,7 +638,6 @@ def test_handle_rules(sample_agents):
         )
 
 
-
 def test_update_system_prompt_for_agent_in_swarm(sample_agents):
     """Test update_system_prompt_for_agent_in_swarm method."""
     router = SwarmRouter(
@@ -891,7 +889,6 @@ def test_swarm_router_config_model():
     assert config.swarm_type == "SequentialWorkflow"
     assert config.task == "Test task"
     assert config.multi_agent_collab_prompt is True
-
 
 
 if __name__ == "__main__":

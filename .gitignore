@@ -16,6 +16,7 @@ databases
 static/generated
 conversations/
 next_swarms_update.txt
+.pytest_cache
 infra.md
 runs
 Financial-Analysis-Agent_state.json

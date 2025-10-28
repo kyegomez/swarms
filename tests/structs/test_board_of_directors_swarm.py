@@ -137,7 +137,7 @@ def test_board_of_directors_swarm_error_handling():
     """Test BoardOfDirectorsSwarm error handling and validation"""
     # Test with empty agents list
     try:
-        board_swarm = BoardOfDirectorsSwarm(agents=[])
+        BoardOfDirectorsSwarm(agents=[])
         assert (
             False
         ), "Should have raised ValueError for empty agents list"
@@ -153,7 +153,7 @@ def test_board_of_directors_swarm_error_handling():
     )
 
     try:
-        board_swarm = BoardOfDirectorsSwarm(
+        BoardOfDirectorsSwarm(
             agents=[analyst], max_loops=0
         )
         assert (

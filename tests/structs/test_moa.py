@@ -170,7 +170,7 @@ def test_mixture_of_agents_error_handling():
     """Test MixtureOfAgents error handling and validation"""
     # Test with empty agents list
     try:
-        moa = MixtureOfAgents(agents=[])
+        MixtureOfAgents(agents=[])
         assert (
             False
         ), "Should have raised ValueError for empty agents list"
@@ -186,7 +186,7 @@ def test_mixture_of_agents_error_handling():
     )
 
     try:
-        moa = MixtureOfAgents(
+        MixtureOfAgents(
             agents=[analyst], aggregator_system_prompt=""
         )
         assert (
