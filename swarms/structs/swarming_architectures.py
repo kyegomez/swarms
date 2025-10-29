@@ -52,12 +52,12 @@ def circular_swarm(
         for agent in flat_agents:
             conversation.add(
                 role="User",
-                message=task,
+                content=task,
             )
             response = agent.run(conversation.get_str())
             conversation.add(
                 role=agent.agent_name,
-                message=response,
+                content=response,
             )
 
     return history_output_formatter(conversation, output_type)
@@ -88,7 +88,7 @@ def grid_swarm(
 
     conversation.add(
         role="User",
-        message=tasks,
+        content=tasks,
     )
 
     grid_size = int(
@@ -101,7 +101,7 @@ def grid_swarm(
                 response = agents[i * grid_size + j].run(task)
                 conversation.add(
                     role=agents[i * grid_size + j].agent_name,
-                    message=response,
+                    content=response,
                 )
 
     return history_output_formatter(conversation, output_type)
@@ -139,12 +139,12 @@ def linear_swarm(
             task = tasks.pop(0)
             conversation.add(
                 role="User",
-                message=task,
+                content=task,
             )
             response = agent.run(conversation.get_str())
             conversation.add(
                 role=agent.agent_name,
-                message=response,
+                content=response,
             )
 
     return history_output_formatter(conversation, output_type)
@@ -182,12 +182,12 @@ def star_swarm(
         # Central agent processes the task
         conversation.add(
             role="User",
-            message=task,
+            content=task,
         )
         center_response = center_agent.run(conversation.get_str())
         conversation.add(
             role=center_agent.agent_name,
-            message=center_response,
+            content=center_response,
         )
 
         # Other agents process the same task
@@ -195,7 +195,7 @@ def star_swarm(
             response = agent.run(task)
             conversation.add(
                 role=agent.agent_name,
-                message=response,
+                content=response,
             )
 
     return history_output_formatter(conversation, output_type)
@@ -229,7 +229,7 @@ def mesh_swarm(
     conversation = Conversation()
     conversation.add(
         role="User",
-        message=tasks,
+        content=tasks,
     )
     task_queue = tasks.copy()
 
@@ -240,7 +240,7 @@ def mesh_swarm(
                 response = agent.run(task)
                 conversation.add(
                     role=agent.agent_name,
-                    message=response,
+                    content=response,
                 )
 
     return history_output_formatter(conversation, output_type)
@@ -285,7 +285,7 @@ def pyramid_swarm(
                 response = agents[agent_index].run(task)
                 conversation.add(
                     role=agents[agent_index].agent_name,
-                    message=response,
+                    content=response,
                 )
 
     return history_output_formatter(conversation, output_type)
@@ -312,7 +312,7 @@ def fibonacci_swarm(
     conversation = Conversation()
     conversation.add(
         role="User",
-        message=tasks,
+        content=tasks,
     )
     fib = [1, 1]
     while len(fib) < len(agents):
@@ -324,7 +324,7 @@ def fibonacci_swarm(
                 response = agents[int(sum(fib[:i]) + j)].run(task)
                 conversation.add(
                     role=agents[int(sum(fib[:i]) + j)].agent_name,
-                    message=response,
+                    content=response,
                 )
 
     return history_output_formatter(conversation, output_type)
@@ -351,7 +351,7 @@ def prime_swarm(
     conversation = Conversation()
     conversation.add(
         role="User",
-        message=tasks,
+        content=tasks,
     )
     primes = [
         2,
@@ -386,7 +386,7 @@ def prime_swarm(
             output = agents[prime].run(task)
             conversation.add(
                 role=agents[prime].agent_name,
-                message=output,
+                content=output,
             )
     return history_output_formatter(conversation, output_type)
 
@@ -412,7 +412,7 @@ def power_swarm(
     conversation = Conversation()
     conversation.add(
         role="User",
-        message=tasks,
+        content=tasks,
     )
     powers = [2**i for i in range(int(len(agents) ** 0.5))]
     for power in powers:
@@ -421,7 +421,7 @@ def power_swarm(
             output = agents[power].run(task)
             conversation.add(
                 role=agents[power].agent_name,
-                message=output,
+                content=output,
             )
     return history_output_formatter(conversation, output_type)
 
@@ -447,7 +447,7 @@ def log_swarm(
     conversation = Conversation()
     conversation.add(
         role="User",
-        message=tasks,
+        content=tasks,
     )
     for i in range(len(agents)):
         if 2**i < len(agents) and tasks:
@@ -455,7 +455,7 @@ def log_swarm(
             output = agents[2**i].run(task)
             conversation.add(
                 role=agents[2**i].agent_name,
-                message=output,
+                content=output,
             )
     return history_output_formatter(conversation, output_type)
 
@@ -481,7 +481,7 @@ def exponential_swarm(
     conversation = Conversation()
     conversation.add(
         role="User",
-        message=tasks,
+        content=tasks,
     )
 
     for i in range(len(agents)):
@@ -492,7 +492,7 @@ def exponential_swarm(
 
         conversation.add(
             role=agents[index].agent_name,
-            message=output,
+            content=output,
         )
 
     return history_output_formatter(conversation, output_type)
@@ -521,7 +521,7 @@ def geometric_swarm(
     conversation = Conversation()
     conversation.add(
         role="User",
-        message=tasks,
+        content=tasks,
     )
 
     for i in range(len(agents)):
@@ -531,7 +531,7 @@ def geometric_swarm(
             response = agents[index].run(task)
             conversation.add(
                 role=agents[index].agent_name,
-                message=response,
+                content=response,
             )
 
     return history_output_formatter(conversation, output_type)
@@ -558,7 +558,7 @@ def harmonic_swarm(
     conversation = Conversation()
     conversation.add(
         role="User",
-        message=tasks,
+        content=tasks,
     )
 
     for i in range(1, len(agents) + 1):
@@ -568,7 +568,7 @@ def harmonic_swarm(
             response = agents[index].run(task)
             conversation.add(
                 role=agents[index].agent_name,
-                message=response,
+                content=response,
             )
 
     return history_output_formatter(conversation, output_type)
@@ -595,7 +595,7 @@ def staircase_swarm(
     conversation = Conversation()
     conversation.add(
         role="User",
-        message=tasks,
+        content=tasks,
     )
 
     step = len(agents) // 5
@@ -606,7 +606,7 @@ def staircase_swarm(
             response = agents[index].run(task)
             conversation.add(
                 role=agents[index].agent_name,
-                message=response,
+                content=response,
             )
 
     return history_output_formatter(conversation, output_type)
@@ -633,7 +633,7 @@ def sigmoid_swarm(
     conversation = Conversation()
     conversation.add(
         role="User",
-        message=tasks,
+        content=tasks,
     )
 
     for i in range(len(agents)):
@@ -643,7 +643,7 @@ def sigmoid_swarm(
             response = agents[index].run(task)
             conversation.add(
                 role=agents[index].agent_name,
-                message=response,
+                content=response,
             )
 
     return history_output_formatter(conversation, output_type)
@@ -670,7 +670,7 @@ def sinusoidal_swarm(
     conversation = Conversation()
     conversation.add(
         role="User",
-        message=tasks,
+        content=tasks,
     )
 
     for i in range(len(agents)):
@@ -680,7 +680,7 @@ def sinusoidal_swarm(
             response = agents[index].run(task)
             conversation.add(
                 role=agents[index].agent_name,
-                message=response,
+                content=response,
             )
 
     return history_output_formatter(conversation, output_type)
@@ -715,7 +715,7 @@ def one_to_one(
     conversation = Conversation()
     conversation.add(
         role="User",
-        message=task,
+        content=task,
     )
 
     try:
@@ -724,14 +724,14 @@ def one_to_one(
             sender_response = sender.run(task)
             conversation.add(
                 role=sender.agent_name,
-                message=sender_response,
+                content=sender_response,
             )
 
             # Receiver processes the result of the sender
             receiver_response = receiver.run(sender_response)
             conversation.add(
                 role=receiver.agent_name,
-                message=receiver_response,
+                content=receiver_response,
             )
 
         return history_output_formatter(conversation, output_type)
@@ -769,7 +769,7 @@ async def broadcast(
     conversation = Conversation()
     conversation.add(
         role="User",
-        message=task,
+        content=task,
     )
 
     if not sender or not agents or not task:
@@ -781,7 +781,7 @@ async def broadcast(
 
         conversation.add(
             role=sender.agent_name,
-            message=broadcast_message,
+            content=broadcast_message,
         )
 
         # Then have all agents process it
@@ -789,7 +789,7 @@ async def broadcast(
             response = agent.run(conversation.get_str())
             conversation.add(
                 role=agent.agent_name,
-                message=response,
+                content=response,
             )
 
         return history_output_formatter(conversation, output_type)
@@ -832,7 +832,7 @@ async def one_to_three(
 
     conversation.add(
         role="User",
-        message=task,
+        content=task,
     )
 
     try:
@@ -840,7 +840,7 @@ async def one_to_three(
         sender_message = sender.run(conversation.get_str())
         conversation.add(
             role=sender.agent_name,
-            message=sender_message,
+            content=sender_message,
         )
 
         # Have each receiver process the message
@@ -848,7 +848,7 @@ async def one_to_three(
             response = agent.run(conversation.get_str())
             conversation.add(
                 role=agent.agent_name,
-                message=response,
+                content=response,
             )
 
         return history_output_formatter(conversation, output_type)

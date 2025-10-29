@@ -1,6 +1,4 @@
-import asyncio
-import time
-from typing import List
+import pytest
 
 from swarms.structs.agent import Agent
 from swarms.structs.swarming_architectures import (
@@ -34,268 +32,251 @@ def create_test_agent(name: str) -> Agent:
     )
 
 
-def create_test_agents(num_agents: int) -> List[Agent]:
+def create_test_agents(num_agents: int) -> list[Agent]:
     """Create specified number of test agents"""
-    return [
-        create_test_agent(f"Agent{i+1}") for i in range(num_agents)
-    ]
-
-
-def print_separator():
-    print("\n" + "=" * 50 + "\n")
+    return [create_test_agent(f"Agent{i+1}") for i in range(num_agents)]
 
 
 def test_circular_swarm():
-    """Test and display circular swarm outputs"""
-    print_separator()
-    print("CIRCULAR SWARM TEST")
-    try:
-        agents = create_test_agents(3)
-        tasks = [
-            "Analyze data",
-            "Generate report",
-            "Summarize findings",
-        ]
+    """Test circular swarm outputs"""
+    agents = create_test_agents(3)
+    tasks = [
+        "Analyze data",
+        "Generate report",
+        "Summarize findings",
+    ]
 
-        print("Running circular swarm with:")
-        print(f"Tasks: {tasks}\n")
+    result = circular_swarm(agents, tasks)
 
-        result = circular_swarm(agents, tasks)
-        print("Circular Swarm Outputs:")
-        for log in result["history"]:
-            print(f"\nAgent: {log['agent_name']}")
-            print(f"Task: {log['task']}")
-            print(f"Response: {log['response']}")
-    except Exception as e:
-        print(f"Error: {str(e)}")
+    assert isinstance(result, list)
+    assert len(result) > 0
+
+    for log in result:
+        assert "role" in log
+        assert "content" in log
 
 
 def test_grid_swarm():
-    """Test and display grid swarm outputs"""
-    print_separator()
-    print("GRID SWARM TEST")
-    try:
-        agents = create_test_agents(4)  # 2x2 grid
-        tasks = ["Task A", "Task B", "Task C", "Task D"]
+    """Test grid swarm with 2x2 grid"""
+    agents = create_test_agents(4)
+    tasks = ["Task A", "Task B", "Task C", "Task D"]
 
-        print("Running grid swarm with 2x2 grid")
-        print(f"Tasks: {tasks}\n")
+    result = grid_swarm(agents, tasks)
 
-        print(grid_swarm(agents, tasks))
-        print(
-            "Grid Swarm completed - each agent processed tasks in its grid position"
-        )
-    except Exception as e:
-        print(f"Error: {str(e)}")
+    assert isinstance(result, list)
+    assert len(result) > 0
+    
 
 
 def test_linear_swarm():
-    """Test and display linear swarm outputs"""
-    print_separator()
-    print("LINEAR SWARM TEST")
-    try:
-        agents = create_test_agents(3)
-        tasks = ["Research task", "Write content", "Review output"]
+    """Test linear swarm sequential processing"""
+    agents = create_test_agents(3)
+    tasks = ["Research task", "Write content", "Review output"]
 
-        print("Running linear swarm with:")
-        print(f"Tasks: {tasks}\n")
+    result = linear_swarm(agents, tasks)
 
-        result = linear_swarm(agents, tasks)
-        print("Linear Swarm Outputs:")
-        for log in result["history"]:
-            print(f"\nAgent: {log['agent_name']}")
-            print(f"Task: {log['task']}")
-            print(f"Response: {log['response']}")
-    except Exception as e:
-        print(f"Error: {str(e)}")
+    assert isinstance(result, list)
+    assert len(result) > 0
+    
+
+    for log in result:
+        assert "role" in log
+        assert "content" in log
 
 
 def test_star_swarm():
-    """Test and display star swarm outputs"""
-    print_separator()
-    print("STAR SWARM TEST")
-    try:
-        agents = create_test_agents(4)  # 1 center + 3 peripheral
-        tasks = ["Coordinate workflow", "Process data"]
+    """Test star swarm with central and peripheral agents"""
+    agents = create_test_agents(4)
+    tasks = ["Coordinate workflow", "Process data"]
 
-        print("Running star swarm with:")
-        print(f"Center agent: {agents[0].agent_name}")
-        print(
-            f"Peripheral agents: {[agent.agent_name for agent in agents[1:]]}"
-        )
-        print(f"Tasks: {tasks}\n")
+    result = star_swarm(agents, tasks)
 
-        result = star_swarm(agents, tasks)
-        print("Star Swarm Outputs:")
-        for log in result["history"]:
-            print(f"\nAgent: {log['agent_name']}")
-            print(f"Task: {log['task']}")
-            print(f"Response: {log['response']}")
-    except Exception as e:
-        print(f"Error: {str(e)}")
+    assert isinstance(result, list)
+    assert len(result) > 0
+    
+
+    for log in result:
+        assert "role" in log
+        assert "content" in log
 
 
 def test_mesh_swarm():
-    """Test and display mesh swarm outputs"""
-    print_separator()
-    print("MESH SWARM TEST")
-    try:
-        agents = create_test_agents(3)
-        tasks = [
-            "Analyze data",
-            "Process information",
-            "Generate insights",
-        ]
+    """Test mesh swarm interconnected processing"""
+    agents = create_test_agents(3)
+    tasks = [
+        "Analyze data",
+        "Process information",
+        "Generate insights",
+    ]
 
-        print("Running mesh swarm with:")
-        print(f"Tasks: {tasks}\n")
+    result = mesh_swarm(agents, tasks)
 
-        result = mesh_swarm(agents, tasks)
-        print(f"Mesh Swarm Outputs: {result}")
-        for log in result["history"]:
-            print(f"\nAgent: {log['agent_name']}")
-            print(f"Task: {log['task']}")
-            print(f"Response: {log['response']}")
-    except Exception as e:
-        print(f"Error: {str(e)}")
+    assert isinstance(result, list)
+    assert len(result) > 0
+    
+
+    for log in result:
+        assert "role" in log
+        assert "content" in log
 
 
 def test_pyramid_swarm():
-    """Test and display pyramid swarm outputs"""
-    print_separator()
-    print("PYRAMID SWARM TEST")
-    try:
-        agents = create_test_agents(6)  # 1-2-3 pyramid
-        tasks = [
-            "Top task",
-            "Middle task 1",
-            "Middle task 2",
-            "Bottom task 1",
-            "Bottom task 2",
-            "Bottom task 3",
-        ]
+    """Test pyramid swarm hierarchical structure"""
+    agents = create_test_agents(6)
+    tasks = [
+        "Top task",
+        "Middle task 1",
+        "Middle task 2",
+        "Bottom task 1",
+        "Bottom task 2",
+        "Bottom task 3",
+    ]
 
-        print("Running pyramid swarm with:")
-        print(f"Tasks: {tasks}\n")
+    result = pyramid_swarm(agents, tasks)
 
-        result = pyramid_swarm(agents, tasks)
-        print(f"Pyramid Swarm Outputs: {result}")
-        for log in result["history"]:
-            print(f"\nAgent: {log['agent_name']}")
-            print(f"Task: {log['task']}")
-            print(f"Response: {log['response']}")
-    except Exception as e:
-        print(f"Error: {str(e)}")
+    assert isinstance(result, list)
+    assert len(result) > 0
+    
+
+    for log in result:
+        assert "role" in log
+        assert "content" in log
 
 
-async def test_communication_patterns():
-    """Test and display agent communication patterns"""
-    print_separator()
-    print("COMMUNICATION PATTERNS TEST")
-    try:
-        sender = create_test_agent("Sender")
-        receiver = create_test_agent("Receiver")
-        task = "Process and relay this message"
+def test_power_swarm():
+    """Test power swarm mathematical pattern"""
+    agents = create_test_agents(8)
+    tasks = ["Calculate in Power Swarm", "Process in Power Swarm", "Analyze in Power Swarm"]
 
-        print("Testing One-to-One Communication:")
-        result = one_to_one(sender, receiver, task)
-        print(f"\nOne-to-One Communication Outputs: {result}")
-        for log in result["history"]:
-            print(f"\nAgent: {log['agent_name']}")
-            print(f"Task: {log['task']}")
-            print(f"Response: {log['response']}")
+    result = power_swarm(agents, tasks.copy())
 
-        print("\nTesting One-to-Three Communication:")
-        receivers = create_test_agents(3)
-        await one_to_three(sender, receivers, task)
-
-        print("\nTesting Broadcast Communication:")
-        broadcast_receivers = create_test_agents(5)
-        await broadcast(sender, broadcast_receivers, task)
-
-    except Exception as e:
-        print(f"Error: {str(e)}")
+    assert isinstance(result, list)
+    assert len(result) > 0
+    
 
 
-def test_mathematical_swarms():
-    """Test and display mathematical swarm patterns"""
-    print_separator()
-    print("MATHEMATICAL SWARMS TEST")
-    try:
-        agents = create_test_agents(8)
-        base_tasks = ["Calculate", "Process", "Analyze"]
+def test_log_swarm():
+    """Test log swarm mathematical pattern"""
+    agents = create_test_agents(8)
+    tasks = ["Calculate in Log Swarm", "Process in Log Swarm", "Analyze in Log Swarm"]
 
-        # Test each mathematical swarm
-        for swarm_type, swarm_func in [
-            ("Power Swarm", power_swarm),
-            ("Log Swarm", log_swarm),
-            ("Exponential Swarm", exponential_swarm),
-            ("Geometric Swarm", geometric_swarm),
-            ("Harmonic Swarm", harmonic_swarm),
-        ]:
-            print(f"\nTesting {swarm_type}:")
-            tasks = [f"{task} in {swarm_type}" for task in base_tasks]
-            print(f"Tasks: {tasks}")
-            swarm_func(agents, tasks.copy())
+    result = log_swarm(agents, tasks.copy())
 
-    except Exception as e:
-        print(f"Error: {str(e)}")
+    assert isinstance(result, list)
+    assert len(result) > 0
+    
 
 
-def test_pattern_swarms():
-    """Test and display pattern-based swarms"""
-    print_separator()
-    print("PATTERN-BASED SWARMS TEST")
-    try:
-        agents = create_test_agents(10)
-        task = "Process according to pattern"
+def test_exponential_swarm():
+    """Test exponential swarm mathematical pattern"""
+    agents = create_test_agents(8)
+    tasks = ["Calculate in Exponential Swarm", "Process in Exponential Swarm", "Analyze in Exponential Swarm"]
 
-        for swarm_type, swarm_func in [
-            ("Staircase Swarm", staircase_swarm),
-            ("Sigmoid Swarm", sigmoid_swarm),
-            ("Sinusoidal Swarm", sinusoidal_swarm),
-        ]:
-            print(f"\nTesting {swarm_type}:")
-            print(f"Task: {task}")
-            swarm_func(agents, task)
+    result = exponential_swarm(agents, tasks.copy())
 
-    except Exception as e:
-        print(f"Error: {str(e)}")
+    assert isinstance(result, list)
+    assert len(result) > 0
+    
 
 
-def run_all_tests():
-    """Run all swarm architecture tests"""
-    print(
-        "\n=== Starting Swarm Architectures Test Suite with Outputs ==="
-    )
-    start_time = time.time()
+def test_geometric_swarm():
+    """Test geometric swarm mathematical pattern"""
+    agents = create_test_agents(8)
+    tasks = ["Calculate in Geometric Swarm", "Process in Geometric Swarm", "Analyze in Geometric Swarm"]
 
-    try:
-        # Test basic swarm patterns
-        test_circular_swarm()
-        test_grid_swarm()
-        test_linear_swarm()
-        test_star_swarm()
-        test_mesh_swarm()
-        test_pyramid_swarm()
+    result = geometric_swarm(agents, tasks.copy())
 
-        # Test mathematical and pattern swarms
-        test_mathematical_swarms()
-        test_pattern_swarms()
-
-        # Test communication patterns
-        asyncio.run(test_communication_patterns())
-
-        end_time = time.time()
-        duration = round(end_time - start_time, 2)
-        print("\n=== Test Suite Completed Successfully ===")
-        print(f"Time taken: {duration} seconds")
-
-    except Exception as e:
-        print("\n=== Test Suite Failed ===")
-        print(f"Error: {str(e)}")
-        raise
+    assert isinstance(result, list)
+    assert len(result) > 0
+    
 
 
-if __name__ == "__main__":
-    run_all_tests()
+def test_harmonic_swarm():
+    """Test harmonic swarm mathematical pattern"""
+    agents = create_test_agents(8)
+    tasks = ["Calculate in Harmonic Swarm", "Process in Harmonic Swarm", "Analyze in Harmonic Swarm"]
+
+    result = harmonic_swarm(agents, tasks.copy())
+
+    assert isinstance(result, list)
+    assert len(result) > 0
+    
+
+
+def test_staircase_swarm():
+    """Test staircase swarm pattern"""
+    agents = create_test_agents(10)
+    tasks = ["Process step 1", "Process step 2", "Process step 3", "Process step 4", "Process step 5"]
+
+    result = staircase_swarm(agents, tasks)
+
+    assert isinstance(result, list)
+    assert len(result) > 0
+
+
+def test_sigmoid_swarm():
+    """Test sigmoid swarm pattern"""
+    agents = create_test_agents(10)
+    tasks = ["Sigmoid task 1", "Sigmoid task 2", "Sigmoid task 3", "Sigmoid task 4", "Sigmoid task 5"]
+
+    result = sigmoid_swarm(agents, tasks)
+
+    assert isinstance(result, list)
+    assert len(result) > 0
+
+
+def test_sinusoidal_swarm():
+    """Test sinusoidal swarm pattern"""
+    agents = create_test_agents(10)
+    tasks = ["Wave task 1", "Wave task 2", "Wave task 3", "Wave task 4", "Wave task 5"]
+
+    result = sinusoidal_swarm(agents, tasks)
+
+    assert isinstance(result, list)
+    assert len(result) > 0
+    
+
+
+def test_one_to_one():
+    """Test one-to-one communication pattern"""
+    sender = create_test_agent("Sender")
+    receiver = create_test_agent("Receiver")
+    task = "Process and relay this message"
+
+    result = one_to_one(sender, receiver, task)
+
+    assert isinstance(result, list)
+    assert len(result) > 0
+    
+
+    for log in result:
+        assert "role" in log
+        assert "content" in log
+
+
+@pytest.mark.asyncio
+async def test_one_to_three():
+    """Test one-to-three communication pattern"""
+    sender = create_test_agent("Sender")
+    receivers = create_test_agents(3)
+    task = "Process and relay this message"
+
+    result = await one_to_three(sender, receivers, task)
+
+    assert isinstance(result, list)
+    assert len(result) > 0
+    
+
+
+@pytest.mark.asyncio
+async def test_broadcast():
+    """Test broadcast communication pattern"""
+    sender = create_test_agent("Broadcaster")
+    receivers = create_test_agents(5)
+    task = "Broadcast this message"
+
+    result = await broadcast(sender, receivers, task)
+
+    assert isinstance(result, list)
+    assert len(result) > 0
+    
