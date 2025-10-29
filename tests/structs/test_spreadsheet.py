@@ -1,13 +1,3 @@
-"""
-SpreadSheetSwarm Test Suite
-
-Tests for the SpreadSheetSwarm class, which manages multiple agents to execute tasks
-concurrently with support for CSV-based agent loading and automatic metadata tracking.
-
-The SpreadSheetSwarm processes tasks across multiple agents in parallel, tracks outputs,
-and provides data export capabilities in both CSV and JSON formats.
-"""
-
 import os
 import json
 import csv
