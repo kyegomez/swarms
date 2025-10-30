@@ -153,9 +153,7 @@ def test_board_of_directors_swarm_error_handling():
     )
 
     try:
-        BoardOfDirectorsSwarm(
-            agents=[analyst], max_loops=0
-        )
+        BoardOfDirectorsSwarm(agents=[analyst], max_loops=0)
         assert (
             False
         ), "Should have raised ValueError for invalid max_loops"

@@ -186,9 +186,7 @@ def test_mixture_of_agents_error_handling():
     )
 
     try:
-        MixtureOfAgents(
-            agents=[analyst], aggregator_system_prompt=""
-        )
+        MixtureOfAgents(agents=[analyst], aggregator_system_prompt="")
         assert (
             False
         ), "Should have raised ValueError for empty system prompt"

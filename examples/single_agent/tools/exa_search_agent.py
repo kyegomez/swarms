@@ -3,8 +3,8 @@ from swarms_tools import exa_search
 
 
 agent = Agent(
-    name="Exa Search Agent",
-    llm="gpt-4o-mini",
+    agent_name="Exa Search Agent",
+    model_name="gpt-4o-mini",
     tools=[exa_search],
 )
 
