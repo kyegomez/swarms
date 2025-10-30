@@ -57,7 +57,9 @@ class TestAnyToStr:
             assert "data:" in result
         except Exception as e:
             logger.error(f"Error in test_nested_dictionary: {e}")
-            pytest.fail(f"test_nested_dictionary failed with error: {e}")
+            pytest.fail(
+                f"test_nested_dictionary failed with error: {e}"
+            )
 
     def test_tuple(self):
         """Test converting a tuple to string."""
@@ -99,7 +101,9 @@ class TestAnyToStr:
             assert result == '"hello"'
         except Exception as e:
             logger.error(f"Error in test_string_with_quotes: {e}")
-            pytest.fail(f"test_string_with_quotes failed with error: {e}")
+            pytest.fail(
+                f"test_string_with_quotes failed with error: {e}"
+            )
 
     def test_integer(self):
         """Test converting an integer."""
@@ -121,4 +125,6 @@ class TestAnyToStr:
             assert "None" in result
         except Exception as e:
             logger.error(f"Error in test_mixed_types_in_list: {e}")
-            pytest.fail(f"test_mixed_types_in_list failed with error: {e}")
+            pytest.fail(
+                f"test_mixed_types_in_list failed with error: {e}"
+            )

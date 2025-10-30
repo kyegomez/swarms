@@ -34,7 +34,9 @@ def create_test_agent(name: str) -> Agent:
 
 def create_test_agents(num_agents: int) -> list[Agent]:
     """Create specified number of test agents"""
-    return [create_test_agent(f"Agent{i+1}") for i in range(num_agents)]
+    return [
+        create_test_agent(f"Agent{i+1}") for i in range(num_agents)
+    ]
 
 
 def test_circular_swarm():
@@ -65,7 +67,6 @@ def test_grid_swarm():
 
     assert isinstance(result, list)
     assert len(result) > 0
-    
 
 
 def test_linear_swarm():
@@ -77,7 +78,6 @@ def test_linear_swarm():
 
     assert isinstance(result, list)
     assert len(result) > 0
-    
 
     for log in result:
         assert "role" in log
@@ -93,7 +93,6 @@ def test_star_swarm():
 
     assert isinstance(result, list)
     assert len(result) > 0
-    
 
     for log in result:
         assert "role" in log
@@ -113,7 +112,6 @@ def test_mesh_swarm():
 
     assert isinstance(result, list)
     assert len(result) > 0
-    
 
     for log in result:
         assert "role" in log
@@ -136,7 +134,6 @@ def test_pyramid_swarm():
 
     assert isinstance(result, list)
     assert len(result) > 0
-    
 
     for log in result:
         assert "role" in log
@@ -146,67 +143,88 @@ def test_pyramid_swarm():
 def test_power_swarm():
     """Test power swarm mathematical pattern"""
     agents = create_test_agents(8)
-    tasks = ["Calculate in Power Swarm", "Process in Power Swarm", "Analyze in Power Swarm"]
+    tasks = [
+        "Calculate in Power Swarm",
+        "Process in Power Swarm",
+        "Analyze in Power Swarm",
+    ]
 
     result = power_swarm(agents, tasks.copy())
 
     assert isinstance(result, list)
     assert len(result) > 0
-    
 
 
 def test_log_swarm():
     """Test log swarm mathematical pattern"""
     agents = create_test_agents(8)
-    tasks = ["Calculate in Log Swarm", "Process in Log Swarm", "Analyze in Log Swarm"]
+    tasks = [
+        "Calculate in Log Swarm",
+        "Process in Log Swarm",
+        "Analyze in Log Swarm",
+    ]
 
     result = log_swarm(agents, tasks.copy())
 
     assert isinstance(result, list)
     assert len(result) > 0
-    
 
 
 def test_exponential_swarm():
     """Test exponential swarm mathematical pattern"""
     agents = create_test_agents(8)
-    tasks = ["Calculate in Exponential Swarm", "Process in Exponential Swarm", "Analyze in Exponential Swarm"]
+    tasks = [
+        "Calculate in Exponential Swarm",
+        "Process in Exponential Swarm",
+        "Analyze in Exponential Swarm",
+    ]
 
     result = exponential_swarm(agents, tasks.copy())
 
     assert isinstance(result, list)
     assert len(result) > 0
-    
 
 
 def test_geometric_swarm():
     """Test geometric swarm mathematical pattern"""
     agents = create_test_agents(8)
-    tasks = ["Calculate in Geometric Swarm", "Process in Geometric Swarm", "Analyze in Geometric Swarm"]
+    tasks = [
+        "Calculate in Geometric Swarm",
+        "Process in Geometric Swarm",
+        "Analyze in Geometric Swarm",
+    ]
 
     result = geometric_swarm(agents, tasks.copy())
 
     assert isinstance(result, list)
     assert len(result) > 0
-    
 
 
 def test_harmonic_swarm():
     """Test harmonic swarm mathematical pattern"""
     agents = create_test_agents(8)
-    tasks = ["Calculate in Harmonic Swarm", "Process in Harmonic Swarm", "Analyze in Harmonic Swarm"]
+    tasks = [
+        "Calculate in Harmonic Swarm",
+        "Process in Harmonic Swarm",
+        "Analyze in Harmonic Swarm",
+    ]
 
     result = harmonic_swarm(agents, tasks.copy())
 
     assert isinstance(result, list)
     assert len(result) > 0
-    
 
 
 def test_staircase_swarm():
     """Test staircase swarm pattern"""
     agents = create_test_agents(10)
-    tasks = ["Process step 1", "Process step 2", "Process step 3", "Process step 4", "Process step 5"]
+    tasks = [
+        "Process step 1",
+        "Process step 2",
+        "Process step 3",
+        "Process step 4",
+        "Process step 5",
+    ]
 
     result = staircase_swarm(agents, tasks)
 
@@ -217,7 +235,13 @@ def test_staircase_swarm():
 def test_sigmoid_swarm():
     """Test sigmoid swarm pattern"""
     agents = create_test_agents(10)
-    tasks = ["Sigmoid task 1", "Sigmoid task 2", "Sigmoid task 3", "Sigmoid task 4", "Sigmoid task 5"]
+    tasks = [
+        "Sigmoid task 1",
+        "Sigmoid task 2",
+        "Sigmoid task 3",
+        "Sigmoid task 4",
+        "Sigmoid task 5",
+    ]
 
     result = sigmoid_swarm(agents, tasks)
 
@@ -228,13 +252,18 @@ def test_sigmoid_swarm():
 def test_sinusoidal_swarm():
     """Test sinusoidal swarm pattern"""
     agents = create_test_agents(10)
-    tasks = ["Wave task 1", "Wave task 2", "Wave task 3", "Wave task 4", "Wave task 5"]
+    tasks = [
+        "Wave task 1",
+        "Wave task 2",
+        "Wave task 3",
+        "Wave task 4",
+        "Wave task 5",
+    ]
 
     result = sinusoidal_swarm(agents, tasks)
 
     assert isinstance(result, list)
     assert len(result) > 0
-    
 
 
 def test_one_to_one():
@@ -247,7 +276,6 @@ def test_one_to_one():
 
     assert isinstance(result, list)
     assert len(result) > 0
-    
 
     for log in result:
         assert "role" in log
@@ -265,7 +293,6 @@ async def test_one_to_three():
 
     assert isinstance(result, list)
     assert len(result) > 0
-    
 
 
 @pytest.mark.asyncio
@@ -279,4 +306,3 @@ async def test_broadcast():
 
     assert isinstance(result, list)
     assert len(result) > 0
-    

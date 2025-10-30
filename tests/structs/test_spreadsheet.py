@@ -21,9 +21,27 @@ def sample_csv_file(tmp_path):
     """Create a sample CSV file with agent configurations."""
     csv_path = tmp_path / "test_agents.csv"
     csv_content = [
-        ["agent_name", "description", "system_prompt", "task", "model_name"],
-        ["agent_1", "First test agent", "You are a helpful assistant. Respond with exactly 'Task completed.'", "Say hello", "gpt-4o-mini"],
-        ["agent_2", "Second test agent", "You are a code reviewer. Respond with exactly 'Review done.'", "Review this: print('hello')", "gpt-4o-mini"],
+        [
+            "agent_name",
+            "description",
+            "system_prompt",
+            "task",
+            "model_name",
+        ],
+        [
+            "agent_1",
+            "First test agent",
+            "You are a helpful assistant. Respond with exactly 'Task completed.'",
+            "Say hello",
+            "gpt-4o-mini",
+        ],
+        [
+            "agent_2",
+            "Second test agent",
+            "You are a code reviewer. Respond with exactly 'Review done.'",
+            "Review this: print('hello')",
+            "gpt-4o-mini",
+        ],
     ]
 
     with open(csv_path, "w", newline="") as f:
@@ -261,10 +279,14 @@ def test_load_from_csv_basic(sample_csv_file, temp_workspace):
     assert "agent_1" in swarm.agent_tasks
     assert "agent_2" in swarm.agent_tasks
     assert swarm.agent_tasks["agent_1"] == "Say hello"
-    assert swarm.agent_tasks["agent_2"] == "Review this: print('hello')"
+    assert (
+        swarm.agent_tasks["agent_2"] == "Review this: print('hello')"
+    )
 
 
-def test_load_from_csv_creates_agents(sample_csv_file, temp_workspace):
+def test_load_from_csv_creates_agents(
+    sample_csv_file, temp_workspace
+):
     """Test that CSV loading creates proper Agent objects."""
     agent = Agent(
         agent_name="placeholder",
@@ -349,7 +371,13 @@ def test_save_to_csv_headers(temp_workspace):
     with open(swarm.save_file_path, "r") as f:
         reader = csv.reader(f)
         headers = next(reader)
-        assert headers == ["Run ID", "Agent Name", "Task", "Result", "Timestamp"]
+        assert headers == [
+            "Run ID",
+            "Agent Name",
+            "Task",
+            "Result",
+            "Timestamp",
+        ]
 
 
 def test_save_to_csv_data(temp_workspace):

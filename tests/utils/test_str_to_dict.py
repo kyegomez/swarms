@@ -16,7 +16,9 @@ class TestStrToDict:
             assert result == {"key": "value"}
         except Exception as e:
             logger.error(f"Error in test_valid_json_string: {e}")
-            pytest.fail(f"test_valid_json_string failed with error: {e}")
+            pytest.fail(
+                f"test_valid_json_string failed with error: {e}"
+            )
 
     def test_nested_json_string(self):
         """Test converting a nested JSON string."""
@@ -26,7 +28,9 @@ class TestStrToDict:
             assert result == {"a": 1, "b": {"c": 2}}
         except Exception as e:
             logger.error(f"Error in test_nested_json_string: {e}")
-            pytest.fail(f"test_nested_json_string failed with error: {e}")
+            pytest.fail(
+                f"test_nested_json_string failed with error: {e}"
+            )
 
     def test_list_in_json_string(self):
         """Test converting JSON string containing a list."""
@@ -36,7 +40,9 @@ class TestStrToDict:
             assert result == {"items": [1, 2, 3]}
         except Exception as e:
             logger.error(f"Error in test_list_in_json_string: {e}")
-            pytest.fail(f"test_list_in_json_string failed with error: {e}")
+            pytest.fail(
+                f"test_list_in_json_string failed with error: {e}"
+            )
 
     def test_empty_json_object(self):
         """Test converting an empty JSON object."""
@@ -46,27 +52,41 @@ class TestStrToDict:
             assert result == {}
         except Exception as e:
             logger.error(f"Error in test_empty_json_object: {e}")
-            pytest.fail(f"test_empty_json_object failed with error: {e}")
+            pytest.fail(
+                f"test_empty_json_object failed with error: {e}"
+            )
 
     def test_json_with_numbers(self):
         """Test converting JSON string with various number types."""
         try:
-            result = str_to_dict('{"int": 42, "float": 3.14, "negative": -5}')
+            result = str_to_dict(
+                '{"int": 42, "float": 3.14, "negative": -5}'
+            )
             assert result is not None, "Result should not be None"
-            assert result == {"int": 42, "float": 3.14, "negative": -5}
+            assert result == {
+                "int": 42,
+                "float": 3.14,
+                "negative": -5,
+            }
         except Exception as e:
             logger.error(f"Error in test_json_with_numbers: {e}")
-            pytest.fail(f"test_json_with_numbers failed with error: {e}")
+            pytest.fail(
+                f"test_json_with_numbers failed with error: {e}"
+            )
 
     def test_json_with_booleans(self):
         """Test converting JSON string with boolean values."""
         try:
-            result = str_to_dict('{"true_val": true, "false_val": false}')
+            result = str_to_dict(
+                '{"true_val": true, "false_val": false}'
+            )
             assert result is not None, "Result should not be None"
             assert result == {"true_val": True, "false_val": False}
         except Exception as e:
             logger.error(f"Error in test_json_with_booleans: {e}")
-            pytest.fail(f"test_json_with_booleans failed with error: {e}")
+            pytest.fail(
+                f"test_json_with_booleans failed with error: {e}"
+            )
 
     def test_json_with_null(self):
         """Test converting JSON string with null value."""
@@ -84,13 +104,17 @@ class TestStrToDict:
             with pytest.raises(json.JSONDecodeError):
                 str_to_dict('{"invalid": json}')  # Invalid JSON
         except Exception as e:
-            logger.error(f"Error in test_invalid_json_raises_error: {e}")
-            pytest.fail(f"test_invalid_json_raises_error failed with error: {e}")
+            logger.error(
+                f"Error in test_invalid_json_raises_error: {e}"
+            )
+            pytest.fail(
+                f"test_invalid_json_raises_error failed with error: {e}"
+            )
 
     def test_complex_nested_structure(self):
         """Test converting a complex nested JSON structure."""
         try:
-            json_str = '''
+            json_str = """
             {
                 "user": {
                     "name": "John",
@@ -100,7 +124,7 @@ class TestStrToDict:
                 "tags": ["python", "testing"],
                 "metadata": null
             }
-            '''
+            """
             result = str_to_dict(json_str)
             assert result is not None, "Result should not be None"
             assert result["user"]["name"] == "John"
@@ -108,8 +132,12 @@ class TestStrToDict:
             assert result["tags"] == ["python", "testing"]
             assert result["metadata"] is None
         except Exception as e:
-            logger.error(f"Error in test_complex_nested_structure: {e}")
-            pytest.fail(f"test_complex_nested_structure failed with error: {e}")
+            logger.error(
+                f"Error in test_complex_nested_structure: {e}"
+            )
+            pytest.fail(
+                f"test_complex_nested_structure failed with error: {e}"
+            )
 
     def test_retries_parameter(self):
         """Test that retries parameter works correctly."""
@@ -120,7 +148,9 @@ class TestStrToDict:
             assert result == {"test": 1}
         except Exception as e:
             logger.error(f"Error in test_retries_parameter: {e}")
-            pytest.fail(f"test_retries_parameter failed with error: {e}")
+            pytest.fail(
+                f"test_retries_parameter failed with error: {e}"
+            )
 
     def test_json_with_unicode_characters(self):
         """Test converting JSON string with unicode characters."""
@@ -130,5 +160,9 @@ class TestStrToDict:
             assert result["emoji"] == "🐍"
             assert result["text"] == "你好"
         except Exception as e:
-            logger.error(f"Error in test_json_with_unicode_characters: {e}")
-            pytest.fail(f"test_json_with_unicode_characters failed with error: {e}")
+            logger.error(
+                f"Error in test_json_with_unicode_characters: {e}"
+            )
+            pytest.fail(
+                f"test_json_with_unicode_characters failed with error: {e}"
+            )

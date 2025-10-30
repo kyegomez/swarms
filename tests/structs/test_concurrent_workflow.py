@@ -2,6 +2,7 @@ from swarms import Agent
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 import pytest
 
+
 def test_concurrent_workflow_basic_execution():
     """Test basic ConcurrentWorkflow execution with multiple agents"""
     # Create specialized agents for different perspectives
@@ -54,7 +55,9 @@ def test_concurrent_workflow_basic_execution():
     for r in result:
         assert isinstance(r, dict)
         assert "role" in r  # Agent name is stored in 'role' field
-        assert "content" in r  # Agent output is stored in 'content' field
+        assert (
+            "content" in r
+        )  # Agent output is stored in 'content' field
 
 
 def test_concurrent_workflow_with_dashboard():
@@ -106,7 +109,9 @@ def test_concurrent_workflow_with_dashboard():
     for r in result:
         assert isinstance(r, dict)
         assert "role" in r  # Agent name is stored in 'role' field
-        assert "content" in r  # Agent output is stored in 'content' field
+        assert (
+            "content" in r
+        )  # Agent output is stored in 'content' field
 
 
 def test_concurrent_workflow_batched_execution():
@@ -117,8 +122,8 @@ def test_concurrent_workflow_batched_execution():
             agent_name=f"Analysis-Agent-{i+1}",
             agent_description=f"Agent {i+1} for comprehensive business analysis",
             model_name="gpt-4o-mini",
-        verbose=False,
-        print_on=False,
+            verbose=False,
+            print_on=False,
             max_loops=1,
         )
         for i in range(4)
@@ -206,7 +211,9 @@ def test_concurrent_workflow_max_loops_configuration():
     for r in result:
         assert isinstance(r, dict)
         assert "role" in r  # Agent name is stored in 'role' field
-        assert "content" in r  # Agent output is stored in 'content' field
+        assert (
+            "content" in r
+        )  # Agent output is stored in 'content' field
 
 
 def test_concurrent_workflow_different_output_types():
@@ -318,7 +325,9 @@ def test_concurrent_workflow_real_world_scenario():
     for r in result:
         assert isinstance(r, dict)
         assert "role" in r  # Agent name is stored in 'role' field
-        assert "content" in r  # Agent output is stored in 'content' field
+        assert (
+            "content" in r
+        )  # Agent output is stored in 'content' field
 
 
 def test_concurrent_workflow_team_collaboration():
@@ -385,7 +394,10 @@ def test_concurrent_workflow_team_collaboration():
     for r in result:
         assert isinstance(r, dict)
         assert "role" in r  # Agent name is stored in 'role' field
-        assert "content" in r  # Agent output is stored in 'content' field
+        assert (
+            "content" in r
+        )  # Agent output is stored in 'content' field
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
