@@ -66,8 +66,28 @@ class AgentRouter:
 
             response = embedding(**params)
 
-            # Extract the embedding from the response
-            embedding_vector = response.data[0].embedding
+            # Handle different response structures from litellm
+            if hasattr(response, "data") and response.data:
+                if hasattr(response.data[0], "embedding"):
+                    embedding_vector = response.data[0].embedding
+                elif (
+                    isinstance(response.data[0], dict)
+                    and "embedding" in response.data[0]
+                ):
+                    embedding_vector = response.data[0]["embedding"]
+                else:
+                    logger.error(
+                        f"Unexpected response structure: {response.data[0]}"
+                    )
+                    raise ValueError(
+                        f"Unexpected embedding response structure: {type(response.data[0])}"
+                    )
+            else:
+                logger.error(f"Unexpected response structure: {response}")
+                raise ValueError(
+                    f"Unexpected embedding response structure: {type(response)}"
+                )
+            
             return embedding_vector
 
         except Exception as e:
