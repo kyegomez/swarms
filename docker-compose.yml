@@ -4,8 +4,8 @@ services:
   swarms:
     platform: linux/amd64
     build:
-      context: ../..
-      dockerfile: scripts/docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
       platforms:
         - linux/amd64
     image: swarms:latest
@@ -22,7 +22,7 @@ services:
       - ./data:/app/data
       - ./models:/app/models
     working_dir: /app
-    command: python test_docker.py
+    command: python -c "import swarms; print('Swarms container is running successfully!')"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import swarms; print('Health check passed')"]
@@ -34,8 +34,8 @@ services:
   swarms-dev:
     platform: linux/amd64
     build:
-      context: ../..
-      dockerfile: scripts/docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
       platforms:
         - linux/amd64
     image: swarms:dev
@@ -53,28 +53,6 @@ services:
     tty: true
     restart: unless-stopped
 
-  swarms-api:
-    platform: linux/amd64
-    build:
-      context: ../..
-      dockerfile: scripts/docker/Dockerfile
-      platforms:
-        - linux/amd64
-    image: swarms:api
-    container_name: swarms-api-container
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app
-    volumes:
-      - .:/app
-    working_dir: /app
-    ports:
-      - "8000:8000"
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-    restart: unless-stopped
-    depends_on:
-      - swarms
-
 networks:
   default:
-    name: swarms-network 
+    name: swarms-network
