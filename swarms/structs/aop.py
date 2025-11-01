@@ -12,12 +12,113 @@ from uuid import uuid4
 
 from loguru import logger
 from mcp.server.fastmcp import FastMCP
+from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
 from swarms.tools.mcp_client_tools import (
     get_tools_for_multiple_mcp_servers,
 )
+
+# Optional x402 and Starlette imports
+try:
+    from starlette.middleware.base import BaseHTTPMiddleware
+    from starlette.requests import Request
+    from x402.fastapi.middleware import require_payment
+
+    X402_AVAILABLE = True
+except ImportError:
+    X402_AVAILABLE = False
+
+
+class PaymentConfig(BaseModel):
+    """
+    Configuration for x402 cryptocurrency payment integration.
+
+    This enables monetization of AI agent endpoints by requiring payment
+    before execution. Payments are processed via x402 protocol on Solana blockchain.
+
+    Attributes:
+        pay_to_address: Solana wallet address to receive cryptocurrency payments
+        price: Cost per agent request (e.g., "$0.01", "$0.05")
+        network_id: Blockchain network identifier (default: "solana" for Solana mainnet)
+        description: Optional description of the payment service for users
+    """
+
+    pay_to_address: str = Field(
+        ...,
+        description="Solana wallet address to receive payments",
+    )
+    price: str = Field(
+        default="$0.01",
+        description="Price per agent request in USD (e.g., '$0.01')",
+    )
+    network_id: str = Field(
+        default="solana",
+        description="Blockchain network ID (default: 'solana' for mainnet, or 'solana-devnet' for testing)",
+    )
+    description: Optional[str] = Field(
+        None,
+        description="Service description shown to users during payment",
+    )
+
+
+if X402_AVAILABLE:
+
+    class X402PaymentMiddleware(BaseHTTPMiddleware):
+        """
+        Starlette middleware that wraps x402 payment validation.
+
+        Intercepts HTTP requests and applies x402 payment requirement
+        to specified paths (MCP tool execution paths).
+        """
+
+        def __init__(self, app, payment_config: PaymentConfig):
+            """
+            Initialize x402 payment middleware.
+
+            Args:
+                app: Starlette app instance
+                payment_config: Payment configuration with wallet, price, network
+            """
+            super().__init__(app)
+            self.payment_config = payment_config
+            # Create x402 payment middleware for MCP path
+            self.payment_validator = require_payment(
+                path="/mcp",  # FastMCP streamable-http path
+                price=payment_config.price,
+                pay_to_address=payment_config.pay_to_address,
+                network_id=payment_config.network_id,
+                description=payment_config.description
+                or "AI Agent execution via MCP",
+                input_schema={
+                    "type": "object",
+                    "properties": {"task": {"type": "string"}},
+                },
+                output_schema={
+                    "type": "object",
+                    "properties": {"result": {"type": "string"}},
+                },
+            )
+
+        async def dispatch(self, request: Request, call_next):
+            """
+            Intercept requests and apply x402 payment validation.
+
+            Args:
+                request: Incoming HTTP request
+                call_next: Next middleware in chain
+
+            Returns:
+                Response from payment validator or next middleware
+            """
+            # Check if request path requires payment (MCP paths)
+            if request.url.path.startswith("/mcp"):
+                # Apply x402 payment validation
+                return await self.payment_validator(request, call_next)
+
+            # Other paths don't require payment
+            return await call_next(request)
 
 
 class TaskStatus(Enum):
@@ -597,6 +698,8 @@ class AOP:
         max_network_retries: int = 5,
         network_retry_delay: float = 10.0,
         network_timeout: float = 30.0,
+        payment: bool = False,
+        payment_config: Optional[PaymentConfig] = None,
         log_level: Literal[
             "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
         ] = "INFO",
@@ -628,7 +731,22 @@ class AOP:
             max_network_retries: Maximum number of network reconnection attempts
             network_retry_delay: Delay between network retry attempts in seconds
             network_timeout: Network connection timeout in seconds
+            payment: Enable x402 cryptocurrency payment for agent endpoints
+            payment_config: Configuration for x402 payment (required if payment=True)
         """
+        # Validate payment configuration
+        if payment and not payment_config:
+            raise ValueError(
+                "payment_config is required when payment=True. "
+                "Please provide a PaymentConfig instance with pay_to_address."
+            )
+
+        if payment and not X402_AVAILABLE:
+            raise ImportError(
+                "x402 package is required for payment functionality. "
+                "Install it with: pip install x402"
+            )
+
         self.server_name = server_name
         self.description = description
         self.verbose = verbose
@@ -648,6 +766,8 @@ class AOP:
         self.max_network_retries = max_network_retries
         self.network_retry_delay = network_retry_delay
         self.network_timeout = network_timeout
+        self.payment = payment
+        self.payment_config = payment_config
 
         # Persistence state tracking
         self._restart_count = 0
@@ -671,6 +791,39 @@ class AOP:
             **kwargs,
         )
 
+        # Patch streamable_http_app to add x402 payment middleware
+        if self.payment and self.payment_config:
+            if X402_AVAILABLE:
+                # Store original streamable_http_app
+                original_streamable_http_app = (
+                    self.mcp_server.streamable_http_app
+                )
+                payment_config = self.payment_config
+
+                # Create patched version that adds middleware
+                def patched_streamable_http_app():
+                    app = original_streamable_http_app()
+                    app.add_middleware(
+                        X402PaymentMiddleware,
+                        payment_config=payment_config,
+                    )
+                    return app
+
+                # Replace streamable_http_app with patched version
+                self.mcp_server.streamable_http_app = (
+                    patched_streamable_http_app
+                )
+
+                logger.info(
+                    f"Added x402 payment middleware (Solana): "
+                    f"price={self.payment_config.price}, "
+                    f"wallet={self.payment_config.pay_to_address}"
+                )
+            else:
+                logger.error(
+                    "x402 payment enabled but middleware not available"
+                )
+
         # Configure logger
         logger.remove()  # Remove default handler
         logger.add(
@@ -681,7 +834,7 @@ class AOP:
         )
 
         logger.info(
-            f"Initialized AOP with server name: {server_name}, verbose: {verbose}, traceback: {traceback_enabled}, persistence: {persistence}, network_monitoring: {network_monitoring}"
+            f"Initialized AOP with server name: {server_name}, verbose: {verbose}, traceback: {traceback_enabled}, persistence: {persistence}, network_monitoring: {network_monitoring}, payment: {payment}"
         )
 
         # Add initial agents if provided
