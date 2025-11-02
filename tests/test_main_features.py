@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, List
 from dotenv import load_dotenv
 from loguru import logger
 
-from swarms.structs import (
+from swarms import (
     Agent,
     AgentRearrange,
     ConcurrentWorkflow,
@@ -19,8 +19,9 @@ from swarms.structs import (
     SequentialWorkflow,
     SpreadSheetSwarm,
     SwarmRouter,
+    HierarchicalSwarm,
 )
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+
 from swarms.structs.tree_swarm import ForestSwarm, Tree, TreeAgent
 
 load_dotenv()
@@ -35,10 +36,18 @@ def write_markdown_report(
     results: List[Dict[str, Any]], filename: str
 ):
     """Write test results to a markdown file"""
-    if not os.path.exists("test_runs"):
-        os.makedirs("test_runs")
+    workspace_dir = os.getenv("WORKSPACE_DIR")
+    if not workspace_dir:
+        raise ValueError(
+            "WORKSPACE_DIR environment variable is not set"
+        )
 
-    with open(f"test_runs/{filename}.md", "w") as f:
+    test_runs_dir = os.path.join(workspace_dir, "test_runs")
+    if not os.path.exists(test_runs_dir):
+        os.makedirs(test_runs_dir)
+
+    file_path = os.path.join(test_runs_dir, f"{filename}.md")
+    with open(file_path, "w") as f:
         f.write("# Swarms Comprehensive Test Report\n\n")
         f.write(
             f"Test Run: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"

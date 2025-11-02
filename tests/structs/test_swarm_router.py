@@ -37,6 +37,7 @@ def create_sample_agents():
         ),
     ]
 
+
 # ============================================================================
 # Initialization Tests
 # ============================================================================
@@ -67,7 +68,7 @@ def test_default_initialization():
 def test_custom_initialization():
     """Test SwarmRouter with custom parameters."""
     sample_agents = create_sample_agents()
-    
+
     router = SwarmRouter(
         name="test-router",
         description="Test router description",
@@ -102,7 +103,7 @@ def test_custom_initialization():
 def test_initialization_with_heavy_swarm_config():
     """Test SwarmRouter with HeavySwarm specific configuration."""
     sample_agents = create_sample_agents()
-    
+
     router = SwarmRouter(
         agents=sample_agents,
         swarm_type="HeavySwarm",
@@ -114,7 +115,9 @@ def test_initialization_with_heavy_swarm_config():
 
     assert router.swarm_type == "HeavySwarm"
     assert router.heavy_swarm_loops_per_agent == 2
-    assert router.heavy_swarm_question_agent_model_name == "gpt-4o-mini"
+    assert (
+        router.heavy_swarm_question_agent_model_name == "gpt-4o-mini"
+    )
     assert router.heavy_swarm_worker_model_name == "gpt-4o-mini"
     assert router.heavy_swarm_swarm_show_output is False
 
@@ -132,6 +135,7 @@ def test_initialization_with_agent_rearrange_config():
     assert router.swarm_type == "AgentRearrange"
     assert router.rearrange_flow == "ResearchAgent -> CodeAgent"
 
+
 # ============================================================================
 # Configuration Tests
 # ============================================================================
@@ -140,7 +144,7 @@ def test_initialization_with_agent_rearrange_config():
 def test_initialization_with_shared_memory():
     """Test SwarmRouter with shared memory system."""
     sample_agents = create_sample_agents()
-    
+
     router = SwarmRouter(
         agents=sample_agents,
         shared_memory_system=None,  # Test with None for now
@@ -152,13 +156,14 @@ def test_initialization_with_shared_memory():
 def test_initialization_with_worker_tools():
     """Test SwarmRouter with worker tools."""
     sample_agents = create_sample_agents()
-    
+
     router = SwarmRouter(
         agents=sample_agents,
         worker_tools=[],  # Empty list for now
     )
 
     assert router.worker_tools == []
+
 
 # ============================================================================
 # Document Management Tests
@@ -192,6 +197,7 @@ def test_router_with_documents():
     assert len(router.documents) == 2
     assert router.documents[0].file_path == "/path/to/doc1.txt"
     assert router.documents[1].file_path == "/path/to/doc2.txt"
+
 
 # ============================================================================
 # Configuration Class Tests
@@ -249,6 +255,7 @@ def test_router_with_config():
     assert router.swarm_type == config.swarm_type
     assert router.rules == config.rules
 
+
 # ============================================================================
 # Basic Execution Tests
 # ============================================================================
@@ -257,7 +264,7 @@ def test_router_with_config():
 def test_run_with_sequential_workflow():
     """Test running SwarmRouter with SequentialWorkflow."""
     sample_agents = create_sample_agents()
-    
+
     router = SwarmRouter(
         agents=sample_agents,
         swarm_type="SequentialWorkflow",
@@ -297,6 +304,7 @@ def test_run_with_none_task():
     result = router.run(None)
     assert result is not None
 
+
 # ============================================================================
 # Batch Processing Tests
 # ============================================================================
@@ -305,7 +313,7 @@ def test_run_with_none_task():
 def test_batch_run_with_tasks():
     """Test batch processing with multiple tasks."""
     sample_agents = create_sample_agents()
-    
+
     router = SwarmRouter(
         agents=sample_agents,
         verbose=False,
@@ -313,7 +321,7 @@ def test_batch_run_with_tasks():
 
     tasks = ["What is 1+1?", "What is 2+2?"]
     results = router.batch_run(tasks)
-    
+
     assert len(results) == 2
     assert all(result is not None for result in results)
 
@@ -321,7 +329,7 @@ def test_batch_run_with_tasks():
 def test_batch_run_with_empty_tasks():
     """Test batch processing with empty task list."""
     sample_agents = create_sample_agents()
-    
+
     router = SwarmRouter(agents=sample_agents)
 
     results = router.batch_run([])
@@ -335,6 +343,7 @@ def test_batch_run_with_no_agents():
     with pytest.raises(RuntimeError):
         router.batch_run(["Test task"])
 
+
 # ============================================================================
 # Call Method Tests
 # ============================================================================
@@ -343,7 +352,7 @@ def test_batch_run_with_no_agents():
 def test_call_method():
     """Test __call__ method."""
     sample_agents = create_sample_agents()
-    
+
     router = SwarmRouter(
         agents=sample_agents,
         verbose=False,
@@ -356,7 +365,7 @@ def test_call_method():
 def test_call_with_image():
     """Test __call__ method with image."""
     sample_agents = create_sample_agents()
-    
+
     router = SwarmRouter(
         agents=sample_agents,
         verbose=False,
@@ -366,6 +375,7 @@ def test_call_with_image():
     result = router("Describe this image", img=None)
     assert result is not None
 
+
 # ============================================================================
 # Output Type Tests
 # ============================================================================
@@ -374,16 +384,17 @@ def test_call_with_image():
 def test_different_output_types():
     """Test router with different output types."""
     sample_agents = create_sample_agents()
-    
+
     for output_type in ["dict", "json", "string", "list"]:
         router = SwarmRouter(
             agents=sample_agents,
             output_type=output_type,
             verbose=False,
         )
-        
+
         result = router.run("Simple test task")
         assert result is not None
+
 
 # ============================================================================
 # Error Handling Tests
@@ -413,8 +424,11 @@ def test_invalid_swarm_type():
     )
 
     # But should raise ValueError during execution when creating swarm
-    with pytest.raises(ValueError, match="Invalid swarm type: InvalidSwarmType"):
+    with pytest.raises(
+        ValueError, match="Invalid swarm type: InvalidSwarmType"
+    ):
         router.run("Test task")
+
 
 # ============================================================================
 # Integration Tests
@@ -425,7 +439,7 @@ def test_complete_workflow():
     """Test complete workflow from initialization to execution."""
     # Create agents
     agents = create_sample_agents()
-    
+
     # Create router with configuration
     router = SwarmRouter(
         name="integration-test-router",
@@ -436,11 +450,11 @@ def test_complete_workflow():
         verbose=False,
         output_type="string",
     )
-    
+
     # Execute single task
     result = router.run("Calculate the sum of 5 and 7")
     assert result is not None
-    
+
     # Execute batch tasks
     tasks = [
         "What is 10 + 15?",
@@ -448,7 +462,7 @@ def test_complete_workflow():
         "What is 6 * 7?",
     ]
     batch_results = router.batch_run(tasks)
-    
+
     assert len(batch_results) == 3
     assert all(result is not None for result in batch_results)
 
@@ -456,18 +470,18 @@ def test_complete_workflow():
 def test_router_reconfiguration():
     """Test reconfiguring router after initialization."""
     sample_agents = create_sample_agents()
-    
+
     router = SwarmRouter(agents=sample_agents)
-    
+
     # Change configuration
     router.max_loops = 3
     router.output_type = "json"
     router.verbose = False
-    
+
     assert router.max_loops == 3
     assert router.output_type == "json"
     assert router.verbose is False
-    
+
     # Test execution with new configuration
     result = router.run("Test reconfiguration")
     assert result is not None

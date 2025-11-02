@@ -57,7 +57,10 @@ def test_initialization():
     )
 
     assert len(agent_rearrange.agents) == 3
-    assert agent_rearrange.flow == "ResearchAgent -> WriterAgent -> ReviewerAgent"
+    assert (
+        agent_rearrange.flow
+        == "ResearchAgent -> WriterAgent -> ReviewerAgent"
+    )
     assert agent_rearrange.max_loops == 1
     assert agent_rearrange.verbose is True
     print("✓ test_initialization passed")
@@ -74,7 +77,10 @@ def test_initialization_with_team_awareness():
         verbose=True,
     )
 
-    assert agent_rearrange.flow == "ResearchAgent -> WriterAgent -> ReviewerAgent"
+    assert (
+        agent_rearrange.flow
+        == "ResearchAgent -> WriterAgent -> ReviewerAgent"
+    )
     print("✓ test_initialization_with_team_awareness passed")
 
 
@@ -317,7 +323,9 @@ def test_get_agent_sequential_awareness():
         verbose=True,
     )
 
-    awareness = agent_rearrange.get_agent_sequential_awareness("WriterAgent")
+    awareness = agent_rearrange.get_agent_sequential_awareness(
+        "WriterAgent"
+    )
     assert awareness is not None
     assert isinstance(awareness, str)
     print("✓ test_get_agent_sequential_awareness passed")
@@ -506,9 +514,9 @@ def main():
         test_complete_workflow,
     ]
 
-    print("="*60)
+    print("=" * 60)
     print("Running AgentRearrange Tests")
-    print("="*60)
+    print("=" * 60)
 
     for test in tests:
         try:
@@ -516,9 +524,9 @@ def main():
         except Exception as e:
             print(f"✗ {test.__name__} failed: {e}")
 
-    print("="*60)
+    print("=" * 60)
     print("All tests completed!")
-    print("="*60)
+    print("=" * 60)
 
 
 if __name__ == "__main__":
