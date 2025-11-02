@@ -278,6 +278,12 @@ class AgentRouter:
         except Exception as e:
             logger.error(f"Error finding best agent: {str(e)}")
             raise
+        
+    def run(self, task: str) -> Optional[AgentType]:
+        """
+        Run the agent router on a given task.
+        """
+        return self.find_best_agent(task)
 
 
 # # Example usage

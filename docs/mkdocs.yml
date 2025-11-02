@@ -296,6 +296,7 @@ nav:
         - Routers:
           - SwarmRouter: "swarms/structs/swarm_router.md"
           - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
+          - AgentRouter: "swarms/structs/agent_router.md"
           - ModelRouter: "swarms/structs/model_router.md"
 
 

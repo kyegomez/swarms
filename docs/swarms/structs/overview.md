@@ -19,6 +19,7 @@ This page provides a comprehensive overview of all available multi-agent archite
     | TaskQueueSwarm | Task management | Manages and prioritizes tasks in a queue | [Docs](taskqueue_swarm.md) |
     | SwarmRearrange | Dynamic swarm optimization | Optimizes swarm configurations for specific tasks | [Docs](swarm_rearrange.md) |
     | MultiAgentRouter | Advanced task routing | Routes tasks to specialized agents based on capabilities | [Docs](multi_agent_router.md) |
+    | AgentRouter | Embedding-based routing | Routes tasks to agents using semantic similarity on embeddings | [Docs](agent_router.md) |
     | MatrixSwarm | Parallel processing | Matrix-based organization for parallel task execution | [Docs](matrix_swarm.md) |
     | ModelRouter | Model selection | Routes tasks to appropriate AI models | [Docs](model_router.md) |
     | MALT | Multi-agent learning | Enables agents to learn from each other | [Docs](malt.md) |
