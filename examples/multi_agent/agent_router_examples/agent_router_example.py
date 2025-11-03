@@ -29,7 +29,7 @@ agent_router = AgentRouter(
                 "You are a medical lab and imaging interpretation agent. Take the patient's test results, imaging findings, and vitals, "
                 "and interpret them in context of their symptoms. Suggest relevant follow-up diagnostics or considerations for the physician."
             ),
-        ),   
+        ),
     ],
 )
 

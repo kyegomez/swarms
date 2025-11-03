@@ -83,11 +83,13 @@ class AgentRouter:
                         f"Unexpected embedding response structure: {type(response.data[0])}"
                     )
             else:
-                logger.error(f"Unexpected response structure: {response}")
+                logger.error(
+                    f"Unexpected response structure: {response}"
+                )
                 raise ValueError(
                     f"Unexpected embedding response structure: {type(response)}"
                 )
-            
+
             return embedding_vector
 
         except Exception as e:
@@ -278,7 +280,7 @@ class AgentRouter:
         except Exception as e:
             logger.error(f"Error finding best agent: {str(e)}")
             raise
-        
+
     def run(self, task: str) -> Optional[AgentType]:
         """
         Run the agent router on a given task.

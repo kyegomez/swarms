@@ -12,11 +12,13 @@ def pdf_to_text(pdf_path: str) -> str:
         FileNotFoundError: If the PDF file is not found at the specified path.
         Exception: If there is an error in reading the PDF file.
     """
-    
+
     try:
         import pypdf
     except ImportError:
-        raise ImportError("pypdf is not installed. Please install it using `pip install pypdf`.")
+        raise ImportError(
+            "pypdf is not installed. Please install it using `pip install pypdf`."
+        )
 
     try:
         # Open the PDF file

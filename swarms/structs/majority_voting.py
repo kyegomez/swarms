@@ -168,7 +168,15 @@ class MajorityVoting:
             title="Majority Voting",
         )
 
-    def run(self, task: str, streaming_callback: Optional[Callable[[str, str, bool], None]] = None, *args, **kwargs) -> List[Any]:
+    def run(
+        self,
+        task: str,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+        *args,
+        **kwargs,
+    ) -> List[Any]:
         """
         Runs the majority voting system with multi-loop functionality and returns the majority vote.
 
@@ -200,24 +208,30 @@ class MajorityVoting:
                     role=agent.agent_name,
                     content=output,
                 )
-            
+
             # Set streaming_on for the consensus agent based on the provided streaming_callback
-            self.consensus_agent.streaming_on = streaming_callback is not None
+            self.consensus_agent.streaming_on = (
+                streaming_callback is not None
+            )
 
             # Instead of a simple passthrough wrapper, match the callback invocation pattern from the provided reference for the consensus agent:
             consensus_agent_name = self.consensus_agent.agent_name
 
             if streaming_callback is not None:
+
                 def consensus_streaming_callback(chunk: str):
                     """Wrapper for consensus agent streaming callback."""
                     try:
                         if chunk is not None and chunk.strip():
-                            streaming_callback(consensus_agent_name, chunk, False)
+                            streaming_callback(
+                                consensus_agent_name, chunk, False
+                            )
                     except Exception as callback_error:
                         if self.verbose:
                             logger.warning(
                                 f"[STREAMING] Callback failed for {consensus_agent_name}: {str(callback_error)}"
                             )
+
             else:
                 consensus_streaming_callback = None
 

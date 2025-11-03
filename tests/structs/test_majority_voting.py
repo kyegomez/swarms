@@ -202,12 +202,16 @@ def test_majority_voting_different_output_types():
     # Assert majority vote is correct
     assert majority_vote is not None
 
+
 def test_streaming_majority_voting():
     """
     Test the streaming_majority_voting with logging/try-except and assertion.
     """
     logs = []
-    def streaming_callback(agent_name: str, chunk: str, is_final: bool):
+
+    def streaming_callback(
+        agent_name: str, chunk: str, is_final: bool
+    ):
         # Chunk buffer static per call (reset each session)
         if not hasattr(streaming_callback, "_buffer"):
             streaming_callback._buffer = ""
@@ -218,7 +222,10 @@ def test_streaming_majority_voting():
         if chunk:
             streaming_callback._buffer += chunk
             streaming_callback._buffer_size += len(chunk)
-        if streaming_callback._buffer_size >= min_chunk_size or is_final:
+        if (
+            streaming_callback._buffer_size >= min_chunk_size
+            or is_final
+        ):
             if streaming_callback._buffer:
                 print(streaming_callback._buffer, end="", flush=True)
                 logs.append(streaming_callback._buffer)
@@ -226,7 +233,7 @@ def test_streaming_majority_voting():
                 streaming_callback._buffer_size = 0
         if is_final:
             print()
-     
+
     try:
         # Initialize the agent
         agent = Agent(
@@ -245,11 +252,11 @@ def test_streaming_majority_voting():
             max_tokens=4000,  # max output tokens
             saved_state_path="agent_00.json",
             interactive=False,
-            streaming_on=True,  #if concurrent agents want to be streamed
+            streaming_on=True,  # if concurrent agents want to be streamed
         )
-        
+
         swarm = MajorityVoting(agents=[agent, agent, agent])
-        
+
         result = swarm.run(
             "Create a table of super high growth opportunities for AI. I have $40k to invest in ETFs, index funds, and more. Please create a table in markdown.",
             streaming_callback=streaming_callback,
