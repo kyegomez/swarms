@@ -156,6 +156,122 @@ Each agent is created with:
 - **Port**: Change the port number as needed
 - **Verbose**: Set to False for reduced logging
 - **Server Name**: Use a descriptive name for your server
+- **Authentication**: Add `auth_callback` to enable security (see below)
+
+## Adding Authentication
+
+You can secure your AOP server by adding a custom authentication callback:
+
+### Simple API Key Authentication
+
+```python
+from swarms import Agent
+from swarms.structs.aop import AOP
+
+# Define authentication callback
+def my_auth(token: str) -> bool:
+    """Validate API keys."""
+    valid_keys = {"api-key-1", "api-key-2", "api-key-3"}
+    return token in valid_keys
+
+# Create agents (same as above)
+research_agent = Agent(
+    agent_name="Research-Agent",
+    model_name="claude-sonnet-4-5-20250929",
+    max_loops=1,
+    system_prompt="You are a research specialist.",
+    temperature=0.7,
+    top_p=None,
+)
+
+# Create AOP with authentication
+deployer = AOP(
+    server_name="SecureAgentServer",
+    port=5932,
+    verbose=True,
+    auth_callback=my_auth,  # Enable authentication
+)
+
+deployer.add_agent(research_agent)
+deployer.run()
+```
+
+### JWT Token Authentication
+
+```python
+import jwt
+
+def jwt_auth(token: str) -> bool:
+    """Validate JWT tokens."""
+    try:
+        payload = jwt.decode(token, "your-secret-key", algorithms=["HS256"])
+        return payload.get("authorized", False)
+    except:
+        return False
+
+deployer = AOP(
+    server_name="JWT-SecureServer",
+    port=5932,
+    auth_callback=jwt_auth,
+)
+```
+
+### Environment-Based Authentication
+
+```python
+import os
+
+def env_auth(token: str) -> bool:
+    """Validate tokens from environment."""
+    valid_tokens = set(os.getenv("VALID_API_KEYS", "").split(","))
+    return token in valid_tokens
+
+deployer = AOP(
+    server_name="Env-AuthServer",
+    port=5932,
+    auth_callback=env_auth,
+)
+```
+
+### Client Usage with Authentication
+
+When calling tools on an authenticated server:
+
+```python
+import asyncio
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
+
+async def call_tool():
+    url = "http://localhost:5932/mcp"
+
+    async with streamablehttp_client(url) as ctx:
+        read, write = ctx if len(ctx) == 2 else (ctx[0], ctx[1])
+
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+
+            # Include auth_token parameter
+            result = await session.call_tool(
+                name="Research-Agent",
+                arguments={
+                    "task": "Research AI trends",
+                    "auth_token": "api-key-1"  # Required!
+                },
+            )
+
+            print(result)
+
+asyncio.run(call_tool())
+```
+
+### Authentication Rules
+
+- If `auth_callback` is provided → authentication is enabled
+- If `auth_callback` is None → no authentication required
+- The callback function determines ALL security logic
+- Return `True` to allow access, `False` to deny
+- Failed authentication returns: `{"success": false, "error": "Authentication failed"}`
 
 ## Next Steps
 

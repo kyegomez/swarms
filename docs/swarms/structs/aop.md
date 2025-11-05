@@ -122,6 +122,7 @@ Main class for deploying agents as tools in an MCP server.
 | `processing_timeout` | `int` | `30` | Timeout for processing tasks in seconds |
 | `retry_delay` | `float` | `1.0` | Delay between retries in seconds |
 | `log_level` | `str` | `"INFO"` | Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) |
+| `auth_callback` | `Optional[Callable[[str], bool]]` | `None` | Custom authentication callback function. If provided, authentication is enabled. |
 | `*args` | `Any` | - | Additional positional arguments passed to FastMCP |
 | `**kwargs` | `Any` | - | Additional keyword arguments passed to FastMCP |
 
@@ -585,6 +586,7 @@ All agent tools accept the following parameters:
 | `img` | `str` | No | Single image to be processed by the agent |
 | `imgs` | `List[str]` | No | Multiple images to be processed by the agent |
 | `correct_answer` | `str` | No | Correct answer for validation or comparison |
+| `auth_token` | `str` | Conditional | Authentication token (required if `auth_callback` is configured on server) |
 
 ## Output Format
 
@@ -596,6 +598,173 @@ All agent tools return a standardized response format:
   "success": "boolean",   // Whether the task was executed successfully
   "error": "string"       // Error message if execution failed (null if successful)
 }
+```
+
+## Authentication for AOP Servers
+
+AOP supports optional authentication to secure your agent deployments. Authentication is enabled by providing a custom `auth_callback` function when creating the AOP instance.
+
+### How Authentication Works
+
+1. **Server Side**: Provide an `auth_callback` function that validates tokens
+2. **Client Side**: Include `auth_token` parameter when calling tools
+3. **The callback determines ALL security logic** - token format, validation, etc.
+
+### Authentication Callback
+
+The `auth_callback` function should:
+- Accept a single parameter: `token` (str)
+- Return `True` to allow access, `False` to deny
+- Handle all validation logic (API keys, JWT, database lookups, etc.)
+
+### Authentication Examples
+
+#### Simple API Key Authentication
+
+```python
+from swarms import Agent
+from swarms.structs.aop import AOP
+
+# Define authentication callback
+def simple_auth(token: str) -> bool:
+    """Validate token against a list of valid API keys."""
+    valid_tokens = {"secret-key-123", "secret-key-456", "secret-key-789"}
+    return token in valid_tokens
+
+# Create agent
+agent = Agent(
+    agent_name="Research-Agent",
+    model_name="claude-sonnet-4-5-20250929",
+    max_loops=1,
+    system_prompt="You are a helpful research assistant.",
+    temperature=0.7,
+    top_p=None,
+)
+
+# Create AOP with authentication
+server = AOP(
+    server_name="SecureServer",
+    port=5932,
+    auth_callback=simple_auth,  # This enables and governs authentication
+)
+
+server.add_agent(agent)
+server.run()
+```
+
+#### JWT Token Authentication
+
+```python
+import jwt
+
+def jwt_auth(token: str) -> bool:
+    """Validate JWT tokens."""
+    try:
+        secret = "your-secret-key"
+        payload = jwt.decode(token, secret, algorithms=["HS256"])
+        return payload.get("authorized", False)
+    except jwt.InvalidTokenError:
+        return False
+
+server = AOP(
+    server_name="JWT-Server",
+    port=5932,
+    auth_callback=jwt_auth,
+)
+```
+
+#### Database Authentication
+
+```python
+def database_auth(token: str) -> bool:
+    """Validate tokens against database."""
+    from your_db import session, Token
+
+    token_record = session.query(Token).filter_by(
+        token=token,
+        is_active=True
+    ).first()
+
+    return token_record is not None
+
+server = AOP(
+    server_name="DB-Auth-Server",
+    port=5932,
+    auth_callback=database_auth,
+)
+```
+
+#### Environment-Based Authentication
+
+```python
+import os
+
+def env_auth(token: str) -> bool:
+    """Validate tokens from environment variables."""
+    valid_tokens = set(os.getenv("VALID_API_KEYS", "").split(","))
+    return token in valid_tokens
+
+server = AOP(
+    server_name="Env-Auth-Server",
+    port=5932,
+    auth_callback=env_auth,
+)
+```
+
+### Client-Side Authentication
+
+When calling tools on an authenticated server, include the `auth_token` parameter:
+
+```python
+import asyncio
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
+
+async def call_authenticated_tool():
+    url = "http://localhost:5932/mcp"
+
+    async with streamablehttp_client(url) as ctx:
+        read, write = ctx if len(ctx) == 2 else (ctx[0], ctx[1])
+
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+
+            # Include auth_token in tool call
+            result = await session.call_tool(
+                name="Research-Agent",
+                arguments={
+                    "task": "Research AI trends",
+                    "auth_token": "secret-key-123"  # Required!
+                },
+            )
+
+            print(result)
+
+asyncio.run(call_authenticated_tool())
+```
+
+### Authentication Error Handling
+
+When authentication fails, tools return:
+
+```json
+{
+  "result": "",
+  "success": false,
+  "error": "Authentication failed"
+}
+```
+
+### No Authentication
+
+To run without authentication, simply don't provide `auth_callback`:
+
+```python
+server = AOP(
+    server_name="PublicServer",
+    port=5932,
+    # No auth_callback = no authentication required
+)
 ```
 
 ## Complete Examples

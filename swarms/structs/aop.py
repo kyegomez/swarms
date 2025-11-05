@@ -7,7 +7,7 @@ import traceback
 from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional
 from uuid import uuid4
 
 from loguru import logger
@@ -573,6 +573,7 @@ class AOP:
         max_network_retries: Maximum number of network reconnection attempts
         network_retry_delay: Delay between network retry attempts in seconds
         network_timeout: Network connection timeout in seconds
+        auth_callback: Custom authentication callback function (if provided, auth is enabled)
     """
 
     def __init__(
@@ -600,6 +601,7 @@ class AOP:
         log_level: Literal[
             "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
         ] = "INFO",
+        auth_callback: Optional[Callable[[str], bool]] = None,
         *args,
         **kwargs,
     ):
@@ -628,6 +630,7 @@ class AOP:
             max_network_retries: Maximum number of network reconnection attempts
             network_retry_delay: Delay between network retry attempts in seconds
             network_timeout: Network connection timeout in seconds
+            auth_callback: Custom authentication callback function that takes a token (str) and returns bool. If provided, authentication is enabled.
         """
         self.server_name = server_name
         self.description = description
@@ -648,6 +651,7 @@ class AOP:
         self.max_network_retries = max_network_retries
         self.network_retry_delay = network_retry_delay
         self.network_timeout = network_timeout
+        self.auth_callback = auth_callback
 
         # Persistence state tracking
         self._restart_count = 0
@@ -681,7 +685,7 @@ class AOP:
         )
 
         logger.info(
-            f"Initialized AOP with server name: {server_name}, verbose: {verbose}, traceback: {traceback_enabled}, persistence: {persistence}, network_monitoring: {network_monitoring}"
+            f"Initialized AOP with server name: {server_name}, verbose: {verbose}, traceback: {traceback_enabled}, persistence: {persistence}, network_monitoring: {network_monitoring}, auth: {'enabled' if auth_callback else 'disabled'}"
         )
 
         # Add initial agents if provided
@@ -695,6 +699,36 @@ class AOP:
         # Register queue management tools if queue is enabled
         if self.queue_enabled:
             self._register_queue_management_tools()
+
+    def _validate_auth(self, token: Optional[str] = None) -> bool:
+        """
+        Validate authentication token using the configured auth callback.
+
+        Args:
+            token: The authentication token to validate
+
+        Returns:
+            bool: True if no auth callback configured or token is valid, False otherwise
+        """
+        # If no auth callback configured, allow all requests
+        if self.auth_callback is None:
+            return True
+
+        # If auth callback exists, validate the token
+        if token is None:
+            logger.warning("Authentication required but no token provided")
+            return False
+
+        try:
+            is_valid = self.auth_callback(token)
+            if not is_valid:
+                logger.warning(f"Authentication failed for token: {token[:10]}...")
+            return is_valid
+        except Exception as e:
+            logger.error(f"Error during authentication: {str(e)}")
+            if self.traceback_enabled:
+                logger.error(traceback.format_exc())
+            return False
 
     def add_agent(
         self,
@@ -972,6 +1006,7 @@ class AOP:
             imgs: List[str] = None,
             correct_answer: str = None,
             max_retries: int = None,
+            auth_token: str = None,
         ) -> Dict[str, Any]:
             """
             Execute the agent with the provided parameters.
@@ -982,10 +1017,23 @@ class AOP:
                 imgs: Optional list of images to be processed by the agent
                 correct_answer: Optional correct answer for validation or comparison
                 max_retries: Maximum number of retries (uses config default if None)
+                auth_token: Optional authentication token (required if auth is enabled)
 
             Returns:
                 Dict containing the agent's response and execution status
             """
+            # Validate authentication first
+            if not self._validate_auth(auth_token):
+                error_msg = "Authentication failed"
+                logger.warning(
+                    f"Tool '{tool_name}' authentication failed"
+                )
+                return {
+                    "result": "",
+                    "success": False,
+                    "error": error_msg,
+                }
+
             start_time = None
             if config.verbose:
                 start_time = (
@@ -1685,16 +1733,27 @@ class AOP:
             name="discover_agents",
             description="Discover information about other agents in the cluster including their name, description, system prompt (truncated to 200 chars), and tags.",
         )
-        def discover_agents(agent_name: str = None) -> Dict[str, Any]:
+        def discover_agents(
+            agent_name: str = None, auth_token: str = None
+        ) -> Dict[str, Any]:
             """
             Discover information about agents in the cluster.
 
             Args:
                 agent_name: Optional specific agent name to get info for. If None, returns info for all agents.
+                auth_token: Optional authentication token (required if auth is enabled)
 
             Returns:
                 Dict containing agent information for discovery
             """
+            # Validate authentication
+            if not self._validate_auth(auth_token):
+                return {
+                    "success": False,
+                    "error": "Authentication failed",
+                    "agents": [],
+                }
+
             try:
                 if agent_name:
                     # Get specific agent info
