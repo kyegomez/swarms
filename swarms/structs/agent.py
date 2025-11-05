@@ -1783,11 +1783,11 @@ class Agent:
 
                 # Handle REACT tools
                 if function_name == "action":
-                    action_desc = arguments.get("action_description", "")
-                    action_result = arguments.get("action_result", "")
-                    action_msg = (
-                        f"Action: {action_desc}\nResult: {action_result}"
+                    action_desc = arguments.get(
+                        "action_description", ""
                     )
+                    action_result = arguments.get("action_result", "")
+                    action_msg = f"Action: {action_desc}\nResult: {action_result}"
 
                     self.short_memory.add(
                         role="Tool Executor", content=action_msg
@@ -1798,10 +1798,10 @@ class Agent:
 
                 elif function_name == "subtask_complete":
                     subtask_num = arguments.get("subtask_number", 0)
-                    subtask_summary = arguments.get("subtask_summary", "")
-                    subtask_msg = (
-                        f"Subtask {subtask_num} Complete: {subtask_summary}"
+                    subtask_summary = arguments.get(
+                        "subtask_summary", ""
                     )
+                    subtask_msg = f"Subtask {subtask_num} Complete: {subtask_summary}"
 
                     self.short_memory.add(
                         role=self.agent_name, content=subtask_msg
@@ -1814,9 +1814,7 @@ class Agent:
 
                 elif function_name == "objective_complete":
                     final_summary = arguments.get("final_summary", "")
-                    objective_msg = (
-                        f"Objective Complete!\nFinal Summary: {final_summary}"
-                    )
+                    objective_msg = f"Objective Complete!\nFinal Summary: {final_summary}"
 
                     self.short_memory.add(
                         role=self.agent_name, content=objective_msg
@@ -1868,7 +1866,9 @@ class Agent:
 
             # Add REACT system prompt if not already added
             if not self.react_on:
-                react_prompt = REACT_SYS_PROMPT + """
+                react_prompt = (
+                    REACT_SYS_PROMPT
+                    + """
 
 You are now in REACT workflow mode. Follow this process:
 1. Review the plan and current subtask
@@ -1882,6 +1882,7 @@ Available tools:
 - subtask_complete: Mark current subtask as complete
 - objective_complete: Mark entire objective as complete (use only when ALL subtasks are done)
 """
+                )
                 self.short_memory.add(
                     role="system", content=react_prompt
                 )
@@ -1916,7 +1917,9 @@ Available tools:
             max_iterations = 100  # Safety limit
             objective_complete = False
 
-            while not objective_complete and loop_count < max_iterations:
+            while (
+                not objective_complete and loop_count < max_iterations
+            ):
                 loop_count += 1
 
                 # Build context for current iteration
@@ -1949,7 +1952,7 @@ Remember to use 'subtask_complete' when you finish a subtask, and 'objective_com
                 # Call LLM with REACT tools
                 attempt = 0
                 success = False
-                
+
                 while attempt < self.retry_attempts and not success:
                     try:
                         if img is not None:
@@ -1996,15 +1999,19 @@ Remember to use 'subtask_complete' when you finish a subtask, and 'objective_com
                             # Extract subtask number from response if possible
                             # This is a fallback - ideally it comes from the tool call
                             for item in (
-                                response if isinstance(response, list) else []
+                                response
+                                if isinstance(response, list)
+                                else []
                             ):
                                 if isinstance(item, dict):
-                                    tool_calls = item.get("tool_calls", [])
+                                    tool_calls = item.get(
+                                        "tool_calls", []
+                                    )
                                     for tool_call in tool_calls:
                                         if (
-                                            tool_call.get("function", {}).get(
-                                                "name"
-                                            )
+                                            tool_call.get(
+                                                "function", {}
+                                            ).get("name")
                                             == "subtask_complete"
                                         ):
                                             args = tool_call.get(
@@ -2012,7 +2019,9 @@ Remember to use 'subtask_complete' when you finish a subtask, and 'objective_com
                                             ).get("arguments", {})
                                             if isinstance(args, str):
                                                 try:
-                                                    args = json.loads(args)
+                                                    args = json.loads(
+                                                        args
+                                                    )
                                                 except:
                                                     pass
                                             if isinstance(args, dict):
@@ -2067,7 +2076,9 @@ Remember to use 'subtask_complete' when you finish a subtask, and 'objective_com
                     self.stopping_condition is not None
                     and self._check_stopping_condition(response)
                 ):
-                    logger.info("Stopping condition met in REACT workflow")
+                    logger.info(
+                        "Stopping condition met in REACT workflow"
+                    )
                     break
 
             # Restore original tools and context_length
@@ -2095,7 +2106,9 @@ Remember to use 'subtask_complete' when you finish a subtask, and 'objective_com
             if hasattr(self, "context_length"):
                 self.context_length = original_context_length
             if hasattr(self, "short_memory"):
-                self.short_memory.context_length = original_context_length
+                self.short_memory.context_length = (
+                    original_context_length
+                )
             raise error
 
     async def run_concurrent(self, task: str, *args, **kwargs):
