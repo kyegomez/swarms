@@ -13,7 +13,6 @@ from uuid import uuid4
 
 from loguru import logger
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, field_validator
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
@@ -110,7 +109,8 @@ def create_payment_middleware(
     return payment_middleware
 
 
-class PaymentConfig(BaseModel):
+@dataclass
+class PaymentConfig:
     """
     Configuration for x402 payment integration per agent.
 
@@ -126,105 +126,50 @@ class PaymentConfig(BaseModel):
         facilitator_url: Optional custom facilitator URL (defaults to https://x402.org/facilitator)
         input_schema: Optional JSON schema for input validation
         output_schema: Optional JSON schema for output description
+
+    Raises:
+        ValueError: If payment is enabled but pay_to_address is missing or invalid,
+                   or if price format is invalid
     """
 
-    enabled: bool = Field(
-        default=False,
-        description="Whether payment is required for this agent",
-    )
-    price: str = Field(
-        default="$0.01",
-        description="Price per request in USD (e.g., '$0.01', '$1.00')",
-    )
-    pay_to_address: Optional[str] = Field(
-        default=None,
-        description="EVM-compatible wallet address to receive payments",
-    )
-    network_id: str = Field(
-        default="base-sepolia",
-        description="Blockchain network ID (e.g., 'base-sepolia' for testnet, 'base' for mainnet)",
-    )
-    description: Optional[str] = Field(
-        default=None,
-        description="Description of what the payment is for",
-    )
-    facilitator_url: str = Field(
-        default="https://x402.org/facilitator",
-        description="Facilitator URL for payment processing",
-    )
-    input_schema: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="Optional JSON schema for input validation",
-    )
-    output_schema: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="Optional JSON schema for output description",
-    )
+    enabled: bool = False
+    price: str = "$0.01"
+    pay_to_address: Optional[str] = None
+    network_id: str = "base-sepolia"
+    description: Optional[str] = None
+    facilitator_url: str = "https://x402.org/facilitator"
+    input_schema: Optional[Dict[str, Any]] = None
+    output_schema: Optional[Dict[str, Any]] = None
 
-    @field_validator("price")
-    @classmethod
-    def validate_price(cls, v: str) -> str:
+    def __post_init__(self) -> None:
         """
-        Validate that price is in the correct format.
-
-        Args:
-            v: Price string to validate
-
-        Returns:
-            Validated price string
+        Validate payment configuration after initialization.
 
         Raises:
-            ValueError: If price format is invalid
+            ValueError: If validation fails
         """
-        if not v.startswith("$"):
+        # Validate price format
+        if not self.price.startswith("$"):
             raise ValueError("Price must start with '$' (e.g., '$0.01')")
         try:
-            float(v[1:])
+            float(self.price[1:])
         except ValueError:
             raise ValueError(
                 "Price must be a valid number after '$' (e.g., '$0.01')"
             )
-        return v
 
-    @field_validator("pay_to_address")
-    @classmethod
-    def validate_address(cls, v: Optional[str], info) -> Optional[str]:
-        """
-        Validate wallet address when payment is enabled.
-
-        Args:
-            v: Wallet address to validate
-            info: Validation context
-
-        Returns:
-            Validated address
-
-        Raises:
-            ValueError: If payment is enabled but address is missing or invalid
-        """
-        if info.data.get("enabled", False):
-            if not v:
+        # Validate wallet address when payment is enabled
+        if self.enabled:
+            if not self.pay_to_address:
                 raise ValueError(
                     "pay_to_address is required when payment is enabled"
                 )
-            if not v.startswith("0x") or len(v) != 42:
+            if not self.pay_to_address.startswith("0x") or len(
+                self.pay_to_address
+            ) != 42:
                 raise ValueError(
                     "pay_to_address must be a valid EVM address (0x followed by 40 hex characters)"
                 )
-        return v
-
-    class Config:
-        """Pydantic configuration."""
-
-        json_schema_extra = {
-            "example": {
-                "enabled": True,
-                "price": "$0.01",
-                "pay_to_address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-                "network_id": "base-sepolia",
-                "description": "AI-powered research agent",
-            }
-        }
 
 
 class TaskStatus(Enum):
