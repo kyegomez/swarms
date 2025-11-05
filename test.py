@@ -29,11 +29,10 @@ async def call_server():
             print("Calling discover_agents...")
             print("=" * 60 + "\n")
 
-            # Just pass auth_token in arguments
             result = await session.call_tool(
                 name="discover_agents",
                 arguments={
-                    "auth_token": "mytoken123" 
+                    "auth_token": "mytoken1234" 
                 },
             )
 
@@ -47,7 +46,7 @@ async def call_server():
                 name="Research-Agent",
                 arguments={
                     "task": "What is Python?",
-                    "auth_token": "mytoken123"
+                    "auth_token": "mytoken123" 
                 },
             )
 
