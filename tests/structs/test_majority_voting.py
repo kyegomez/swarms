@@ -178,21 +178,21 @@ def test_majority_voting_error_handling():
 def test_majority_voting_different_output_types():
     """Test MajorityVoting with different output types"""
     # Create agents for technical analysis
-    security_expert = Agent(
+    Agent(
         agent_name="Security-Expert",
         agent_description="Cybersecurity and data protection specialist",
         model_name="gpt-4o",
         max_loops=1,
     )
 
-    compliance_officer = Agent(
+    Agent(
         agent_name="Compliance-Officer",
         agent_description="Regulatory compliance and legal specialist",
         model_name="gpt-4o",
         max_loops=1,
     )
 
-    privacy_advocate = Agent(
+    Agent(
         agent_name="Privacy-Advocate",
         agent_description="Privacy protection and data rights specialist",
         model_name="gpt-4o",
