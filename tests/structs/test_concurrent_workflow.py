@@ -159,7 +159,7 @@ def test_concurrent_workflow_error_handling():
     """Test ConcurrentWorkflow error handling and validation"""
     # Test with empty agents list
     try:
-        workflow = ConcurrentWorkflow(agents=[])
+        ConcurrentWorkflow(agents=[])
         assert (
             False
         ), "Should have raised ValueError for empty agents list"
@@ -168,7 +168,7 @@ def test_concurrent_workflow_error_handling():
 
     # Test with None agents
     try:
-        workflow = ConcurrentWorkflow(agents=None)
+        ConcurrentWorkflow(agents=None)
         assert False, "Should have raised ValueError for None agents"
     except ValueError as e:
         assert "No agents provided" in str(e)
