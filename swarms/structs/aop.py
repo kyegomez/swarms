@@ -2711,6 +2711,13 @@ class AOP:
             self.mcp_server.run(transport=self.transport)
         except KeyboardInterrupt:
             logger.info("Server interrupted by user")
+        except (OSError, socket.error) as e:
+            error_msg = str(e).lower()
+            if "address already in use" in error_msg or "errno 98" in error_msg:
+                logger.error(
+                    f"Port {self.port} is already in use. Please use a different port or stop the process using this port."
+                )
+            raise
         finally:
             # Clean up queues when server stops
             if self.queue_enabled:
@@ -2743,7 +2750,32 @@ class AOP:
         """
         if not self._persistence_enabled:
             # Standard run without persistence
-            self.start_server()
+            try:
+                self.start_server()
+            except Exception as e:
+                if self._is_network_error(e):
+                    if self.network_monitoring:
+                        logger.error(
+                            f"Network error during server start: {e}"
+                        )
+                        if self._handle_network_error(e):
+                            try:
+                                self.start_server()
+                                return
+                            except Exception as retry_error:
+                                logger.error(
+                                    f"Server failed after network recovery: {retry_error}"
+                                )
+                                raise
+                        else:
+                            raise
+                    else:
+                        logger.error(
+                            f"Network error but network monitoring is disabled: {e}"
+                        )
+                        raise
+                else:
+                    raise
             return
 
         # Persistence-enabled run
@@ -2908,6 +2940,9 @@ class AOP:
             "aborted",
             "unreachable",
             "timeout",
+            "address already in use",
+            "errno 98",
+            "bind",
         ]
 
         return any(
