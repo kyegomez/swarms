@@ -18,7 +18,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 
 ### Model Integrations
 
-- **[models/](models/)** - Various model integrations including Cerebras, GPT-5, GPT-OSS, Llama 4, Lumo, Ollama, and VLLM implementations with concurrent processing examples and provider-specific configurations.
+- **[models/](models/)** - Various model integrations including Cerebras, GPT-5, GPT-OSS, Llama 4, Lumo, and Ollama implementations with concurrent processing examples and provider-specific configurations.
 
 ### API & Protocols
 
