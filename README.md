@@ -1,98 +1,12 @@
 <div align="center">
   <a href="https://swarms.world">
-    <img src="https://github.com/kyegomez/swarms/blob/master/images/swarmslogobanner.png" style="margin: 15px; max-width: 700px" width="100%" alt="Logo">
+    <img src="https://github.com/kyegomez/swarms/blob/master/images/new_logo.png" style="margin: 15px; max-width: 350px" width="70%" alt="Logo">
   </a>
 </div>
 <p align="center">
   <em>The Enterprise-Grade Production-Ready Multi-Agent Orchestration Framework </em>
 </p>
 
-<p align="center">
-  <a href="https://pypi.org/project/swarms/" target="_blank">
-    <picture>
-      <source srcset="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54" media="(prefers-color-scheme: dark)">
-      <img alt="Python" src="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54" />
-    </picture>
-    <picture>
-      <source srcset="https://img.shields.io/pypi/v/swarms?style=for-the-badge&color=3670A0" media="(prefers-color-scheme: dark)">
-      <img alt="Version" src="https://img.shields.io/pypi/v/swarms?style=for-the-badge&color=3670A0">
-    </picture>
-  </a>
-</p>
-
-<p align="center">
-  <!-- Project Stats - Most Important First -->
-  <a href="https://github.com/kyegomez/swarms/stargazers">
-    <picture>
-      <source srcset="https://img.shields.io/github/stars/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/github/stars/kyegomez/swarms?style=for-the-badge" alt="GitHub stars">
-    </picture>
-  </a>
-  <a href="https://github.com/kyegomez/swarms/network">
-    <picture>
-      <source srcset="https://img.shields.io/github/forks/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/github/forks/kyegomez/swarms?style=for-the-badge" alt="GitHub forks">
-    </picture>
-  </a>
-  <a href="https://github.com/kyegomez/swarms/issues">
-    <picture>
-      <source srcset="https://img.shields.io/github/issues/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/github/issues/kyegomez/swarms?style=for-the-badge" alt="GitHub issues">
-    </picture>
-  </a>
-  <a href="https://github.com/kyegomez/swarms/blob/main/LICENSE">
-    <picture>
-      <source srcset="https://img.shields.io/github/license/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/github/license/kyegomez/swarms?style=for-the-badge" alt="GitHub license">
-    </picture>
-  </a>
-  <a href="https://pepy.tech/project/swarms">
-    <picture>
-      <source srcset="https://static.pepy.tech/badge/swarms/month" media="(prefers-color-scheme: dark)">
-      <img src="https://static.pepy.tech/badge/swarms/month" alt="Downloads">
-    </picture>
-  </a>
-  <a href="https://libraries.io/github/kyegomez/swarms">
-    <picture>
-      <source srcset="https://img.shields.io/librariesio/github/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/librariesio/github/kyegomez/swarms?style=for-the-badge" alt="Dependency Status">
-    </picture>
-  </a>
-</p>
-
-<p align="center">
-  <!-- Social Media -->
-  <a href="https://twitter.com/swarms_corp/">
-    <picture>
-      <source srcset="https://img.shields.io/badge/Twitter-Follow-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/badge/Twitter-Follow-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" alt="Twitter">
-    </picture>
-  </a>
-  <a href="https://discord.gg/EamjgSaEQf">
-    <picture>
-      <source srcset="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
-    </picture>
-  </a>
-  <a href="https://www.youtube.com/@kyegomez3242">
-    <picture>
-      <source srcset="https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube">
-    </picture>
-  </a>
-  <a href="https://www.linkedin.com/in/kye-g-38759a207/">
-    <picture>
-      <source srcset="https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn">
-    </picture>
-  </a>
-  <a href="https://x.com/swarms_corp">
-    <picture>
-      <source srcset="https://img.shields.io/badge/X.com-Follow-1DA1F2?style=for-the-badge&logo=x&logoColor=white" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/badge/X.com-Follow-1DA1F2?style=for-the-badge&logo=x&logoColor=white" alt="X.com">
-    </picture>
-  </a>
-</p>
 
 <p align="center">
   <!-- Main Navigation Links -->
@@ -103,18 +17,30 @@
   <a href="https://swarms.world">🛒 Swarms Marketplace</a>
 </p>
 
+
 <p align="center">
-  <!-- Share Buttons -->
-  <a href="https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms">
+  <a href="https://pypi.org/project/swarms/" target="_blank">
     <picture>
-      <source srcset="https://img.shields.io/badge/Share%20on%20Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/badge/Share%20on%20Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" alt="Share on Twitter">
+      <source srcset="https://img.shields.io/pypi/v/swarms?style=for-the-badge&color=3670A0" media="(prefers-color-scheme: dark)">
+      <img alt="Version" src="https://img.shields.io/pypi/v/swarms?style=for-the-badge&color=3670A0">
     </picture>
   </a>
-  <a href="https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=&summary=&source=">
+  <a href="https://pypi.org/project/swarms/" target="_blank">
     <picture>
-      <source srcset="https://img.shields.io/badge/Share%20on%20LinkedIn-blue?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/badge/Share%20on%20LinkedIn-blue?style=for-the-badge" alt="Share on LinkedIn">
+      <source srcset="https://img.shields.io/pypi/dm/swarms?style=for-the-badge&color=3670A0" media="(prefers-color-scheme: dark)">
+      <img alt="Downloads" src="https://img.shields.io/pypi/dm/swarms?style=for-the-badge&color=3670A0">
+    </picture>
+  </a>
+  <a href="https://twitter.com/swarms_corp/">
+    <picture>
+      <source srcset="https://img.shields.io/badge/Twitter-Follow-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/badge/Twitter-Follow-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" alt="Twitter">
+    </picture>
+  </a>
+  <a href="https://discord.gg/EamjgSaEQf">
+    <picture>
+      <source srcset="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
     </picture>
   </a>
 </p>
@@ -160,12 +86,10 @@ $ poetry add swarms
 # Clone the repository
 $ git clone https://github.com/kyegomez/swarms.git
 $ cd swarms
-
-# Install with pip
-$ pip install -e .
+$ pip install -r requirements.txt
 ```
 
-### Using Docker
+<!-- ### Using Docker
 
 The easiest way to get started with Swarms is using our pre-built Docker image:
 
@@ -181,7 +105,7 @@ $ docker run -it --rm -v $(pwd):/app kyegomez/swarms:latest bash
 $ docker-compose up -d
 ```
 
-For more Docker options and advanced usage, see our [Docker documentation](/scripts/docker/DOCKER.md).
+For more Docker options and advanced usage, see our [Docker documentation](/scripts/docker/DOCKER.md). -->
 
 ---
 
