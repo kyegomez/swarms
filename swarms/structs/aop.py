@@ -659,6 +659,9 @@ class AOP:
         self._last_network_error = None
         self._network_connected = True
 
+        # Server creation timestamp
+        self._created_at = time.time()
+
         self.agents: Dict[str, Agent] = {}
         self.tool_configs: Dict[str, AgentToolConfig] = {}
         self.task_queues: Dict[str, TaskQueue] = {}
@@ -1980,6 +1983,53 @@ class AOP:
                     "matching_agents": [],
                 }
 
+        @self.mcp_server.tool(
+            name="get_server_info",
+            description="Get comprehensive server information including metadata, configuration, tool details, queue stats, and network status.",
+        )
+        def get_server_info_tool() -> Dict[str, Any]:
+            """
+            Get comprehensive information about the MCP server and registered tools.
+
+            Returns:
+                Dict containing server information with the following fields:
+                - server_name: Name of the server
+                - description: Server description
+                - total_tools/total_agents: Total number of agents registered
+                - tools/agent_names: List of all agent names
+                - created_at: Unix timestamp when server was created
+                - created_at_iso: ISO formatted creation time
+                - uptime_seconds: Server uptime in seconds
+                - host: Server host address
+                - port: Server port number
+                - transport: Transport protocol used
+                - log_level: Logging level
+                - queue_enabled: Whether queue system is enabled
+                - persistence_enabled: Whether persistence mode is enabled
+                - network_monitoring_enabled: Whether network monitoring is enabled
+                - persistence: Detailed persistence status
+                - network: Detailed network status
+                - tool_details: Detailed information about each agent tool
+                - queue_config: Queue configuration (if queue enabled)
+                - queue_stats: Queue statistics for each agent (if queue enabled)
+            """
+            try:
+                server_info = self.get_server_info()
+                return {
+                    "success": True,
+                    "server_info": server_info,
+                }
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(
+                    f"Error in get_server_info tool: {error_msg}"
+                )
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "server_info": None,
+                }
+
     def _register_queue_management_tools(self) -> None:
         """
         Register queue management tools for the MCP server.
@@ -2699,18 +2749,30 @@ class AOP:
         Get information about the MCP server and registered tools.
 
         Returns:
-            Dict containing server information
+            Dict containing server information including metadata, configuration,
+            and tool details
         """
         info = {
             "server_name": self.server_name,
             "description": self.description,
             "total_tools": len(self.agents),
+            "total_agents": len(self.agents),  # Alias for compatibility
             "tools": self.list_agents(),
+            "agent_names": self.list_agents(),  # Alias for compatibility
+            "created_at": self._created_at,
+            "created_at_iso": time.strftime(
+                "%Y-%m-%d %H:%M:%S", time.localtime(self._created_at)
+            ),
+            "uptime_seconds": time.time() - self._created_at,
             "verbose": self.verbose,
             "traceback_enabled": self.traceback_enabled,
             "log_level": self.log_level,
             "transport": self.transport,
+            "host": self.host,
+            "port": self.port,
             "queue_enabled": self.queue_enabled,
+            "persistence_enabled": self._persistence_enabled,  # Top-level for compatibility
+            "network_monitoring_enabled": self.network_monitoring,  # Top-level for compatibility
             "persistence": self.get_persistence_status(),
             "network": self.get_network_status(),
             "tool_details": {

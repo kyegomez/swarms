@@ -199,9 +199,14 @@ Run the MCP server (alias for start_server).
 
 ##### get_server_info()
 
-Get information about the MCP server and registered tools.
+Get comprehensive information about the MCP server and registered tools, including metadata, configuration, tool details, queue stats, and network status.
 
-**Returns:** `Dict[str, Any]` - Server information
+**Returns:** `Dict[str, Any]` - Server information including:
+- Server metadata (name, description, creation time, uptime)
+- Configuration (host, port, transport, log level)
+- Agent information (total count, names, detailed tool info)
+- Queue configuration and statistics (if queue enabled)
+- Persistence and network status
 
 ##### _register_tool()
 
