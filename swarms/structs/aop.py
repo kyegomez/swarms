@@ -2756,7 +2756,9 @@ class AOP:
             "server_name": self.server_name,
             "description": self.description,
             "total_tools": len(self.agents),
-            "total_agents": len(self.agents),  # Alias for compatibility
+            "total_agents": len(
+                self.agents
+            ),  # Alias for compatibility
             "tools": self.list_agents(),
             "agent_names": self.list_agents(),  # Alias for compatibility
             "created_at": self._created_at,

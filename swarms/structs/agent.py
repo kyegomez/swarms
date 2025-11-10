@@ -101,6 +101,9 @@ from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
 from swarms.utils.pdf_to_text import pdf_to_text
+from swarms.utils.swarms_marketplace_utils import (
+    add_prompt_to_marketplace,
+)
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -414,7 +417,6 @@ class Agent:
         created_at: float = time.time(),
         return_step_meta: Optional[bool] = False,
         tags: Optional[List[str]] = None,
-        use_cases: Optional[List[Dict[str, str]]] = None,
         step_pool: List[Step] = [],
         print_every_step: Optional[bool] = False,
         time_created: Optional[str] = time.strftime(
@@ -466,6 +468,8 @@ class Agent:
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
         capabilities: Optional[List[str]] = None,
         mode: Literal["interactive", "fast", "standard"] = "standard",
+        publish_to_marketplace: bool = False,
+        use_cases: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ):
@@ -617,6 +621,7 @@ class Agent:
         self.handoffs = handoffs
         self.capabilities = capabilities
         self.mode = mode
+        self.publish_to_marketplace = publish_to_marketplace
 
         # Initialize transforms
         if transforms is None:
@@ -689,6 +694,30 @@ class Agent:
         if self.mode == "fast":
             self.print_on = False
             self.verbose = False
+
+        if self.publish_to_marketplace is True:
+            # Join tags and capabilities into a single string
+            tags_and_capabilities = ", ".join(
+                self.tags + self.capabilities
+                if self.tags and self.capabilities
+                else None
+            )
+
+            if self.use_cases is None:
+                raise AgentInitializationError(
+                    "Use cases are required when publishing to the marketplace. The schema is a list of dictionaries with 'title' and 'description' keys."
+                )
+
+            add_prompt_to_marketplace(
+                name=self.agent_name,
+                prompt=self.short_memory.get_str(),
+                description=self.agent_description,
+                tags=tags_and_capabilities,
+                category="research",
+                use_cases=(
+                    self.use_cases if self.use_cases else None
+                ),
+            )
 
     def handle_handoffs(self, task: Optional[str] = None):
         router = MultiAgentRouter(
