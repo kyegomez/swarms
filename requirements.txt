@@ -3,7 +3,7 @@ toml
 pypdf==5.1.0
 ratelimit==2.2.1
 loguru
-pydantic==2.12.0
+pydantic==2.12.4
 tenacity
 rich
 psutil
