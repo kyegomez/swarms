@@ -93,7 +93,7 @@ mypy-protobuf = "^3.0.0"
 
 
 [tool.poetry.group.test.dependencies]
-pytest = "^8.1.1"
+pytest = ">=8.1.1,<10.0.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "*"
