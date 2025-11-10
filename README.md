@@ -25,10 +25,10 @@
       <img alt="Version" src="https://img.shields.io/pypi/v/swarms?style=for-the-badge&color=3670A0">
     </picture>
   </a>
-  <a href="https://pepy.tech/project/swarms">
+  <a href="https://pypi.org/project/swarms/" target="_blank">
     <picture>
-      <source srcset="https://static.pepy.tech/badge/swarms/month" media="(prefers-color-scheme: dark)">
-      <img src="https://static.pepy.tech/badge/swarms/month" alt="Downloads">
+      <source srcset="https://img.shields.io/pypi/dm/swarms?style=for-the-badge&color=3670A0" media="(prefers-color-scheme: dark)">
+      <img alt="Downloads" src="https://img.shields.io/pypi/dm/swarms?style=for-the-badge&color=3670A0">
     </picture>
   </a>
   <a href="https://twitter.com/swarms_corp/">
