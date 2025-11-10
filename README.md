@@ -86,12 +86,10 @@ $ poetry add swarms
 # Clone the repository
 $ git clone https://github.com/kyegomez/swarms.git
 $ cd swarms
-
-# Install with pip
-$ pip install -e .
+$ pip install -r requirements.txt
 ```
 
-### Using Docker
+<!-- ### Using Docker
 
 The easiest way to get started with Swarms is using our pre-built Docker image:
 
@@ -107,7 +105,7 @@ $ docker run -it --rm -v $(pwd):/app kyegomez/swarms:latest bash
 $ docker-compose up -d
 ```
 
-For more Docker options and advanced usage, see our [Docker documentation](/scripts/docker/DOCKER.md).
+For more Docker options and advanced usage, see our [Docker documentation](/scripts/docker/DOCKER.md). -->
 
 ---
 
