@@ -20,7 +20,6 @@ This directory contains comprehensive demonstration examples showcasing various 
 
 ## Finance
 - [sentiment_news_analysis.py](finance/sentiment_news_analysis.py) - Financial sentiment analysis
-- [swarms_of_vllm.py](finance/swarms_of_vllm.py) - VLLM-based financial swarms
 
 ## Hackathon Examples
 - [fraud.py](hackathon_feb16/fraud.py) - Fraud detection system

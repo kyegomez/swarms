@@ -13,10 +13,14 @@ Here's a simple example of integrating Llama4 model for crypto risk analysis:
 ```python
 from dotenv import load_dotenv
 from swarms import Agent
-from swarms.utils.vllm_wrapper import VLLM
 
 load_dotenv()
-model = VLLM(model_name="meta-llama/Llama-4-Maverick-17B-128E")
+
+agent = Agent(
+    agent_name="Crypto-Risk-Analysis-Agent",
+    model_name="meta-llama/Llama-4-Maverick-17B-128E",
+    max_loops=1,
+)
 ```
 
 ## Available Models
@@ -78,9 +82,9 @@ Base your analysis on established crypto market principles and current market co
 agent = Agent(
     agent_name="Crypto-Risk-Analysis-Agent",
     agent_description="Agent for analyzing risks in cryptocurrency investments",
+    model_name="meta-llama/Llama-4-Maverick-17B-128E",
     system_prompt=CRYPTO_RISK_ANALYSIS_PROMPT,
     max_loops=1,
-    llm=model,
 )
 ```
 
@@ -88,9 +92,7 @@ agent = Agent(
 
 ```python
 from dotenv import load_dotenv
-
 from swarms import Agent
-from swarms.utils.vllm_wrapper import VLLM
 
 load_dotenv()
 
@@ -126,15 +128,13 @@ Provide detailed, balanced analysis with both risks and potential mitigations.
 Base your analysis on established crypto market principles and current market conditions.
 """
 
-model = VLLM(model_name="meta-llama/Llama-4-Maverick-17B-128E")
-
 # Initialize the agent with custom prompt
 agent = Agent(
     agent_name="Crypto-Risk-Analysis-Agent",
     agent_description="Agent for analyzing risks in cryptocurrency investments",
+    model_name="meta-llama/Llama-4-Maverick-17B-128E",
     system_prompt=CRYPTO_RISK_ANALYSIS_PROMPT,
     max_loops=1,
-    llm=model,
 )
 
 print(
@@ -153,7 +153,7 @@ print(
     The `max_loops` parameter determines how many times the agent will iterate through its thinking process. In this example, it's set to 1 for a single pass analysis.
 
 ??? question "Can I use a different model?"
-    Yes, you can replace the VLLM wrapper with other compatible models. Just ensure you update the model initialization accordingly.
+    Yes, you can use any compatible model by changing the `model_name` parameter. Just ensure you have the necessary API keys and access configured.
 
 ??? question "How do I customize the system prompt?"
     You can modify the `CRYPTO_RISK_ANALYSIS_PROMPT` string to match your specific use case while maintaining the structured format.
