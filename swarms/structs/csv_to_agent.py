@@ -102,16 +102,30 @@ class AgentValidator:
 
             # Validate model name using litellm model list
             model_name = str(config["model_name"])
-            if not any(
-                model_name in model["model_name"]
-                for model in model_list
-            ):
-                [model["model_name"] for model in model_list]
-                raise AgentValidationError(
-                    "Invalid model name. Must be one of the supported litellm models",
-                    "model_name",
-                    model_name,
-                )
+            # model_list from litellm is a list of strings, not dicts
+            if isinstance(model_list, list) and len(model_list) > 0:
+                if isinstance(model_list[0], str):
+                    # model_list is list of strings
+                    if not any(
+                        model_name in model or model in model_name
+                        for model in model_list
+                    ):
+                        raise AgentValidationError(
+                            "Invalid model name. Must be one of the supported litellm models",
+                            "model_name",
+                            model_name,
+                        )
+                elif isinstance(model_list[0], dict):
+                    # model_list is list of dicts (fallback for different litellm versions)
+                    if not any(
+                        model_name in model.get("model_name", "")
+                        for model in model_list
+                    ):
+                        raise AgentValidationError(
+                            "Invalid model name. Must be one of the supported litellm models",
+                            "model_name",
+                            model_name,
+                        )
 
             # Convert types with error handling
             validated_config: AgentConfigDict = {
