@@ -499,7 +499,7 @@ class SwarmRouter:
             name=self.name,
             description=self.description,
             agents=self.agents,
-            consensus_agent=self.agents[-1],
+            max_loops=self.max_loops,
             *args,
             **kwargs,
         )

@@ -122,6 +122,7 @@ class MajorityVoting:
         consensus_agent_description: str = "An agent that uses consensus to generate a final answer.",
         consensus_agent_model_name: str = "gpt-4.1",
         additional_consensus_agent_kwargs: dict = {},
+        consensus_agent: Agent = None,  # Accept but don't use this parameter for backward compatibility
         *args,
         **kwargs,
     ):
@@ -135,8 +136,23 @@ class MajorityVoting:
         self.output_type = output_type
         self.consensus_agent_prompt = consensus_agent_prompt
 
+        # Filter out MajorityVoting-specific kwargs that shouldn't be passed to Conversation
+        majority_voting_specific_params = {
+            "consensus_agent",
+            "consensus_agent_prompt",
+            "consensus_agent_name",
+            "consensus_agent_description",
+            "consensus_agent_model_name",
+            "additional_consensus_agent_kwargs",
+        }
+        conversation_kwargs = {
+            k: v
+            for k, v in kwargs.items()
+            if k not in majority_voting_specific_params
+        }
+
         self.conversation = Conversation(
-            time_enabled=False, *args, **kwargs
+            time_enabled=False, *args, **conversation_kwargs
         )
 
         self.consensus_agent = default_consensus_agent(
