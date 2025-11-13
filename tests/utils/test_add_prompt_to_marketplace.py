@@ -1,6 +1,7 @@
 """
 Pytest tests for swarms_marketplace_utils module.
 """
+
 import os
 from unittest.mock import Mock, patch
 
@@ -57,8 +58,13 @@ class TestAddPromptToMarketplace:
         assert result["status"] == "success"
         mock_client.post.assert_called_once()
         call_args = mock_client.post.call_args
-        assert call_args[0][0] == "https://swarms.world/api/add-prompt"
-        assert call_args[1]["headers"]["Authorization"] == "Bearer test_api_key_12345"
+        assert (
+            call_args[0][0] == "https://swarms.world/api/add-prompt"
+        )
+        assert (
+            call_args[1]["headers"]["Authorization"]
+            == "Bearer test_api_key_12345"
+        )
         assert call_args[1]["json"]["name"] == "Blood Analysis Agent"
         assert call_args[1]["json"]["category"] == "research"
 
@@ -69,7 +75,10 @@ class TestAddPromptToMarketplace:
         # Mock response
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {"id": "456", "status": "success"}
+        mock_response.json.return_value = {
+            "id": "456",
+            "status": "success",
+        }
         mock_response.text = ""
         mock_response.raise_for_status = Mock()
 
@@ -85,7 +94,12 @@ class TestAddPromptToMarketplace:
             name="Test Prompt",
             prompt="Test prompt text",
             description="Test description",
-            use_cases=[{"title": "Use Case 1", "description": "Description 1"}],
+            use_cases=[
+                {
+                    "title": "Use Case 1",
+                    "description": "Description 1",
+                }
+            ],
             tags="tag1, tag2",
             is_free=False,
             price_usd=9.99,
@@ -105,7 +119,9 @@ class TestAddPromptToMarketplace:
     def test_add_prompt_missing_api_key(self):
         """Test that missing API key raises ValueError."""
         with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(ValueError, match="Swarms API key is not set"):
+            with pytest.raises(
+                ValueError, match="Swarms API key is not set"
+            ):
                 add_prompt_to_marketplace(
                     name="Test",
                     prompt="Test prompt",
@@ -117,7 +133,9 @@ class TestAddPromptToMarketplace:
     def test_add_prompt_empty_api_key(self):
         """Test that empty API key raises ValueError."""
         with patch.dict(os.environ, {"SWARMS_API_KEY": ""}):
-            with pytest.raises(ValueError, match="Swarms API key is not set"):
+            with pytest.raises(
+                ValueError, match="Swarms API key is not set"
+            ):
                 add_prompt_to_marketplace(
                     name="Test",
                     prompt="Test prompt",
@@ -141,7 +159,9 @@ class TestAddPromptToMarketplace:
     def test_add_prompt_missing_prompt(self):
         """Test that missing prompt raises ValueError."""
         with patch.dict(os.environ, {"SWARMS_API_KEY": "test_key"}):
-            with pytest.raises(ValueError, match="prompt is required"):
+            with pytest.raises(
+                ValueError, match="prompt is required"
+            ):
                 add_prompt_to_marketplace(
                     name="Test",
                     prompt=None,
@@ -153,7 +173,9 @@ class TestAddPromptToMarketplace:
     def test_add_prompt_missing_description(self):
         """Test that missing description raises ValueError."""
         with patch.dict(os.environ, {"SWARMS_API_KEY": "test_key"}):
-            with pytest.raises(ValueError, match="description is required"):
+            with pytest.raises(
+                ValueError, match="description is required"
+            ):
                 add_prompt_to_marketplace(
                     name="Test",
                     prompt="Test prompt",
@@ -165,7 +187,9 @@ class TestAddPromptToMarketplace:
     def test_add_prompt_missing_category(self):
         """Test that missing category raises ValueError."""
         with patch.dict(os.environ, {"SWARMS_API_KEY": "test_key"}):
-            with pytest.raises(ValueError, match="category is required"):
+            with pytest.raises(
+                ValueError, match="category is required"
+            ):
                 add_prompt_to_marketplace(
                     name="Test",
                     prompt="Test prompt",
@@ -177,7 +201,9 @@ class TestAddPromptToMarketplace:
     def test_add_prompt_missing_use_cases(self):
         """Test that missing use_cases raises ValueError."""
         with patch.dict(os.environ, {"SWARMS_API_KEY": "test_key"}):
-            with pytest.raises(ValueError, match="use_cases is required"):
+            with pytest.raises(
+                ValueError, match="use_cases is required"
+            ):
                 add_prompt_to_marketplace(
                     name="Test",
                     prompt="Test prompt",
@@ -196,7 +222,9 @@ class TestAddPromptToMarketplace:
         mock_response.reason_phrase = "Bad Request"
         mock_response.json.return_value = {"error": "Invalid request"}
         mock_response.text = '{"error": "Invalid request"}'
-        mock_response.raise_for_status.side_effect = Exception("HTTP 400")
+        mock_response.raise_for_status.side_effect = Exception(
+            "HTTP 400"
+        )
 
         # Mock client
         mock_client = Mock()
@@ -227,7 +255,9 @@ class TestAddPromptToMarketplace:
             "error": "Authentication failed"
         }
         mock_response.text = '{"error": "Authentication failed"}'
-        mock_response.raise_for_status.side_effect = Exception("HTTP 401")
+        mock_response.raise_for_status.side_effect = Exception(
+            "HTTP 401"
+        )
 
         # Mock client
         mock_client = Mock()
@@ -253,7 +283,10 @@ class TestAddPromptToMarketplace:
         # Mock response
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {"id": "789", "status": "success"}
+        mock_response.json.return_value = {
+            "id": "789",
+            "status": "success",
+        }
         mock_response.text = ""
         mock_response.raise_for_status = Mock()
 

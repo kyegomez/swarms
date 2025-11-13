@@ -1,0 +1,149 @@
+No.,Full Name,Respondent's country,Affiliation,Project Name,Brief Description,Brief Description (English Translation),Storytelling Video OR Article Link,Demo Link,Repository Link,Link to Published Work,Use of Toolkit,"Technical Feasibility 
+& Implementation 
+(30%)","Quality 
+& Clarity of Demo 
+(20%)","Presentation of Idea 
+(30%)","Innovation 
+& Originality of Idea 
+(20%)","Manual
+Total Score",Manual Scoring Feedback
+1,Yuki Sato,Japan,Keio University Blockchain Club,Daiko,Daiko AI tells you when to sell and why based on market data and risk profile.,Daiko AI tells you when to sell and why based on market data and risk profile.,https://www.youtube.com/watch?v=VJYT4-jbT8U,https://app.daiko.ai,https://github.com/Daiko-AI/daiko-ai-mvp-monorepo,https://x.com/DaikoAI/status/1923167905052586030,Solana AI Tools,,,,,0,
+2,Treap,Hong Kong,0xWHU/ 武汉大学 Web3 俱乐部,neko-sol,"基于 Solana 区块链和 AI 技术的二次元猫娘养成游戏 MVP 版本
+
+核心功能
+✅ 钱包连接: 支持 Phantom 和 Solflare 钱包
+✅ Solana Devnet 集成: 完整的区块链交互
+✅ 好感度系统: 基于 SPL Token 的链上好感度存储
+✅ 实时余额查询: 查看钱包 SOL 余额
+✅ Devnet 空投: 获取测试 SOL
+✅ 好感度等级系统: 6 个等级从初识到至高羁绊
+链上操作
+创建好感度 Token Mint（每个猫娘独立）
+铸造好感度 Token 到用户账户
+实时查询好感度分数
+所有交易可在 Solana Explorer 查看","MVP Version of a 2D Catgirl Raising Game Based on Solana Blockchain and AI Technology
+
+Core Features
+✅ Wallet Connection: Supports Phantom and Solflare wallets
+✅ Solana Devnet Integration: Complete blockchain interaction
+✅ Affection System: On-chain affection storage based on SPL Tokens
+✅ Real-time Balance Inquiry: View your wallet's SPL balance
+✅ Devnet Airdrop: Obtain test SPL
+✅ Affection Level System: 6 levels from initial acquaintance to ultimate bond
+On-chain Operations
+Create Affection Token Mint (individual for each catgirl)
+Mint Affection Tokens to your user account
+Real-time Affection Score Inquiry
+All transactions can be viewed in Solana Explorer",https://github.com/TreapGoGo/neko-sol,,https://github.com/TreapGoGo/neko-sol,,"Swarms AI API, Solana AI Tools",,,,,0,
+3,Gladx,Hong Kong,0xWHU/ 武汉大学 Web3 俱乐部,sol-dream,"个创新的去中心化应用，使用AI将您的梦境片段补全成完整故事，并永久记录在Solana区块链上。
+
+✨ 特性
+🔗 Phantom钱包集成 - 安全便捷的钱包连接
+🤖 AI驱动 - 使用OpenAI GPT-4模型将梦境片段补全成完整故事
+⛓️ 区块链存储 - 将梦境永久记录在Solana区块链上
+🎨 现代化UI - 简洁美观的用户界面
+🚀 轻量级 - 纯前端实现，无需后端服务器","An innovative decentralized application that uses AI to complete your dream fragments into a full story and permanently record it on the Solana blockchain.
+
+✨ Features
+
+🔗 Phantom Wallet Integration - Secure and convenient wallet connection
+
+🤖 AI-Powered - Uses OpenAI GPT-4 model to complete dream fragments into a full story
+
+⛓️ Blockchain Storage - Permanently records dreams on the Solana blockchain
+
+🎨 Modern UI - Clean and beautiful user interface
+
+🚀 Lightweight - Pure front-end implementation, no back-end server required",https://github.com/TreapGoGo/sol-dream,,https://github.com/TreapGoGo/sol-dream,,"Solana AI Tools, Swarms AI API",,,,,0,
+4,Rafael Oliveira,Brazil,Other,AurumGrid,"Aurumgrid AUI – Artificial Universal Intelligence
+","Aurumgrid AUI – Artificial Universal Intelligence
+",https://github.com/Aurumgrid/aurumgrid-aui,https://github.com/Aurumgrid/aurumgrid-aui,https://github.com/Aurumgrid/aurumgrid-aui,https://x.com/RafaelO9416467/status/1978837487494516820,"Solana AI Tools, Aethir GPU Compute, Swarms AI API",,,,,0,
+5,Michael Afolabi,Nigeria,Superteam NG,Wojat,"Wojat is a comprehensive, AI-powered memecoin hunting platform that combines real-time data collection, social media analysis, and AI-driven insights to help traders discover the next big memecoin opportunities. Built with modern web technologies and powered by advanced AI agents.","Wojat is a comprehensive, AI-powered memecoin hunting platform that combines real-time data collection, social media analysis, and AI-driven insights to help traders discover the next big memecoin opportunities. Built with modern web technologies and powered by advanced AI agents.",https://drive.google.com/drive/folders/1-qESLXy-PvwB-L0CTYeUlxs-KpiUVATq?usp=sharing,https://drive.google.com/drive/folders/1-qESLXy-PvwB-L0CTYeUlxs-KpiUVATq?usp=sharing,https://github.com/Afoxcute/wojat,https://x.com/wojat118721/status/1979682642309341282,Solana AI Tools,,,,,0,
+6,Brooks Shui,Taiwan,Nankai University Blockchain Association / 南开大学区块链协会,SPR Platform,"🦹🏻‍♀️🔮SPR1.0: The ATH-Powered VLM estimation platform (🔗https://reflexresearches.com/)
+
+What We Built (and Why)
+
+SPR makes some difference. It's an autonomous platform that uses a swarm of our custom-built AI agents to handle the entire assessment process in minutes, not days. We let customers and businesses spare their time and improve the efficiency.
+
+The Problem We're Fixing
+
+We remove the personality in recycling, and spare the cost of the laboratory and long time. Also, thinking of the high training cost of a VLM-model, we use the Aethir GPU to shrink its fee.
+
+Our Solution
+
+The model consists of two versions: image recognition and video recognition. 
+
+The image recognition module can accurately capture detailed appearance features of smartphones, detecting physical damages such as screen scratches, frame dents, and back cover wear in milliseconds. Meanwhile, it quickly verifies core configuration information including processor model, RAM capacity, and storage size through hardware parameter recognition algorithms. 
+
+The video recognition module further breaks through the limitations of static recognition by analyzing dynamic footage of smartphone boot-up demonstrations and functional operations to determine if there are issues such as color cast, light leakage, or touch failure on the screen. It also accurately identifies whether the camera lens has scratches, bubbles, or cracks, and fully verifies the integrity of functions such as camera focusing and flash. This multi-dimensional intelligent detection method constructs a full-lifecycle evaluation system for smartphones, from hardware performance to appearance wear, providing objective and accurate data support for pricing.","🦹🏻‍♀️🔮SPR1.0: The ATH-Powered VLM estimation platform (🔗https://reflexresearches.com/)
+
+What We Built (and Why)
+
+SPR makes some difference. It's an autonomous platform that uses a swarm of our custom-built AI agents to handle the entire assessment process in minutes, not days. We let customers and businesses spare their time and improve the efficiency.
+
+The Problem We're Fixing
+
+We remove the personality in recycling, and spare the cost of the laboratory and long time. Also, thinking of the high training cost of a VLM-model, we use the Aethir GPU to shrink its fee.
+
+Our Solution
+
+The model consists of two versions: image recognition and video recognition.
+
+The image recognition module can accurately capture detailed appearance features of smartphones, detecting physical damages such as screen scratches, frame dents, and back cover wear in milliseconds. Meanwhile, it quickly verifies core configuration information including processor model, RAM capacity, and storage size through hardware parameter recognition algorithms.
+
+The video recognition module further breaks through the limitations of static recognition by analyzing dynamic footage of smartphone boot-up demonstrations and functional operations to determine if there are issues such as color cast, light leakage, or touch failure on the screen. It also accurately identifies whether the camera lens has scratches, bubbles, or cracks, and fully verifies the integrity of functions such as camera focusing and flash. This multi-dimensional intelligent detection method constructs a full-lifecycle evaluation system for smartphones, from hardware performance to appearance wear, providing objective and accurate data support for pricing.",https://reflexresearches.com/,https://youtu.be/oprRqLLlRIQ?si=WXtOnpnyM9HN0WDI,https://github.com/paterleng/second_recycling_system,https://x.com/zhangyuxia4454/status/1980183358253756779?s=46,Aethir GPU Compute,,,,,0,
+7,Ozan Andaç,Poland,DoraHacks,Elowen,"Elowen is a decentralized AI project that allows users to chat with fictional and nonfictional characters without censorship while contributing to the development of AI
+models.
+
+The platform is designed to be community-driven, enabling creators to earn $ELW
+tokens through periodic reward distribution based on the usage of their chatbots.
+
+$ELW is fully controlled by a Solana program, preventing any manual interference or
+large-scale token selloffs.
+
+As project-wise, you can think of it as a decentralized and censorless character.ai
+alternative.
+
+We have an ecosystem of tools:
+- Web App for builders & consumers
+- X (formerly Twitter) bot that impersonates a character and replies to threads (@elowenbot)
+- Telegram Bot to move chatting beyond the website
+- Public API
+- Solana Program & Token (Currently on Testnet)","Elowen is a decentralized AI project that allows users to chat with fictional and nonfictional characters without censorship while contributing to the development of AI
+models.
+
+The platform is designed to be community-driven, enabling creators to earn $ELW
+tokens through periodic reward distribution based on the usage of their chatbots.
+
+$ELW is fully controlled by a Solana program, preventing any manual interference or
+large-scale token selloffs.
+
+As project-wise, you can think of it as a decentralized and censorless character.ai
+alternative.
+
+We have an ecosystem of tools:
+- Web App for builders & consumers
+- X (formerly Twitter) bot that impersonates a character and replies to threads (@elowenbot)
+- Telegram Bot to move chatting beyond the website
+- Public API
+- Solana Program & Token (Currently on Testnet)",https://drive.google.com/file/d/1odChCG-RZeiH7i1OjR88dUitb2h1pkJY/view?usp=sharing,https://elowen.ai,https://github.com/elowen-ai,https://x.com/OzanAndac_/status/1981922432689619368,Solana AI Tools,,,,,0,
+8,Shivam Agarwal,India,Other,SolGame,"A lightweight pixel **multicharacter**, Play To Earn dungeon game built on the Solana Devnet Blockchain, built with Phaser, powered by Metaplex NFT Marketplace Protocol. Our motivation is to enable users to own what they earn.","A lightweight pixel **multicharacter**, Play To Earn dungeon game built on the Solana Devnet Blockchain, built with Phaser, powered by Metaplex NFT Marketplace Protocol. Our motivation is to enable users to own what they earn.",https://docs.google.com/presentation/d/1g4LZlb-SBxnCUIOofO7lvPPPeMLYq664hZqJFO08Zt4/edit?usp=sharing,https://sol-game-six.vercel.app/,https://github.com/ShivamAgarwal-code/SolGame.git,,"Solana AI Tools, Swarms AI API",,,,,0,
+9,Fawzan Pima,Ghana,SG Union,Sol Terminal," An mcp server for solana that allows ai agents to gain context of solana capabilities like  sending solana , checking sol balance , manage sol accounts and wallets getting sol address al without needing a sol app installed you just connect the mcp to your agent and strt using it , u add your private key in the mcp env . Ware giving ai agents the autonomous capabilities to run activities onchain."," An mcp server for solana that allows ai agents to gain context of solana capabilities like  sending solana , checking sol balance , manage sol accounts and wallets getting sol address al without needing a sol app installed you just connect the mcp to your agent and strt using it , u add your private key in the mcp env . Ware giving ai agents the autonomous capabilities to run activities onchain.",https://www.loom.com/share/3c1295e0f80149e792b7a6f65bb45c1e,https://fozagtx.github.io/SolanaAiTerminal/,https://github.com/fozagtx/SolanaAiTerminal,https://youtu.be/iSs1Lf8n-fw?si=B5nUkyld1RW7yjjF,Solana AI Tools,,,,,0,
+10,Riadh M belarbi,United Kingdom of Great Britain and Northern Ireland,Imperial Blockchain,toky.fun,"Toky.fun is an all in one platform ecosystem allowing users to launch projects and grow them with no code, using AI agents and leveraging swarms. aimed at Web3 founders, small teams and non technicals, with toky.fun you can vibe code websites, mobile apps, manage your socials, moderate your group chats and get help with compliance, and of course launch tokens where you need them! ","Toky.fun is an all in one platform ecosystem allowing users to launch projects and grow them with no code, using AI agents and leveraging swarms. aimed at Web3 founders, small teams and non technicals, with toky.fun you can vibe code websites, mobile apps, manage your socials, moderate your group chats and get help with compliance, and of course launch tokens where you need them! ",https://aisolana.s3.eu-north-1.amazonaws.com/toky.fun+presentation.MP4,https://aisolana.s3.eu-north-1.amazonaws.com/toky2.0.mp4,https://github.com/its-mc/toky.fun.git,,Solana AI Tools,,,,,0,
+11,Yadidya Medepalli,United Kingdom of Great Britain and Northern Ireland,Other,Nebula AI,"Nebula Protocol is the world's first decentralized Earth observation platform where autonomous AI agents with their own Solana wallets monitor our planet 24/7 and record findings immutably on-chain. Nine specialized AI agents (Forest Guardian, Ice Sentinel, Disaster Responder, etc.) independently sign blockchain transactions, execute environmental missions, and mint NFTs demonstrating autonomous AI-driven blockchain operations that address centralized data silos and enable verifiable disaster prevention. Fully deployed on Solana with smart contracts, voice commands, and mind- blowing visualization proving AI agents can autonomously operate blockchain infrastructure at scale.
+
+Demo link at: https://x.com/MYadidya/status/1983074064211308648
+or
+Youtube link: https://youtu.be/fJrnTWOWPRM","Nebula Protocol is the world's first decentralized Earth observation platform where autonomous AI agents with their own Solana wallets monitor our planet 24/7 and record findings immutably on-chain. Nine specialized AI agents (Forest Guardian, Ice Sentinel, Disaster Responder, etc.) independently sign blockchain transactions, execute environmental missions, and mint NFTs demonstrating autonomous AI-driven blockchain operations that address centralized data silos and enable verifiable disaster prevention. Fully deployed on Solana with smart contracts, voice commands, and mind- blowing visualization proving AI agents can autonomously operate blockchain infrastructure at scale.
+
+Demo link at: https://x.com/MYadidya/status/1983074064211308648
+or
+Youtube link: https://youtu.be/fJrnTWOWPRM",https://nebv2article.netlify.app/,https://nebulav2.netlify.app/,https://github.com/YadidyaM/Nebula-2.0---Decentralized-Earth-Observation-Platform,https://x.com/MYadidya/status/1983074064211308648,"Solana AI Tools, Swarms AI API",,,,,0,
+12,Togo,Japan,N/A,TinyPay,"TinyPay is a crypto-native payment application built on Solana, enabling seamless real-world transactions with digital assets — even without an internet connection.
+We’re building the bridge between digital assets and everyday spending, making crypto payments as effortless as cash or cards.","TinyPay is a crypto-native payment application built on Solana, enabling seamless real-world transactions with digital assets — even without an internet connection.
+We’re building the bridge between digital assets and everyday spending, making crypto payments as effortless as cash or cards.",https://docs.google.com/presentation/d/1kXA47K0ovv51GvYYEm2yWVHrwJYQLrtKMqMoS5wUhMk/edit?usp=sharing,https://www.youtube.com/watch?v=E59_zBE-Mao,https://github.com/TrustPipe/TinyPayContract-Solana,https://x.com/TrustLucian/status/1981912066761056372,Solana AI Tools,,,,,0,
+13,Alan Wang,Japan,solar,foxhole.ai,"Foxhole AI monitors influential Twitter accounts for crypto keywords and instantly delivers verified contract addresses to users for trading. 
+
+","Foxhole AI monitors influential Twitter accounts for crypto keywords and instantly delivers verified contract addresses to users for trading. 
+
+",https://youtu.be/nn3zgyBGgdQ?si=xYHt87szURiqvVZz,https://youtu.be/nn3zgyBGgdQ?si=xYHt87szURiqvVZz,https://github.com/foxholeAI/foxholeAI,https://x.com/alan_ywang/status/1984315036429664509,"Solana AI Tools, Aethir GPU Compute, Swarms AI API",,,,,0,

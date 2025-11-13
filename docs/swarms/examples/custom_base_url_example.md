@@ -130,7 +130,7 @@ hf_agent = Agent(
 ### 4. Custom Local Endpoint
 
 ```python
-# Using a local model server (e.g., vLLM, Ollama, etc.)
+# Using a local model server (e.g., Ollama, etc.)
 local_agent = Agent(
     agent_name="Local-Agent",
     agent_description="Agent using local model endpoint",
