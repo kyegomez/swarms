@@ -78,6 +78,10 @@ aiohttp = "*"
 schedule = "*"
 uvloop = {version = "*", markers = "sys_platform == 'linux' or sys_platform == 'darwin'"}
 winloop = {version = "*", markers = "sys_platform == 'win32'"}
+pandas = "*"
+scipy = "*"
+cvxpy = "*"
+torch = "*"
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"
