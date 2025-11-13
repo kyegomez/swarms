@@ -133,11 +133,6 @@ def add_prompt_to_marketplace(
                     f"Error response text: {e.response.text}"
                 )
         raise
-    except httpx.RequestError as e:
-        logger.error(
-            f"Request error adding prompt to marketplace: {e}"
-        )
-        raise
     except Exception as e:
         logger.error(
             f"Error adding prompt to marketplace: {e} Traceback: {traceback.format_exc()}"
