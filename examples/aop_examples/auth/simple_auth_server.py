@@ -10,7 +10,7 @@ from swarms import Agent
 from swarms.structs.aop import AOP
 
 
-# This function governs ALL security
+# EXAMPLE: This function governs ALL security
 def custom_auth(token: str) -> bool:
     """
     Your custom authentication logic goes here.
@@ -21,7 +21,7 @@ def custom_auth(token: str) -> bool:
     - Token format (API key, JWT, whatever)
     - Any additional validation logic
     """
-    # Simple example: check against valid tokens
+
     valid_tokens = {
         "mytoken123",
         "anothertoken456",
@@ -36,15 +36,14 @@ agent = Agent(
     max_loops=1,
     system_prompt="You are a helpful research assistant.",
     temperature=0.7,
-    top_p=None,  # Can't use both temperature and top_p with Claude
+    top_p=None, 
 )
 
-# Create server with auth callback
-# If auth_callback is provided, auth is automatically enabled
+
 server = AOP(
     server_name="SimpleAuthServer",
     port=5932,
-    auth_callback=custom_auth,  # This enables and governs auth
+    auth_callback=custom_auth,
 )
 
 server.add_agent(agent)
