@@ -423,7 +423,6 @@ class SwarmRouter:
             max_loops=self.max_loops,
             flow=self.rearrange_flow,
             output_type=self.output_type,
-            return_entire_history=self.return_entire_history,
             *args,
             **kwargs,
         )
@@ -474,7 +473,6 @@ class SwarmRouter:
             description=self.description,
             agents=self.agents,
             max_loops=self.max_loops,
-            return_all_history=self.return_entire_history,
             output_type=self.output_type,
             *args,
             **kwargs,
@@ -499,7 +497,8 @@ class SwarmRouter:
             name=self.name,
             description=self.description,
             agents=self.agents,
-            consensus_agent=self.agents[-1],
+            max_loops=self.max_loops,
+            output_type=self.output_type,
             *args,
             **kwargs,
         )

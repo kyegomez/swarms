@@ -944,7 +944,8 @@ class HierarchicalSwarm:
             if self.planning_enabled is True:
                 self.director.tools_list_dictionary = None
                 out = self.setup_director_with_planning(
-                    task=self.conversation.get_str(), img=img
+                    task=f"History: {self.conversation.get_str()} \n\n Task: {task}",
+                    img=img,
                 )
                 self.conversation.add(
                     role=self.director.agent_name, content=out

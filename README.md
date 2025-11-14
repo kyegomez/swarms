@@ -58,6 +58,17 @@ Swarms delivers a comprehensive, enterprise-grade multi-agent infrastructure pla
 | 🛠️ **Developer Experience** | • Intuitive Enterprise API<br>• Comprehensive Documentation<br>• Active Enterprise Community<br>• CLI & SDK Tools<br>• IDE Integration Support<br>• Code Generation Templates | • Accelerated Development Cycles<br>• Reduced Learning Curve<br>• Expert Community Support<br>• Rapid Deployment Capabilities<br>• Enhanced Developer Productivity<br>• Standardized Development Patterns |
 
 
+## 🔌 Supported Protocols & Integrations
+
+Swarms seamlessly integrates with industry-standard protocols, enabling powerful capabilities for tool integration, payment processing, and distributed agent orchestration.
+
+| Protocol | Description | Use Cases | Documentation |
+|----------|-------------|-----------|---------------|
+| **[MCP (Model Context Protocol)](https://docs.swarms.world/en/latest/swarms/examples/multi_mcp_agent/)** | Standardized protocol for AI agents to interact with external tools and services through MCP servers. Enables dynamic tool discovery and execution. | • Tool integration<br>• Multi-server connections<br>• External API access<br>• Database connectivity | [MCP Integration Guide](https://docs.swarms.world/en/latest/swarms/examples/multi_mcp_agent/) |
+| **[X402](https://docs.swarms.world/en/latest/examples/x402_payment_integration/)** | Cryptocurrency payment protocol for API endpoints. Enables monetization of agents with pay-per-use models. | • Agent monetization<br>• Payment gate protection<br>• Crypto payments<br>• Pay-per-use services | [X402 Quickstart](https://docs.swarms.world/en/latest/examples/x402_payment_integration/) |
+| **[AOP (Agent Orchestration Protocol)](https://docs.swarms.world/en/latest/examples/aop_medical/)** | Framework for deploying and managing agents as distributed services. Enables agent discovery, management, and execution through standardized protocols. | • Distributed agent deployment<br>• Agent discovery<br>• Service orchestration<br>• Scalable multi-agent systems | [AOP Reference](https://docs.swarms.world/en/latest/swarms/structs/aop/) |
+
+
 ## Install 💻
 
 ### Using pip

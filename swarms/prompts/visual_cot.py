@@ -1,3 +1,8 @@
+"""
+A structured prompt template that guides models through step-by-step visual analysis, from observation to reflection.
+Provides a systematic chain-of-thought approach for analyzing images, graphs, and visual puzzles with detailed reasoning and visual references.
+"""
+
 VISUAL_CHAIN_OF_THOUGHT = """
     
 You, as the model, are presented with a visual problem. This could be an image containing various elements that you need to analyze, a graph that requires interpretation, or a visual puzzle. Your task is to examine the visual information carefully and describe your process of understanding and solving the problem.
