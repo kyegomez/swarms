@@ -290,14 +290,14 @@ task = "Write a short story about a robot who discovers music."
 # --- Example 1: SequentialWorkflow ---
 # Agents run one after another in a chain: Writer -> Editor -> Reviewer.
 print("Running a Sequential Workflow...")
-sequential_router = SwarmRouter(swarm_type=SwarmType.SequentialWorkflow, agents=agents)
+sequential_router = SwarmRouter(swarm_type="SequentialWorkflow", agents=agents)
 sequential_output = sequential_router.run(task)
 print(f"Final Sequential Output:\n{sequential_output}\n")
 
 # --- Example 2: ConcurrentWorkflow ---
 # All agents receive the same initial task and run at the same time.
 print("Running a Concurrent Workflow...")
-concurrent_router = SwarmRouter(swarm_type=SwarmType.ConcurrentWorkflow, agents=agents)
+concurrent_router = SwarmRouter(swarm_type="ConcurrentWorkflow", agents=agents)
 concurrent_outputs = concurrent_router.run(task)
 # This returns a dictionary of each agent's output
 for agent_name, output in concurrent_outputs.items():
@@ -312,9 +312,9 @@ aggregator = Agent(
     model_name="gpt-4o-mini"
 )
 moa_router = SwarmRouter(
-    swarm_type=SwarmType.MixtureOfAgents,
+    swarm_type="MixtureOfAgents",
     agents=agents,
-    aggregator_agent=aggregator, # MoA requires an aggregator
+    aggregator_agent=aggregator,
 )
 aggregated_output = moa_router.run(task)
 print(f"Final Aggregated Output:\n{aggregated_output}\n")
