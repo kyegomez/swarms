@@ -76,6 +76,9 @@ httpx = "*"
 mcp = "*"
 aiohttp = "*"
 schedule = "*"
+opentelemetry-api = ">=1.20.0"
+opentelemetry-sdk = ">=1.20.0"
+opentelemetry-exporter-otlp = ">=1.20.0"
 uvloop = {version = "*", markers = "sys_platform == 'linux' or sys_platform == 'darwin'"}
 winloop = {version = "*", markers = "sys_platform == 'win32'"}
 
