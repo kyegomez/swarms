@@ -272,6 +272,40 @@ class SwarmRouter:
                     "SwarmRouter: Swarm type cannot be 'none'. Check the docs for all the swarm types available. https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
                 )
 
+            # Validate swarm type is a valid string
+            valid_swarm_types = [
+                "AgentRearrange",
+                "MixtureOfAgents",
+                "SequentialWorkflow",
+                "ConcurrentWorkflow",
+                "GroupChat",
+                "MultiAgentRouter",
+                "AutoSwarmBuilder",
+                "HiearchicalSwarm",
+                "auto",
+                "MajorityVoting",
+                "MALT",
+                "CouncilAsAJudge",
+                "InteractiveGroupChat",
+                "HeavySwarm",
+                "BatchedGridWorkflow",
+            ]
+
+            if not isinstance(self.swarm_type, str):
+                raise SwarmRouterConfigError(
+                    f"SwarmRouter: swarm_type must be a string, not {type(self.swarm_type).__name__}. "
+                    f"Valid types are: {', '.join(valid_swarm_types)}. "
+                    "Use swarm_type='SequentialWorkflow' (string), NOT SwarmType.SequentialWorkflow. "
+                    "See https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
+                )
+
+            if self.swarm_type not in valid_swarm_types:
+                raise SwarmRouterConfigError(
+                    f"SwarmRouter: Invalid swarm_type '{self.swarm_type}'. "
+                    f"Valid types are: {', '.join(valid_swarm_types)}. "
+                    "See https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
+                )
+
             if (
                 self.swarm_type != "HeavySwarm"
                 and self.agents is None
