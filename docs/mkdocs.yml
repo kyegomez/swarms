@@ -387,7 +387,6 @@ nav:
             - OpenRouter: "swarms/examples/openrouter.md"
             - XAI: "swarms/examples/xai.md"
             - Azure OpenAI: "swarms/examples/azure.md"
-            - VLLM: "swarms/examples/vllm_integration.md"
             - Llama4: "swarms/examples/llama4.md"
             - Custom Base URL & API Keys: "swarms/examples/custom_base_url_example.md"
 
@@ -412,7 +411,6 @@ nav:
           - Advanced BatchedGridWorkflow: "swarms/examples/batched_grid_advanced_example.md"
         - Applications:
           - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
-          - ConcurrentWorkflow with VLLM Agents: "swarms/examples/vllm.md"
           - Hiearchical Marketing Team: "examples/marketing_team.md"
           - Gold ETF Research with HeavySwarm: "examples/gold_etf_research.md"
           - Hiring Swarm: "examples/hiring_swarm.md"
@@ -442,6 +440,7 @@ nav:
 
       - X402:
       - x402 Quickstart Example: "examples/x402_payment_integration.md"
+      - X402 Discovery Query Agent: "examples/x402_discovery_query.md"
 
 
   - Swarms Cloud API:
