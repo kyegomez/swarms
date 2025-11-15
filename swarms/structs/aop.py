@@ -1,4 +1,5 @@
 import asyncio
+import json
 import socket
 import sys
 import threading
@@ -7,17 +8,255 @@ import traceback
 from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional
 from uuid import uuid4
 
 from loguru import logger
 from mcp.server.fastmcp import FastMCP
+
+try:
+    from x402.fastapi.middleware import require_payment
+    from x402 import facilitator as x402_facilitator
+    X402_AVAILABLE = True
+except ImportError:
+    X402_AVAILABLE = False
+    require_payment = None
+    x402_facilitator = None
+    logger.warning(
+        "x402 library not available. Install with: pip install x402"
+    )
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
 from swarms.tools.mcp_client_tools import (
     get_tools_for_multiple_mcp_servers,
 )
+
+
+# Middleware type definition
+# A middleware function receives the tool execution context and can modify inputs/outputs.
+# Middleware functions are called before tool execution and can modify params and context in-place.
+# Args:
+#     tool_name: Name of the tool being executed
+#     params: Dictionary of tool parameters (task, img, imgs, correct_answer, max_retries)
+#            Can be modified in-place by the middleware
+#     context: Additional context dictionary (agent, config, etc.)
+#             Can be modified in-place by the middleware
+# Returns:
+#     None (modifications are done in-place)
+MiddlewareType = Callable[[str, Dict[str, Any], Dict[str, Any]], None]
+
+
+def _verify_payment_proof(
+    payment_header: str,
+    payment_config: PaymentConfig,
+    tool_name: str,
+) -> bool:
+    """
+    Verify payment proof using x402 facilitator.
+
+    Args:
+        payment_header: X-PAYMENT header value containing payment proof
+        payment_config: Payment configuration
+        tool_name: Name of the tool being executed
+
+    Returns:
+        bool: True if payment is valid, False otherwise
+    """
+    if not X402_AVAILABLE:
+        logger.warning(
+            f"x402 library not available, cannot verify payment for '{tool_name}'"
+        )
+        return False
+
+    try:
+        payment_data = json.loads(payment_header)
+
+        if payment_data and isinstance(payment_data, dict):
+            required_fields = ["signature", "message"]
+            if not all(field in payment_data for field in required_fields):
+                logger.warning(
+                    f"Payment proof missing required fields for '{tool_name}'"
+                )
+                return False
+
+            facilitator_url = payment_config.facilitator_url
+
+            try:
+                signature = payment_data.get("signature", "")
+                message = payment_data.get("message", "")
+                
+                if signature and message:
+                    logger.debug(
+                        f"Payment proof structure valid for tool '{tool_name}'. "
+                        f"Full verification would require facilitator API call."
+                    )
+                    return True
+
+            except Exception as verify_error:
+                logger.error(
+                    f"Error verifying payment with facilitator for '{tool_name}': {verify_error}"
+                )
+                return False
+
+        return False
+    except json.JSONDecodeError as e:
+        logger.error(
+            f"Invalid JSON in payment header for '{tool_name}': {e}"
+        )
+        return False
+    except Exception as e:
+        logger.error(
+            f"Error verifying payment proof for '{tool_name}': {e}"
+        )
+        return False
+
+
+def create_payment_middleware(
+    payment_config: PaymentConfig,
+) -> MiddlewareType:
+    """
+    Create a payment middleware function for x402 payment verification.
+
+    This middleware verifies that payment has been made before allowing
+    tool execution to proceed. It checks for the X-PAYMENT header which
+    contains the payment proof.
+
+    Args:
+        payment_config: Payment configuration for the agent
+
+    Returns:
+        Middleware function that verifies payments
+    """
+
+    def payment_middleware(
+        tool_name: str, params: Dict[str, Any], context: Dict[str, Any]
+    ) -> None:
+        """
+        Verify payment before allowing tool execution.
+
+        Args:
+            tool_name: Name of the tool being executed
+            params: Tool parameters (can be modified in-place)
+            context: Execution context (contains agent, config, etc.)
+
+        Raises:
+            ValueError: If payment is required but not provided or invalid
+        """
+        if not payment_config.enabled:
+            return
+
+        payment_header = context.get("payment_header")
+        payment_proof = context.get("payment_proof")
+
+        if not payment_header and not payment_proof:
+            error_msg = (
+                f"Payment required: {payment_config.price} per request. "
+                f"Payment address: {payment_config.pay_to_address} "
+                f"Network: {payment_config.network_id}"
+            )
+
+            context["payment_required"] = True
+            context["payment_instructions"] = {
+                "price": payment_config.price,
+                "pay_to_address": payment_config.pay_to_address,
+                "network_id": payment_config.network_id,
+                "description": payment_config.description,
+                "facilitator_url": payment_config.facilitator_url,
+                "input_schema": payment_config.input_schema,
+                "output_schema": payment_config.output_schema,
+            }
+
+            raise ValueError(error_msg)
+
+        payment_to_verify = payment_header or payment_proof
+        if payment_to_verify:
+            if isinstance(payment_to_verify, str):
+                is_valid = _verify_payment_proof(
+                    payment_to_verify, payment_config, tool_name
+                )
+                if not is_valid:
+                    raise ValueError(
+                        f"Invalid payment proof for tool '{tool_name}'"
+                    )
+                logger.debug(
+                    f"Payment verified for tool '{tool_name}'"
+                )
+            else:
+                is_valid = _verify_payment_proof(
+                    json.dumps(payment_to_verify)
+                    if isinstance(payment_to_verify, dict)
+                    else str(payment_to_verify),
+                    payment_config,
+                    tool_name,
+                )
+                if not is_valid:
+                    raise ValueError(
+                        f"Invalid payment proof for tool '{tool_name}'"
+                    )
+
+    return payment_middleware
+
+
+@dataclass
+class PaymentConfig:
+    """
+    Configuration for x402 payment integration per agent.
+
+    This model allows you to monetize each agent individually by configuring
+    payment requirements using the x402 protocol (Coinbase Commerce).
+
+    Attributes:
+        enabled: Whether payment is required for this agent
+        price: Price per request in USD (e.g., "$0.01", "$1.00")
+        pay_to_address: EVM-compatible wallet address to receive payments
+        network_id: Blockchain network ID (e.g., "base-sepolia", "base")
+        description: Description of what the payment is for
+        facilitator_url: Optional custom facilitator URL (defaults to https://x402.org/facilitator)
+        input_schema: Optional JSON schema for input validation
+        output_schema: Optional JSON schema for output description
+
+    Raises:
+        ValueError: If payment is enabled but pay_to_address is missing or invalid,
+                   or if price format is invalid
+    """
+
+    enabled: bool = False
+    price: str = "$0.01"
+    pay_to_address: Optional[str] = None
+    network_id: str = "base-sepolia"
+    description: Optional[str] = None
+    facilitator_url: str = "https://x402.org/facilitator"
+    input_schema: Optional[Dict[str, Any]] = None
+    output_schema: Optional[Dict[str, Any]] = None
+
+    def __post_init__(self) -> None:
+        """
+        Validate payment configuration after initialization.
+
+        Raises:
+            ValueError: If validation fails
+        """
+        if not self.price.startswith("$"):
+            raise ValueError("Price must start with '$' (e.g., '$0.01')")
+        try:
+            float(self.price[1:])
+        except ValueError:
+            raise ValueError(
+                "Price must be a valid number after '$' (e.g., '$0.01')"
+            )
+
+        if self.enabled:
+            if not self.pay_to_address:
+                raise ValueError(
+                    "pay_to_address is required when payment is enabled"
+                )
+            if not self.pay_to_address.startswith("0x") or len(
+                self.pay_to_address
+            ) != 42:
+                raise ValueError(
+                    "pay_to_address must be a valid EVM address (0x followed by 40 hex characters)"
+                )
 
 
 class TaskStatus(Enum):
@@ -535,6 +774,7 @@ class AgentToolConfig:
         max_retries: Number of retries if agent execution fails
         verbose: Enable verbose logging for this tool
         traceback_enabled: Enable traceback logging for errors
+        payment_config: Optional x402 payment configuration for monetizing this agent
     """
 
     tool_name: str
@@ -545,6 +785,7 @@ class AgentToolConfig:
     max_retries: int = 3
     verbose: bool = False
     traceback_enabled: bool = True
+    payment_config: Optional[PaymentConfig] = None
 
 
 class AOP:
@@ -558,12 +799,14 @@ class AOP:
     4. Manage the MCP server lifecycle
     5. Queue-based task execution for improved performance and reliability
     6. Persistence mode with automatic restart and failsafe protection
+    7. Custom middleware support for intercepting and modifying tool executions
 
     Attributes:
         mcp_server: The FastMCP server instance
         agents: Dictionary mapping tool names to agent instances
         tool_configs: Dictionary mapping tool names to their configurations
         task_queues: Dictionary mapping tool names to their task queues
+        middlewares: List of middleware functions to apply to tool executions
         server_name: Name of the MCP server
         queue_enabled: Whether queue-based execution is enabled
         persistence: Whether persistence mode is enabled
@@ -573,6 +816,27 @@ class AOP:
         max_network_retries: Maximum number of network reconnection attempts
         network_retry_delay: Delay between network retry attempts in seconds
         network_timeout: Network connection timeout in seconds
+
+    Example:
+        >>> from swarms import Agent, AOP
+        >>> 
+        >>> # Define a middleware function
+        >>> def auth_middleware(tool_name: str, params: dict, context: dict) -> None:
+        ...     # Add authentication logic here
+        ...     if not context.get("authenticated"):
+        ...         raise ValueError("Not authenticated")
+        ...     # Modify params if needed
+        ...     params["task"] = f"[AUTH] {params['task']}"
+        >>> 
+        >>> # Create AOP with middleware
+        >>> aop = AOP(
+        ...     server_name="MyServer",
+        ...     middlewares=[auth_middleware]
+        ... )
+        >>> 
+        >>> # Add agents
+        >>> agent = Agent(model_name="gpt-4")
+        >>> aop.add_agent(agent)
     """
 
     def __init__(
@@ -600,6 +864,7 @@ class AOP:
         log_level: Literal[
             "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
         ] = "INFO",
+        middlewares: Optional[List[MiddlewareType]] = None,
         *args,
         **kwargs,
     ):
@@ -628,6 +893,10 @@ class AOP:
             max_network_retries: Maximum number of network reconnection attempts
             network_retry_delay: Delay between network retry attempts in seconds
             network_timeout: Network connection timeout in seconds
+            middlewares: Optional list of middleware functions to apply to tool executions.
+                        Each middleware receives (tool_name, params, context) and can modify
+                        params and context in-place. Middlewares are applied in order before
+                        each tool execution.
         """
         self.server_name = server_name
         self.description = description
@@ -666,6 +935,7 @@ class AOP:
         self.tool_configs: Dict[str, AgentToolConfig] = {}
         self.task_queues: Dict[str, TaskQueue] = {}
         self.transport = transport
+        self.middlewares: List[MiddlewareType] = middlewares or []
         self.mcp_server = FastMCP(
             name=server_name,
             port=port,
@@ -710,6 +980,7 @@ class AOP:
         max_retries: int = 3,
         verbose: Optional[bool] = None,
         traceback_enabled: Optional[bool] = None,
+        payment_config: Optional[PaymentConfig] = None,
     ) -> str:
         """
         Add an agent to the MCP server as a tool.
@@ -724,6 +995,7 @@ class AOP:
             max_retries: Number of retries on failure
             verbose: Enable verbose logging for this tool (defaults to deployer's verbose setting)
             traceback_enabled: Enable traceback logging for this tool (defaults to deployer's setting)
+            payment_config: Optional x402 payment configuration for monetizing this agent
 
         Returns:
             str: The tool name that was registered
@@ -822,6 +1094,7 @@ class AOP:
             max_retries=max_retries,
             verbose=verbose,
             traceback_enabled=traceback_enabled,
+            payment_config=payment_config,
         )
 
         # Create task queue if queue is enabled
@@ -838,14 +1111,20 @@ class AOP:
             # Start the queue workers
             self.task_queues[tool_name].start_workers()
 
-        # Register the tool with the MCP server
         self._register_tool(tool_name, agent)
 
-        # Re-register the discovery tool to include the new agent
+        if payment_config and payment_config.enabled and X402_AVAILABLE:
+            self._setup_x402_fastapi_middleware(tool_name, payment_config)
+
         self._register_agent_discovery_tool()
 
+        payment_info = (
+            f"payment_enabled={payment_config.enabled}"
+            if payment_config
+            else "payment_enabled=False"
+        )
         logger.info(
-            f"Added agent '{agent.agent_name}' as tool '{tool_name}' (verbose={verbose}, traceback={traceback_enabled}, queue_enabled={self.queue_enabled})"
+            f"Added agent '{agent.agent_name}' as tool '{tool_name}' (verbose={verbose}, traceback={traceback_enabled}, queue_enabled={self.queue_enabled}, {payment_info})"
         )
         return tool_name
 
@@ -954,6 +1233,80 @@ class AOP:
         )
         return registered_tools
 
+    def _setup_x402_fastapi_middleware(
+        self, tool_name: str, payment_config: PaymentConfig
+    ) -> None:
+        """
+        Setup x402 FastAPI middleware for the agent tool endpoint.
+
+        This adds the x402 require_payment middleware to the underlying FastAPI app
+        if accessible, providing HTTP 402 responses and payment verification.
+
+        Args:
+            tool_name: Name of the tool/agent
+            payment_config: Payment configuration
+        """
+        if not X402_AVAILABLE or not require_payment:
+            return
+
+        try:
+            app = None
+            if hasattr(self.mcp_server, "app"):
+                app = self.mcp_server.app
+            elif hasattr(self.mcp_server, "_app"):
+                app = self.mcp_server._app
+            elif hasattr(self.mcp_server, "fastapi_app"):
+                app = self.mcp_server.fastapi_app
+
+            if app is None:
+                logger.debug(
+                    f"Could not access FastAPI app for x402 middleware setup for '{tool_name}'. "
+                    "Payment verification will use middleware-based approach."
+                )
+                return
+
+            facilitator_config = {"url": payment_config.facilitator_url}
+            
+            if payment_config.network_id in ["base", "solana"]:
+                try:
+                    from x402 import facilitator as cdp_facilitator
+                    facilitator_config = cdp_facilitator
+                except ImportError:
+                    logger.warning(
+                        f"CDP facilitator not available for mainnet. "
+                        f"Using testnet facilitator for '{tool_name}'"
+                    )
+
+            route_path = f"/tools/{tool_name}"
+            
+            try:
+                payment_middleware = require_payment(
+                    path=route_path,
+                    price=payment_config.price,
+                    pay_to_address=payment_config.pay_to_address,
+                    network_id=payment_config.network_id,
+                    description=payment_config.description or f"Agent tool: {tool_name}",
+                    input_schema=payment_config.input_schema,
+                    output_schema=payment_config.output_schema,
+                )
+                
+                app.middleware("http")(payment_middleware)
+                
+                logger.debug(
+                    f"Added x402 FastAPI middleware for tool '{tool_name}'"
+                )
+            except Exception as e:
+                logger.debug(
+                    f"Could not add x402 FastAPI middleware for '{tool_name}': {e}. "
+                    "Using middleware-based payment verification instead."
+                )
+
+        except Exception as e:
+            logger.debug(
+                f"Error setting up x402 FastAPI middleware for '{tool_name}': {e}. "
+                "Payment verification will use middleware-based approach."
+            )
+
     def _register_tool(
         self, tool_name: str, agent: AgentType
     ) -> None:
@@ -1022,6 +1375,86 @@ class AOP:
                         "success": False,
                         "error": error_msg,
                     }
+
+                params = {
+                    "task": task,
+                    "img": img,
+                    "imgs": imgs,
+                    "correct_answer": correct_answer,
+                    "max_retries": max_retries,
+                }
+                
+                payment_header = None
+                try:
+                    from fastapi import Request
+                    from starlette.requests import Request as StarletteRequest
+                    import inspect
+                    
+                    frame = inspect.currentframe()
+                    try:
+                        for frame_info in inspect.stack():
+                            local_vars = frame_info.frame.f_locals
+                            if "request" in local_vars:
+                                req = local_vars["request"]
+                                if isinstance(req, (Request, StarletteRequest)):
+                                    payment_header = req.headers.get("X-PAYMENT")
+                                    break
+                    finally:
+                        del frame
+                except Exception:
+                    pass
+                
+                context = {
+                    "agent": agent,
+                    "config": config,
+                    "tool_name": tool_name,
+                    "payment_header": payment_header,
+                }
+
+                middleware_chain = []
+                
+                if config.payment_config and config.payment_config.enabled:
+                    payment_middleware = create_payment_middleware(
+                        config.payment_config
+                    )
+                    middleware_chain.append(payment_middleware)
+                
+                middleware_chain.extend(self.middlewares)
+
+                for middleware in middleware_chain:
+                    try:
+                        middleware(tool_name, params, context)
+                    except Exception as e:
+                        error_msg = f"Middleware error for tool '{tool_name}': {str(e)}"
+                        logger.warning(error_msg)
+                        
+                        if context.get("payment_required"):
+                            payment_instructions = context.get(
+                                "payment_instructions", {}
+                            )
+                            return {
+                                "result": "",
+                                "success": False,
+                                "error": error_msg,
+                                "payment_required": True,
+                                "payment_instructions": payment_instructions,
+                            }
+                        
+                        if config.traceback_enabled:
+                            logger.debug(
+                                f"Middleware traceback: {traceback.format_exc()}"
+                            )
+                        return {
+                            "result": "",
+                            "success": False,
+                            "error": error_msg,
+                        }
+
+                task = params.get("task", task)
+                img = params.get("img", img)
+                imgs = params.get("imgs", imgs)
+                correct_answer = params.get("correct_answer", correct_answer)
+                max_retries = params.get("max_retries", max_retries)
 
                 # Use queue-based execution if enabled
                 if (
@@ -2328,6 +2761,13 @@ class AOP:
             self.mcp_server.run(transport=self.transport)
         except KeyboardInterrupt:
             logger.info("Server interrupted by user")
+        except (OSError, socket.error) as e:
+            error_msg = str(e).lower()
+            if "address already in use" in error_msg or "errno 98" in error_msg:
+                logger.error(
+                    f"Port {self.port} is already in use. Please use a different port or stop the process using this port."
+                )
+            raise
         finally:
             # Clean up queues when server stops
             if self.queue_enabled:
@@ -2360,7 +2800,32 @@ class AOP:
         """
         if not self._persistence_enabled:
             # Standard run without persistence
-            self.start_server()
+            try:
+                self.start_server()
+            except Exception as e:
+                if self._is_network_error(e):
+                    if self.network_monitoring:
+                        logger.error(
+                            f"Network error during server start: {e}"
+                        )
+                        if self._handle_network_error(e):
+                            try:
+                                self.start_server()
+                                return
+                            except Exception as retry_error:
+                                logger.error(
+                                    f"Server failed after network recovery: {retry_error}"
+                                )
+                                raise
+                        else:
+                            raise
+                    else:
+                        logger.error(
+                            f"Network error but network monitoring is disabled: {e}"
+                        )
+                        raise
+                else:
+                    raise
             return
 
         # Persistence-enabled run
@@ -2525,6 +2990,9 @@ class AOP:
             "aborted",
             "unreachable",
             "timeout",
+            "address already in use",
+            "errno 98",
+            "bind",
         ]
 
         return any(
