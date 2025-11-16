@@ -284,8 +284,12 @@ class ReasoningAgentRouter:
             The result of the reasoning process (format depends on agent and output_type).
         """
         try:
-            swarm = self.select_swarm()
-            return swarm.run(task=task, *args, **kwargs)
+            if self.swarm_type == "ReflexionAgent":
+                swarm = self.select_swarm()
+                return swarm.run(tasks=[task], *args, **kwargs)
+            else:
+                swarm = self.select_swarm()
+                return swarm.run(task=task, *args, **kwargs)
         except Exception as e:
             raise ReasoningAgentExecutorError(
                 f"ReasoningAgentRouter Error: {e} Traceback: {traceback.format_exc()} If the error persists, please check the agent's configuration and try again. If you would like support book a call with our team at https://cal.com/swarms"
