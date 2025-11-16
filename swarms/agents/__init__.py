@@ -1,5 +1,6 @@
 from swarms.agents.agent_judge import AgentJudge
 from swarms.agents.consistency_agent import SelfConsistencyAgent
+from swarms.agents.tree_of_thought_agent import ToTAgent
 from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
 )
@@ -22,4 +23,5 @@ __all__ = [
     "ReflexionAgent",
     "GKPAgent",
     "AgentJudge",
+    "ToTAgent",
 ]
