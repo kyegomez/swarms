@@ -99,6 +99,7 @@ from swarms.utils.index import (
 )
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.agents.chain_of_thought import CoTAgent, CoTConfig
 from swarms.utils.output_types import OutputType
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.swarms_marketplace_utils import (
@@ -457,6 +458,7 @@ class Agent:
         tool_call_summary: bool = True,
         output_raw_json_from_tool_call: bool = False,
         summarize_multiple_images: bool = False,
+        chain_of_thoughts: bool = False,
         tool_retry_attempts: int = 3,
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
@@ -603,6 +605,7 @@ class Agent:
         self.conversation_schema = conversation_schema
         self.llm_base_url = llm_base_url
         self.llm_api_key = llm_api_key
+        self.chain_of_thoughts = chain_of_thoughts
         self.tool_call_summary = tool_call_summary
         self.output_raw_json_from_tool_call = (
             output_raw_json_from_tool_call
@@ -1302,8 +1305,33 @@ class Agent:
                 success = False
                 while attempt < self.retry_attempts and not success:
                     try:
-
-                        if img is not None:
+                        # Apply Chain-of-Thought if enabled
+                        if self.chain_of_thoughts and img is None:
+                            try:
+                                cot_config = CoTConfig(
+                                    temperature=self.temperature,
+                                    top_p=self.top_p,
+                                    max_reasoning_length=self.max_tokens // 2,
+                                    max_answer_length=self.max_tokens // 2,
+                                )
+                                cot_agent = CoTAgent(
+                                    agent=self,
+                                    config=cot_config,
+                                )
+                                response = cot_agent.run(task_prompt, return_reasoning=False)
+                            except Exception as e:
+                                logger.warning(
+                                    f"CoT failed, falling back to normal LLM call: {e}"
+                                )
+                                # Fallback to normal call
+                                response = self.call_llm(
+                                    task=task_prompt,
+                                    current_loop=loop_count,
+                                    streaming_callback=streaming_callback,
+                                    *args,
+                                    **kwargs,
+                                )
+                        elif img is not None:
                             response = self.call_llm(
                                 task=task_prompt,
                                 img=img,
