@@ -1,0 +1,475 @@
+docs_dir: '.'  # replace with the correct path if your documentation files are not in the same directory as mkdocs.yml
+site_name: Swarms
+site_url: https://docs.swarms.world
+site_author: Swarms
+site_description: The Enterprise-Grade Production-Ready Multi-Agent Orchestration Framework
+repo_name: kyegomez/swarms
+repo_url: https://github.com/kyegomez/swarms
+edit_uri: https://github.com/kyegomez/swarms/tree/main/docs
+copyright: TGSC Corp 2024. All rights reserved.
+
+plugins:
+  # - glightbox
+  - search
+  - git-authors
+  - mkdocs-jupyter:
+        kernel_name: python3
+        execute: false
+        include_source: True
+        include_requirejs: true
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            parameter_headings: true
+            paths: [supervision]
+            load_external_modules: true
+            allow_inspection: true
+            show_bases: true
+            group_by_category: true
+            docstring_style: google
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            show_category_heading: true
+  - git-committers:
+      repository: kyegomez/swarms
+      branch: master
+      # token: !ENV ["GITHUB_TOKEN"]
+  - git-revision-date-localized:
+      enable_creation_date: true
+extra_css:
+  - assets/css/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/twitter
+      link: https://x.com/swarms_corp
+    - icon: fontawesome/brands/github
+      link: https://github.com/kyegomez/swarms
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/EamjgSaEQf
+    - icon: fontawesome/brands/youtube
+      link: https://www.youtube.com/@kyegomez3242
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/company/swarms-corp/
+
+  footer_links:
+    
+    "Quick Start":
+      - title: "Installation"
+        url: "https://docs.swarms.world/en/latest/swarms/install/install/"
+      - title: "Quickstart Guide"
+        url: "https://docs.swarms.world/en/latest/quickstart/"
+      - title: "Environment Setup"
+        url: "https://docs.swarms.world/en/latest/swarms/install/env/"
+      - title: "Basic Agent Example"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/basic_agent/"
+
+    "Core Capabilities":
+      - title: "Agents"
+        url: "https://docs.swarms.world/en/latest/swarms/structs/agent/"
+      - title: "Multi-Agent Architectures"
+        url: "https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/"
+      - title: "LLM Providers"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/model_providers/"
+      - title: "Swarm Router"
+        url: "https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
+
+    "Advanced Concepts":
+      - title: "MALT (Multi-Agent Learning Task)"
+        url: "https://github.com/kyegomez/swarms/blob/master/examples/single_agent/reasoning_agent_examples/malt_example.py"
+      - title: "MAI-DxO (Medical AI Diagnosis)"
+        url: "https://github.com/The-Swarm-Corporation/Open-MAI-Dx-Orchestrator"
+      - title: "AI-CoScientist Research Framework"
+        url: "https://github.com/The-Swarm-Corporation/AI-CoScientist"
+      - title: "Agent-as-a-Judge Evaluation"
+        url: "https://github.com/kyegomez/swarms/blob/master/examples/single_agent/reasoning_agent_examples/agent_judge_example.py"
+      - title: "Research Papers Collection"
+        url: "https://github.com/kyegomez/awesome-multi-agent-papers"
+
+
+    "Tools":
+      - title: "Tools and MCP"
+        url: "https://docs.swarms.world/en/latest/swarms/tools/tools_examples/"
+      - title: "OpenAI Tools & Function Calling"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/agent_structured_outputs/"
+      - title: "Web Search (Exa, Serper)"
+        url: "https://docs.swarms.world/en/latest/swarms_tools/search/"
+      - title: "Vision & Image Processing"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/vision_processing/"
+      - title: "Browser Automation"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/swarms_of_browser_agents/"
+      - title: "Crypto APIs (CoinGecko, HTX)"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/agent_with_tools/"
+      - title: "Yahoo Finance"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/yahoo_finance/"
+
+    "Use Cases":
+      - title: "Examples Overview"
+        url: "https://docs.swarms.world/en/latest/examples/index/"
+      - title: "Templates & Applications"
+        url: "https://docs.swarms.world/en/latest/examples/templates/"
+      - title: "Financial Analysis Swarms"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/swarms_api_finance/"
+      - title: "Medical Diagnosis Systems"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/swarms_api_medical/"
+      - title: "DAO Governance"
+        url: "https://docs.swarms.world/en/latest/swarms/examples/swarms_dao/"
+      - title: "All Examples Repository"
+        url: "https://github.com/kyegomez/swarms/tree/master/examples"
+
+  analytics:
+    provider: google
+    property: G-MPE9C65596
+
+theme:
+  name: material
+  custom_dir: overrides
+  logo: assets/img/swarms-logo.png
+  palette:
+    - scheme: default
+      primary: white      # White background
+      accent: white       # Black accents for interactive elements
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate       # Optional: lighter shades for accessibility
+      primary: black
+      accent: black
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - content.code.annotate
+    - navigation.tabs
+    - navigation.sections
+    # - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - announce.dismiss
+  font:
+    text: "Fira Sans"      # Clean and readable text
+    code: "Fira Code"      # Modern look for code snippets
+
+
+# Extensions
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: squidfunk
+      repo: mkdocs-material
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      auto_append:
+        - includes/mkdocs.md
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.inlinehilite
+
+nav:
+  # - Home:
+  #   - Overview: "quickstart.md"
+  #   - Installation: "swarms/install/install.md"
+  #   - Environment Configuration: "swarms/install/env.md"
+  #   - Agents: "swarms/agents/index.md"
+  #   - Multi-Agent Architectures: "swarms/structs/index.md"
+
+  - Home:
+    - Overview: "index.md"
+    - Onboarding: 
+      - Installation: "swarms/install/install.md"
+      - Environment Configuration: "swarms/install/env.md"
+      - Quickstart: "quickstart.md"
+      - Agents: "swarms/agents/index.md"
+      - Multi-Agent Architectures: "swarms/structs/index.md"
+    
+    - Protocol:
+      - Overview: "protocol/overview.md"
+      - SIPs: "protocol/sip.md"
+      - Feature Set: "swarms/features.md"
+      - Swarms Ecosystem: "swarms/ecosystem.md"
+      - Technical Support: "swarms/support.md"
+    
+    
+    - Agents:
+      - Overview: "swarms/framework/agents_explained.md"
+      - Quickstart: "swarms/agents/index.md"
+      - Reference: "swarms/structs/agent.md"
+      - Tools and MCP: "swarms/tools/tools_examples.md"
+      - Multi-Agent Helpers: "swarms/structs/agent_multi_agent_communication.md"
+      
+      - Capabilities:
+        - Fallback Models: "swarms/utils/fallback_models.md"
+        - Running Agents with YAML: "swarms/agents/create_agents_yaml.md"
+        - Tools Reference:
+          - Overview: "swarms/tools/main.md"
+          - What are tools?: "swarms/tools/build_tool.md"
+          - Structured Outputs: "swarms/agents/structured_outputs.md"
+          - Agent MCP Integration: "swarms/structs/agent_mcp.md"
+        - Long Term Memory Reference:
+          - Integrating RAG with Agents: "swarms/memory/diy_memory.md"
+        
+    - Third-Party Agents:
+      - Creating Custom Agents: "swarms/agents/new_agent.md"
+      - OpenAI Assistant: "swarms/agents/openai_assistant.md"
+      - Integrating External Agents from Griptape, Langchain, etc: "swarms/agents/external_party_agents.md"
+    
+    - Reasoning Agents:
+      - Overview: "swarms/agents/reasoning_agents_overview.md"
+      - Self Consistency Agent: "swarms/agents/consistency_agent.md"
+      - IRE Agent: "swarms/agents/iterative_agent.md"
+      - Reasoning Duo: "swarms/agents/reasoning_duo.md"
+      - Reflexion Agent: "swarms/agents/reflexion_agent.md"
+      - GKP Agent: "swarms/agents/gkp_agent.md"
+      - Agent Judge: "swarms/agents/agent_judge.md"
+      - Reasoning Agent Router: "swarms/agents/reasoning_agent_router.md"
+    
+    - Multi-Agent Architectures:
+      - Overview: "swarms/concept/swarm_architectures.md"
+      - Benefits: "swarms/concept/why.md"
+      - Choosing Multi Agent Architecture: "swarms/concept/how_to_choose_swarms.md"
+
+      - Reference Documentation:
+        - Overview: "swarms/structs/overview.md"
+        - Custom Multi Agent Architectures: "swarms/structs/custom_swarm.md"
+        - Debate Multi-Agent Architectures: "swarms/structs/orchestration_methods.md"
+        - MajorityVoting: "swarms/structs/majorityvoting.md"
+        - RoundRobin: "swarms/structs/round_robin_swarm.md"
+        - Mixture of Agents: "swarms/structs/moa.md"
+        - SelfMoASeq: "swarms/structs/self_moa_seq.md"
+        - SpreadSheetSwarm: "swarms/structs/spreadsheet_swarm.md"
+        - ForestSwarm: "swarms/structs/forest_swarm.md"
+        - MALT: "swarms/structs/malt.md"
+        - Multi-Agent Execution Utilities: "swarms/structs/various_execution_methods.md"
+        - Council of Judges: "swarms/structs/council_of_judges.md"
+        - Heavy Swarm: "swarms/structs/heavy_swarm.md"
+        - Social Algorithms: "swarms/structs/social_algorithms.md"
+
+        - Hiearchical Architectures:
+          - Overview: "swarms/structs/multi_swarm_orchestration.md"
+          - HierarchicalSwarm: "swarms/structs/hierarchical_swarm.md"
+          - Hierarchical Structured Communication Framework: "swarms/structs/hierarchical_structured_communication_framework.md"
+          - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
+          - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
+          - Swarm Matcher: "swarms/structs/swarm_matcher.md"
+          - Board of Directors: "swarms/structs/BoardOfDirectors.md"
+
+
+        - Routers:
+          - SwarmRouter: "swarms/structs/swarm_router.md"
+          - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
+          - AgentRouter: "swarms/structs/agent_router.md"
+          - ModelRouter: "swarms/structs/model_router.md"
+
+
+        - Rearrangers:
+          - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
+          - AgentRearrange: "swarms/structs/agent_rearrange.md"
+
+        - GroupChats:
+          - GroupChat: "swarms/structs/group_chat.md"
+          - Interactive Group Chat: "swarms/structs/interactive_groupchat.md"
+
+        - Workflows:
+          - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
+          - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
+          - GraphWorkflow: "swarms/structs/graph_workflow.md"
+          - BatchedGridWorkflow: "swarms/structs/batched_grid_workflow.md"
+
+        - Communication Structure: "swarms/structs/conversation.md"
+
+    - Utilities:
+      - CLI Reference: "swarms/cli/cli_reference.md"
+      - Agent Loader: "swarms/utils/agent_loader.md"
+      - AgentRegistry: "swarms/structs/agent_registry.md"
+
+    - Tools:
+      - Overview: "swarms_tools/overview.md"
+      - BaseTool Reference: "swarms/tools/base_tool.md"
+      - MCP Client Utils: "swarms/tools/mcp_client_call.md"
+
+      - Vertical Tools:
+        - Finance: "swarms_tools/finance.md"
+        - Search: "swarms_tools/search.md"
+        - Social Media:
+          - Twitter: "swarms_tools/twitter.md"
+
+
+    - Deployment Solutions:
+      - Overview: "deployment_solutions/overview.md"
+      - FastAPI + Uvicorn: "deployment_solutions/fastapi_agent_api.md"
+      - CronJob: "swarms/structs/cron_job.md"
+      - Agent on MCP: "examples/mcp_ds.md"
+      - Providers:
+        - Deploy on Google Cloud Run: "swarms_cloud/cloud_run.md"
+        - Deploy on Phala: "swarms_cloud/phala_deploy.md"
+        - Deploy on Cloudflare Workers: "swarms_cloud/cloudflare_workers.md"
+      - Agent Orchestration Protocol (AOP):
+        - AOP Reference: "swarms/structs/aop.md"
+        - AOP Server Setup: "swarms/examples/aop_server_example.md"
+        - AOP Cluster Example: "swarms/examples/aop_cluster_example.md"
+
+    
+  - Examples:
+    - Overview: "examples/index.md"
+    - CookBook Index: "examples/cookbook_index.md"
+    - Paper Implementations: "examples/paper_implementations.md"
+    - Templates & Applications: "examples/templates.md"
+    - Community Resources: "examples/community_resources.md"
+    - CLI Examples: "swarms/cli/cli_examples.md"
+
+    - Basic Examples:
+      - Individual Agents:
+        - Basic Agent: "swarms/examples/basic_agent.md"
+        - Tool Usage:
+          - Agents with Vision and Tool Usage: "swarms/examples/vision_tools.md"
+          - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
+          - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
+          - Message Transforms for Context Management: "swarms/structs/transforms.md"
+        - Vision:
+          - Agents with Vision: "swarms/examples/vision_processing.md"
+          - Agent with Multiple Images: "swarms/examples/multiple_images.md"
+        - Utils:
+          - Agent with Streaming: "examples/agent_stream.md"
+          - Agent Output Types: "swarms/examples/agent_output_types.md"
+          - Gradio Chat Interface: "swarms/ui/main.md"
+          - Agent with Gemini Nano Banana: "swarms/examples/jarvis_agent.md"
+        - LLM Providers:
+          - Language Models:
+            - Overview: "swarms/examples/model_providers.md"
+            - OpenAI: "swarms/examples/openai_example.md"
+            - Anthropic: "swarms/examples/claude.md"
+            - Groq: "swarms/examples/groq.md"
+            - Cohere: "swarms/examples/cohere.md"
+            - DeepSeek: "swarms/examples/deepseek.md"
+            - Ollama: "swarms/examples/ollama.md"
+            - OpenRouter: "swarms/examples/openrouter.md"
+            - XAI: "swarms/examples/xai.md"
+            - Azure OpenAI: "swarms/examples/azure.md"
+            - Llama4: "swarms/examples/llama4.md"
+            - Custom Base URL & API Keys: "swarms/examples/custom_base_url_example.md"
+
+
+
+    - Advanced Examples:
+      - Multi-Agent Architectures:
+        - HierarchicalSwarm Examples: "swarms/examples/hierarchical_swarm_example.md"
+        - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
+        - Group Chat Example: "swarms/examples/groupchat_example.md"
+        - Sequential Workflow Example: "swarms/examples/sequential_example.md"
+        - SwarmRouter Example: "swarms/examples/swarm_router.md"
+        - MultiAgentRouter Minimal Example: "swarms/examples/multi_agent_router_minimal.md"
+        - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
+        - Mixture of Agents Example: "swarms/examples/moa_example.md"
+        - Unique Swarms: "swarms/examples/unique_swarms.md"
+        - Agents as Tools: "swarms/examples/agents_as_tools.md"
+        - Aggregate Multi-Agent Responses: "swarms/examples/aggregate.md"
+        - Interactive GroupChat Example: "swarms/examples/igc_example.md"
+        - BatchedGridWorkflow Examples:
+          - Simple BatchedGridWorkflow: "swarms/examples/batched_grid_simple_example.md"
+          - Advanced BatchedGridWorkflow: "swarms/examples/batched_grid_advanced_example.md"
+        - Applications:
+          - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
+          - Hiearchical Marketing Team: "examples/marketing_team.md"
+          - Gold ETF Research with HeavySwarm: "examples/gold_etf_research.md"
+          - Hiring Swarm: "examples/hiring_swarm.md"
+          - Advanced Research: "examples/av.md"
+          - Real Estate Swarm: "examples/realestate_swarm.md"
+          - Job Finding Swarm: "examples/job_finding.md"
+          - Mergers & Aquisition (M&A) Advisory Swarm: "examples/ma_swarm.md"
+    
+    - Tools & Integrations:
+      - Web Search with Exa: "examples/exa_search.md"
+      - Browser Use: "examples/browser_use.md"
+      - Yahoo Finance: "swarms/examples/yahoo_finance.md"
+      - Firecrawl: "developer_guides/firecrawl.md"
+      
+      - MCP: 
+        - Multi-MCP Agent Integration: "swarms/examples/multi_mcp_agent.md"
+
+    - RAG:
+      - RAG with Qdrant: "swarms/RAG/qdrant_rag.md"
+
+    - Apps:
+      - Web Scraper Agents: "developer_guides/web_scraper.md"
+      - Smart Database: "examples/smart_database.md"
+      
+    - AOP:
+      - Medical AOP Example: "examples/aop_medical.md"
+
+    - X402:
+      - x402 Quickstart Example: "examples/x402_payment_integration.md"
+      - X402 Discovery Query Agent: "examples/x402_discovery_query.md"
+
+
+  - Swarms Cloud API:
+    - Overview: "swarms_cloud/migration.md"
+
+
+  - Swarms Marketplace:
+    - Overview: "swarms_platform/index.md"
+    - Marketplace:
+      - Share and Discover Agents, Prompts, and Tools: "swarms_platform/share_and_discover.md"
+      - Monetize Your Prompts, Agents, and Tools: "swarms_platform/monetize.md"
+    - Platform:
+      - Customize Your Sidebar: "swarms_platform/apps_page.md"
+      - Playground: "swarms_platform/playground_page.md"
+      - API Key Management: "swarms_platform/apikeys.md"
+      - Account Management: "swarms_platform/account_management.md"
+
+  - Swarms Rust:
+    - Overview: "swarms_rs/overview.md"
+    - Agents: "swarms_rs/agents.md"
+
+  - Contributors:
+    - Overview: "contributors/main.md"
+    - Environment Setup: "contributors/environment_setup.md"
+    - Bounty Program: "governance/bounty_program.md"
+    
+    - Development Guides:
+      - Code Style Guide & Best Practices: "swarms/framework/code_cleanliness.md"
+      - Adding Tests: "swarms/framework/test.md"
+      - Adding Documentation: "contributors/docs.md"
+      - New Tools & Plugins: "contributors/tools.md"
+    
+    - Architecture & Design:
+      - Understanding Swarms Architecture: "swarms/concept/framework_architecture.md"
+      - Development Philosophy & Principles: "swarms/concept/philosophy.md"

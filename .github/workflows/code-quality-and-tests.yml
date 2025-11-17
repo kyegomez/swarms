@@ -1,0 +1,73 @@
+name: Code Quality and Tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  code-quality-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10"]
+
+    steps:
+    # Step 1: Check out the repository
+    - name: Checkout repository
+      uses: actions/checkout@v5
+
+    # Step 2: Set up Python
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    # Step 3: Install Poetry for dependency management
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    # Step 4: Cache dependencies to speed up subsequent runs
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+    # Step 5: Install dependencies including dev dependencies
+    - name: Install dependencies
+      run: poetry install --no-interaction --with dev --all-extras 
+
+    # Step 7: Run Black formatting check on swarms folder
+    - name: Check Black formatting on swarms folder
+      run: |
+        poetry run black swarms/ --check --diff
+
+    # Step 8: Run Ruff linting on swarms folder
+    - name: Run Ruff linting on swarms folder
+      run: |
+        poetry run ruff check swarms/
+
+    # Step 10: Run tests with API keys
+    - name: Run tests
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      run: |
+        poetry run pytest tests/ -v --tb=short
+
+    # Step 11: Upload test results as artifacts (optional)
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v5
+      with:
+        name: test-results-${{ matrix.python-version }}
+        path: |
+          tests/
+          .coverage
+        retention-days: 7 
