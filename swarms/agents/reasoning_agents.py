@@ -284,11 +284,11 @@ class ReasoningAgentRouter:
             The result of the reasoning process (format depends on agent and output_type).
         """
         try:
+            swarm = self.select_swarm()
+
             if self.swarm_type == "ReflexionAgent":
-                swarm = self.select_swarm()
                 return swarm.run(tasks=[task], *args, **kwargs)
             else:
-                swarm = self.select_swarm()
                 return swarm.run(task=task, *args, **kwargs)
         except Exception as e:
             raise ReasoningAgentExecutorError(
