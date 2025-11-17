@@ -1,80 +1,125 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+
 [tool.poetry]
 name = "swarms"
-version = "0.6.1"
-description = "Swarms - Pytorch"
-authors = ["Kye Gomez <kye@apac.ai>"]
+version = "8.6.2"
+description = "Swarms - TGSC"
 license = "MIT"
+authors = ["Kye Gomez <kye@swarms.world>"]
+homepage = "https://github.com/kyegomez/swarms"
+documentation = "https://docs.swarms.world"
 readme = "README.md"
+repository = "https://github.com/kyegomez/swarms"
+keywords = [
+    "artificial intelligence",
+    "deep learning",
+    "optimizers",
+    "Prompt Engineering",
+    "swarms",
+    "agents",
+    "llms",
+    "transformers",
+    "multi-agent",
+    "swarms of agents",
+    "Enterprise-Grade Agents",
+    "Production-Grade Agents",
+    "Agents",
+    "Multi-Grade-Agents",
+    "Swarms",
+    "Transformers",
+    "LLMs",
+    "Prompt Engineering",
+    "Agents",
+    "Generative Agents",
+    "Generative AI",
+    "Agent Marketplace",
+    "Agent Store",
+    "quant",
+    "finance",
+    "algorithmic trading",
+    "portfolio optimization",
+    "risk management",
+    "financial modeling",
+    "machine learning for finance",
+    "natural language processing for finance",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+]
+
 
 [tool.poetry.dependencies]
-python = "^3.6"
-transformers = "*"
-openai = "*"
-langchain = "*"
-torch = "*"
-torchvision = "*"
-asyncio = "*"
-nest_asyncio = "*"
-bs4 = "*"
-playwright = "*"
-duckduckgo_search = "*"
-faiss-cpu = "*"
-wget = "3.2"
-accelerate = "0.17.1"
-addict = "*"
-albumentations = "*"
-basicsr = "*"
-controlnet-aux = "*"
-diffusers = "0.14.0"
-einops = "*"
-gradio = "*"
-imageio = "*"
-imageio-ffmpeg = "*"
-kornia = "*"
+python = ">=3.10,<4.0"
+setuptools = "*"
+asyncio = ">=3.4.3,<5.0"
+toml = "*"
+pypdf = "5.1.0"
+loguru = "*"
+pydantic = "*"
+tenacity = "*"
+psutil = "*"
+python-dotenv = "*"
+PyYAML = "*"
+networkx = "*"
+aiofiles = "*"
+rich = "*"
 numpy = "*"
-omegaconf = "*"
-open_clip_torch = "*"
-opencv-python = "*"
-prettytable = "*"
-safetensors = "*"
-streamlit = "*"
-test-tube = "*"
-timm = "*"
-torchmetrics = "*"
-webdataset = "*"
-yapf = "*"
-wolframalpha = "*"
-wikipedia = "1.4.0"
+litellm = "*"
 httpx = "*"
-ggl = "*"
-gradio_tools = "*"
-arxiv = "*"
-google-api-python-client = "*"
-google-auth-oauth = "*"
-google-auth-httplib2 = "*"
-beautifulsoup4 = "4.11.2"
-O365 = "*"
-pytube = "*"
-pydub = "*"
-llama-index = "*"
-fastapi = "0.94.1"
-pydantic = "1.10.6"
-tenacity = "8.2.2"
-python-dotenv = "1.0.0"
-pillow = "9.4.0"
-boto3 = "*"
-uvicorn = "0.21.1"
-python-ptrace = "0.9.8"
-jinja2 = "3.1.2"
-python-multipart = "0.0.6"
-celery = "5.2.7"
-redis = "4.5.4"
-sentencepiece = "0.1.97"
-bitsandbytes = "0.37.2"
-psycopg2-binary = "2.9.5"
-google-search-results = "2.4.2"
-black = "23.1.0"
+mcp = "*"
+aiohttp = "*"
+schedule = "*"
+uvloop = {version = "*", markers = "sys_platform == 'linux' or sys_platform == 'darwin'"}
+winloop = {version = "*", markers = "sys_platform == 'win32'"}
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.poetry.scripts]
+swarms = "swarms.cli.main:main"
+
+
+[tool.poetry.group.lint.dependencies]
+black = ">=23.1,<26.0"
+ruff = ">=0.5.1,<0.14.5"
+types-toml = "^0.10.8.1"
+types-pytz = ">=2023.3,<2026.0"
+types-chardet = "^5.0.4.6"
+mypy-protobuf = "^3.0.0"
+
+
+[tool.poetry.group.test.dependencies]
+pytest = ">=8.1.1,<10.0.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "*"
+ruff = "*"
+pytest = "*"
+# pre-commit = "*"
+
+[tool.ruff]
+line-length = 70
+
+[tool.black]
+target-version = ["py38"]
+line-length = 70
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | docs
+)/
+'''
+

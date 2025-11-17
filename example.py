@@ -1,25 +1,23 @@
-from swarms import Swarms
+import json
 
+from swarms import Agent
 
-# Retrieve your API key from the environment or replace with your actual key
-api_key = "sksdsds"
+# Initialize the agent
+agent = Agent(
+    agent_name="Quantitative-Trading-Agent",
+    agent_description="Advanced quantitative trading and algorithmic analysis agent",
+    model_name="gpt-4.1",
+    dynamic_temperature_enabled=True,
+    max_loops=1,
+    dynamic_context_window=True,
+    streaming_on=False,
+    top_p=None,
+    output_type="dict",
+)
 
-# Initialize Swarms with your API key
-swarm = Swarms(openai_api_key=api_key)
+out = agent.run(
+    task="What are the top five best energy stocks across nuclear, solar, gas, and other energy sources?",
+    n=1,
+)
 
-# Define an objective
-objective = """
-Please make a web GUI for using HTTP API server. 
-The name of it is Swarms. 
-You can check the server code at ./main.py. 
-The server is served on localhost:8000. 
-Users should be able to write text input as 'query' and url array as 'files', and check the response. 
-Users input form should be delivered in JSON format. 
-I want it to have neumorphism-style. Serve it on port 4500.
-
-"""
-
-# Run Swarms
-task = swarm.run_swarms(objective)
-
-print(task)
+print(json.dumps(out, indent=4))

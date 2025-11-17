@@ -1,0 +1,15 @@
+swarms
+pytest
+matplotlib
+loguru
+psutil
+pyyaml
+python-dotenv
+rich
+pydantic
+numpy
+pandas
+openpyxl
+seaborn
+requests
+swarms-memory

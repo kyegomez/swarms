@@ -1,248 +1,404 @@
-# Contributing to Swarms
+# Contribution Guidelines
 
-Hi there! Thank you for even being interested in contributing to Swarms.
-As an open source project in a rapidly developing field, we are extremely open
-to contributions, whether they be in the form of new features, improved infra, better documentation, or bug fixes.
+<div align="center">
+  <a href="https://swarms.world">
+    <img src="https://github.com/kyegomez/swarms/blob/master/images/swarmslogobanner.png" style="margin: 15px; max-width: 500px" width="50%" alt="Swarms Logo">
+  </a>
+</div>
 
-## 🗺️ Guidelines
+<p align="center">
+  <em>The Enterprise-Grade Production-Ready Multi-Agent Orchestration Framework</em>
+</p>
 
-### 👩‍💻 Contributing Code
+---
 
-To contribute to this project, please follow a ["fork and pull request"](https://docs.github.com/en/get-started/quickstart/contributing-to-projects) workflow.
-Please do not try to push directly to this repo unless you are maintainer.
+## Table of Contents
 
-Please follow the checked-in pull request template when opening pull requests. Note related issues and tag relevant
-maintainers.
+- [Project Overview](#project-overview)
+- [Getting Started](#getting-started)
+  - [Installation](#installation)
+  - [Environment Configuration](#environment-configuration)
+  - [Project Structure](#project-structure)
+- [How to Contribute](#how-to-contribute)
+  - [Reporting Issues](#reporting-issues)
+  - [Submitting Pull Requests](#submitting-pull-requests)
+  - [Good First Issues](#good-first-issues)
+- [Coding Standards](#coding-standards)
+  - [Type Annotations](#type-annotations)
+  - [Docstrings and Documentation](#docstrings-and-documentation)
+  - [Testing](#testing)
+  - [Code Style](#code-style)
+- [Areas Needing Contributions](#areas-needing-contributions)
+  - [Writing Tests](#writing-tests)
+  - [Improving Documentation](#improving-documentation)
+  - [Adding New Swarm Architectures](#adding-new-swarm-architectures)
+  - [Enhancing Agent Capabilities](#enhancing-agent-capabilities)
+  - [Removing Defunct Code](#removing-defunct-code)
+- [Development Resources](#development-resources)
+  - [Documentation](#documentation)
+  - [Examples and Tutorials](#examples-and-tutorials)
+  - [API Reference](#api-reference)
+- [Community and Support](#community-and-support)
+- [License](#license)
 
-Pull requests cannot land without passing the formatting, linting and testing checks first. See
-[Common Tasks](#-common-tasks) for how to run these checks locally.
+---
 
-It's essential that we maintain great documentation and testing. If you:
-- Fix a bug
-  - Add a relevant unit or integration test when possible. These live in `tests/unit_tests` and `tests/integration_tests`.
-- Make an improvement
-  - Update any affected example notebooks and documentation. These lives in `docs`.
-  - Update unit and integration tests when relevant.
-- Add a feature
-  - Add a demo notebook in `docs/modules`.
-  - Add unit and integration tests.
+## Project Overview
 
-We're a small, building-oriented team. If there's something you'd like to add or change, opening a pull request is the
-best way to get our attention.
+**Swarms** is an enterprise-grade, production-ready multi-agent orchestration framework focused on making it simple to orchestrate agents to automate real-world activities. The goal is to automate the world economy with these swarms of agents.
 
-### 🚩GitHub Issues
+### Key Features
 
-Our [issues](https://github.com/kyegomez/Swarms/issues) page is kept up to date
-with bugs, improvements, and feature requests. 
+| Category | Features | Benefits |
+|----------|----------|-----------|
+| 🏢 Enterprise Architecture | • Production-Ready Infrastructure<br>• High Reliability Systems<br>• Modular Design<br>• Comprehensive Logging | • Reduced downtime<br>• Easier maintenance<br>• Better debugging<br>• Enhanced monitoring |
+| 🤖 Agent Orchestration | • Hierarchical Swarms<br>• Parallel Processing<br>• Sequential Workflows<br>• Graph-based Workflows<br>• Dynamic Agent Rearrangement | • Complex task handling<br>• Improved performance<br>• Flexible workflows<br>• Optimized execution |
+| 🔄 Integration Capabilities | • Multi-Model Support<br>• Custom Agent Creation<br>• Extensive Tool Library<br>• Multiple Memory Systems | • Provider flexibility<br>• Custom solutions<br>• Extended functionality<br>• Enhanced memory management |
 
-There is a taxonomy of labels to help with sorting and discovery of issues of interest. Please use these to help
-organize issues.
+### We Need Your Help To:
 
-If you start working on an issue, please assign it to yourself.
+- **Write Tests**: Ensure the reliability and correctness of the codebase
+- **Improve Documentation**: Maintain clear and comprehensive documentation
+- **Add New Orchestration Methods**: Add multi-agent orchestration methods
+- **Remove Defunct Code**: Clean up and remove bad code
+- **Enhance Agent Capabilities**: Improve existing agents and add new ones
+- **Optimize Performance**: Improve speed and efficiency of swarm operations
 
-If you are adding an issue, please try to keep it focused on a single, modular bug/improvement/feature.
-If two issues are related, or blocking, please link them rather than combining them.
+Your contributions will help us push the boundaries of AI and make this library a valuable resource for the community.
 
-We will try to keep these issues as up to date as possible, though
-with the rapid rate of develop in this field some may get out of date.
-If you notice this happening, please let us know.
+---
 
-### 🙋Getting Help
+## Getting Started
 
-Our goal is to have the simplest developer setup possible. Should you experience any difficulty getting setup, please
-contact a maintainer! Not only do we want to help get you unblocked, but we also want to make sure that the process is
-smooth for future contributors.
+### Installation
 
-In a similar vein, we do enforce certain linting, formatting, and documentation standards in the codebase.
-If you are finding these difficult (or even just annoying) to work with, feel free to contact a maintainer for help -
-we do not want these to get in the way of getting good code into the codebase.
-
-## 🚀 Quick Start
-
-> **Note:** You can run this repository locally (which is described below) or in a [development container](https://containers.dev/) (which is described in the [.devcontainer folder](https://github.com/hwchase17/Swarms/tree/master/.devcontainer)).
-
-This project uses [Poetry](https://python-poetry.org/) as a dependency manager. Check out Poetry's [documentation on how to install it](https://python-poetry.org/docs/#installation) on your system before proceeding.
-
-❗Note: If you use `Conda` or `Pyenv` as your environment / package manager, avoid dependency conflicts by doing the following first:
-1. *Before installing Poetry*, create and activate a new Conda env (e.g. `conda create -n Swarms python=3.9`)
-2. Install Poetry (see above)
-3. Tell Poetry to use the virtualenv python environment (`poetry config virtualenvs.prefer-active-python true`)
-4. Continue with the following steps.
-
-To install requirements:
-
+#### Using pip
 ```bash
-poetry install -E all
+pip3 install -U swarms
 ```
 
-This will install all requirements for running the package, examples, linting, formatting, tests, and coverage. Note the `-E all` flag will install all optional dependencies necessary for integration testing.
-
-❗Note: If you're running Poetry 1.4.1 and receive a `WheelFileValidationError` for `debugpy` during installation, you can try either downgrading to Poetry 1.4.0 or disabling "modern installation" (`poetry config installer.modern-installation false`) and re-install requirements. See [this `debugpy` issue](https://github.com/microsoft/debugpy/issues/1246) for more details.
-
-Now, you should be able to run the common tasks in the following section. To double check, run `make test`, all tests should pass. If they don't you may need to pip install additional dependencies, such as `numexpr` and `openapi_schema_pydantic`.
-
-## ✅ Common Tasks
-
-Type `make` for a list of common tasks.
-
-### Code Formatting
-
-Formatting for this project is done via a combination of [Black](https://black.readthedocs.io/en/stable/) and [isort](https://pycqa.github.io/isort/).
-
-To run formatting for this project:
+#### Using uv (Recommended)
+[uv](https://github.com/astral-sh/uv) is a fast Python package installer and resolver, written in Rust.
 
 ```bash
-make format
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install swarms using uv
+uv pip install swarms
 ```
 
-### Linting
+#### Using poetry
+```bash
+# Install poetry if you haven't already
+curl -sSL https://install.python-poetry.org | python3 -
 
-Linting for this project is done via a combination of [Black](https://black.readthedocs.io/en/stable/), [isort](https://pycqa.github.io/isort/), [flake8](https://flake8.pycqa.org/en/latest/), and [mypy](http://mypy-lang.org/).
+# Add swarms to your project
+poetry add swarms
+```
 
-To run linting for this project:
+#### From source
+```bash
+# Clone the repository
+git clone https://github.com/kyegomez/swarms.git
+cd swarms
+
+# Install with pip
+pip install -e .
+```
+
+### Environment Configuration
+
+Create a `.env` file in your project root with the following variables:
 
 ```bash
-make lint
+OPENAI_API_KEY=""
+WORKSPACE_DIR="agent_workspace"
+ANTHROPIC_API_KEY=""
+GROQ_API_KEY=""
 ```
 
-We recognize linting can be annoying - if you do not want to do it, please contact a project maintainer, and they can help you with it. We do not want this to be a blocker for good code getting contributed.
+- [Learn more about environment configuration here](https://docs.swarms.world/en/latest/swarms/install/env/)
 
-### Coverage
+### Project Structure
 
-Code coverage (i.e. the amount of code that is covered by unit tests) helps identify areas of the code that are potentially more or less brittle.
+- **`swarms/`**: Contains all the source code for the library
+  - **`agents/`**: Agent implementations and base classes
+  - **`structs/`**: Swarm orchestration structures (SequentialWorkflow, AgentRearrange, etc.)
+  - **`tools/`**: Tool implementations and base classes
+  - **`prompts/`**: System prompts and prompt templates
+  - **`utils/`**: Utility functions and helpers
+- **`examples/`**: Includes example scripts and notebooks demonstrating how to use the library
+- **`tests/`**: Unit tests for the library
+- **`docs/`**: Documentation files and guides
 
-To get a report of current coverage, run the following:
+---
 
-```bash
-make coverage
-```
+## How to Contribute
 
-### Working with Optional Dependencies
+### Reporting Issues
 
-Swarms relies heavily on optional dependencies to keep the Swarms package lightweight.
+If you find any bugs, inconsistencies, or have suggestions for enhancements, please open an issue on GitHub:
 
-If you're adding a new dependency to Swarms, assume that it will be an optional dependency, and
-that most users won't have it installed.
+1. **Search Existing Issues**: Before opening a new issue, check if it has already been reported.
+2. **Open a New Issue**: If it hasn't been reported, create a new issue and provide detailed information.
+   - **Title**: A concise summary of the issue.
+   - **Description**: Detailed description, steps to reproduce, expected behavior, and any relevant logs or screenshots.
+3. **Label Appropriately**: Use labels to categorize the issue (e.g., bug, enhancement, documentation).
 
-Users that do not have the dependency installed should be able to **import** your code without
-any side effects (no warnings, no errors, no exceptions). 
+**Issue Templates**: Use our issue templates for bug reports and feature requests:
+- [Bug Report](https://github.com/kyegomez/swarms/issues/new?template=bug_report.md)
+- [Feature Request](https://github.com/kyegomez/swarms/issues/new?template=feature_request.md)
 
-To introduce the dependency to the pyproject.toml file correctly, please do the following: 
+### Submitting Pull Requests
 
-1. Add the dependency to the main group as an optional dependency
-  ```bash
-  poetry add --optional [package_name]
+We welcome pull requests (PRs) for bug fixes, improvements, and new features. Please follow these guidelines:
+
+1. **Fork the Repository**: Create a personal fork of the repository on GitHub.
+2. **Clone Your Fork**: Clone your forked repository to your local machine.
+
+   ```bash
+   git clone https://github.com/kyegomez/swarms.git
+   cd swarms
+   ```
+
+3. **Create a New Branch**: Use a descriptive branch name.
+
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+4. **Make Your Changes**: Implement your code, ensuring it adheres to the coding standards.
+5. **Add Tests**: Write tests to cover your changes.
+6. **Commit Your Changes**: Write clear and concise commit messages.
+
+   ```bash
+   git commit -am "Add feature X"
+   ```
+
+7. **Push to Your Fork**:
+
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+8. **Create a Pull Request**:
+
+   - Go to the original repository on GitHub.
+   - Click on "New Pull Request".
+   - Select your branch and create the PR.
+   - Provide a clear description of your changes and reference any related issues.
+
+9. **Respond to Feedback**: Be prepared to make changes based on code reviews.
+
+**Note**: It's recommended to create small and focused PRs for easier review and faster integration.
+
+### Good First Issues
+
+The easiest way to contribute is to pick any issue with the `good first issue` tag 💪. These are specifically designed for new contributors:
+
+- [Good First Issues](https://github.com/kyegomez/swarms/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
+- [Contributing Board](https://github.com/users/kyegomez/projects/1) - Participate in Roadmap discussions!
+
+---
+
+## Coding Standards
+
+To maintain code quality and consistency, please adhere to the following standards.
+
+### Type Annotations
+
+- **Mandatory**: All functions and methods must have type annotations.
+- **Example**:
+
+  ```python
+  def add_numbers(a: int, b: int) -> int:
+      return a + b
   ```
-2. Open pyproject.toml and add the dependency to the `extended_testing` extra
-3. Relock the poetry file to update the extra.
-  ```bash
-  poetry lock --no-update
+
+- **Benefits**:
+  - Improves code readability.
+  - Helps with static type checking tools.
+
+### Docstrings and Documentation
+
+- **Docstrings**: Every public class, function, and method must have a docstring following the [Google Python Style Guide](http://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) or [NumPy Docstring Standard](https://numpydoc.readthedocs.io/en/latest/format.html).
+- **Content**:
+  - **Description**: Briefly describe what the function or class does.
+  - **Args**: List and describe each parameter.
+  - **Returns**: Describe the return value(s).
+  - **Raises**: List any exceptions that are raised.
+
+- **Example**:
+
+  ```python
+  def calculate_mean(values: List[float]) -> float:
+      """
+      Calculates the mean of a list of numbers.
+
+      Args:
+          values (List[float]): A list of numerical values.
+
+      Returns:
+          float: The mean of the input values.
+
+      Raises:
+          ValueError: If the input list is empty.
+      """
+      if not values:
+          raise ValueError("The input list is empty.")
+      return sum(values) / len(values)
   ```
-4. Add a unit test that the very least attempts to import the new code. Ideally the unit
-test makes use of lightweight fixtures to test the logic of the code.
-5. Please use the `@pytest.mark.requires(package_name)` decorator for any tests that require the dependency.
+
+- **Documentation**: Update or create documentation pages if your changes affect the public API.
 
 ### Testing
 
-See section about optional dependencies.
+- **Required**: All new features and bug fixes must include appropriate unit tests.
+- **Framework**: Use `unittest`, `pytest`, or a similar testing framework.
+- **Test Location**: Place tests in the `tests/` directory, mirroring the structure of `swarms/`.
+- **Test Coverage**: Aim for high test coverage to ensure code reliability.
+- **Running Tests**: Provide instructions for running tests.
 
-#### Unit Tests
+  ```bash
+  pytest tests/
+  ```
 
-Unit tests cover modular logic that does not require calls to outside APIs.
+### Code Style
 
-To run unit tests:
+- **PEP 8 Compliance**: Follow [PEP 8](https://www.python.org/dev/peps/pep-0008/) style guidelines.
+- **Linting Tools**: Use `flake8`, `black`, or `pylint` to check code style.
+- **Consistency**: Maintain consistency with the existing codebase.
 
-```bash
-make test
-```
+---
 
-To run unit tests in Docker:
+## Areas Needing Contributions
 
-```bash
-make docker_tests
-```
+We have several areas where contributions are particularly welcome.
 
-If you add new logic, please add a unit test.
+### Writing Tests
 
+- **Goal**: Increase test coverage to ensure the library's robustness.
+- **Tasks**:
+  - Write unit tests for existing code in `swarms/`.
+  - Identify edge cases and potential failure points.
+  - Ensure tests are repeatable and independent.
+  - Add integration tests for swarm orchestration methods.
 
+### Improving Documentation
 
-#### Integration Tests
+- **Goal**: Maintain clear and comprehensive documentation for users and developers.
+- **Tasks**:
+  - Update docstrings to reflect any changes.
+  - Add examples and tutorials in the `examples/` directory.
+  - Improve or expand the content in the `docs/` directory.
+  - Create video tutorials and walkthroughs.
 
-Integration tests cover logic that requires making calls to outside APIs (often integration with other services).
+### Adding New Swarm Architectures
 
-**warning** Almost no tests should be integration tests. 
+- **Goal**: Provide new multi-agent orchestration methods.
+- **Current Architectures**:
+  - [SequentialWorkflow](https://docs.swarms.world/en/latest/swarms/structs/sequential_workflow/)
+  - [AgentRearrange](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)
+  - [MixtureOfAgents](https://docs.swarms.world/en/latest/swarms/structs/moa/)
+  - [SpreadSheetSwarm](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)
+  - [ForestSwarm](https://docs.swarms.world/en/latest/swarms/structs/forest_swarm/)
+  - [GraphWorkflow](https://docs.swarms.world/en/latest/swarms/structs/graph_swarm/)
+  - [GroupChat](https://docs.swarms.world/en/latest/swarms/structs/group_chat/)
+  - [SwarmRouter](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)
 
-  Tests that require making network connections make it difficult for other
-  developers to test the code.
+### Enhancing Agent Capabilities
 
-  Instead favor relying on `responses` library and/or mock.patch to mock
-  requests using small fixtures.
+- **Goal**: Improve existing agents and add new specialized agents.
+- **Areas of Focus**:
+  - Financial analysis agents
+  - Medical diagnosis agents
+  - Code generation and review agents
+  - Research and analysis agents
+  - Creative content generation agents
 
-To run integration tests:
+### Removing Defunct Code
 
-```bash
-make integration_tests
-```
+- **Goal**: Clean up and remove bad code to improve maintainability.
+- **Tasks**:
+  - Identify unused or deprecated code.
+  - Remove duplicate implementations.
+  - Simplify complex functions.
+  - Update outdated dependencies.
 
-If you add support for a new external API, please add a new integration test.
+---
 
-### Adding a Jupyter Notebook
+## Development Resources
 
-If you are adding a Jupyter notebook example, you'll want to install the optional `dev` dependencies.
+### Documentation
 
-To install dev dependencies:
+- **Official Documentation**: [docs.swarms.world](https://docs.swarms.world)
+- **Installation Guide**: [Installation](https://docs.swarms.world/en/latest/swarms/install/install/)
+- **Quickstart Guide**: [Get Started](https://docs.swarms.world/en/latest/swarms/install/quickstart/)
+- **Agent Architecture**: [Agent Internal Mechanisms](https://docs.swarms.world/en/latest/swarms/framework/agents_explained/)
+- **Agent API**: [Agent API](https://docs.swarms.world/en/latest/swarms/structs/agent/)
 
-```bash
-poetry install --with dev
-```
+### Examples and Tutorials
 
-Launch a notebook:
+- **Basic Examples**: [examples/](https://github.com/kyegomez/swarms/tree/master/examples)
+- **Agent Examples**: [examples/single_agent/](https://github.com/kyegomez/swarms/tree/master/examples/single_agent)
+- **Multi-Agent Examples**: [examples/multi_agent/](https://github.com/kyegomez/swarms/tree/master/examples/multi_agent)
+- **Tool Examples**: [examples/tools/](https://github.com/kyegomez/swarms/tree/master/examples/tools)
 
-```bash
-poetry run jupyter notebook
-```
+### API Reference
 
-When you run `poetry install`, the `Swarms` package is installed as editable in the virtualenv, so your new logic can be imported into the notebook.
+- **Core Classes**: [swarms/structs/](https://github.com/kyegomez/swarms/tree/master/swarms/structs)
+- **Agent Implementations**: [swarms/agents/](https://github.com/kyegomez/swarms/tree/master/swarms/agents)
+- **Tool Implementations**: [swarms/tools/](https://github.com/kyegomez/swarms/tree/master/swarms/tools)
+- **Utility Functions**: [swarms/utils/](https://github.com/kyegomez/swarms/tree/master/swarms/utils)
 
-## Documentation
+---
 
-### Contribute Documentation
+## Community and Support
 
-Docs are largely autogenerated by [sphinx](https://www.sphinx-doc.org/en/master/) from the code.
+### Connect With Us
 
-For that reason, we ask that you add good documentation to all classes and methods.
+| Platform | Link | Description |
+|----------|------|-------------|
+| 📚 Documentation | [docs.swarms.world](https://docs.swarms.world) | Official documentation and guides |
+| 📝 Blog | [Medium](https://medium.com/@kyeg) | Latest updates and technical articles |
+| 💬 Discord | [Join Discord](https://discord.gg/EamjgSaEQf) | Live chat and community support |
+| 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
+| 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
+| 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
+| 🎫 Events | [Sign up here](https://lu.ma/swarms_calendar) | Join our community events |
 
-Similar to linting, we recognize documentation can be annoying. If you do not want to do it, please contact a project maintainer, and they can help you with it. We do not want this to be a blocker for good code getting contributed.
+### Onboarding Session
 
-### Build Documentation Locally
+Get onboarded with the creator and lead maintainer of Swarms, Kye Gomez, who will show you how to get started with the installation, usage examples, and starting to build your custom use case! [CLICK HERE](https://cal.com/swarms/swarms-onboarding-session)
 
-Before building the documentation, it is always a good idea to clean the build directory:
+### Community Guidelines
 
-```bash
-make docs_clean
-```
+- **Communication**: Engage with the community by participating in discussions on issues and pull requests.
+- **Respect**: Maintain a respectful and inclusive environment.
+- **Feedback**: Be open to receiving and providing constructive feedback.
+- **Collaboration**: Work together to improve the project for everyone.
 
-Next, you can run the linkchecker to make sure all links are valid:
+---
 
-```bash
-make docs_linkcheck
-```
+## License
 
-Finally, you can build the documentation as outlined below:
+By contributing to swarms, you agree that your contributions will be licensed under the [Apache License](LICENSE).
 
-```bash
-make docs_build
-```
+---
 
-## 🏭 Release Process
+## Citation
 
-As of now, Swarms has an ad hoc release process: releases are cut with high frequency by
-a developer and published to [PyPI](https://pypi.org/project/Swarms/).
+If you use **swarms** in your research, please cite the project by referencing the metadata in [CITATION.cff](./CITATION.cff).
 
-Swarms follows the [semver](https://semver.org/) versioning standard. However, as pre-1.0 software,
-even patch releases may contain [non-backwards-compatible changes](https://semver.org/#spec-item-4).
+---
 
-### 🌟 Recognition
+Thank you for contributing to swarms! Your efforts help make this project better for everyone.
 
-If your contribution has made its way into a release, we will want to give you credit on Twitter (only if you want though)!
-If you have a Twitter account you would like us to mention, please let us know in the PR or in another manner.
+If you have any questions or need assistance, please feel free to:
+- Open an issue on GitHub
+- Join our Discord community
+- Reach out to the maintainers
+- Schedule an onboarding session
+
+**Happy contributing! 🚀**
