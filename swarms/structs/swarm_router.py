@@ -2,7 +2,7 @@ import concurrent.futures
 import json
 import os
 import traceback
-from typing import Any, Callable, Dict, List, Literal, Optional, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Union, get_args
 
 from pydantic import BaseModel, Field
 
@@ -46,6 +46,7 @@ SwarmType = Literal[
     "CouncilAsAJudge",
     "InteractiveGroupChat",
     "HeavySwarm",
+    "BatchedGridWorkflow",
 ]
 
 
@@ -273,23 +274,7 @@ class SwarmRouter:
                 )
 
             # Validate swarm type is a valid string
-            valid_swarm_types = [
-                "AgentRearrange",
-                "MixtureOfAgents",
-                "SequentialWorkflow",
-                "ConcurrentWorkflow",
-                "GroupChat",
-                "MultiAgentRouter",
-                "AutoSwarmBuilder",
-                "HiearchicalSwarm",
-                "auto",
-                "MajorityVoting",
-                "MALT",
-                "CouncilAsAJudge",
-                "InteractiveGroupChat",
-                "HeavySwarm",
-                "BatchedGridWorkflow",
-            ]
+            valid_swarm_types = get_args(SwarmType)
 
             if not isinstance(self.swarm_type, str):
                 raise SwarmRouterConfigError(
