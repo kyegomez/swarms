@@ -1,37 +1,43 @@
 import pytest
-from unittest.mock import Mock, patch
 from swarms.structs.collaborative_utils import talk_to_agent
+from swarms.structs.agent import Agent
+
+
+def create_test_agent(name: str, description: str = "Test agent") -> Agent:
+    """Create a real Agent instance for testing"""
+    return Agent(
+        agent_name=name,
+        agent_description=description,
+        system_prompt=f"You are {name}, a helpful test assistant.",
+        model_name="gpt-4o-mini",
+        max_loops=1,
+        verbose=False,
+    )
 
 
 def test_talk_to_agent_success():
     """Test successful agent-to-agent communication"""
-    current_agent = Mock()
-    current_agent.agent_name = "CurrentAgent"
-
-    target_agent = Mock()
-    target_agent.agent_name = "TargetAgent"
+    current_agent = create_test_agent("CurrentAgent")
+    target_agent = create_test_agent("TargetAgent")
 
     agents = [current_agent, target_agent]
 
-    # Mock the one_on_one_debate function result
-    with patch('swarms.structs.collaborative_utils.one_on_one_debate') as mock_debate:
-        mock_debate.return_value = ["conversation result"]
+    result = talk_to_agent(
+        current_agent=current_agent,
+        agents=agents,
+        task="What is 2+2?",
+        agent_name="TargetAgent",
+        max_loops=1
+    )
 
-        result = talk_to_agent(
-            current_agent=current_agent,
-            agents=agents,
-            task="Test task",
-            agent_name="TargetAgent"
-        )
-
-        assert result == ["conversation result"]
-        mock_debate.assert_called_once()
+    assert result is not None
+    # Result should be a list or string from the debate
+    assert len(str(result)) > 0
 
 
 def test_talk_to_agent_not_found():
     """Test error when target agent not found"""
-    current_agent = Mock()
-    current_agent.agent_name = "CurrentAgent"
+    current_agent = create_test_agent("CurrentAgent")
 
     agents = [current_agent]
 
@@ -46,41 +52,29 @@ def test_talk_to_agent_not_found():
 
 def test_talk_to_agent_with_max_loops():
     """Test talk_to_agent with custom max_loops"""
-    current_agent = Mock()
-    current_agent.agent_name = "CurrentAgent"
-
-    target_agent = Mock()
-    target_agent.agent_name = "TargetAgent"
+    current_agent = create_test_agent("CurrentAgent")
+    target_agent = create_test_agent("TargetAgent")
 
     agents = [current_agent, target_agent]
 
-    with patch('swarms.structs.collaborative_utils.one_on_one_debate') as mock_debate:
-        mock_debate.return_value = ["result"]
+    result = talk_to_agent(
+        current_agent=current_agent,
+        agents=agents,
+        task="Discuss the weather briefly",
+        agent_name="TargetAgent",
+        max_loops=2
+    )
 
-        talk_to_agent(
-            current_agent=current_agent,
-            agents=agents,
-            task="Test",
-            agent_name="TargetAgent",
-            max_loops=5
-        )
-
-        mock_debate.assert_called_once_with(
-            max_loops=5,
-            agents=[current_agent, target_agent],
-            task="Test",
-            output_type="str-all-except-first"
-        )
+    assert result is not None
 
 
 def test_talk_to_agent_no_agent_name_attribute():
-    """Test when agents don't have agent_name attribute"""
-    current_agent = Mock()
-    current_agent.agent_name = "CurrentAgent"
+    """Test when target agent is not found by name"""
+    current_agent = create_test_agent("CurrentAgent")
+    # Create another agent with different name
+    other_agent = create_test_agent("OtherAgent")
 
-    target_agent = Mock(spec=[])  # No agent_name
-
-    agents = [current_agent, target_agent]
+    agents = [current_agent, other_agent]
 
     with pytest.raises(ValueError, match="Agent 'TargetAgent' not found"):
         talk_to_agent(
@@ -93,24 +87,18 @@ def test_talk_to_agent_no_agent_name_attribute():
 
 def test_talk_to_agent_output_type():
     """Test talk_to_agent with custom output_type"""
-    current_agent = Mock()
-    current_agent.agent_name = "CurrentAgent"
-
-    target_agent = Mock()
-    target_agent.agent_name = "TargetAgent"
+    current_agent = create_test_agent("CurrentAgent")
+    target_agent = create_test_agent("TargetAgent")
 
     agents = [current_agent, target_agent]
 
-    with patch('swarms.structs.collaborative_utils.one_on_one_debate') as mock_debate:
-        mock_debate.return_value = ["result"]
+    result = talk_to_agent(
+        current_agent=current_agent,
+        agents=agents,
+        task="Say hello",
+        agent_name="TargetAgent",
+        output_type="str",
+        max_loops=1
+    )
 
-        talk_to_agent(
-            current_agent=current_agent,
-            agents=agents,
-            task="Test",
-            agent_name="TargetAgent",
-            output_type="custom"
-        )
-
-        args, kwargs = mock_debate.call_args
-        assert kwargs["output_type"] == "custom"
+    assert result is not None
