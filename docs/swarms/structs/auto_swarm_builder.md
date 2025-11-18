@@ -40,7 +40,6 @@ The `execution_type` parameter controls how the AutoSwarmBuilder operates:
 | Execution Type                  | Description                                               |
 |----------------------------------|-----------------------------------------------------------|
 | **"return-agents"**              | Creates and returns agent specifications as a dictionary (default) |
-| **"execute-swarm-router"**       | Executes the swarm router with the created agents         |
 | **"return-swarm-router-config"** | Returns the swarm router configuration as a dictionary    |
 | **"return-agents-objects"**     | Returns agent objects created from specifications         |
 
@@ -602,7 +601,6 @@ for agent in agents:
     - Use `verbose=True` during development for debugging
     - Choose the right `execution_type` for your use case:
         - Use `"return-agents"` for getting agent specifications as dictionary (default)
-        - Use `"execute-swarm-router"` for executing the swarm router with created agents
         - Use `"return-swarm-router-config"` for analyzing swarm architecture
         - Use `"return-agents-objects"` for getting agent objects created from specifications
     - Set `max_tokens` appropriately based on expected response length
