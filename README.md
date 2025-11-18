@@ -833,7 +833,7 @@ Thank you for contributing to swarms. Your work is extremely appreciated and rec
 
 -----
 
-## Connect With Us
+## Join the Swarms community 👾👾👾
 
 Join our community of agent engineers and researchers for technical support, cutting-edge updates, and exclusive access to world-class agent engineering insights!
 
