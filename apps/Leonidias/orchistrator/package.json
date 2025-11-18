@@ -1,0 +1,30 @@
+{
+  "name": "server-bot",
+  "version": "1.0.0",
+  "description": "Discord bot to remotely monitor and control a docker based server",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/allenrkeen/server-bot.git"
+  },
+  "keywords": [
+    "discord",
+    "docker",
+    "linux",
+    "selfhost"
+  ],
+  "author": "allenrkeen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/allenrkeen/server-bot/issues"
+  },
+  "homepage": "https://github.com/allenrkeen/server-bot#readme",
+  "dependencies": {
+    "discord.js": "^14.7.1",
+    "dotenv": "^16.0.3",
+    "node-docker-api": "^1.1.22"
+  }
+}

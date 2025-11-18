@@ -1,0 +1,30 @@
+FROM nvidia/cuda:11.7.0-runtime-ubuntu20.04
+WORKDIR /app/
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN \
+  apt-get update && \
+  apt-get install -y software-properties-common && \
+  add-apt-repository ppa:deadsnakes/ppa && \
+  apt-get install -y python3.10 python3-pip curl && \
+  curl -sSL https://install.python-poetry.org | python3 - && \
+  apt-get install -y nodejs npm
+
+ENV PATH "/root/.local/bin:$PATH"
+
+COPY pyproject.toml .
+COPY poetry.lock .
+
+COPY api/__init__.py api/__init__.py
+RUN poetry config virtualenvs.in-project true
+RUN poetry config virtualenvs.path .venv
+RUN poetry config installer.max-workers 10
+RUN poetry env use 3.10
+RUN poetry install --with tools,gpu
+
+COPY . .
+
+ENV PORT 8001
+
+ENTRYPOINT ["poetry", "run", "serve"]

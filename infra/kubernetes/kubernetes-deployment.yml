@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: swarms-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: swarms
+  template:
+    metadata:
+      labels:
+        app: swarms
+    spec:
+      containers:
+        - name: swarms
+          image: your_dockerhub_username/swarms:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: EVAL_PORT
+              value: "8000"
+            - name: MODEL_NAME
+              value: "gpt-4"
+            - name: CELERY_BROKER_URL
+              value: "redis://redis:6379"
+            - name: SERVER
+              value: "http://localhost:8000"
+            - name: USE_GPU
+              value: "False"
+            - name: PLAYGROUND_DIR
+              value: "playground"
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: BOT_NAME
+              value: "Orca"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai-secret
+                  key: OPENAI_API_KEY
+            # Other environment variables

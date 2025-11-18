@@ -1,0 +1,45 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Run Python unit tests
+      run: python3 -m unittest tests/swarms
+
+    - name: Verify that the Docker image for the action builds
+      run: docker build . --file Dockerfile
+
+    - name: Integration test 1
+      uses: ./
+      with:
+        input-one: something
+        input-two: true
+
+    - name: Integration test 2
+      uses: ./
+      with:
+        input-one: something else
+        input-two: false
+
+    - name: Verify integration test results
+      run: python3 -m unittest unittesting/swarms
