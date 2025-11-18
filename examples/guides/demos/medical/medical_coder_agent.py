@@ -15,7 +15,7 @@
 - can we confirm for every diagnosis -> monitoring, evaluation, and treatment, specialized for these things
 - find diagnosis -> or have diagnosis, -> for each diagnosis are there evidence of those 3 things
 - swarm of those 4 agents, ->
-- fda api for healthcare for commerically available papers
+- fda api for healthcare for commercially available papers
 -
 
 """
