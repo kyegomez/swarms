@@ -80,18 +80,23 @@ class SequentialWorkflow:
         self.multi_agent_collab_prompt = multi_agent_collab_prompt
         self.team_awareness = team_awareness
 
-        self.reliability_check()
-        self.flow = self.sequential_flow()
+        # Only validate and initialize if agents are provided
+        if self.agents is not None and len(self.agents) > 0:
+            self.reliability_check()
+            self.flow = self.sequential_flow()
 
-        self.agent_rearrange = AgentRearrange(
-            name=self.name,
-            description=self.description,
-            agents=self.agents,
-            flow=self.flow,
-            max_loops=self.max_loops,
-            output_type=self.output_type,
-            team_awareness=self.team_awareness,
-        )
+            self.agent_rearrange = AgentRearrange(
+                name=self.name,
+                description=self.description,
+                agents=self.agents,
+                flow=self.flow,
+                max_loops=self.max_loops,
+                output_type=self.output_type,
+                team_awareness=self.team_awareness,
+            )
+        else:
+            self.flow = ""
+            self.agent_rearrange = None
 
     def reliability_check(self):
         """
@@ -180,9 +185,15 @@ class SequentialWorkflow:
             str: The final result after processing through all agents.
 
         Raises:
-            ValueError: If the task is None or empty.
+            ValueError: If the task is None or empty, or if no agents are configured.
             Exception: If any error occurs during task execution.
         """
+        if self.agents is None or len(self.agents) == 0:
+            raise ValueError("Agents list cannot be None or empty. Add agents before running the workflow.")
+
+        if self.agent_rearrange is None:
+            raise ValueError("Workflow not properly initialized. AgentRearrange is None.")
+
         try:
             # prompt = f"{MULTI_AGENT_COLLAB_PROMPT}\n\n{task}"
             return self.agent_rearrange.run(
@@ -221,9 +232,15 @@ class SequentialWorkflow:
             List[str]: A list of final results after processing through all agents.
 
         Raises:
-            ValueError: If tasks is None, empty, or contains non-string elements.
+            ValueError: If tasks is None, empty, contains non-string elements, or if no agents are configured.
             Exception: If any error occurs during task execution.
         """
+        if self.agents is None or len(self.agents) == 0:
+            raise ValueError("Agents list cannot be None or empty. Add agents before running the workflow.")
+
+        if self.agent_rearrange is None:
+            raise ValueError("Workflow not properly initialized. AgentRearrange is None.")
+
         if not tasks or not all(
             isinstance(task, str) for task in tasks
         ):
@@ -250,9 +267,15 @@ class SequentialWorkflow:
             str: The final result after processing through all agents.
 
         Raises:
-            ValueError: If task is None or not a string.
+            ValueError: If task is None, not a string, or if no agents are configured.
             Exception: If any error occurs during task execution.
         """
+        if self.agents is None or len(self.agents) == 0:
+            raise ValueError("Agents list cannot be None or empty. Add agents before running the workflow.")
+
+        if self.agent_rearrange is None:
+            raise ValueError("Workflow not properly initialized. AgentRearrange is None.")
+
         if not task or not isinstance(task, str):
             raise ValueError("Task must be a non-empty string")
 
@@ -275,9 +298,15 @@ class SequentialWorkflow:
             List[str]: A list of final results after processing through all agents.
 
         Raises:
-            ValueError: If tasks is None, empty, or contains non-string elements.
+            ValueError: If tasks is None, empty, contains non-string elements, or if no agents are configured.
             Exception: If any error occurs during task execution.
         """
+        if self.agents is None or len(self.agents) == 0:
+            raise ValueError("Agents list cannot be None or empty. Add agents before running the workflow.")
+
+        if self.agent_rearrange is None:
+            raise ValueError("Workflow not properly initialized. AgentRearrange is None.")
+
         if not tasks or not all(
             isinstance(task, str) for task in tasks
         ):

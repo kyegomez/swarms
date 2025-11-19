@@ -41,13 +41,13 @@ graph TD
 
 ### `__init__(self, agents: List[Union[Agent, Callable]] = None, max_loops: int = 1, team_awareness: bool = False, *args, **kwargs)`
 
-The constructor initializes the `SequentialWorkflow` object.
+The constructor initializes the `SequentialWorkflow` object. Agents can be provided during initialization or the workflow can be initialized empty and configured later.
 
 - **Parameters:**
   - `id` (`str`, optional): Unique identifier for the workflow. Defaults to `"sequential_workflow"`.
   - `name` (`str`, optional): Name of the workflow. Defaults to `"SequentialWorkflow"`.
   - `description` (`str`, optional): Description of the workflow. Defaults to a standard description.
-  - `agents` (`List[Union[Agent, Callable]]`, optional): The list of agents or callables to execute in sequence.
+  - `agents` (`List[Union[Agent, Callable]]`, optional): The list of agents or callables to execute in sequence. Can be `None` during initialization but must be set before calling any run methods. Defaults to `None`.
   - `max_loops` (`int`, optional): The maximum number of loops to execute the workflow. Defaults to `1`.
   - `output_type` (`OutputType`, optional): Output format for the workflow. Defaults to `"dict"`.
   - `shared_memory_system` (`callable`, optional): Callable for shared memory management. Defaults to `None`.
@@ -55,6 +55,8 @@ The constructor initializes the `SequentialWorkflow` object.
   - `team_awareness` (`bool`, optional): Enables sequential awareness features in the underlying `AgentRearrange`. Defaults to `False`.
   - `*args`: Variable length argument list.
   - `**kwargs`: Arbitrary keyword arguments.
+
+- **Note:** When initialized without agents, the workflow's `agent_rearrange` attribute will be `None` and `flow` will be an empty string. You must provide agents before running the workflow.
 
 ### `run(self, task: str, img: Optional[str] = None, imgs: Optional[List[str]] = None, *args, **kwargs) -> str`
 
@@ -70,6 +72,9 @@ Runs the specified task through the agents in the dynamically constructed flow.
 - **Returns:**
   - The final result after processing through all agents.
 
+- **Raises:**
+  - `ValueError`: If agents list is None or empty when attempting to run.
+
 ### `run_batched(self, tasks: List[str]) -> List[str]`
 
 Executes a batch of tasks through the agents in the dynamically constructed flow.
@@ -79,6 +84,9 @@ Executes a batch of tasks through the agents in the dynamically constructed flow
 
 - **Returns:**
   - `List[str]`: A list of final results after processing through all agents.
+
+- **Raises:**
+  - `ValueError`: If agents list is None or empty when attempting to run.
 
 ### `async run_async(self, task: str) -> str`
 
@@ -90,6 +98,9 @@ Executes the specified task through the agents asynchronously.
 - **Returns:**
   - `str`: The final result after processing through all agents.
 
+- **Raises:**
+  - `ValueError`: If agents list is None or empty when attempting to run.
+
 ### `async run_concurrent(self, tasks: List[str]) -> List[str]`
 
 Executes a batch of tasks through the agents concurrently.
@@ -99,6 +110,9 @@ Executes a batch of tasks through the agents concurrently.
 
 - **Returns:**
   - `List[str]`: A list of final results after processing through all agents.
+
+- **Raises:**
+  - `ValueError`: If agents list is None or empty when attempting to run.
 
 ## Usage Examples
 
@@ -303,7 +317,7 @@ print(result)
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `agents` | List of agents to execute in sequence | Required |
+| `agents` | List of agents to execute in sequence | None (optional at init, required before run) |
 | `name` | Name of the workflow | "SequentialWorkflow" |
 | `description` | Description of workflow purpose | Standard description |
 | `max_loops` | Number of times to execute workflow | 1 |
@@ -317,12 +331,48 @@ print(result)
 4. **System Prompts**: Write comprehensive system prompts that explain the agent's expertise and responsibilities.
 5. **Task Clarity**: Provide clear, specific tasks when calling `run()`.
 
+## Initialization Behavior
+
+The `SequentialWorkflow` can be initialized with or without agents:
+
+### With Agents (Standard)
+```python
+workflow = SequentialWorkflow(agents=[agent1, agent2, agent3])
+# Ready to run immediately
+workflow.run("Task to execute")
+```
+
+### Without Agents (Deferred Configuration)
+```python
+# Create an empty workflow
+workflow = SequentialWorkflow()
+
+# Configure later (you'll need to reinitialize with agents)
+workflow = SequentialWorkflow(agents=[agent1, agent2])
+workflow.run("Task to execute")
+```
+
+**Note**: When initialized without agents, `agent_rearrange` will be `None` and `flow` will be an empty string. You must provide agents before calling any execution methods.
+
 ## Logging and Error Handling
 
 The `run` method includes comprehensive logging to track workflow execution:
 
 ```bash
 2023-05-08 10:30:15.456 | INFO | Sequential Workflow Name: SequentialWorkflow is ready to run.
+```
+
+### Error Handling
+
+All execution methods (`run`, `run_batched`, `run_async`, `run_concurrent`) validate that agents are configured before execution:
+
+```python
+workflow = SequentialWorkflow()  # No agents
+
+try:
+    workflow.run("Some task")
+except ValueError as e:
+    print(e)  # "Agents list cannot be None or empty. Add agents before running the workflow."
 ```
 
 All errors during execution are logged and re-raised for proper error handling.

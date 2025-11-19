@@ -7,15 +7,12 @@ from swarms import Agent, SequentialWorkflow
 def test_sequential_workflow_initialization():
     workflow = SequentialWorkflow()
     assert isinstance(workflow, SequentialWorkflow)
-    assert len(workflow.tasks) == 0
+    assert workflow.agents is None
     assert workflow.max_loops == 1
-    assert workflow.autosave is False
-    assert (
-        workflow.saved_state_filepath
-        == "sequential_workflow_state.json"
-    )
-    assert workflow.restore_state_filepath is None
-    assert workflow.dashboard is False
+    assert workflow.flow == ""
+    assert workflow.agent_rearrange is None
+    assert workflow.name == "SequentialWorkflow"
+    assert workflow.id == "sequential_workflow"
 
 
 def test_sequential_workflow_initialization_with_agents():
@@ -83,6 +80,11 @@ def test_sequential_workflow_multi_agent_execution():
     result = workflow.run(
         "Analyze the impact of renewable energy on climate change"
     )
+    print("\n" + "="*80)
+    print("WORKFLOW RESULT:")
+    print("="*80)
+    print(result)
+    print("="*80 + "\n")
     assert result is not None
     # SequentialWorkflow may return different types based on output_type, just ensure it's not None
 
@@ -232,16 +234,24 @@ def test_sequential_workflow_with_multi_agent_collaboration():
 
 def test_sequential_workflow_error_handling():
     """Test SequentialWorkflow error handling"""
-    # Test with invalid agents list
+    # Test that initialization with None agents is allowed
+    workflow_none = SequentialWorkflow(agents=None)
+    assert workflow_none.agents is None
+
+    # Test that initialization with empty agents is allowed
+    workflow_empty = SequentialWorkflow(agents=[])
+    assert workflow_empty.agents == []
+
+    # Test that running with no agents raises error
     with pytest.raises(
         ValueError, match="Agents list cannot be None or empty"
     ):
-        SequentialWorkflow(agents=None)
+        workflow_none.run("test task")
 
     with pytest.raises(
         ValueError, match="Agents list cannot be None or empty"
     ):
-        SequentialWorkflow(agents=[])
+        workflow_empty.run("test task")
 
     # Test with zero max_loops
     with pytest.raises(ValueError, match="max_loops cannot be 0"):
