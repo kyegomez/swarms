@@ -79,6 +79,8 @@ Devin Worker 2_state.json
 # C extensions
 *.so
 .ruff_cache
+.claude
+
 
 
 errors.txt
