@@ -16,7 +16,6 @@ load_dotenv()
 
 execution_types = [
     "return-agents",
-    "execute-swarm-router",
     "return-swarm-router-config",
     "return-agents-objects",
 ]
