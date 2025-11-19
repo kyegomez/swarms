@@ -90,7 +90,7 @@ class ReasoningAgentRouter:
         majority_voting_prompt: Optional[str] = None,
         reasoning_model_name: Optional[
             str
-        ] = "claude-3-5-sonnet-20240620",
+        ] = "gpt-4o",
     ):
         """
         Initialize the ReasoningAgentRouter with the specified configuration.

@@ -7,6 +7,10 @@ from swarms.agents.reasoning_agents import (
     ReasoningAgentRouter,
 )
 
+from dotenv import load_dotenv
+load_dotenv()
+
+
 
 def test_router_initialization():
     """
@@ -55,7 +59,7 @@ def test_router_initialization():
             eval=True,
             random_models_on=True,
             majority_voting_prompt="Custom voting prompt",
-            reasoning_model_name="claude-3-5-sonnet-20240620",
+            reasoning_model_name="gpt-4o",
         )
         assert (
             custom_router is not None
@@ -250,7 +254,7 @@ def test_agent_factories():
         "eval": False,
         "random_models_on": False,
         "majority_voting_prompt": None,
-        "reasoning_model_name": "claude-3-5-sonnet-20240620",
+        "reasoning_model_name": "gpt-4o",
     }
 
     # Test 1: Reasoning Duo factory
