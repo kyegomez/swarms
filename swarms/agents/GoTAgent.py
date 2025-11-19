@@ -1,199 +1,3 @@
-"""
-Graph-of-Thought (GoT) Reasoning Framework Implementation.
-
-This module implements a comprehensive Graph-of-Thought reasoning system based on
-the formal framework where we model reasoning as a labeled directed graph with
-probabilistic semantics.
-
-Mathematical Foundation:
-    Core Probabilistic Model:
-        p_θ(y, G | x) = p_θ(G | x) · p_θ(y | G, x)
-    
-    Where:
-    - x = input (problem, task description) ∈ X
-    - y = final answer (possibly a node in V with type "final") ∈ Y
-    - G = (V, E, τ, ℓ, σ) = thought graph
-        - V = {v₁, ..., vₙ}: vertices, each a thought unit
-        - E ⊆ V × V × R: directed, typed edges with relations r ∈ R
-        - τ: V → T: node type map (T = {problem, hypothesis, subproblem, ...})
-        - ℓ: V → S*: node label (text of the thought)
-        - σ: V → R^d: embedding / latent state
-    - θ parameterizes the LLM + controller
-    
-    Factorization over graph (topological order):
-        p_θ(G | x) = ∏_{v_i ∈ V} p_θ(ℓ(v_i), Pa(v_i), τ(v_i) | x, G_{<i})
-        
-        Where Pa(v_i) = {v_j : (v_j, v_i, r) ∈ E} are the parents of v_i.
-    
-    Graph Neural Network (GNN) Message Passing:
-        H^(k+1) = σ(A H^(k) W^(k) + B H^(k))
-        
-        Where:
-        - H^(k) ∈ R^{n×d}: node embeddings at layer k
-        - A ∈ R^{n×n}: adjacency matrix (possibly normalized)
-        - W^(k) ∈ R^{d×d}: learnable weight matrix
-        - B ∈ R^{d×d}: residual connection weight
-        - σ: nonlinearity (ReLU, GELU, etc.)
-        
-        Graph-level readout:
-            h_G = READOUT({h_v : v ∈ V}) = Mean/Max/Sum pooling or attention
-    
-    Spectral Graph Theory:
-        Graph Laplacian: L = D - A
-        Normalized Laplacian: L_norm = D^{-1/2} L D^{-1/2}
-        
-        Eigenvalue decomposition:
-            L = Φ Λ Φ^T
-        
-        Where:
-        - Λ = diag(λ₁, ..., λₙ): eigenvalues (spectrum)
-        - Φ: eigenvectors (graph Fourier basis)
-        
-        Graph Fourier Transform:
-            F(λ) = Σ_{v} h_v · φ_v(λ)
-    
-    Quantum Graph Superposition:
-        |ψ_G⟩ = Σ_{G ∈ G} α_G |G⟩ ⊗ |y_G⟩
-        
-        Where:
-        - |ψ_G⟩ = quantum state representing superposition of graphs
-        - α_G = √(p_θ(G | x)) = amplitude for graph G
-        - |G⟩ = basis state for graph structure
-        - |y_G⟩ = answer state conditioned on G
-        
-        Measurement probability:
-            P(y | x) = |⟨y | ψ_G⟩|² = |Σ_{G: y_G=y} α_G|²
-        
-        Quantum graph operations:
-            U_expand |G⟩ = |G ∪ {v_new}⟩
-            U_merge |G⟩ = |G / {v_i, v_j} ∪ {v_merged}⟩
-    
-    Markov Decision Process (MDP) Formulation:
-        State space: S = {G : G is a valid thought graph}
-        Action space: A = {EXPAND, MERGE, REFINE, ADD_EDGE, STOP}
-        Transition: P(S_{t+1} | S_t, a_t) = f_θ(S_t, a_t)
-        Reward: R(S_T) = quality(y | G_T, x)
-        Policy: π_θ(a_t | S_t, x) = softmax(Controller_θ(Enc_φ(S_t, x)))
-        
-        Value function:
-            V^π(S_t) = E_π[Σ_{k=t}^T γ^{k-t} R(S_k) | S_t]
-        
-        Q-function:
-            Q^π(S_t, a_t) = E_π[Σ_{k=t}^T γ^{k-t} R(S_k) | S_t, a_t]
-        
-        Optimal policy:
-            π*(a | S) = argmax_a Q*(S, a)
-    
-    Information-Theoretic Graph Properties:
-        Graph entropy:
-            H(G | X) = -Σ_{G} p_θ(G | x) log p_θ(G | x)
-        
-        Mutual information:
-            I(G; Y | X) = H(Y | X) - H(Y | G, X)
-        
-        Node information gain:
-            I(v; Y | G, X) = H(Y | G, X) - H(Y | G ∪ {v}, X)
-        
-        Graph complexity:
-            C(G) = |V| log |V| + |E| log |E| + Σ_{v} |ℓ(v)|
-    
-    Statistical Mechanics of Graphs:
-        Energy function:
-            E(G, x) = -log p_θ(G | x) = -Σ_{v_i} log p_θ(v_i | Pa(v_i), x)
-        
-        Boltzmann distribution:
-            p_θ(G | x) = (1/Z(x)) exp(-E(G, x) / T)
-        
-        Partition function:
-            Z(x) = Σ_{G ∈ G} exp(-E(G, x) / T)
-        
-        Free energy:
-            F(x) = -T log Z(x)
-        
-        Graph ensemble:
-            ⟨f(G)⟩ = (1/Z) Σ_{G} f(G) exp(-E(G, x) / T)
-    
-    Graph Topology and Structure:
-        Degree distribution:
-            P(k) = (1/|V|) Σ_{v} 𝟙[deg(v) = k]
-        
-        Clustering coefficient:
-            C(v) = (2e_v) / (k_v(k_v - 1))
-            Where e_v = edges among neighbors of v, k_v = degree of v
-        
-        Path length:
-            d(v_i, v_j) = shortest path length between v_i and v_j
-        
-        Graph diameter:
-            D(G) = max_{v_i, v_j} d(v_i, v_j)
-        
-        Centrality measures:
-            - Degree: C_deg(v) = deg(v) / (|V| - 1)
-            - Betweenness: C_bet(v) = Σ_{i≠j≠v} σ_{ij}(v) / σ_{ij}
-            - Closeness: C_clo(v) = (|V| - 1) / Σ_{u≠v} d(v, u)
-            - Eigenvector: C_eig(v) = (1/λ) Σ_{u} A_{vu} C_eig(u)
-    
-    Graph Neural Network Variants:
-        Graph Convolutional Network (GCN):
-            H^(k+1) = σ(Ã H^(k) W^(k))
-            Where Ã = D^{-1/2} A D^{-1/2} (normalized adjacency)
-        
-        Graph Attention Network (GAT):
-            h_v^(k+1) = σ(Σ_{u ∈ N(v)} α_{vu} W^(k) h_u^(k))
-            Where α_{vu} = softmax(LeakyReLU(a^T [W h_v || W h_u]))
-        
-        Graph Transformer:
-            H^(k+1) = LayerNorm(H^(k) + MultiHeadAttention(H^(k), H^(k), H^(k)))
-            H^(k+1) = LayerNorm(H^(k+1) + FFN(H^(k+1)))
-    
-    Graph Matching and Similarity:
-        Graph edit distance:
-            d_edit(G₁, G₂) = min_{ops} cost(ops)
-            Where ops = {insert, delete, substitute} operations
-        
-        Weisfeiler-Lehman kernel:
-            K_WL(G₁, G₂) = Σ_{k} Σ_{v₁, v₂} 𝟙[WL_k(v₁) = WL_k(v₂)]
-        
-        Graph kernel:
-            K(G₁, G₂) = ⟨φ(G₁), φ(G₂)⟩
-            Where φ is a graph embedding function
-    
-    Optimization and Learning:
-        Variational inference:
-            ELBO: log p_θ(y | x) ≥ E_{q_φ(G|x,y)}[log p_θ(y | G, x)] - KL(q_φ(G|x,y) || p_θ(G|x))
-        
-        Policy gradient:
-            ∇_θ J(π_θ) = E_π[Σ_{t} ∇_θ log π_θ(a_t | S_t) · R_t]
-        
-        Actor-Critic:
-            ∇_θ J(π_θ) = E_π[Σ_{t} ∇_θ log π_θ(a_t | S_t) · A^π(S_t, a_t)]
-            Where A^π(S, a) = Q^π(S, a) - V^π(S) is the advantage function
-    
-    Computational Complexity:
-        Graph construction: O(|V| · (expand_cost + eval_cost))
-        GNN forward pass: O(|E| · d²) per layer
-        Graph matching: O(|V|! · |E|!) in worst case
-        Topological sort: O(|V| + |E|)
-        
-        With MDP search (T steps):
-            Time: O(T · (|V| · expand_cost + |E| · d²))
-            Space: O(|V| · d + |E|)
-
-Operational Semantics:
-    GoT construction as a Markov Decision Process over graphs:
-    - State S_t = G_t: current partial thought graph
-    - Action a_t: EXPAND, MERGE, REFINE, ADD_EDGE, STOP
-    - Transition: S_{t+1} = f_θ(S_t, a_t)
-    - Reward R(S_T): quality of final answer
-    - Policy: π_θ(a_t | S_t, x) = Controller_θ(Enc_φ(S_t, x))
-    
-    Graph operations:
-    - EXPAND: G' = G ∪ {v_new} with edges from selected parent
-    - MERGE: G' = G / {v_i, v_j} ∪ {v_merged} with merged edges
-    - REFINE: G' = G with ℓ(v) updated
-    - ADD_EDGE: G' = G ∪ {(v_i, v_j, r)}
-"""
-
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple, Union, Callable, Set
 from enum import Enum
@@ -207,8 +11,6 @@ from loguru import logger
 
 
 class _NodeType(str, Enum):
-    """Node types in the thought graph."""
-    
     PROBLEM = "problem"
     HYPOTHESIS = "hypothesis"
     SUBPROBLEM = "subproblem"
@@ -219,8 +21,6 @@ class _NodeType(str, Enum):
 
 
 class _EdgeRelation(str, Enum):
-    """Edge relation types in the thought graph."""
-    
     REFINES = "refines"
     CONTRADICTS = "contradicts"
     DEPENDS_ON = "depends_on"
@@ -232,8 +32,6 @@ class _EdgeRelation(str, Enum):
 
 
 class _GraphOperation(str, Enum):
-    """Primitive graph operations."""
-    
     EXPAND = "expand"
     MERGE = "merge"
     REFINE = "refine"
@@ -244,23 +42,8 @@ class _GraphOperation(str, Enum):
 
 
 class GraphInformationTheory:
-    """
-    Information-theoretic utilities for graph reasoning analysis.
-    
-    Implements graph entropy, mutual information, and complexity measures.
-    """
-    
     @staticmethod
     def graph_entropy(graph_probs: List[float]) -> float:
-        """
-        Calculate graph entropy: H(G | X) = -Σ p_θ(G | x) log p_θ(G | x).
-        
-        Args:
-            graph_probs: List of graph probabilities
-            
-        Returns:
-            Entropy value in bits
-        """
         if not graph_probs:
             return 0.0
         
@@ -282,16 +65,6 @@ class GraphInformationTheory:
         prior_entropy: float,
         conditional_entropy: float
     ) -> float:
-        """
-        Calculate mutual information: I(G; Y | X) = H(Y | X) - H(Y | G, X).
-        
-        Args:
-            prior_entropy: H(Y | X)
-            conditional_entropy: H(Y | G, X)
-            
-        Returns:
-            Mutual information value
-        """
         return prior_entropy - conditional_entropy
     
     @staticmethod
@@ -299,16 +72,6 @@ class GraphInformationTheory:
         entropy_before: float,
         entropy_after: float
     ) -> float:
-        """
-        Calculate node information gain: I(v; Y | G, X) = H(Y | G, X) - H(Y | G ∪ {v}, X).
-        
-        Args:
-            entropy_before: H(Y | G, X)
-            entropy_after: H(Y | G ∪ {v}, X)
-            
-        Returns:
-            Information gain value
-        """
         return entropy_before - entropy_after
     
     @staticmethod
@@ -317,17 +80,6 @@ class GraphInformationTheory:
         num_edges: int,
         total_text_length: int
     ) -> float:
-        """
-        Calculate graph complexity: C(G) = |V| log |V| + |E| log |E| + Σ |ℓ(v)|.
-        
-        Args:
-            num_nodes: Number of nodes |V|
-            num_edges: Number of edges |E|
-            total_text_length: Sum of text lengths Σ |ℓ(v)|
-            
-        Returns:
-            Complexity value
-        """
         if num_nodes == 0:
             return 0.0
         
@@ -339,23 +91,8 @@ class GraphInformationTheory:
 
 
 class QuantumGraphOperations:
-    """
-    Quantum-inspired graph operations and superposition.
-    
-    Implements: |ψ_G⟩ = Σ_G α_G |G⟩
-    """
-    
     @staticmethod
     def calculate_graph_amplitudes(graph_probs: List[float]) -> List[float]:
-        """
-        Calculate quantum amplitudes: α_G = √(p_θ(G | x)).
-        
-        Args:
-            graph_probs: List of graph probabilities
-            
-        Returns:
-            List of amplitudes
-        """
         return [math.sqrt(max(0.0, p)) for p in graph_probs]
     
     @staticmethod
@@ -364,17 +101,6 @@ class QuantumGraphOperations:
         answers: List[str],
         graph_probs: Optional[List[float]] = None
     ) -> Tuple[str, float]:
-        """
-        Quantum measurement: P(y | x) = |⟨y | ψ_G⟩|² = |Σ_{G: y_G=y} α_G|².
-        
-        Args:
-            graphs: List of graph structures
-            answers: List of answers corresponding to graphs
-            graph_probs: Optional graph probabilities (uniform if None)
-            
-        Returns:
-            Tuple of (most likely answer, probability)
-        """
         if not graphs or not answers:
             return "", 0.0
         
@@ -406,17 +132,6 @@ class QuantumGraphOperations:
         graph_probs: List[float],
         num_samples: int = 1
     ) -> List[Any]:
-        """
-        Sample graphs using quantum-inspired superposition.
-        
-        Args:
-            graphs: List of graphs to sample from
-            graph_probs: Probabilities for each graph
-            num_samples: Number of samples to generate
-            
-        Returns:
-            List of sampled graphs
-        """
         if not graphs:
             return []
         
@@ -443,37 +158,12 @@ class QuantumGraphOperations:
 
 
 class GraphEnergyFunction:
-    """
-    Energy-based functions for graph reasoning (statistical mechanics).
-    
-    Implements: E(G, x) = -log p_θ(G | x)
-    """
-    
     @staticmethod
     def calculate_graph_energy(graph_logprob: float) -> float:
-        """
-        Calculate graph energy: E(G, x) = -log p_θ(G | x).
-        
-        Args:
-            graph_logprob: Log probability of graph
-            
-        Returns:
-            Energy value
-        """
         return -graph_logprob
     
     @staticmethod
     def boltzmann_graph_weight(energy: float, temperature: float) -> float:
-        """
-        Calculate Boltzmann weight: w(G) = exp(-E(G, x) / T).
-        
-        Args:
-            energy: Energy value E(G, x)
-            temperature: Temperature parameter T
-            
-        Returns:
-            Boltzmann weight
-        """
         if temperature <= 0:
             return 0.0 if energy > 0 else 1.0
         
@@ -484,16 +174,6 @@ class GraphEnergyFunction:
         graph_energies: List[float],
         temperature: float
     ) -> float:
-        """
-        Calculate partition function: Z(x) = Σ_G exp(-E(G, x) / T).
-        
-        Args:
-            graph_energies: List of energy values for graphs
-            temperature: Temperature parameter T
-            
-        Returns:
-            Partition function value
-        """
         if temperature <= 0:
             return 1.0
         
@@ -502,16 +182,6 @@ class GraphEnergyFunction:
     
     @staticmethod
     def graph_free_energy(partition_function: float, temperature: float) -> float:
-        """
-        Calculate free energy: F(x) = -T log Z(x).
-        
-        Args:
-            partition_function: Partition function Z(x)
-            temperature: Temperature parameter T
-            
-        Returns:
-            Free energy value
-        """
         if partition_function <= 0:
             return float('inf')
         
@@ -526,17 +196,6 @@ class GraphEnergyFunction:
         graph_energies: List[float],
         temperature: float
     ) -> float:
-        """
-        Calculate graph ensemble average: ⟨f(G)⟩ = (1/Z) Σ_G f(G) exp(-E(G, x) / T).
-        
-        Args:
-            graph_values: Function values f(G) for each graph
-            graph_energies: Energy values E(G, x) for each graph
-            temperature: Temperature parameter T
-            
-        Returns:
-            Ensemble average value
-        """
         if not graph_values or not graph_energies:
             return 0.0
         
@@ -553,38 +212,14 @@ class GraphEnergyFunction:
 
 
 class SpectralGraphTheory:
-    """
-    Spectral graph theory utilities.
-    
-    Implements Laplacian, eigenvalues, and graph Fourier transform.
-    """
-    
     @staticmethod
     def compute_laplacian(adjacency_matrix: np.ndarray) -> np.ndarray:
-        """
-        Compute graph Laplacian: L = D - A.
-        
-        Args:
-            adjacency_matrix: Adjacency matrix A
-            
-        Returns:
-            Laplacian matrix L
-        """
         degree_matrix = np.diag(np.sum(adjacency_matrix, axis=1))
         laplacian = degree_matrix - adjacency_matrix
         return laplacian
     
     @staticmethod
     def compute_normalized_laplacian(adjacency_matrix: np.ndarray) -> np.ndarray:
-        """
-        Compute normalized Laplacian: L_norm = D^{-1/2} L D^{-1/2}.
-        
-        Args:
-            adjacency_matrix: Adjacency matrix A
-            
-        Returns:
-            Normalized Laplacian matrix L_norm
-        """
         degree_matrix = np.diag(np.sum(adjacency_matrix, axis=1))
         degree_inv_sqrt = np.diag(1.0 / np.sqrt(np.diag(degree_matrix) + 1e-10))
         laplacian = SpectralGraphTheory.compute_laplacian(adjacency_matrix)
@@ -597,19 +232,6 @@ class SpectralGraphTheory:
         k: Optional[int] = None,
         which: str = "SM"
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Compute eigenvalue decomposition: L = Φ Λ Φ^T.
-        
-        Full implementation with support for partial eigendecomposition.
-        
-        Args:
-            laplacian: Laplacian matrix L
-            k: Number of eigenvalues to compute (None = all)
-            which: Which eigenvalues to compute ("SM" = smallest, "LM" = largest, "BE" = both ends)
-            
-        Returns:
-            Tuple of (eigenvalues Λ, eigenvectors Φ)
-        """
         if laplacian.size == 0:
             return np.array([]), np.array([])
         
@@ -657,16 +279,6 @@ class SpectralGraphTheory:
         node_embeddings: np.ndarray,
         eigenvectors: np.ndarray
     ) -> np.ndarray:
-        """
-        Graph Fourier Transform: F(λ) = Σ_v h_v · φ_v(λ).
-        
-        Args:
-            node_embeddings: Node embeddings H ∈ R^{n×d}
-            eigenvectors: Eigenvectors Φ
-            
-        Returns:
-            Fourier coefficients
-        """
         if eigenvectors.size == 0 or node_embeddings.size == 0:
             return np.array([])
         
@@ -676,27 +288,11 @@ class SpectralGraphTheory:
 
 
 class GraphTopology:
-    """
-    Graph topology and structure analysis.
-    
-    Implements centrality measures, clustering, and path analysis.
-    """
-    
     @staticmethod
     def degree_centrality(
         adjacency_matrix: np.ndarray,
         node_idx: int
     ) -> float:
-        """
-        Calculate degree centrality: C_deg(v) = deg(v) / (|V| - 1).
-        
-        Args:
-            adjacency_matrix: Adjacency matrix A
-            node_idx: Node index v
-            
-        Returns:
-            Degree centrality value
-        """
         n = adjacency_matrix.shape[0]
         if n <= 1:
             return 0.0
@@ -709,16 +305,6 @@ class GraphTopology:
         adjacency_matrix: np.ndarray,
         node_idx: int
     ) -> float:
-        """
-        Calculate clustering coefficient: C(v) = (2e_v) / (k_v(k_v - 1)).
-        
-        Args:
-            adjacency_matrix: Adjacency matrix A
-            node_idx: Node index v
-            
-        Returns:
-            Clustering coefficient
-        """
         neighbors = np.where(adjacency_matrix[node_idx, :] > 0)[0]
         k_v = len(neighbors)
         
@@ -741,21 +327,6 @@ class GraphTopology:
         target: int,
         weighted: bool = False
     ) -> float:
-        """
-        Calculate shortest path length: d(v_i, v_j).
-        
-        Full implementation using Dijkstra's algorithm for weighted graphs
-        or BFS for unweighted graphs.
-        
-        Args:
-            adjacency_matrix: Adjacency matrix A (can be weighted)
-            source: Source node index v_i
-            target: Target node index v_j
-            weighted: Whether to treat edges as weighted (Dijkstra) or unweighted (BFS)
-            
-        Returns:
-            Shortest path length, or inf if unreachable
-        """
         n = adjacency_matrix.shape[0]
         if source == target:
             return 0.0
@@ -818,17 +389,6 @@ class GraphTopology:
     
     @staticmethod
     def all_pairs_shortest_paths(adjacency_matrix: np.ndarray) -> np.ndarray:
-        """
-        Compute all-pairs shortest paths using Floyd-Warshall algorithm.
-        
-        d[i, j] = shortest path length from node i to node j.
-        
-        Args:
-            adjacency_matrix: Adjacency matrix A
-            
-        Returns:
-            Distance matrix D ∈ R^{n×n}
-        """
         n = adjacency_matrix.shape[0]
         if n == 0:
             return np.array([])
@@ -854,17 +414,6 @@ class GraphTopology:
     
     @staticmethod
     def graph_diameter(adjacency_matrix: np.ndarray) -> float:
-        """
-        Calculate graph diameter: D(G) = max_{v_i, v_j} d(v_i, v_j).
-        
-        Efficient implementation using all-pairs shortest paths.
-        
-        Args:
-            adjacency_matrix: Adjacency matrix A
-            
-        Returns:
-            Graph diameter (inf if graph is disconnected)
-        """
         n = adjacency_matrix.shape[0]
         if n <= 1:
             return 0.0
@@ -887,19 +436,6 @@ class GraphTopology:
         node_idx: int,
         normalized: bool = True
     ) -> float:
-        """
-        Calculate closeness centrality: C_clo(v) = (|V| - 1) / Σ_{u≠v} d(v, u).
-        
-        Full implementation with normalization support.
-        
-        Args:
-            adjacency_matrix: Adjacency matrix A
-            node_idx: Node index v
-            normalized: Whether to normalize by (|V| - 1)
-            
-        Returns:
-            Closeness centrality value
-        """
         n = adjacency_matrix.shape[0]
         if n <= 1:
             return 0.0
@@ -933,19 +469,6 @@ class GraphTopology:
         node_idx: int,
         normalized: bool = True
     ) -> float:
-        """
-        Calculate betweenness centrality: C_bet(v) = Σ_{i≠j≠v} σ_{ij}(v) / σ_{ij}.
-        
-        Full implementation using Brandes' algorithm.
-        
-        Args:
-            adjacency_matrix: Adjacency matrix A
-            node_idx: Node index v
-            normalized: Whether to normalize by (|V| - 1)(|V| - 2) / 2
-            
-        Returns:
-            Betweenness centrality value
-        """
         n = adjacency_matrix.shape[0]
         if n <= 2:
             return 0.0
@@ -1007,19 +530,6 @@ class GraphTopology:
         max_iter: int = 100,
         tol: float = 1e-6
     ) -> np.ndarray:
-        """
-        Calculate eigenvector centrality: C_eig(v) = (1/λ) Σ_{u} A_{vu} C_eig(u).
-        
-        Full implementation using power iteration.
-        
-        Args:
-            adjacency_matrix: Adjacency matrix A
-            max_iter: Maximum iterations
-            tol: Convergence tolerance
-            
-        Returns:
-            Eigenvector centrality values for all nodes
-        """
         n = adjacency_matrix.shape[0]
         if n == 0:
             return np.array([])
@@ -1048,15 +558,6 @@ class GraphTopology:
     
     @staticmethod
     def degree_distribution(adjacency_matrix: np.ndarray) -> Dict[int, float]:
-        """
-        Calculate degree distribution: P(k) = (1/|V|) Σ_v 𝟙[deg(v) = k].
-        
-        Args:
-            adjacency_matrix: Adjacency matrix A
-            
-        Returns:
-            Dictionary mapping degree k to probability P(k)
-        """
         n = adjacency_matrix.shape[0]
         if n == 0:
             return {}
@@ -1069,12 +570,6 @@ class GraphTopology:
 
 
 class MDPFormulation:
-    """
-    Markov Decision Process utilities for graph construction.
-    
-    Implements value functions, Q-functions, and policy evaluation.
-    """
-    
     @staticmethod
     def value_function_estimate(
         rewards: List[float],
@@ -1082,20 +577,6 @@ class MDPFormulation:
         use_gae: bool = False,
         lambda_gae: float = 0.95
     ) -> Union[float, np.ndarray]:
-        """
-        Estimate value function: V^π(S_t) = E_π[Σ_{k=t}^T γ^{k-t} R(S_k) | S_t].
-        
-        Full implementation with support for Generalized Advantage Estimation (GAE).
-        
-        Args:
-            rewards: List of rewards R(S_k) from time t to T
-            gamma: Discount factor γ
-            use_gae: Whether to use Generalized Advantage Estimation
-            lambda_gae: GAE lambda parameter
-            
-        Returns:
-            Value function estimate (scalar or array if use_gae=True)
-        """
         if not rewards:
             return 0.0
         
@@ -1139,18 +620,6 @@ class MDPFormulation:
         next_state_value: float,
         gamma: float = 0.99
     ) -> float:
-        """
-        Estimate Q-function: Q^π(S_t, a_t) = R(S_t, a_t) + γ V^π(S_{t+1}).
-        
-        Args:
-            state_value: Current state value V^π(S_t)
-            action_reward: Immediate reward R(S_t, a_t)
-            next_state_value: Next state value V^π(S_{t+1})
-            gamma: Discount factor γ
-            
-        Returns:
-            Q-function estimate
-        """
         return action_reward + gamma * next_state_value
     
     @staticmethod
@@ -1158,16 +627,6 @@ class MDPFormulation:
         q_value: float,
         value: float
     ) -> float:
-        """
-        Calculate advantage function: A^π(S, a) = Q^π(S, a) - V^π(S).
-        
-        Args:
-            q_value: Q-function value Q^π(S, a)
-            value: Value function value V^π(S)
-            
-        Returns:
-            Advantage value
-        """
         return q_value - value
     
     @staticmethod
@@ -1176,17 +635,6 @@ class MDPFormulation:
         rewards: List[float],
         gamma: float = 0.99
     ) -> float:
-        """
-        Estimate policy gradient: ∇_θ J(π_θ) = E_π[Σ_t ∇_θ log π_θ(a_t | S_t) · R_t].
-        
-        Args:
-            log_probs: List of log probabilities log π_θ(a_t | S_t)
-            rewards: List of rewards R_t
-            gamma: Discount factor γ
-            
-        Returns:
-            Policy gradient estimate
-        """
         if not log_probs or not rewards:
             return 0.0
         
@@ -1202,12 +650,6 @@ class MDPFormulation:
 
 
 class GraphMatching:
-    """
-    Graph matching and similarity utilities.
-    
-    Implements graph edit distance, Weisfeiler-Lehman kernel, and graph kernels.
-    """
-    
     @staticmethod
     def graph_edit_distance(
         graph1_nodes: List[str],
@@ -1219,24 +661,6 @@ class GraphMatching:
         node_ins_cost: float = 1.0,
         node_del_cost: float = 1.0
     ) -> float:
-        """
-        Calculate graph edit distance: d_edit(G₁, G₂) = min_{ops} cost(ops).
-        
-        Full implementation using dynamic programming approximation.
-        
-        Args:
-            graph1_nodes: Node labels for graph 1
-            graph1_edges: Edge list for graph 1 [(i, j), ...]
-            graph2_nodes: Node labels for graph 2
-            graph2_edges: Edge list for graph 2 [(i, j), ...]
-            node_sub_cost: Cost function for node substitution (default: edit distance)
-            edge_sub_cost: Cost for edge substitution
-            node_ins_cost: Cost for node insertion
-            node_del_cost: Cost for node deletion
-            
-        Returns:
-            Graph edit distance
-        """
         if node_sub_cost is None:
             def node_sub_cost(s1: str, s2: str) -> float:
                 # Simple edit distance between strings
@@ -1290,21 +714,6 @@ class GraphMatching:
         graph2_edges: List[Tuple[int, int]],
         num_iterations: int = 3
     ) -> float:
-        """
-        Calculate Weisfeiler-Lehman kernel: K_WL(G₁, G₂) = Σ_{k} Σ_{v₁, v₂} 𝟙[WL_k(v₁) = WL_k(v₂)].
-        
-        Full implementation of WL graph kernel.
-        
-        Args:
-            graph1_nodes: Node labels for graph 1
-            graph1_edges: Edge list for graph 1
-            graph2_nodes: Node labels for graph 2
-            graph2_edges: Edge list for graph 2
-            num_iterations: Number of WL iterations k
-            
-        Returns:
-            WL kernel value
-        """
         def wl_relabel(nodes: List[str], edges: List[Tuple[int, int]], iteration: int) -> List[str]:
             """Perform one iteration of WL relabeling."""
             n = len(nodes)
@@ -1354,20 +763,6 @@ class GraphMatching:
         kernel_type: str = "rbf",
         gamma: float = 1.0
     ) -> float:
-        """
-        Calculate graph kernel: K(G₁, G₂) = ⟨φ(G₁), φ(G₂)⟩.
-        
-        Supports linear, polynomial, and RBF kernels.
-        
-        Args:
-            graph1_embedding: Graph embedding φ(G₁)
-            graph2_embedding: Graph embedding φ(G₂)
-            kernel_type: Kernel type ("linear", "polynomial", "rbf")
-            gamma: Kernel parameter (for RBF/polynomial)
-            
-        Returns:
-            Kernel value
-        """
         if graph1_embedding.size == 0 or graph2_embedding.size == 0:
             return 0.0
         
@@ -1392,12 +787,6 @@ class GraphMatching:
 
 
 class GraphNeuralNetwork:
-    """
-    Graph Neural Network message passing implementations.
-    
-    Implements GCN, GAT, and Graph Transformer variants with full mathematical rigor.
-    """
-    
     @staticmethod
     def gcn_layer(
         node_embeddings: np.ndarray,
@@ -1408,23 +797,6 @@ class GraphNeuralNetwork:
         dropout: float = 0.0,
         use_layer_norm: bool = False
     ) -> np.ndarray:
-        """
-        Graph Convolutional Network layer: H^(k+1) = σ(Ã H^(k) W^(k) + b).
-        
-        Where Ã = D^{-1/2} (A + I) D^{-1/2} (normalized adjacency with self-loops).
-        
-        Args:
-            node_embeddings: Node embeddings H^(k) ∈ R^{n×d}
-            adjacency_matrix: Adjacency matrix A ∈ R^{n×n}
-            weight_matrix: Optional weight matrix W^(k) ∈ R^{d×d'} (learned or identity)
-            bias: Optional bias vector b ∈ R^{d'}
-            activation: Activation function ("relu", "gelu", "tanh", "sigmoid", "none")
-            dropout: Dropout probability (0.0 = no dropout)
-            use_layer_norm: Whether to apply layer normalization
-            
-        Returns:
-            Updated embeddings H^(k+1) ∈ R^{n×d'}
-        """
         n, d = node_embeddings.shape
         
         if n == 0 or d == 0:
@@ -1493,20 +865,6 @@ class GraphNeuralNetwork:
         num_heads: int = 4,
         attention_dropout: float = 0.0
     ) -> np.ndarray:
-        """
-        Graph Attention Network layer: h_v^(k+1) = σ(Σ_{u ∈ N(v)} α_{vu} W^(k) h_u^(k)).
-        
-        Where α_{vu} = softmax(LeakyReLU(a^T [W h_v || W h_u])).
-        
-        Args:
-            node_embeddings: Node embeddings H^(k) ∈ R^{n×d}
-            adjacency_matrix: Adjacency matrix A
-            num_heads: Number of attention heads
-            attention_dropout: Dropout probability for attention weights
-            
-        Returns:
-            Updated embeddings H^(k+1) ∈ R^{n×d}
-        """
         n, d = node_embeddings.shape
         
         if n == 0 or d == 0:
@@ -1583,22 +941,6 @@ class GraphNeuralNetwork:
         ff_dim: Optional[int] = None,
         dropout: float = 0.0
     ) -> np.ndarray:
-        """
-        Graph Transformer layer with full self-attention.
-        
-        H^(k+1) = LayerNorm(H^(k) + MultiHeadAttention(H^(k), H^(k), H^(k)))
-        H^(k+1) = LayerNorm(H^(k+1) + FFN(H^(k+1)))
-        
-        Args:
-            node_embeddings: Node embeddings H^(k) ∈ R^{n×d}
-            adjacency_matrix: Adjacency matrix (for masking)
-            num_heads: Number of attention heads
-            ff_dim: Feed-forward dimension (default: 4*d)
-            dropout: Dropout probability
-            
-        Returns:
-            Updated embeddings H^(k+1) ∈ R^{n×d}
-        """
         n, d = node_embeddings.shape
         
         if n == 0 or d == 0:
@@ -1633,7 +975,6 @@ class GraphNeuralNetwork:
         num_heads: int,
         dropout: float
     ) -> np.ndarray:
-        """Multi-head self-attention mechanism."""
         n, d = query.shape
         d_head = d // num_heads
         
@@ -1674,7 +1015,6 @@ class GraphNeuralNetwork:
         ff_dim: int,
         dropout: float
     ) -> np.ndarray:
-        """Feed-forward network: FFN(x) = ReLU(xW₁ + b₁)W₂ + b₂."""
         n, d = x.shape
         
         # First linear layer
@@ -1697,7 +1037,6 @@ class GraphNeuralNetwork:
     
     @staticmethod
     def _layer_norm(x: np.ndarray, eps: float = 1e-8) -> np.ndarray:
-        """Layer normalization: LN(x) = (x - μ) / (σ + ε) * γ + β."""
         mean = np.mean(x, axis=1, keepdims=True)
         std = np.std(x, axis=1, keepdims=True) + eps
         normalized = (x - mean) / std
@@ -1710,19 +1049,6 @@ class GraphNeuralNetwork:
         method: str = "mean",
         attention_weights: Optional[np.ndarray] = None
     ) -> np.ndarray:
-        """
-        Graph-level readout: h_G = READOUT({h_v : v ∈ V}).
-        
-        Supports mean, max, sum, and attention-based pooling.
-        
-        Args:
-            node_embeddings: Node embeddings H ∈ R^{n×d}
-            method: Readout method ("mean", "max", "sum", "attention")
-            attention_weights: Optional attention weights for attention pooling
-            
-        Returns:
-            Graph embedding h_G ∈ R^d
-        """
         if node_embeddings.size == 0:
             return np.array([])
         
@@ -1750,19 +1076,6 @@ class GraphNeuralNetwork:
 
 @dataclass
 class _ThoughtNode:
-    """
-    Represents a node in the Graph of Thought reasoning structure.
-    
-    Attributes:
-        id: Unique identifier for the node
-        text: The text content of the thought (ℓ(v_i))
-        node_type: Type of the node (τ(v_i))
-        parents: Set of parent node IDs
-        children: Set of child node IDs
-        embedding: Continuous state / embedding (σ(v_i)) ∈ R^d
-        score: Quality score for this node
-        metadata: Additional metadata
-    """
     
     id: UUID
     text: str
@@ -1774,15 +1087,6 @@ class _ThoughtNode:
     metadata: Dict[str, Any] = field(default_factory=dict)
     
     def get_ancestors(self, graph: "_ThoughtGraph") -> Set[UUID]:
-        """
-        Get all ancestor node IDs (transitive closure of parents).
-        
-        Args:
-            graph: The thought graph containing this node
-            
-        Returns:
-            Set of ancestor node IDs
-        """
         ancestors = set()
         queue = deque([self.id])
         
@@ -1802,15 +1106,6 @@ class _ThoughtNode:
         return ancestors
     
     def get_descendants(self, graph: "_ThoughtGraph") -> Set[UUID]:
-        """
-        Get all descendant node IDs (transitive closure of children).
-        
-        Args:
-            graph: The thought graph containing this node
-            
-        Returns:
-            Set of descendant node IDs
-        """
         descendants = set()
         queue = deque([self.id])
         
@@ -1832,15 +1127,6 @@ class _ThoughtNode:
 
 @dataclass
 class _ThoughtEdge:
-    """
-    Represents an edge in the Graph of Thought reasoning structure.
-    
-    Attributes:
-        source: Source node ID
-        target: Target node ID
-        relation: Edge relation type (r)
-        weight: Optional edge weight
-    """
     
     source: UUID
     target: UUID
@@ -1850,16 +1136,6 @@ class _ThoughtEdge:
 
 @dataclass
 class _ThoughtGraph:
-    """
-    Represents a complete Graph of Thought reasoning structure.
-    
-    G = (V, E, τ, ℓ, σ)
-    
-    Attributes:
-        nodes: Dictionary mapping node IDs to _ThoughtNode instances
-        edges: List of _ThoughtEdge instances
-        root_id: ID of the root node (problem node)
-    """
     
     nodes: Dict[UUID, "_ThoughtNode"] = field(default_factory=dict)
     edges: List["_ThoughtEdge"] = field(default_factory=list)
@@ -1874,20 +1150,6 @@ class _ThoughtGraph:
         embedding: Optional[np.ndarray] = None,
         score: float = 0.0,
     ) -> "_ThoughtNode":
-        """
-        Add a node to the graph.
-        
-        Args:
-            node_id: Unique identifier for the node
-            text: Text content of the thought
-            node_type: Type of the node
-            parents: Set of parent node IDs
-            embedding: Node embedding vector
-            score: Quality score
-            
-        Returns:
-            The created _ThoughtNode
-        """
         node = _ThoughtNode(
             id=node_id,
             text=text,
@@ -1915,18 +1177,6 @@ class _ThoughtGraph:
         relation: "_EdgeRelation",
         weight: float = 1.0,
     ) -> "_ThoughtEdge":
-        """
-        Add an edge to the graph.
-        
-        Args:
-            source: Source node ID
-            target: Target node ID
-            relation: Edge relation type
-            weight: Edge weight
-            
-        Returns:
-            The created _ThoughtEdge
-        """
         if source not in self.nodes or target not in self.nodes:
             raise ValueError("Both source and target nodes must exist in the graph")
         
@@ -1945,12 +1195,6 @@ class _ThoughtGraph:
         return edge
     
     def get_adjacency_matrix(self) -> np.ndarray:
-        """
-        Get the adjacency matrix of the graph.
-        
-        Returns:
-            Adjacency matrix A ∈ {0,1}^{n×n} or R^{n×n}
-        """
         n = len(self.nodes)
         if n == 0:
             return np.array([])
@@ -1969,12 +1213,6 @@ class _ThoughtGraph:
         return A
     
     def get_node_embeddings_matrix(self) -> np.ndarray:
-        """
-        Get the stack of node embeddings.
-        
-        Returns:
-            Matrix H ∈ R^{n×d} where each row is a node embedding
-        """
         node_ids = list(self.nodes.keys())
         if not node_ids:
             return np.array([])
@@ -2004,12 +1242,6 @@ class _ThoughtGraph:
         return H
     
     def topological_order(self) -> List[UUID]:
-        """
-        Get nodes in topological order (if graph is a DAG).
-        
-        Returns:
-            List of node IDs in topological order
-        """
         in_degree = defaultdict(int)
         for node_id in self.nodes:
             in_degree[node_id] = len(self.nodes[node_id].parents)
@@ -2039,26 +1271,6 @@ class _ThoughtGraph:
 
 @dataclass
 class _GoTConfig:
-    """
-    Configuration for Graph-of-Thought reasoning.
-    
-    Attributes:
-        max_nodes: Maximum number of nodes in the graph
-        max_iterations: Maximum number of graph construction iterations
-        expansion_branch_factor: Number of children to create per expansion
-        merge_similarity_threshold: Threshold for merging similar nodes
-        evaluation_temperature: Temperature for evaluation prompts
-        expansion_temperature: Temperature for expansion prompts
-        refinement_temperature: Temperature for refinement prompts
-        enable_merging: Whether to enable node merging
-        enable_refinement: Whether to enable node refinement
-        enable_feedback: Whether to enable feedback loops
-        embedding_dim: Dimension of node embeddings
-        gnn_layers: Number of GNN message passing layers
-        gnn_hidden_dim: Hidden dimension for GNN
-        system_prompt: System prompt for LLM interactions
-        answer_prefix: Prefix for final answer extraction
-    """
     
     max_nodes: int = 50
     max_iterations: int = 20
@@ -2079,13 +1291,6 @@ class _GoTConfig:
 
 
 class _LLMBackend:
-    """
-    Abstract interface for LLM backend.
-    
-    This defines the contract that any LLM implementation must follow
-    to work with the GoT framework.
-    """
-    
     def generate(
         self,
         prompt: str,
@@ -2094,53 +1299,16 @@ class _LLMBackend:
         top_p: float = 0.9,
         stop: Optional[List[str]] = None,
     ) -> str:
-        """
-        Generate text from the LLM.
-        
-        Args:
-            prompt: Input prompt
-            max_tokens: Maximum tokens to generate
-            temperature: Sampling temperature
-            top_p: Nucleus sampling parameter
-            stop: List of stop sequences
-            
-        Returns:
-            Generated text
-            
-        Raises:
-            NotImplementedError: Must be implemented by subclass
-        """
         raise NotImplementedError("Subclass must implement generate method")
 
 
 class _GraphEncoder:
-    """
-    Encodes the thought graph into a vector representation using message passing.
-    
-    Implements graph-level representation via GNN-style message passing:
-    H^(k+1) = ρ(A H^(k) W^(k) + B H^(k))
-    
-    Where:
-    - H ∈ R^{n×d}: stack of node vectors
-    - A ∈ R^{n×n}: adjacency matrix
-    - ρ: nonlinearity
-    - W^(k), B: parameters
-    """
-    
     def __init__(
         self,
         embedding_dim: int = 128,
         hidden_dim: int = 256,
         num_layers: int = 2,
     ):
-        """
-        Initialize the GraphEncoder.
-        
-        Args:
-            embedding_dim: Dimension of input node embeddings
-            hidden_dim: Hidden dimension for GNN layers
-            num_layers: Number of message passing layers
-        """
         self.embedding_dim = embedding_dim
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
@@ -2149,18 +1317,6 @@ class _GraphEncoder:
         self,
         graph: "_ThoughtGraph",
     ) -> np.ndarray:
-        """
-        Encode the graph into a graph-level representation.
-        
-        Implements GNN message passing: H^(k+1) = σ(A H^(k) W^(k) + B H^(k))
-        Graph-level readout: h_G = READOUT({h_v : v ∈ V})
-        
-        Args:
-            graph: The thought graph to encode
-            
-        Returns:
-            Graph embedding vector h_G ∈ R^d
-        """
         if len(graph.nodes) == 0:
             return np.zeros(self.embedding_dim)
         
@@ -2204,17 +1360,6 @@ class _GraphEncoder:
         graph: "_ThoughtGraph",
         input_embedding: Optional[np.ndarray] = None,
     ) -> None:
-        """
-        Compute embeddings for nodes that don't have them.
-        
-        This is a placeholder - in practice, you would use an encoder
-        (LLM hidden state, sentence transformer, etc.) to compute
-        σ(v_i) = Enc_φ(x, ℓ(v_i), {ℓ(v_j) : v_j ∈ Pa(v_i)})
-        
-        Args:
-            graph: The thought graph
-            input_embedding: Optional input problem embedding
-        """
         # Simple placeholder: use text length and node type as features
         # In practice, replace with actual encoder
         for node_id, node in graph.nodes.items():
@@ -2231,25 +1376,11 @@ class _GraphEncoder:
 
 
 class _NodeExpander:
-    """
-    Implements EXPAND_SUBPROBLEM operation.
-    
-    Given node v, create children c₁, ..., cₖ whose texts describe
-    subproblems / continuations.
-    """
-    
     def __init__(
         self,
         llm: "_LLMBackend",
         config: "_GoTConfig",
     ):
-        """
-        Initialize the NodeExpander.
-        
-        Args:
-            llm: LLM backend instance
-            config: GoT configuration
-        """
         self.llm = llm
         self.config = config
     
@@ -2259,17 +1390,6 @@ class _NodeExpander:
         node_id: UUID,
         problem: str,
     ) -> List[str]:
-        """
-        Expand a node by generating candidate thoughts.
-        
-        Args:
-            graph: The current thought graph
-            node_id: ID of the node to expand
-            problem: The original problem statement
-            
-        Returns:
-            List of candidate thought strings
-        """
         node = graph.nodes.get(node_id)
         if node is None:
             logger.error(f"Node {node_id} not found in graph")
@@ -2321,15 +1441,6 @@ Return them as numbered items:
             return []
     
     def _parse_thoughts(self, response: str) -> List[str]:
-        """
-        Parse numbered thoughts from LLM response.
-        
-        Args:
-            response: LLM response text
-            
-        Returns:
-            List of thought strings
-        """
         thoughts = []
         lines = response.strip().split('\n')
         
@@ -2357,25 +1468,11 @@ Return them as numbered items:
 
 
 class _NodeMerger:
-    """
-    Implements MERGE_SIMILAR operation.
-    
-    Given nodes v_i, v_j, merge if similarity sim(σ(v_i), σ(v_j)) ≥ τ.
-    Creates new node u with synthesized combination.
-    """
-    
     def __init__(
         self,
         llm: "_LLMBackend",
         config: "_GoTConfig",
     ):
-        """
-        Initialize the NodeMerger.
-        
-        Args:
-            llm: LLM backend instance
-            config: GoT configuration
-        """
         self.llm = llm
         self.config = config
     
@@ -2383,15 +1480,6 @@ class _NodeMerger:
         self,
         graph: "_ThoughtGraph",
     ) -> List[Tuple[UUID, UUID, float]]:
-        """
-        Find pairs of similar nodes that could be merged.
-        
-        Args:
-            graph: The thought graph
-            
-        Returns:
-            List of (node_id1, node_id2, similarity) tuples
-        """
         similar_pairs = []
         node_ids = list(graph.nodes.keys())
         
@@ -2425,18 +1513,6 @@ class _NodeMerger:
         node_id2: UUID,
         problem: str,
     ) -> Optional[UUID]:
-        """
-        Merge two similar nodes into one.
-        
-        Args:
-            graph: The thought graph
-            node_id1: First node ID to merge
-            node_id2: Second node ID to merge
-            problem: The original problem statement
-            
-        Returns:
-            ID of the merged node, or None if merge failed
-        """
         node1 = graph.nodes.get(node_id1)
         node2 = graph.nodes.get(node_id2)
         
@@ -2539,16 +1615,6 @@ Merged thought:"""
         vec1: np.ndarray,
         vec2: np.ndarray,
     ) -> float:
-        """
-        Compute cosine similarity between two vectors.
-        
-        Args:
-            vec1: First vector
-            vec2: Second vector
-            
-        Returns:
-            Cosine similarity in [0, 1]
-        """
         dot_product = np.dot(vec1, vec2)
         norm1 = np.linalg.norm(vec1)
         norm2 = np.linalg.norm(vec2)
@@ -2562,25 +1628,11 @@ Merged thought:"""
 
 
 class _NodeRefiner:
-    """
-    Implements REFINE_NODE operation.
-    
-    Given node v, use LLM to rewrite and improve the reasoning step
-    while keeping it consistent with parents and children.
-    """
-    
     def __init__(
         self,
         llm: "_LLMBackend",
         config: "_GoTConfig",
     ):
-        """
-        Initialize the NodeRefiner.
-        
-        Args:
-            llm: LLM backend instance
-            config: GoT configuration
-        """
         self.llm = llm
         self.config = config
     
@@ -2590,17 +1642,6 @@ class _NodeRefiner:
         node_id: UUID,
         problem: str,
     ) -> bool:
-        """
-        Refine a node by rewriting its text.
-        
-        Args:
-            graph: The thought graph
-            node_id: ID of the node to refine
-            problem: The original problem statement
-            
-        Returns:
-            True if refinement succeeded, False otherwise
-        """
         node = graph.nodes.get(node_id)
         if node is None:
             logger.error(f"Node {node_id} not found in graph")
@@ -2658,25 +1699,11 @@ Improved reasoning step:"""
 
 
 class _NodeEvaluator:
-    """
-    Evaluates nodes using the LLM as a heuristic.
-    
-    Assigns a score to each node estimating the likelihood that
-    it contributes to a correct answer.
-    """
-    
     def __init__(
         self,
         llm: "_LLMBackend",
         config: "_GoTConfig",
     ):
-        """
-        Initialize the NodeEvaluator.
-        
-        Args:
-            llm: LLM backend instance
-            config: GoT configuration
-        """
         self.llm = llm
         self.config = config
     
@@ -2686,17 +1713,6 @@ class _NodeEvaluator:
         node_id: UUID,
         problem: str,
     ) -> float:
-        """
-        Evaluate a node's quality.
-        
-        Args:
-            graph: The thought graph
-            node_id: ID of the node to evaluate
-            problem: The original problem statement
-            
-        Returns:
-            Score from 0.0 to 1.0
-        """
         node = graph.nodes.get(node_id)
         if node is None:
             return 0.0
@@ -2744,15 +1760,6 @@ Score:"""
             return 0.5  # Default neutral score
     
     def _parse_score(self, response: str) -> float:
-        """
-        Parse score from evaluation response.
-        
-        Args:
-            response: LLM response text
-            
-        Returns:
-            Score from 0.0 to 1.0 (normalized from 0-10)
-        """
         import re
         
         numbers = re.findall(r'\d+\.?\d*', response)
@@ -2767,13 +1774,6 @@ Score:"""
 
 
 class _GoTController:
-    """
-    Controller that orchestrates graph construction operations.
-    
-    Implements the policy π_θ(a_t | S_t, x) = Controller_θ(Enc_φ(S_t, x))
-    to decide which node to operate on and which operation to apply.
-    """
-    
     def __init__(
         self,
         llm: "_LLMBackend",
@@ -2784,18 +1784,6 @@ class _GoTController:
         refiner: Optional["_NodeRefiner"],
         evaluator: "_NodeEvaluator",
     ):
-        """
-        Initialize the GoTController.
-        
-        Args:
-            llm: LLM backend instance
-            config: GoT configuration
-            encoder: Graph encoder instance
-            expander: Node expander instance
-            merger: Node merger instance (optional)
-            refiner: Node refiner instance (optional)
-            evaluator: Node evaluator instance
-        """
         self.llm = llm
         self.config = config
         self.encoder = encoder
@@ -2809,19 +1797,6 @@ class _GoTController:
         graph: "_ThoughtGraph",
         problem: str,
     ) -> Optional[UUID]:
-        """
-        Select a node to operate on using MDP-based selection.
-        
-        Uses information gain and centrality measures: I(v; Y | G, X)
-        Combined with MDP value estimates for optimal node selection.
-        
-        Args:
-            graph: The current thought graph
-            problem: The original problem statement
-            
-        Returns:
-            Selected node ID, or None if graph is empty
-        """
         if len(graph.nodes) == 0:
             return None
         
@@ -2891,17 +1866,6 @@ class _GoTController:
         node_id: UUID,
         problem: str,
     ) -> "_GraphOperation":
-        """
-        Select which operation to apply.
-        
-        Args:
-            graph: The current thought graph
-            node_id: ID of the selected node
-            problem: The original problem statement
-            
-        Returns:
-            Selected graph operation
-        """
         # Check if we should stop
         if len(graph.nodes) >= self.config.max_nodes:
             return _GraphOperation.STOP
@@ -2926,16 +1890,6 @@ class _GoTController:
         graph: "_ThoughtGraph",
         problem: str,
     ) -> "_ThoughtGraph":
-        """
-        Perform one step of graph construction.
-        
-        Args:
-            graph: The current thought graph
-            problem: The original problem statement
-            
-        Returns:
-            Updated thought graph
-        """
         # Select node
         node_id = self.select_node(graph, problem)
         if node_id is None:
@@ -2993,24 +1947,11 @@ class _GoTController:
 
 
 class _AnswerSynthesizer:
-    """
-    Synthesizes the final answer from the thought graph.
-    
-    Implements p_θ(y | G, x) by summarizing key nodes and generating answer.
-    """
-    
     def __init__(
         self,
         llm: "_LLMBackend",
         config: "_GoTConfig",
     ):
-        """
-        Initialize the AnswerSynthesizer.
-        
-        Args:
-            llm: LLM backend instance
-            config: GoT configuration
-        """
         self.llm = llm
         self.config = config
     
@@ -3019,16 +1960,6 @@ class _AnswerSynthesizer:
         graph: "_ThoughtGraph",
         problem: str,
     ) -> str:
-        """
-        Synthesize final answer from the graph.
-        
-        Args:
-            graph: The complete thought graph
-            problem: The original problem statement
-            
-        Returns:
-            Final answer string
-        """
         # Select key nodes (highest scoring, or final nodes)
         key_nodes = []
         
@@ -3083,73 +2014,19 @@ Format: {self.config.answer_prefix} [your answer]"""
 
 
 class GoTAgent:
-    """
-    Main Graph-of-Thought reasoning agent.
-    
-    Implements the complete GoT reasoning pipeline:
-    1. Problem ingestion
-    2. Graph initialization
-    3. Iterative graph construction
-    4. Graph encoding
-    5. Answer synthesis
-    6. Verification + correction (optional)
-    
-    Mathematical Foundation:
-        Core Probabilistic Model:
-            p_θ(y, G | x) = p_θ(G | x) · p_θ(y | G, x)
-        
-        Where:
-        - x = input (problem, task description) ∈ X
-        - y = final answer (possibly a node in V with type "final") ∈ Y
-        - G = (V, E, τ, ℓ, σ) = thought graph
-        - θ parameterizes the LLM + controller
-    
-    Attributes:
-        agent_name: Name of the agent
-        model_name: LLM model to use
-        config: GoT configuration
-        agent: Internal Agent or LLM instance
-        controller: Internal _GoTController instance
-    
-    Example:
-        >>> from swarms.agents import GoTAgent
-        >>> # Using model_name
-        >>> agent = GoTAgent(
-        ...     agent_name="got-agent",
-        ...     model_name="gpt-4o",
-        ... )
-        >>> result = agent.run("Solve: If a train travels 120 miles in 2 hours, what is its average speed?")
-        >>> print(result)
-        
-        >>> # Using llm directly (any LLM instance with a 'run' method)
-        >>> from swarms import LiteLLM
-        >>> llm = LiteLLM(model_name="gpt-4o")
-        >>> agent = GoTAgent(llm=llm)
-        >>> result = agent.run("Your problem here")
-    """
-    
     def __init__(
         self,
         agent_name: str = "got-agent",
+        description: Optional[str] = None,
         model_name: Optional[str] = "gpt-4o",
         llm: Optional[Any] = None,
         system_prompt: Optional[str] = None,
+        global_system_prompt: Optional[str] = None,
+        secondary_system_prompt: Optional[str] = None,
         config: Optional["_GoTConfig"] = None,
         agent: Optional[Any] = None,
         **kwargs,
     ):
-        """
-        Initialize the GoTAgent.
-        
-        Args:
-            agent_name: Name of the agent
-            model_name: LLM model name (used if agent/llm not provided)
-            llm: Optional LLM instance or callable (takes precedence over model_name)
-            system_prompt: Optional custom system prompt
-            config: GoT configuration (uses defaults if None)
-            agent: Optional Agent instance to use (if provided, uses its LLM)
-            **kwargs: Additional arguments passed to Agent if creating one
-        """
         self.agent_name = agent_name
         self.model_name = model_name
         self.config = config or _GoTConfig()
@@ -3171,12 +2048,24 @@ class GoTAgent:
             # Import Agent here to avoid circular imports
             from swarms.structs.agent import Agent
             
-            self.agent = Agent(
-                agent_name=agent_name,
-                model_name=model_name,
-                system_prompt=system_prompt,
+            # Prepare agent kwargs
+            agent_kwargs = {
+                "agent_name": agent_name,
+                "model_name": model_name,
                 **kwargs,
-            )
+            }
+            
+            # Add optional parameters if provided
+            if description is not None:
+                agent_kwargs["agent_description"] = description
+            if system_prompt is not None:
+                agent_kwargs["system_prompt"] = system_prompt
+            if global_system_prompt is not None:
+                agent_kwargs["global_system_prompt"] = global_system_prompt
+            if secondary_system_prompt is not None:
+                agent_kwargs["secondary_system_prompt"] = secondary_system_prompt
+            
+            self.agent = Agent(**agent_kwargs)
             llm_adapter = _AgentLLMAdapter(self.agent)
         
         # Store the LLM backend for internal use
@@ -3205,21 +2094,20 @@ class GoTAgent:
             evaluator=self.evaluator,
         )
     
+    def step(self, task: str, *args, **kwargs) -> str:
+        result = self.run(task, return_reasoning=False, *args, **kwargs)
+        return result if isinstance(result, str) else result.get("answer", "")
+    
+    def __getattr__(self, name: str):
+        if hasattr(self, 'agent'):
+            return getattr(self.agent, name)
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+    
     def run(
         self,
         problem: str,
         return_graph: Optional[bool] = None,
     ) -> Union[str, Dict[str, Any]]:
-        """
-        Run the Graph-of-Thought reasoning process.
-        
-        Args:
-            problem: The problem statement to solve
-            return_graph: Whether to return the graph structure (overrides config)
-            
-        Returns:
-            Final answer string, or dict with answer and graph if return_graph=True
-        """
         return_graph = return_graph if return_graph is not None else self.config.return_graph
         
         logger.info(f"Starting GoT reasoning for problem: {problem[:100]}...")
@@ -3440,19 +2328,7 @@ class GoTAgent:
 
 
 class _AgentLLMAdapter(_LLMBackend):
-    """
-    Adapter to use Agent's LLM with the GoT framework.
-    
-    Wraps the Agent's LLM interface to match the LLMBackend contract.
-    """
-    
     def __init__(self, agent: Any):
-        """
-        Initialize the adapter.
-        
-        Args:
-            agent: Agent instance with an LLM, or direct LLM instance/callable
-        """
         self.agent = agent
         # Handle both Agent instances and direct LLM instances
         if hasattr(agent, 'llm'):
@@ -3471,19 +2347,6 @@ class _AgentLLMAdapter(_LLMBackend):
         top_p: float = 0.9,
         stop: Optional[List[str]] = None,
     ) -> str:
-        """
-        Generate text using the Agent's LLM.
-        
-        Args:
-            prompt: Input prompt
-            max_tokens: Maximum tokens to generate
-            temperature: Sampling temperature
-            top_p: Nucleus sampling parameter
-            stop: List of stop sequences
-            
-        Returns:
-            Generated text
-        """
         # Try to get LLM from agent if not directly available
         llm = self.llm
         if llm is None and hasattr(self.agent, 'llm'):
