@@ -332,7 +332,7 @@ class DebateWithJudge:
             str: The content of the final judge synthesis.
         """
         return self.conversation.get_final_message_content()
-    
+
     def batched_run(self, tasks: List[str]) -> List[str]:
         """
         Run the debate with judge refinement process for a batch of tasks.

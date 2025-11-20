@@ -68,4 +68,3 @@ results = architecture_debate.batched_run(architecture_questions)
 # Display results
 for result in results:
     print(result)
-

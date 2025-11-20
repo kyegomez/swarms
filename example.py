@@ -1,4 +1,3 @@
-import json
 
 from swarms import Agent
 
@@ -12,7 +11,7 @@ agent = Agent(
     dynamic_context_window=True,
     streaming_on=False,
     top_p=None,
-    output_type="dict",
+    stream=True,
 )
 
 out = agent.run(
@@ -20,4 +19,5 @@ out = agent.run(
     n=1,
 )
 
-print(json.dumps(out, indent=4))
+for token in out:
+    print(token, end="", flush=True)

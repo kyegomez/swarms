@@ -84,4 +84,3 @@ print(history)
 # Get the final refined answer
 final_answer = strategy_debate.get_final_answer()
 print(final_answer)
-

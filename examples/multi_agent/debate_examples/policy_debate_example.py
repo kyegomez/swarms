@@ -80,4 +80,3 @@ print(result)
 # Get the final refined answer
 final_answer = debate_system.get_final_answer()
 print(final_answer)
-
