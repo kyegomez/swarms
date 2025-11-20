@@ -2223,7 +2223,7 @@ If you'd like technical support, join our Discord below and stay updated on our 
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
-| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
+| 🎫 Events | [Sign up here](https://lu.ma/swarms_calendar) | Join our community events |
 
 
 
@@ -2327,7 +2327,7 @@ This index provides a categorized list of examples and tutorials for using the S
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
-| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
+| 🎫 Events | [Sign up here](https://lu.ma/swarms_calendar) | Join our community events |
 
 ## Contributing
 
@@ -3967,7 +3967,7 @@ Join our community of agent engineers and researchers for technical support, cut
 | 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
-| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
+| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/swarms_calendar) |
 | 🚀 Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
 
 ---
@@ -6892,7 +6892,7 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
-| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
+| 🎫 Events | [Sign up here](https://lu.ma/swarms_calendar) | Join our community events |
 
 ## Get Support
 
@@ -10190,7 +10190,7 @@ Join our community of agent engineers and researchers for technical support, cut
 | 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
-| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
+| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/swarms_calendar) |
 | 🚀 Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
 
 ### Getting Help
@@ -21439,7 +21439,7 @@ Join our community of agent engineers and researchers for technical support, cut
 | 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
-| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
+| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/swarms_calendar) |
 | 🚀 Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
 
 
@@ -22230,7 +22230,7 @@ If you're facing issues or want to learn more, check out the following resources
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
-| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
+| 🎫 Events | [Sign up here](https://lu.ma/swarms_calendar) | Join our community events |
 
 
 
@@ -22534,7 +22534,7 @@ If you're facing issues or want to learn more, check out the following resources
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
-| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
+| 🎫 Events | [Sign up here](https://lu.ma/swarms_calendar) | Join our community events |
 
 
 
@@ -24998,7 +24998,7 @@ If you're facing issues or want to learn more, check out the following resources
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
-| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
+| 🎫 Events | [Sign up here](https://lu.ma/swarms_calendar) | Join our community events |
 
 
 
@@ -42641,7 +42641,7 @@ Join our community of agent engineers and researchers for technical support, cut
 | Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyXyitkbU_WSy7bd_41SqQ) |
-| Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
+| Events | Join our community events | [Sign up here](https://lu.ma/swarms_calendar) |
 | Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
 
 ---
@@ -61933,7 +61933,7 @@ Join our community of agent engineers and researchers for technical support, cut
 | 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
-| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
+| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/swarms_calendar) |
 | 🚀 Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
 
 --------------------------------------------------

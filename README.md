@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://swarms.world">
-    <img src="https://github.com/kyegomez/swarms/blob/master/images/new_logo.png" style="margin: 15px; max-width: 350px" width="70%" alt="Logo">
+    <img src="https://github.com/kyegomez/swarms/blob/master/images/new_logo.png" style="margin: 15px; max-width: 350px" width="80%" alt="Logo">
   </a>
 </div>
 <p align="center">
@@ -56,6 +56,17 @@ Swarms delivers a comprehensive, enterprise-grade multi-agent infrastructure pla
 | 🔄 **Enterprise Integration** | • Multi-Model Provider Support<br>• Custom Agent Development Framework<br>• Extensive Enterprise Tool Library<br>• Multiple Memory Systems<br>• Backwards Compatibility with LangChain, AutoGen, CrewAI<br>• Standardized API Interfaces | • Vendor-Agnostic Architecture<br>• Custom Solution Development<br>• Extended Functionality Integration<br>• Enhanced Knowledge Management<br>• Seamless Framework Migration<br>• Reduced Integration Complexity |
 | 📈 **Enterprise Scalability** | • Concurrent Multi-Agent Processing<br>• Intelligent Resource Management<br>• Load Balancing & Auto-Scaling<br>• Horizontal Scaling Capabilities<br>• Performance Optimization<br>• Capacity Planning Tools | • High-Throughput Processing<br>• Cost-Effective Resource Utilization<br>• Elastic Scaling Based on Demand<br>• Linear Performance Scaling<br>• Optimized Response Times<br>• Predictable Growth Planning |
 | 🛠️ **Developer Experience** | • Intuitive Enterprise API<br>• Comprehensive Documentation<br>• Active Enterprise Community<br>• CLI & SDK Tools<br>• IDE Integration Support<br>• Code Generation Templates | • Accelerated Development Cycles<br>• Reduced Learning Curve<br>• Expert Community Support<br>• Rapid Deployment Capabilities<br>• Enhanced Developer Productivity<br>• Standardized Development Patterns |
+
+
+## 🔌 Supported Protocols & Integrations
+
+Swarms seamlessly integrates with industry-standard protocols, enabling powerful capabilities for tool integration, payment processing, and distributed agent orchestration.
+
+| Protocol | Description | Use Cases | Documentation |
+|----------|-------------|-----------|---------------|
+| **[MCP (Model Context Protocol)](https://docs.swarms.world/en/latest/swarms/examples/multi_mcp_agent/)** | Standardized protocol for AI agents to interact with external tools and services through MCP servers. Enables dynamic tool discovery and execution. | • Tool integration<br>• Multi-server connections<br>• External API access<br>• Database connectivity | [MCP Integration Guide](https://docs.swarms.world/en/latest/swarms/examples/multi_mcp_agent/) |
+| **[X402](https://docs.swarms.world/en/latest/examples/x402_payment_integration/)** | Cryptocurrency payment protocol for API endpoints. Enables monetization of agents with pay-per-use models. | • Agent monetization<br>• Payment gate protection<br>• Crypto payments<br>• Pay-per-use services | [X402 Quickstart](https://docs.swarms.world/en/latest/examples/x402_payment_integration/) |
+| **[AOP (Agent Orchestration Protocol)](https://docs.swarms.world/en/latest/examples/aop_medical/)** | Framework for deploying and managing agents as distributed services. Enables agent discovery, management, and execution through standardized protocols. | • Distributed agent deployment<br>• Agent discovery<br>• Service orchestration<br>• Scalable multi-agent systems | [AOP Reference](https://docs.swarms.world/en/latest/swarms/structs/aop/) |
 
 
 ## Install 💻
@@ -213,7 +224,7 @@ This feature is perfect for rapid prototyping, complex task decomposition, and c
 
 -----
 
-## 🏗️ Multi-Agent Architectures For Production Deployments
+## 🏗️ Available Multi-Agent Architectures
 
 `swarms` provides a variety of powerful, pre-built multi-agent architectures enabling you to orchestrate agents in various ways. Choose the right structure for your specific problem to build efficient and reliable production systems.
 
@@ -753,7 +764,6 @@ Explore comprehensive examples and tutorials to learn how to use Swarms effectiv
 | **Model Providers** | Ollama | Local Ollama model integration | [Ollama Examples](https://docs.swarms.world/en/latest/swarms/examples/ollama/) |
 | **Model Providers** | OpenRouter | OpenRouter model integration | [OpenRouter Examples](https://docs.swarms.world/en/latest/swarms/examples/openrouter/) |
 | **Model Providers** | XAI | XAI model integration | [XAI Examples](https://docs.swarms.world/en/latest/swarms/examples/xai/) |
-| **Model Providers** | VLLM | VLLM integration | [VLLM Examples](https://docs.swarms.world/en/latest/swarms/examples/vllm_integration/) |
 | **Model Providers** | Llama4 | Llama4 model integration | [Llama4 Examples](https://docs.swarms.world/en/latest/swarms/examples/llama4/) |
 | **Multi-Agent Architecture** | HierarchicalSwarm | Hierarchical agent orchestration | [HierarchicalSwarm Examples](https://docs.swarms.world/en/latest/swarms/examples/hierarchical_swarm_example/) |
 | **Multi-Agent Architecture** | Hybrid Hierarchical-Cluster Swarm | Advanced hierarchical patterns | [HHCS Examples](https://docs.swarms.world/en/latest/swarms/examples/hhcs_examples/) |
@@ -813,7 +823,7 @@ We've made it easy to start contributing. Here's how you can help:
 4. **Join the Discussion:** To participate in roadmap discussions and connect with other developers, join our community on [**Discord**](https://discord.gg/EamjgSaEQf).
 
 
-### ✨ Our Valued Contributors
+### ✨ Thank You to Our Contributors
 
 Thank you for contributing to swarms. Your work is extremely appreciated and recognized.
 
@@ -821,9 +831,17 @@ Thank you for contributing to swarms. Your work is extremely appreciated and rec
   <img src="https://contrib.rocks/image?repo=kyegomez/swarms" />
 </a>
 
+### 🙏 Thank You to Our Community
+
+We're incredibly grateful to everyone who supports Swarms! Your stars, forks, and contributions help make this project better every day.
+
+[![Forkers repo roster for @kyegomez/swarms](https://reporoster.com/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network/members)
+
+[![Stargazers repo roster for @kyegomez/swarms](https://reporoster.com/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers)
+
 -----
 
-## Connect With Us
+## Join the Swarms community 👾👾👾
 
 Join our community of agent engineers and researchers for technical support, cutting-edge updates, and exclusive access to world-class agent engineering insights!
 
@@ -835,7 +853,7 @@ Join our community of agent engineers and researchers for technical support, cut
 | 🐦 Twitter | Latest news and announcements | [@swarms_corp](https://twitter.com/swarms_corp) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
-| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
+| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/swarms_calendar) |
 | 🚀 Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
 
 ------
@@ -853,6 +871,8 @@ If you use **swarms** in your research, please cite the project by referencing t
   note    = {Documentation available at \url{https://docs.swarms.world}},
   version = {latest}
 ```
+
+---
 
 # License
 

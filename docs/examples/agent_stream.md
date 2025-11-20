@@ -58,5 +58,5 @@ If you'd like technical support, join our Discord below and stay updated on our 
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
-| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
+| 🎫 Events | [Sign up here](https://lu.ma/swarms_calendar) | Join our community events |
 
