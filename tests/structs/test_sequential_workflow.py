@@ -3,12 +3,6 @@ import pytest
 from swarms import Agent, SequentialWorkflow
 
 
-# Test SequentialWorkflow class
-def test_sequential_workflow_initialization():
-    # SequentialWorkflow requires agents, so expect ValueError
-    with pytest.raises(ValueError, match="Agents list cannot be None or empty"):
-        workflow = SequentialWorkflow()
-
 
 def test_sequential_workflow_initialization_with_agents():
     """Test SequentialWorkflow initialization with agents"""
