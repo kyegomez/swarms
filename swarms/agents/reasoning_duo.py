@@ -37,7 +37,7 @@ class ReasoningDuo:
         output_type: OutputType = "dict-all-except-first",
         reasoning_model_name: Optional[
             str
-        ] = "claude-3-5-sonnet-20240620",
+        ] = "gpt-4o",
         max_loops: int = 1,
         *args,
         **kwargs,
