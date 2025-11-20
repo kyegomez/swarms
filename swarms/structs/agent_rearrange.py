@@ -1,7 +1,7 @@
 import json
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional, Union
-
+import asyncio
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
@@ -939,7 +939,6 @@ class AgentRearrange:
             This method uses asyncio.to_thread to run the synchronous run method
             asynchronously, allowing integration with async/await patterns.
         """
-        import asyncio
 
         try:
             return await asyncio.to_thread(
