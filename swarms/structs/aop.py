@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import AbstractAsyncContextManager
 import socket
 import sys
 import threading
@@ -7,11 +8,12 @@ import traceback
 from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional
 from uuid import uuid4
 
 from loguru import logger
 from mcp.server.fastmcp import FastMCP
+from mcp.server.lowlevel.server import LifespanResultT
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
@@ -19,6 +21,7 @@ from swarms.tools.mcp_client_tools import (
     get_tools_for_multiple_mcp_servers,
 )
 
+from mcp.server.fastmcp import AuthSettings, TransportSecuritySettings
 
 class TaskStatus(Enum):
     """Status of a task in the queue."""
@@ -600,6 +603,9 @@ class AOP:
         log_level: Literal[
             "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
         ] = "INFO",
+        lifespan: Callable[[FastMCP[LifespanResultT]], AbstractAsyncContextManager[LifespanResultT]] | None = None,
+        auth: AuthSettings | None = None,
+        transport_security: TransportSecuritySettings | None = None,
         *args,
         **kwargs,
     ):
@@ -670,6 +676,9 @@ class AOP:
             name=server_name,
             port=port,
             log_level=log_level,
+            lifespan=lifespan,
+            auth=auth,
+            transport_security=transport_security,
             *args,
             **kwargs,
         )
@@ -1122,6 +1131,28 @@ class AOP:
         Returns:
             Dict containing the result or task information
         """
+        # Safety check: ensure queue is enabled
+        if not self.queue_enabled:
+            logger.error(
+                f"Queue execution attempted but queue is disabled for tool '{tool_name}'"
+            )
+            return {
+                "result": "",
+                "success": False,
+                "error": "Queue system is disabled",
+            }
+
+        # Safety check: ensure task queue exists
+        if tool_name not in self.task_queues:
+            logger.error(
+                f"Task queue not found for tool '{tool_name}'"
+            )
+            return {
+                "result": "",
+                "success": False,
+                "error": f"Task queue not found for agent '{tool_name}'",
+            }
+
         try:
             # Use config max_retries if not specified
             if max_retries is None:
@@ -1176,6 +1207,30 @@ class AOP:
         Returns:
             Dict containing the task result
         """
+        # Safety check: ensure queue is enabled
+        if not self.queue_enabled:
+            logger.error(
+                f"Task completion wait attempted but queue is disabled for tool '{tool_name}'"
+            )
+            return {
+                "result": "",
+                "success": False,
+                "error": "Queue system is disabled",
+                "task_id": task_id,
+            }
+
+        # Safety check: ensure task queue exists
+        if tool_name not in self.task_queues:
+            logger.error(
+                f"Task queue not found for tool '{tool_name}'"
+            )
+            return {
+                "result": "",
+                "success": False,
+                "error": f"Task queue not found for agent '{tool_name}'",
+                "task_id": task_id,
+            }
+
         start_time = time.time()
 
         while time.time() - start_time < timeout:
@@ -1287,8 +1342,8 @@ class AOP:
             bool: True if agent was removed, False if not found
         """
         if tool_name in self.agents:
-            # Stop and remove task queue if it exists
-            if tool_name in self.task_queues:
+            # Stop and remove task queue if it exists and queue is enabled
+            if self.queue_enabled and tool_name in self.task_queues:
                 self.task_queues[tool_name].stop_workers()
                 del self.task_queues[tool_name]
 

@@ -1,4 +1,3 @@
-
 from swarms import Agent
 
 # Initialize the agent
@@ -11,7 +10,7 @@ agent = Agent(
     dynamic_context_window=True,
     streaming_on=False,
     top_p=None,
-    stream=True,
+    # stream=True,
 )
 
 out = agent.run(

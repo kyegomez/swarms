@@ -831,6 +831,14 @@ Thank you for contributing to swarms. Your work is extremely appreciated and rec
   <img src="https://contrib.rocks/image?repo=kyegomez/swarms" />
 </a>
 
+### 🙏 Thank You to Our Community
+
+We're incredibly grateful to everyone who supports Swarms! Your stars, forks, and contributions help make this project better every day.
+
+[![Forkers repo roster for @kyegomez/swarms](https://reporoster.com/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network/members)
+
+[![Stargazers repo roster for @kyegomez/swarms](https://reporoster.com/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers)
+
 -----
 
 ## Join the Swarms community 👾👾👾
