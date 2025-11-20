@@ -914,6 +914,7 @@ class HierarchicalSwarm:
             logger.error(
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
+            raise
 
     def agents_no_print(self):
         for agent in self.agents:
