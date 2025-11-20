@@ -7,8 +7,12 @@ what topic the agents should discuss when they meet.
 """
 
 from swarms import Agent
-from simulations.agent_map_simulation import AgentMapSimulation
-from simulations.v0.demo_simulation import NATURAL_CONVERSATION_PROMPT
+from examples.multi_agent.simulations.agent_map.agent_map_simulation import (
+    AgentMapSimulation,
+)
+from examples.multi_agent.simulations.agent_map.v0.demo_simulation import (
+    NATURAL_CONVERSATION_PROMPT,
+)
 
 
 def create_simple_agent(name: str, expertise: str) -> Agent:

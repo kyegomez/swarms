@@ -12,7 +12,7 @@ agent = Agent(
         + " Output the <DONE> token when you're done creating a portfolio"
     ),
     max_loops=1,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     dynamic_temperature_enabled=True,
     user_name="Kye",
     retry_attempts=3,

@@ -1,9 +1,8 @@
 import uuid
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, List, Optional
 
-import numpy as np
 from litellm import embedding
 from pydantic import BaseModel, Field
 
@@ -12,74 +11,6 @@ from swarms.structs.conversation import Conversation
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="tree_swarm")
-
-
-# Pydantic Models for Logging
-class AgentLogInput(BaseModel):
-    """
-    Input log model for tracking agent task execution.
-
-    Attributes:
-        log_id (str): Unique identifier for the log entry
-        agent_name (str): Name of the agent executing the task
-        task (str): Description of the task being executed
-        timestamp (datetime): When the task was started
-    """
-
-    log_id: str = Field(
-        default_factory=lambda: str(uuid.uuid4()), alias="id"
-    )
-    agent_name: str
-    task: str
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(datetime.UTC)
-    )
-
-
-class AgentLogOutput(BaseModel):
-    """
-    Output log model for tracking agent task completion.
-
-    Attributes:
-        log_id (str): Unique identifier for the log entry
-        agent_name (str): Name of the agent that completed the task
-        result (Any): Result/output from the task execution
-        timestamp (datetime): When the task was completed
-    """
-
-    log_id: str = Field(
-        default_factory=lambda: str(uuid.uuid4()), alias="id"
-    )
-    agent_name: str
-    result: Any
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(datetime.UTC)
-    )
-
-
-class TreeLog(BaseModel):
-    """
-    Tree execution log model for tracking tree-level operations.
-
-    Attributes:
-        log_id (str): Unique identifier for the log entry
-        tree_name (str): Name of the tree that executed the task
-        task (str): Description of the task that was executed
-        selected_agent (str): Name of the agent selected for the task
-        timestamp (datetime): When the task was executed
-        result (Any): Result/output from the task execution
-    """
-
-    log_id: str = Field(
-        default_factory=lambda: str(uuid.uuid4()), alias="id"
-    )
-    tree_name: str
-    task: str
-    selected_agent: str
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(datetime.UTC)
-    )
-    result: Any
 
 
 def extract_keywords(prompt: str, top_n: int = 5) -> List[str]:
@@ -110,17 +41,85 @@ def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
     Returns:
         float: Cosine similarity score between 0 and 1
     """
-    vec1 = np.array(vec1)
-    vec2 = np.array(vec2)
+    # Calculate dot product
+    dot_product = sum(a * b for a, b in zip(vec1, vec2))
 
-    dot_product = np.dot(vec1, vec2)
-    norm1 = np.linalg.norm(vec1)
-    norm2 = np.linalg.norm(vec2)
+    # Calculate norms
+    norm1 = sum(a * a for a in vec1) ** 0.5
+    norm2 = sum(b * b for b in vec2) ** 0.5
 
     if norm1 == 0 or norm2 == 0:
         return 0.0
 
     return dot_product / (norm1 * norm2)
+
+
+# Pydantic Models for Logging
+class AgentLogInput(BaseModel):
+    """
+    Input log model for tracking agent task execution.
+
+    Attributes:
+        log_id (str): Unique identifier for the log entry
+        agent_name (str): Name of the agent executing the task
+        task (str): Description of the task being executed
+        timestamp (datetime): When the task was started
+    """
+
+    log_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()), alias="id"
+    )
+    agent_name: str
+    task: str
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+
+class AgentLogOutput(BaseModel):
+    """
+    Output log model for tracking agent task completion.
+
+    Attributes:
+        log_id (str): Unique identifier for the log entry
+        agent_name (str): Name of the agent that completed the task
+        result (Any): Result/output from the task execution
+        timestamp (datetime): When the task was completed
+    """
+
+    log_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()), alias="id"
+    )
+    agent_name: str
+    result: Any
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+
+class TreeLog(BaseModel):
+    """
+    Tree execution log model for tracking tree-level operations.
+
+    Attributes:
+        log_id (str): Unique identifier for the log entry
+        tree_name (str): Name of the tree that executed the task
+        task (str): Description of the task that was executed
+        selected_agent (str): Name of the agent selected for the task
+        timestamp (datetime): When the task was executed
+        result (Any): Result/output from the task execution
+    """
+
+    log_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()), alias="id"
+    )
+    tree_name: str
+    task: str
+    selected_agent: str
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    result: Any
 
 
 class TreeAgent(Agent):
@@ -134,9 +133,10 @@ class TreeAgent(Agent):
         name: str = None,
         description: str = None,
         system_prompt: str = None,
-        model_name: str = "gpt-4o",
+        model_name: str = "gpt-4.1",
         agent_name: Optional[str] = None,
         embedding_model_name: str = "text-embedding-ada-002",
+        verbose: bool = False,
         *args,
         **kwargs,
     ):
@@ -150,6 +150,7 @@ class TreeAgent(Agent):
             model_name (str): Name of the language model to use
             agent_name (Optional[str]): Alternative name for the agent
             embedding_model_name (str): Name of the embedding model to use
+            verbose (bool): Whether to enable verbose logging
             *args: Additional positional arguments
             **kwargs: Additional keyword arguments
         """
@@ -164,6 +165,7 @@ class TreeAgent(Agent):
             **kwargs,
         )
         self.embedding_model_name = embedding_model_name
+        self.verbose = verbose
 
         # Generate system prompt embedding using litellm
         if system_prompt:
@@ -195,7 +197,8 @@ class TreeAgent(Agent):
             response = embedding(
                 model=self.embedding_model_name, input=[text]
             )
-            logger.info(f"Embedding type: {type(response)}")
+            if self.verbose:
+                logger.info(f"Embedding type: {type(response)}")
             # print(response)
             # Handle different response structures from litellm
             if hasattr(response, "data") and response.data:
@@ -207,17 +210,20 @@ class TreeAgent(Agent):
                 ):
                     return response.data[0]["embedding"]
                 else:
-                    logger.error(
-                        f"Unexpected response structure: {response.data[0]}"
-                    )
+                    if self.verbose:
+                        logger.error(
+                            f"Unexpected response structure: {response.data[0]}"
+                        )
                     return [0.0] * 1536
             else:
-                logger.error(
-                    f"Unexpected response structure: {response}"
-                )
+                if self.verbose:
+                    logger.error(
+                        f"Unexpected response structure: {response}"
+                    )
                 return [0.0] * 1536
         except Exception as e:
-            logger.error(f"Error getting embedding: {e}")
+            if self.verbose:
+                logger.error(f"Error getting embedding: {e}")
             # Return a zero vector as fallback
             return [0.0] * 1536  # Default OpenAI embedding dimension
 
@@ -264,20 +270,24 @@ class TreeAgent(Agent):
         input_log = AgentLogInput(
             agent_name=self.agent_name,
             task=task,
-            timestamp=datetime.now(),
+            timestamp=datetime.now(timezone.utc),
         )
-        logger.info(f"Running task on {self.agent_name}: {task}")
-        logger.debug(f"Input Log: {input_log.json()}")
+        if self.verbose:
+            logger.info(f"Running task on {self.agent_name}: {task}")
+            logger.debug(f"Input Log: {input_log.json()}")
 
         result = self.run(task=task, img=img, *args, **kwargs)
 
         output_log = AgentLogOutput(
             agent_name=self.agent_name,
             result=result,
-            timestamp=datetime.now(),
+            timestamp=datetime.now(timezone.utc),
         )
-        logger.info(f"Task result from {self.agent_name}: {result}")
-        logger.debug(f"Output Log: {output_log.json()}")
+        if self.verbose:
+            logger.info(
+                f"Task result from {self.agent_name}: {result}"
+            )
+            logger.debug(f"Output Log: {output_log.json()}")
 
         return result
 
@@ -306,25 +316,36 @@ class TreeAgent(Agent):
             similarity = cosine_similarity(
                 self.system_prompt_embedding, task_embedding
             )
-            logger.info(
-                f"Semantic similarity between task and {self.agent_name}: {similarity:.2f}"
-            )
+            if self.verbose:
+                logger.info(
+                    f"Semantic similarity between task and {self.agent_name}: {similarity:.2f}"
+                )
             return similarity >= threshold
 
         return True  # Return True if keyword match is found
 
 
 class Tree:
-    def __init__(self, tree_name: str, agents: List[TreeAgent]):
+    def __init__(
+        self,
+        tree_name: str,
+        agents: List[TreeAgent],
+        verbose: bool = False,
+    ):
         """
         Initializes a tree of agents.
 
         Args:
             tree_name (str): The name of the tree.
             agents (List[TreeAgent]): A list of agents in the tree.
+            verbose (bool): Whether to enable verbose logging
         """
         self.tree_name = tree_name
         self.agents = agents
+        self.verbose = verbose
+        # Pass verbose to all agents
+        for agent in self.agents:
+            agent.verbose = verbose
         self.calculate_agent_distances()
 
     def calculate_agent_distances(self):
@@ -334,9 +355,10 @@ class Tree:
         This method computes the semantic distance between consecutive agents using their system prompt
         embeddings and sorts the agents by distance for optimal task routing.
         """
-        logger.info(
-            f"Calculating distances between agents in tree '{self.tree_name}'"
-        )
+        if self.verbose:
+            logger.info(
+                f"Calculating distances between agents in tree '{self.tree_name}'"
+            )
         for i, agent in enumerate(self.agents):
             if i > 0:
                 agent.distance = agent.calculate_distance(
@@ -359,15 +381,17 @@ class Tree:
         Returns:
             Optional[TreeAgent]: The most relevant agent, or None if no match found.
         """
-        logger.info(
-            f"Searching relevant agent in tree '{self.tree_name}' for task: {task}"
-        )
+        if self.verbose:
+            logger.info(
+                f"Searching relevant agent in tree '{self.tree_name}' for task: {task}"
+            )
         for agent in self.agents:
             if agent.is_relevant_for_task(task):
                 return agent
-        logger.warning(
-            f"No relevant agent found in tree '{self.tree_name}' for task: {task}"
-        )
+        if self.verbose:
+            logger.warning(
+                f"No relevant agent found in tree '{self.tree_name}' for task: {task}"
+            )
         return None
 
     def log_tree_execution(
@@ -380,13 +404,14 @@ class Tree:
             tree_name=self.tree_name,
             task=task,
             selected_agent=selected_agent.agent_name,
-            timestamp=datetime.now(),
+            timestamp=datetime.now(timezone.utc),
             result=result,
         )
-        logger.info(
-            f"Tree '{self.tree_name}' executed task with agent '{selected_agent.agent_name}'"
-        )
-        logger.debug(f"Tree Log: {tree_log.json()}")
+        if self.verbose:
+            logger.info(
+                f"Tree '{self.tree_name}' executed task with agent '{selected_agent.agent_name}'"
+            )
+            logger.debug(f"Tree Log: {tree_log.json()}")
 
 
 class ForestSwarm:
@@ -397,6 +422,7 @@ class ForestSwarm:
         trees: List[Tree] = [],
         shared_memory: Any = None,
         rules: str = None,
+        verbose: bool = False,
         *args,
         **kwargs,
     ):
@@ -409,6 +435,7 @@ class ForestSwarm:
             trees (List[Tree]): A list of trees in the structure
             shared_memory (Any): Shared memory object for inter-tree communication
             rules (str): Rules governing the forest swarm behavior
+            verbose (bool): Whether to enable verbose logging
             *args: Additional positional arguments
             **kwargs: Additional keyword arguments
         """
@@ -416,10 +443,13 @@ class ForestSwarm:
         self.description = description
         self.trees = trees
         self.shared_memory = shared_memory
+        self.verbose = verbose
+        # Pass verbose to all trees
+        for tree in self.trees:
+            tree.verbose = verbose
         self.save_file_path = f"forest_swarm_{uuid.uuid4().hex}.json"
         self.conversation = Conversation(
             time_enabled=False,
-            auto_save=True,
             save_filepath=self.save_file_path,
             rules=rules,
         )
@@ -434,13 +464,15 @@ class ForestSwarm:
         Returns:
             Optional[Tree]: The most relevant tree, or None if no match found
         """
-        logger.info(
-            f"Searching for the most relevant tree for task: {task}"
-        )
+        if self.verbose:
+            logger.info(
+                f"Searching for the most relevant tree for task: {task}"
+            )
         for tree in self.trees:
             if tree.find_relevant_agent(task):
                 return tree
-        logger.warning(f"No relevant tree found for task: {task}")
+        if self.verbose:
+            logger.warning(f"No relevant tree found for task: {task}")
         return None
 
     def run(self, task: str, img: str = None, *args, **kwargs) -> Any:
@@ -457,9 +489,10 @@ class ForestSwarm:
             Any: The result of the task after it has been processed by the agents
         """
         try:
-            logger.info(
-                f"Running task across MultiAgentTreeStructure: {task}"
-            )
+            if self.verbose:
+                logger.info(
+                    f"Running task across MultiAgentTreeStructure: {task}"
+                )
             relevant_tree = self.find_relevant_tree(task)
             if relevant_tree:
                 agent = relevant_tree.find_relevant_agent(task)
@@ -472,14 +505,32 @@ class ForestSwarm:
                     )
                     return result
             else:
-                logger.error(
-                    "Task could not be completed: No relevant agent or tree found."
-                )
+                if self.verbose:
+                    logger.error(
+                        "Task could not be completed: No relevant agent or tree found."
+                    )
                 return "No relevant agent found to handle this task."
         except Exception as error:
-            logger.error(
-                f"Error detected in the ForestSwarm, check your inputs and try again ;) {error}"
-            )
+            if self.verbose:
+                logger.error(
+                    f"Error detected in the ForestSwarm, check your inputs and try again ;) {error}"
+                )
+
+    def batched_run(
+        self,
+        tasks: List[str],
+        *args,
+        **kwargs,
+    ) -> List[Any]:
+        """
+        Execute the given tasks by finding the most relevant tree and agent within that tree.
+
+        Args:
+            tasks: List[str]: The tasks to be executed
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+        """
+        return [self.run(task, *args, **kwargs) for task in tasks]
 
 
 # # Example Usage:

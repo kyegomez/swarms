@@ -86,6 +86,7 @@ The Swarms framework is a powerful multi-agent orchestration platform that enabl
 | [Marketing-Swarm-Template](https://github.com/The-Swarm-Corporation/Marketing-Swarm-Template) | Marketing campaign automation template | Marketing Automation | Business |
 | [Multi-Agent-Marketing-Course](https://github.com/The-Swarm-Corporation/Multi-Agent-Marketing-Course) | Educational course on multi-agent marketing | Marketing Education | Business |
 | [NewsAgent](https://github.com/The-Swarm-Corporation/NewsAgent) | News aggregation and analysis agent | News Analysis | Business |
+|[Product-Marketing-Agency](https://github.com/The-Swarm-Corporation/Product-Marketing-Agency) | Product marketing content generation | Product Marketing | Business |
 
 ### Legal Services
 
@@ -196,7 +197,7 @@ Join our community of agent engineers and researchers for technical support, cut
 | 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
-| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
+| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/swarms_calendar) |
 | 🚀 Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
 
 ---

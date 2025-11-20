@@ -2223,7 +2223,7 @@ If you'd like technical support, join our Discord below and stay updated on our 
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
-| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
+| 🎫 Events | [Sign up here](https://lu.ma/swarms_calendar) | Join our community events |
 
 
 
@@ -2327,7 +2327,7 @@ This index provides a categorized list of examples and tutorials for using the S
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
-| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
+| 🎫 Events | [Sign up here](https://lu.ma/swarms_calendar) | Join our community events |
 
 ## Contributing
 
@@ -3967,7 +3967,7 @@ Join our community of agent engineers and researchers for technical support, cut
 | 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
-| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
+| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/swarms_calendar) |
 | 🚀 Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
 
 ---
@@ -6853,10 +6853,10 @@ pip3 install -U swarms
 | Quickstart | [Get Started](https://docs.swarms.world/en/latest/swarms/install/quickstart/)                                                 |
 | Environment Setup | [Environment Configuration](https://docs.swarms.world/en/latest/swarms/install/workspace_manager/)                                                 |
 | Environment Variables | [Environment Variables](https://docs.swarms.world/en/latest/swarms/install/env/)                                                 |
-| Swarms CLI | [CLI Documentation](https://docs.swarms.world/en/latest/swarms/cli/main/)                                                 |
+| Swarms CLI | [CLI Documentation](https://docs.swarms.world/en/latest/swarms/cli/cli_reference/)                                                 |
 | Agent Internal Mechanisms | [Agent Architecture](https://docs.swarms.world/en/latest/swarms/framework/agents_explained/)                                                 |
 | Agent API | [Agent API](https://docs.swarms.world/en/latest/swarms/structs/agent/)                                                 |
-| Managing Prompts in Production | [Prompts Management](https://docs.swarms.world/en/latest/swarms/prompts/main/)                                                 |
+| Managing Prompts in Production | [Prompts Management](https://github.com/kyegomez/swarms/tree/master/swarms/prompts/)                                                 |
 | Integrating External Agents | [External Agents Integration](https://docs.swarms.world/en/latest/swarms/agents/external_party_agents/)                                                 |
 | Creating Agents from YAML | [YAML Agent Creation](https://docs.swarms.world/en/latest/swarms/agents/create_agents_yaml/)                                                 |
 | Why You Need Swarms | [Why MultiAgent Collaboration](https://docs.swarms.world/en/latest/swarms/concept/why/)                                                 |
@@ -6892,7 +6892,7 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
-| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
+| 🎫 Events | [Sign up here](https://lu.ma/swarms_calendar) | Join our community events |
 
 ## Get Support
 
@@ -6991,7 +6991,7 @@ The Swarms protocol is organized into several key layers, each responsible for a
     agents and swarms.
     
     - **Prompts (`swarms/prompts`)**: Houses prompt templates, system prompts, and agent-specific prompts for LLM-based agents. See 
-    [Prompts Management](https://docs.swarms.world/en/latest/swarms/prompts/main/)
+    [Prompts Management](https://github.com/kyegomez/swarms/tree/master/swarms/prompts/)
     
     - **Telemetry (`swarms/telemetry`)**: Handles logging, monitoring, and bootup routines for observability and debugging.
     
@@ -6999,7 +6999,7 @@ The Swarms protocol is organized into several key layers, each responsible for a
     safety and consistency.
     
     - **CLI (`swarms/cli`)**: Provides command-line utilities for agent creation, management, and orchestration. See [CLI Documentation]
-    (https://docs.swarms.world/en/latest/swarms/cli/main/)
+    (https://docs.swarms.world/en/latest/swarms/cli/cli_reference/)
 
 ---
 
@@ -7218,7 +7218,7 @@ diy_memory/)
 
 - `prompt.py`, `reasoning_prompt.py`, `multi_agent_collab_prompt.py`, etc.
 
-- [Prompts Management](https://docs.swarms.world/en/latest/swarms/prompts/main/)
+- [Prompts Management](https://github.com/kyegomez/swarms/tree/master/swarms/prompts/)
 
 
 ### `artifacts/`
@@ -7265,7 +7265,7 @@ diy_memory/)
 
 - `main.py`, `create_agent.py`, `onboarding_process.py`.
 
-- [CLI Documentation](https://docs.swarms.world/en/latest/swarms/cli/main/)
+- [CLI Documentation](https://docs.swarms.world/en/latest/swarms/cli/cli_reference/)
 
 
 ---
@@ -7287,7 +7287,7 @@ For example, a typical workflow might involve:
 - Logging all actions and outputs for traceability and debugging.
 
 
-For more advanced examples, see the [Examples Overview](https://docs.swarms.world/en/latest/examples/index/).
+For more advanced examples, see the [Examples Overview](https://docs.swarms.world/en/latest/examples/).
 
 ---
 
@@ -7321,9 +7321,9 @@ For more on the philosophy and architecture, see [Development Philosophy & Princ
 | BaseTool Reference                   | [BaseTool Reference](https://docs.swarms.world/en/latest/swarms/tools/base_tool/)      | Reference for the BaseTool class                 |
 | Reasoning Agents Overview            | [Reasoning Agents Overview](https://docs.swarms.world/en/latest/swarms/agents/reasoning_agents_overview/) | Overview of reasoning agents                     |
 | Multi-Agent Architectures Overview   | [Multi-Agent Architectures Overview](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/) | Multi-agent system architectures                 |
-| Examples Overview                    | [Examples Overview](https://docs.swarms.world/en/latest/examples/index/)               | Example projects and use cases                   |
-| CLI Documentation                    | [CLI Documentation](https://docs.swarms.world/en/latest/swarms/cli/main/)              | Command-line interface documentation             |
-| Prompts Management                   | [Prompts Management](https://docs.swarms.world/en/latest/swarms/prompts/main/)         | Managing and customizing prompts                 |
+| Examples Overview                    | [Examples Overview](https://docs.swarms.world/en/latest/examples/)               | Example projects and use cases                   |
+| CLI Documentation                    | [CLI Documentation](https://docs.swarms.world/en/latest/swarms/cli/cli_reference/)              | Command-line interface documentation             |
+| Prompts Management                   | [Prompts Management](https://github.com/kyegomez/swarms/tree/master/swarms/prompts/)         | Managing and customizing prompts                 |
 | Development Philosophy & Principles  | [Development Philosophy & Principles](https://docs.swarms.world/en/latest/swarms/concept/philosophy/) | Framework philosophy and guiding principles      |
 | Understanding Swarms Architecture    | [Understanding Swarms Architecture](https://docs.swarms.world/en/latest/swarms/concept/framework_architecture/) | In-depth look at Swarms architecture             |
 | SIP Guidelines and Template          | [SIP Guidelines and Template](https://docs.swarms.world/en/latest/protocol/sip/)       | Swarms Improvement Proposal process and template |
@@ -10190,7 +10190,7 @@ Join our community of agent engineers and researchers for technical support, cut
 | 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
-| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
+| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/swarms_calendar) |
 | 🚀 Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
 
 ### Getting Help
@@ -10676,7 +10676,7 @@ from swarms import OpenAIAssistant
 assistant = OpenAIAssistant(
     name="Math Tutor",
     instructions="You are a helpful math tutor.",
-    model="gpt-4o",
+    model="gpt-4.1",
     tools=[{"type": "code_interpreter"}]
 )
 
@@ -10728,7 +10728,7 @@ assistant.add_function(
 OpenAIAssistant(
     name: str,
     instructions: Optional[str] = None,
-    model: str = "gpt-4o",
+    model: str = "gpt-4.1",
     tools: Optional[List[Dict[str, Any]]] = None,
     file_ids: Optional[List[str]] = None,
     metadata: Optional[Dict[str, Any]] = None,
@@ -11602,7 +11602,7 @@ consistency_agent = SelfConsistencyAgent(
 
 # Reasoning Duo for collaborative analysis workflows
 duo_agent = ReasoningDuo(
-    model_names=["gpt-4o-mini", "gpt-4o"]
+    model_names=["gpt-4o-mini", "gpt-4.1"]
 )
 
 # Reflexion Agent for adaptive learning scenarios
@@ -11667,7 +11667,7 @@ The ReasoningDuo class implements a dual-agent reasoning system that combines a 
 |-----------|------|---------|-------------|
 | model_name | str | "reasoning-agent-01" | Name identifier for the reasoning agent |
 | description | str | "A highly intelligent..." | Description of the reasoning agent's capabilities |
-| model_names | list[str] | ["gpt-4o-mini", "gpt-4o"] | Model names for reasoning and main agents |
+| model_names | list[str] | ["gpt-4o-mini", "gpt-4.1"] | Model names for reasoning and main agents |
 | system_prompt | str | "You are a helpful..." | System prompt for the main agent |
 
 ### Methods
@@ -11687,7 +11687,7 @@ from swarms.agents.reasoning_duo import ReasoningDuo
 # Initialize the ReasoningDuo
 duo = ReasoningDuo(
     model_name="reasoning-agent-01",
-    model_names=["gpt-4o-mini", "gpt-4o"]
+    model_names=["gpt-4o-mini", "gpt-4.1"]
 )
 
 # Run a single task
@@ -11753,7 +11753,7 @@ You can customize both agents by modifying their initialization parameters:
 duo = ReasoningDuo(
     model_name="custom-reasoning-agent",
     description="Specialized financial analysis agent",
-    model_names=["gpt-4o-mini", "gpt-4o"],
+    model_names=["gpt-4o-mini", "gpt-4.1"],
     system_prompt="You are a financial expert AI assistant..."
 )
 ```
@@ -21096,7 +21096,7 @@ market_research_agent = Agent(
     - Industry report generation
     - Market opportunity identification
     - Risk assessment and mitigation strategies""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 financial_analyst_agent = Agent(
@@ -21109,7 +21109,7 @@ financial_analyst_agent = Agent(
     - Financial modeling and forecasting
     - Risk assessment and portfolio analysis
     - ESG (Environmental, Social, Governance) analysis""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the hierarchical swarm
@@ -21144,7 +21144,7 @@ frontend_developer_agent = Agent(
     - State management (Redux, Zustand, Context API)
     - Web performance optimization
     - Accessibility (WCAG) and SEO best practices""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 backend_developer_agent = Agent(
@@ -21157,7 +21157,7 @@ backend_developer_agent = Agent(
     - API design and REST/GraphQL implementation
     - Authentication and authorization systems
     - Microservices architecture and containerization""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the development swarm
@@ -21185,13 +21185,13 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 market_agent = Agent(
     agent_name="Market-Analyst",
     agent_description="Expert in market analysis and trends",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 technical_agent = Agent(
     agent_name="Technical-Analyst",
     agent_description="Specialist in technical analysis and patterns",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the swarm
@@ -21219,13 +21219,13 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 market_agent = Agent(
     agent_name="Market-Analyst",
     agent_description="Expert in market analysis and trends",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 technical_agent = Agent(
     agent_name="Technical-Analyst",
     agent_description="Specialist in technical analysis and patterns",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the swarm
@@ -21260,21 +21260,21 @@ research_manager = Agent(
     agent_name="Research-Manager",
     agent_description="Manages research operations and coordinates research tasks",
     system_prompt="You are a research manager responsible for overseeing research projects and coordinating research efforts.",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 data_analyst = Agent(
     agent_name="Data-Analyst",
     agent_description="Analyzes data and generates insights",
     system_prompt="You are a data analyst specializing in processing and analyzing data to extract meaningful insights.",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 research_assistant = Agent(
     agent_name="Research-Assistant",
     agent_description="Assists with research tasks and data collection",
     system_prompt="You are a research assistant who helps gather information and support research activities.",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the research swarm
@@ -21439,7 +21439,7 @@ Join our community of agent engineers and researchers for technical support, cut
 | 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
-| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
+| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/swarms_calendar) |
 | 🚀 Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
 
 
@@ -21875,7 +21875,7 @@ legal_expert = Agent(
     3. Ensuring regulatory compliance
     4. Providing legal recommendations
     5. Drafting and reviewing legal documents""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -21887,7 +21887,7 @@ financial_expert = Agent(
     3. Assessing financial risks
     4. Providing financial projections
     5. Recommending financial strategies""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -21899,7 +21899,7 @@ business_expert = Agent(
     3. Assessing competitive advantages
     4. Providing strategic recommendations
     5. Planning business development""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -21912,7 +21912,7 @@ aggregator = Agent(
     3. Prioritizing recommendations
     4. Providing coherent final decisions
     5. Ensuring comprehensive coverage of all aspects""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 ```
@@ -22020,7 +22020,7 @@ market_analyst = Agent(
     3. Customer segments
     4. Market trends
     5. Entry barriers""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -22032,7 +22032,7 @@ financial_analyst = Agent(
     3. Cash flow analysis
     4. Investment requirements
     5. ROI projections""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -22044,7 +22044,7 @@ risk_analyst = Agent(
     3. Financial risks
     4. Regulatory risks
     5. Strategic risks""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -22057,7 +22057,7 @@ aggregator = Agent(
     3. Evaluating trade-offs
     4. Making recommendations
     5. Providing action plans""",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -22230,7 +22230,7 @@ If you're facing issues or want to learn more, check out the following resources
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
-| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
+| 🎫 Events | [Sign up here](https://lu.ma/swarms_calendar) | Join our community events |
 
 
 
@@ -22367,7 +22367,7 @@ research_agent = Agent(
 # Creative agent using GPT-4o for content generation
 creative_agent = Agent(
     agent_name="Creative-Agent", 
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt="You are a creative content expert."
 )
 
@@ -22389,7 +22389,7 @@ from swarms import Agent, ModelRouter
 model_router = ModelRouter(
     models={
         "analysis": "claude-3-sonnet-20240229",
-        "creative": "gpt-4o", 
+        "creative": "gpt-4.1", 
         "fast": "gpt-4o-mini",
         "local": "ollama/llama2"
     }
@@ -22534,7 +22534,7 @@ If you're facing issues or want to learn more, check out the following resources
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
-| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
+| 🎫 Events | [Sign up here](https://lu.ma/swarms_calendar) | Join our community events |
 
 
 
@@ -22726,7 +22726,7 @@ agent = Agent(
     agent_description="Expert cryptocurrency financial analyst and market researcher",
     system_prompt=CRYPTO_ANALYST_SYSTEM_PROMPT,
     max_loops="auto",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     dynamic_temperature_enabled=True,
     user_name="crypto_analyst",
     output_type="str",
@@ -22969,21 +22969,21 @@ from swarms.structs.swarm_router import SwarmRouter, SwarmType
 data_extractor_agent = Agent(
     agent_name="Data-Extractor",
     system_prompt="You are a data extraction specialist...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
 summarizer_agent = Agent(
     agent_name="Document-Summarizer",
     system_prompt="You are a document summarization expert...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
 financial_analyst_agent = Agent(
     agent_name="Financial-Analyst",
     system_prompt="You are a financial analysis specialist...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 ```
@@ -23127,21 +23127,21 @@ from swarms.structs.swarm_router import SwarmRouter, SwarmType
 research_agent = Agent(
     agent_name="ResearchAgent",
     system_prompt="You are a research specialist...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1
 )
 
 analysis_agent = Agent(
     agent_name="AnalysisAgent",
     system_prompt="You are an analysis expert...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1
 )
 
 summary_agent = Agent(
     agent_name="SummaryAgent",
     system_prompt="You are a summarization specialist...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1
 )
 
@@ -23866,7 +23866,7 @@ class BrowserAgent:
     async def browser_agent_test(self, task: str):
         agent = Agent(
             task=task,
-            llm=ChatOpenAI(model="gpt-4o"),
+            llm=ChatOpenAI(model="gpt-4.1"),
         )
         result = await agent.run()
         return result
@@ -23920,7 +23920,7 @@ agent = Agent(
     agent_description="Personal finance advisor agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     max_loops=1,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     dynamic_temperature_enabled=True,
     user_name="swarms_corp",
     return_step_meta=False,
@@ -23967,7 +23967,7 @@ agent = Agent(
     agent_description="Personal finance advisor agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     max_loops=1,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     dynamic_temperature_enabled=True,
     user_name="swarms_corp",
     retry_attempts=3,
@@ -24998,7 +24998,7 @@ If you're facing issues or want to learn more, check out the following resources
 | 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
 | 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
 | 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
-| 🎫 Events | [Sign up here](https://lu.ma/5p2jnc2v) | Join our community events |
+| 🎫 Events | [Sign up here](https://lu.ma/swarms_calendar) | Join our community events |
 
 
 
@@ -25696,7 +25696,7 @@ agent = Agent(
     agent_description="Personal finance advisor agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     max_loops=1,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     dynamic_temperature_enabled=True,
     user_name="swarms_corp",
     retry_attempts=3,
@@ -27504,7 +27504,7 @@ A Pydantic model representing a delta update for messages in chat applications.
 A Pydantic model representing a request for chat completion.
 
 **Attributes**:  
-- `model` (`str`): The model to use for completing the chat (default is "gpt-4o").
+- `model` (`str`): The model to use for completing the chat (default is "gpt-4.1").
 
 - `messages` (`List[ChatMessageInput]`): A list of input messages for the chat.
 
@@ -30798,13 +30798,13 @@ board_members = [
 research_agent = Agent(
     agent_name="Research-Specialist",
     agent_description="Expert in market research and analysis",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 financial_agent = Agent(
     agent_name="Financial-Analyst",
     agent_description="Specialist in financial analysis and valuation",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the Board of Directors swarm
@@ -30834,7 +30834,7 @@ print(result)
 market_research_agent = Agent(
     agent_name="Market-Research-Specialist",
     agent_description="Expert in market research, competitive analysis, and industry trends",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt="""You are a Market Research Specialist. Your responsibilities include:
 1. Conducting comprehensive market research and analysis
 2. Identifying market trends, opportunities, and risks
@@ -30848,7 +30848,7 @@ You should be thorough, analytical, and objective in your research."""
 financial_analyst_agent = Agent(
     agent_name="Financial-Analyst",
     agent_description="Specialist in financial analysis, valuation, and investment assessment",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt="""You are a Financial Analyst. Your responsibilities include:
 1. Conducting financial analysis and valuation
 2. Assessing investment opportunities and risks
@@ -30862,7 +30862,7 @@ You should be financially astute, analytical, and focused on value creation."""
 technical_assessor_agent = Agent(
     agent_name="Technical-Assessor",
     agent_description="Expert in technical feasibility and implementation assessment",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt="""You are a Technical Assessor. Your responsibilities include:
 1. Evaluating technical feasibility and requirements
 2. Assessing implementation challenges and risks
@@ -30946,7 +30946,7 @@ print(json.dumps(result, indent=2))
 tech_strategy_agent = Agent(
     agent_name="Tech-Strategy-Specialist",
     agent_description="Expert in technology strategy and digital transformation",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt="""You are a Technology Strategy Specialist. Your responsibilities include:
 1. Developing technology roadmaps and strategies
 2. Assessing digital transformation opportunities
@@ -30960,7 +30960,7 @@ You should be strategic, forward-thinking, and technology-savvy."""
 implementation_planner_agent = Agent(
     agent_name="Implementation-Planner",
     agent_description="Expert in implementation planning and project management",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt="""You are an Implementation Planner. Your responsibilities include:
 1. Creating detailed implementation plans
 2. Assessing resource requirements and timelines
@@ -31010,7 +31010,7 @@ print(json.dumps(result, indent=2))
 crisis_coordinator_agent = Agent(
     agent_name="Crisis-Coordinator",
     agent_description="Expert in crisis management and emergency response",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt="""You are a Crisis Coordinator. Your responsibilities include:
 1. Coordinating crisis response efforts
 2. Assessing crisis severity and impact
@@ -31024,7 +31024,7 @@ You should be calm, decisive, and action-oriented."""
 communications_specialist_agent = Agent(
     agent_name="Communications-Specialist",
     agent_description="Expert in crisis communications and stakeholder management",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     system_prompt="""You are a Communications Specialist. Your responsibilities include:
 1. Developing crisis communication strategies
 2. Managing stakeholder communications
@@ -32847,7 +32847,7 @@ agent = Agent(
     output_type="json",
     
     # LLM Configuration
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     temperature=0.3,
     max_tokens=8000,
     top_p=0.95,
@@ -35440,7 +35440,7 @@ graph TD
 | description | str | "This is a swarm that creates swarms" | A description of the swarm's purpose |
 | verbose | bool | True | Whether to output detailed logs |
 | max_loops | int | 1 | Maximum number of execution loops |
-| model_name | str | "gpt-4o" | The model to use for agent creation |
+| model_name | str | "gpt-4.1" | The model to use for agent creation |
 | return_dictionary | bool | True | Whether to return results as a dictionary |
 | system_prompt | str | BOSS_SYSTEM_PROMPT | The system prompt for the boss agent |
 
@@ -35450,7 +35450,7 @@ graph TD
 |--------|-------------|------------|---------|
 | run | Run the swarm on a given task | task: str, image_url: str = None, *args, **kwargs | Tuple[List[Agent], int] |
 | _create_agents | Create necessary agents for a task | task: str, *args, **kwargs | List[Agent] |
-| build_agent | Build a single agent with specifications | agent_name: str, agent_description: str, agent_system_prompt: str, max_loops: int = 1, model_name: str = "gpt-4o", dynamic_temperature_enabled: bool = True, auto_generate_prompt: bool = False, role: str = "worker", max_tokens: int = 8192, temperature: float = 0.5 | Agent |
+| build_agent | Build a single agent with specifications | agent_name: str, agent_description: str, agent_system_prompt: str, max_loops: int = 1, model_name: str = "gpt-4.1", dynamic_temperature_enabled: bool = True, auto_generate_prompt: bool = False, role: str = "worker", max_tokens: int = 8192, temperature: float = 0.5 | Agent |
 
 ## Enterprise Use Cases
 
@@ -41114,7 +41114,7 @@ result = swarm.run("Develop a go-to-market strategy for a new SaaS product")
 # Market Analysis
 swarm = HeavySwarm(
     name="FinanceSwarm",
-    worker_model_name="gpt-4o",
+    worker_model_name="gpt-4.1",
     show_dashboard=True
 )
 
@@ -41147,7 +41147,7 @@ Analyze the impact of recent Federal Reserve policy changes on:
 # Clinical Research Analysis
 swarm = HeavySwarm(
     name="HealthcareSwarm",
-    worker_model_name="gpt-4o",
+    worker_model_name="gpt-4.1",
     timeout=600,
     loops_per_agent=2
 )
@@ -41182,7 +41182,7 @@ Evaluate the potential of AI-driven personalized medicine:
 # Tech Strategy Analysis
 swarm = HeavySwarm(
     name="TechSwarm",
-    worker_model_name="gpt-4o",
+    worker_model_name="gpt-4.1",
     show_dashboard=True,
     verbose=True
 )
@@ -41212,7 +41212,7 @@ Assess the strategic implications of quantum computing adoption:
 # Supply Chain Optimization
 swarm = HeavySwarm(
     name="ManufacturingSwarm",
-    worker_model_name="gpt-4o",
+    worker_model_name="gpt-4.1",
     max_workers=8
 )
 
@@ -41243,8 +41243,8 @@ Optimize global supply chain resilience:
 # High-performance configuration
 swarm = HeavySwarm(
     name="HighPerformanceSwarm",
-    question_agent_model_name="gpt-4o",
-    worker_model_name="gpt-4o",
+    question_agent_model_name="gpt-4.1",
+    worker_model_name="gpt-4.1",
     timeout=900,
     loops_per_agent=3,
     max_workers=12,
@@ -41794,13 +41794,13 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 research_agent = Agent(
     agent_name="Research-Specialist",
     agent_description="Expert in market research and analysis",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 financial_agent = Agent(
     agent_name="Financial-Analyst",
     agent_description="Specialist in financial analysis and valuation",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the hierarchical swarm
@@ -41847,13 +41847,13 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 frontend_agent = Agent(
     agent_name="Frontend-Developer",
     agent_description="Expert in React and modern web development",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 backend_agent = Agent(
     agent_name="Backend-Developer",
     agent_description="Specialist in Node.js and API development",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the swarm
@@ -41900,13 +41900,13 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 market_agent = Agent(
     agent_name="Market-Analyst",
     agent_description="Expert in market analysis and trends",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 technical_agent = Agent(
     agent_name="Technical-Analyst",
     agent_description="Specialist in technical analysis and patterns",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the swarm
@@ -42398,12 +42398,12 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 research_agent = Agent(
     agent_name="Research-Specialist",
     agent_description="Expert in market research and analysis",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 financial_agent = Agent(
     agent_name="Financial-Analyst",
     agent_description="Specialist in financial analysis and valuation",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the hierarchical swarm
@@ -42641,7 +42641,7 @@ Join our community of agent engineers and researchers for technical support, cut
 | Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyXyitkbU_WSy7bd_41SqQ) |
-| Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
+| Events | Join our community events | [Sign up here](https://lu.ma/swarms_calendar) |
 | Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
 
 ---
@@ -43722,21 +43722,21 @@ agents = [
         agent_description="Personal finance advisor focused on market analysis",
         system_prompt="You are a financial advisor specializing in market analysis and investment opportunities.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     ),
     Agent(
         agent_name="Risk-Assessment-Agent", 
         agent_description="Risk analysis and portfolio management expert",
         system_prompt="You are a risk assessment expert focused on evaluating investment risks and portfolio diversification.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     ),
     Agent(
         agent_name="Tech-Investment-Agent",
         agent_description="Technology sector investment specialist",
         system_prompt="You are a technology investment specialist focused on AI, emerging tech, and growth opportunities.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     )
 ]
 
@@ -43746,7 +43746,7 @@ consensus_agent = Agent(
     agent_description="Consensus agent focused on analyzing investment advice",
     system_prompt="You are a consensus agent focused on analyzing investment advice and providing a final answer.",
     max_loops=1,
-    model_name="gpt-4o"
+    model_name="gpt-4.1"
 )
 
 # Create majority voting system
@@ -43780,21 +43780,21 @@ agents = [
         agent_description="Personal finance advisor focused on market analysis",
         system_prompt="You are a financial advisor specializing in market analysis and investment opportunities.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     ),
     Agent(
         agent_name="Risk-Assessment-Agent", 
         agent_description="Risk analysis and portfolio management expert",
         system_prompt="You are a risk assessment expert focused on evaluating investment risks and portfolio diversification.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     ),
     Agent(
         agent_name="Tech-Investment-Agent",
         agent_description="Technology sector investment specialist",
         system_prompt="You are a technology investment specialist focused on AI, emerging tech, and growth opportunities.",
         max_loops=1,
-        model_name="gpt-4o"
+        model_name="gpt-4.1"
     )
 ]
 
@@ -43804,7 +43804,7 @@ consensus_agent = Agent(
     agent_description="Consensus agent focused on analyzing investment advice",
     system_prompt="You are a consensus agent focused on analyzing investment advice and providing a final answer.",
     max_loops=1,
-    model_name="gpt-4o"
+    model_name="gpt-4.1"
 )
 
 # Create majority voting system
@@ -45551,7 +45551,7 @@ healthcare_router = MultiAgentRouter(
     name="Healthcare-Router",
     description="Routes medical and healthcare-related tasks to specialized agents",
     agents=agents,
-    model="gpt-4o",
+    model="gpt-4.1",
     temperature=0.1
 )
 
@@ -46954,19 +46954,19 @@ from swarms import Agent, SequentialWorkflow
 agent1 = Agent(
   agent_name="ICD-10 Code Analyzer",
   system_prompt="Analyze medical data and provide relevant ICD-10 codes.",
-  model_name="gpt-4o",
+  model_name="gpt-4.1",
   max_loops=1,
 )
 agent2 = Agent(
   agent_name="ICD-10 Code Summarizer",
   system_prompt="Summarize the findings and suggest ICD-10 codes.",
-  model_name="gpt-4o",
+  model_name="gpt-4.1",
   max_loops=1,
 )
 agent3 = Agent(
   agent_name="ICD-10 Code Validator",
   system_prompt="Validate and finalize the ICD-10 code recommendations.",
-  model_name="gpt-4o",
+  model_name="gpt-4.1",
   max_loops=1,
 )
 
@@ -47567,7 +47567,8 @@ flowchart TD
 SwarmMatcher is included in the Swarms package. To use it, simply import it from the library:
 
 ```python
-from swarms.structs.swarm_matcher import SwarmMatcher, SwarmMatcherConfig, SwarmType
+from swarms_utils.swarm_matcher import SwarmMatcher, SwarmMatcherConfig, SwarmType
+
 ```
 
 ## Basic Usage
@@ -47585,7 +47586,8 @@ print(f"Selected swarm type: {swarm_type}")
 For more control over the matching process, you can create and configure your own SwarmMatcher instance:
 
 ```python
-from swarms.structs.swarm_matcher import SwarmMatcher, SwarmMatcherConfig, SwarmType, initialize_swarm_types
+from swarms_utils.swarm_matcher import SwarmMatcher, SwarmMatcherConfig, SwarmType
+, initialize_swarm_types
 
 # Create a configuration
 config = SwarmMatcherConfig(
@@ -47745,7 +47747,8 @@ for task in tasks:
 ### Custom Swarm Types
 
 ```python
-from swarms.structs.swarm_matcher import SwarmMatcher, SwarmMatcherConfig, SwarmType
+from swarms_utils.swarm_matcher import SwarmMatcher, SwarmMatcherConfig, SwarmType
+
 
 # Create configuration and matcher
 config = SwarmMatcherConfig()
@@ -49640,8 +49643,8 @@ Runs the swarm by having agents pick up tasks from the queue.
 
 
   # Initialize agents
-  agent1 = Agent(agent_name="Agent1", model_name="gpt-4o")
-  agent2 = Agent(agent_name="Agent2", model_name="gpt-4o")
+  agent1 = Agent(agent_name="Agent1", model_name="gpt-4.1")
+  agent2 = Agent(agent_name="Agent2", model_name="gpt-4.1")
 
   # Create the TaskQueueSwarm
   swarm = TaskQueueSwarm(agents=[agent1, agent2], max_loops=5)
@@ -51627,7 +51630,7 @@ agent = Agent(
         "clear, accurate financial insights and recommendations. Always format "
         "responses in markdown for better readability."
     ),
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=3,
     autosave=True,
     dashboard=False,
@@ -51812,7 +51815,7 @@ agent = Agent(
         "data and provide comprehensive financial insights. Always present data "
         "in a clear, professional format with actionable recommendations."
     ),
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=3,
     autosave=True,
     dashboard=False,
@@ -54539,7 +54542,7 @@ agent_config = {
         "and present findings in a clear, structured format. "
         "Focus on accuracy, clarity, and actionable recommendations."
     ),
-    "model_name": "gpt-4o",
+    "model_name": "gpt-4.1",
     "role": "worker",
     "max_loops": 2,
     "max_tokens": 8192,
@@ -54620,7 +54623,7 @@ batch_completions = [
             "agent_name": "Research Analyst",
             "description": "An expert in analyzing research data",
             "system_prompt": "You are a Research Analyst...",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 2
         },
         "task": "Analyze the impact of AI on healthcare delivery."
@@ -54630,7 +54633,7 @@ batch_completions = [
             "agent_name": "Market Analyst",
             "description": "An expert in market analysis",
             "system_prompt": "You are a Market Analyst...",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1
         },
         "task": "Analyze the AI startup landscape in 2025."
@@ -55083,7 +55086,7 @@ Key features:
             "agent_name": "Document Analyzer",
             "description": "Analyzes document content and structure",
             "system_prompt": "You are an expert document analyst. Extract key information, themes, and insights from documents.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.3
           },
@@ -55091,7 +55094,7 @@ Key features:
             "agent_name": "Legal Expert",
             "description": "Provides legal context and interpretation",
             "system_prompt": "You are a legal expert. Analyze documents for legal implications, risks, and compliance issues.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.2
           },
@@ -55099,7 +55102,7 @@ Key features:
             "agent_name": "Summarizer",
             "description": "Creates concise summaries and action items",
             "system_prompt": "You are an expert at creating clear, actionable summaries from complex information.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.4
           }
@@ -55132,7 +55135,7 @@ Key features:
                 "agent_name": "Document Analyzer",
                 "description": "Analyzes document content and structure",
                 "system_prompt": "You are an expert document analyst. Extract key information, themes, and insights from documents.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             },
@@ -55140,7 +55143,7 @@ Key features:
                 "agent_name": "Legal Expert", 
                 "description": "Provides legal context and interpretation",
                 "system_prompt": "You are a legal expert. Analyze documents for legal implications, risks, and compliance issues.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.2
             },
@@ -55148,7 +55151,7 @@ Key features:
                 "agent_name": "Summarizer",
                 "description": "Creates concise summaries and action items", 
                 "system_prompt": "You are an expert at creating clear, actionable summaries from complex information.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.4
             }
@@ -56773,7 +56776,7 @@ Key features:
             "agent_name": "AI Market Analyst",
             "description": "Analyzes AI market trends and opportunities",
             "system_prompt": "You are an AI market analyst. Focus on artificial intelligence market trends, opportunities, key players, and growth projections.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.3
           },
@@ -56781,7 +56784,7 @@ Key features:
             "agent_name": "Healthcare Market Analyst",
             "description": "Analyzes healthcare market trends",
             "system_prompt": "You are a healthcare market analyst. Focus on healthcare market trends, digital health opportunities, regulatory landscape, and growth areas.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.3
           },
@@ -56789,7 +56792,7 @@ Key features:
             "agent_name": "Fintech Market Analyst",
             "description": "Analyzes fintech market opportunities",
             "system_prompt": "You are a fintech market analyst. Focus on financial technology trends, digital payment systems, blockchain opportunities, and regulatory developments.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.3
           },
@@ -56797,7 +56800,7 @@ Key features:
             "agent_name": "E-commerce Market Analyst",
             "description": "Analyzes e-commerce market trends",
             "system_prompt": "You are an e-commerce market analyst. Focus on online retail trends, marketplace opportunities, consumer behavior, and emerging platforms.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.3
           }
@@ -56829,7 +56832,7 @@ Key features:
                 "agent_name": "AI Market Analyst",
                 "description": "Analyzes AI market trends and opportunities",
                 "system_prompt": "You are an AI market analyst. Focus on artificial intelligence market trends, opportunities, key players, and growth projections.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             },
@@ -56837,7 +56840,7 @@ Key features:
                 "agent_name": "Healthcare Market Analyst",
                 "description": "Analyzes healthcare market trends",
                 "system_prompt": "You are a healthcare market analyst. Focus on healthcare market trends, digital health opportunities, regulatory landscape, and growth areas.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             },
@@ -56845,7 +56848,7 @@ Key features:
                 "agent_name": "Fintech Market Analyst",
                 "description": "Analyzes fintech market opportunities",
                 "system_prompt": "You are a fintech market analyst. Focus on financial technology trends, digital payment systems, blockchain opportunities, and regulatory developments.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             },
@@ -56853,7 +56856,7 @@ Key features:
                 "agent_name": "E-commerce Market Analyst",
                 "description": "Analyzes e-commerce market trends",
                 "system_prompt": "You are an e-commerce market analyst. Focus on online retail trends, marketplace opportunities, consumer behavior, and emerging platforms.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             }
@@ -56992,28 +56995,28 @@ Key features:
             "agent_name": "Product Manager",
             "description": "Leads product strategy and development",
             "system_prompt": "You are a senior product manager. Focus on product positioning, features, user needs, and market fit. Ask probing questions and build on others ideas.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 3,
           },
           {
             "agent_name": "Marketing Strategist", 
             "description": "Develops marketing and positioning strategy",
             "system_prompt": "You are a marketing strategist. Focus on target audience, messaging, channels, and competitive positioning. Contribute marketing insights to the discussion.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 3,
           },
           {
             "agent_name": "Sales Director",
             "description": "Provides sales and customer perspective",
             "system_prompt": "You are a sales director with small business experience. Focus on pricing, sales process, customer objections, and market adoption. Share practical sales insights.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 3,
           },
           {
             "agent_name": "UX Researcher",
             "description": "Represents user experience and research insights",
             "system_prompt": "You are a UX researcher specializing in small business tools. Focus on user behavior, usability, adoption barriers, and design considerations.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 3,
           }
         ],
@@ -57044,28 +57047,28 @@ Key features:
                 "agent_name": "Product Manager",
                 "description": "Leads product strategy and development",
                 "system_prompt": "You are a senior product manager. Focus on product positioning, features, user needs, and market fit. Ask probing questions and build on others ideas.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 3,
             },
             {
                 "agent_name": "Marketing Strategist", 
                 "description": "Develops marketing and positioning strategy",
                 "system_prompt": "You are a marketing strategist. Focus on target audience, messaging, channels, and competitive positioning. Contribute marketing insights to the discussion.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 3,
             },
             {
                 "agent_name": "Sales Director",
                 "description": "Provides sales and customer perspective",
                 "system_prompt": "You are a sales director with small business experience. Focus on pricing, sales process, customer objections, and market adoption. Share practical sales insights.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 3,
             },
             {
                 "agent_name": "UX Researcher",
                 "description": "Represents user experience and research insights",
                 "system_prompt": "You are a UX researcher specializing in small business tools. Focus on user behavior, usability, adoption barriers, and design considerations.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 3,
             }
         ],
@@ -57186,7 +57189,7 @@ Key features:
                 "agent_name": "AI Market Analyst",
                 "description": "Analyzes AI market trends and opportunities",
                 "system_prompt": "You are an AI market analyst. Focus on artificial intelligence market trends, opportunities, key players, and growth projections.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             },
@@ -57194,7 +57197,7 @@ Key features:
                 "agent_name": "Healthcare Market Analyst",
                 "description": "Analyzes healthcare market trends",
                 "system_prompt": "You are a healthcare market analyst. Focus on healthcare market trends, digital health opportunities, regulatory landscape, and growth areas.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             },
@@ -57202,7 +57205,7 @@ Key features:
                 "agent_name": "Fintech Market Analyst",
                 "description": "Analyzes fintech market opportunities",
                 "system_prompt": "You are a fintech market analyst. Focus on financial technology trends, digital payment systems, blockchain opportunities, and regulatory developments.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             },
@@ -57210,7 +57213,7 @@ Key features:
                 "agent_name": "E-commerce Market Analyst",
                 "description": "Analyzes e-commerce market trends",
                 "system_prompt": "You are an e-commerce market analyst. Focus on online retail trends, marketplace opportunities, consumer behavior, and emerging platforms.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             }
@@ -57242,7 +57245,7 @@ Key features:
                 "agent_name": "AI Market Analyst",
                 "description": "Analyzes AI market trends and opportunities",
                 "system_prompt": "You are an AI market analyst. Focus on artificial intelligence market trends, opportunities, key players, and growth projections.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             },
@@ -57250,7 +57253,7 @@ Key features:
                 "agent_name": "Healthcare Market Analyst",
                 "description": "Analyzes healthcare market trends",
                 "system_prompt": "You are a healthcare market analyst. Focus on healthcare market trends, digital health opportunities, regulatory landscape, and growth areas.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             },
@@ -57258,7 +57261,7 @@ Key features:
                 "agent_name": "Fintech Market Analyst",
                 "description": "Analyzes fintech market opportunities",
                 "system_prompt": "You are a fintech market analyst. Focus on financial technology trends, digital payment systems, blockchain opportunities, and regulatory developments.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             },
@@ -57266,7 +57269,7 @@ Key features:
                 "agent_name": "E-commerce Market Analyst",
                 "description": "Analyzes e-commerce market trends",
                 "system_prompt": "You are an e-commerce market analyst. Focus on online retail trends, marketplace opportunities, consumer behavior, and emerging platforms.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             }
@@ -57823,7 +57826,7 @@ Key features:
             "agent_name": "Growth Investor",
             "description": "Focuses on growth potential and market opportunity",
             "system_prompt": "You are a growth-focused venture capitalist. Evaluate investments based on market size, scalability, and growth potential. Provide a recommendation with confidence score.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.3
           },
@@ -57831,7 +57834,7 @@ Key features:
             "agent_name": "Financial Analyst",
             "description": "Analyzes financial metrics and projections",
             "system_prompt": "You are a financial analyst specializing in startups. Evaluate financial projections, revenue models, and unit economics. Provide a recommendation with confidence score.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.2
           },
@@ -57839,7 +57842,7 @@ Key features:
             "agent_name": "Technical Due Diligence",
             "description": "Evaluates technology and product viability",
             "system_prompt": "You are a technical due diligence expert. Assess technology viability, intellectual property, product-market fit, and technical risks. Provide a recommendation with confidence score.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.3
           },
@@ -57847,7 +57850,7 @@ Key features:
             "agent_name": "Market Analyst",
             "description": "Analyzes market conditions and competition",
             "system_prompt": "You are a market research analyst. Evaluate market dynamics, competitive landscape, regulatory environment, and market timing. Provide a recommendation with confidence score.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.3
           },
@@ -57855,7 +57858,7 @@ Key features:
             "agent_name": "Risk Assessor",
             "description": "Identifies and evaluates investment risks",
             "system_prompt": "You are a risk assessment specialist. Identify potential risks, evaluate mitigation strategies, and assess overall risk profile. Provide a recommendation with confidence score.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.2
           }
@@ -57887,7 +57890,7 @@ Key features:
                 "agent_name": "Growth Investor",
                 "description": "Focuses on growth potential and market opportunity",
                 "system_prompt": "You are a growth-focused venture capitalist. Evaluate investments based on market size, scalability, and growth potential. Provide a recommendation with confidence score.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             },
@@ -57895,7 +57898,7 @@ Key features:
                 "agent_name": "Financial Analyst",
                 "description": "Analyzes financial metrics and projections",
                 "system_prompt": "You are a financial analyst specializing in startups. Evaluate financial projections, revenue models, and unit economics. Provide a recommendation with confidence score.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.2
             },
@@ -57903,7 +57906,7 @@ Key features:
                 "agent_name": "Technical Due Diligence",
                 "description": "Evaluates technology and product viability",
                 "system_prompt": "You are a technical due diligence expert. Assess technology viability, intellectual property, product-market fit, and technical risks. Provide a recommendation with confidence score.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             },
@@ -57911,7 +57914,7 @@ Key features:
                 "agent_name": "Market Analyst",
                 "description": "Analyzes market conditions and competition",
                 "system_prompt": "You are a market research analyst. Evaluate market dynamics, competitive landscape, regulatory environment, and market timing. Provide a recommendation with confidence score.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             },
@@ -57919,7 +57922,7 @@ Key features:
                 "agent_name": "Risk Assessor",
                 "description": "Identifies and evaluates investment risks",
                 "system_prompt": "You are a risk assessment specialist. Identify potential risks, evaluate mitigation strategies, and assess overall risk profile. Provide a recommendation with confidence score.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.2
             }
@@ -58319,7 +58322,7 @@ swarm_config = {
             "agent_name": "Data Analyzer",
             "description": "Looks at financial data",
             "system_prompt": "Analyze the data.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "role": "worker",
             "max_loops": 1,
             "max_tokens": 1000,
@@ -58330,7 +58333,7 @@ swarm_config = {
             "agent_name": "Risk Analyst",
             "description": "Checks risk levels",
             "system_prompt": "Evaluate the risks.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "role": "worker",
             "max_loops": 1,
             "max_tokens": 1000,
@@ -58341,7 +58344,7 @@ swarm_config = {
             "agent_name": "Strategy Checker",
             "description": "Validates strategies",
             "system_prompt": "Review the strategy.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "role": "worker",
             "max_loops": 1,
             "max_tokens": 1000,
@@ -59184,7 +59187,7 @@ Key features:
             "agent_name": "Market Research Analyst",
             "description": "Analyzes market trends and opportunities",
             "system_prompt": "You are a market research expert specializing in healthcare technology. Analyze market size, trends, and competitive landscape.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.3
           },
@@ -59192,7 +59195,7 @@ Key features:
             "agent_name": "Financial Analyst",
             "description": "Evaluates financial viability and projections",
             "system_prompt": "You are a financial analyst expert. Assess financial implications, ROI, and cost structures for business strategies.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.2
           },
@@ -59200,7 +59203,7 @@ Key features:
             "agent_name": "Regulatory Expert",
             "description": "Analyzes compliance and regulatory requirements",
             "system_prompt": "You are a healthcare regulatory expert. Analyze compliance requirements, regulatory pathways, and potential barriers.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.1
           },
@@ -59208,7 +59211,7 @@ Key features:
             "agent_name": "Technology Strategist",
             "description": "Evaluates technical feasibility and strategy",
             "system_prompt": "You are a technology strategy expert. Assess technical requirements, implementation challenges, and scalability.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.3
           }
@@ -59240,7 +59243,7 @@ Key features:
                 "agent_name": "Market Research Analyst",
                 "description": "Analyzes market trends and opportunities",
                 "system_prompt": "You are a market research expert specializing in healthcare technology. Analyze market size, trends, and competitive landscape.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             },
@@ -59248,7 +59251,7 @@ Key features:
                 "agent_name": "Financial Analyst",
                 "description": "Evaluates financial viability and projections",
                 "system_prompt": "You are a financial analyst expert. Assess financial implications, ROI, and cost structures for business strategies.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.2
             },
@@ -59256,7 +59259,7 @@ Key features:
                 "agent_name": "Regulatory Expert",
                 "description": "Analyzes compliance and regulatory requirements",
                 "system_prompt": "You are a healthcare regulatory expert. Analyze compliance requirements, regulatory pathways, and potential barriers.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.1
             },
@@ -59264,7 +59267,7 @@ Key features:
                 "agent_name": "Technology Strategist",
                 "description": "Evaluates technical feasibility and strategy",
                 "system_prompt": "You are a technology strategy expert. Assess technical requirements, implementation challenges, and scalability.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             }
@@ -59411,7 +59414,7 @@ Key features:
             "agent_name": "Billing Specialist",
             "description": "Handles billing, payments, and account issues",
             "system_prompt": "You are a billing specialist. Handle all billing inquiries, payment issues, refunds, and account-related questions with empathy and accuracy.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.3
           },
@@ -59419,7 +59422,7 @@ Key features:
             "agent_name": "Technical Support",
             "description": "Resolves technical issues and troubleshooting",
             "system_prompt": "You are a technical support specialist. Diagnose and resolve technical issues, provide step-by-step troubleshooting, and escalate complex problems.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.2
           },
@@ -59427,7 +59430,7 @@ Key features:
             "agent_name": "Sales Consultant",
             "description": "Provides product recommendations and sales support",
             "system_prompt": "You are a sales consultant. Provide product recommendations, explain features and benefits, and help customers find the right solutions.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.4
           },
@@ -59435,7 +59438,7 @@ Key features:
             "agent_name": "Policy Advisor",
             "description": "Explains company policies and procedures",
             "system_prompt": "You are a policy advisor. Explain company policies, terms of service, return procedures, and compliance requirements clearly.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.1
           }
@@ -59467,7 +59470,7 @@ Key features:
                 "agent_name": "Billing Specialist",
                 "description": "Handles billing, payments, and account issues",
                 "system_prompt": "You are a billing specialist. Handle all billing inquiries, payment issues, refunds, and account-related questions with empathy and accuracy.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             },
@@ -59475,7 +59478,7 @@ Key features:
                 "agent_name": "Technical Support",
                 "description": "Resolves technical issues and troubleshooting",
                 "system_prompt": "You are a technical support specialist. Diagnose and resolve technical issues, provide step-by-step troubleshooting, and escalate complex problems.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.2
             },
@@ -59483,7 +59486,7 @@ Key features:
                 "agent_name": "Sales Consultant",
                 "description": "Provides product recommendations and sales support",
                 "system_prompt": "You are a sales consultant. Provide product recommendations, explain features and benefits, and help customers find the right solutions.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.4
             },
@@ -59491,7 +59494,7 @@ Key features:
                 "agent_name": "Policy Advisor",
                 "description": "Explains company policies and procedures",
                 "system_prompt": "You are a policy advisor. Explain company policies, terms of service, return procedures, and compliance requirements clearly.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.1
             }
@@ -60079,7 +60082,7 @@ response = client.agent.create(
     agent_config={
         "agent_name": "Researcher",
         "description": "Conducts in-depth research on topics",
-        "model_name": "gpt-4o",
+        "model_name": "gpt-4.1",
         "temperature": 0.7
     },
     task="Research the latest advancements in quantum computing and summarize the key findings"
@@ -60143,7 +60146,7 @@ responses = client.agent.create_batch([
     {
         "agent_config": {
             "agent_name": "Writer",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "temperature": 0.7
         },
         "task": "Write a blog post about AI safety"
@@ -60183,7 +60186,7 @@ async def main():
             agent_config={
                 "agent_name": "Researcher",
                 "description": "Conducts in-depth research",
-                "model_name": "gpt-4o"
+                "model_name": "gpt-4.1"
             },
             task="Research the impact of quantum computing on cryptography"
         )
@@ -60224,7 +60227,7 @@ async def main():
             {
                 "agent_config": {
                     "agent_name": "Writer",
-                    "model_name": "gpt-4o"
+                    "model_name": "gpt-4.1"
                 },
                 "task": "Write a blog post about AI safety"
             }
@@ -60265,7 +60268,7 @@ response = client.swarm.create(
         {
             "agent_name": "Researcher",
             "description": "Conducts in-depth research",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "temperature": 0.5
         },
         {
@@ -60329,7 +60332,7 @@ responses = client.swarm.create_batch([
         "swarm_type": "auto",
         "task": "Research quantum computing advances",
         "agents": [
-            {"agent_name": "Researcher", "model_name": "gpt-4o"}
+            {"agent_name": "Researcher", "model_name": "gpt-4.1"}
         ]
     },
     {
@@ -60337,7 +60340,7 @@ responses = client.swarm.create_batch([
         "swarm_type": "SequentialWorkflow",
         "task": "Write a blog post about AI safety",
         "agents": [
-            {"agent_name": "Writer", "model_name": "gpt-4o"},
+            {"agent_name": "Writer", "model_name": "gpt-4.1"},
             {"agent_name": "Editor", "model_name": "gpt-4o-mini"}
         ]
     }
@@ -60425,7 +60428,7 @@ async def main():
                 {
                     "agent_name": "Researcher",
                     "description": "Conducts in-depth research",
-                    "model_name": "gpt-4o"
+                    "model_name": "gpt-4.1"
                 },
                 {
                     "agent_name": "Critic",
@@ -60467,7 +60470,7 @@ async def main():
                 "swarm_type": "auto",
                 "task": "Research quantum computing",
                 "agents": [
-                    {"agent_name": "Researcher", "model_name": "gpt-4o"}
+                    {"agent_name": "Researcher", "model_name": "gpt-4.1"}
                 ]
             },
             {
@@ -60475,7 +60478,7 @@ async def main():
                 "swarm_type": "SequentialWorkflow",
                 "task": "Write a blog post about AI safety",
                 "agents": [
-                    {"agent_name": "Writer", "model_name": "gpt-4o"}
+                    {"agent_name": "Writer", "model_name": "gpt-4.1"}
                 ]
             }
         ])
@@ -60614,7 +60617,7 @@ from swarms_client import SwarmsClient, SwarmsError, AuthenticationError, RateLi
 try:
     client = SwarmsClient(api_key="invalid-api-key")
     response = client.agent.create(
-        agent_config={"agent_name": "Researcher", "model_name": "gpt-4o"},
+        agent_config={"agent_name": "Researcher", "model_name": "gpt-4.1"},
         task="Research quantum computing"
     )
 except AuthenticationError as e:
@@ -60703,7 +60706,7 @@ try:
     researcher = {
         "agent_name": "Researcher",
         "description": "Conducts thorough research on specified topics",
-        "model_name": "gpt-4o",
+        "model_name": "gpt-4.1",
         "temperature": 0.5,
         "system_prompt": "You are a diligent researcher focused on finding accurate and comprehensive information."
     }
@@ -60711,7 +60714,7 @@ try:
     analyst = {
         "agent_name": "Analyst",
         "description": "Analyzes research findings and identifies key insights",
-        "model_name": "gpt-4o",
+        "model_name": "gpt-4.1",
         "temperature": 0.3,
         "system_prompt": "You are an insightful analyst who can identify patterns and extract meaningful insights from research data."
     }
@@ -61184,7 +61187,7 @@ The API is accessible through two base URLs:
                     "agent_name": "Market Analyst",  # (1)
                     "description": "Analyzes market trends",
                     "system_prompt": "You are a financial analyst expert.",
-                    "model_name": "gpt-4o",
+                    "model_name": "gpt-4.1",
                     "role": "worker",
                     "max_loops": 1,
                     "max_tokens": 8192,
@@ -61195,7 +61198,7 @@ The API is accessible through two base URLs:
                     "agent_name": "Economic Forecaster",  # (2)
                     "description": "Predicts economic trends",
                     "system_prompt": "You are an expert in economic forecasting.",
-                    "model_name": "gpt-4o",
+                    "model_name": "gpt-4.1",
                     "role": "worker",
                     "max_loops": 1,
                     "max_tokens": 8192,
@@ -61234,7 +61237,7 @@ The API is accessible through two base URLs:
             "agent_name": "Market Analyst",
             "description": "Analyzes market trends",
             "system_prompt": "You are a financial analyst expert.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "role": "worker",
             "max_loops": 1,
             "max_tokens": 8192,
@@ -61245,7 +61248,7 @@ The API is accessible through two base URLs:
             "agent_name": "Economic Forecaster",
             "description": "Predicts economic trends",
             "system_prompt": "You are an expert in economic forecasting.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "role": "worker",
             "max_loops": 1,
             "max_tokens": 8192,
@@ -61292,7 +61295,7 @@ The API is accessible through two base URLs:
             agent_name: "Market Analyst",
             description: "Analyzes market trends",
             system_prompt: "You are a financial analyst expert.",
-            model_name: "gpt-4o",
+            model_name: "gpt-4.1",
             role: "worker",
             max_loops: 1,
             max_tokens: 8192,
@@ -61303,7 +61306,7 @@ The API is accessible through two base URLs:
             agent_name: "Economic Forecaster",
             description: "Predicts economic trends",
             system_prompt: "You are an expert in economic forecasting.",
-            model_name: "gpt-4o",
+            model_name: "gpt-4.1",
             role: "worker",
             max_loops: 1,
             max_tokens: 8192,
@@ -61930,7 +61933,7 @@ Join our community of agent engineers and researchers for technical support, cut
 | 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
-| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
+| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/swarms_calendar) |
 | 🚀 Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
 
 --------------------------------------------------
@@ -62190,7 +62193,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             agent
                 .name("Researcher")
                 .description("Conducts in-depth research")
-                .model("gpt-4o")
+                .model("gpt-4.1")
         })
         .send()
         .await?;
@@ -62392,7 +62395,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .completion()
         .agent_name("Content Writer")
         .task("Write a blog post about sustainable technology")
-        .model("gpt-4o")
+        .model("gpt-4.1")
         .temperature(0.7)
         .max_tokens(2000)
         .description("An expert content writer specializing in technology topics")
@@ -62432,7 +62435,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             agent
                 .name("Data Collector")
                 .description("Gathers comprehensive data and recent developments")
-                .model("gpt-4o")
+                .model("gpt-4.1")
                 .system_prompt("You are a research data collector specializing in AI and healthcare. Your job is to gather the most recent and relevant information about AI applications in healthcare, including clinical trials, FDA approvals, and industry developments.")
                 .temperature(0.3)
                 .max_tokens(3000)
@@ -62443,7 +62446,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             agent
                 .name("Technical Analyst")
                 .description("Analyzes technical aspects and implementation details")
-                .model("gpt-4o")
+                .model("gpt-4.1")
                 .system_prompt("You are a technical analyst with deep expertise in AI/ML technologies. Analyze the technical feasibility, implementation challenges, and technological requirements of AI solutions in healthcare.")
                 .temperature(0.4)
                 .max_tokens(3000)
@@ -62454,7 +62457,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             agent
                 .name("Market Analyst")
                 .description("Analyzes market trends, adoption rates, and economic factors")
-                .model("gpt-4o")
+                .model("gpt-4.1")
                 .system_prompt("You are a market research analyst specializing in healthcare technology markets. Analyze market size, growth projections, key players, investment trends, and economic factors affecting AI adoption in healthcare.")
                 .temperature(0.5)
                 .max_tokens(3000)
@@ -62465,7 +62468,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             agent
                 .name("Regulatory Expert")
                 .description("Analyzes regulatory landscape and compliance requirements")
-                .model("gpt-4o")
+                .model("gpt-4.1")
                 .system_prompt("You are a regulatory affairs expert with deep knowledge of healthcare regulations and AI governance. Analyze regulatory challenges, compliance requirements, ethical considerations, and policy developments affecting AI in healthcare.")
                 .temperature(0.3)
                 .max_tokens(3000)
@@ -62476,7 +62479,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             agent
                 .name("Report Synthesizer")
                 .description("Synthesizes all analyses into a comprehensive report")
-                .model("gpt-4o")
+                .model("gpt-4.1")
                 .system_prompt("You are an expert report writer and strategic analyst. Synthesize all the previous analyses into a comprehensive, well-structured executive report with clear insights, recommendations, and future outlook.")
                 .temperature(0.6)
                 .max_tokens(4000)
@@ -62521,7 +62524,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             agent
                 .name("Financial Data Collector")
                 .description("Specializes in gathering and organizing financial data from various sources")
-                .model("gpt-4o")
+                .model("gpt-4.1")
                 .system_prompt("You are a financial data collection specialist. Your role is to gather and organize relevant financial data, including revenue, expenses, profit margins, and key financial ratios. Present the data in a clear, structured format.")
                 .temperature(0.7)
                 .max_tokens(2000)
@@ -62532,7 +62535,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             agent
                 .name("Ratio Analyzer")
                 .description("Analyzes key financial ratios and metrics")
-                .model("gpt-4o")
+                .model("gpt-4.1")
                 .system_prompt("You are a financial ratio analysis expert. Your role is to calculate and interpret key financial ratios such as P/E ratio, debt-to-equity, current ratio, and return on equity. Provide insights on what these ratios indicate about the company's financial health.")
                 .temperature(0.7)
                 .max_tokens(2000)
@@ -62543,7 +62546,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             agent
                 .name("Investment Advisor")
                 .description("Provides investment recommendations based on analysis")
-                .model("gpt-4o")
+                .model("gpt-4.1")
                 .system_prompt("You are an investment advisory specialist. Your role is to synthesize the analysis from previous agents and provide clear, actionable investment recommendations. Consider both short-term and long-term investment perspectives.")
                 .temperature(0.7)
                 .max_tokens(2000)
@@ -62648,7 +62651,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .agent(|agent| {
             agent
                 .name("Market Analyst")
-                .model("gpt-4o")
+                .model("gpt-4.1")
                 .temperature(0.5)
         })
         .send()
@@ -62917,7 +62920,7 @@ Key features:
             "agent_name": "Research Specialist",
             "description": "Conducts thorough research on the topic",
             "system_prompt": "You are a research specialist. Gather comprehensive, accurate information on the given topic from reliable sources.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.3
           },
@@ -62925,7 +62928,7 @@ Key features:
             "agent_name": "Content Writer",
             "description": "Creates engaging written content",
             "system_prompt": "You are a skilled content writer. Transform research into engaging, well-structured articles that are informative and readable.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.6
           },
@@ -62933,7 +62936,7 @@ Key features:
             "agent_name": "Editor",
             "description": "Reviews and polishes the content",
             "system_prompt": "You are a professional editor. Review content for clarity, grammar, flow, and overall quality. Make improvements while maintaining the author's voice.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.4
           },
@@ -62941,7 +62944,7 @@ Key features:
             "agent_name": "SEO Optimizer",
             "description": "Optimizes content for search engines",
             "system_prompt": "You are an SEO expert. Optimize content for search engines while maintaining readability and quality.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "temperature": 0.2
           }
@@ -62973,7 +62976,7 @@ Key features:
                 "agent_name": "Research Specialist",
                 "description": "Conducts thorough research on the topic",
                 "system_prompt": "You are a research specialist. Gather comprehensive, accurate information on the given topic from reliable sources.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.3
             },
@@ -62981,7 +62984,7 @@ Key features:
                 "agent_name": "Content Writer",
                 "description": "Creates engaging written content",
                 "system_prompt": "You are a skilled content writer. Transform research into engaging, well-structured articles that are informative and readable.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.6
             },
@@ -62989,7 +62992,7 @@ Key features:
                 "agent_name": "Editor",
                 "description": "Reviews and polishes the content",
                 "system_prompt": "You are a professional editor. Review content for clarity, grammar, flow, and overall quality. Make improvements while maintaining the author's voice.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.4
             },
@@ -62997,7 +63000,7 @@ Key features:
                 "agent_name": "SEO Optimizer",
                 "description": "Optimizes content for search engines",
                 "system_prompt": "You are an SEO expert. Optimize content for search engines while maintaining readability and quality.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "max_loops": 1,
                 "temperature": 0.2
             }
@@ -63366,7 +63369,7 @@ The `AgentSpec` model defines the configuration of an individual agent.
 | agent_name | string | Unique name for the agent | Yes* |
 | description | string | Description of the agent's purpose | No |
 | system_prompt | string | Instructions for the agent | No |
-| model_name | string | AI model to use (e.g., "gpt-4o") | Yes* |
+| model_name | string | AI model to use (e.g., "gpt-4.1") | Yes* |
 | auto_generate_prompt | boolean | Whether to auto-generate prompts | No |
 | max_tokens | integer | Maximum tokens in response | No |
 | temperature | float | Randomness of responses (0-1) | No |
@@ -63493,7 +63496,7 @@ Run a swarm with the specified configuration to complete a task.
             "agent_name": "Economic Forecaster",
             "description": "Predicts economic trends",
             "system_prompt": "You are an expert in economic forecasting.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "role": "worker",
             "max_loops": 1,
             "max_tokens": 8192,
@@ -63540,7 +63543,7 @@ Run a swarm with the specified configuration to complete a task.
                 "agent_name": "Economic Forecaster",
                 "description": "Predicts economic trends",
                 "system_prompt": "You are an expert in economic forecasting.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "role": "worker",
                 "max_loops": 1,
                 "max_tokens": 8192,
@@ -63616,7 +63619,7 @@ Run a swarm with the specified configuration to complete a task.
                     agent_name: "Economic Forecaster",
                     description: "Predicts economic trends",
                     system_prompt: "You are an expert in economic forecasting.",
-                    model_name: "gpt-4o",
+                    model_name: "gpt-4.1",
                     role: "worker",
                     max_loops: 1,
                     max_tokens: 8192,
@@ -63724,7 +63727,7 @@ Run multiple swarms as a batch operation.
               "agent_name": "Research Agent",
               "description": "Conducts research",
               "system_prompt": "You are a research assistant.",
-              "model_name": "gpt-4o",
+              "model_name": "gpt-4.1",
               "role": "worker",
               "max_loops": 1
             },
@@ -63732,7 +63735,7 @@ Run multiple swarms as a batch operation.
               "agent_name": "Analysis Agent",
               "description": "Analyzes data",
               "system_prompt": "You are a data analyst.",
-              "model_name": "gpt-4o",
+              "model_name": "gpt-4.1",
               "role": "worker",
               "max_loops": 1
             }
@@ -63749,7 +63752,7 @@ Run multiple swarms as a batch operation.
               "agent_name": "Writing Agent",
               "description": "Writes content",
               "system_prompt": "You are a content writer.",
-              "model_name": "gpt-4o",
+              "model_name": "gpt-4.1",
               "role": "worker",
               "max_loops": 1
             },
@@ -63757,7 +63760,7 @@ Run multiple swarms as a batch operation.
               "agent_name": "Editing Agent",
               "description": "Edits content",
               "system_prompt": "You are an editor.",
-              "model_name": "gpt-4o",
+              "model_name": "gpt-4.1",
               "role": "worker",
               "max_loops": 1
             }
@@ -63791,7 +63794,7 @@ Run multiple swarms as a batch operation.
                     "agent_name": "Research Agent",
                     "description": "Conducts research",
                     "system_prompt": "You are a research assistant.",
-                    "model_name": "gpt-4o",
+                    "model_name": "gpt-4.1",
                     "role": "worker",
                     "max_loops": 1
                 },
@@ -63799,7 +63802,7 @@ Run multiple swarms as a batch operation.
                     "agent_name": "Analysis Agent",
                     "description": "Analyzes data",
                     "system_prompt": "You are a data analyst.",
-                    "model_name": "gpt-4o",
+                    "model_name": "gpt-4.1",
                     "role": "worker",
                     "max_loops": 1
                 }
@@ -63816,7 +63819,7 @@ Run multiple swarms as a batch operation.
                     "agent_name": "Writing Agent",
                     "description": "Writes content",
                     "system_prompt": "You are a content writer.",
-                    "model_name": "gpt-4o",
+                    "model_name": "gpt-4.1",
                     "role": "worker",
                     "max_loops": 1
                 },
@@ -63824,7 +63827,7 @@ Run multiple swarms as a batch operation.
                     "agent_name": "Editing Agent",
                     "description": "Edits content",
                     "system_prompt": "You are an editor.",
-                    "model_name": "gpt-4o",
+                    "model_name": "gpt-4.1",
                     "role": "worker",
                     "max_loops": 1
                 }
@@ -63883,7 +63886,7 @@ Run multiple swarms as a batch operation.
                         agent_name: "Research Agent",
                         description: "Conducts research",
                         system_prompt: "You are a research assistant.",
-                        model_name: "gpt-4o",
+                        model_name: "gpt-4.1",
                         role: "worker",
                         max_loops: 1
                     },
@@ -63891,7 +63894,7 @@ Run multiple swarms as a batch operation.
                         agent_name: "Analysis Agent",
                         description: "Analyzes data",
                         system_prompt: "You are a data analyst.",
-                        model_name: "gpt-4o",
+                        model_name: "gpt-4.1",
                         role: "worker",
                         max_loops: 1
                     }
@@ -63908,7 +63911,7 @@ Run multiple swarms as a batch operation.
                         agent_name: "Writing Agent",
                         description: "Writes content",
                         system_prompt: "You are a content writer.",
-                        model_name: "gpt-4o",
+                        model_name: "gpt-4.1",
                         role: "worker",
                         max_loops: 1
                     },
@@ -63916,7 +63919,7 @@ Run multiple swarms as a batch operation.
                         agent_name: "Editing Agent",
                         description: "Edits content",
                         system_prompt: "You are an editor.",
-                        model_name: "gpt-4o",
+                        model_name: "gpt-4.1",
                         role: "worker",
                         max_loops: 1
                     }
@@ -64001,7 +64004,7 @@ Run a single agent with the specified configuration.
              "agent_name": "Research Assistant",
              "description": "Helps with research tasks",
              "system_prompt": "You are a research assistant expert.",
-             "model_name": "gpt-4o",
+             "model_name": "gpt-4.1",
              "max_loops": 1,
              "max_tokens": 8192,
              "temperature": 0.5
@@ -64028,7 +64031,7 @@ Run a single agent with the specified configuration.
             "agent_name": "Research Assistant",
             "description": "Helps with research tasks",
             "system_prompt": "You are a research assistant expert.",
-            "model_name": "gpt-4o",
+            "model_name": "gpt-4.1",
             "max_loops": 1,
             "max_tokens": 8192,
             "temperature": 0.5
@@ -64077,7 +64080,7 @@ Run a single agent with the specified configuration.
                 agent_name: "Research Assistant",
                 description: "Helps with research tasks",
                 system_prompt: "You are a research assistant expert.",
-                model_name: "gpt-4o",
+                model_name: "gpt-4.1",
                 max_loops: 1,
                 max_tokens: 8192,
                 temperature: 0.5
@@ -64172,7 +64175,7 @@ Execute a task using a single agent with specified configuration.
     "agent_name": "Research Assistant",
     "description": "Specialized in research and analysis",
     "system_prompt": "You are an expert research assistant.",
-    "model_name": "gpt-4o",
+    "model_name": "gpt-4.1",
     "auto_generate_prompt": false,
     "max_tokens": 8192,
     "temperature": 0.5,
@@ -64242,7 +64245,7 @@ Execute multiple agent tasks in parallel.
                "agent_name": "Market Analyst",
                "description": "Expert in market analysis",
                "system_prompt": "You are a financial market analyst.",
-               "model_name": "gpt-4o",
+               "model_name": "gpt-4.1",
                "temperature": 0.3
              },
              "task": "Analyze the current market trends in AI technology sector"
@@ -64252,7 +64255,7 @@ Execute multiple agent tasks in parallel.
                "agent_name": "Technical Writer",
                "description": "Specialized in technical documentation",
                "system_prompt": "You are a technical documentation expert.",
-               "model_name": "gpt-4o",
+               "model_name": "gpt-4.1",
                "temperature": 0.7
              },
              "task": "Create a technical guide for implementing OAuth2 authentication"
@@ -64279,7 +64282,7 @@ Execute multiple agent tasks in parallel.
                 "agent_name": "Market Analyst",
                 "description": "Expert in market analysis",
                 "system_prompt": "You are a financial market analyst.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "temperature": 0.3
             },
             "task": "Analyze the current market trends in AI technology sector"
@@ -64289,7 +64292,7 @@ Execute multiple agent tasks in parallel.
                 "agent_name": "Technical Writer",
                 "description": "Specialized in technical documentation",
                 "system_prompt": "You are a technical documentation expert.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "temperature": 0.7
             },
             "task": "Create a technical guide for implementing OAuth2 authentication"
@@ -64338,7 +64341,7 @@ Execute multiple agent tasks in parallel.
                     agent_name: "Market Analyst",
                     description: "Expert in market analysis",
                     system_prompt: "You are a financial market analyst.",
-                    model_name: "gpt-4o",
+                    model_name: "gpt-4.1",
                     temperature: 0.3
                 },
                 task: "Analyze the current market trends in AI technology sector"
@@ -64348,7 +64351,7 @@ Execute multiple agent tasks in parallel.
                     agent_name: "Technical Writer",
                     description: "Specialized in technical documentation",
                     system_prompt: "You are a technical documentation expert.",
-                    model_name: "gpt-4o",
+                    model_name: "gpt-4.1",
                     temperature: 0.7
                 },
                 task: "Create a technical guide for implementing OAuth2 authentication"
@@ -64859,7 +64862,7 @@ def run_single_swarm():
                 "agent_name": "Economic Forecaster",
                 "description": "Predicts economic trends",
                 "system_prompt": "You are an expert in economic forecasting.",
-                "model_name": "gpt-4o",
+                "model_name": "gpt-4.1",
                 "role": "worker",
                 "max_loops": 1,
                 "max_tokens": 8192,

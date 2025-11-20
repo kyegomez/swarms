@@ -1,4 +1,3 @@
-import os
 from dotenv import load_dotenv
 
 # Swarm imports
@@ -7,16 +6,16 @@ from swarms.structs.hiearchical_swarm import (
     HierarchicalSwarm,
     SwarmSpec,
 )
-from swarms.utils.function_caller_model import OpenAIFunctionCaller
+from swarms.utils.litellm_wrapper import LiteLLM
 
 load_dotenv()
 
 # ------------------------------------------------------------------------------
 # Trading Director: Responsible for orchestrating tasks among multiple stock analysts
 # ------------------------------------------------------------------------------
-director_llm = OpenAIFunctionCaller(
-    base_model=SwarmSpec,
-    api_key=os.getenv("OPENAI_API_KEY"),
+director_llm = LiteLLM(
+    model_name="gpt-4.1",
+    response_format=SwarmSpec,
     system_prompt=(
         "You are the Trading Director in charge of coordinating a team of specialized "
         "Stock Analysts. Your responsibilities include:\n\n"
@@ -51,7 +50,7 @@ def main():
     # --------------------------------------------------------------------------
     macro_agent = Agent(
         agent_name="Macro-Economic-Analysis-Agent",
-        model_name="gpt-4o",
+        model_name="gpt-4.1",
         max_loops=1,
         interactive=False,
         streaming_on=False,
@@ -81,7 +80,7 @@ def main():
     # --------------------------------------------------------------------------
     sector_agent = Agent(
         agent_name="Sector-Performance-Analysis-Agent",
-        model_name="gpt-4o",
+        model_name="gpt-4.1",
         max_loops=1,
         interactive=False,
         streaming_on=False,
@@ -113,7 +112,7 @@ def main():
     # --------------------------------------------------------------------------
     technical_agent = Agent(
         agent_name="Technical-Analysis-Agent",
-        model_name="gpt-4o",
+        model_name="gpt-4.1",
         max_loops=1,
         interactive=False,
         streaming_on=False,
@@ -145,7 +144,7 @@ def main():
     # --------------------------------------------------------------------------
     risk_agent = Agent(
         agent_name="Risk-Analysis-Agent",
-        model_name="gpt-4o",
+        model_name="gpt-4.1",
         max_loops=1,
         interactive=False,
         streaming_on=False,

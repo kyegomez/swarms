@@ -8,6 +8,7 @@ from swarms.structs.multi_agent_exec import (
 )
 from swarms.structs.omni_agent_types import AgentType
 from swarms.structs.swarm_id import swarm_id
+from swarms.utils.output_types import OutputType
 
 
 class BatchedGridWorkflow:
@@ -30,6 +31,7 @@ class BatchedGridWorkflow:
         description (str): Description of the workflow's purpose.
         agents (List[AgentType]): List of agents to execute tasks.
         max_loops (int): Maximum number of execution loops to perform.
+        output_type (OutputType): Type of output to return.
 
     Example:
         >>> from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
@@ -48,6 +50,7 @@ class BatchedGridWorkflow:
         description: str = "For every agent, run the task on a different task",
         agents: List[AgentType] = None,
         max_loops: int = 1,
+        output_type: OutputType = "dict",
     ):
         """
         Initialize a BatchedGridWorkflow instance.

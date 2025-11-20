@@ -11,7 +11,7 @@ The ReasoningDuo class implements a dual-agent reasoning system that combines a 
 |-----------|------|---------|-------------|
 | model_name | str | "reasoning-agent-01" | Name identifier for the reasoning agent |
 | description | str | "A highly intelligent..." | Description of the reasoning agent's capabilities |
-| model_names | list[str] | ["gpt-4o-mini", "gpt-4o"] | Model names for reasoning and main agents |
+| model_names | list[str] | ["gpt-4o-mini", "gpt-4.1"] | Model names for reasoning and main agents |
 | system_prompt | str | "You are a helpful..." | System prompt for the main agent |
 
 ### Methods
@@ -31,7 +31,7 @@ from swarms.agents.reasoning_duo import ReasoningDuo
 # Initialize the ReasoningDuo
 duo = ReasoningDuo(
     model_name="reasoning-agent-01",
-    model_names=["gpt-4o-mini", "gpt-4o"]
+    model_names=["gpt-4o-mini", "gpt-4.1"]
 )
 
 # Run a single task
@@ -97,7 +97,7 @@ You can customize both agents by modifying their initialization parameters:
 duo = ReasoningDuo(
     model_name="custom-reasoning-agent",
     description="Specialized financial analysis agent",
-    model_names=["gpt-4o-mini", "gpt-4o"],
+    model_names=["gpt-4o-mini", "gpt-4.1"],
     system_prompt="You are a financial expert AI assistant..."
 )
 ```

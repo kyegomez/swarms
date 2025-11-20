@@ -64,6 +64,7 @@ class MCPExecutionError(MCPError):
 ########################################################
 def transform_mcp_tool_to_openai_tool(
     mcp_tool: MCPTool,
+    verbose: bool = False,
 ) -> ChatCompletionToolParam:
     """
     Convert an MCP tool to an OpenAI tool.
@@ -72,9 +73,11 @@ def transform_mcp_tool_to_openai_tool(
     Returns:
         ChatCompletionToolParam: The OpenAI-compatible tool parameter.
     """
-    logger.info(
-        f"Transforming MCP tool '{mcp_tool.name}' to OpenAI tool format."
-    )
+    if verbose:
+        logger.info(
+            f"Transforming MCP tool '{mcp_tool.name}' to OpenAI tool format."
+        )
+
     return ChatCompletionToolParam(
         type="function",
         function=FunctionDefinition(
@@ -346,6 +349,7 @@ async def aget_mcp_tools(
     format: str = "openai",
     connection: Optional[MCPConnection] = None,
     transport: Optional[str] = None,
+    verbose: bool = True,
     *args,
     **kwargs,
 ) -> List[Dict[str, Any]]:
@@ -356,15 +360,17 @@ async def aget_mcp_tools(
         format (str): Format to return tools in ('openai' or 'mcp').
         connection (Optional[MCPConnection]): Optional connection object.
         transport (Optional[str]): Transport type. If None, auto-detects.
+        verbose (bool): Enable verbose logging. Defaults to True.
     Returns:
         List[Dict[str, Any]]: List of available MCP tools in OpenAI format.
     Raises:
         MCPValidationError: If server_path is invalid.
         MCPConnectionError: If connection to server fails.
     """
-    logger.info(
-        f"aget_mcp_tools called for server_path: {server_path}"
-    )
+    if verbose:
+        logger.info(
+            f"aget_mcp_tools called for server_path: {server_path}"
+        )
     if transport is None:
         transport = auto_detect_transport(server_path)
     if exists(connection):
@@ -381,9 +387,10 @@ async def aget_mcp_tools(
             server_path,
         )
         url = server_path
-    logger.info(
-        f"Fetching MCP tools from server: {server_path} using transport: {transport}"
-    )
+    if verbose:
+        logger.info(
+            f"Fetching MCP tools from server: {server_path} using transport: {transport}"
+        )
     try:
         async with get_mcp_client(
             transport,
@@ -402,9 +409,10 @@ async def aget_mcp_tools(
                 tools = await load_mcp_tools(
                     session=session, format=format
                 )
-                logger.info(
-                    f"Successfully fetched {len(tools)} tools"
-                )
+                if verbose:
+                    logger.info(
+                        f"Successfully fetched {len(tools)} tools"
+                    )
                 return tools
     except Exception as e:
         logger.error(
@@ -420,6 +428,7 @@ def get_mcp_tools_sync(
     format: str = "openai",
     connection: Optional[MCPConnection] = None,
     transport: Optional[str] = "streamable-http",
+    verbose: bool = True,
     *args,
     **kwargs,
 ) -> List[Dict[str, Any]]:
@@ -430,6 +439,7 @@ def get_mcp_tools_sync(
         format (str): Format to return tools in ('openai' or 'mcp').
         connection (Optional[MCPConnection]): Optional connection object.
         transport (Optional[str]): Transport type. If None, auto-detects.
+        verbose (bool): Enable verbose logging. Defaults to True.
     Returns:
         List[Dict[str, Any]]: List of available MCP tools in OpenAI format.
     Raises:
@@ -437,9 +447,10 @@ def get_mcp_tools_sync(
         MCPConnectionError: If connection to server fails.
         MCPExecutionError: If event loop management fails.
     """
-    logger.info(
-        f"get_mcp_tools_sync called for server_path: {server_path}"
-    )
+    if verbose:
+        logger.info(
+            f"get_mcp_tools_sync called for server_path: {server_path}"
+        )
     if transport is None:
         transport = auto_detect_transport(server_path)
     with get_or_create_event_loop() as loop:
@@ -450,6 +461,7 @@ def get_mcp_tools_sync(
                     format=format,
                     connection=connection,
                     transport=transport,
+                    verbose=verbose,
                     *args,
                     **kwargs,
                 )
@@ -468,6 +480,7 @@ def _fetch_tools_for_server(
     connection: Optional[MCPConnection] = None,
     format: str = "openai",
     transport: Optional[str] = None,
+    verbose: bool = True,
 ) -> List[Dict[str, Any]]:
     """
     Helper function to fetch tools for a single server.
@@ -476,10 +489,12 @@ def _fetch_tools_for_server(
         connection (Optional[MCPConnection]): Optional connection object.
         format (str): Format to return tools in.
         transport (Optional[str]): Transport type. If None, auto-detects.
+        verbose (bool): Enable verbose logging. Defaults to True.
     Returns:
         List[Dict[str, Any]]: List of available MCP tools.
     """
-    logger.info(f"_fetch_tools_for_server called for url: {url}")
+    if verbose:
+        logger.info(f"_fetch_tools_for_server called for url: {url}")
     if transport is None:
         transport = auto_detect_transport(url)
     return get_mcp_tools_sync(
@@ -487,6 +502,7 @@ def _fetch_tools_for_server(
         connection=connection,
         format=format,
         transport=transport,
+        verbose=verbose,
     )
 
 
@@ -497,6 +513,7 @@ def get_tools_for_multiple_mcp_servers(
     output_type: Literal["json", "dict", "str"] = "str",
     max_workers: Optional[int] = None,
     transport: Optional[str] = None,
+    verbose: bool = True,
 ) -> List[Dict[str, Any]]:
     """
     Get tools for multiple MCP servers concurrently using ThreadPoolExecutor.
@@ -507,18 +524,23 @@ def get_tools_for_multiple_mcp_servers(
         output_type (Literal): Output format type.
         max_workers (Optional[int]): Max worker threads.
         transport (Optional[str]): Transport type. If None, auto-detects per URL.
+        verbose (bool): Enable verbose logging. Defaults to True.
     Returns:
         List[Dict[str, Any]]: Combined list of tools from all servers.
     """
-    logger.info(
-        f"get_tools_for_multiple_mcp_servers called for {len(urls)} urls."
-    )
+    if verbose:
+        logger.info(
+            f"get_tools_for_multiple_mcp_servers called for {len(urls)} urls."
+        )
+
     tools = []
+
     (
         min(32, os.cpu_count() + 4)
         if max_workers is None
         else max_workers
     )
+
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         if exists(connections):
             future_to_url = {
@@ -528,6 +550,7 @@ def get_tools_for_multiple_mcp_servers(
                     connection,
                     format,
                     transport,
+                    verbose,
                 ): url
                 for url, connection in zip(urls, connections)
             }
@@ -539,6 +562,7 @@ def get_tools_for_multiple_mcp_servers(
                     None,
                     format,
                     transport,
+                    verbose,
                 ): url
                 for url in urls
             }
@@ -563,6 +587,7 @@ async def _execute_tool_call_simple(
     connection: Optional[MCPConnection] = None,
     output_type: Literal["json", "dict", "str"] = "str",
     transport: Optional[str] = None,
+    verbose: bool = True,
     *args,
     **kwargs,
 ):
@@ -574,14 +599,16 @@ async def _execute_tool_call_simple(
         connection (Optional[MCPConnection]): Optional connection object.
         output_type (Literal): Output format type.
         transport (Optional[str]): Transport type. If None, auto-detects.
+        verbose (bool): Enable verbose logging. Defaults to True.
     Returns:
         The tool call result in the specified output format.
     Raises:
         MCPExecutionError, MCPConnectionError
     """
-    logger.info(
-        f"_execute_tool_call_simple called for server_path: {server_path}"
-    )
+    if verbose:
+        logger.info(
+            f"_execute_tool_call_simple called for server_path: {server_path}"
+        )
     if transport is None:
         transport = auto_detect_transport(server_path)
     if exists(connection):
@@ -638,9 +665,10 @@ async def _execute_tool_call_simple(
                         out = "\n".join(formatted_lines)
                     else:
                         out = call_result.model_dump()
-                    logger.info(
-                        f"Tool call executed successfully for {server_path}"
-                    )
+                    if verbose:
+                        logger.info(
+                            f"Tool call executed successfully for {server_path}"
+                        )
                     return out
                 except Exception as e:
                     logger.error(
@@ -664,6 +692,7 @@ async def execute_tool_call_simple(
     connection: Optional[MCPConnection] = None,
     output_type: Literal["json", "dict", "str", "formatted"] = "str",
     transport: Optional[str] = None,
+    verbose: bool = True,
     *args,
     **kwargs,
 ) -> List[Dict[str, Any]]:
@@ -675,12 +704,14 @@ async def execute_tool_call_simple(
         connection (Optional[MCPConnection]): Optional connection object.
         output_type (Literal): Output format type.
         transport (Optional[str]): Transport type. If None, auto-detects.
+        verbose (bool): Enable verbose logging. Defaults to True.
     Returns:
         The tool call result in the specified output format.
     """
-    logger.info(
-        f"execute_tool_call_simple called for server_path: {server_path}"
-    )
+    if verbose:
+        logger.info(
+            f"execute_tool_call_simple called for server_path: {server_path}"
+        )
     if transport is None:
         transport = auto_detect_transport(server_path)
     if isinstance(response, str):
@@ -691,6 +722,7 @@ async def execute_tool_call_simple(
         connection=connection,
         output_type=output_type,
         transport=transport,
+        verbose=verbose,
         *args,
         **kwargs,
     )
@@ -701,6 +733,7 @@ def _create_server_tool_mapping(
     connections: List[MCPConnection] = None,
     format: str = "openai",
     transport: Optional[str] = None,
+    verbose: bool = True,
 ) -> Dict[str, Dict[str, Any]]:
     """
     Create a mapping of function names to server information for all MCP servers.
@@ -709,6 +742,7 @@ def _create_server_tool_mapping(
         connections (List[MCPConnection]): Optional list of MCPConnection objects.
         format (str): Format to fetch tools in.
         transport (Optional[str]): Transport type. If None, auto-detects per URL.
+        verbose (bool): Enable verbose logging. Defaults to True.
     Returns:
         Dict[str, Dict[str, Any]]: Mapping of function names to server info.
     """
@@ -725,6 +759,7 @@ def _create_server_tool_mapping(
                 connection=connection,
                 format=format,
                 transport=transport,
+                verbose=verbose,
             )
             for tool in tools:
                 if isinstance(tool, dict) and "function" in tool:
@@ -755,6 +790,7 @@ async def _create_server_tool_mapping_async(
     connections: List[MCPConnection] = None,
     format: str = "openai",
     transport: str = "streamable-http",
+    verbose: bool = True,
 ) -> Dict[str, Dict[str, Any]]:
     """
     Async version: Create a mapping of function names to server information for all MCP servers.
@@ -763,6 +799,7 @@ async def _create_server_tool_mapping_async(
         connections (List[MCPConnection]): Optional list of MCPConnection objects.
         format (str): Format to fetch tools in.
         transport (str): Transport type.
+        verbose (bool): Enable verbose logging. Defaults to True.
     Returns:
         Dict[str, Dict[str, Any]]: Mapping of function names to server info.
     """
@@ -779,6 +816,7 @@ async def _create_server_tool_mapping_async(
                 connection=connection,
                 format=format,
                 transport=transport,
+                verbose=verbose,
             )
             for tool in tools:
                 if isinstance(tool, dict) and "function" in tool:
@@ -809,6 +847,7 @@ async def _execute_tool_on_server(
     server_info: Dict[str, Any],
     output_type: Literal["json", "dict", "str", "formatted"] = "str",
     transport: str = "streamable-http",
+    verbose: bool = True,
 ) -> Dict[str, Any]:
     """
     Execute a single tool call on a specific server.
@@ -817,6 +856,7 @@ async def _execute_tool_on_server(
         server_info (Dict[str, Any]): Server information from the mapping.
         output_type (Literal): Output format type.
         transport (str): Transport type.
+        verbose (bool): Enable verbose logging. Defaults to True.
     Returns:
         Dict[str, Any]: Execution result with server metadata.
     """
@@ -827,6 +867,7 @@ async def _execute_tool_on_server(
             connection=server_info["connection"],
             output_type=output_type,
             transport=transport,
+            verbose=verbose,
         )
         return {
             "server_url": server_info["url"],
@@ -860,6 +901,7 @@ async def execute_multiple_tools_on_multiple_mcp_servers(
     output_type: Literal["json", "dict", "str", "formatted"] = "str",
     max_concurrent: Optional[int] = None,
     transport: str = "streamable-http",
+    verbose: bool = True,
     *args,
     **kwargs,
 ) -> List[Dict[str, Any]]:
@@ -872,88 +914,103 @@ async def execute_multiple_tools_on_multiple_mcp_servers(
         output_type (Literal): Output format type.
         max_concurrent (Optional[int]): Max concurrent tasks.
         transport (str): Transport type.
+        verbose (bool): Enable verbose logging. Defaults to True.
     Returns:
         List[Dict[str, Any]]: List of execution results.
     """
     if not responses:
-        logger.warning("No responses provided for execution")
+        if verbose:
+            logger.warning("No responses provided for execution")
         return []
     if not urls:
         raise MCPValidationError("No server URLs provided")
-    logger.info(
-        f"Creating tool mapping for {len(urls)} servers using transport: {transport}"
-    )
+    if verbose:
+        logger.info(
+            f"Creating tool mapping for {len(urls)} servers using transport: {transport}"
+        )
     server_tool_mapping = await _create_server_tool_mapping_async(
         urls=urls,
         connections=connections,
         format="openai",
         transport=transport,
+        verbose=verbose,
     )
     if not server_tool_mapping:
         raise MCPExecutionError(
             "No tools found on any of the provided servers"
         )
-    logger.info(
-        f"Found {len(server_tool_mapping)} unique functions across all servers"
-    )
+    if verbose:
+        logger.info(
+            f"Found {len(server_tool_mapping)} unique functions across all servers"
+        )
     all_tool_calls = []
-    logger.info(
-        f"Processing {len(responses)} responses for tool call extraction"
-    )
+    if verbose:
+        logger.info(
+            f"Processing {len(responses)} responses for tool call extraction"
+        )
     if len(responses) > 10 and all(
         isinstance(r, str) and len(r) == 1 for r in responses
     ):
-        logger.info(
-            "Detected character-by-character response, reconstructing JSON string"
-        )
+        if verbose:
+            logger.info(
+                "Detected character-by-character response, reconstructing JSON string"
+            )
         try:
             reconstructed_response = "".join(responses)
-            logger.info(
-                f"Reconstructed response length: {len(reconstructed_response)}"
-            )
-            logger.debug(
-                f"Reconstructed response: {reconstructed_response}"
-            )
+            if verbose:
+                logger.info(
+                    f"Reconstructed response length: {len(reconstructed_response)}"
+                )
+                logger.debug(
+                    f"Reconstructed response: {reconstructed_response}"
+                )
             try:
                 json.loads(reconstructed_response)
-                logger.info(
-                    "Successfully validated reconstructed JSON response"
-                )
+                if verbose:
+                    logger.info(
+                        "Successfully validated reconstructed JSON response"
+                    )
             except json.JSONDecodeError as e:
-                logger.warning(
-                    f"Reconstructed response is not valid JSON: {str(e)}"
-                )
-                logger.debug(
-                    f"First 100 chars: {reconstructed_response[:100]}"
-                )
-                logger.debug(
-                    f"Last 100 chars: {reconstructed_response[-100:]}"
-                )
+                if verbose:
+                    logger.warning(
+                        f"Reconstructed response is not valid JSON: {str(e)}"
+                    )
+                    logger.debug(
+                        f"First 100 chars: {reconstructed_response[:100]}"
+                    )
+                    logger.debug(
+                        f"Last 100 chars: {reconstructed_response[-100:]}"
+                    )
             responses = [reconstructed_response]
         except Exception as e:
-            logger.warning(
-                f"Failed to reconstruct response from characters: {str(e)}"
-            )
+            if verbose:
+                logger.warning(
+                    f"Failed to reconstruct response from characters: {str(e)}"
+                )
     for i, response in enumerate(responses):
-        logger.debug(
-            f"Processing response {i}: {type(response)} - {response}"
-        )
+        if verbose:
+            logger.debug(
+                f"Processing response {i}: {type(response)} - {response}"
+            )
         if isinstance(response, str):
             try:
                 response = json.loads(response)
-                logger.debug(
-                    f"Parsed JSON string response {i}: {response}"
-                )
+                if verbose:
+                    logger.debug(
+                        f"Parsed JSON string response {i}: {response}"
+                    )
             except json.JSONDecodeError:
-                logger.warning(
-                    f"Failed to parse JSON response at index {i}: {response}"
-                )
+                if verbose:
+                    logger.warning(
+                        f"Failed to parse JSON response at index {i}: {response}"
+                    )
                 continue
         if isinstance(response, dict):
             if "function" in response:
-                logger.debug(
-                    f"Found single tool call in response {i}: {response['function']}"
-                )
+                if verbose:
+                    logger.debug(
+                        f"Found single tool call in response {i}: {response['function']}"
+                    )
                 if isinstance(
                     response["function"].get("arguments"), str
                 ):
@@ -963,18 +1020,21 @@ async def execute_multiple_tools_on_multiple_mcp_servers(
                                 response["function"]["arguments"]
                             )
                         )
-                        logger.debug(
-                            f"Parsed function arguments: {response['function']['arguments']}"
-                        )
+                        if verbose:
+                            logger.debug(
+                                f"Parsed function arguments: {response['function']['arguments']}"
+                            )
                     except json.JSONDecodeError:
-                        logger.warning(
-                            f"Failed to parse function arguments: {response['function']['arguments']}"
-                        )
+                        if verbose:
+                            logger.warning(
+                                f"Failed to parse function arguments: {response['function']['arguments']}"
+                            )
                 all_tool_calls.append((i, response))
             elif "tool_calls" in response:
-                logger.debug(
-                    f"Found multiple tool calls in response {i}: {len(response['tool_calls'])} calls"
-                )
+                if verbose:
+                    logger.debug(
+                        f"Found multiple tool calls in response {i}: {len(response['tool_calls'])} calls"
+                    )
                 for tool_call in response["tool_calls"]:
                     if isinstance(
                         tool_call.get("function", {}).get(
@@ -988,44 +1048,55 @@ async def execute_multiple_tools_on_multiple_mcp_servers(
                                     tool_call["function"]["arguments"]
                                 )
                             )
-                            logger.debug(
-                                f"Parsed tool call arguments: {tool_call['function']['arguments']}"
-                            )
+                            if verbose:
+                                logger.debug(
+                                    f"Parsed tool call arguments: {tool_call['function']['arguments']}"
+                                )
                         except json.JSONDecodeError:
-                            logger.warning(
-                                f"Failed to parse tool call arguments: {tool_call['function']['arguments']}"
-                            )
+                            if verbose:
+                                logger.warning(
+                                    f"Failed to parse tool call arguments: {tool_call['function']['arguments']}"
+                                )
                     all_tool_calls.append((i, tool_call))
             elif "name" in response and "arguments" in response:
-                logger.debug(
-                    f"Found direct tool call in response {i}: {response}"
-                )
+                if verbose:
+                    logger.debug(
+                        f"Found direct tool call in response {i}: {response}"
+                    )
                 if isinstance(response.get("arguments"), str):
                     try:
                         response["arguments"] = json.loads(
                             response["arguments"]
                         )
-                        logger.debug(
-                            f"Parsed direct tool call arguments: {response['arguments']}"
-                        )
+                        if verbose:
+                            logger.debug(
+                                f"Parsed direct tool call arguments: {response['arguments']}"
+                            )
                     except json.JSONDecodeError:
-                        logger.warning(
-                            f"Failed to parse direct tool call arguments: {response['arguments']}"
-                        )
+                        if verbose:
+                            logger.warning(
+                                f"Failed to parse direct tool call arguments: {response['arguments']}"
+                            )
                 all_tool_calls.append((i, {"function": response}))
             else:
-                logger.debug(
-                    f"Response {i} is a dict but doesn't match expected tool call formats: {list(response.keys())}"
-                )
+                if verbose:
+                    logger.debug(
+                        f"Response {i} is a dict but doesn't match expected tool call formats: {list(response.keys())}"
+                    )
         else:
-            logger.warning(
-                f"Unsupported response type at index {i}: {type(response)}"
-            )
+            if verbose:
+                logger.warning(
+                    f"Unsupported response type at index {i}: {type(response)}"
+                )
             continue
     if not all_tool_calls:
-        logger.warning("No tool calls found in responses")
+        if verbose:
+            logger.warning("No tool calls found in responses")
         return []
-    logger.info(f"Found {len(all_tool_calls)} tool calls to execute")
+    if verbose:
+        logger.info(
+            f"Found {len(all_tool_calls)} tool calls to execute"
+        )
     max_concurrent = max_concurrent or len(all_tool_calls)
     semaphore = asyncio.Semaphore(max_concurrent)
 
@@ -1036,9 +1107,10 @@ async def execute_multiple_tools_on_multiple_mcp_servers(
                 "name", "unknown"
             )
             if function_name not in server_tool_mapping:
-                logger.warning(
-                    f"Function '{function_name}' not found on any server"
-                )
+                if verbose:
+                    logger.warning(
+                        f"Function '{function_name}' not found on any server"
+                    )
                 return {
                     "response_index": response_index,
                     "function_name": function_name,
@@ -1052,6 +1124,7 @@ async def execute_multiple_tools_on_multiple_mcp_servers(
                 server_info=server_info,
                 output_type=output_type,
                 transport=transport,
+                verbose=verbose,
             )
             result["response_index"] = response_index
             return result
@@ -1082,9 +1155,10 @@ async def execute_multiple_tools_on_multiple_mcp_servers(
             )
         else:
             processed_results.append(result)
-    logger.info(
-        f"Completed execution of {len(processed_results)} tool calls"
-    )
+    if verbose:
+        logger.info(
+            f"Completed execution of {len(processed_results)} tool calls"
+        )
     return processed_results
 
 
@@ -1095,6 +1169,7 @@ def execute_multiple_tools_on_multiple_mcp_servers_sync(
     output_type: Literal["json", "dict", "str", "formatted"] = "str",
     max_concurrent: Optional[int] = None,
     transport: str = "streamable-http",
+    verbose: bool = True,
     *args,
     **kwargs,
 ) -> List[Dict[str, Any]]:
@@ -1107,6 +1182,7 @@ def execute_multiple_tools_on_multiple_mcp_servers_sync(
         output_type (Literal): Output format type.
         max_concurrent (Optional[int]): Max concurrent tasks.
         transport (str): Transport type.
+        verbose (bool): Enable verbose logging. Defaults to True.
     Returns:
         List[Dict[str, Any]]: List of execution results.
     """
@@ -1120,6 +1196,7 @@ def execute_multiple_tools_on_multiple_mcp_servers_sync(
                     output_type=output_type,
                     max_concurrent=max_concurrent,
                     transport=transport,
+                    verbose=verbose,
                     *args,
                     **kwargs,
                 )

@@ -1,7 +1,7 @@
 from swarms.structs.conversation import Conversation
 
 # Create a conversation object
-conversation = Conversation(backend="in-memory")
+conversation = Conversation()
 
 # Add a message to the conversation
 conversation.add(

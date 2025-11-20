@@ -58,7 +58,6 @@ This index organizes **100+ production-ready examples** from our [Swarms Example
 | Claude | [Claude 4 Example](https://github.com/kyegomez/swarms/blob/master/examples/models/claude_4_example.py) | Anthropic Claude 4 model integration for advanced reasoning capabilities |
 | Swarms Claude | [Swarms Claude Example](https://github.com/kyegomez/swarms/blob/master/examples/models/swarms_claude_example.py) | Optimized Claude integration within the Swarms framework |
 | Lumo | [Lumo Example](https://github.com/kyegomez/swarms/blob/master/examples/models/lumo_example.py) | Lumo AI model integration for specialized tasks |
-| VLLM | [VLLM Example](https://github.com/kyegomez/swarms/blob/master/examples/models/vllm_example.py) | High-performance inference using VLLM for large language models |
 | Llama4 | [LiteLLM Example](https://github.com/kyegomez/swarms/blob/master/examples/models/llama4_examples/litellm_example.py) | Llama4 model integration using LiteLLM for efficient inference |
 
 ### Tools and Function Calling
@@ -242,12 +241,20 @@ This index organizes **100+ production-ready examples** from our [Swarms Example
 | Business | [Business Strategy](https://github.com/The-Swarm-Corporation/swarms-examples/blob/main/examples/applications/business_strategy/business_strategy_graph/growth_agent.py) | Strategic planning and business development swarm |
 | Research | [Astronomy Research](https://github.com/The-Swarm-Corporation/swarms-examples/blob/main/examples/applications/astronomy/multiversal_detection/test.py) | Collaborative space research and astronomical analysis |
 
-## Additional Resources
 
-- [Github](https://github.com/kyegomez/swarms)
+-------
 
-- Discord (https://t.co/zlLe07AqUX)
+## Connect With Us
 
-- Telegram (https://t.co/dSRy143zQv)
+Join our community of agent engineers and researchers for technical support, cutting-edge updates, and exclusive access to world-class agent engineering insights!
 
-- X Community (https://x.com/i/communities/1875452887414804745)
+| Platform | Description | Link |
+|----------|-------------|------|
+| 📚 Documentation | Official documentation and guides | [docs.swarms.world](https://docs.swarms.world) |
+| 📝 Blog | Latest updates and technical articles | [Medium](https://medium.com/@kyeg) |
+| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/EamjgSaEQf) |
+| 🐦 Twitter | Latest news and announcements | [@swarms_corp](https://twitter.com/swarms_corp) |
+| 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
+| 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
+| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/swarms_calendar) |
+| 🚀 Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |

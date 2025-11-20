@@ -4,8 +4,10 @@ import traceback
 import uuid
 from pathlib import Path
 from typing import List, Optional
+import socket
 
 import litellm
+from pydantic import BaseModel
 import requests
 from litellm import completion, supports_vision
 from loguru import logger
@@ -14,6 +16,12 @@ from loguru import logger
 class LiteLLMException(Exception):
     """
     Exception for LiteLLM.
+    """
+
+
+class NetworkConnectionError(Exception):
+    """
+    Exception raised when network connectivity issues are detected.
     """
 
 
@@ -209,7 +217,7 @@ class LiteLLM:
 
     def __init__(
         self,
-        model_name: str = "gpt-4o",
+        model_name: str = "gpt-4.1",
         system_prompt: str = None,
         stream: bool = False,
         temperature: float = 0.5,
@@ -242,7 +250,7 @@ class LiteLLM:
         Initialize the LiteLLM with the given parameters.
 
         Args:
-            model_name (str, optional): The name of the model to use. Defaults to "gpt-4o".
+            model_name (str, optional): The name of the model to use. Defaults to "gpt-4.1".
             system_prompt (str, optional): The system prompt to use. Defaults to None.
             stream (bool, optional): Whether to stream the output. Defaults to False.
             temperature (float, optional): The temperature for the model. Defaults to 0.5.
@@ -394,74 +402,119 @@ class LiteLLM:
                 # Store other types of runtime_args for debugging
                 completion_params["runtime_args"] = runtime_args
 
+    # def output_for_tools(self, response: any):
+    #     """
+    #     Process tool calls from the LLM response and return formatted output.
+
+    #     Args:
+    #         response: The response object from the LLM API call
+
+    #     Returns:
+    #         dict or list: Formatted tool call data, or default response if no tool calls
+    #     """
+    #     try:
+    #         # Convert response to dict if it's a Pydantic model
+    #         if hasattr(response, "model_dump"):
+    #             response_dict = response.model_dump()
+    #         else:
+    #             response_dict = response
+
+    #         print(f"Response dict: {response_dict}")
+
+    #         # Check if tool_calls exists and is not None
+    #         if (
+    #             response_dict.get("choices")
+    #             and response_dict["choices"][0].get("message")
+    #             and response_dict["choices"][0]["message"].get(
+    #                 "tool_calls"
+    #             )
+    #             and len(
+    #                 response_dict["choices"][0]["message"][
+    #                     "tool_calls"
+    #                 ]
+    #             )
+    #             > 0
+    #         ):
+    #             tool_call = response_dict["choices"][0]["message"][
+    #                 "tool_calls"
+    #             ][0]
+    #             if "function" in tool_call:
+    #                 return {
+    #                     "function": {
+    #                         "name": tool_call["function"].get(
+    #                             "name", ""
+    #                         ),
+    #                         "arguments": tool_call["function"].get(
+    #                             "arguments", "{}"
+    #                         ),
+    #                     }
+    #                 }
+    #             else:
+    #                 # Handle case where tool_call structure is different
+    #                 return tool_call
+    #         else:
+    #             # Return a default response when no tool calls are present
+    #             logger.warning(
+    #                 "No tool calls found in response, returning default response"
+    #             )
+    #             return {
+    #                 "function": {
+    #                     "name": "no_tool_call",
+    #                     "arguments": "{}",
+    #                 }
+    #             }
+    #     except Exception as e:
+    #         logger.error(f"Error processing tool calls: {str(e)} Traceback: {traceback.format_exc()}")
+
     def output_for_tools(self, response: any):
         """
-        Process tool calls from the LLM response and return formatted output.
+        Process and extract tool call information from the LLM response.
+
+        This function handles the output for tool-based responses, supporting both
+        MCP (Multi-Call Protocol) and standard tool call formats. It extracts the
+        relevant function name and arguments from the response, handling both
+        BaseModel and dictionary outputs.
 
         Args:
-            response: The response object from the LLM API call
+            response (any): The response object returned by the LLM API call.
 
         Returns:
-            dict or list: Formatted tool call data, or default response if no tool calls
+            dict or list: A dictionary containing the function name and arguments
+                if MCP call is used, or the tool calls output (as a dict or list)
+                for standard tool call responses.
         """
-        try:
-            # Convert response to dict if it's a Pydantic model
-            if hasattr(response, "model_dump"):
-                response_dict = response.model_dump()
-            else:
-                response_dict = response
+        if self.mcp_call is True:
+            tool_calls = response.choices[0].message.tool_calls
 
-            # Check if tool_calls exists and is not None
-            if (
-                response_dict.get("choices")
-                and response_dict["choices"][0].get("message")
-                and response_dict["choices"][0]["message"].get(
-                    "tool_calls"
-                )
-                and len(
-                    response_dict["choices"][0]["message"][
-                        "tool_calls"
-                    ]
-                )
-                > 0
-            ):
-                tool_call = response_dict["choices"][0]["message"][
-                    "tool_calls"
-                ][0]
-                if "function" in tool_call:
-                    return {
+            # Check if there are multiple tool calls
+            if len(tool_calls) > 1:
+                # Return all tool calls if there are multiple
+                return [
+                    {
                         "function": {
-                            "name": tool_call["function"].get(
-                                "name", ""
-                            ),
-                            "arguments": tool_call["function"].get(
-                                "arguments", "{}"
-                            ),
+                            "name": tool_call.function.name,
+                            "arguments": tool_call.function.arguments,
                         }
                     }
-                else:
-                    # Handle case where tool_call structure is different
-                    return tool_call
+                    for tool_call in tool_calls
+                ]
             else:
-                # Return a default response when no tool calls are present
-                logger.warning(
-                    "No tool calls found in response, returning default response"
-                )
-                return {
+                # Single tool call
+                out = tool_calls[0].function
+                output = {
                     "function": {
-                        "name": "no_tool_call",
-                        "arguments": "{}",
+                        "name": out.name,
+                        "arguments": out.arguments,
                     }
                 }
-        except Exception as e:
-            logger.error(f"Error processing tool calls: {str(e)}")
-            # Return a safe default response
-            return {
-                "function": {
-                    "name": "error_processing_tool_calls",
-                    "arguments": f'{{"error": "{str(e)}"}}',
-                }
-            }
+                return output
+        else:
+            out = response.choices[0].message.tool_calls
+
+            if isinstance(out, BaseModel):
+                out = out.model_dump()
+
+            return out
 
     def output_for_reasoning(self, response: any):
         """
@@ -829,6 +882,69 @@ class LiteLLM:
         else:
             return False
 
+    @staticmethod
+    def check_internet_connection(
+        host: str = "8.8.8.8", port: int = 53, timeout: int = 3
+    ) -> bool:
+        """
+        Check if there is an active internet connection.
+
+        This method attempts to establish a socket connection to a DNS server
+        (default is Google's DNS at 8.8.8.8) to verify internet connectivity.
+
+        Args:
+            host (str, optional): The host to connect to for checking connectivity.
+                Defaults to "8.8.8.8" (Google DNS).
+            port (int, optional): The port to use for the connection. Defaults to 53 (DNS).
+            timeout (int, optional): Connection timeout in seconds. Defaults to 3.
+
+        Returns:
+            bool: True if internet connection is available, False otherwise.
+        """
+        try:
+            socket.setdefaulttimeout(timeout)
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(
+                (host, port)
+            )
+            return True
+        except (socket.error, socket.timeout):
+            return False
+
+    @staticmethod
+    def is_local_model(
+        model_name: str, base_url: Optional[str] = None
+    ) -> bool:
+        """
+        Determine if the model is a local model (e.g., Ollama, LlamaCPP).
+
+        Args:
+            model_name (str): The name of the model to check.
+            base_url (str, optional): The base URL if specified. Defaults to None.
+
+        Returns:
+            bool: True if the model is a local model, False otherwise.
+        """
+        local_indicators = [
+            "ollama",
+            "llama-cpp",
+            "local",
+            "localhost",
+            "127.0.0.1",
+            "custom",
+        ]
+
+        model_lower = model_name.lower()
+        is_local_model = any(
+            indicator in model_lower for indicator in local_indicators
+        )
+
+        is_local_url = base_url is not None and any(
+            indicator in base_url.lower()
+            for indicator in local_indicators
+        )
+
+        return is_local_model or is_local_url
+
     def run(
         self,
         task: str,
@@ -978,10 +1094,74 @@ class LiteLLM:
             else:
                 return response.choices[0].message.content
 
+        except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.RequestException,
+            ConnectionError,
+            TimeoutError,
+        ) as network_error:
+            # Check if this is a local model
+            if self.is_local_model(self.model_name, self.base_url):
+                error_msg = (
+                    f"Network error connecting to local model '{self.model_name}': {str(network_error)}\n\n"
+                    "Troubleshooting steps:\n"
+                    "1. Ensure your local model server (e.g., Ollama, LlamaCPP) is running\n"
+                    "2. Verify the base_url is correct and accessible\n"
+                    "3. Check that the model is properly loaded and available\n"
+                )
+                logger.error(error_msg)
+                raise NetworkConnectionError(
+                    error_msg
+                ) from network_error
+
+            # Check internet connectivity
+            has_internet = self.check_internet_connection()
+
+            if not has_internet:
+                error_msg = (
+                    f"No internet connection detected while trying to use model '{self.model_name}'.\n\n"
+                    "Possible solutions:\n"
+                    "1. Check your internet connection and try again\n"
+                    "2. Reconnect to your network\n"
+                    "3. Use a local model instead (e.g., Ollama):\n"
+                    "   - Install Ollama from https://ollama.ai\n"
+                    "   - Run: ollama pull llama2\n"
+                    "   - Use model_name='ollama/llama2' in your LiteLLM configuration\n"
+                    "\nExample:\n"
+                    "  model = LiteLLM(model_name='ollama/llama2')\n"
+                )
+                logger.error(error_msg)
+                raise NetworkConnectionError(
+                    error_msg
+                ) from network_error
+            else:
+                # Internet is available but request failed
+                error_msg = (
+                    f"Network error occurred while connecting to '{self.model_name}': {str(network_error)}\n\n"
+                    "Possible causes:\n"
+                    "1. The API endpoint may be temporarily unavailable\n"
+                    "2. Connection timeout or slow network\n"
+                    "3. Firewall or proxy blocking the connection\n"
+                    "\nConsider using a local model as a fallback:\n"
+                    "  model = LiteLLM(model_name='ollama/llama2')\n"
+                )
+                logger.error(error_msg)
+                raise NetworkConnectionError(
+                    error_msg
+                ) from network_error
+
         except LiteLLMException as error:
             logger.error(
                 f"Error in LiteLLM run: {str(error)} Traceback: {traceback.format_exc()}"
             )
+            raise
+
+        except Exception as error:
+            logger.error(
+                f"Unexpected error in LiteLLM run: {str(error)} Traceback: {traceback.format_exc()}"
+            )
+            raise
 
     def __call__(self, task: str, *args, **kwargs):
         """

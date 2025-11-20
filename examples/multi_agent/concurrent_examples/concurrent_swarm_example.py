@@ -9,7 +9,7 @@ if __name__ == "__main__":
         Agent(
             agent_name=f"Financial-Analysis-Agent-{i}",
             system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-            model_name="gpt-4o",
+            model_name="gpt-4.1",
             max_loops=1,
         )
         for i in range(3)  # Adjust number of agents as needed

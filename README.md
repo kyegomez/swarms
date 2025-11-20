@@ -1,98 +1,12 @@
 <div align="center">
   <a href="https://swarms.world">
-    <img src="https://github.com/kyegomez/swarms/blob/master/images/swarmslogobanner.png" style="margin: 15px; max-width: 700px" width="100%" alt="Logo">
+    <img src="https://github.com/kyegomez/swarms/blob/master/images/new_logo.png" style="margin: 15px; max-width: 350px" width="80%" alt="Logo">
   </a>
 </div>
 <p align="center">
   <em>The Enterprise-Grade Production-Ready Multi-Agent Orchestration Framework </em>
 </p>
 
-<p align="center">
-  <a href="https://pypi.org/project/swarms/" target="_blank">
-    <picture>
-      <source srcset="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54" media="(prefers-color-scheme: dark)">
-      <img alt="Python" src="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54" />
-    </picture>
-    <picture>
-      <source srcset="https://img.shields.io/pypi/v/swarms?style=for-the-badge&color=3670A0" media="(prefers-color-scheme: dark)">
-      <img alt="Version" src="https://img.shields.io/pypi/v/swarms?style=for-the-badge&color=3670A0">
-    </picture>
-  </a>
-</p>
-
-<p align="center">
-  <!-- Project Stats - Most Important First -->
-  <a href="https://github.com/kyegomez/swarms/stargazers">
-    <picture>
-      <source srcset="https://img.shields.io/github/stars/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/github/stars/kyegomez/swarms?style=for-the-badge" alt="GitHub stars">
-    </picture>
-  </a>
-  <a href="https://github.com/kyegomez/swarms/network">
-    <picture>
-      <source srcset="https://img.shields.io/github/forks/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/github/forks/kyegomez/swarms?style=for-the-badge" alt="GitHub forks">
-    </picture>
-  </a>
-  <a href="https://github.com/kyegomez/swarms/issues">
-    <picture>
-      <source srcset="https://img.shields.io/github/issues/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/github/issues/kyegomez/swarms?style=for-the-badge" alt="GitHub issues">
-    </picture>
-  </a>
-  <a href="https://github.com/kyegomez/swarms/blob/main/LICENSE">
-    <picture>
-      <source srcset="https://img.shields.io/github/license/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/github/license/kyegomez/swarms?style=for-the-badge" alt="GitHub license">
-    </picture>
-  </a>
-  <a href="https://pepy.tech/project/swarms">
-    <picture>
-      <source srcset="https://static.pepy.tech/badge/swarms/month" media="(prefers-color-scheme: dark)">
-      <img src="https://static.pepy.tech/badge/swarms/month" alt="Downloads">
-    </picture>
-  </a>
-  <a href="https://libraries.io/github/kyegomez/swarms">
-    <picture>
-      <source srcset="https://img.shields.io/librariesio/github/kyegomez/swarms?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/librariesio/github/kyegomez/swarms?style=for-the-badge" alt="Dependency Status">
-    </picture>
-  </a>
-</p>
-
-<p align="center">
-  <!-- Social Media -->
-  <a href="https://twitter.com/swarms_corp/">
-    <picture>
-      <source srcset="https://img.shields.io/badge/Twitter-Follow-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/badge/Twitter-Follow-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" alt="Twitter">
-    </picture>
-  </a>
-  <a href="https://discord.gg/EamjgSaEQf">
-    <picture>
-      <source srcset="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
-    </picture>
-  </a>
-  <a href="https://www.youtube.com/@kyegomez3242">
-    <picture>
-      <source srcset="https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube">
-    </picture>
-  </a>
-  <a href="https://www.linkedin.com/in/kye-g-38759a207/">
-    <picture>
-      <source srcset="https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn">
-    </picture>
-  </a>
-  <a href="https://x.com/swarms_corp">
-    <picture>
-      <source srcset="https://img.shields.io/badge/X.com-Follow-1DA1F2?style=for-the-badge&logo=x&logoColor=white" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/badge/X.com-Follow-1DA1F2?style=for-the-badge&logo=x&logoColor=white" alt="X.com">
-    </picture>
-  </a>
-</p>
 
 <p align="center">
   <!-- Main Navigation Links -->
@@ -103,18 +17,30 @@
   <a href="https://swarms.world">🛒 Swarms Marketplace</a>
 </p>
 
+
 <p align="center">
-  <!-- Share Buttons -->
-  <a href="https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms">
+  <a href="https://pypi.org/project/swarms/" target="_blank">
     <picture>
-      <source srcset="https://img.shields.io/badge/Share%20on%20Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/badge/Share%20on%20Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" alt="Share on Twitter">
+      <source srcset="https://img.shields.io/pypi/v/swarms?style=for-the-badge&color=3670A0" media="(prefers-color-scheme: dark)">
+      <img alt="Version" src="https://img.shields.io/pypi/v/swarms?style=for-the-badge&color=3670A0">
     </picture>
   </a>
-  <a href="https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=&summary=&source=">
+  <a href="https://pypi.org/project/swarms/" target="_blank">
     <picture>
-      <source srcset="https://img.shields.io/badge/Share%20on%20LinkedIn-blue?style=for-the-badge" media="(prefers-color-scheme: dark)">
-      <img src="https://img.shields.io/badge/Share%20on%20LinkedIn-blue?style=for-the-badge" alt="Share on LinkedIn">
+      <source srcset="https://img.shields.io/pypi/dm/swarms?style=for-the-badge&color=3670A0" media="(prefers-color-scheme: dark)">
+      <img alt="Downloads" src="https://img.shields.io/pypi/dm/swarms?style=for-the-badge&color=3670A0">
+    </picture>
+  </a>
+  <a href="https://twitter.com/swarms_corp/">
+    <picture>
+      <source srcset="https://img.shields.io/badge/Twitter-Follow-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/badge/Twitter-Follow-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" alt="Twitter">
+    </picture>
+  </a>
+  <a href="https://discord.gg/EamjgSaEQf">
+    <picture>
+      <source srcset="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white" media="(prefers-color-scheme: dark)">
+      <img src="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
     </picture>
   </a>
 </p>
@@ -130,6 +56,17 @@ Swarms delivers a comprehensive, enterprise-grade multi-agent infrastructure pla
 | 🔄 **Enterprise Integration** | • Multi-Model Provider Support<br>• Custom Agent Development Framework<br>• Extensive Enterprise Tool Library<br>• Multiple Memory Systems<br>• Backwards Compatibility with LangChain, AutoGen, CrewAI<br>• Standardized API Interfaces | • Vendor-Agnostic Architecture<br>• Custom Solution Development<br>• Extended Functionality Integration<br>• Enhanced Knowledge Management<br>• Seamless Framework Migration<br>• Reduced Integration Complexity |
 | 📈 **Enterprise Scalability** | • Concurrent Multi-Agent Processing<br>• Intelligent Resource Management<br>• Load Balancing & Auto-Scaling<br>• Horizontal Scaling Capabilities<br>• Performance Optimization<br>• Capacity Planning Tools | • High-Throughput Processing<br>• Cost-Effective Resource Utilization<br>• Elastic Scaling Based on Demand<br>• Linear Performance Scaling<br>• Optimized Response Times<br>• Predictable Growth Planning |
 | 🛠️ **Developer Experience** | • Intuitive Enterprise API<br>• Comprehensive Documentation<br>• Active Enterprise Community<br>• CLI & SDK Tools<br>• IDE Integration Support<br>• Code Generation Templates | • Accelerated Development Cycles<br>• Reduced Learning Curve<br>• Expert Community Support<br>• Rapid Deployment Capabilities<br>• Enhanced Developer Productivity<br>• Standardized Development Patterns |
+
+
+## 🔌 Supported Protocols & Integrations
+
+Swarms seamlessly integrates with industry-standard protocols, enabling powerful capabilities for tool integration, payment processing, and distributed agent orchestration.
+
+| Protocol | Description | Use Cases | Documentation |
+|----------|-------------|-----------|---------------|
+| **[MCP (Model Context Protocol)](https://docs.swarms.world/en/latest/swarms/examples/multi_mcp_agent/)** | Standardized protocol for AI agents to interact with external tools and services through MCP servers. Enables dynamic tool discovery and execution. | • Tool integration<br>• Multi-server connections<br>• External API access<br>• Database connectivity | [MCP Integration Guide](https://docs.swarms.world/en/latest/swarms/examples/multi_mcp_agent/) |
+| **[X402](https://docs.swarms.world/en/latest/examples/x402_payment_integration/)** | Cryptocurrency payment protocol for API endpoints. Enables monetization of agents with pay-per-use models. | • Agent monetization<br>• Payment gate protection<br>• Crypto payments<br>• Pay-per-use services | [X402 Quickstart](https://docs.swarms.world/en/latest/examples/x402_payment_integration/) |
+| **[AOP (Agent Orchestration Protocol)](https://docs.swarms.world/en/latest/examples/aop_medical/)** | Framework for deploying and managing agents as distributed services. Enables agent discovery, management, and execution through standardized protocols. | • Distributed agent deployment<br>• Agent discovery<br>• Service orchestration<br>• Scalable multi-agent systems | [AOP Reference](https://docs.swarms.world/en/latest/swarms/structs/aop/) |
 
 
 ## Install 💻
@@ -160,12 +97,10 @@ $ poetry add swarms
 # Clone the repository
 $ git clone https://github.com/kyegomez/swarms.git
 $ cd swarms
-
-# Install with pip
-$ pip install -e .
+$ pip install -r requirements.txt
 ```
 
-### Using Docker
+<!-- ### Using Docker
 
 The easiest way to get started with Swarms is using our pre-built Docker image:
 
@@ -181,7 +116,7 @@ $ docker run -it --rm -v $(pwd):/app kyegomez/swarms:latest bash
 $ docker-compose up -d
 ```
 
-For more Docker options and advanced usage, see our [Docker documentation](/scripts/docker/DOCKER.md).
+For more Docker options and advanced usage, see our [Docker documentation](/scripts/docker/DOCKER.md). -->
 
 ---
 
@@ -195,7 +130,6 @@ WORKSPACE_DIR="agent_workspace"
 ANTHROPIC_API_KEY=""
 GROQ_API_KEY=""
 ```
-
 
 
 ### 🤖 Your First Agent
@@ -290,7 +224,7 @@ This feature is perfect for rapid prototyping, complex task decomposition, and c
 
 -----
 
-## 🏗️ Multi-Agent Architectures For Production Deployments
+## 🏗️ Available Multi-Agent Architectures
 
 `swarms` provides a variety of powerful, pre-built multi-agent architectures enabling you to orchestrate agents in various ways. Choose the right structure for your specific problem to build efficient and reliable production systems.
 
@@ -676,6 +610,128 @@ This architecture is perfect for financial analysis, strategic planning, researc
 
 ---
 
+### Social Algorithms
+
+**Social Algorithms** provide a flexible framework for defining custom communication patterns between agents. You can upload any arbitrary social algorithm as a callable that defines the sequence of communication, enabling agents to talk to each other in sophisticated ways. [Learn more about Social Algorithms](https://docs.swarms.world/en/latest/swarms/structs/social_algorithms/)
+
+```python
+from swarms import Agent, SocialAlgorithms
+
+# Define a custom social algorithm
+def research_analysis_synthesis_algorithm(agents, task, **kwargs):
+    # Agent 1 researches the topic
+    research_result = agents[0].run(f"Research: {task}")
+    
+    # Agent 2 analyzes the research
+    analysis = agents[1].run(f"Analyze this research: {research_result}")
+    
+    # Agent 3 synthesizes the findings
+    synthesis = agents[2].run(f"Synthesize: {research_result} + {analysis}")
+    
+    return {
+        "research": research_result,
+        "analysis": analysis,
+        "synthesis": synthesis
+    }
+
+# Create agents
+researcher = Agent(
+  agent_name="Researcher",
+  agent_description="Expert in comprehensive research and information gathering.",
+  model_name="gpt-4.1"
+)
+analyst = Agent(
+  agent_name="Analyst",
+  agent_description="Specialist in analyzing and interpreting data.",
+  model_name="gpt-4.1"
+)
+synthesizer = Agent(
+  agent_name="Synthesizer",
+  agent_description="Focused on synthesizing and integrating research insights.",
+  model_name="gpt-4.1"
+)
+
+# Create social algorithm
+social_alg = SocialAlgorithms(
+    name="Research-Analysis-Synthesis",
+    agents=[researcher, analyst, synthesizer],
+    social_algorithm=research_analysis_synthesis_algorithm,
+    verbose=True
+)
+
+# Run the algorithm
+result = social_alg.run("The impact of AI on healthcare")
+print(result.final_outputs)
+```
+
+Perfect for implementing complex multi-agent workflows, collaborative problem-solving, and custom communication protocols.
+
+---
+
+### Agent Orchestration Protocol (AOP)
+
+The **Agent Orchestration Protocol (AOP)** is a powerful framework for deploying and managing agents as distributed services. AOP enables agents to be discovered, managed, and executed through a standardized protocol, making it perfect for building scalable multi-agent systems. [Learn more about AOP](https://docs.swarms.world/en/latest/swarms/structs/aop/)
+
+```python
+from swarms import Agent
+from swarms.structs.aop import AOP
+
+# Create specialized agents
+research_agent = Agent(
+    agent_name="Research-Agent",
+    agent_description="Expert in research and data collection",
+    model_name="anthropic/claude-sonnet-4-5",
+    max_loops=1,
+    tags=["research", "data-collection", "analysis"],
+    capabilities=["web-search", "data-gathering", "report-generation"],
+    role="researcher"
+)
+
+analysis_agent = Agent(
+    agent_name="Analysis-Agent", 
+    agent_description="Expert in data analysis and insights",
+    model_name="anthropic/claude-sonnet-4-5",
+    max_loops=1,
+    tags=["analysis", "data-processing", "insights"],
+    capabilities=["statistical-analysis", "pattern-recognition", "visualization"],
+    role="analyst"
+)
+
+# Create AOP server
+deployer = AOP(
+    server_name="ResearchCluster",
+    port=8000,
+    verbose=True
+)
+
+# Add agents to the server
+deployer.add_agent(
+    agent=research_agent,
+    tool_name="research_tool",
+    tool_description="Research and data collection tool",
+    timeout=30,
+    max_retries=3
+)
+
+deployer.add_agent(
+    agent=analysis_agent,
+    tool_name="analysis_tool", 
+    tool_description="Data analysis and insights tool",
+    timeout=30,
+    max_retries=3
+)
+
+# List all registered agents
+print("Registered agents:", deployer.list_agents())
+
+# Start the AOP server
+deployer.run()
+```
+
+Perfect for deploying large scale multi-agent systems. [Read the complete AOP documentation](https://docs.swarms.world/en/latest/swarms/structs/aop/)
+
+---
+
 ## Documentation
 
 Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
@@ -708,7 +764,6 @@ Explore comprehensive examples and tutorials to learn how to use Swarms effectiv
 | **Model Providers** | Ollama | Local Ollama model integration | [Ollama Examples](https://docs.swarms.world/en/latest/swarms/examples/ollama/) |
 | **Model Providers** | OpenRouter | OpenRouter model integration | [OpenRouter Examples](https://docs.swarms.world/en/latest/swarms/examples/openrouter/) |
 | **Model Providers** | XAI | XAI model integration | [XAI Examples](https://docs.swarms.world/en/latest/swarms/examples/xai/) |
-| **Model Providers** | VLLM | VLLM integration | [VLLM Examples](https://docs.swarms.world/en/latest/swarms/examples/vllm_integration/) |
 | **Model Providers** | Llama4 | Llama4 model integration | [Llama4 Examples](https://docs.swarms.world/en/latest/swarms/examples/llama4/) |
 | **Multi-Agent Architecture** | HierarchicalSwarm | Hierarchical agent orchestration | [HierarchicalSwarm Examples](https://docs.swarms.world/en/latest/swarms/examples/hierarchical_swarm_example/) |
 | **Multi-Agent Architecture** | Hybrid Hierarchical-Cluster Swarm | Advanced hierarchical patterns | [HHCS Examples](https://docs.swarms.world/en/latest/swarms/examples/hhcs_examples/) |
@@ -722,6 +777,7 @@ Explore comprehensive examples and tutorials to learn how to use Swarms effectiv
 | **Multi-Agent Architecture** | Agents as Tools | Using agents as tools in workflows | [Agents as Tools](https://docs.swarms.world/en/latest/swarms/examples/agents_as_tools/) |
 | **Multi-Agent Architecture** | Aggregate Responses | Combining multiple agent outputs | [Aggregate Examples](https://docs.swarms.world/en/latest/swarms/examples/aggregate/) |
 | **Multi-Agent Architecture** | Interactive GroupChat | Real-time agent interactions | [Interactive GroupChat](https://docs.swarms.world/en/latest/swarms/examples/igc_example/) |
+| **Deployment Solutions** | Agent Orchestration Protocol (AOP) | Deploy agents as distributed services with discovery and management | [AOP Reference](https://docs.swarms.world/en/latest/swarms/structs/aop/) |
 | **Applications** | Advanced Research System | Multi-agent research system inspired by Anthropic's research methodology | [AdvancedResearch](https://github.com/The-Swarm-Corporation/AdvancedResearch) |
 | **Applications** | Hospital Simulation | Healthcare simulation system using multi-agent architecture | [HospitalSim](https://github.com/The-Swarm-Corporation/HospitalSim) |
 | **Applications** | Browser Agents | Web automation with agents | [Browser Agents](https://docs.swarms.world/en/latest/swarms/examples/swarms_of_browser_agents/) |
@@ -767,7 +823,7 @@ We've made it easy to start contributing. Here's how you can help:
 4. **Join the Discussion:** To participate in roadmap discussions and connect with other developers, join our community on [**Discord**](https://discord.gg/EamjgSaEQf).
 
 
-### ✨ Our Valued Contributors
+### ✨ Thank You to Our Contributors
 
 Thank you for contributing to swarms. Your work is extremely appreciated and recognized.
 
@@ -775,9 +831,17 @@ Thank you for contributing to swarms. Your work is extremely appreciated and rec
   <img src="https://contrib.rocks/image?repo=kyegomez/swarms" />
 </a>
 
+### 🙏 Thank You to Our Community
+
+We're incredibly grateful to everyone who supports Swarms! Your stars, forks, and contributions help make this project better every day.
+
+[![Forkers repo roster for @kyegomez/swarms](https://reporoster.com/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network/members)
+
+[![Stargazers repo roster for @kyegomez/swarms](https://reporoster.com/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers)
+
 -----
 
-## Connect With Us
+## Join the Swarms community 👾👾👾
 
 Join our community of agent engineers and researchers for technical support, cutting-edge updates, and exclusive access to world-class agent engineering insights!
 
@@ -789,7 +853,7 @@ Join our community of agent engineers and researchers for technical support, cut
 | 🐦 Twitter | Latest news and announcements | [@swarms_corp](https://twitter.com/swarms_corp) |
 | 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
 | 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
-| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
+| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/swarms_calendar) |
 | 🚀 Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
 
 ------
@@ -800,14 +864,15 @@ If you use **swarms** in your research, please cite the project by referencing t
 
 ```bibtex
 @misc{SWARMS_2022,
-  author  = {Gomez, Kye and Pliny and More, Harshal and Swarms Community},
+  author  = {Kye Gomez and Pliny and Zack Bradshaw and Ilumn and Harshal and the Swarms Community},
   title   = {{Swarms: Production-Grade Multi-Agent Infrastructure Platform}},
   year    = {2022},
   howpublished = {\url{https://github.com/kyegomez/swarms}},
   note    = {Documentation available at \url{https://docs.swarms.world}},
   version = {latest}
-}
 ```
+
+---
 
 # License
 

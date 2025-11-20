@@ -101,6 +101,9 @@ from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
 from swarms.utils.pdf_to_text import pdf_to_text
+from swarms.utils.swarms_marketplace_utils import (
+    add_prompt_to_marketplace,
+)
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -215,7 +218,8 @@ class Agent:
         preset_stopping_token (bool): Enable preset stopping token
         traceback (Any): The traceback
         traceback_handlers (Any): The traceback handlers
-        streaming_on (bool): Enable streaming
+        streaming_on (bool): Enable basic streaming with formatted panels
+        stream (bool): Enable detailed token-by-token streaming with metadata (citations, tokens used, etc.)
         docs (List[str]): The list of documents
         docs_folder (str): The folder containing the documents
         verbose (bool): Enable verbose mode
@@ -302,19 +306,19 @@ class Agent:
 
     Examples:
     >>> from swarms import Agent
-    >>> agent = Agent(model_name="gpt-4o", max_loops=1)
+    >>> agent = Agent(model_name="gpt-4.1", max_loops=1)
     >>> response = agent.run("Generate a report on the financials.")
     >>> print(response)
     >>> # Generate a report on the financials.
 
-    >>> # Real-time streaming example
-    >>> agent = Agent(model_name="gpt-4o", max_loops=1, streaming_on=True)
-    >>> response = agent.run("Tell me a long story.")  # Will stream in real-time
+    >>> # Detailed token streaming example
+    >>> agent = Agent(model_name="gpt-4.1", max_loops=1, stream=True)
+    >>> response = agent.run("Tell me a story.")  # Will stream each token with detailed metadata
     >>> print(response)  # Final complete response
 
     >>> # Fallback model example
     >>> agent = Agent(
-    ...     fallback_models=["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"],
+    ...     fallback_models=["gpt-4.1", "gpt-4o-mini", "gpt-3.5-turbo"],
     ...     max_loops=1
     ... )
     >>> response = agent.run("Generate a report on the financials.")
@@ -363,6 +367,7 @@ class Agent:
         traceback: Optional[Any] = None,
         traceback_handlers: Optional[Any] = None,
         streaming_on: Optional[bool] = False,
+        stream: Optional[bool] = False,
         docs: List[str] = None,
         docs_folder: Optional[str] = None,
         verbose: Optional[bool] = False,
@@ -414,7 +419,6 @@ class Agent:
         created_at: float = time.time(),
         return_step_meta: Optional[bool] = False,
         tags: Optional[List[str]] = None,
-        use_cases: Optional[List[Dict[str, str]]] = None,
         step_pool: List[Step] = [],
         print_every_step: Optional[bool] = False,
         time_created: Optional[str] = time.strftime(
@@ -466,6 +470,8 @@ class Agent:
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
         capabilities: Optional[List[str]] = None,
         mode: Literal["interactive", "fast", "standard"] = "standard",
+        publish_to_marketplace: bool = False,
+        use_cases: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ):
@@ -512,6 +518,7 @@ class Agent:
         self.traceback = traceback
         self.traceback_handlers = traceback_handlers
         self.streaming_on = streaming_on
+        self.stream = stream
         self.docs = docs
         self.docs_folder = docs_folder
         self.verbose = verbose
@@ -617,6 +624,7 @@ class Agent:
         self.handoffs = handoffs
         self.capabilities = capabilities
         self.mode = mode
+        self.publish_to_marketplace = publish_to_marketplace
 
         # Initialize transforms
         if transforms is None:
@@ -690,6 +698,30 @@ class Agent:
             self.print_on = False
             self.verbose = False
 
+        if self.publish_to_marketplace is True:
+            # Join tags and capabilities into a single string
+            tags_and_capabilities = ", ".join(
+                self.tags + self.capabilities
+                if self.tags and self.capabilities
+                else None
+            )
+
+            if self.use_cases is None:
+                raise AgentInitializationError(
+                    "Use cases are required when publishing to the marketplace. The schema is a list of dictionaries with 'title' and 'description' keys."
+                )
+
+            add_prompt_to_marketplace(
+                name=self.agent_name,
+                prompt=self.short_memory.get_str(),
+                description=self.agent_description,
+                tags=tags_and_capabilities,
+                category="research",
+                use_cases=(
+                    self.use_cases if self.use_cases else None
+                ),
+            )
+
     def handle_handoffs(self, task: Optional[str] = None):
         router = MultiAgentRouter(
             name=self.agent_name,
@@ -697,6 +729,7 @@ class Agent:
             agents=self.handoffs,
             model=self.model_name,
             temperature=self.temperature,
+            system_prompt=self.system_prompt,
             output_type=self.output_type,
         )
 
@@ -723,26 +756,33 @@ class Agent:
         )
 
     def short_memory_init(self):
-        prompt = ""
+        # Assemble initial prompt context as a dict, update conditionally, then compose as string
+        prompt_dict = {}
 
-        # Add agent name, description, and instructions to the prompt
         if self.agent_name is not None:
-            prompt += f"\n Your Name: {self.agent_name} \n"
-        elif self.agent_description is not None:
-            prompt += (
-                f"\n Your Description: {self.agent_description} \n"
+            prompt_dict["name"] = f"Your Name: {self.agent_name}"
+        if self.agent_description is not None:
+            prompt_dict["description"] = (
+                f"Your Description: {self.agent_description}"
             )
-        elif self.system_prompt is not None:
-            prompt += f"\n Your Instructions: {self.system_prompt} \n"
-        else:
-            prompt = self.system_prompt
+        if self.system_prompt is not None:
+            prompt_dict["instructions"] = (
+                f"Your Instructions: {self.system_prompt}"
+            )
+
+        # Compose prompt, prioritizing adding everything present in the dict
+        # (entries are newline separated, order: name → description → instructions)
+        prompt = ""
+        for key in ["name", "description", "instructions"]:
+            if key in prompt_dict:
+                prompt += f"\n {prompt_dict[key]} \n"
 
         if self.safety_prompt_on is True:
             prompt += SAFETY_PROMPT
 
         # Initialize the short term memory
         memory = Conversation(
-            name=f"{self.agent_name}_conversation",
+            name=f"{self.agent_name}_id_{self.id}_conversation",
             system_prompt=prompt,
             user=self.user_name,
             rules=self.rules,
@@ -815,7 +855,17 @@ class Agent:
                 tools_list.extend(self.tools_list_dictionary)
 
             if exists(self.mcp_url) or exists(self.mcp_urls):
-                tools_list.extend(self.add_mcp_tools_to_memory())
+                if self.verbose:
+                    logger.info(
+                        f"Adding MCP tools to memory for {self.agent_name}"
+                    )
+                # tools_list.extend(self.add_mcp_tools_to_memory())
+                mcp_tools = self.add_mcp_tools_to_memory()
+
+                if self.verbose:
+                    logger.info(f"MCP tools: {mcp_tools}")
+
+                tools_list.extend(mcp_tools)
 
             # Additional arguments for LiteLLM initialization
             additional_args = {}
@@ -881,37 +931,37 @@ class Agent:
             Exception: If there's an error accessing the MCP tools
         """
         try:
+            # Determine which MCP configuration to use
             if exists(self.mcp_url):
                 tools = get_mcp_tools_sync(server_path=self.mcp_url)
             elif exists(self.mcp_config):
                 tools = get_mcp_tools_sync(connection=self.mcp_config)
-                # logger.info(f"Tools: {tools}")
             elif exists(self.mcp_urls):
+                logger.info(
+                    f"Getting MCP tools for multiple MCP servers for {self.agent_name}"
+                )
                 tools = get_tools_for_multiple_mcp_servers(
                     urls=self.mcp_urls,
-                    output_type="str",
                 )
-                # print(f"Tools: {tools} for {self.mcp_urls}")
+
+                if self.verbose:
+                    logger.info(f"MCP tools: {tools}")
             else:
                 raise AgentMCPConnectionError(
                     "mcp_url must be either a string URL or MCPConnection object"
                 )
 
-            if (
-                exists(self.mcp_url)
-                or exists(self.mcp_urls)
-                or exists(self.mcp_config)
-            ):
-                if self.print_on is True:
-                    self.pretty_print(
-                        f"✨ [SYSTEM] Successfully integrated {len(tools)} MCP tools into agent: {self.agent_name} | Status: ONLINE | Time: {time.strftime('%H:%M:%S')} ✨",
-                        loop_count=0,
-                    )
+            # Print success message if any MCP configuration exists
+            if self.print_on:
+                self.pretty_print(
+                    f"✨ [SYSTEM] Successfully integrated {len(tools)} MCP tools into agent: {self.agent_name} | Status: ONLINE | Time: {time.strftime('%H:%M:%S')} ✨",
+                    loop_count=0,
+                )
 
             return tools
         except AgentMCPConnectionError as e:
             logger.error(
-                f"Error in MCP connection: {e} Traceback: {traceback.format_exc()}"
+                f"Error Adding MCP Tools to Agent: {self.agent_name} Error: {e} Traceback: {traceback.format_exc()}"
             )
             raise e
 
@@ -1298,6 +1348,8 @@ class Agent:
                                     loop_count,
                                 )
                             elif self.streaming_on:
+                                pass
+                            elif self.stream:
                                 pass
                             else:
                                 self.pretty_print(
@@ -2406,12 +2458,14 @@ class Agent:
             Dict[str, Any]: A dictionary representation of the class attributes.
         """
 
-        # Remove the llm object from the dictionary
-        self.__dict__.pop("llm", None)
+        # Create a copy of the dict to avoid mutating the original object
+        # Remove the llm object from the copy since it's not serializable
+        dict_copy = self.__dict__.copy()
+        dict_copy.pop("llm", None)
 
         return {
             attr_name: self._serialize_attr(attr_name, attr_value)
-            for attr_name, attr_value in self.__dict__.items()
+            for attr_name, attr_value in dict_copy.items()
         }
 
     def to_json(self, indent: int = 4, *args, **kwargs):
@@ -2517,8 +2571,143 @@ class Agent:
             del kwargs["is_last"]
 
         try:
-            # Set streaming parameter in LLM if streaming is enabled
-            if self.streaming_on and hasattr(self.llm, "stream"):
+            if self.stream and hasattr(self.llm, "stream"):
+                original_stream = self.llm.stream
+                self.llm.stream = True
+
+                if img is not None:
+                    streaming_response = self.llm.run(
+                        task=task, img=img, *args, **kwargs
+                    )
+                else:
+                    streaming_response = self.llm.run(
+                        task=task, *args, **kwargs
+                    )
+
+                if hasattr(
+                    streaming_response, "__iter__"
+                ) and not isinstance(streaming_response, str):
+                    complete_response = ""
+                    token_count = 0
+                    final_chunk = None
+                    first_chunk = None
+
+                    for chunk in streaming_response:
+                        if first_chunk is None:
+                            first_chunk = chunk
+
+                        if (
+                            hasattr(chunk, "choices")
+                            and chunk.choices[0].delta.content
+                        ):
+                            content = chunk.choices[0].delta.content
+                            complete_response += content
+                            token_count += 1
+
+                            # Schema per token outputted
+                            token_info = {
+                                "token_index": token_count,
+                                "model": getattr(
+                                    chunk,
+                                    "model",
+                                    self.get_current_model(),
+                                ),
+                                "id": getattr(chunk, "id", ""),
+                                "created": getattr(
+                                    chunk, "created", int(time.time())
+                                ),
+                                "object": getattr(
+                                    chunk,
+                                    "object",
+                                    "chat.completion.chunk",
+                                ),
+                                "token": content,
+                                "system_fingerprint": getattr(
+                                    chunk, "system_fingerprint", ""
+                                ),
+                                "finish_reason": chunk.choices[
+                                    0
+                                ].finish_reason,
+                                "citations": getattr(
+                                    chunk, "citations", None
+                                ),
+                                "provider_specific_fields": getattr(
+                                    chunk,
+                                    "provider_specific_fields",
+                                    None,
+                                ),
+                                "service_tier": getattr(
+                                    chunk, "service_tier", "default"
+                                ),
+                                "obfuscation": getattr(
+                                    chunk, "obfuscation", None
+                                ),
+                                "usage": getattr(
+                                    chunk, "usage", None
+                                ),
+                                "logprobs": chunk.choices[0].logprobs,
+                                "timestamp": time.time(),
+                            }
+
+                            print(f"ResponseStream {token_info}")
+
+                            if streaming_callback is not None:
+                                streaming_callback(token_info)
+
+                        final_chunk = chunk
+
+                    # Final ModelResponse to stream
+                    if (
+                        final_chunk
+                        and hasattr(final_chunk, "usage")
+                        and final_chunk.usage
+                    ):
+                        usage = final_chunk.usage
+                        print(
+                            f"ModelResponseStream(id='{getattr(final_chunk, 'id', 'N/A')}', "
+                            f"created={getattr(final_chunk, 'created', 'N/A')}, "
+                            f"model='{getattr(final_chunk, 'model', self.get_current_model())}', "
+                            f"object='{getattr(final_chunk, 'object', 'chat.completion.chunk')}', "
+                            f"system_fingerprint='{getattr(final_chunk, 'system_fingerprint', 'N/A')}', "
+                            f"choices=[StreamingChoices(finish_reason='{final_chunk.choices[0].finish_reason}', "
+                            f"index=0, delta=Delta(provider_specific_fields=None, content=None, role=None, "
+                            f"function_call=None, tool_calls=None, audio=None), logprobs=None)], "
+                            f"provider_specific_fields=None, "
+                            f"usage=Usage(completion_tokens={usage.completion_tokens}, "
+                            f"prompt_tokens={usage.prompt_tokens}, "
+                            f"total_tokens={usage.total_tokens}, "
+                            f"completion_tokens_details=CompletionTokensDetailsWrapper("
+                            f"accepted_prediction_tokens={usage.completion_tokens_details.accepted_prediction_tokens}, "
+                            f"audio_tokens={usage.completion_tokens_details.audio_tokens}, "
+                            f"reasoning_tokens={usage.completion_tokens_details.reasoning_tokens}, "
+                            f"rejected_prediction_tokens={usage.completion_tokens_details.rejected_prediction_tokens}, "
+                            f"text_tokens={usage.completion_tokens_details.text_tokens}), "
+                            f"prompt_tokens_details=PromptTokensDetailsWrapper("
+                            f"audio_tokens={usage.prompt_tokens_details.audio_tokens}, "
+                            f"cached_tokens={usage.prompt_tokens_details.cached_tokens}, "
+                            f"text_tokens={usage.prompt_tokens_details.text_tokens}, "
+                            f"image_tokens={usage.prompt_tokens_details.image_tokens})))"
+                        )
+                    else:
+                        print(
+                            f"ModelResponseStream(id='{getattr(final_chunk, 'id', 'N/A')}', "
+                            f"created={getattr(final_chunk, 'created', 'N/A')}, "
+                            f"model='{getattr(final_chunk, 'model', self.get_current_model())}', "
+                            f"object='{getattr(final_chunk, 'object', 'chat.completion.chunk')}', "
+                            f"system_fingerprint='{getattr(final_chunk, 'system_fingerprint', 'N/A')}', "
+                            f"choices=[StreamingChoices(finish_reason='{final_chunk.choices[0].finish_reason}', "
+                            f"index=0, delta=Delta(provider_specific_fields=None, content=None, role=None, "
+                            f"function_call=None, tool_calls=None, audio=None), logprobs=None)], "
+                            f"provider_specific_fields=None)"
+                        )
+
+                    self.llm.stream = original_stream
+                    return complete_response
+                else:
+                    self.llm.stream = original_stream
+                    return streaming_response
+
+            elif self.streaming_on and hasattr(self.llm, "stream"):
                 original_stream = self.llm.stream
                 self.llm.stream = True
 
@@ -2644,6 +2833,7 @@ class Agent:
         imgs: Optional[List[str]] = None,
         correct_answer: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        n: int = 1,
         *args,
         **kwargs,
     ) -> Any:
@@ -2688,6 +2878,8 @@ class Agent:
                 )
             elif exists(self.handoffs):
                 output = self.handle_handoffs(task=task)
+            elif n > 1:
+                output = [self.run(task=task) for _ in range(n)]
             else:
                 output = self._run(
                     task=task,
@@ -2708,65 +2900,22 @@ class Agent:
             Exception,
         ) as e:
             # Try fallback models if available
-            if (
-                self.is_fallback_available()
-                and self.switch_to_next_model()
-            ):
-                # Always log fallback events, regardless of verbose setting
-                if self.verbose:
-                    logger.warning(
-                        f"⚠️  [FALLBACK] Agent '{self.agent_name}' failed with model '{self.get_current_model()}'. "
-                        f"Switching to fallback model '{self.get_current_model()}' (attempt {self.current_model_index + 1}/{len(self.get_available_models())})"
-                    )
-                try:
-                    # Recursive call to run() with the new model
-                    result = self.run(
-                        task=task,
-                        img=img,
-                        imgs=imgs,
-                        correct_answer=correct_answer,
-                        streaming_callback=streaming_callback,
-                        *args,
-                        **kwargs,
-                    )
-                    if self.verbose:
-                        # Log successful completion with fallback model
-                        logger.info(
-                            f"✅ [FALLBACK SUCCESS] Agent '{self.agent_name}' successfully completed task "
-                            f"using fallback model '{self.get_current_model()}'"
-                        )
-                    return result
-                except Exception as fallback_error:
-                    logger.error(
-                        f"Fallback model '{self.get_current_model()}' also failed: {fallback_error}"
-                    )
-                    # Continue to next fallback or raise if no more models
-                    if (
-                        self.is_fallback_available()
-                        and self.switch_to_next_model()
-                    ):
-                        return self.run(
-                            task=task,
-                            img=img,
-                            imgs=imgs,
-                            correct_answer=correct_answer,
-                            streaming_callback=streaming_callback,
-                            *args,
-                            **kwargs,
-                        )
-                    else:
-                        if self.verbose:
-                            logger.error(
-                                f"❌ [FALLBACK EXHAUSTED] Agent '{self.agent_name}' has exhausted all available models. "
-                                f"Tried {len(self.get_available_models())} models: {self.get_available_models()}"
-                            )
-
-                        self._handle_run_error(e)
+            if self.is_fallback_available():
+                return self._handle_fallback_execution(
+                    task=task,
+                    img=img,
+                    imgs=imgs,
+                    correct_answer=correct_answer,
+                    streaming_callback=streaming_callback,
+                    original_error=e,
+                    *args,
+                    **kwargs,
+                )
             else:
                 if self.verbose:
                     # No fallback available
                     logger.error(
-                        f"❌ [NO FALLBACK] Agent '{self.agent_name}' failed with model '{self.get_current_model()}' "
+                        f"Agent Name: {self.agent_name} [NO FALLBACK] failed with model '{self.get_current_model()}' "
                         f"and no fallback models are configured. Error: {str(e)[:100]}{'...' if len(str(e)) > 100 else ''}"
                     )
 
@@ -2774,12 +2923,110 @@ class Agent:
 
         except KeyboardInterrupt:
             logger.warning(
-                f"Keyboard interrupt detected for agent '{self.agent_name}'. "
+                f"Agent Name: {self.agent_name} Keyboard interrupt detected. "
                 "If autosave is enabled, the agent's state will be saved to the workspace directory. "
                 "To enable autosave, please initialize the agent with Agent(autosave=True)."
                 "For technical support, refer to this document: https://docs.swarms.world/en/latest/swarms/support/"
             )
             raise KeyboardInterrupt
+
+    def _handle_fallback_execution(
+        self,
+        task: Optional[Union[str, Any]] = None,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        correct_answer: Optional[str] = None,
+        streaming_callback: Optional[Callable[[str], None]] = None,
+        original_error: Exception = None,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """
+        Handles fallback execution when the primary model fails.
+
+        This method attempts to execute the task using fallback models when the primary
+        model encounters an error. It will try each available fallback model in sequence
+        until either the task succeeds or all fallback models are exhausted.
+
+        Args:
+            task (Optional[Union[str, Any]], optional): The task to be executed. Defaults to None.
+            img (Optional[str], optional): The image to be processed. Defaults to None.
+            imgs (Optional[List[str]], optional): The list of images to be processed. Defaults to None.
+            correct_answer (Optional[str], optional): The correct answer for continuous run mode. Defaults to None.
+            streaming_callback (Optional[Callable[[str], None]], optional): Callback function to receive streaming tokens in real-time. Defaults to None.
+            original_error (Exception): The original error that triggered the fallback. Defaults to None.
+            *args: Additional positional arguments to be passed to the execution method.
+            **kwargs: Additional keyword arguments to be passed to the execution method.
+
+        Returns:
+            Any: The result of the execution if successful.
+
+        Raises:
+            Exception: If all fallback models fail or no fallback models are available.
+        """
+        # Check if fallback models are available
+        if not self.is_fallback_available():
+            if self.verbose:
+                logger.error(
+                    f"Agent Name: {self.agent_name} [NO FALLBACK] failed with model '{self.get_current_model()}' "
+                    f"and no fallback models are configured. Error: {str(original_error)[:100]}{'...' if len(str(original_error)) > 100 else ''}"
+                )
+            self._handle_run_error(original_error)
+            return None
+
+        # Try to switch to the next fallback model
+        if not self.switch_to_next_model():
+            if self.verbose:
+                logger.error(
+                    f"Agent Name: {self.agent_name} [FALLBACK EXHAUSTED] has exhausted all available models. "
+                    f"Tried {len(self.get_available_models())} models: {self.get_available_models()}"
+                )
+            self._handle_run_error(original_error)
+            return None
+
+        # Log fallback attempt
+        if self.verbose:
+            logger.warning(
+                f"Agent Name: {self.agent_name} [FALLBACK] failed with model '{self.get_current_model()}'. "
+                f"Switching to fallback model '{self.get_current_model()}' (attempt {self.current_model_index + 1}/{len(self.get_available_models())})"
+            )
+
+        try:
+            # Recursive call to run() with the new model
+            result = self.run(
+                task=task,
+                img=img,
+                imgs=imgs,
+                correct_answer=correct_answer,
+                streaming_callback=streaming_callback,
+                *args,
+                **kwargs,
+            )
+
+            if self.verbose:
+                # Log successful completion with fallback model
+                logger.info(
+                    f"Agent Name: {self.agent_name} [FALLBACK SUCCESS] successfully completed task "
+                    f"using fallback model '{self.get_current_model()}'"
+                )
+            return result
+
+        except Exception as fallback_error:
+            logger.error(
+                f"Agent Name: {self.agent_name} Fallback model '{self.get_current_model()}' also failed: {fallback_error}"
+            )
+
+            # Try the next fallback model recursively
+            return self._handle_fallback_execution(
+                task=task,
+                img=img,
+                imgs=imgs,
+                correct_answer=correct_answer,
+                streaming_callback=streaming_callback,
+                original_error=original_error,
+                *args,
+                **kwargs,
+            )
 
     def run_batched(
         self,
@@ -2944,6 +3191,8 @@ class Agent:
             response = "No response generated"
 
         if self.streaming_on:
+            pass
+        elif self.stream:
             pass
 
         if self.print_on:

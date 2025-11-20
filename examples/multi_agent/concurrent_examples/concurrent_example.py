@@ -1,10 +1,4 @@
-import os
-
-
 from swarms import Agent, ConcurrentWorkflow
-
-# Fetch the OpenAI API key from the environment variable
-api_key = os.getenv("OPENAI_API_KEY")
 
 # Initialize agents for different roles
 delaware_ccorp_agent = Agent(
@@ -21,7 +15,7 @@ delaware_ccorp_agent = Agent(
     corporate law and ensure that all hiring practices are in compliance with 
     state and federal regulations.
     """,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -41,7 +35,7 @@ indian_foreign_agent = Agent(
     implications of hiring foreign nationals and the requirements for obtaining 
     necessary visas and work permits.
     """,
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
@@ -59,7 +53,6 @@ task = """
 # Run agents with tasks concurrently
 swarm = ConcurrentWorkflow(
     agents=agents,
-    return_str_on=False,
     output_type="list",
 )
 

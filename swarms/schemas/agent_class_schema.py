@@ -1,9 +1,3 @@
-"""
-This is a schema that enables the agent to generate it's self.
-
-
-"""
-
 from pydantic import BaseModel, Field
 from typing import Optional
 

@@ -29,27 +29,27 @@ GROQ_API_KEY=""
 
 ```python
 from swarms import Agent
-from swarms.structs.swarm_router import SwarmRouter, SwarmType
+from swarms.structs.swarm_router import SwarmRouter
 
 # Initialize specialized agents
 data_extractor_agent = Agent(
     agent_name="Data-Extractor",
     system_prompt="You are a data extraction specialist...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
 summarizer_agent = Agent(
     agent_name="Document-Summarizer",
     system_prompt="You are a document summarization expert...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 
 financial_analyst_agent = Agent(
     agent_name="Financial-Analyst",
     system_prompt="You are a financial analysis specialist...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1,
 )
 ```
@@ -61,7 +61,7 @@ sequential_router = SwarmRouter(
     name="SequentialRouter",
     description="Process tasks in sequence",
     agents=[data_extractor_agent, summarizer_agent, financial_analyst_agent],
-    swarm_type=SwarmType.SequentialWorkflow,
+    swarm_type="SequentialWorkflow",
     max_loops=1
 )
 
@@ -76,7 +76,7 @@ concurrent_router = SwarmRouter(
     name="ConcurrentRouter",
     description="Process tasks concurrently",
     agents=[data_extractor_agent, summarizer_agent, financial_analyst_agent],
-    swarm_type=SwarmType.ConcurrentWorkflow,
+    swarm_type="ConcurrentWorkflow",
     max_loops=1
 )
 
@@ -91,8 +91,8 @@ rearrange_router = SwarmRouter(
     name="RearrangeRouter",
     description="Dynamically rearrange agents for optimal task processing",
     agents=[data_extractor_agent, summarizer_agent, financial_analyst_agent],
-    swarm_type=SwarmType.AgentRearrange,
-    flow=f"{data_extractor_agent.agent_name} -> {summarizer_agent.agent_name} -> {financial_analyst_agent.agent_name}",
+    swarm_type="AgentRearrange",
+    rearrange_flow=f"{data_extractor_agent.agent_name} -> {summarizer_agent.agent_name} -> {financial_analyst_agent.agent_name}",
     max_loops=1
 )
 
@@ -107,7 +107,7 @@ mixture_router = SwarmRouter(
     name="MixtureRouter",
     description="Combine multiple expert agents",
     agents=[data_extractor_agent, summarizer_agent, financial_analyst_agent],
-    swarm_type=SwarmType.MixtureOfAgents,
+    swarm_type="MixtureOfAgents",
     max_loops=1
 )
 
@@ -137,13 +137,34 @@ router = SwarmRouter(
     name="CustomRouter",
     description="Custom router configuration",
     agents=[data_extractor_agent, summarizer_agent, financial_analyst_agent],
-    swarm_type=SwarmType.SequentialWorkflow,
+    swarm_type="SequentialWorkflow",
     max_loops=3,
     autosave=True,
     verbose=True,
     output_type="json"
 )
 ```
+
+# SwarmType Reference
+
+## Valid SwarmType Values
+
+| Value | Description |
+|-------|-------------|
+| `"SequentialWorkflow"` | Execute agents in sequence |
+| `"ConcurrentWorkflow"` | Execute agents concurrently |
+| `"AgentRearrange"` | Dynamically rearrange agent execution order |
+| `"MixtureOfAgents"` | Combine outputs from multiple agents |
+| `"GroupChat"` | Enable group chat between agents |
+| `"MultiAgentRouter"` | Route tasks to appropriate agents |
+| `"AutoSwarmBuilder"` | Automatically build swarm configuration |
+| `"HiearchicalSwarm"` | Hierarchical agent organization |
+| `"MajorityVoting"` | Use majority voting for decisions |
+| `"MALT"` | Multi-Agent Learning and Training |
+| `"CouncilAsAJudge"` | Council-based evaluation system |
+| `"InteractiveGroupChat"` | Interactive group chat with agents |
+| `"HeavySwarm"` | Heavy swarm for complex tasks |
+| `"auto"` | Automatically select swarm type |
 
 # Best Practices
 
@@ -187,27 +208,27 @@ Here's a complete example showing how to use SwarmRouter in a real-world scenari
 ```python
 import os
 from swarms import Agent
-from swarms.structs.swarm_router import SwarmRouter, SwarmType
+from swarms.structs.swarm_router import SwarmRouter
 
 # Initialize specialized agents
 research_agent = Agent(
     agent_name="ResearchAgent",
     system_prompt="You are a research specialist...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1
 )
 
 analysis_agent = Agent(
     agent_name="AnalysisAgent",
     system_prompt="You are an analysis expert...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1
 )
 
 summary_agent = Agent(
     agent_name="SummaryAgent",
     system_prompt="You are a summarization specialist...",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
     max_loops=1
 )
 
@@ -216,7 +237,7 @@ router = SwarmRouter(
     name="ResearchAnalysisRouter",
     description="Process research and analysis tasks",
     agents=[research_agent, analysis_agent, summary_agent],
-    swarm_type=SwarmType.SequentialWorkflow,
+    swarm_type="SequentialWorkflow",
     max_loops=1,
     verbose=True
 )

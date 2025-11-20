@@ -2,7 +2,16 @@ import concurrent.futures
 import json
 import os
 import traceback
-from typing import Any, Callable, Dict, List, Literal, Optional, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Union,
+    get_args,
+)
 
 from pydantic import BaseModel, Field
 
@@ -24,7 +33,6 @@ from swarms.structs.malt import MALT
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.multi_agent_router import MultiAgentRouter
 from swarms.structs.sequential_workflow import SequentialWorkflow
-from swarms.structs.swarm_matcher import swarm_matcher
 from swarms.telemetry.log_executions import log_execution
 from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.loguru_logger import initialize_logger
@@ -47,6 +55,7 @@ SwarmType = Literal[
     "CouncilAsAJudge",
     "InteractiveGroupChat",
     "HeavySwarm",
+    "BatchedGridWorkflow",
 ]
 
 
@@ -273,6 +282,24 @@ class SwarmRouter:
                     "SwarmRouter: Swarm type cannot be 'none'. Check the docs for all the swarm types available. https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
                 )
 
+            # Validate swarm type is a valid string
+            valid_swarm_types = get_args(SwarmType)
+
+            if not isinstance(self.swarm_type, str):
+                raise SwarmRouterConfigError(
+                    f"SwarmRouter: swarm_type must be a string, not {type(self.swarm_type).__name__}. "
+                    f"Valid types are: {', '.join(valid_swarm_types)}. "
+                    "Use swarm_type='SequentialWorkflow' (string), NOT SwarmType.SequentialWorkflow. "
+                    "See https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
+                )
+
+            if self.swarm_type not in valid_swarm_types:
+                raise SwarmRouterConfigError(
+                    f"SwarmRouter: Invalid swarm_type '{self.swarm_type}'. "
+                    f"Valid types are: {', '.join(valid_swarm_types)}. "
+                    "See https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
+                )
+
             if (
                 self.swarm_type != "HeavySwarm"
                 and self.agents is None
@@ -423,9 +450,7 @@ class SwarmRouter:
             agents=self.agents,
             max_loops=self.max_loops,
             flow=self.rearrange_flow,
-            return_json=self.return_json,
             output_type=self.output_type,
-            return_entire_history=self.return_entire_history,
             *args,
             **kwargs,
         )
@@ -476,7 +501,6 @@ class SwarmRouter:
             description=self.description,
             agents=self.agents,
             max_loops=self.max_loops,
-            return_all_history=self.return_entire_history,
             output_type=self.output_type,
             *args,
             **kwargs,
@@ -501,7 +525,8 @@ class SwarmRouter:
             name=self.name,
             description=self.description,
             agents=self.agents,
-            consensus_agent=self.agents[-1],
+            max_loops=self.max_loops,
+            output_type=self.output_type,
             *args,
             **kwargs,
         )
@@ -537,8 +562,6 @@ class SwarmRouter:
             max_loops=self.max_loops,
             shared_memory_system=self.shared_memory_system,
             output_type=self.output_type,
-            return_json=self.return_json,
-            return_entire_history=self.return_entire_history,
             *args,
             **kwargs,
         )
@@ -550,8 +573,6 @@ class SwarmRouter:
             description=self.description,
             agents=self.agents,
             max_loops=self.max_loops,
-            auto_save=self.autosave,
-            return_str_on=self.return_entire_history,
             output_type=self.output_type,
             *args,
             **kwargs,
@@ -574,19 +595,6 @@ class SwarmRouter:
         Raises:
             ValueError: If an invalid swarm type is provided.
         """
-        # Handle auto swarm type selection
-        if self.swarm_type == "auto":
-            try:
-                matched_swarm_type = str(swarm_matcher(task))
-                self.swarm_type = matched_swarm_type
-                logger.info(
-                    f"Auto-selected swarm type: {matched_swarm_type}"
-                )
-            except Exception as e:
-                logger.warning(
-                    f"Auto-selection failed: {e}, falling back to SequentialWorkflow"
-                )
-                self.swarm_type = "SequentialWorkflow"
 
         # Check cache first for better performance
         cache_key = (

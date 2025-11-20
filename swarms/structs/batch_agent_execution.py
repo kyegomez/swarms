@@ -1,10 +1,12 @@
 import concurrent.futures
-from swarms.structs.agent import Agent
-from typing import List, Union, Callable
 import os
-from swarms.utils.formatter import formatter
-from loguru import logger
 import traceback
+from typing import Callable, List, Union
+
+from loguru import logger
+
+from swarms.structs.agent import Agent
+from swarms.utils.formatter import formatter
 
 
 class BatchAgentExecutionError(Exception):

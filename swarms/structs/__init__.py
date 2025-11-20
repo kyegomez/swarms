@@ -1,7 +1,7 @@
 from swarms.structs.agent import Agent
-from swarms.structs.agent_builder import AgentsBuilder
 from swarms.structs.agent_loader import AgentLoader
 from swarms.structs.agent_rearrange import AgentRearrange, rearrange
+from swarms.structs.aop import AOP
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
@@ -11,6 +11,7 @@ from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.cron_job import CronJob
+from swarms.structs.debate_with_judge import DebateWithJudge
 from swarms.structs.graph_workflow import (
     Edge,
     GraphWorkflow,
@@ -42,9 +43,6 @@ from swarms.structs.majority_voting import (
     MajorityVoting,
 )
 from swarms.structs.malt import MALT
-from swarms.structs.meme_agent_persona_generator import (
-    MemeAgentGenerator,
-)
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.model_router import ModelRouter
 from swarms.structs.multi_agent_exec import (
@@ -62,7 +60,9 @@ from swarms.structs.multi_agent_exec import (
 )
 from swarms.structs.multi_agent_router import MultiAgentRouter
 from swarms.structs.round_robin import RoundRobinSwarm
+from swarms.structs.self_moa_seq import SelfMoASeq
 from swarms.structs.sequential_workflow import SequentialWorkflow
+from swarms.structs.social_algorithms import SocialAlgorithms
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.stopping_conditions import (
     check_cancelled,
@@ -107,6 +107,7 @@ __all__ = [
     "BaseStructure",
     "BaseSwarm",
     "ConcurrentWorkflow",
+    "SocialAlgorithms",
     "Conversation",
     "GroupChat",
     "MajorityVoting",
@@ -153,9 +154,7 @@ __all__ = [
     "GroupChat",
     "expertise_based",
     "MultiAgentRouter",
-    "MemeAgentGenerator",
     "ModelRouter",
-    "AgentsBuilder",
     "MALT",
     "HybridHierarchicalClusterSwarm",
     "get_agents_info",
@@ -186,4 +185,7 @@ __all__ = [
     "check_end",
     "AgentLoader",
     "BatchedGridWorkflow",
+    "AOP",
+    "SelfMoASeq",
+    "DebateWithJudge",
 ]

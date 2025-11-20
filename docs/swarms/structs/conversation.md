@@ -1,46 +1,17 @@
-# Module/Class Name: Conversation
+# Module/Class Name: `Conversation`
 
-## Introduction
-
-The `Conversation` class is a powerful and flexible tool for managing conversational data in Python applications. It provides a comprehensive solution for storing, retrieving, and analyzing conversations with support for multiple storage backends, token tracking, and advanced metadata management.
+The `Conversation` class is a powerful and flexible tool for managing agent conversation context. It provides a comprehensive solution for storing, retrieving, and analyzing conversations with in-memory storage, token tracking, and advanced metadata management.
 
 ### Key Features
 
 | Feature Category            | Features / Description                                                                                      |
 |----------------------------|-------------------------------------------------------------------------------------------------------------|
-| **Multiple Storage Backends** | - In-memory: Fast, temporary storage for testing and development<br>- Supabase: PostgreSQL-based cloud storage with real-time capabilities<br>- Redis: High-performance caching and persistence<br>- SQLite: Local file-based storage<br>- DuckDB: Analytical workloads and columnar storage<br>- Pulsar: Event streaming for distributed systems<br>- Mem0: Memory-based storage with mem0 integration |
+| **In-Memory Storage**       | - Fast, efficient in-memory storage for conversation history<br>- No external dependencies required<br>- Perfect for development, testing, and single-session applications |
 | **Token Management**        | - Built-in token counting with configurable models<br>- Automatic token tracking for input/output messages<br>- Token usage analytics and reporting<br>- Context length management |
 | **Metadata and Categories** | - Support for message metadata<br>- Message categorization (input/output)<br>- Role-based message tracking<br>- Custom message IDs |
 | **Data Export/Import**      | - JSON and YAML export formats<br>- Automatic saving and loading<br>- Conversation history management<br>- Batch operations support |
 | **Advanced Features**       | - Message search and filtering<br>- Conversation analytics<br>- Multi-agent support<br>- Error handling and fallbacks<br>- Type hints and validation |
 
-### Use Cases
-
-| Use Case                   | Features / Description                                                                                  |
-|----------------------------|--------------------------------------------------------------------------------------------------------|
-| **Chatbot Development**    | - Store and manage conversation history<br>- Track token usage and context length<br>- Analyze conversation patterns |
-| **Multi-Agent Systems**    | - Coordinate multiple AI agents<br>- Track agent interactions<br>- Store agent outputs and metadata    |
-| **Analytics Applications** | - Track conversation metrics<br>- Generate usage reports<br>- Analyze user interactions                |
-| **Production Systems**     | - Persistent storage with various backends<br>- Error handling and recovery<br>- Scalable conversation management |
-| **Development and Testing**| - Fast in-memory storage<br>- Debugging support<br>- Easy export/import of test data                   |
-
-### Best Practices
-
-| Category            | Best Practices                                                                                                         |
-|---------------------|------------------------------------------------------------------------------------------------------------------------|
-| **Storage Selection** | - Use in-memory for testing and development<br>- Choose Supabase for multi-user cloud applications<br>- Use Redis for high-performance requirements<br>- Select SQLite for single-user local applications<br>- Pick DuckDB for analytical workloads<br>- Opt for Pulsar in distributed systems |
-| **Token Management** | - Enable token counting for production use<br>- Set appropriate context lengths<br>- Monitor token usage with `export_and_count_categories()` |
-| **Error Handling**   | - Implement proper fallback mechanisms<br>- Use type hints for better code reliability<br>- Monitor and log errors appropriately |
-| **Data Management**  | - Use appropriate export formats (JSON/YAML)<br>- Implement regular backup strategies<br>- Clean up old conversations when needed |
-| **Security**         | - Use environment variables for sensitive credentials<br>- Implement proper access controls<br>- Validate input data    |
-
-## Table of Contents
-
-1. [Class Definition](#1-class-definition)
-2. [Initialization Parameters](#2-initialization-parameters)
-3. [Backend Configuration](#3-backend-configuration)
-4. [Methods](#4-methods)
-5. [Examples](#5-examples)
 
 ## 1. Class Definition
 
@@ -48,19 +19,7 @@ The `Conversation` class is a powerful and flexible tool for managing conversati
 
 The `Conversation` class is designed to manage conversations by keeping track of messages and their attributes. It offers methods for adding, deleting, updating, querying, and displaying messages within the conversation. Additionally, it supports exporting and importing conversations, searching for specific keywords, and more.
 
-**New in this version**: The class now supports multiple storage backends for persistent conversation storage:
-
-| Backend      | Description                                                                                                 | Requirements                      |
-|--------------|-------------------------------------------------------------------------------------------------------------|------------------------------------|
-| **in-memory**| Default memory-based storage (no persistence)                                                               | None (built-in)                    |
-| **mem0**     | Memory-based storage with mem0 integration                                                                  | `pip install mem0ai`               |
-| **supabase** | PostgreSQL-based storage using Supabase                                                                     | `pip install supabase`             |
-| **redis**    | Redis-based storage                                                                                         | `pip install redis`                |
-| **sqlite**   | SQLite-based storage (local file)                                                                           | None (built-in)                    |
-| **duckdb**   | DuckDB-based storage (analytical workloads, columnar storage)                                               | `pip install duckdb`               |
-| **pulsar**   | Apache Pulsar messaging backend                                                                             | `pip install pulsar-client`        |
-
-All backends use **lazy loading** - database dependencies are only imported when the specific backend is instantiated. Each backend provides helpful error messages if required packages are not installed.
+The class uses **in-memory storage** for fast and efficient conversation management, making it perfect for development, testing, and single-session applications. No external dependencies are required, making it easy to set up and use.
 
 ### Attributes
 
@@ -74,18 +33,19 @@ All backends use **lazy loading** - database dependencies are only imported when
 | save_filepath | str | File path for saving conversation history |
 | load_filepath | str | File path for loading conversation history |
 | conversation_history | list | List storing conversation messages |
-| tokenizer | Callable | Tokenizer for counting tokens |
 | context_length | int | Maximum tokens allowed in conversation |
 | rules | str | Rules for the conversation |
 | custom_rules_prompt | str | Custom prompt for rules |
 | user | str | User identifier for messages |
-| save_as_yaml | bool | Flag to save as YAML |
+| save_as_yaml_on | bool | Flag to save as YAML |
 | save_as_json_bool | bool | Flag to save as JSON |
 | token_count | bool | Flag to enable token counting |
 | message_id_on | bool | Flag to enable message IDs |
-| backend | str | Storage backend type |
-| backend_instance | Any | The actual backend instance |
+| tokenizer_model_name | str | Model name for tokenization |
 | conversations_dir | str | Directory to store conversations |
+| export_method | str | Export format ("json" or "yaml") |
+| dynamic_context_window | bool | Enable dynamic context window management |
+| caching | bool | Enable caching features |
 
 ## 2. Initialization Parameters
 
@@ -106,61 +66,14 @@ All backends use **lazy loading** - database dependencies are only imported when
 | save_as_json_bool | bool | False | Save as JSON |
 | token_count | bool | False | Enable token counting |
 | message_id_on | bool | False | Enable message IDs |
-| provider | Literal["mem0", "in-memory"] | "in-memory" | Legacy storage provider |
-| backend | Optional[str] | None | Storage backend (takes precedence over provider) |
 | tokenizer_model_name | str | "gpt-4.1" | Model name for tokenization |
 | conversations_dir | Optional[str] | None | Directory for conversations |
 | export_method | str | "json" | Export format ("json" or "yaml") |
+| dynamic_context_window | bool | True | Enable dynamic context window management |
+| caching | bool | True | Enable caching features |
 
-### Backend-Specific Parameters
 
-#### Supabase Backend
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| supabase_url | Optional[str] | None | Supabase project URL |
-| supabase_key | Optional[str] | None | Supabase API key |
-| table_name | str | "conversations" | Database table name |
-
-Environment variables: `SUPABASE_URL`, `SUPABASE_ANON_KEY`
-
-#### Redis Backend
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| redis_host | str | "localhost" | Redis server host |
-| redis_port | int | 6379 | Redis server port |
-| redis_db | int | 0 | Redis database number |
-| redis_password | Optional[str] | None | Redis password |
-| use_embedded_redis | bool | True | Use embedded Redis |
-| persist_redis | bool | True | Enable Redis persistence |
-| auto_persist | bool | True | Auto-persist data |
-| redis_data_dir | Optional[str] | None | Redis data directory |
-
-#### SQLite/DuckDB Backend
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| db_path | Optional[str] | None | Database file path |
-
-#### Pulsar Backend
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| pulsar_url | str | "pulsar://localhost:6650" | Pulsar server URL |
-| topic | str | f"conversation-{id}" | Pulsar topic name |
-
-### Backend Selection
-
-The `backend` parameter takes precedence over the legacy `provider` parameter:
-
-```python
-# Legacy way (still supported)
-conversation = Conversation(provider="in-memory")
-
-# New way (recommended)
-conversation = Conversation(backend="supabase")
-conversation = Conversation(backend="redis")
-conversation = Conversation(backend="sqlite")
-```
-
-## 4. Methods
+## 3. Methods
 
 ### `add(role: str, content: Union[str, dict, list], metadata: Optional[dict] = None)`
 
@@ -628,14 +541,14 @@ conversation.add("user", "Hello")
 conversation.clear_memory()
 ```
 
-## 5. Examples
+## 4. Examples
 
-### Basic Usage with Modern Configuration
+### Basic Usage
 
 ```python
 from swarms.structs import Conversation
 
-# Create a new conversation with modern configuration
+# Create a new conversation with in-memory storage
 conversation = Conversation(
     name="my_chat",
     system_prompt="You are a helpful assistant",
@@ -672,51 +585,24 @@ print(f"Total tokens: {token_stats['total_tokens']}")
 conversation.display_conversation()
 ```
 
-### Using Supabase Backend with Environment Variables
+### Advanced Configuration with Export/Import
 
 ```python
-import os
 from swarms.structs import Conversation
+import os
 
-# Using environment variables for secure configuration
-os.environ["SUPABASE_URL"] = "https://your-project.supabase.co"
-os.environ["SUPABASE_ANON_KEY"] = "your-anon-key"
-
+# Advanced configuration with custom settings
 conversation = Conversation(
-    name="supabase_chat",
-    backend="supabase",
+    name="advanced_chat",
     system_prompt="You are a helpful assistant",
     time_enabled=True,
     token_count=True,
     message_id_on=True,
-    table_name="production_conversations"  # Custom table name
-)
-
-# Messages are automatically persisted to Supabase
-conversation.add("user", "Hello!", metadata={"client_id": "user123"})
-conversation.add("assistant", "Hi there!", metadata={"model": "gpt-4"})
-
-# Search functionality works with backend
-results = conversation.search("Hello")
-```
-
-### Redis Backend with Advanced Configuration
-
-```python
-from swarms.structs import Conversation
-
-# Redis with advanced configuration and persistence
-conversation = Conversation(
-    name="redis_chat",
-    backend="redis",
-    redis_host="localhost",
-    redis_port=6379,
-    redis_password="secure_password",
-    use_embedded_redis=False,  # Use external Redis
-    persist_redis=True,
-    auto_persist=True,
-    redis_data_dir="/path/to/redis/data",
-    token_count=True
+    export_method="yaml",
+    dynamic_context_window=True,
+    caching=True,
+    autosave=True,
+    conversations_dir=os.path.expanduser("~/conversations")
 )
 
 # Add structured messages
@@ -733,30 +619,37 @@ conversation.batch_add([
     {"role": "assistant", "content": "Processing..."},
     {"role": "system", "content": "Data processed successfully"}
 ])
+
+# Export conversation to YAML
+conversation.export(force=True)  # force=True overrides autosave setting
 ```
 
-### SQLite Backend with Custom Path and Export
+### File-based Persistence
 
 ```python
 from swarms.structs import Conversation
 import os
 
-# SQLite with custom database path and YAML export
+# Create conversation with file persistence
 conversation = Conversation(
-    name="sqlite_chat",
-    backend="sqlite",
-    db_path=os.path.expanduser("~/conversations.db"),
-    export_method="yaml",
+    name="persistent_chat",
     system_prompt="You are a helpful assistant",
-    token_count=True
+    token_count=True,
+    export_method="json",
+    autosave=True,
+    save_filepath="my_conversation.json"
 )
 
-# Add messages and export
-conversation.add("user", "Hello SQLite!")
-conversation.add("assistant", "Hello from SQLite backend!")
+# Add messages
+conversation.add("user", "Hello!")
+conversation.add("assistant", "Hi there!")
 
-# Export conversation to YAML
-conversation.export(force=True)  # force=True overrides autosave setting
+# Conversation is automatically saved to file
+# You can also manually export
+conversation.export()
+
+# Load conversation later
+loaded_conversation = Conversation.load_conversation("persistent_chat")
 ```
 
 ### Advanced Usage with Multi-Agent Systems
@@ -764,17 +657,16 @@ conversation.export(force=True)  # force=True overrides autosave setting
 ```python
 from swarms.structs import Agent, Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
-import os
 
-# Set up conversation with DuckDB backend for analytics
+# Set up conversation for multi-agent analytics
 conversation = Conversation(
     name="multi_agent_analytics",
-    backend="duckdb",
-    db_path="analytics.duckdb",
     system_prompt="Multi-agent analytics session",
     time_enabled=True,
     token_count=True,
-    message_id_on=True
+    message_id_on=True,
+    export_method="json",
+    autosave=True
 )
 
 # Create specialized agents
@@ -814,9 +706,12 @@ for result, agent in zip(results, [data_analyst, researcher]):
 # Get analytics
 token_usage = conversation.export_and_count_categories()
 message_counts = conversation.count_messages_by_role()
+
+# Export conversation for persistence
+conversation.export()
 ```
 
-### Error Handling and Fallbacks with Type Hints
+### Error Handling and Type Hints
 
 ```python
 from typing import Optional, Dict, Any
@@ -824,34 +719,18 @@ from swarms.structs import Conversation
 
 def initialize_conversation(
     name: str,
-    backend: str,
     config: Dict[str, Any]
 ) -> Optional[Conversation]:
-    """Initialize conversation with fallback handling."""
+    """Initialize conversation with error handling."""
     try:
         conversation = Conversation(
             name=name,
-            backend=backend,
             **config
         )
-        print(f"✅ {backend} backend initialized successfully")
-        return conversation
-    except ImportError as e:
-        print(f"❌ {backend} not available: {e}")
-        # Fallback to in-memory with same configuration
-        fallback_config = {
-            k: v for k, v in config.items() 
-            if k not in ['supabase_url', 'supabase_key', 'redis_host']
-        }
-        conversation = Conversation(
-            name=name,
-            backend="in-memory",
-            **fallback_config
-        )
-        print("💡 Falling back to in-memory storage")
+        print(f"✅ Conversation '{name}' initialized successfully")
         return conversation
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"❌ Error initializing conversation: {e}")
         return None
 
 # Usage
@@ -859,21 +738,24 @@ config = {
     "system_prompt": "You are a helpful assistant",
     "time_enabled": True,
     "token_count": True,
-    "supabase_url": "https://your-project.supabase.co",
-    "supabase_key": "your-key"
+    "export_method": "json",
+    "autosave": True
 }
 
 conversation = initialize_conversation(
-    name="fallback_test",
-    backend="supabase",
+    name="error_handling_test",
     config=config
 )
 
 if conversation:
     conversation.add("user", "Hello!")
+    conversation.add("assistant", "Hi there!")
+    
+    # Export for persistence
+    conversation.export()
 ```
 
-### Loading and Managing Conversations with Modern Features
+### Loading and Managing Conversations
 
 ```python
 from swarms.structs import Conversation
@@ -881,7 +763,7 @@ from typing import List, Dict
 import os
 
 def manage_conversations(base_dir: str) -> List[Dict[str, str]]:
-    """Manage conversations with modern features."""
+    """Manage conversations with file-based persistence."""
     
     # List all saved conversations
     conversations = Conversation.list_conversations(
@@ -921,51 +803,47 @@ base_dir = os.path.expanduser("~/conversation_data")
 stats = manage_conversations(base_dir)
 ```
 
-### Backend Comparison and Selection Guide
+### Configuration Examples
 
 ```python
-# In-memory: Fast, no persistence, good for testing
-conv_memory = Conversation(
-    backend="in-memory",
+# Basic configuration: Simple in-memory storage
+conv_basic = Conversation(
+    name="basic_chat",
     token_count=True,
     message_id_on=True
 )
 
-# SQLite: Local file-based persistence, good for single-user apps
-conv_sqlite = Conversation(
-    backend="sqlite",
-    db_path="conversations.db",
+# Development configuration: With time tracking and autosave
+conv_dev = Conversation(
+    name="dev_chat",
+    time_enabled=True,
     token_count=True,
+    message_id_on=True,
+    autosave=True,
     export_method="json"
 )
 
-# Redis: High performance, good for real-time applications
-conv_redis = Conversation(
-    backend="redis",
-    redis_host="localhost",
-    persist_redis=True,
-    token_count=True
+# Production configuration: Full features with file persistence
+conv_prod = Conversation(
+    name="prod_chat",
+    system_prompt="You are a helpful assistant",
+    time_enabled=True,
+    token_count=True,
+    message_id_on=True,
+    autosave=True,
+    export_method="json",
+    dynamic_context_window=True,
+    caching=True,
+    conversations_dir="/app/conversations"
 )
 
-# Supabase: Cloud PostgreSQL, good for multi-user applications
-conv_supabase = Conversation(
-    backend="supabase", 
-    supabase_url=os.getenv("SUPABASE_URL"),
-    supabase_key=os.getenv("SUPABASE_ANON_KEY"),
-    token_count=True
-)
-
-# DuckDB: Analytical workloads, good for data analysis
-conv_duckdb = Conversation(
-    backend="duckdb",
-    db_path="analytics.duckdb",
-    token_count=True
-)
-
-# Pulsar: Event streaming, good for distributed systems
-conv_pulsar = Conversation(
-    backend="pulsar",
-    token_count=True
+# Analytics configuration: For data analysis and reporting
+conv_analytics = Conversation(
+    name="analytics_chat",
+    token_count=True,
+    export_method="yaml",
+    autosave=True,
+    dynamic_context_window=True
 )
 ```
 
@@ -973,42 +851,33 @@ conv_pulsar = Conversation(
 
 The conversation class provides graceful error handling:
 
-- **Missing Dependencies**: Clear error messages with installation instructions
-- **Backend Failures**: Automatic fallback to in-memory storage
-- **Network Issues**: Retry logic and connection management
+- **File Operations**: Clear error messages for file read/write issues
+- **Data Validation**: Input validation and type checking
+- **Memory Management**: Efficient memory usage and cleanup
 - **Data Corruption**: Validation and recovery mechanisms
 
-Example error message:
-```
-Backend 'supabase' dependencies not available. Install with: pip install supabase
-```
-
-## Migration Guide
-
-### From Provider to Backend
-
+Example error handling:
 ```python
-# Old way
-conversation = Conversation(provider="in-memory")
-
-# New way (recommended)
-conversation = Conversation(backend="in-memory")
-
-# Both work, but backend takes precedence
-conversation = Conversation(
-    provider="in-memory",  # Ignored
-    backend="supabase"     # Used
-)
+try:
+    conversation = Conversation(name="test")
+    conversation.add("user", "Hello")
+    conversation.export()
+except Exception as e:
+    print(f"Error: {e}")
 ```
+
 
 ## Conclusion
 
-The `Conversation` class provides a comprehensive set of tools for managing conversations in Python applications with full backend flexibility. It supports various storage backends, lazy loading, token counting, caching, and multiple export/import formats. The class is designed to be flexible and extensible, making it suitable for a wide range of use cases from simple chat applications to complex conversational AI systems with persistent storage requirements.
+The `Conversation` class provides a comprehensive set of tools for managing conversations in Python applications with efficient in-memory storage. It supports token counting, caching, metadata management, and multiple export/import formats. The class is designed to be simple, fast, and reliable, making it suitable for a wide range of use cases from simple chat applications to complex conversational AI systems.
 
-Choose the appropriate backend based on your needs:
-- **in-memory**: Development and testing
-- **sqlite**: Local applications and small-scale deployments  
-- **redis**: Distributed applications requiring high performance
-- **supabase**: Cloud applications with real-time requirements
-- **duckdb**: Analytics and data science workloads
-- **pulsar**: Event-driven architectures and streaming applications
+Key benefits:
+
+| Benefit                  | Description                                      |
+|--------------------------|--------------------------------------------------|
+| **Simple Setup**         | No external dependencies required                |
+| **Fast Performance**     | In-memory storage for quick access               |
+| **File Persistence**     | Export/import for data persistence               |
+| **Token Management**     | Built-in token counting and analytics            |
+| **Flexible Configuration** | Customizable for different use cases           |
+| **Type Safety**          | Full type hints and validation                   |

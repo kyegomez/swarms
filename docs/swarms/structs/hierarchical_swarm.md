@@ -2,7 +2,17 @@
 
 The `HierarchicalSwarm` is a sophisticated multi-agent orchestration system that implements a hierarchical workflow pattern. It consists of a director agent that coordinates and distributes tasks to specialized worker agents, creating a structured approach to complex problem-solving.
 
-## Overview
+```mermaid
+graph TD
+    A[Task] --> B[Director]
+    B --> C[Plan & Orders]
+    C --> D[Agents]
+    D --> E[Results]
+    E --> F{More Loops?}
+    F -->|Yes| B
+    F -->|No| G[Output]
+```
+
 
 The Hierarchical Swarm follows a clear workflow pattern:
 
@@ -12,25 +22,6 @@ The Hierarchical Swarm follows a clear workflow pattern:
 4. **Feedback Loop**: Director evaluates results and issues new orders if needed (up to `max_loops`)
 5. **Context Preservation**: All conversation history and context is maintained throughout the process
 
-## Architecture
-
-```mermaid
-graph TD
-    A[User Task] --> B[Director Agent]
-    B --> C[Create Plan & Orders]
-    C --> D[Distribute to Agents]
-    D --> E[Agent 1]
-    D --> F[Agent 2]
-    D --> G[Agent N]
-    E --> H[Execute Task]
-    F --> H
-    G --> H
-    H --> I[Report Results]
-    I --> J[Director Evaluation]
-    J --> K{More Loops?}
-    K -->|Yes| C
-    K -->|No| L[Final Output]
-```
 
 ## Key Features
 
@@ -45,44 +36,65 @@ graph TD
 | **Live Streaming**           | Real-time streaming callbacks for monitoring agent outputs                                   |
 | **Token-by-Token Updates**   | Watch text formation in real-time as agents generate responses                               |
 
-## `HierarchicalSwarm` Constructor
+## Constructor
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `name` | `str` | `"HierarchicalAgentSwarm"` | The name of the swarm instance |
-| `description` | `str` | `"Distributed task swarm"` | Brief description of the swarm's functionality |
-| `director` | `Optional[Union[Agent, Callable, Any]]` | `None` | The director agent that orchestrates tasks |
-| `agents` | `List[Union[Agent, Callable, Any]]` | `None` | List of worker agents in the swarm |
-| `max_loops` | `int` | `1` | Maximum number of feedback loops between director and agents |
-| `output_type` | `OutputType` | `"dict-all-except-first"` | Format for output (dict, str, list) |
-| `feedback_director_model_name` | `str` | `"gpt-4o-mini"` | Model name for feedback director |
-| `director_name` | `str` | `"Director"` | Name of the director agent |
-| `director_model_name` | `str` | `"gpt-4o-mini"` | Model name for the director agent |
-| `verbose` | `bool` | `False` | Enable detailed logging |
-| `add_collaboration_prompt` | `bool` | `True` | Add collaboration prompts to agents |
-| `planning_director_agent` | `Optional[Union[Agent, Callable, Any]]` | `None` | Optional planning agent for enhanced planning |
+### `HierarchicalSwarm.__init__()`
 
-## Core Methods
+Initializes a new HierarchicalSwarm instance.
 
-### `run(task, img=None, streaming_callback=None, *args, **kwargs)`
+#### Important Parameters
 
-Executes the hierarchical swarm for a specified number of feedback loops, processing the task through multiple iterations for refinement and improvement.
-
-#### Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `task` | `str` | **Required** | The initial task to be processed by the swarm |
-| `img` | `str` | `None` | Optional image input for the agents |
-| `streaming_callback` | `Callable[[str, str, bool], None]` | `None` | Optional callback for real-time streaming of agent outputs |
-| `*args` | `Any` | - | Additional positional arguments |
-| `**kwargs` | `Any` | - | Additional keyword arguments |
+| Parameter | Type | Default | Required | Description |
+|-----------|------|---------|----------|-------------|
+| `agents` | `AgentListType` | `None` | **Yes** | List of worker agents in the swarm. Must not be empty |
+| `name` | `str` | `"HierarchicalAgentSwarm"` | No | The name identifier for this swarm instance |
+| `description` | `str` | `"Distributed task swarm"` | No | A description of the swarm's purpose and capabilities |
+| `director` | `Optional[Union[Agent, Callable, Any]]` | `None` | No | The director agent that orchestrates tasks. If None, a default director will be created |
+| `max_loops` | `int` | `1` | No | Maximum number of feedback loops between director and agents (must be > 0) |
+| `output_type` | `OutputType` | `"dict-all-except-first"` | No | Format for output (dict, str, list) |
+| `director_model_name` | `str` | `"gpt-4o-mini"` | No | Model name for the main director agent |
+| `director_feedback_on` | `bool` | `True` | No | Whether director feedback is enabled |
+| `interactive` | `bool` | `False` | No | Enable interactive mode with dashboard visualization |
 
 #### Returns
 
 | Type | Description |
 |------|-------------|
-| `Any` | The formatted conversation history as output based on `output_type` |
+| `HierarchicalSwarm` | A new HierarchicalSwarm instance |
+
+#### Raises
+
+| Exception | Condition |
+|-----------|-----------|
+| `ValueError` | If no agents are provided or max_loops is invalid |
+
+## Core Methods
+
+### `run()`
+
+Executes the hierarchical swarm for a specified number of feedback loops, processing the task through multiple iterations for refinement and improvement.
+
+#### Important Parameters
+
+| Parameter | Type | Default | Required | Description |
+|-----------|------|---------|----------|-------------|
+| `task` | `Optional[str]` | `None` | **Yes*** | The initial task to be processed by the swarm. If None and interactive mode is enabled, will prompt for input |
+| `img` | `Optional[str]` | `None` | No | Optional image input for the agents |
+| `streaming_callback` | `Optional[Callable[[str, str, bool], None]]` | `None` | No | Callback function for real-time streaming of agent outputs. Parameters are (agent_name, chunk, is_final) where is_final indicates completion |
+
+*Required if `interactive=False`
+
+#### Returns
+
+| Type | Description |
+|------|-------------|
+| `Any` | The formatted conversation history as output, formatted according to the `output_type` configuration |
+
+#### Raises
+
+| Exception | Condition |
+|-----------|-----------|
+| `Exception` | If swarm execution fails |
 
 #### Example
 
@@ -94,13 +106,13 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 research_agent = Agent(
     agent_name="Research-Specialist",
     agent_description="Expert in market research and analysis",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 financial_agent = Agent(
     agent_name="Financial-Analyst",
     agent_description="Specialist in financial analysis and valuation",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the hierarchical swarm
@@ -170,71 +182,29 @@ task = "Analyze the impact of AI on the job market"
 result = swarm.run(task=task, streaming_callback=streaming_callback)
 ```
 
-#### Parameters (step method)
+### `batched_run()`
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `task` | `str` | **Required** | The task to be executed in this step |
-| `img` | `str` | `None` | Optional image input for the agents |
-| `streaming_callback` | `Callable[[str, str, bool], None]` | `None` | Optional callback for real-time streaming of agent outputs |
-| `*args` | `Any` | - | Additional positional arguments |
-| `**kwargs` | `Any` | - | Additional keyword arguments |
+Execute the hierarchical swarm for multiple tasks in sequence. Processes a list of tasks sequentially, running the complete swarm workflow for each task independently.
 
-#### Returns (step method)
+#### Important Parameters
 
-| Type | Description |
-|------|-------------|
-| `str` | Feedback from the director based on agent outputs |
+| Parameter | Type | Default | Required | Description |
+|-----------|------|---------|----------|-------------|
+| `tasks` | `List[str]` | - | **Yes** | List of tasks to be processed by the swarm |
+| `img` | `Optional[str]` | `None` | No | Optional image input for the tasks |
+| `streaming_callback` | `Optional[Callable[[str, str, bool], None]]` | `None` | No | Callback function for streaming agent outputs. Parameters are (agent_name, chunk, is_final) where is_final indicates completion |
 
-#### Example (step method)
-
-```python
-from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
-
-# Create development agents
-frontend_agent = Agent(
-    agent_name="Frontend-Developer",
-    agent_description="Expert in React and modern web development",
-    model_name="gpt-4o",
-)
-
-backend_agent = Agent(
-    agent_name="Backend-Developer",
-    agent_description="Specialist in Node.js and API development",
-    model_name="gpt-4o",
-)
-
-# Initialize the swarm
-swarm = HierarchicalSwarm(
-    name="Development-Swarm",
-    description="A hierarchical swarm for software development",
-    agents=[frontend_agent, backend_agent],
-    max_loops=1,
-    verbose=True,
-)
-
-# Execute a single step
-task = "Create a simple web app for file upload and download"
-feedback = swarm.step(task=task)
-print("Director Feedback:", feedback)
-```
-
-#### Parameters (batched_run method)
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `tasks` | `List[str]` | **Required** | List of tasks to be processed |
-| `img` | `str` | `None` | Optional image input for the agents |
-| `streaming_callback` | `Callable[[str, str, bool], None]` | `None` | Optional callback for real-time streaming of agent outputs |
-| `*args` | `Any` | - | Additional positional arguments |
-| `**kwargs` | `Any` | - | Additional keyword arguments |
-
-#### Returns (batched_run method)
+#### Returns
 
 | Type | Description |
 |------|-------------|
-| `List[Any]` | List of results for each task |
+| `List[Any]` | List of results for each processed task |
+
+#### Raises
+
+| Exception | Condition |
+|-----------|-----------|
+| `Exception` | If batched execution fails |
 
 #### Example (batched_run method)
 
@@ -246,13 +216,13 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 market_agent = Agent(
     agent_name="Market-Analyst",
     agent_description="Expert in market analysis and trends",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 technical_agent = Agent(
     agent_name="Technical-Analyst",
     agent_description="Specialist in technical analysis and patterns",
-    model_name="gpt-4o",
+    model_name="gpt-4.1",
 )
 
 # Initialize the swarm
@@ -442,28 +412,6 @@ def live_paragraph_callback(agent_name: str, chunk: str, is_final: bool):
         print(f"\n✅ {agent_name} completed!")
 ```
 
-### Streaming Use Cases
-
-- **Real-time Monitoring**: Watch agents work simultaneously
-- **Progress Tracking**: See text formation token by token
-- **Live Debugging**: Monitor agent performance in real-time
-- **User Experience**: Provide live feedback to users
-- **Logging**: Capture detailed execution traces
-
-### Streaming in Different Methods
-
-Streaming callbacks work with all execution methods:
-
-```python
-# Single task with streaming
-result = swarm.run(task=task, streaming_callback=my_callback)
-
-# Single step with streaming
-result = swarm.step(task=task, streaming_callback=my_callback)
-
-# Batch processing with streaming
-results = swarm.batched_run(tasks=tasks, streaming_callback=my_callback)
-```
 
 ## Best Practices
 

@@ -45,7 +45,7 @@
 
 # # print(aggregator_system_prompt.get_prompt())
 
-aggregator_system_prompt_main = """
+AGGREGATOR_SYSTEM_PROMPT_MAIN = """
 
     # Multi-Agent Observer and Summarizer
 
@@ -82,4 +82,4 @@ aggregator_system_prompt_main = """
     5. Potential improvements or areas for further exploration
 
     Remember: Your role is crucial in distilling complex mult-agent interactions into actionable insights. Strive for clarity, accuracy, and impartiality in all your summaries.
-    """
+"""

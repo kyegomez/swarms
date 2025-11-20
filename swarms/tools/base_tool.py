@@ -231,9 +231,10 @@ class BaseTool(BaseModel):
     def base_model_to_dict(
         self,
         pydantic_type: type[BaseModel],
+        output_str: bool = False,
         *args: Any,
         **kwargs: Any,
-    ) -> dict[str, Any]:
+    ) -> Union[dict[str, Any], str]:
         """
         Convert a Pydantic BaseModel to OpenAI function calling schema dictionary.
 
@@ -247,7 +248,7 @@ class BaseTool(BaseModel):
             **kwargs: Additional keyword arguments
 
         Returns:
-            dict[str, Any]: OpenAI function calling schema dictionary
+            Union[dict[str, Any], str]: OpenAI function calling schema dictionary or JSON string
 
         Raises:
             ToolValidationError: If pydantic_type validation fails
@@ -278,8 +279,12 @@ class BaseTool(BaseModel):
 
             # Get the base function schema
             base_result = base_model_to_openai_function(
-                pydantic_type, *args, **kwargs
+                pydantic_type, output_str=output_str, *args, **kwargs
             )
+
+            # If output_str is True, return the string directly
+            if output_str and isinstance(base_result, str):
+                return base_result
 
             # Extract the function definition from the functions array
             if (
@@ -314,8 +319,8 @@ class BaseTool(BaseModel):
             ) from e
 
     def multi_base_models_to_dict(
-        self, base_models: List[BaseModel]
-    ) -> dict[str, Any]:
+        self, base_models: List[BaseModel], output_str: bool = False
+    ) -> Union[dict[str, Any], str]:
         """
         Convert multiple Pydantic BaseModels to OpenAI function calling schema.
 
@@ -323,12 +328,11 @@ class BaseTool(BaseModel):
         a unified OpenAI function calling schema format.
 
         Args:
-            return_str (bool): Whether to return string format
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
+            base_models (List[BaseModel]): List of Pydantic models to convert
+            output_str (bool): Whether to return string format. Defaults to False.
 
         Returns:
-            dict[str, Any]: Combined OpenAI function calling schema
+            dict[str, Any] or str: Combined OpenAI function calling schema or JSON string
 
         Raises:
             ToolValidationError: If base_models validation fails
@@ -344,10 +348,18 @@ class BaseTool(BaseModel):
             )
 
         try:
-            return [
-                self.base_model_to_dict(model)
+            results = [
+                self.base_model_to_dict(model, output_str=output_str)
                 for model in base_models
             ]
+
+            # If output_str is True, return the string directly
+            if output_str:
+                import json
+
+                return json.dumps(results, indent=2)
+
+            return results
         except Exception as e:
             self._log_if_verbose(
                 "error", f"Failed to convert multiple models: {e}"
