@@ -823,7 +823,7 @@ We've made it easy to start contributing. Here's how you can help:
 4. **Join the Discussion:** To participate in roadmap discussions and connect with other developers, join our community on [**Discord**](https://discord.gg/EamjgSaEQf).
 
 
-### ✨ Our Valued Contributors
+### ✨ Thank You to Our Contributors
 
 Thank you for contributing to swarms. Your work is extremely appreciated and recognized.
 
