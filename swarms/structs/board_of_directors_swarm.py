@@ -841,7 +841,7 @@ class BoardOfDirectorsSwarm:
         description: str = "Distributed task swarm with collective decision-making",
         board_members: Optional[List[BoardMember]] = None,
         agents: Optional[List[Union[Agent, Callable, Any]]] = None,
-        max_loops: int = 1,
+        max_loops: Union[int, str] = 1,
         output_type: OutputType = "dict-all-except-first",
         board_model_name: str = "gpt-4o-mini",
         verbose: bool = False,
@@ -879,6 +879,8 @@ class BoardOfDirectorsSwarm:
             ValueError: If critical requirements are not met during initialization
         """
         self.name = name
+        # Follow agent.py pattern: set agent_name to match name (line 664 in agent.py: self.name = agent_name)
+        self.agent_name = name
         self.description = description
         self.board_members = board_members or []
         self.agents = agents or []
@@ -1106,9 +1108,17 @@ You should be thorough, organized, and detail-oriented in your documentation."""
                     "No agents found in the swarm. At least one agent must be provided to create a Board of Directors swarm."
                 )
 
-            if self.max_loops <= 0:
+            # Handle max_loops="auto" or string values in reliability check
+            if isinstance(self.max_loops, str) and self.max_loops.lower() == "auto":
+                pass  # "auto" is valid
+            elif isinstance(self.max_loops, int):
+                if self.max_loops <= 0:
+                    raise ValueError(
+                        "Max loops must be greater than 0. Please set a valid number of loops."
+                    )
+            else:
                 raise ValueError(
-                    "Max loops must be greater than 0. Please set a valid number of loops."
+                    f"Invalid max_loops value '{self.max_loops}'. Must be an integer > 0 or 'auto'."
                 )
 
             if (
@@ -1202,13 +1212,17 @@ You should be thorough, organized, and detail-oriented in your documentation."""
         Returns:
             str: The board meeting prompt
         """
+        available_agent_names = [getattr(agent, 'agent_name', getattr(agent, 'name', str(agent))) for agent in self.agents]
         return f"""BOARD OF DIRECTORS MEETING
 
 TASK: {task}
 
 CONVERSATION HISTORY: {self.conversation.get_str()}
 
-AVAILABLE AGENTS: {[agent.agent_name for agent in self.agents]}
+AVAILABLE AGENTS (YOU MUST USE ONLY THESE EXACT NAMES - DO NOT CREATE OR INFER OTHER NAMES):
+{available_agent_names}
+
+⚠️ CRITICAL: When creating orders, you MUST use ONLY the exact agent names listed above. Do NOT create, infer, or hallucinate agent names that are not in the AVAILABLE AGENTS list. Each agent_name in your orders must exactly match one of the names in AVAILABLE AGENTS.
 
 BOARD MEMBERS:
 {self._format_board_members_info()}
@@ -1218,7 +1232,7 @@ INSTRUCTIONS:
 2. Consider all perspectives and expertise areas
 3. Reach consensus or majority decision on the approach
 4. Create a detailed plan for task execution
-5. Assign specific tasks to appropriate agents
+5. Assign specific tasks to appropriate agents - USE ONLY THE EXACT AGENT NAMES FROM AVAILABLE AGENTS LIST
 6. Document all decisions and reasoning
 
 Please provide your response in the following format:
@@ -1226,7 +1240,7 @@ Please provide your response in the following format:
     "plan": "Detailed plan for task execution",
     "orders": [
         {{
-            "agent_name": "Agent Name",
+            "agent_name": "MUST BE EXACTLY ONE OF: {available_agent_names}",
             "task": "Specific task description",
             "priority": 1-5,
             "deadline": "Optional deadline",
@@ -1259,7 +1273,7 @@ Please provide your response in the following format:
         info = []
         for member in self.board_members:
             info.append(
-                f"- {member.agent.agent_name} ({member.role.value}): {member.agent.agent_description}"
+                f"- {getattr(member.agent, 'agent_name', getattr(member.agent, 'name', str(member.agent)))} ({member.role.value}): {getattr(member.agent, 'agent_description', getattr(member.agent, 'description', ''))}"
             )
             if member.expertise_areas:
                 info.append(
@@ -1305,6 +1319,58 @@ Please provide your response in the following format:
 
         return chairman.run(task=prompt, img=img)
 
+    def _extract_json_from_text(self, text: str) -> Optional[str]:
+        """
+        Extract the first valid JSON object from text using balanced brace matching.
+        
+        Args:
+            text: Text that may contain JSON
+            
+        Returns:
+            Extracted JSON string or None if not found
+        """
+        # Find all potential JSON start positions
+        start_positions = [m.start() for m in re.finditer(r'\{', text)]
+        
+        for start_pos in start_positions:
+            # Try to find balanced braces from this position
+            brace_count = 0
+            in_string = False
+            escape_next = False
+            
+            for i in range(start_pos, len(text)):
+                char = text[i]
+                
+                if escape_next:
+                    escape_next = False
+                    continue
+                    
+                if char == '\\':
+                    escape_next = True
+                    continue
+                    
+                if char == '"' and not escape_next:
+                    in_string = not in_string
+                    continue
+                    
+                if not in_string:
+                    if char == '{':
+                        brace_count += 1
+                    elif char == '}':
+                        brace_count -= 1
+                        if brace_count == 0:
+                            # Found balanced JSON
+                            json_str = text[start_pos:i+1]
+                            # Try to parse it to validate
+                            try:
+                                json.loads(json_str)
+                                return json_str
+                            except (json.JSONDecodeError, ValueError):
+                                # Not valid JSON, continue searching
+                                break
+        
+        return None
+
     def _parse_board_decisions(self, board_output: str) -> BoardSpec:
         """
         Parse the board output into a BoardSpec object.
@@ -1322,14 +1388,16 @@ Please provide your response in the following format:
         try:
             # Try to parse as JSON first
             if isinstance(board_output, str):
-                # Try to extract JSON from the response
-                json_match = re.search(
-                    r"\{.*\}", board_output, re.DOTALL
-                )
-                if json_match:
-                    board_output = json_match.group()
-
-                parsed = json.loads(board_output)
+                # First, try direct JSON parsing
+                try:
+                    parsed = json.loads(board_output)
+                except (json.JSONDecodeError, ValueError):
+                    # Try to extract JSON from the response
+                    json_str = self._extract_json_from_text(board_output)
+                    if json_str:
+                        parsed = json.loads(json_str)
+                    else:
+                        raise ValueError("Could not extract valid JSON from board output")
             else:
                 parsed = board_output
 
@@ -1339,11 +1407,56 @@ Please provide your response in the following format:
             decisions_data = parsed.get("decisions", [])
             meeting_summary = parsed.get("meeting_summary", "")
 
-            # Create BoardOrder objects
+            # Get available agent names for validation
+            available_agent_names = [
+                getattr(agent, 'agent_name', getattr(agent, 'name', str(agent)))
+                for agent in self.agents
+            ]
+
+            # Create BoardOrder objects with validation
             orders = []
+            invalid_orders = []
             for order_data in orders_data:
+                agent_name = order_data.get("agent_name", "")
+                
+                # Validate agent name exists in available agents
+                agent_found = False
+                # First try exact match (case-insensitive)
+                for available_name in available_agent_names:
+                    if agent_name.lower() == available_name.lower():
+                        agent_name = available_name
+                        agent_found = True
+                        break
+                
+                # If no exact match, try partial matching (for minor variations)
+                if not agent_found:
+                    for available_name in available_agent_names:
+                        # Only match if one is clearly a substring of the other
+                        # (to avoid false matches like "SubDept" matching "TeamBoard")
+                        if (agent_name.lower() in available_name.lower() and 
+                            len(agent_name) >= 3) or \
+                           (available_name.lower() in agent_name.lower() and 
+                            len(available_name) >= 3):
+                            agent_name = available_name
+                            agent_found = True
+                            break
+                
+                if not agent_found and agent_name:
+                    invalid_orders.append(agent_name)
+                    if self.verbose:
+                        board_logger.warning(
+                            f"⚠️ Invalid agent name '{agent_name}' in order. "
+                            f"Available agents: {available_agent_names}. Skipping this order."
+                        )
+                    continue
+                
+                if not agent_name:
+                    if self.verbose:
+                        board_logger.warning("⚠️ Order missing agent_name. Skipping.")
+                    continue
+                
                 order = BoardOrder(
-                    agent_name=order_data.get("agent_name", ""),
+                    agent_name=agent_name,
                     task=order_data.get("task", ""),
                     priority=order_data.get("priority", 3),
                     deadline=order_data.get("deadline"),
@@ -1352,6 +1465,12 @@ Please provide your response in the following format:
                     ),
                 )
                 orders.append(order)
+            
+            if invalid_orders and self.verbose:
+                board_logger.warning(
+                    f"⚠️ Filtered out {len(invalid_orders)} invalid order(s) with agent names: {invalid_orders}. "
+                    f"Valid orders: {len(orders)}"
+                )
 
             # Create BoardDecision objects
             decisions = []
@@ -1379,16 +1498,30 @@ Please provide your response in the following format:
                 meeting_summary=meeting_summary,
             )
 
-        except Exception as e:
+        except json.JSONDecodeError as e:
             board_logger.error(
-                f"Failed to parse board decisions: {str(e)}"
+                f"JSON parsing error at line {e.lineno}, column {e.colno}: {str(e)}"
+            )
+            board_logger.debug(
+                f"Problematic JSON snippet: {board_output[max(0, e.pos-50):e.pos+50]}"
             )
             # Return a basic BoardSpec if parsing fails
             return BoardSpec(
                 plan=board_output,
                 orders=[],
                 decisions=[],
-                meeting_summary="Parsing failed, using raw output",
+                meeting_summary=f"Parsing failed: {str(e)}",
+            )
+        except Exception as e:
+            board_logger.error(
+                f"Failed to parse board decisions: {str(e)}\nTraceback: {traceback.format_exc()}"
+            )
+            # Return a basic BoardSpec if parsing fails
+            return BoardSpec(
+                plan=board_output,
+                orders=[],
+                decisions=[],
+                meeting_summary=f"Parsing failed: {str(e)}",
             )
 
     def step(
@@ -1487,11 +1620,24 @@ Please provide your response in the following format:
                 )
                 board_logger.info(f"📋 Task: {task[:100]}...")
 
+            # Handle max_loops="auto" or string values
+            if isinstance(self.max_loops, str) and self.max_loops.lower() == "auto":
+                # For "auto", execute once (single step)
+                max_loops_int = 1
+            elif isinstance(self.max_loops, int):
+                max_loops_int = self.max_loops
+            else:
+                # Default to 1 if invalid type
+                max_loops_int = 1
+                board_logger.warning(
+                    f"Invalid max_loops value '{self.max_loops}', defaulting to 1"
+                )
+
             current_loop = 0
-            while current_loop < self.max_loops:
+            while current_loop < max_loops_int:
                 if self.verbose:
                     board_logger.info(
-                        f"🔄 Executing loop {current_loop + 1}/{self.max_loops}"
+                        f"🔄 Executing loop {current_loop + 1}/{max_loops_int}"
                     )
 
                 # Execute step
@@ -1613,27 +1759,68 @@ Please provide your response in the following format:
         try:
             if self.verbose:
                 board_logger.info(f"📞 Calling agent: {agent_name}")
+                # Debug: show what agents we have
+                board_logger.debug(
+                    f"Available agents in swarm '{self.name}': "
+                    f"{[getattr(a, 'agent_name', getattr(a, 'name', type(a).__name__)) for a in self.agents]}"
+                )
 
-            # Find agent by name
+            # Find agent by name (handle both agent_name and name attributes)
+            # Also try case-insensitive and partial matching for robustness
             agent = None
+            agent_name_lower = agent_name.lower().strip()
+            
             for a in self.agents:
-                if (
-                    hasattr(a, "agent_name")
-                    and a.agent_name == agent_name
-                ):
+                agent_name_attr = getattr(a, 'agent_name', None)
+                name_attr = getattr(a, 'name', None)
+                
+                # Exact match (case-sensitive)
+                if (agent_name_attr and agent_name_attr == agent_name) or (name_attr and name_attr == agent_name):
+                    agent = a
+                    break
+                
+                # Case-insensitive match
+                if agent_name_attr and agent_name_attr.lower().strip() == agent_name_lower:
+                    agent = a
+                    break
+                if name_attr and name_attr.lower().strip() == agent_name_lower:
+                    agent = a
+                    break
+                
+                # Partial match (for cases where LLM might add extra text)
+                if agent_name_attr and agent_name_lower in agent_name_attr.lower():
+                    agent = a
+                    break
+                if name_attr and agent_name_lower in name_attr.lower():
                     agent = a
                     break
 
             if agent is None:
                 available_agents = [
-                    a.agent_name
+                    getattr(a, 'agent_name', getattr(a, 'name', str(a)))
                     for a in self.agents
-                    if hasattr(a, "agent_name")
+                ]
+                # Also show agent types for debugging
+                agent_types = [
+                    type(a).__name__ for a in self.agents
                 ]
                 raise ValueError(
-                    f"Agent '{agent_name}' not found in swarm. Available agents: {available_agents}"
+                    f"Agent '{agent_name}' not found in swarm. Available agents: {available_agents} (types: {agent_types})"
                 )
 
+            # Check if agent is a nested swarm (has name attribute matching agent_name)
+            is_nested_swarm = (
+                hasattr(agent, 'name') and 
+                hasattr(agent, 'run') and 
+                not hasattr(agent, 'agent_name') or 
+                (hasattr(agent, 'agent_name') and hasattr(agent, 'name'))
+            )
+            
+            if self.verbose and is_nested_swarm:
+                board_logger.info(
+                    f"🔄 Calling nested swarm '{agent_name}' - this will trigger its own board meeting and cascade down"
+                )
+            
             output = agent.run(
                 task=f"History: {self.conversation.get_str()} \n\n Task: {task}",
                 *args,
@@ -1760,7 +1947,7 @@ Please provide your response in the following format:
         self.board_members.append(board_member)
         if self.verbose:
             board_logger.info(
-                f"✅ Added board member: {board_member.agent.agent_name}"
+                f"✅ Added board member: {getattr(board_member.agent, 'agent_name', getattr(board_member.agent, 'name', str(board_member.agent)))}"
             )
 
     def remove_board_member(self, agent_name: str) -> None:
@@ -1775,7 +1962,7 @@ Please provide your response in the following format:
         self.board_members = [
             member
             for member in self.board_members
-            if member.agent.agent_name != agent_name
+            if getattr(member.agent, 'agent_name', getattr(member.agent, 'name', str(member.agent))) != agent_name
         ]
         if self.verbose:
             board_logger.info(
@@ -1797,7 +1984,7 @@ Please provide your response in the following format:
             Optional[BoardMember]: The board member if found, None otherwise
         """
         for member in self.board_members:
-            if member.agent.agent_name == agent_name:
+            if getattr(member.agent, 'agent_name', getattr(member.agent, 'name', str(member.agent))) == agent_name:
                 return member
         return None
 
@@ -1816,7 +2003,7 @@ Please provide your response in the following format:
             "total_members": len(self.board_members),
             "members": [
                 {
-                    "name": member.agent.agent_name,
+                    "name": getattr(member.agent, 'agent_name', getattr(member.agent, 'name', str(member.agent))),
                     "role": member.role.value,
                     "voting_weight": member.voting_weight,
                     "expertise_areas": member.expertise_areas,
