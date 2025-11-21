@@ -6,6 +6,7 @@ from swarms.structs.custom_agent import CustomAgent, AgentResponse
 
 try:
     import pytest_asyncio
+
     ASYNC_AVAILABLE = True
 except ImportError:
     ASYNC_AVAILABLE = False
@@ -40,7 +41,10 @@ def test_custom_agent_initialization():
             timeout=30.0,
             verify_ssl=True,
         )
-        assert custom_agent_instance.base_url == "https://api.example.com"
+        assert (
+            custom_agent_instance.base_url
+            == "https://api.example.com"
+        )
         assert custom_agent_instance.endpoint == "v1/endpoint"
         assert custom_agent_instance.timeout == 30.0
         assert custom_agent_instance.verify_ssl is True
@@ -51,7 +55,9 @@ def test_custom_agent_initialization():
         raise
 
 
-def test_custom_agent_initialization_with_default_headers(sample_custom_agent):
+def test_custom_agent_initialization_with_default_headers(
+    sample_custom_agent,
+):
     try:
         custom_agent_no_headers = CustomAgent(
             name="TestAgent",
@@ -59,7 +65,9 @@ def test_custom_agent_initialization_with_default_headers(sample_custom_agent):
             base_url="https://api.test.com",
             endpoint="test",
         )
-        assert "Content-Type" in custom_agent_no_headers.default_headers
+        assert (
+            "Content-Type" in custom_agent_no_headers.default_headers
+        )
         assert (
             custom_agent_no_headers.default_headers["Content-Type"]
             == "application/json"
@@ -78,7 +86,10 @@ def test_custom_agent_url_normalization():
             base_url="https://api.test.com/",
             endpoint="/v1/test",
         )
-        assert custom_agent_with_slashes.base_url == "https://api.test.com"
+        assert (
+            custom_agent_with_slashes.base_url
+            == "https://api.test.com"
+        )
         assert custom_agent_with_slashes.endpoint == "v1/test"
         logger.debug("URL normalization works correctly")
     except Exception as e:
@@ -90,14 +101,22 @@ def test_prepare_headers(sample_custom_agent):
     try:
         prepared_headers = sample_custom_agent._prepare_headers()
         assert "Authorization" in prepared_headers
-        assert prepared_headers["Authorization"] == "Bearer test-token"
+        assert (
+            prepared_headers["Authorization"] == "Bearer test-token"
+        )
 
         additional_headers = {"X-Custom-Header": "custom-value"}
         prepared_headers_with_additional = (
             sample_custom_agent._prepare_headers(additional_headers)
         )
-        assert prepared_headers_with_additional["X-Custom-Header"] == "custom-value"
-        assert prepared_headers_with_additional["Authorization"] == "Bearer test-token"
+        assert (
+            prepared_headers_with_additional["X-Custom-Header"]
+            == "custom-value"
+        )
+        assert (
+            prepared_headers_with_additional["Authorization"]
+            == "Bearer test-token"
+        )
         logger.debug("Header preparation works correctly")
     except Exception as e:
         logger.error(f"Failed to test prepare_headers: {e}")
@@ -107,7 +126,9 @@ def test_prepare_headers(sample_custom_agent):
 def test_prepare_payload_dict(sample_custom_agent):
     try:
         payload_dict = {"key": "value", "number": 123}
-        prepared_payload = sample_custom_agent._prepare_payload(payload_dict)
+        prepared_payload = sample_custom_agent._prepare_payload(
+            payload_dict
+        )
         assert isinstance(prepared_payload, str)
         parsed = json.loads(prepared_payload)
         assert parsed["key"] == "value"
@@ -121,22 +142,30 @@ def test_prepare_payload_dict(sample_custom_agent):
 def test_prepare_payload_string(sample_custom_agent):
     try:
         payload_string = '{"test": "value"}'
-        prepared_payload = sample_custom_agent._prepare_payload(payload_string)
+        prepared_payload = sample_custom_agent._prepare_payload(
+            payload_string
+        )
         assert prepared_payload == payload_string
         logger.debug("String payload prepared correctly")
     except Exception as e:
-        logger.error(f"Failed to test prepare_payload with string: {e}")
+        logger.error(
+            f"Failed to test prepare_payload with string: {e}"
+        )
         raise
 
 
 def test_prepare_payload_bytes(sample_custom_agent):
     try:
         payload_bytes = b'{"test": "value"}'
-        prepared_payload = sample_custom_agent._prepare_payload(payload_bytes)
+        prepared_payload = sample_custom_agent._prepare_payload(
+            payload_bytes
+        )
         assert prepared_payload == payload_bytes
         logger.debug("Bytes payload prepared correctly")
     except Exception as e:
-        logger.error(f"Failed to test prepare_payload with bytes: {e}")
+        logger.error(
+            f"Failed to test prepare_payload with bytes: {e}"
+        )
         raise
 
 
@@ -148,7 +177,9 @@ def test_parse_response_success(sample_custom_agent):
         mock_response.headers = {"content-type": "application/json"}
         mock_response.json.return_value = {"message": "success"}
 
-        parsed_response = sample_custom_agent._parse_response(mock_response)
+        parsed_response = sample_custom_agent._parse_response(
+            mock_response
+        )
         assert isinstance(parsed_response, AgentResponse)
         assert parsed_response.status_code == 200
         assert parsed_response.success is True
@@ -167,7 +198,9 @@ def test_parse_response_error(sample_custom_agent):
         mock_response.text = "Not Found"
         mock_response.headers = {"content-type": "text/plain"}
 
-        parsed_response = sample_custom_agent._parse_response(mock_response)
+        parsed_response = sample_custom_agent._parse_response(
+            mock_response
+        )
         assert isinstance(parsed_response, AgentResponse)
         assert parsed_response.status_code == 404
         assert parsed_response.success is False
@@ -189,11 +222,15 @@ def test_extract_content_openai_format(sample_custom_agent):
                 }
             ]
         }
-        extracted_content = sample_custom_agent._extract_content(openai_response)
+        extracted_content = sample_custom_agent._extract_content(
+            openai_response
+        )
         assert extracted_content == "This is the response content"
         logger.debug("OpenAI format content extracted correctly")
     except Exception as e:
-        logger.error(f"Failed to test extract_content OpenAI format: {e}")
+        logger.error(
+            f"Failed to test extract_content OpenAI format: {e}"
+        )
         raise
 
 
@@ -202,25 +239,33 @@ def test_extract_content_anthropic_format(sample_custom_agent):
         anthropic_response = {
             "content": [
                 {"text": "First part "},
-                {"text": "second part"}
+                {"text": "second part"},
             ]
         }
-        extracted_content = sample_custom_agent._extract_content(anthropic_response)
+        extracted_content = sample_custom_agent._extract_content(
+            anthropic_response
+        )
         assert extracted_content == "First part second part"
         logger.debug("Anthropic format content extracted correctly")
     except Exception as e:
-        logger.error(f"Failed to test extract_content Anthropic format: {e}")
+        logger.error(
+            f"Failed to test extract_content Anthropic format: {e}"
+        )
         raise
 
 
 def test_extract_content_generic_format(sample_custom_agent):
     try:
         generic_response = {"text": "Generic response text"}
-        extracted_content = sample_custom_agent._extract_content(generic_response)
+        extracted_content = sample_custom_agent._extract_content(
+            generic_response
+        )
         assert extracted_content == "Generic response text"
         logger.debug("Generic format content extracted correctly")
     except Exception as e:
-        logger.error(f"Failed to test extract_content generic format: {e}")
+        logger.error(
+            f"Failed to test extract_content generic format: {e}"
+        )
         raise
 
 
@@ -229,14 +274,18 @@ def test_run_success(mock_client_class, sample_custom_agent):
     try:
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.text = '{"choices": [{"message": {"content": "Success"}}]}'
+        mock_response.text = (
+            '{"choices": [{"message": {"content": "Success"}}]}'
+        )
         mock_response.json.return_value = {
             "choices": [{"message": {"content": "Success"}}]
         }
         mock_response.headers = {"content-type": "application/json"}
 
         mock_client_instance = Mock()
-        mock_client_instance.__enter__ = Mock(return_value=mock_client_instance)
+        mock_client_instance.__enter__ = Mock(
+            return_value=mock_client_instance
+        )
         mock_client_instance.__exit__ = Mock(return_value=None)
         mock_client_instance.post.return_value = mock_response
         mock_client_class.return_value = mock_client_instance
@@ -259,7 +308,9 @@ def test_run_error_response(mock_client_class, sample_custom_agent):
         mock_response.text = "Internal Server Error"
 
         mock_client_instance = Mock()
-        mock_client_instance.__enter__ = Mock(return_value=mock_client_instance)
+        mock_client_instance.__enter__ = Mock(
+            return_value=mock_client_instance
+        )
         mock_client_instance.__exit__ = Mock(return_value=None)
         mock_client_instance.post.return_value = mock_response
         mock_client_class.return_value = mock_client_instance
@@ -280,9 +331,13 @@ def test_run_request_error(mock_client_class, sample_custom_agent):
         import httpx
 
         mock_client_instance = Mock()
-        mock_client_instance.__enter__ = Mock(return_value=mock_client_instance)
+        mock_client_instance.__enter__ = Mock(
+            return_value=mock_client_instance
+        )
         mock_client_instance.__exit__ = Mock(return_value=None)
-        mock_client_instance.post.side_effect = httpx.RequestError("Connection failed")
+        mock_client_instance.post.side_effect = httpx.RequestError(
+            "Connection failed"
+        )
         mock_client_class.return_value = mock_client_instance
 
         test_payload = {"message": "test"}
@@ -295,23 +350,33 @@ def test_run_request_error(mock_client_class, sample_custom_agent):
         raise
 
 
-@pytest.mark.skipif(not ASYNC_AVAILABLE, reason="pytest-asyncio not installed")
+@pytest.mark.skipif(
+    not ASYNC_AVAILABLE, reason="pytest-asyncio not installed"
+)
 @pytest.mark.asyncio
 @patch("swarms.structs.custom_agent.httpx.AsyncClient")
-async def test_run_async_success(mock_async_client_class, sample_custom_agent):
+async def test_run_async_success(
+    mock_async_client_class, sample_custom_agent
+):
     try:
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.text = '{"content": [{"text": "Async Success"}]}'
+        mock_response.text = (
+            '{"content": [{"text": "Async Success"}]}'
+        )
         mock_response.json.return_value = {
             "content": [{"text": "Async Success"}]
         }
         mock_response.headers = {"content-type": "application/json"}
 
         mock_client_instance = AsyncMock()
-        mock_client_instance.__aenter__ = AsyncMock(return_value=mock_client_instance)
+        mock_client_instance.__aenter__ = AsyncMock(
+            return_value=mock_client_instance
+        )
         mock_client_instance.__aexit__ = AsyncMock(return_value=None)
-        mock_client_instance.post = AsyncMock(return_value=mock_response)
+        mock_client_instance.post = AsyncMock(
+            return_value=mock_response
+        )
         mock_async_client_class.return_value = mock_client_instance
 
         test_payload = {"message": "test"}
@@ -324,19 +389,27 @@ async def test_run_async_success(mock_async_client_class, sample_custom_agent):
         raise
 
 
-@pytest.mark.skipif(not ASYNC_AVAILABLE, reason="pytest-asyncio not installed")
+@pytest.mark.skipif(
+    not ASYNC_AVAILABLE, reason="pytest-asyncio not installed"
+)
 @pytest.mark.asyncio
 @patch("swarms.structs.custom_agent.httpx.AsyncClient")
-async def test_run_async_error_response(mock_async_client_class, sample_custom_agent):
+async def test_run_async_error_response(
+    mock_async_client_class, sample_custom_agent
+):
     try:
         mock_response = Mock()
         mock_response.status_code = 400
         mock_response.text = "Bad Request"
 
         mock_client_instance = AsyncMock()
-        mock_client_instance.__aenter__ = AsyncMock(return_value=mock_client_instance)
+        mock_client_instance.__aenter__ = AsyncMock(
+            return_value=mock_client_instance
+        )
         mock_client_instance.__aexit__ = AsyncMock(return_value=None)
-        mock_client_instance.post = AsyncMock(return_value=mock_response)
+        mock_client_instance.post = AsyncMock(
+            return_value=mock_response
+        )
         mock_async_client_class.return_value = mock_client_instance
 
         test_payload = {"message": "test"}
@@ -367,4 +440,3 @@ def test_agent_response_dataclass():
     except Exception as e:
         logger.error(f"Failed to test AgentResponse dataclass: {e}")
         raise
-
