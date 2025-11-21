@@ -3,20 +3,6 @@ import pytest
 from swarms import Agent, SequentialWorkflow
 
 
-# Test SequentialWorkflow class
-def test_sequential_workflow_initialization():
-    workflow = SequentialWorkflow()
-    assert isinstance(workflow, SequentialWorkflow)
-    assert len(workflow.tasks) == 0
-    assert workflow.max_loops == 1
-    assert workflow.autosave is False
-    assert (
-        workflow.saved_state_filepath
-        == "sequential_workflow_state.json"
-    )
-    assert workflow.restore_state_filepath is None
-    assert workflow.dashboard is False
-
 
 def test_sequential_workflow_initialization_with_agents():
     """Test SequentialWorkflow initialization with agents"""
