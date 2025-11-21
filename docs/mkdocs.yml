@@ -399,6 +399,7 @@ nav:
         - SwarmRouter Example: "swarms/examples/swarm_router.md"
         - MultiAgentRouter Minimal Example: "swarms/examples/multi_agent_router_minimal.md"
         - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
+        - Multi-Agentic Patterns with GraphWorkflow: "swarms/examples/graphworkflow_rustworkx_patterns.md"
         - Mixture of Agents Example: "swarms/examples/moa_example.md"
         - Unique Swarms: "swarms/examples/unique_swarms.md"
         - Agents as Tools: "swarms/examples/agents_as_tools.md"
