@@ -1,4 +1,4 @@
-"""MakeASwarm Framework - Create swarms from other swarms and agents."""
+"""MakeASwarm Framework - Combine swarm architectures and agent types to create new architectures."""
 
 import os
 from collections import deque
@@ -81,7 +81,7 @@ class TopologicalSorter:
 
 
 class ComponentRegistry:
-    """Registry for tracking agents and swarms by name."""
+    """Registry for tracking swarm architectures, agents, and reasoning architectures by name."""
 
     def __init__(self) -> None:
         self.components: Dict[str, Any] = {}
@@ -113,7 +113,13 @@ class ComponentRegistry:
 
 
 class MakeASwarm(BaseSwarm):
-    """Framework for creating swarms from other swarms and agents."""
+    """
+    Framework for combining swarm architectures and creating new reasoning architectures.
+    
+    Combines different swarm types (HeavySwarm, BoardOfDirectors, GroupChat, etc.) as components.
+    Creates nested architectures where swarms contain other swarms.
+    Mixes agent types (ToT, CoT, Reflexion, etc.) to create new reasoning architectures.
+    """
 
     def __init__(
         self,
@@ -148,11 +154,11 @@ class MakeASwarm(BaseSwarm):
         self._built = False
 
     def add_component(self, name: str, component: Any) -> None:
-        """Add a component (agent, swarm, or any callable with run method) to the registry."""
+        """Add a swarm architecture, agent, or reasoning architecture to the registry."""
         self.component_registry.add(name, component)
 
     def create_agent(self, config: Dict[str, Any]) -> Any:
-        """Create an agent from config. Supports all agent types in the codebase."""
+        """Create an agent or reasoning architecture from config. Supports all agent types."""
         agent_type = config.pop("agent_type", "Agent").lower()
         
         # Handle base Agent
@@ -429,6 +435,7 @@ class MakeASwarm(BaseSwarm):
     def create_swarm(
         self, name: str, swarm_type: Union[str, type], config: Dict[str, Any]
     ) -> BaseSwarm:
+        """Create a swarm architecture from configuration. Can be combined with other swarms."""
         if isinstance(swarm_type, type):
             try:
                 return swarm_type(**config)
@@ -552,6 +559,7 @@ class MakeASwarm(BaseSwarm):
     def set_execution_order(
         self, order: Union[List[str], Dict[str, List[str]]]
     ) -> None:
+        """Set execution order for swarm architectures and components."""
         self.execution_order = order
         if isinstance(order, dict):
             self.workflow_graph = order
@@ -564,11 +572,13 @@ class MakeASwarm(BaseSwarm):
     def _execute_sequential(
         self, order: List[str], task: str, *args, **kwargs
     ) -> Dict[str, Any]:
+        """Execute swarm architectures sequentially."""
         results: Dict[str, Any] = {}
         previous_result: Any = None
 
         for component_name in order:
             component = self.component_registry.get(component_name)
+            # Component can be a swarm architecture, agent, or reasoning architecture
             if hasattr(component, 'run') and callable(getattr(component, 'run')):
                 result = component.run(task, *args, **kwargs)
             elif callable(component):
@@ -587,11 +597,13 @@ class MakeASwarm(BaseSwarm):
     def _execute_concurrent(
         self, order: List[str], task: str, *args, **kwargs
     ) -> Dict[str, Any]:
+        """Execute swarm architectures concurrently (in parallel)."""
         results: Dict[str, Any] = {}
         with ThreadPoolExecutor() as executor:
             futures = {}
             for component_name in order:
                 component = self.component_registry.get(component_name)
+                # Component: swarm architecture (HeavySwarm, BoardOfDirectors, etc.), agent, or reasoning architecture
                 if hasattr(component, 'run') and callable(getattr(component, 'run')):
                     future = executor.submit(component.run, task, *args, **kwargs)
                 elif callable(component):
@@ -612,10 +624,12 @@ class MakeASwarm(BaseSwarm):
     def _execute_with_dependencies(
         self, task: str, *args, **kwargs
     ) -> Dict[str, Any]:
+        """Execute swarm architectures based on dependency graph using topological sorting."""
         execution_levels = self._resolve_dependencies()
         results: Dict[str, Any] = {}
 
         for level in execution_levels:
+            # Execute all swarm architectures at this dependency level concurrently (HeavySwarm, BoardOfDirectors, etc.)
             level_results = self._execute_concurrent(level, task, *args, **kwargs)
             results.update(level_results)
 
@@ -628,6 +642,7 @@ class MakeASwarm(BaseSwarm):
         return results
 
     def build(self) -> None:
+        """Build the final multi-architecture swarm structure."""
         if self._built:
             logger.warning("Swarm already built, rebuilding...")
 
@@ -651,7 +666,7 @@ class MakeASwarm(BaseSwarm):
                         f"Component '{component_name}' not found in registry"
                     )
 
-        # Follow agent.py pattern: include all runnable components (agents, swarms, callables)
+        # Include all runnable components (swarm architectures, agents, reasoning architectures, callables)
         self.agents = [
             comp
             for comp in self.component_registry.components.values()
@@ -661,6 +676,7 @@ class MakeASwarm(BaseSwarm):
         self._built = True
 
     def run(self, task: Optional[str] = None, *args, **kwargs) -> Any:
+        """Execute the combined swarm architecture system."""
         if not self._built:
             self.build()
 
@@ -694,6 +710,7 @@ class MakeASwarm(BaseSwarm):
             return list(self.execution_results.values())
 
     def export_to_json(self, filepath: str) -> None:
+        """Export the combined swarm architecture configuration to JSON and generate importable module."""
         config = {
             "name": self.name,
             "description": self.description,
