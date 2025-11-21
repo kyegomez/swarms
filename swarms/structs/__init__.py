@@ -7,11 +7,12 @@ from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.batch_agent_execution import batch_agent_execution
 from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
+from swarms.structs.board_of_directors_swarm import BoardOfDirectorsSwarm
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.council_as_judge import CouncilAsAJudge
-from swarms.structs.cron_job import CronJob
 from swarms.structs.debate_with_judge import DebateWithJudge
+from swarms.structs.cron_job import CronJob
 from swarms.structs.graph_workflow import (
     Edge,
     GraphWorkflow,
@@ -43,6 +44,7 @@ from swarms.structs.majority_voting import (
     MajorityVoting,
 )
 from swarms.structs.malt import MALT
+from swarms.structs.make_a_swarm import MakeASwarm
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.model_router import ModelRouter
 from swarms.structs.multi_agent_exec import (
@@ -185,7 +187,9 @@ __all__ = [
     "check_end",
     "AgentLoader",
     "BatchedGridWorkflow",
+    "DebateWithJudge",
     "AOP",
     "SelfMoASeq",
-    "DebateWithJudge",
+    "MakeASwarm",
+    "BoardOfDirectorsSwarm",
 ]
