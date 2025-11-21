@@ -254,6 +254,9 @@ nav:
     
     - Reasoning Agents:
       - Overview: "swarms/agents/reasoning_agents_overview.md"
+      - Chain of Thought Agent: "swarms/agents/chain_of_thought.md"
+      - Tree of Thought Agent: "swarms/agents/tree_of_thought_agent.md"
+      - Graph of Thought Agent: "swarms/agents/got_agent.md"
       - Self Consistency Agent: "swarms/agents/consistency_agent.md"
       - IRE Agent: "swarms/agents/iterative_agent.md"
       - Reasoning Duo: "swarms/agents/reasoning_duo.md"
@@ -261,6 +264,7 @@ nav:
       - GKP Agent: "swarms/agents/gkp_agent.md"
       - Agent Judge: "swarms/agents/agent_judge.md"
       - Reasoning Agent Router: "swarms/agents/reasoning_agent_router.md"
+      - CR-CA Agent: "swarms/agents/cr_ca_agent.md"
     
     - Multi-Agent Architectures:
       - Overview: "swarms/concept/swarm_architectures.md"
@@ -270,6 +274,7 @@ nav:
       - Reference Documentation:
         - Overview: "swarms/structs/overview.md"
         - Custom Multi Agent Architectures: "swarms/structs/custom_swarm.md"
+        - MakeASwarm: "swarms/structs/make_a_swarm.md"
         - Debate Multi-Agent Architectures: "swarms/structs/orchestration_methods.md"
         - DebateWithJudge: "swarms/structs/debate_with_judge.md"
         - MajorityVoting: "swarms/structs/majorityvoting.md"
@@ -386,6 +391,8 @@ nav:
             - XAI: "swarms/examples/xai.md"
             - Azure OpenAI: "swarms/examples/azure.md"
             - Llama4: "swarms/examples/llama4.md"
+            - VLLM: "swarms/examples/vllm.md"
+            - VLLM Integration: "swarms/examples/vllm_integration.md"
             - Custom Base URL & API Keys: "swarms/examples/custom_base_url_example.md"
 
 
