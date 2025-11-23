@@ -11,6 +11,7 @@ from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.cron_job import CronJob
+from swarms.structs.llm_council import LLMCouncil
 from swarms.structs.debate_with_judge import DebateWithJudge
 from swarms.structs.graph_workflow import (
     Edge,
@@ -161,6 +162,7 @@ __all__ = [
     "get_swarms_info",
     "AutoSwarmBuilder",
     "CouncilAsAJudge",
+    "LLMCouncil",
     "batch_agent_execution",
     "aggregate",
     "find_agent_by_name",
