@@ -1,4 +1,5 @@
 from swarms.agents.agent_judge import AgentJudge
+from swarms.agents.chain_of_thought import CoTAgent
 from swarms.agents.consistency_agent import SelfConsistencyAgent
 from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
@@ -21,5 +22,6 @@ __all__ = [
     "agent_types",
     "ReflexionAgent",
     "GKPAgent",
+    "CoTAgent",
     "AgentJudge",
 ]
