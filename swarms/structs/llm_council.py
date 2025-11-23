@@ -12,7 +12,7 @@ often selecting responses from other models as superior to their own.
 
 from typing import Dict, List, Optional
 import random
-from swarms import Agent
+from swarms.structs.agent import Agent
 from swarms.structs.multi_agent_exec import (
     run_agents_concurrently,
     batched_grid_agent_execution,
