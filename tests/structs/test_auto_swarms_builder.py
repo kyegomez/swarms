@@ -168,7 +168,9 @@ def test_error_handling():
         # Test with invalid agent configuration
         print("Testing invalid agent configuration...")
         try:
-            swarm.create_agents_from_specs({"agents": [{"agent_name": ""}]})
+            swarm.create_agents_from_specs(
+                {"agents": [{"agent_name": ""}]}
+            )
             print(
                 "✗ Should have raised an error for empty agent configuration"
             )

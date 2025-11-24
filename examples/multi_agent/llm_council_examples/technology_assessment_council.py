@@ -29,4 +29,3 @@ result = council.run(query)
 
 # Print final response
 print(result["final_response"])
-

@@ -1,5 +1,3 @@
-import pytest
-
 from swarms.agents.i_agent import IterativeReflectiveExpansion
 
 

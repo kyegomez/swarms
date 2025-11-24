@@ -15,5 +15,8 @@ print(result["final_response"])
 # Optionally print evaluations
 for name, evaluation in result["evaluations"].items():
     print(f"\n{name}:")
-    print(evaluation[:500] + "..." if len(evaluation) > 500 else evaluation)
-
+    print(
+        evaluation[:500] + "..."
+        if len(evaluation) > 500
+        else evaluation
+    )

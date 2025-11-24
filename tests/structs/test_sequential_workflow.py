@@ -3,7 +3,6 @@ import pytest
 from swarms import Agent, SequentialWorkflow
 
 
-
 def test_sequential_workflow_initialization_with_agents():
     """Test SequentialWorkflow initialization with agents"""
     agent1 = Agent(

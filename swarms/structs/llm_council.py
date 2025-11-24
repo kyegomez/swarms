@@ -17,12 +17,14 @@ from swarms.structs.multi_agent_exec import (
     run_agents_concurrently,
     batched_grid_agent_execution,
 )
-
+from swarms.utils.history_output_formatter import HistoryOutputType, history_output_formatter
+from swarms.structs.conversation import Conversation
+from swarms.structs.swarm_id import swarm_id
 
 def get_gpt_councilor_prompt() -> str:
     """
     Get system prompt for GPT-5.1 councilor.
-    
+
     Returns:
         System prompt string for GPT-5.1 councilor agent.
     """
@@ -46,7 +48,7 @@ Remember: You are part of a council where multiple AI models will respond to the
 def get_gemini_councilor_prompt() -> str:
     """
     Get system prompt for Gemini 3 Pro councilor.
-    
+
     Returns:
         System prompt string for Gemini 3 Pro councilor agent.
     """
@@ -70,7 +72,7 @@ Remember: You are part of a council where multiple AI models will respond to the
 def get_claude_councilor_prompt() -> str:
     """
     Get system prompt for Claude Sonnet 4.5 councilor.
-    
+
     Returns:
         System prompt string for Claude Sonnet 4.5 councilor agent.
     """
@@ -94,7 +96,7 @@ Remember: You are part of a council where multiple AI models will respond to the
 def get_grok_councilor_prompt() -> str:
     """
     Get system prompt for Grok-4 councilor.
-    
+
     Returns:
         System prompt string for Grok-4 councilor agent.
     """
@@ -118,7 +120,7 @@ Remember: You are part of a council where multiple AI models will respond to the
 def get_chairman_prompt() -> str:
     """
     Get system prompt for the Chairman agent.
-    
+
     Returns:
         System prompt string for the Chairman agent.
     """
@@ -141,23 +143,27 @@ Your approach:
 Remember: You have access to all original responses and all evaluations. Use this rich context to create the best possible final answer."""
 
 
-def get_evaluation_prompt(query: str, responses: Dict[str, str], evaluator_name: str) -> str:
+def get_evaluation_prompt(
+    query: str, responses: Dict[str, str], evaluator_name: str
+) -> str:
     """
     Create evaluation prompt for council members to review and rank responses.
-    
+
     Args:
         query: The original user query
         responses: Dictionary mapping anonymous IDs to response texts
         evaluator_name: Name of the agent doing the evaluation
-        
+
     Returns:
         Formatted evaluation prompt string
     """
-    responses_text = "\n\n".join([
-        f"Response {response_id}:\n{response_text}"
-        for response_id, response_text in responses.items()
-    ])
-    
+    responses_text = "\n\n".join(
+        [
+            f"Response {response_id}:\n{response_text}"
+            for response_id, response_text in responses.items()
+        ]
+    )
+
     return f"""You are evaluating responses from your fellow LLM Council members to the following query:
 
 QUERY: {query}
@@ -191,30 +197,34 @@ def get_synthesis_prompt(
     query: str,
     original_responses: Dict[str, str],
     evaluations: Dict[str, str],
-    id_to_member: Dict[str, str]
+    id_to_member: Dict[str, str],
 ) -> str:
     """
     Create synthesis prompt for the Chairman.
-    
+
     Args:
         query: Original user query
         original_responses: Dict mapping member names to their responses
         evaluations: Dict mapping evaluator names to their evaluation texts
         id_to_member: Mapping from anonymous IDs to member names
-        
+
     Returns:
         Formatted synthesis prompt
     """
-    responses_section = "\n\n".join([
-        f"=== {name} ===\n{response}"
-        for name, response in original_responses.items()
-    ])
-    
-    evaluations_section = "\n\n".join([
-        f"=== Evaluation by {name} ===\n{evaluation}"
-        for name, evaluation in evaluations.items()
-    ])
-    
+    responses_section = "\n\n".join(
+        [
+            f"=== {name} ===\n{response}"
+            for name, response in original_responses.items()
+        ]
+    )
+
+    evaluations_section = "\n\n".join(
+        [
+            f"=== Evaluation by {name} ===\n{evaluation}"
+            for name, evaluation in evaluations.items()
+        ]
+    )
+
     return f"""As the Chairman of the LLM Council, synthesize the following information into a final, comprehensive answer.
 
 ORIGINAL QUERY:
@@ -246,38 +256,46 @@ class LLMCouncil:
     """
     An LLM Council that orchestrates multiple specialized agents to collaboratively
     answer queries through independent responses, peer review, and synthesis.
-    
+
     The council follows this workflow:
     1. Dispatch query to all council members in parallel
     2. Collect all responses (anonymized)
     3. Have each member review and rank all responses
     4. Chairman synthesizes everything into final response
     """
-    
+
     def __init__(
         self,
+        id: str = swarm_id(),
+        name: str = "LLM Council",
+        description: str = "A collaborative council of LLM agents where each member independently answers a query, reviews and ranks anonymized peer responses, and a chairman synthesizes the best elements into a final answer.",
         council_members: Optional[List[Agent]] = None,
         chairman_model: str = "gpt-5.1",
         verbose: bool = True,
+        output_type: HistoryOutputType = "dict",
     ):
         """
         Initialize the LLM Council.
-        
+
         Args:
             council_members: List of Agent instances representing council members.
                            If None, creates default council with GPT-5.1, Gemini 3 Pro,
                            Claude Sonnet 4.5, and Grok-4.
             chairman_model: Model name for the Chairman agent that synthesizes responses.
             verbose: Whether to print progress and intermediate results.
+            output_type: Format for the output. Options: "list", "dict", "string", "final", "json", "yaml", etc.
         """
+        self.name = name
+        self.description = description
         self.verbose = verbose
-        
+        self.output_type = output_type
+
         # Create default council members if none provided
         if council_members is None:
             self.council_members = self._create_default_council()
         else:
             self.council_members = council_members
-        
+
         # Create Chairman agent
         self.chairman = Agent(
             agent_name="Chairman",
@@ -289,19 +307,25 @@ class LLMCouncil:
             temperature=0.7,
         )
         
+        self.conversation = Conversation(name=f"[LLM Council] [Conversation][{name}]")
+
         if self.verbose:
-            print(f"🏛️  LLM Council initialized with {len(self.council_members)} members")
+            print(
+                f"🏛️  LLM Council initialized with {len(self.council_members)} members"
+            )
             for i, member in enumerate(self.council_members, 1):
-                print(f"   {i}. {member.agent_name} ({member.model_name})")
-    
+                print(
+                    f"   {i}. {member.agent_name} ({member.model_name})"
+                )
+
     def _create_default_council(self) -> List[Agent]:
         """
         Create default council members with specialized prompts and models.
-        
+
         Returns:
             List of Agent instances configured as council members.
         """
-        
+
         # GPT-5.1 Agent - Analytical and comprehensive
         gpt_agent = Agent(
             agent_name="GPT-5.1-Councilor",
@@ -312,7 +336,7 @@ class LLMCouncil:
             verbose=False,
             temperature=0.7,
         )
-        
+
         # Gemini 3 Pro Agent - Concise and processed
         gemini_agent = Agent(
             agent_name="Gemini-3-Pro-Councilor",
@@ -323,7 +347,7 @@ class LLMCouncil:
             verbose=False,
             temperature=0.7,
         )
-        
+
         # Claude Sonnet 4.5 Agent - Balanced and thoughtful
         claude_agent = Agent(
             agent_name="Claude-Sonnet-4.5-Councilor",
@@ -335,7 +359,7 @@ class LLMCouncil:
             temperature=0.0,
             top_p=None,
         )
-        
+
         # Grok-4 Agent - Creative and innovative
         grok_agent = Agent(
             agent_name="Grok-4-Councilor",
@@ -346,114 +370,135 @@ class LLMCouncil:
             verbose=False,
             temperature=0.8,
         )
-        
+
         members = [gpt_agent, gemini_agent, claude_agent, grok_agent]
-        
+
         return members
-    
-    def run(self, query: str) -> Dict:
+
+    def run(self, query: str):
         """
         Execute the full LLM Council workflow.
-        
+
         Args:
             query: The user's query to process
-            
+
         Returns:
-            Dictionary containing:
-                - original_responses: Dict mapping member names to their responses
-                - evaluations: Dict mapping evaluator names to their rankings
-                - final_response: The Chairman's synthesized final answer
+            Formatted output based on output_type, containing conversation history
+            with all council member responses, evaluations, and final synthesis.
         """
         if self.verbose:
             print(f"\n{'='*80}")
             print("🏛️  LLM COUNCIL SESSION")
-            print("="*80)
+            print("=" * 80)
             print(f"\n📝 Query: {query}\n")
-        
+
+        # Add user query to conversation
+        self.conversation.add(role="User", content=query)
+
         # Step 1: Get responses from all council members in parallel
         if self.verbose:
             print("📤 Dispatching query to all council members...")
-        
+
         results_dict = run_agents_concurrently(
             self.council_members,
             task=query,
-            return_agent_output_dict=True
+            return_agent_output_dict=True,
         )
-        
+
         # Map results to member names
         original_responses = {
             member.agent_name: response
-            for member, response in zip(self.council_members, 
-                                       [results_dict.get(member.agent_name, "") 
-                                        for member in self.council_members])
+            for member, response in zip(
+                self.council_members,
+                [
+                    results_dict.get(member.agent_name, "")
+                    for member in self.council_members
+                ],
+            )
         }
-        
+
+        # Add each council member's response to conversation
+        for member_name, response in original_responses.items():
+            self.conversation.add(role=member_name, content=response)
+
         if self.verbose:
-            print(f"✅ Received {len(original_responses)} responses\n")
+            print(
+                f"✅ Received {len(original_responses)} responses\n"
+            )
             for name, response in original_responses.items():
                 print(f"   {name}: {response[:100]}...")
-        
+
         # Step 2: Anonymize responses for evaluation
         # Create anonymous IDs (A, B, C, D, etc.)
-        anonymous_ids = [chr(65 + i) for i in range(len(self.council_members))]
+        anonymous_ids = [
+            chr(65 + i) for i in range(len(self.council_members))
+        ]
         random.shuffle(anonymous_ids)  # Shuffle to ensure anonymity
-        
+
         anonymous_responses = {
             anonymous_ids[i]: original_responses[member.agent_name]
             for i, member in enumerate(self.council_members)
         }
-        
+
         # Create mapping from anonymous ID to member name (for later reference)
         id_to_member = {
             anonymous_ids[i]: member.agent_name
             for i, member in enumerate(self.council_members)
         }
-        
+
         if self.verbose:
-            print("\n🔍 Council members evaluating each other's responses...")
-        
+            print(
+                "\n🔍 Council members evaluating each other's responses..."
+            )
+
         # Step 3: Have each member evaluate and rank all responses concurrently
         # Create evaluation tasks for each member
         evaluation_tasks = [
-            get_evaluation_prompt(query, anonymous_responses, member.agent_name)
+            get_evaluation_prompt(
+                query, anonymous_responses, member.agent_name
+            )
             for member in self.council_members
         ]
-        
+
         # Run evaluations concurrently using batched_grid_agent_execution
         evaluation_results = batched_grid_agent_execution(
-            self.council_members,
-            evaluation_tasks
+            self.council_members, evaluation_tasks
         )
-        
+
         # Map results to member names
         evaluations = {
             member.agent_name: evaluation_results[i]
             for i, member in enumerate(self.council_members)
         }
-        
+
+        # Add each council member's evaluation to conversation
+        for member_name, evaluation in evaluations.items():
+            self.conversation.add(
+                role=f"{member_name}-Evaluation", content=evaluation
+            )
+
         if self.verbose:
             print(f"✅ Received {len(evaluations)} evaluations\n")
-        
+
         # Step 4: Chairman synthesizes everything
         if self.verbose:
             print("👔 Chairman synthesizing final response...\n")
-        
+
         synthesis_prompt = get_synthesis_prompt(
             query, original_responses, evaluations, id_to_member
         )
-        
+
         final_response = self.chairman.run(task=synthesis_prompt)
-        
+
+        # Add chairman's final response to conversation
+        self.conversation.add(role="Chairman", content=final_response)
+
         if self.verbose:
             print(f"{'='*80}")
             print("✅ FINAL RESPONSE")
             print(f"{'='*80}\n")
-        
-        return {
-            "query": query,
-            "original_responses": original_responses,
-            "evaluations": evaluations,
-            "final_response": final_response,
-            "anonymous_mapping": id_to_member,
-        }
 
+        # Format and return output using history_output_formatter
+        return history_output_formatter(
+            conversation=self.conversation, type=self.output_type
+        )

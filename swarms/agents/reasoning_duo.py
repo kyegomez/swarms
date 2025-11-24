@@ -35,9 +35,7 @@ class ReasoningDuo:
         model_names: list[str] = ["gpt-4o-mini", "gpt-4.1"],
         system_prompt: str = "You are a helpful assistant that can answer questions and help with tasks.",
         output_type: OutputType = "dict-all-except-first",
-        reasoning_model_name: Optional[
-            str
-        ] = "gpt-4o",
+        reasoning_model_name: Optional[str] = "gpt-4o",
         max_loops: int = 1,
         *args,
         **kwargs,

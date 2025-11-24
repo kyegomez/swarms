@@ -88,9 +88,7 @@ class ReasoningAgentRouter:
         eval: bool = False,
         random_models_on: bool = False,
         majority_voting_prompt: Optional[str] = None,
-        reasoning_model_name: Optional[
-            str
-        ] = "gpt-4o",
+        reasoning_model_name: Optional[str] = "gpt-4o",
     ):
         """
         Initialize the ReasoningAgentRouter with the specified configuration.
