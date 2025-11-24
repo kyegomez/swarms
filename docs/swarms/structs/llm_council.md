@@ -86,10 +86,12 @@ Initializes the LLM Council with council members and a Chairman agent.
 
 Creates an LLM Council instance with specialized council members. If no members are provided, it creates a default council consisting of:
 
-- **GPT-5.1-Councilor**: Analytical and comprehensive responses
-- **Gemini-3-Pro-Councilor**: Concise and well-processed responses  
-- **Claude-Sonnet-4.5-Councilor**: Thoughtful and balanced responses
-- **Grok-4-Councilor**: Creative and innovative responses
+| Council Member                  | Description                              |
+|---------------------------------|------------------------------------------|
+| **GPT-5.1-Councilor**           | Analytical and comprehensive responses   |
+| **Gemini-3-Pro-Councilor**      | Concise and well-processed responses     |
+| **Claude-Sonnet-4.5-Councilor** | Thoughtful and balanced responses        |
+| **Grok-4-Councilor**            | Creative and innovative responses        |
 
 The Chairman agent is automatically created with a specialized prompt for synthesizing responses. A `Conversation` object is also initialized to track all messages throughout the workflow, including user queries, council member responses, evaluations, and the final synthesis.
 
@@ -137,17 +139,19 @@ Executes the full LLM Council workflow: parallel responses, anonymization, peer 
 
 The return value depends on the `output_type` parameter set during initialization:
 
-- **`"dict"`** (default): Returns conversation as a dictionary/list of message dictionaries
-- **`"list"`**: Returns conversation as a list of formatted strings (`"role: content"`)
-- **`"string"`** or **`"str"`**: Returns conversation as a formatted string
-- **`"final"`** or **`"last"`**: Returns only the content of the final message (Chairman's response)
-- **`"json"`**: Returns conversation as a JSON string
-- **`"yaml"`**: Returns conversation as a YAML string
-- **`"xml"`**: Returns conversation as an XML string
-- **`"dict-all-except-first"`**: Returns all messages except the first as a dictionary
-- **`"str-all-except-first"`**: Returns all messages except the first as a string
-- **`"dict-final"`**: Returns the final message as a dictionary
-- **`"list-final"`**: Returns the final message as a list
+| `output_type` value             | Description                                                        |
+|---------------------------------|---------------------------------------------------------------------|
+| **`"dict"`** (default)          | Returns conversation as a dictionary/list of message dictionaries   |
+| **`"list"`**                    | Returns conversation as a list of formatted strings (`"role: content"`) |
+| **`"string"`** or **`"str"`**   | Returns conversation as a formatted string                          |
+| **`"final"`** or **`"last"`**   | Returns only the content of the final message (Chairman's response) |
+| **`"json"`**                    | Returns conversation as a JSON string                               |
+| **`"yaml"`**                    | Returns conversation as a YAML string                               |
+| **`"xml"`**                     | Returns conversation as an XML string                               |
+| **`"dict-all-except-first"`**   | Returns all messages except the first as a dictionary               |
+| **`"str-all-except-first"`**    | Returns all messages except the first as a string                   |
+| **`"dict-final"`**              | Returns the final message as a dictionary                           |
+| **`"list-final"`**              | Returns the final message as a list                                 |
 
 #### Conversation Tracking
 
@@ -354,11 +358,14 @@ The LLM Council is ideal for scenarios requiring:
 
 ### Common Applications
 
-- **Medical Diagnosis**: Multiple medical AI agents provide diagnoses, evaluate each other, and synthesize recommendations
-- **Financial Analysis**: Different financial experts analyze investments and rank each other's assessments
-- **Legal Analysis**: Multiple legal perspectives evaluate compliance and risk
-- **Business Strategy**: Diverse strategic viewpoints are synthesized into comprehensive plans
-- **Research Analysis**: Multiple research perspectives are combined for thorough analysis
+| Use Case              | Description                                                                                      |
+|-----------------------|--------------------------------------------------------------------------------------------------|
+| **Medical Diagnosis** | Multiple medical AI agents provide diagnoses, evaluate each other, and synthesize recommendations |
+| **Financial Analysis**| Different financial experts analyze investments and rank each other's assessments                |
+| **Legal Analysis**    | Multiple legal perspectives evaluate compliance and risk                                         |
+| **Business Strategy** | Diverse strategic viewpoints are synthesized into comprehensive plans                            |
+| **Research Analysis** | Multiple research perspectives are combined for thorough analysis                                |
+
 
 ## Examples
 
@@ -508,12 +515,14 @@ yaml_output = conversation.return_messages_as_dictionary()
 
 ## Performance Considerations
 
-- **Parallel Execution**: Both response generation and evaluation phases run in parallel for efficiency
-- **Anonymization**: Responses are anonymized to prevent bias in evaluation
-- **Model Selection**: Different models can be used for different roles based on their strengths
-- **Verbose Mode**: Can be disabled for production use to reduce output
-- **Conversation Management**: Conversation object efficiently tracks all messages in memory and supports export to JSON/YAML files
-- **Output Formatting**: Choose lightweight output formats (e.g., "final") for production to reduce memory usage
+| Feature                   | Description                                                                                                    |
+|---------------------------|----------------------------------------------------------------------------------------------------------------|
+| **Parallel Execution**    | Both response generation and evaluation phases run in parallel for efficiency                                  |
+| **Anonymization**         | Responses are anonymized to prevent bias in evaluation                                                         |
+| **Model Selection**       | Different models can be used for different roles based on their strengths                                      |
+| **Verbose Mode**          | Can be disabled for production use to reduce output                                                            |
+| **Conversation Management** | Conversation object efficiently tracks all messages in memory and supports export to JSON/YAML files         |
+| **Output Formatting**     | Choose lightweight output formats (e.g., "final") for production to reduce memory usage                        |
 
 ## Related Documentation
 
