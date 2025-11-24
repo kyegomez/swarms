@@ -281,6 +281,7 @@ nav:
         - MALT: "swarms/structs/malt.md"
         - Multi-Agent Execution Utilities: "swarms/structs/various_execution_methods.md"
         - Council of Judges: "swarms/structs/council_of_judges.md"
+        - LLM Council: "swarms/structs/llm_council.md"
         - Heavy Swarm: "swarms/structs/heavy_swarm.md"
         - Social Algorithms: "swarms/structs/social_algorithms.md"
 
@@ -399,7 +400,9 @@ nav:
         - SwarmRouter Example: "swarms/examples/swarm_router.md"
         - MultiAgentRouter Minimal Example: "swarms/examples/multi_agent_router_minimal.md"
         - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
+        - Multi-Agentic Patterns with GraphWorkflow: "swarms/examples/graphworkflow_rustworkx_patterns.md"
         - Mixture of Agents Example: "swarms/examples/moa_example.md"
+        - LLM Council Examples: "examples/llm_council_examples.md"
         - Unique Swarms: "swarms/examples/unique_swarms.md"
         - Agents as Tools: "swarms/examples/agents_as_tools.md"
         - Aggregate Multi-Agent Responses: "swarms/examples/aggregate.md"

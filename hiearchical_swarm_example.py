@@ -1,5 +1,4 @@
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
-from swarms.structs.agent import Agent
+from swarms import Agent, HierarchicalSwarm
 
 # Create specialized agents
 research_agent = Agent(

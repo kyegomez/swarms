@@ -1,7 +1,7 @@
 import json
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional, Union
-
+import asyncio
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
@@ -905,6 +905,45 @@ class AgentRearrange:
                     for task, img_path in zip(tasks, imgs)
                 ]
                 return [future.result() for future in futures]
+        except Exception as e:
+            self._catch_error(e)
+
+    async def run_async(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """
+        Asynchronously executes a task through the agent workflow.
+
+        This method enables asynchronous execution of tasks by running the
+        synchronous run method in a separate thread using asyncio.to_thread.
+        This is ideal for integrating the agent workflow into async applications
+        or when you want non-blocking execution.
+
+        Args:
+            task (str): The task to be executed through the agent workflow.
+            img (Optional[str]): Optional image input for the task. Defaults to None.
+            *args: Additional positional arguments passed to the run method.
+            **kwargs: Additional keyword arguments passed to the run method.
+
+        Returns:
+            Any: The result of the task execution, format depends on output_type setting.
+
+        Raises:
+            Exception: If an error occurs during task execution.
+
+        Note:
+            This method uses asyncio.to_thread to run the synchronous run method
+            asynchronously, allowing integration with async/await patterns.
+        """
+
+        try:
+            return await asyncio.to_thread(
+                self.run, task=task, img=img, *args, **kwargs
+            )
         except Exception as e:
             self._catch_error(e)
 

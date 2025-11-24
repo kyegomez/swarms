@@ -18,8 +18,10 @@ from swarms.structs.agent import Agent
 
 def create_function_agent(name: str, system_prompt: str = None):
     if system_prompt is None:
-        system_prompt = f"You are {name}. Provide concise and direct responses."
-    
+        system_prompt = (
+            f"You are {name}. Provide concise and direct responses."
+        )
+
     agent = Agent(
         agent_name=name,
         agent_description=f"Test agent {name}",
@@ -34,12 +36,10 @@ def create_function_agent(name: str, system_prompt: str = None):
 @pytest.fixture
 def sample_two_agents():
     agent1 = create_function_agent(
-        "Agent1",
-        "You are Agent1. Provide concise responses."
+        "Agent1", "You are Agent1. Provide concise responses."
     )
     agent2 = create_function_agent(
-        "Agent2",
-        "You are Agent2. Provide concise responses."
+        "Agent2", "You are Agent2. Provide concise responses."
     )
     return [agent1, agent2]
 
@@ -71,7 +71,9 @@ def test_one_on_one_debate_initialization(sample_two_agents):
         assert debate.output_type == "str-all-except-first"
         logger.info("OneOnOneDebate initialization test passed")
     except Exception as e:
-        logger.error(f"Failed to test OneOnOneDebate initialization: {e}")
+        logger.error(
+            f"Failed to test OneOnOneDebate initialization: {e}"
+        )
         raise
 
 
@@ -95,7 +97,9 @@ def test_one_on_one_debate_run(sample_two_agents, sample_task):
         raise
 
 
-def test_one_on_one_debate_wrong_number_of_agents(sample_three_agents, sample_task):
+def test_one_on_one_debate_wrong_number_of_agents(
+    sample_three_agents, sample_task
+):
     try:
         debate = OneOnOneDebate(
             max_loops=2,
@@ -104,13 +108,19 @@ def test_one_on_one_debate_wrong_number_of_agents(sample_three_agents, sample_ta
         )
         with pytest.raises(ValueError, match="exactly two agents"):
             debate.run(sample_task)
-        logger.info("OneOnOneDebate wrong number of agents test passed")
+        logger.info(
+            "OneOnOneDebate wrong number of agents test passed"
+        )
     except Exception as e:
-        logger.error(f"Failed to test OneOnOneDebate wrong number of agents: {e}")
+        logger.error(
+            f"Failed to test OneOnOneDebate wrong number of agents: {e}"
+        )
         raise
 
 
-def test_one_on_one_debate_output_types(sample_two_agents, sample_task):
+def test_one_on_one_debate_output_types(
+    sample_two_agents, sample_task
+):
     try:
         assert sample_two_agents is not None
         assert sample_task is not None
@@ -133,7 +143,9 @@ def test_one_on_one_debate_output_types(sample_two_agents, sample_task):
                 assert isinstance(result, str)
         logger.info("OneOnOneDebate output types test passed")
     except Exception as e:
-        logger.error(f"Failed to test OneOnOneDebate output types: {e}")
+        logger.error(
+            f"Failed to test OneOnOneDebate output types: {e}"
+        )
         raise
 
 
@@ -175,13 +187,19 @@ def test_expert_panel_discussion_initialization(sample_three_agents):
         assert panel.max_rounds == 2
         assert len(panel.agents) == 3
         assert panel.moderator is not None
-        logger.info("ExpertPanelDiscussion initialization test passed")
+        logger.info(
+            "ExpertPanelDiscussion initialization test passed"
+        )
     except Exception as e:
-        logger.error(f"Failed to test ExpertPanelDiscussion initialization: {e}")
+        logger.error(
+            f"Failed to test ExpertPanelDiscussion initialization: {e}"
+        )
         raise
 
 
-def test_expert_panel_discussion_run(sample_three_agents, sample_task):
+def test_expert_panel_discussion_run(
+    sample_three_agents, sample_task
+):
     try:
         moderator = create_function_agent("Moderator")
         assert moderator is not None
@@ -217,15 +235,23 @@ def test_expert_panel_discussion_insufficient_agents(sample_task):
             output_type="str-all-except-first",
         )
         assert panel is not None
-        with pytest.raises(ValueError, match="At least two expert agents"):
+        with pytest.raises(
+            ValueError, match="At least two expert agents"
+        ):
             panel.run(sample_task)
-        logger.info("ExpertPanelDiscussion insufficient agents test passed")
+        logger.info(
+            "ExpertPanelDiscussion insufficient agents test passed"
+        )
     except Exception as e:
-        logger.error(f"Failed to test ExpertPanelDiscussion insufficient agents: {e}")
+        logger.error(
+            f"Failed to test ExpertPanelDiscussion insufficient agents: {e}"
+        )
         raise
 
 
-def test_expert_panel_discussion_no_moderator(sample_three_agents, sample_task):
+def test_expert_panel_discussion_no_moderator(
+    sample_three_agents, sample_task
+):
     try:
         panel = ExpertPanelDiscussion(
             max_rounds=2,
@@ -233,11 +259,15 @@ def test_expert_panel_discussion_no_moderator(sample_three_agents, sample_task):
             moderator=None,
             output_type="str-all-except-first",
         )
-        with pytest.raises(ValueError, match="moderator agent is required"):
+        with pytest.raises(
+            ValueError, match="moderator agent is required"
+        ):
             panel.run(sample_task)
         logger.info("ExpertPanelDiscussion no moderator test passed")
     except Exception as e:
-        logger.error(f"Failed to test ExpertPanelDiscussion no moderator: {e}")
+        logger.error(
+            f"Failed to test ExpertPanelDiscussion no moderator: {e}"
+        )
         raise
 
 
@@ -257,7 +287,9 @@ def test_round_table_discussion_initialization(sample_three_agents):
         assert round_table.facilitator is not None
         logger.info("RoundTableDiscussion initialization test passed")
     except Exception as e:
-        logger.error(f"Failed to test RoundTableDiscussion initialization: {e}")
+        logger.error(
+            f"Failed to test RoundTableDiscussion initialization: {e}"
+        )
         raise
 
 
@@ -292,15 +324,23 @@ def test_round_table_discussion_insufficient_agents(sample_task):
             facilitator=facilitator,
             output_type="str-all-except-first",
         )
-        with pytest.raises(ValueError, match="At least two participants"):
+        with pytest.raises(
+            ValueError, match="At least two participants"
+        ):
             round_table.run(sample_task)
-        logger.info("RoundTableDiscussion insufficient agents test passed")
+        logger.info(
+            "RoundTableDiscussion insufficient agents test passed"
+        )
     except Exception as e:
-        logger.error(f"Failed to test RoundTableDiscussion insufficient agents: {e}")
+        logger.error(
+            f"Failed to test RoundTableDiscussion insufficient agents: {e}"
+        )
         raise
 
 
-def test_round_table_discussion_no_facilitator(sample_three_agents, sample_task):
+def test_round_table_discussion_no_facilitator(
+    sample_three_agents, sample_task
+):
     try:
         round_table = RoundTableDiscussion(
             max_cycles=2,
@@ -308,11 +348,15 @@ def test_round_table_discussion_no_facilitator(sample_three_agents, sample_task)
             facilitator=None,
             output_type="str-all-except-first",
         )
-        with pytest.raises(ValueError, match="facilitator agent is required"):
+        with pytest.raises(
+            ValueError, match="facilitator agent is required"
+        ):
             round_table.run(sample_task)
         logger.info("RoundTableDiscussion no facilitator test passed")
     except Exception as e:
-        logger.error(f"Failed to test RoundTableDiscussion no facilitator: {e}")
+        logger.error(
+            f"Failed to test RoundTableDiscussion no facilitator: {e}"
+        )
         raise
 
 
@@ -338,7 +382,9 @@ def test_interview_series_initialization():
         assert interview.follow_up_depth == 1
         logger.info("InterviewSeries initialization test passed")
     except Exception as e:
-        logger.error(f"Failed to test InterviewSeries initialization: {e}")
+        logger.error(
+            f"Failed to test InterviewSeries initialization: {e}"
+        )
         raise
 
 
@@ -378,11 +424,15 @@ def test_interview_series_no_interviewer(sample_task):
             follow_up_depth=1,
             output_type="str-all-except-first",
         )
-        with pytest.raises(ValueError, match="Both interviewer and interviewee"):
+        with pytest.raises(
+            ValueError, match="Both interviewer and interviewee"
+        ):
             interview.run(sample_task)
         logger.info("InterviewSeries no interviewer test passed")
     except Exception as e:
-        logger.error(f"Failed to test InterviewSeries no interviewer: {e}")
+        logger.error(
+            f"Failed to test InterviewSeries no interviewer: {e}"
+        )
         raise
 
 
@@ -396,11 +446,15 @@ def test_interview_series_no_interviewee(sample_task):
             follow_up_depth=1,
             output_type="str-all-except-first",
         )
-        with pytest.raises(ValueError, match="Both interviewer and interviewee"):
+        with pytest.raises(
+            ValueError, match="Both interviewer and interviewee"
+        ):
             interview.run(sample_task)
         logger.info("InterviewSeries no interviewee test passed")
     except Exception as e:
-        logger.error(f"Failed to test InterviewSeries no interviewee: {e}")
+        logger.error(
+            f"Failed to test InterviewSeries no interviewee: {e}"
+        )
         raise
 
 
@@ -425,13 +479,18 @@ def test_interview_series_default_questions(sample_task):
         assert len(result) >= 0
         logger.info("InterviewSeries default questions test passed")
     except Exception as e:
-        logger.error(f"Failed to test InterviewSeries default questions: {e}")
+        logger.error(
+            f"Failed to test InterviewSeries default questions: {e}"
+        )
         raise
 
 
 def test_peer_review_process_initialization():
     try:
-        reviewers = [create_function_agent("Reviewer1"), create_function_agent("Reviewer2")]
+        reviewers = [
+            create_function_agent("Reviewer1"),
+            create_function_agent("Reviewer2"),
+        ]
         assert reviewers is not None
         assert len(reviewers) == 2
         assert reviewers[0] is not None
@@ -450,13 +509,18 @@ def test_peer_review_process_initialization():
         assert peer_review.review_rounds == 2
         logger.info("PeerReviewProcess initialization test passed")
     except Exception as e:
-        logger.error(f"Failed to test PeerReviewProcess initialization: {e}")
+        logger.error(
+            f"Failed to test PeerReviewProcess initialization: {e}"
+        )
         raise
 
 
 def test_peer_review_process_run(sample_task):
     try:
-        reviewers = [create_function_agent("Reviewer1"), create_function_agent("Reviewer2")]
+        reviewers = [
+            create_function_agent("Reviewer1"),
+            create_function_agent("Reviewer2"),
+        ]
         assert reviewers is not None
         assert len(reviewers) == 2
         author = create_function_agent("Author")
@@ -491,7 +555,9 @@ def test_peer_review_process_no_reviewers(sample_task):
             peer_review.run(sample_task)
         logger.info("PeerReviewProcess no reviewers test passed")
     except Exception as e:
-        logger.error(f"Failed to test PeerReviewProcess no reviewers: {e}")
+        logger.error(
+            f"Failed to test PeerReviewProcess no reviewers: {e}"
+        )
         raise
 
 
@@ -504,11 +570,15 @@ def test_peer_review_process_no_author(sample_task):
             review_rounds=2,
             output_type="str-all-except-first",
         )
-        with pytest.raises(ValueError, match="author agent is required"):
+        with pytest.raises(
+            ValueError, match="author agent is required"
+        ):
             peer_review.run(sample_task)
         logger.info("PeerReviewProcess no author test passed")
     except Exception as e:
-        logger.error(f"Failed to test PeerReviewProcess no author: {e}")
+        logger.error(
+            f"Failed to test PeerReviewProcess no author: {e}"
+        )
         raise
 
 
@@ -529,7 +599,9 @@ def test_mediation_session_initialization(sample_two_agents):
         assert mediation.max_sessions == 2
         logger.info("MediationSession initialization test passed")
     except Exception as e:
-        logger.error(f"Failed to test MediationSession initialization: {e}")
+        logger.error(
+            f"Failed to test MediationSession initialization: {e}"
+        )
         raise
 
 
@@ -567,13 +639,19 @@ def test_mediation_session_insufficient_parties(sample_task):
         )
         with pytest.raises(ValueError, match="At least two parties"):
             mediation.run(sample_task)
-        logger.info("MediationSession insufficient parties test passed")
+        logger.info(
+            "MediationSession insufficient parties test passed"
+        )
     except Exception as e:
-        logger.error(f"Failed to test MediationSession insufficient parties: {e}")
+        logger.error(
+            f"Failed to test MediationSession insufficient parties: {e}"
+        )
         raise
 
 
-def test_mediation_session_no_mediator(sample_two_agents, sample_task):
+def test_mediation_session_no_mediator(
+    sample_two_agents, sample_task
+):
     try:
         mediation = MediationSession(
             parties=sample_two_agents,
@@ -581,11 +659,15 @@ def test_mediation_session_no_mediator(sample_two_agents, sample_task):
             max_sessions=2,
             output_type="str-all-except-first",
         )
-        with pytest.raises(ValueError, match="mediator agent is required"):
+        with pytest.raises(
+            ValueError, match="mediator agent is required"
+        ):
             mediation.run(sample_task)
         logger.info("MediationSession no mediator test passed")
     except Exception as e:
-        logger.error(f"Failed to test MediationSession no mediator: {e}")
+        logger.error(
+            f"Failed to test MediationSession no mediator: {e}"
+        )
         raise
 
 
@@ -608,7 +690,9 @@ def test_brainstorming_session_initialization(sample_three_agents):
         assert brainstorming.build_on_ideas is True
         logger.info("BrainstormingSession initialization test passed")
     except Exception as e:
-        logger.error(f"Failed to test BrainstormingSession initialization: {e}")
+        logger.error(
+            f"Failed to test BrainstormingSession initialization: {e}"
+        )
         raise
 
 
@@ -646,15 +730,23 @@ def test_brainstorming_session_insufficient_participants(sample_task):
             build_on_ideas=True,
             output_type="str-all-except-first",
         )
-        with pytest.raises(ValueError, match="At least two participants"):
+        with pytest.raises(
+            ValueError, match="At least two participants"
+        ):
             brainstorming.run(sample_task)
-        logger.info("BrainstormingSession insufficient participants test passed")
+        logger.info(
+            "BrainstormingSession insufficient participants test passed"
+        )
     except Exception as e:
-        logger.error(f"Failed to test BrainstormingSession insufficient participants: {e}")
+        logger.error(
+            f"Failed to test BrainstormingSession insufficient participants: {e}"
+        )
         raise
 
 
-def test_brainstorming_session_no_facilitator(sample_three_agents, sample_task):
+def test_brainstorming_session_no_facilitator(
+    sample_three_agents, sample_task
+):
     try:
         brainstorming = BrainstormingSession(
             participants=sample_three_agents,
@@ -663,11 +755,15 @@ def test_brainstorming_session_no_facilitator(sample_three_agents, sample_task):
             build_on_ideas=True,
             output_type="str-all-except-first",
         )
-        with pytest.raises(ValueError, match="facilitator agent is required"):
+        with pytest.raises(
+            ValueError, match="facilitator agent is required"
+        ):
             brainstorming.run(sample_task)
         logger.info("BrainstormingSession no facilitator test passed")
     except Exception as e:
-        logger.error(f"Failed to test BrainstormingSession no facilitator: {e}")
+        logger.error(
+            f"Failed to test BrainstormingSession no facilitator: {e}"
+        )
         raise
 
 
@@ -699,7 +795,9 @@ def test_trial_simulation_initialization():
         assert trial.phases == ["opening", "closing"]
         logger.info("TrialSimulation initialization test passed")
     except Exception as e:
-        logger.error(f"Failed to test TrialSimulation initialization: {e}")
+        logger.error(
+            f"Failed to test TrialSimulation initialization: {e}"
+        )
         raise
 
 
@@ -746,7 +844,9 @@ def test_trial_simulation_no_prosecution(sample_task):
             trial.run(sample_task)
         logger.info("TrialSimulation no prosecution test passed")
     except Exception as e:
-        logger.error(f"Failed to test TrialSimulation no prosecution: {e}")
+        logger.error(
+            f"Failed to test TrialSimulation no prosecution: {e}"
+        )
         raise
 
 
@@ -774,7 +874,9 @@ def test_trial_simulation_default_phases(sample_task):
         assert len(result) >= 0
         logger.info("TrialSimulation default phases test passed")
     except Exception as e:
-        logger.error(f"Failed to test TrialSimulation default phases: {e}")
+        logger.error(
+            f"Failed to test TrialSimulation default phases: {e}"
+        )
         raise
 
 
@@ -797,7 +899,9 @@ def test_council_meeting_initialization(sample_three_agents):
         assert council.require_consensus is False
         logger.info("CouncilMeeting initialization test passed")
     except Exception as e:
-        logger.error(f"Failed to test CouncilMeeting initialization: {e}")
+        logger.error(
+            f"Failed to test CouncilMeeting initialization: {e}"
+        )
         raise
 
 
@@ -835,15 +939,21 @@ def test_council_meeting_insufficient_members(sample_task):
             require_consensus=False,
             output_type="str-all-except-first",
         )
-        with pytest.raises(ValueError, match="At least two council members"):
+        with pytest.raises(
+            ValueError, match="At least two council members"
+        ):
             council.run(sample_task)
         logger.info("CouncilMeeting insufficient members test passed")
     except Exception as e:
-        logger.error(f"Failed to test CouncilMeeting insufficient members: {e}")
+        logger.error(
+            f"Failed to test CouncilMeeting insufficient members: {e}"
+        )
         raise
 
 
-def test_council_meeting_no_chairperson(sample_three_agents, sample_task):
+def test_council_meeting_no_chairperson(
+    sample_three_agents, sample_task
+):
     try:
         council = CouncilMeeting(
             council_members=sample_three_agents,
@@ -852,11 +962,15 @@ def test_council_meeting_no_chairperson(sample_three_agents, sample_task):
             require_consensus=False,
             output_type="str-all-except-first",
         )
-        with pytest.raises(ValueError, match="chairperson agent is required"):
+        with pytest.raises(
+            ValueError, match="chairperson agent is required"
+        ):
             council.run(sample_task)
         logger.info("CouncilMeeting no chairperson test passed")
     except Exception as e:
-        logger.error(f"Failed to test CouncilMeeting no chairperson: {e}")
+        logger.error(
+            f"Failed to test CouncilMeeting no chairperson: {e}"
+        )
         raise
 
 
@@ -880,7 +994,9 @@ def test_mentorship_session_initialization():
         assert mentorship.include_feedback is True
         logger.info("MentorshipSession initialization test passed")
     except Exception as e:
-        logger.error(f"Failed to test MentorshipSession initialization: {e}")
+        logger.error(
+            f"Failed to test MentorshipSession initialization: {e}"
+        )
         raise
 
 
@@ -918,11 +1034,15 @@ def test_mentorship_session_no_mentor(sample_task):
             include_feedback=True,
             output_type="str-all-except-first",
         )
-        with pytest.raises(ValueError, match="Both mentor and mentee"):
+        with pytest.raises(
+            ValueError, match="Both mentor and mentee"
+        ):
             mentorship.run(sample_task)
         logger.info("MentorshipSession no mentor test passed")
     except Exception as e:
-        logger.error(f"Failed to test MentorshipSession no mentor: {e}")
+        logger.error(
+            f"Failed to test MentorshipSession no mentor: {e}"
+        )
         raise
 
 
@@ -936,11 +1056,15 @@ def test_mentorship_session_no_mentee(sample_task):
             include_feedback=True,
             output_type="str-all-except-first",
         )
-        with pytest.raises(ValueError, match="Both mentor and mentee"):
+        with pytest.raises(
+            ValueError, match="Both mentor and mentee"
+        ):
             mentorship.run(sample_task)
         logger.info("MentorshipSession no mentee test passed")
     except Exception as e:
-        logger.error(f"Failed to test MentorshipSession no mentee: {e}")
+        logger.error(
+            f"Failed to test MentorshipSession no mentee: {e}"
+        )
         raise
 
 
@@ -963,7 +1087,9 @@ def test_negotiation_session_initialization(sample_two_agents):
         assert negotiation.include_concessions is True
         logger.info("NegotiationSession initialization test passed")
     except Exception as e:
-        logger.error(f"Failed to test NegotiationSession initialization: {e}")
+        logger.error(
+            f"Failed to test NegotiationSession initialization: {e}"
+        )
         raise
 
 
@@ -1003,13 +1129,19 @@ def test_negotiation_session_insufficient_parties(sample_task):
         )
         with pytest.raises(ValueError, match="At least two parties"):
             negotiation.run(sample_task)
-        logger.info("NegotiationSession insufficient parties test passed")
+        logger.info(
+            "NegotiationSession insufficient parties test passed"
+        )
     except Exception as e:
-        logger.error(f"Failed to test NegotiationSession insufficient parties: {e}")
+        logger.error(
+            f"Failed to test NegotiationSession insufficient parties: {e}"
+        )
         raise
 
 
-def test_negotiation_session_no_mediator(sample_two_agents, sample_task):
+def test_negotiation_session_no_mediator(
+    sample_two_agents, sample_task
+):
     try:
         negotiation = NegotiationSession(
             parties=sample_two_agents,
@@ -1018,15 +1150,21 @@ def test_negotiation_session_no_mediator(sample_two_agents, sample_task):
             include_concessions=True,
             output_type="str-all-except-first",
         )
-        with pytest.raises(ValueError, match="mediator agent is required"):
+        with pytest.raises(
+            ValueError, match="mediator agent is required"
+        ):
             negotiation.run(sample_task)
         logger.info("NegotiationSession no mediator test passed")
     except Exception as e:
-        logger.error(f"Failed to test NegotiationSession no mediator: {e}")
+        logger.error(
+            f"Failed to test NegotiationSession no mediator: {e}"
+        )
         raise
 
 
-def test_negotiation_session_without_concessions(sample_two_agents, sample_task):
+def test_negotiation_session_without_concessions(
+    sample_two_agents, sample_task
+):
     try:
         mediator = create_function_agent("Mediator")
         assert mediator is not None
@@ -1043,13 +1181,19 @@ def test_negotiation_session_without_concessions(sample_two_agents, sample_task)
         assert result is not None
         assert isinstance(result, str)
         assert len(result) >= 0
-        logger.info("NegotiationSession without concessions test passed")
+        logger.info(
+            "NegotiationSession without concessions test passed"
+        )
     except Exception as e:
-        logger.error(f"Failed to test NegotiationSession without concessions: {e}")
+        logger.error(
+            f"Failed to test NegotiationSession without concessions: {e}"
+        )
         raise
 
 
-def test_one_on_one_debate_multiple_loops(sample_two_agents, sample_task):
+def test_one_on_one_debate_multiple_loops(
+    sample_two_agents, sample_task
+):
     try:
         assert sample_two_agents is not None
         debate = OneOnOneDebate(
@@ -1064,11 +1208,15 @@ def test_one_on_one_debate_multiple_loops(sample_two_agents, sample_task):
         assert len(result) >= 0
         logger.info("OneOnOneDebate multiple loops test passed")
     except Exception as e:
-        logger.error(f"Failed to test OneOnOneDebate multiple loops: {e}")
+        logger.error(
+            f"Failed to test OneOnOneDebate multiple loops: {e}"
+        )
         raise
 
 
-def test_expert_panel_discussion_output_types(sample_three_agents, sample_task):
+def test_expert_panel_discussion_output_types(
+    sample_three_agents, sample_task
+):
     try:
         moderator = create_function_agent("Moderator")
         assert moderator is not None
@@ -1093,5 +1241,7 @@ def test_expert_panel_discussion_output_types(sample_three_agents, sample_task):
                 assert isinstance(result, str)
         logger.info("ExpertPanelDiscussion output types test passed")
     except Exception as e:
-        logger.error(f"Failed to test ExpertPanelDiscussion output types: {e}")
+        logger.error(
+            f"Failed to test ExpertPanelDiscussion output types: {e}"
+        )
         raise

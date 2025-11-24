@@ -10,7 +10,6 @@ agent = Agent(
     dynamic_context_window=True,
     streaming_on=False,
     top_p=None,
-    # stream=True,
 )
 
 out = agent.run(
@@ -18,5 +17,4 @@ out = agent.run(
     n=1,
 )
 
-for token in out:
-    print(token, end="", flush=True)
+print(out)
