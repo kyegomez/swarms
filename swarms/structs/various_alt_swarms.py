@@ -1,5 +1,5 @@
 import math
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Union, Optional
 
 from loguru import logger
 
@@ -9,7 +9,12 @@ from swarms.structs.omni_agent_types import AgentListType
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
+from swarms.utils.formatter import formatter
 
+# Internal helpers to avoid duplicate prints when nested BaseSwarm initializers request visualization.
+# Buffer requests and emit a single top-level print when outermost init completes.
+_swarm_init_depth = 0
+_pending_swarm_prints: List[Any] = []
 
 # Base Swarm class that all other swarm types will inherit from
 class BaseSwarm:
@@ -19,6 +24,7 @@ class BaseSwarm:
         name: str = "BaseSwarm",
         description: str = "A base swarm implementation",
         output_type: str = "dict",
+        show_swarm_structure: bool = False,
     ):
         """
         Initialize the BaseSwarm with agents, name, description, and output type.
@@ -28,17 +34,57 @@ class BaseSwarm:
             name: Name of the swarm
             description: Description of the swarm's purpose
             output_type: Type of output format, one of 'dict', 'list', 'string', 'json', 'yaml', 'xml', etc.
+            show_swarm_structure: Enable automatic visualization of nested swarm structure
         """
-        # Ensure agents is a flat list of Agent objects
-        self.agents = (
-            [agent for sublist in agents for agent in sublist]
-            if isinstance(agents[0], list)
-            else agents
-        )
-        self.name = name
-        self.description = description
-        self.output_type = output_type
-        self.conversation = Conversation()
+        # Buffer depth bookkeeping to avoid duplicate nested prints.
+        global _swarm_init_depth, _pending_swarm_prints
+        _swarm_init_depth += 1
+        try:
+            # Ensure agents is a flat list of Agent objects
+            self.agents = (
+                [agent for sublist in agents for agent in sublist]
+                if isinstance(agents[0], list)
+                else agents
+            )
+            self.name = name
+            self.description = description
+            self.output_type = output_type
+            self.conversation = Conversation()
+            self.show_swarm_structure = show_swarm_structure
+        finally:
+            _swarm_init_depth -= 1
+        
+        # If visualization was requested, buffer and only render once when the
+        # outermost initializer finishes (depth == 0). This preserves the
+        # existing `show_swarm_structure` API while avoiding duplicate output.
+        if self.show_swarm_structure:
+            try:
+                if self not in _pending_swarm_prints:
+                    _pending_swarm_prints.append(self)
+            except Exception:
+                # Best-effort only; do not fail initialization due to bookkeeping
+                pass
+
+        if _swarm_init_depth == 0 and _pending_swarm_prints:
+            try:
+                # Print all buffered top-level swarms requested during this burst,
+                # preserving order and isolating failures per-swarm.
+                for swarm_to_print in list(_pending_swarm_prints):
+                    try:
+                        formatter.print_swarm_structure(swarm_to_print)
+                    except Exception:
+                        # Best-effort per swarm; don't abort the loop.
+                        pass
+            finally:
+                _pending_swarm_prints.clear()
+    
+    def print_swarm_structure(self) -> None:
+        """
+        Print the visual tree representation of this swarm's structure.
+        
+        This method can be called on any swarm to visualize its nested structure.
+        """
+        formatter.print_swarm_structure(self)
 
     def run(self, tasks: List[str]) -> Union[Dict, List, str]:
         """
