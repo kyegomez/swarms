@@ -1044,6 +1044,28 @@ class HierarchicalSwarm:
                 img=img,
             )
 
+            # Handle different output formats from director
+            # If it's a SwarmSpec BaseModel, convert to dict
+            if isinstance(function_call, SwarmSpec):
+                function_call = function_call.model_dump()
+            # If it's a string, try to parse as JSON (might be JSON string from LiteLLM)
+            elif isinstance(function_call, str):
+                try:
+                    import json
+                    parsed = json.loads(function_call)
+                    if isinstance(parsed, dict) and "plan" in parsed and "orders" in parsed:
+                        function_call = parsed
+                    else:
+                        raise ValueError(
+                            f"Director returned string but it's not valid SwarmSpec JSON: {function_call[:200]}"
+                        )
+                except (json.JSONDecodeError, ValueError) as e:
+                    raise ValueError(
+                        f"Director returned string instead of SwarmSpec. "
+                        f"Ensure director uses response_format=SwarmSpec. "
+                        f"Output: {function_call[:200] if len(str(function_call)) > 200 else function_call}"
+                    )
+
             self.conversation.add(
                 role="Director", content=function_call
             )
