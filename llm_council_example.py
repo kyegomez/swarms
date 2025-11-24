@@ -1,7 +1,7 @@
 from swarms.structs.llm_council import LLMCouncil
 
 # Create the council
-council = LLMCouncil(verbose=True)
+council = LLMCouncil(verbose=True, output_type="final")
 
 # Example query
 query = "What are the top five best energy stocks across nuclear, solar, gas, and other energy sources?"
@@ -9,14 +9,4 @@ query = "What are the top five best energy stocks across nuclear, solar, gas, an
 # Run the council
 result = council.run(query)
 
-# Print final response
-print(result["final_response"])
-
-# Optionally print evaluations
-for name, evaluation in result["evaluations"].items():
-    print(f"\n{name}:")
-    print(
-        evaluation[:500] + "..."
-        if len(evaluation) > 500
-        else evaluation
-    )
+print(result)

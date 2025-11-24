@@ -5,20 +5,28 @@ The Swarms CLI is a comprehensive command-line interface for managing and execut
 ## Table of Contents
 
 - [Installation](#installation)
-
 - [Basic Usage](#basic-usage)
-
 - [Commands Reference](#commands-reference)
-
 - [Global Arguments](#global-arguments)
-
 - [Command-Specific Arguments](#command-specific-arguments)
-
+  - [run-agents Command](#run-agents-command)
+  - [load-markdown Command](#load-markdown-command)
+  - [agent Command](#agent-command)
+  - [autoswarm Command](#autoswarm-command)
+  - [setup-check Command](#setup-check-command)
+  - [llm-council Command](#llm-council-command)
+  - [heavy-swarm Command](#heavy-swarm-command)
+  - [features Command](#features-command)
 - [Error Handling](#error-handling)
-
 - [Examples](#examples)
-
 - [Configuration](#configuration)
+- [Advanced Features](#advanced-features)
+- [Troubleshooting](#troubleshooting)
+- [Integration](#integration)
+- [Performance Considerations](#performance-considerations)
+- [Security](#security)
+- [Command Quick Reference](#command-quick-reference)
+- [Support](#support)
 
 
 ## Installation
@@ -43,6 +51,7 @@ swarms <command> [options]
 |---------|-------------|-------------------|
 | `onboarding` | Start interactive onboarding process | None |
 | `help` | Display help message | None |
+| `features` | Display all available features and actions in a comprehensive table | None |
 | `get-api-key` | Open API key portal in browser | None |
 | `check-login` | Verify login status and initialize cache | None |
 | `run-agents` | Execute agents from YAML configuration | `--yaml-file` |
@@ -52,6 +61,8 @@ swarms <command> [options]
 | `book-call` | Schedule strategy session | None |
 | `autoswarm` | Generate and execute autonomous swarm | `--task`, `--model` |
 | `setup-check` | Run comprehensive environment setup check | None |
+| `llm-council` | Run LLM Council with multiple agents collaborating on a task | `--task` |
+| `heavy-swarm` | Run HeavySwarm with specialized agents for complex task analysis | `--task` |
 
 ## Global Arguments
 
@@ -221,6 +232,148 @@ swarms setup-check --verbose
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
+### `llm-council` Command
+
+Run the LLM Council with multiple specialized agents that collaborate, evaluate, and synthesize responses.
+
+The LLM Council follows a structured workflow:
+1. **Independent Responses**: Each council member (GPT-5.1, Gemini 3 Pro, Claude Sonnet 4.5, Grok-4) independently responds to the query
+2. **Peer Review**: All members review and rank each other's anonymized responses
+3. **Synthesis**: A Chairman agent synthesizes all responses and rankings into a final comprehensive answer
+
+```bash
+swarms llm-council [options]
+```
+
+#### Required Arguments
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `--task` | `str` | The query or question for the LLM Council to process |
+
+#### Optional Arguments
+
+| Argument | Type | Default | Description |
+|----------|------|---------|-------------|
+| `--verbose` | `bool` | `True` | Enable verbose output showing progress and intermediate results |
+
+**Example:**
+```bash
+# Basic usage
+swarms llm-council --task "What are the best energy ETFs right now?"
+
+# With verbose output
+swarms llm-council --task "What is the best approach to solve this problem?" --verbose
+```
+
+**How It Works:**
+
+The LLM Council creates a collaborative environment where:
+- **Default Council Members**: GPT-5.1 (analytical), Gemini 3 Pro (concise), Claude Sonnet 4.5 (balanced), Grok-4 (creative)
+- **Anonymized Evaluation**: Responses are anonymized before evaluation to ensure honest ranking
+- **Cross-Model Evaluation**: Each model evaluates all responses, often selecting other models' responses as superior
+- **Final Synthesis**: The Chairman (GPT-5.1 by default) synthesizes the best elements from all responses
+
+**Use Cases:**
+- Complex problem-solving requiring multiple perspectives
+- Research questions needing comprehensive analysis
+- Decision-making scenarios requiring thorough evaluation
+- Content generation with quality assurance
+
+### `heavy-swarm` Command
+
+Run HeavySwarm with specialized agents for complex task analysis and decomposition.
+
+HeavySwarm follows a structured workflow:
+1. **Task Decomposition**: Breaks down tasks into specialized questions
+2. **Parallel Execution**: Executes specialized agents in parallel
+3. **Result Synthesis**: Integrates and synthesizes results
+4. **Comprehensive Reporting**: Generates detailed final reports
+5. **Iterative Refinement**: Optional multi-loop execution for iterative improvement
+
+```bash
+swarms heavy-swarm [options]
+```
+
+#### Required Arguments
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `--task` | `str` | The task for HeavySwarm to analyze and process |
+
+#### Optional Arguments
+
+| Argument | Type | Default | Description |
+|----------|------|---------|-------------|
+| `--loops-per-agent` | `int` | `1` | Number of execution loops each agent should perform |
+| `--question-agent-model-name` | `str` | `"gpt-4o-mini"` | Model name for the question generation agent |
+| `--worker-model-name` | `str` | `"gpt-4o-mini"` | Model name for specialized worker agents |
+| `--random-loops-per-agent` | `bool` | `False` | Enable random number of loops per agent (1-10 range) |
+| `--verbose` | `bool` | `False` | Enable verbose output showing detailed progress |
+
+**Example:**
+```bash
+# Basic usage
+swarms heavy-swarm --task "Analyze the current market trends for renewable energy"
+
+# With custom configuration
+swarms heavy-swarm \
+  --task "Research the best investment strategies for 2024" \
+  --loops-per-agent 3 \
+  --question-agent-model-name "gpt-4" \
+  --worker-model-name "gpt-4" \
+  --random-loops-per-agent \
+  --verbose
+```
+
+**Specialized Agent Roles:**
+
+HeavySwarm includes specialized agents for different aspects of analysis:
+- **Research Agent**: Fast, trustworthy, and reproducible research
+- **Analysis Agent**: Statistical analysis and validated insights
+- **Writing Agent**: Clear, structured documentation
+- **Question Agent**: Task decomposition and question generation
+
+**Use Cases:**
+- Complex research tasks requiring multiple perspectives
+- Market analysis and financial research
+- Technical analysis and evaluation
+- Comprehensive report generation
+- Multi-faceted problem solving
+
+### `features` Command
+
+Display all available CLI features and actions in a comprehensive, formatted table.
+
+This command provides a quick reference to all available features, their categories, descriptions, command syntax, and key parameters.
+
+```bash
+swarms features
+```
+
+**No arguments required.**
+
+**Example:**
+```bash
+swarms features
+```
+
+**Output Includes:**
+- **Main Features Table**: Complete list of all features with:
+  - Feature name
+  - Category (Setup, Auth, Execution, Creation, etc.)
+  - Description
+  - Command syntax
+  - Key parameters
+- **Category Summary**: Overview of features grouped by category with counts
+- **Usage Tips**: Quick tips for using the CLI effectively
+
+**Use Cases:**
+- Quick reference when exploring CLI capabilities
+- Discovering available features
+- Understanding command syntax and parameters
+- Learning about feature categories
+
 ## Error Handling
 
 The CLI provides comprehensive error handling with formatted error messages:
@@ -287,6 +440,34 @@ swarms run-agents \
 swarms autoswarm \
   --task "Create a comprehensive market analysis report for tech stocks" \
   --model "gpt-4"
+```
+
+### LLM Council Collaboration
+
+```bash
+# Run LLM Council for collaborative problem solving
+swarms llm-council \
+  --task "What are the best strategies for reducing carbon emissions in manufacturing?" \
+  --verbose
+```
+
+### HeavySwarm Complex Analysis
+
+```bash
+# Run HeavySwarm for comprehensive task analysis
+swarms heavy-swarm \
+  --task "Analyze the impact of AI on the job market in 2024" \
+  --loops-per-agent 2 \
+  --question-agent-model-name "gpt-4" \
+  --worker-model-name "gpt-4" \
+  --verbose
+```
+
+### Viewing All Features
+
+```bash
+# Display all available features
+swarms features
 ```
 
 ## Configuration
@@ -386,6 +567,54 @@ Guided setup process including:
 
 - Usage examples
 
+### Multi-Agent Collaboration
+
+The CLI supports advanced multi-agent architectures:
+
+#### LLM Council
+
+Collaborative problem-solving with multiple specialized models:
+
+```bash
+swarms llm-council --task "Your question here"
+```
+
+**Features:**
+- Multiple model perspectives (GPT-5.1, Gemini, Claude, Grok)
+- Anonymous peer review and ranking
+- Synthesized final responses
+- Cross-model evaluation
+
+#### HeavySwarm
+
+Complex task analysis with specialized agent roles:
+
+```bash
+swarms heavy-swarm --task "Your complex task here"
+```
+
+**Features:**
+- Task decomposition into specialized questions
+- Parallel agent execution
+- Result synthesis and integration
+- Iterative refinement with multiple loops
+- Specialized agent roles (Research, Analysis, Writing, Question)
+
+### Feature Discovery
+
+Quickly discover all available features:
+
+```bash
+swarms features
+```
+
+Displays comprehensive tables showing:
+- All available commands
+- Feature categories
+- Command syntax
+- Key parameters
+- Usage examples
+
 
 ## Troubleshooting
 
@@ -451,6 +680,8 @@ swarms run-agents --yaml-file agents2.yaml
 | Model Selection        | Choose appropriate models for task complexity        |
 | Context Length         | Monitor and optimize input sizes                    |
 | Rate Limiting          | Respect API provider limits                         |
+| Multi-Agent Execution  | LLM Council and HeavySwarm execute agents in parallel for efficiency |
+| Loop Configuration     | Adjust `--loops-per-agent` based on task complexity and time constraints |
 
 ## Security
 
@@ -461,6 +692,48 @@ swarms run-agents --yaml-file agents2.yaml
 | Input Validation       | CLI validates all inputs before execution              |
 | Error Sanitization     | Sensitive information is not exposed in errors         |
 
+## Command Quick Reference
+
+### Quick Start Commands
+
+```bash
+# Environment setup
+swarms setup-check --verbose
+swarms onboarding
+
+# View all features
+swarms features
+
+# Get help
+swarms help
+```
+
+### Agent Commands
+
+```bash
+# Create custom agent
+swarms agent --name "Agent" --task "Task" --system-prompt "Prompt"
+
+# Run agents from YAML
+swarms run-agents --yaml-file agents.yaml
+
+# Load from markdown
+swarms load-markdown --markdown-path ./agents/
+```
+
+### Multi-Agent Commands
+
+```bash
+# LLM Council
+swarms llm-council --task "Your question"
+
+# HeavySwarm
+swarms heavy-swarm --task "Your complex task" --loops-per-agent 2 --verbose
+
+# Auto-generate swarm
+swarms autoswarm --task "Task description" --model "gpt-4"
+```
+
 ## Support
 
 For additional support:
@@ -470,3 +743,4 @@ For additional support:
 | **Community**        | [Discord](https://discord.gg/EamjgSaEQf)                                              |
 | **Issues**           | [GitHub Issues](https://github.com/kyegomez/swarms/issues)                            |
 | **Strategy Sessions**| [Book a Call](https://cal.com/swarms/swarms-strategy-session)                         |
+| **Documentation**    | [Full Documentation](https://docs.swarms.world)                                      |

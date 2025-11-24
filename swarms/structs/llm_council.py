@@ -17,9 +17,13 @@ from swarms.structs.multi_agent_exec import (
     run_agents_concurrently,
     batched_grid_agent_execution,
 )
-from swarms.utils.history_output_formatter import HistoryOutputType, history_output_formatter
+from swarms.utils.history_output_formatter import (
+    HistoryOutputType,
+    history_output_formatter,
+)
 from swarms.structs.conversation import Conversation
 from swarms.structs.swarm_id import swarm_id
+
 
 def get_gpt_councilor_prompt() -> str:
     """
@@ -272,7 +276,7 @@ class LLMCouncil:
         council_members: Optional[List[Agent]] = None,
         chairman_model: str = "gpt-5.1",
         verbose: bool = True,
-        output_type: HistoryOutputType = "dict",
+        output_type: HistoryOutputType = "dict-all-except-first",
     ):
         """
         Initialize the LLM Council.
@@ -306,8 +310,10 @@ class LLMCouncil:
             verbose=verbose,
             temperature=0.7,
         )
-        
-        self.conversation = Conversation(name=f"[LLM Council] [Conversation][{name}]")
+
+        self.conversation = Conversation(
+            name=f"[LLM Council] [Conversation][{name}]"
+        )
 
         if self.verbose:
             print(
@@ -365,7 +371,7 @@ class LLMCouncil:
             agent_name="Grok-4-Councilor",
             agent_description="Creative and innovative AI councilor specializing in unique perspectives and creative solutions",
             system_prompt=get_grok_councilor_prompt(),
-            model_name="x-ai/grok-4",  # Using available model as proxy for Grok-4
+            model_name="xai/grok-4-1-fast-reasoning",  # Using available model as proxy for Grok-4
             max_loops=1,
             verbose=False,
             temperature=0.8,
