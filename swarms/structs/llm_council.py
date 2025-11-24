@@ -502,3 +502,15 @@ class LLMCouncil:
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
         )
+
+    def batched_run(self, tasks: List[str]):
+        """
+        Run the LLM Council workflow for a batch of tasks.
+
+        Args:
+            tasks: List of tasks to process
+
+        Returns:
+            List of formatted outputs based on output_type
+        """
+        return [self.run(task) for task in tasks]

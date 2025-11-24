@@ -37,6 +37,7 @@ from swarms.telemetry.log_executions import log_execution
 from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.structs.llm_council import LLMCouncil
 
 logger = initialize_logger(log_folder="swarm_router")
 
@@ -56,6 +57,7 @@ SwarmType = Literal[
     "InteractiveGroupChat",
     "HeavySwarm",
     "BatchedGridWorkflow",
+    "LLMCouncil",
 ]
 
 
@@ -210,6 +212,7 @@ class SwarmRouter:
         verbose: bool = False,
         worker_tools: List[Callable] = None,
         aggregation_strategy: str = "synthesis",
+        chairman_model: str = "gpt-5.1",
         *args,
         **kwargs,
     ):
@@ -252,7 +255,8 @@ class SwarmRouter:
         self.heavy_swarm_swarm_show_output = (
             heavy_swarm_swarm_show_output
         )
-
+        self.chairman_model = chairman_model
+        
         # Initialize swarm factory for O(1) lookup performance
         self._swarm_factory = self._initialize_swarm_factory()
         self._swarm_cache = {}  # Cache for created swarms
@@ -425,6 +429,7 @@ class SwarmRouter:
             "SequentialWorkflow": self._create_sequential_workflow,
             "ConcurrentWorkflow": self._create_concurrent_workflow,
             "BatchedGridWorkflow": self._create_batched_grid_workflow,
+            "LLMCouncil": self._create_llm_council,
         }
 
     def _create_heavy_swarm(self, *args, **kwargs):
@@ -440,6 +445,16 @@ class SwarmRouter:
             worker_tools=self.worker_tools,
             aggregation_strategy=self.aggregation_strategy,
             show_dashboard=False,
+        )
+        
+    def _create_llm_council(self, *args, **kwargs):
+        """Factory function for LLMCouncil."""
+        return LLMCouncil(
+            name=self.name,
+            description=self.description,
+            output_type=self.output_type,
+            verbose=self.verbose,
+            chairman_model=self.chairman_model,
         )
 
     def _create_agent_rearrange(self, *args, **kwargs):

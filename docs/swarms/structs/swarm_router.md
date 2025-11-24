@@ -42,6 +42,7 @@ Main class for routing tasks to different swarm types.
 | `verbose` | bool | Flag to enable/disable verbose logging (default: False) |
 | `worker_tools` | List[Callable] | List of tools available to worker agents |
 | `aggregation_strategy` | str | Aggregation strategy for HeavySwarm (default: "synthesis") |
+| `chairman_model` | str | Model name for the Chairman in LLMCouncil (default: "gpt-5.1") |
 
 ### Methods
 
@@ -123,6 +124,7 @@ The `SwarmRouter` supports many various multi-agent architectures for various ap
 | `InteractiveGroupChat` | Interactive group chat with user participation |
 | `HeavySwarm` | Heavy swarm architecture with question and worker agents |
 | `BatchedGridWorkflow` | Batched grid workflow for parallel task processing |
+| `LLMCouncil` | Council of specialized LLM agents with peer review and synthesis |
 | `auto` | Automatically selects best swarm type via embedding search |
 
 ## Basic Usage
@@ -455,6 +457,30 @@ result = batched_grid_router.run(tasks=["Task 1", "Task 2", "Task 3"])
 ```
 
 BatchedGridWorkflow is designed for efficiently processing multiple tasks in parallel batches, optimizing resource utilization.
+
+### LLMCouncil
+
+Use Case: Collaborative analysis with multiple specialized LLM agents that evaluate each other's responses and synthesize a final answer.
+
+```python
+llm_council_router = SwarmRouter(
+    name="LLMCouncil",
+    description="Collaborative council of LLM agents with peer review",
+    swarm_type="LLMCouncil",
+    chairman_model="gpt-5.1",  # Model for the Chairman agent
+    output_type="dict",  # Output format: "dict", "list", "string", "json", "yaml", "final", etc.
+    verbose=True  # Show progress and intermediate results
+)
+
+result = llm_council_router.run("What are the top five best energy stocks across nuclear, solar, gas, and other energy sources?")
+```
+
+LLMCouncil creates a council of specialized agents (GPT-5.1, Gemini, Claude, Grok by default) that:
+1. Each independently responds to the query
+2. Evaluates and ranks each other's anonymized responses
+3. A Chairman synthesizes all responses and evaluations into a final comprehensive answer
+
+The council automatically tracks all messages in a conversation object and supports flexible output formats. Note: LLMCouncil uses default council members and doesn't require the `agents` parameter.
 
 ## Advanced Features
 
