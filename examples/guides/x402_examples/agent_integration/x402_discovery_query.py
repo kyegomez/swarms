@@ -4,7 +4,6 @@ from swarms import Agent
 import httpx
 
 
-
 async def query_x402_services(
     limit: Optional[int] = None,
     max_price: Optional[int] = None,
@@ -205,7 +204,6 @@ def get_x402_services_sync(
         )
     )
     return str(services)
-
 
 
 agent = Agent(

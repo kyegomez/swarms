@@ -83,6 +83,7 @@ The `Agent` class establishes a conversational loop with a language model, allow
 | `traceback` | `Optional[Any]` | Object used for traceback handling. |
 | `traceback_handlers` | `Optional[Any]` | List of traceback handlers. |
 | `streaming_on` | `Optional[bool]` | Boolean indicating whether to stream responses. |
+| `stream` | `Optional[bool]` | Boolean indicating whether to enable detailed token-by-token streaming with metadata. |
 | `docs` | `List[str]` | List of document paths or contents to be ingested. |
 | `docs_folder` | `Optional[str]` | Path to a folder containing documents to be ingested. |
 | `verbose` | `Optional[bool]` | Boolean indicating whether to print verbose output. |
@@ -757,6 +758,22 @@ agent.run(
 # Print the dynamically generated system prompt
 print(agent.system_prompt)
 
+```
+
+### Token-by-Token Streaming
+
+```python
+from swarms import Agent
+
+# Initialize agent with detailed streaming
+agent = Agent(
+    model_name="gpt-4.1",
+    max_loops=1,
+    stream=True,  # Enable detailed token-by-token streaming
+)
+
+# Run with detailed streaming - each token shows metadata
+agent.run("Tell me a short story about a robot learning to paint.")
 ```
 
 ## Agent Structured Outputs

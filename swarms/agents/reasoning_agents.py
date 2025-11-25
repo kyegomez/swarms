@@ -88,9 +88,7 @@ class ReasoningAgentRouter:
         eval: bool = False,
         random_models_on: bool = False,
         majority_voting_prompt: Optional[str] = None,
-        reasoning_model_name: Optional[
-            str
-        ] = "claude-3-5-sonnet-20240620",
+        reasoning_model_name: Optional[str] = "gpt-4o",
     ):
         """
         Initialize the ReasoningAgentRouter with the specified configuration.
@@ -285,7 +283,11 @@ class ReasoningAgentRouter:
         """
         try:
             swarm = self.select_swarm()
-            return swarm.run(task=task, *args, **kwargs)
+
+            if self.swarm_type == "ReflexionAgent":
+                return swarm.run(tasks=[task], *args, **kwargs)
+            else:
+                return swarm.run(task=task, *args, **kwargs)
         except Exception as e:
             raise ReasoningAgentExecutorError(
                 f"ReasoningAgentRouter Error: {e} Traceback: {traceback.format_exc()} If the error persists, please check the agent's configuration and try again. If you would like support book a call with our team at https://cal.com/swarms"

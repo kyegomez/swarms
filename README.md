@@ -823,7 +823,7 @@ We've made it easy to start contributing. Here's how you can help:
 4. **Join the Discussion:** To participate in roadmap discussions and connect with other developers, join our community on [**Discord**](https://discord.gg/EamjgSaEQf).
 
 
-### ✨ Our Valued Contributors
+### ✨ Thank You to Our Contributors
 
 Thank you for contributing to swarms. Your work is extremely appreciated and recognized.
 
@@ -831,9 +831,17 @@ Thank you for contributing to swarms. Your work is extremely appreciated and rec
   <img src="https://contrib.rocks/image?repo=kyegomez/swarms" />
 </a>
 
+### 🙏 Thank You to Our Community
+
+We're incredibly grateful to everyone who supports Swarms! Your stars, forks, and contributions help make this project better every day.
+
+[![Forkers repo roster for @kyegomez/swarms](https://reporoster.com/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network/members)
+
+[![Stargazers repo roster for @kyegomez/swarms](https://reporoster.com/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers)
+
 -----
 
-## Connect With Us
+## Join the Swarms community 👾👾👾
 
 Join our community of agent engineers and researchers for technical support, cutting-edge updates, and exclusive access to world-class agent engineering insights!
 

@@ -2,7 +2,16 @@ import concurrent.futures
 import json
 import os
 import traceback
-from typing import Any, Callable, Dict, List, Literal, Optional, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Union,
+    get_args,
+)
 
 from pydantic import BaseModel, Field
 
@@ -28,6 +37,7 @@ from swarms.telemetry.log_executions import log_execution
 from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.structs.llm_council import LLMCouncil
 
 logger = initialize_logger(log_folder="swarm_router")
 
@@ -46,6 +56,8 @@ SwarmType = Literal[
     "CouncilAsAJudge",
     "InteractiveGroupChat",
     "HeavySwarm",
+    "BatchedGridWorkflow",
+    "LLMCouncil",
 ]
 
 
@@ -200,6 +212,7 @@ class SwarmRouter:
         verbose: bool = False,
         worker_tools: List[Callable] = None,
         aggregation_strategy: str = "synthesis",
+        chairman_model: str = "gpt-5.1",
         *args,
         **kwargs,
     ):
@@ -242,6 +255,7 @@ class SwarmRouter:
         self.heavy_swarm_swarm_show_output = (
             heavy_swarm_swarm_show_output
         )
+        self.chairman_model = chairman_model
 
         # Initialize swarm factory for O(1) lookup performance
         self._swarm_factory = self._initialize_swarm_factory()
@@ -270,6 +284,24 @@ class SwarmRouter:
             if self.swarm_type is None:
                 raise SwarmRouterConfigError(
                     "SwarmRouter: Swarm type cannot be 'none'. Check the docs for all the swarm types available. https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
+                )
+
+            # Validate swarm type is a valid string
+            valid_swarm_types = get_args(SwarmType)
+
+            if not isinstance(self.swarm_type, str):
+                raise SwarmRouterConfigError(
+                    f"SwarmRouter: swarm_type must be a string, not {type(self.swarm_type).__name__}. "
+                    f"Valid types are: {', '.join(valid_swarm_types)}. "
+                    "Use swarm_type='SequentialWorkflow' (string), NOT SwarmType.SequentialWorkflow. "
+                    "See https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
+                )
+
+            if self.swarm_type not in valid_swarm_types:
+                raise SwarmRouterConfigError(
+                    f"SwarmRouter: Invalid swarm_type '{self.swarm_type}'. "
+                    f"Valid types are: {', '.join(valid_swarm_types)}. "
+                    "See https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
                 )
 
             if (
@@ -397,6 +429,7 @@ class SwarmRouter:
             "SequentialWorkflow": self._create_sequential_workflow,
             "ConcurrentWorkflow": self._create_concurrent_workflow,
             "BatchedGridWorkflow": self._create_batched_grid_workflow,
+            "LLMCouncil": self._create_llm_council,
         }
 
     def _create_heavy_swarm(self, *args, **kwargs):
@@ -412,6 +445,16 @@ class SwarmRouter:
             worker_tools=self.worker_tools,
             aggregation_strategy=self.aggregation_strategy,
             show_dashboard=False,
+        )
+
+    def _create_llm_council(self, *args, **kwargs):
+        """Factory function for LLMCouncil."""
+        return LLMCouncil(
+            name=self.name,
+            description=self.description,
+            output_type=self.output_type,
+            verbose=self.verbose,
+            chairman_model=self.chairman_model,
         )
 
     def _create_agent_rearrange(self, *args, **kwargs):

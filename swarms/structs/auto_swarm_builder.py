@@ -16,7 +16,6 @@ load_dotenv()
 
 execution_types = [
     "return-agents",
-    "execute-swarm-router",
     "return-swarm-router-config",
     "return-agents-objects",
 ]
@@ -408,6 +407,8 @@ class AutoSwarmBuilder:
 
             agents_dictionary = model.run(task)
 
+            agents_dictionary = json.loads(agents_dictionary)
+
             return agents_dictionary
 
         except Exception as e:
@@ -437,6 +438,8 @@ class AutoSwarmBuilder:
             swarm_spec = model.run(
                 f"Create the swarm spec for the following task: {task}"
             )
+
+            swarm_spec = json.loads(swarm_spec)
 
             print(swarm_spec)
 

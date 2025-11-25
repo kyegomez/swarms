@@ -41,21 +41,31 @@ def test_initialization():
 
 
 def test_agent_building():
-    """Test building individual agents"""
+    """Test building individual agents from specs"""
     print_separator()
     print("Testing Agent Building")
     try:
         swarm = AutoSwarmBuilder()
-        agent = swarm.build_agent(
-            agent_name="TestAgent",
-            agent_description="A test agent",
-            agent_system_prompt="You are a test agent",
-            max_loops=1,
-        )
+        specs = {
+            "agents": [
+                {
+                    "agent_name": "TestAgent",
+                    "description": "A test agent",
+                    "system_prompt": "You are a test agent",
+                    "max_loops": 1,
+                }
+            ]
+        }
+        agents = swarm.create_agents_from_specs(specs)
+        agent = agents[0]
+
+        # Create agent from spec
+        agents = swarm.create_agents_from_specs({"agents": [agent_spec]})
+        agent = agents[0]
 
         print("✓ Built agent with configuration:")
         print(f"  - Name: {agent.agent_name}")
-        print(f"  - Description: {agent.description}")
+        print(f"  - Description: {agent.agent_description}")
         print(f"  - Max loops: {agent.max_loops}")
         print("✓ Agent building test passed")
         return agent
@@ -69,18 +79,25 @@ def test_agent_creation():
     print_separator()
     print("Testing Agent Creation from Task")
     try:
+        import json
+
         swarm = AutoSwarmBuilder(
             name="ResearchSwarm",
             description="A swarm for research tasks",
         )
         task = "Research the latest developments in quantum computing"
-        agents = swarm._create_agents(task)
+        # create_agents returns a JSON string
+        agent_specs_json = swarm.create_agents(task)
+        # Parse JSON string to dict
+        agent_specs = json.loads(agent_specs_json)
+        # Convert specs to actual Agent objects
+        agents = swarm.create_agents_from_specs(agent_specs)
 
         print("✓ Created agents for research task:")
         for i, agent in enumerate(agents, 1):
             print(f"  Agent {i}:")
             print(f"    - Name: {agent.agent_name}")
-            print(f"    - Description: {agent.description}")
+            print(f"    - Description: {agent.agent_description}")
         print(f"✓ Created {len(agents)} agents successfully")
         return agents
     except Exception as e:
@@ -103,7 +120,7 @@ def test_swarm_routing():
         task = "Analyze the impact of AI on healthcare"
 
         print("Starting task routing...")
-        result = swarm.swarm_router(agents, task)
+        result = swarm.initialize_swarm_router(agents, task)
 
         print("✓ Task routed successfully")
         print(
@@ -155,7 +172,9 @@ def test_error_handling():
         # Test with invalid agent configuration
         print("Testing invalid agent configuration...")
         try:
-            swarm.build_agent("", "", "")
+            swarm.create_agents_from_specs(
+                {"agents": [{"agent_name": ""}]}
+            )
             print(
                 "✗ Should have raised an error for empty agent configuration"
             )
