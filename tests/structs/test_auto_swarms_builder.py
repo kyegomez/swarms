@@ -59,6 +59,10 @@ def test_agent_building():
         agents = swarm.create_agents_from_specs(specs)
         agent = agents[0]
 
+        # Create agent from spec
+        agents = swarm.create_agents_from_specs({"agents": [agent_spec]})
+        agent = agents[0]
+
         print("✓ Built agent with configuration:")
         print(f"  - Name: {agent.agent_name}")
         print(f"  - Description: {agent.agent_description}")
@@ -116,7 +120,7 @@ def test_swarm_routing():
         task = "Analyze the impact of AI on healthcare"
 
         print("Starting task routing...")
-        result = swarm.swarm_router(agents, task)
+        result = swarm.initialize_swarm_router(agents, task)
 
         print("✓ Task routed successfully")
         print(
