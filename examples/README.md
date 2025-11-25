@@ -79,16 +79,26 @@ This directory contains comprehensive examples demonstrating various capabilitie
   - [README.md](ui/README.md) - UI examples documentation
   - [chat.py](ui/chat.py) - Chat interface example
 
+### Command Line Interface
+
+- **[cli/](cli/)** - CLI command examples demonstrating all available Swarms CLI features including setup, agent management, multi-agent architectures, and utilities.
+  - [README.md](cli/README.md) - CLI examples documentation
+  - [01_setup_check.sh](cli/01_setup_check.sh) - Environment setup verification
+  - [05_create_agent.sh](cli/05_create_agent.sh) - Create custom agents
+  - [08_llm_council.sh](cli/08_llm_council.sh) - LLM Council collaboration
+  - [09_heavy_swarm.sh](cli/09_heavy_swarm.sh) - HeavySwarm complex analysis
+
 ## Quick Start
 
 1. **New to Swarms?** Start with [single_agent/simple_agent.py](single_agent/simple_agent.py) for basic concepts
-2. **Want multi-agent workflows?** Check out [multi_agent/duo_agent.py](multi_agent/duo_agent.py)
-3. **Need tool integration?** Explore [tools/agent_as_tools.py](tools/agent_as_tools.py)
-4. **Interested in AOP?** Try [aop_examples/client/example_new_agent_tools.py](aop_examples/client/example_new_agent_tools.py) for agent discovery
-5. **Want to see social algorithms?** Check out [multi_agent/social_algorithms_examples/](multi_agent/social_algorithms_examples/)
-6. **Looking for guides?** Visit [guides/](guides/) for comprehensive tutorials
-7. **Need RAG?** Try [rag/qdrant_rag_example.py](rag/qdrant_rag_example.py)
-8. **Want reasoning agents?** Check out [reasoning_agents/example_o3.py](reasoning_agents/example_o3.py)
+2. **Want to use the CLI?** Check out [cli/](cli/) for all CLI command examples
+3. **Want multi-agent workflows?** Check out [multi_agent/duo_agent.py](multi_agent/duo_agent.py)
+4. **Need tool integration?** Explore [tools/agent_as_tools.py](tools/agent_as_tools.py)
+5. **Interested in AOP?** Try [aop_examples/client/example_new_agent_tools.py](aop_examples/client/example_new_agent_tools.py) for agent discovery
+6. **Want to see social algorithms?** Check out [multi_agent/social_algorithms_examples/](multi_agent/social_algorithms_examples/)
+7. **Looking for guides?** Visit [guides/](guides/) for comprehensive tutorials
+8. **Need RAG?** Try [rag/qdrant_rag_example.py](rag/qdrant_rag_example.py)
+9. **Want reasoning agents?** Check out [reasoning_agents/example_o3.py](reasoning_agents/example_o3.py)
 
 ## Key Examples by Category
 
@@ -121,6 +131,14 @@ This directory contains comprehensive examples demonstrating various capabilitie
 - [DeepSeek](single_agent/llms/deepseek_examples/deepseek_r1.py) - DeepSeek models
 - [Azure](single_agent/llms/azure_agent.py) - Azure OpenAI
 - [Ollama](models/simple_example_ollama.py) - Local Ollama models
+
+### CLI Examples
+
+- [Setup Check](cli/01_setup_check.sh) - Verify environment setup
+- [Create Agent](cli/05_create_agent.sh) - Create custom agents via CLI
+- [LLM Council](cli/08_llm_council.sh) - Run LLM Council collaboration
+- [HeavySwarm](cli/09_heavy_swarm.sh) - Run HeavySwarm for complex tasks
+- [All CLI Examples](cli/) - Complete CLI examples directory
 
 ## Documentation
 

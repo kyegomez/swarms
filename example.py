@@ -1,5 +1,3 @@
-import json
-
 from swarms import Agent
 
 # Initialize the agent
@@ -12,7 +10,6 @@ agent = Agent(
     dynamic_context_window=True,
     streaming_on=False,
     top_p=None,
-    output_type="dict",
 )
 
 out = agent.run(
@@ -20,4 +17,4 @@ out = agent.run(
     n=1,
 )
 
-print(json.dumps(out, indent=4))
+print(out)

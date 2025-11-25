@@ -8,4 +8,3 @@ router = ReasoningAgentRouter(
 
 result = router.run("Explain photosynthesis in one sentence.")
 print(result)
-

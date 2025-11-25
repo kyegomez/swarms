@@ -41,19 +41,23 @@ def test_initialization():
 
 
 def test_agent_building():
-    """Test building individual agents"""
+    """Test building individual agents from specs"""
     print_separator()
     print("Testing Agent Building")
     try:
         swarm = AutoSwarmBuilder()
-
-        # Create agent spec
-        agent_spec = AgentSpec(
-            agent_name="TestAgent",
-            description="A test agent",
-            system_prompt="You are a test agent",
-            max_loops=1,
-        )
+        specs = {
+            "agents": [
+                {
+                    "agent_name": "TestAgent",
+                    "description": "A test agent",
+                    "system_prompt": "You are a test agent",
+                    "max_loops": 1,
+                }
+            ]
+        }
+        agents = swarm.create_agents_from_specs(specs)
+        agent = agents[0]
 
         # Create agent from spec
         agents = swarm.create_agents_from_specs({"agents": [agent_spec]})
@@ -75,13 +79,19 @@ def test_agent_creation():
     print_separator()
     print("Testing Agent Creation from Task")
     try:
+        import json
+
         swarm = AutoSwarmBuilder(
             name="ResearchSwarm",
             description="A swarm for research tasks",
         )
         task = "Research the latest developments in quantum computing"
-        agents_dict = swarm.create_agents(task)
-        agents = swarm.create_agents_from_specs(agents_dict)
+        # create_agents returns a JSON string
+        agent_specs_json = swarm.create_agents(task)
+        # Parse JSON string to dict
+        agent_specs = json.loads(agent_specs_json)
+        # Convert specs to actual Agent objects
+        agents = swarm.create_agents_from_specs(agent_specs)
 
         print("✓ Created agents for research task:")
         for i, agent in enumerate(agents, 1):
@@ -162,7 +172,9 @@ def test_error_handling():
         # Test with invalid agent configuration
         print("Testing invalid agent configuration...")
         try:
-            swarm.build_agent("", "", "")
+            swarm.create_agents_from_specs(
+                {"agents": [{"agent_name": ""}]}
+            )
             print(
                 "✗ Should have raised an error for empty agent configuration"
             )

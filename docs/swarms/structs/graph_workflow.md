@@ -12,6 +12,7 @@ Key features:
 |------------------------|-----------------------------------------------------------------------------------------------|
 | **Agent-based nodes**  | Each node represents an agent that can process tasks                                          |
 | **Directed graph structure** | Edges define the flow of data between agents                                            |
+| **Dual backend support** | Choose between NetworkX (compatibility) or Rustworkx (performance) backends            |
 | **Parallel execution** | Multiple agents can run simultaneously within layers                                          |
 | **Automatic compilation** | Optimizes workflow structure for efficient execution                                       |
 | **Rich visualization** | Generate visual representations using Graphviz                                                |
@@ -25,36 +26,39 @@ graph TB
     subgraph "GraphWorkflow Architecture"
         A[GraphWorkflow] --> B[Node Collection]
         A --> C[Edge Collection]
-        A --> D[NetworkX Graph]
+        A --> D[Graph Backend]
         A --> E[Execution Engine]
         
         B --> F[Agent Nodes]
         C --> G[Directed Edges]
-        D --> H[Topological Sort]
-        E --> I[Parallel Execution]
-        E --> J[Layer Processing]
+        D --> H[NetworkX Backend]
+        D --> I[Rustworkx Backend]
+        D --> J[Topological Sort]
+        E --> K[Parallel Execution]
+        E --> L[Layer Processing]
         
         subgraph "Node Types"
-            F --> K[Agent Node]
-            K --> L[Agent Instance]
-            K --> M[Node Metadata]
+            F --> M[Agent Node]
+            M --> N[Agent Instance]
+            M --> O[Node Metadata]
         end
         
         subgraph "Edge Types"
-            G --> N[Simple Edge]
-            G --> O[Fan-out Edge]
-            G --> P[Fan-in Edge]
-            G --> Q[Parallel Chain]
+            G --> P[Simple Edge]
+            G --> Q[Fan-out Edge]
+            G --> R[Fan-in Edge]
+            G --> S[Parallel Chain]
         end
         
         subgraph "Execution Patterns"
-            I --> R[Thread Pool]
-            I --> S[Concurrent Futures]
-            J --> T[Layer-by-layer]
-            J --> U[Dependency Resolution]
+            K --> T[Thread Pool]
+            K --> U[Concurrent Futures]
+            L --> V[Layer-by-layer]
+            L --> W[Dependency Resolution]
         end
     end
 ```
+
 
 ## Class Reference
 
@@ -71,6 +75,70 @@ graph TB
 | `task` | `Optional[str]` | The task to be executed by the workflow | `None` |
 | `auto_compile` | `bool` | Whether to automatically compile the workflow | `True` |
 | `verbose` | `bool` | Whether to enable detailed logging | `False` |
+| `backend` | `str` | Graph backend to use ("networkx" or "rustworkx") | `"networkx"` |
+
+## Graph Backends
+
+GraphWorkflow supports two graph backend implementations, each with different performance characteristics:
+
+### NetworkX Backend (Default)
+
+The **NetworkX** backend is the default and most widely compatible option. It provides:
+
+| Feature             | Description                                             |
+|---------------------|---------------------------------------------------------|
+| ✅ Full compatibility | Works out of the box with no additional dependencies   |
+| ✅ Mature ecosystem   | Well-tested and stable                                 |
+| ✅ Rich features      | Comprehensive graph algorithms and operations          |
+| ✅ Python-native      | Pure Python implementation                             |
+
+**Use NetworkX when:**
+
+- You need maximum compatibility
+
+- Working with small to medium-sized graphs (< 1000 nodes)
+
+- You want zero additional dependencies
+
+### Rustworkx Backend (High Performance)
+
+The **Rustworkx** backend provides significant performance improvements for large graphs:
+
+| Feature            | Description                                                     |
+|--------------------|-----------------------------------------------------------------|
+| ⚡ High performance| Rust-based implementation for faster operations                  |
+| ⚡ Memory efficient| Optimized for large-scale graphs                                |
+| ⚡ Scalable        | Better performance with graphs containing 1000+ nodes            |
+| ⚡ Same API        | Drop-in replacement with identical interface                     |
+
+**Use Rustworkx when:**
+
+- Working with large graphs (1000+ nodes)
+
+- Performance is critical
+
+- You can install additional dependencies
+
+**Installation:**
+```bash
+pip install rustworkx
+```
+
+**Note:** If rustworkx is not installed and you specify `backend="rustworkx"`, GraphWorkflow will automatically fall back to NetworkX with a warning.
+
+### Backend Selection
+
+Both backends implement the same `GraphBackend` interface, ensuring complete API compatibility. You can switch between backends without changing your code:
+
+```python
+# Use NetworkX (default)
+workflow = GraphWorkflow(backend="networkx")
+
+# Use Rustworkx for better performance
+workflow = GraphWorkflow(backend="rustworkx")
+```
+
+The backend choice is transparent to the rest of the API - all methods work identically regardless of which backend is used.
 
 ### Core Methods
 
@@ -455,7 +523,7 @@ Constructs a workflow from a list of agents and connections.
 | `entry_points` | `List[str]` | List of entry point node IDs | `None` |
 | `end_points` | `List[str]` | List of end point node IDs | `None` |
 | `task` | `str` | Task to be executed by the workflow | `None` |
-| `**kwargs` | `Any` | Additional keyword arguments | `{}` |
+| `**kwargs` | `Any` | Additional keyword arguments (e.g., `backend`, `verbose`, `auto_compile`) | `{}` |
 
 **Returns:**
 
@@ -464,6 +532,7 @@ Constructs a workflow from a list of agents and connections.
 **Example:**
 
 ```python
+# Using NetworkX backend (default)
 workflow = GraphWorkflow.from_spec(
     agents=[agent1, agent2, agent3],
     edges=[
@@ -473,9 +542,55 @@ workflow = GraphWorkflow.from_spec(
     ],
     task="Analyze market data"
 )
+
+# Using Rustworkx backend for better performance
+workflow = GraphWorkflow.from_spec(
+    agents=[agent1, agent2, agent3],
+    edges=[
+        ("agent1", "agent2"),
+        ("agent2", "agent3"),
+    ],
+    task="Analyze market data",
+    backend="rustworkx"  # Specify backend via kwargs
+)
 ```
 
 ## Examples
+
+### Using Rustworkx Backend for Performance
+
+```python
+from swarms import Agent, GraphWorkflow
+
+# Create agents
+research_agent = Agent(
+    agent_name="ResearchAgent",
+    model_name="gpt-4",
+    max_loops=1
+)
+
+analysis_agent = Agent(
+    agent_name="AnalysisAgent", 
+    model_name="gpt-4",
+    max_loops=1
+)
+
+# Build workflow with rustworkx backend for better performance
+workflow = GraphWorkflow(
+    name="High-Performance-Workflow",
+    backend="rustworkx"  # Use rustworkx backend
+)
+
+workflow.add_node(research_agent)
+workflow.add_node(analysis_agent)
+workflow.add_edge("ResearchAgent", "AnalysisAgent")
+
+# Execute - backend is transparent to the API
+results = workflow.run("What are the latest trends in AI?")
+print(results)
+```
+
+**Note:** Make sure to install rustworkx first: `pip install rustworkx`
 
 ### Basic Sequential Workflow
 
@@ -667,6 +782,46 @@ loaded_workflow = GraphWorkflow.load_from_file(
 new_results = loaded_workflow.run("Continue with quantum cryptography analysis")
 ```
 
+### Large-Scale Workflow with Rustworkx
+
+```python
+from swarms import Agent, GraphWorkflow
+
+# Create a large workflow with many agents
+# Rustworkx backend provides better performance for large graphs
+workflow = GraphWorkflow(
+    name="Large-Scale-Workflow",
+    backend="rustworkx",  # Use rustworkx for better performance
+    verbose=True
+)
+
+# Create many agents (e.g., for parallel data processing)
+agents = []
+for i in range(50):
+    agent = Agent(
+        agent_name=f"Processor{i}",
+        model_name="gpt-4",
+        max_loops=1
+    )
+    agents.append(agent)
+    workflow.add_node(agent)
+
+# Create complex interconnections
+# Rustworkx handles this efficiently
+for i in range(0, 50, 10):
+    source_agents = [f"Processor{j}" for j in range(i, min(i+10, 50))]
+    target_agents = [f"Processor{j}" for j in range(i+10, min(i+20, 50))]
+    if target_agents:
+        workflow.add_parallel_chain(source_agents, target_agents)
+
+# Compile and execute
+workflow.compile()
+status = workflow.get_compilation_status()
+print(f"Compiled workflow with {status['cached_layers_count']} layers")
+
+results = workflow.run("Process large dataset in parallel")
+```
+
 ### Advanced Pattern Detection
 
 ```python
@@ -770,7 +925,8 @@ The `GraphWorkflow` class provides a powerful and flexible framework for orchest
 |-----------------|--------------------------------------------------------------------------------------------------|
 | **Scalability** | Supports workflows with hundreds of agents through efficient parallel execution                  |
 | **Flexibility** | Multiple connection patterns (sequential, fan-out, fan-in, parallel chains)                      |
-| **Performance** | Automatic compilation and optimization for faster execution                                      |
+| **Performance** | Automatic compilation and optimization for faster execution; rustworkx backend for large-scale graphs |
+| **Backend Choice** | Choose between NetworkX (compatibility) or Rustworkx (performance) based on your needs          |
 | **Visualization** | Rich visual representations for workflow understanding and debugging                           |
 | **Persistence** | Complete serialization and deserialization capabilities                                          |
 | **Error Handling** | Comprehensive error handling and recovery mechanisms                                          |
@@ -793,10 +949,28 @@ The `GraphWorkflow` class provides a powerful and flexible framework for orchest
 |---------------------------------------|------------------------------------------------------------------|
 | **Use meaningful agent names**        | Helps with debugging and visualization                           |
 | **Leverage parallel patterns**        | Use fan-out and fan-in for better performance                    |
+| **Choose the right backend**          | Use rustworkx for large graphs (1000+ nodes), networkx for smaller graphs |
 | **Compile workflows**                 | Always compile before execution for optimal performance           |
 | **Monitor execution**                 | Use verbose mode and status reporting for debugging              |
 | **Save important workflows**          | Use serialization for workflow persistence                       |
 | **Handle errors gracefully**          | Implement proper error handling and recovery                     |
 | **Visualize complex workflows**       | Use visualization to understand and debug workflows              |
+
+### Backend Performance Considerations
+
+When choosing between NetworkX and Rustworkx backends:
+
+| Graph Size | Recommended Backend | Reason |
+|------------|-------------------|--------|
+| < 100 nodes | NetworkX | Minimal overhead, no extra dependencies |
+| 100-1000 nodes | NetworkX or Rustworkx | Both perform well, choose based on dependency preferences |
+| 1000+ nodes | Rustworkx | Significant performance benefits for large graphs |
+| Very large graphs (10k+ nodes) | Rustworkx | Essential for acceptable performance |
+
+**Performance Tips:**
+- Rustworkx provides 2-10x speedup for topological operations on large graphs
+- Both backends support the same features and API
+- You can switch backends without code changes
+- Rustworkx uses less memory for large graphs
 
 The GraphWorkflow system represents a significant advancement in multi-agent orchestration, providing the tools needed to build complex, scalable, and maintainable AI workflows.
