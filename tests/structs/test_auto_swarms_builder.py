@@ -60,7 +60,9 @@ def test_agent_building():
         agent = agents[0]
 
         # Create agent from spec
-        agents = swarm.create_agents_from_specs({"agents": [agent_spec]})
+        agents = swarm.create_agents_from_specs(
+            {"agents": [agent_spec]}
+        )
         agent = agents[0]
 
         print("✓ Built agent with configuration:")

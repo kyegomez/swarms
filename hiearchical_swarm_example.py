@@ -38,7 +38,10 @@ swarm = HierarchicalSwarm(
     planning_enabled=True,
 )
 
-out = swarm.run(
-    "Conduct a research analysis on water stocks and etfs"
-)
-print(out)
+
+print(swarm.display_hierarchy())
+
+# out = swarm.run(
+#     "Conduct a research analysis on water stocks and etfs"
+# )
+# print(out)
