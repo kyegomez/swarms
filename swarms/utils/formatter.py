@@ -934,12 +934,21 @@ class Formatter:
     def print_swarm_structure(self, swarm: Any, title: str = "Nested Structure:") -> None:
         """
         Print a visual tree representation of a nested swarm structure using Rich Tree.
+        
+        Note: Rich tree visualization is only available for HierarchicalSwarm instances.
+        Other swarm types will not be visualized.
 
         Args:
             swarm (Any): The root swarm object to visualize.
             title (str): Title to display above the structure. Defaults to "Nested Structure:".
         """
         if not swarm:
+            return
+        
+        # Only use Rich tree for HierarchicalSwarm instances
+        swarm_type_name = type(swarm).__name__
+        if swarm_type_name != "HierarchicalSwarm":
+            # For non-HierarchicalSwarm types, do nothing
             return
         
         # Always print title first using regular print to ensure visibility
