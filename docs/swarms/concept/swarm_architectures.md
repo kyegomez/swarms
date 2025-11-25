@@ -83,6 +83,7 @@ graph TD
 A dynamic architecture where agents rearrange themselves based on task requirements and environmental conditions. Agents can adapt their roles, positions, and relationships to optimize performance for different scenarios.
 
 **Use Cases:**
+
 - Adaptive manufacturing lines that reconfigure based on product requirements
 
 - Dynamic sales territory realignment based on market conditions
@@ -122,6 +123,7 @@ graph TD
 Multiple agents operate independently and simultaneously on different tasks. Each agent works on its own task without dependencies on the others.
 
 **Use Cases:**
+
 - Tasks that can be processed independently, such as parallel data analysis
 
 - Large-scale simulations where multiple scenarios are run simultaneously
@@ -203,6 +205,7 @@ graph TD
 Makes it easy to manage thousands of agents in one place: a CSV file. Initialize any number of agents and run loops of agents on tasks.
 
 **Use Cases:**
+
 - Multi-threaded execution: Execute agents on multiple threads
 
 - Save agent outputs into CSV file
@@ -247,6 +250,7 @@ graph TD
 Multi-agent orchestration pattern that executes tasks in a batched grid format, where each agent processes different tasks simultaneously. Provides structured parallel processing with conversation state management.
 
 **Use Cases:**
+
 - Parallel task processing
 
 - Grid-based agent execution
@@ -285,6 +289,7 @@ graph TD
 Combines multiple agents with different capabilities and expertise to solve complex problems that require diverse skill sets.
 
 **Use Cases:**
+
 - Financial forecasting requiring different analytical approaches
 
 - Complex problem-solving needing diverse expertise
@@ -319,6 +324,7 @@ graph TD
 Organizes agents in a directed acyclic graph (DAG) format, enabling complex dependencies and parallel execution paths.
 
 **Use Cases:**
+
 - AI-driven software development pipelines
 
 - Complex project management with dependencies
@@ -348,6 +354,7 @@ graph TD
 Enables agents to engage in chat-like interactions to reach decisions collaboratively through discussion and consensus building.
 
 **Use Cases:**
+
 - Real-time collaborative decision-making
 
 - Contract negotiations
@@ -382,6 +389,7 @@ graph TD
 Enhanced version of Group Chat with dynamic speaker selection, priority-based communication, and advanced interaction patterns.
 
 **Use Cases:**
+
 - Advanced collaborative decision-making
 
 - Dynamic team coordination
@@ -421,6 +429,7 @@ graph TD
 Intelligently routes tasks to the most appropriate agents or architectures based on task requirements and agent capabilities.
 
 **Use Cases:**
+
 - Dynamic task routing
 
 - Adaptive architecture selection
@@ -458,6 +467,7 @@ graph TD
 High-performance architecture designed for handling intensive computational tasks with multiple agents working on resource-heavy operations.
 
 **Use Cases:**
+
 - Large-scale data processing
 
 - Intensive computational workflows
@@ -493,6 +503,7 @@ graph TD
 Specialized architecture for conducting comprehensive research tasks across multiple domains with iterative refinement and cross-validation.
 
 **Use Cases:**
+
 - Academic research projects
 
 - Market analysis and intelligence
@@ -528,6 +539,7 @@ graph TD
 Architecture specifically designed to reduce and eliminate hallucinations in AI outputs through consensus mechanisms and fact-checking protocols.
 
 **Use Cases:**
+
 - Fact-checking and verification
 
 - Content validation
@@ -564,6 +576,7 @@ graph TD
 Ensemble method that generates multiple candidate responses from a single high-performing model and synthesizes them sequentially using a sliding window approach. Keeps context within bounds while leveraging diversity across samples.
 
 **Use Cases:**
+
 - Response synthesis
 
 - Ensemble methods
@@ -602,6 +615,7 @@ graph TD
 Multiple agents act as a council to evaluate, judge, and validate outputs or decisions through collaborative assessment.
 
 **Use Cases:**
+
 - Quality assessment and validation
 
 - Decision validation processes
@@ -638,6 +652,7 @@ graph TD
 Orchestrates multiple specialized LLM agents to collaboratively answer queries through structured peer review and synthesis. Different models evaluate and rank each other's work, often selecting responses from other models as superior.
 
 **Use Cases:**
+
 - Multi-model collaboration
 
 - Peer review processes
@@ -676,6 +691,7 @@ graph TD
 Debate architecture with self-refinement through a judge agent, enabling Pro and Con agents to debate a topic with iterative refinement. The judge evaluates arguments and provides synthesis for progressive improvement.
 
 **Use Cases:**
+
 - Structured debates
 
 - Argument evaluation
@@ -714,6 +730,7 @@ graph TD
 Specialized architecture for complex language processing tasks that require coordination between multiple language-focused agents.
 
 **Use Cases:**
+
 - Natural language processing pipelines
 
 - Translation and localization
@@ -751,6 +768,7 @@ graph TD
 Agents vote on decisions with the majority determining the final outcome, providing democratic decision-making and error reduction through consensus.
 
 **Use Cases:**
+
 - Democratic decision-making processes
 
 - Consensus building
@@ -789,6 +807,7 @@ graph TD
 Automatically constructs and configures multi-agent systems based on requirements, enabling dynamic system creation and adaptation.
 
 **Use Cases:**
+
 - Dynamic system creation
 
 - Adaptive architectures
@@ -826,6 +845,7 @@ graph TD
 Orchestrates multiple swarms in sequential or parallel flow patterns with thread-safe operations and flow validation. Provides comprehensive swarm management and coordination capabilities.
 
 **Use Cases:**
+
 - Multi-swarm orchestration
 
 - Flow pattern management
@@ -867,6 +887,7 @@ graph TD
 Combines hierarchical and peer-to-peer communication patterns for complex workflows that require both centralized coordination and distributed collaboration.
 
 **Use Cases:**
+
 - Complex enterprise workflows
 
 - Multi-department coordination
@@ -908,6 +929,7 @@ graph TD
 Agents participate in democratic voting processes to select leaders or make collective decisions.
 
 **Use Cases:**
+
 - Democratic governance
 
 - Consensus building
@@ -949,6 +971,7 @@ graph TD
 Adaptive conversation management with dynamic agent selection and interaction patterns.
 
 **Use Cases:**
+
 - Adaptive chatbots
 
 - Dynamic customer service
@@ -988,6 +1011,7 @@ graph TD
 Hierarchical tree structure for organizing agents in parent-child relationships.
 
 **Use Cases:**
+
 - Organizational hierarchies
 
 - Decision trees
