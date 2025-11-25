@@ -1,44 +1,69 @@
-
-# CRCAgent
+<!-- swarms/agents/cr_ca_agent.py — CRCAAgent (CR‑CA Lite) -->
+# CRCAAgent 
 
 Short summary
 -------------
-CRCAgent is a lightweight, auditable causal simulation core implemented in
-pure Python and intended as the deterministic CR‑CA engine for Swarms.
-It focuses on the core ASTT primitives: a causal DAG, a linear structural
+CRCAAgent is a lightweight causal reasoning Agent with LLM integration,
+implemented in pure Python and intended as a flexible CR‑CA engine for Swarms.
+It provides both LLM-based causal analysis and deterministic causal simulation,
+focusing on the core ASTT primitives: a causal DAG, a linear structural
 evolution operator (in z-space), and compact counterfactual generation.
 
 Key properties
-- Minimal dependencies (numpy + stdlib)
+- LLM integration for sophisticated causal reasoning (like full CRCAAgent)
+- Dual-mode operation: LLM-based analysis and deterministic simulation
+- Minimal dependencies (numpy + swarms Agent base)
 - Pure-Python causal graph (adjacency dicts)
 - Linear SCM evolution by default (overrideable)
-- Agent-first `run()` entrypoint (accepts dict or JSON payloads)
+- Agent-first `run()` entrypoint (accepts task string or dict/JSON payloads)
 
 Canonical import
 ----------------
 Use the canonical agent import in application code:
 
 ```python
-from swarms.agents.cr_ca_agent import CRCAgent
+from swarms.agents.cr_ca_agent import CRCAAgent
 ```
 
 Quickstart
 ----------
-Minimal example — initialize, add edges, evolve state and get counterfactuals:
+Minimal example — deterministic mode: initialize, add edges, evolve state and get counterfactuals:
 
 ```python
-from swarms.agents.cr_ca_agent import CRCAgent
+from swarms.agents.cr_ca_agent import CRCAAgent
 
-agent = CRCAgent(variables=["price", "demand", "inventory"])
+agent = CRCAAgent(variables=["price", "demand", "inventory"])
 agent.add_causal_relationship("price", "demand", strength=-0.5)
 agent.add_causal_relationship("demand", "inventory", strength=-0.2)
 
 state = {"price": 100.0, "demand": 1000.0, "inventory": 5000.0}
-out = agent.run(state, target_variables=["price", "demand"], max_steps=1)
+out = agent.run(initial_state=state, target_variables=["price", "demand"], max_steps=1)
 
 print("Evolved:", out["evolved_state"])            # evolved world state
 for sc in out["counterfactual_scenarios"][:5]:      # candidate CFs
     print(sc.name, sc.interventions, sc.probability)
+```
+
+LLM-based causal analysis example
+----------------------------------
+
+```python
+from swarms.agents.cr_ca_agent import CRCAAgent
+
+agent = CRCAAgent(
+    variables=["price", "demand", "inventory"],
+    model_name="gpt-4o",
+    max_loops=3
+)
+agent.add_causal_relationship("price", "demand", strength=-0.5)
+
+# LLM mode: pass task as string
+task = "Analyze how increasing price affects demand and inventory levels"
+result = agent.run(task=task)
+
+print("Causal Analysis:", result["causal_analysis"])
+print("Counterfactual Scenarios:", result["counterfactual_scenarios"])
+print("Analysis Steps:", result["analysis_steps"])
 ```
 
 Agent-style JSON payload example (orchestrators)
@@ -46,75 +71,90 @@ Agent-style JSON payload example (orchestrators)
 
 ```python
 import json
-from swarms.agents.cr_ca_agent import CRCAgent
+from swarms.agents.cr_ca_agent import CRCAAgent
 
-agent = CRCAgent(variables=["price","demand","inventory"])
+agent = CRCAAgent(variables=["price","demand","inventory"])
 payload = json.dumps({"price": 100.0, "demand": 1000.0})
-out = agent.run(payload, target_variables=["price"], max_steps=1)
+out = agent.run(initial_state=payload, target_variables=["price"], max_steps=1)
 print(out["evolved_state"])
 ```
 
 Why use `run()`
 --------------
-- Accepts both dict and JSON payloads for flexible integration.
-- Evolves the world state for `max_steps` using the deterministic evolution
-  operator, then generates counterfactuals from the evolved state (consistent timelines).
-- Returns a compact result dict used across Swarms agents.
+- **Dual-mode operation**: Automatically selects LLM mode (task string) or deterministic mode (initial_state dict)
+- **LLM mode**: Performs sophisticated multi-loop causal reasoning with structured output
+- **Deterministic mode**: Evolves the world state for `max_steps` using the deterministic evolution
+  operator, then generates counterfactuals from the evolved state (consistent timelines)
+- Accepts both dict and JSON payloads for flexible integration
+- Returns a compact result dict used across Swarms agents
 
 Architecture (high level)
 -------------------------
 
 ```mermaid
-flowchart LR
-  subgraph Ingestion["Input / Ingestion"]
-    I1["Initial state"]
-    I2["Historical data"]
+flowchart TB
+  subgraph Input[Input]
+    I1[Task string]
+    I2[Initial state dict]
   end
 
-  subgraph Modeling["Causal Model"]
-    G1["Causal graph"]
-    G2["Add/update edges"]
-    G3["Standardization stats"]
+  I1 -->|String| LLM[LLM Mode]
+  I2 -->|Dict| DET[Deterministic Mode]
+
+  subgraph LLMFlow[LLM Causal Analysis]
+    LLM --> P1[Build Causal Prompt]
+    P1 --> L1[LLM Step 1]
+    L1 --> L2[LLM Step 2...N]
+    L2 --> SYN[Synthesize Analysis]
+    SYN --> CF1[Generate Counterfactuals]
   end
 
-  subgraph Preproc["Preprocessing"]
-    P1["ensure_standardization_stats"]
-    P2["Standardize to z-space"]
+  subgraph DetFlow[Deterministic Simulation]
+    DET --> P2[ensure_standardization_stats]
+    P2 --> P3[Standardize to z-space]
+    P3 --> T[Topological sort]
+    T --> E[predict_outcomes linear SCM]
+    E --> D[De-standardize outputs]
+    D --> R[Timeline rollout]
+    R --> CF2[Generate Counterfactuals]
   end
 
-  subgraph Engine["Lite Engine"]
-    T["Topological sort"]
-    E["predict_outcomes (linear SCM)"]
-    D["De-standardize outputs"]
-    R["run (timeline rollout)"]
+  subgraph Model[Causal Model]
+    G1[Causal graph]
+    G2[Edge strengths]
+    G3[Standardization stats]
   end
 
-  subgraph CF["Counterfactuals"]
-    C1["generate_counterfactual_scenarios"]
-    C2["Abduction–Action–Prediction"]
-    S["Scenario scoring"]
+  subgraph Output[Outputs]
+    O1[Causal analysis / Evolved state]
+    O2[Counterfactual scenarios]
+    O3[Causal graph info]
   end
 
-  subgraph Analysis["Outputs / Analysis"]
-    O1["Evolved state"]
-    O2["Counterfactual scenarios"]
-    O3["Causal paths / visualization"]
-  end
-
-  I1 --> P1 --> P2 --> G1
-  I2 --> G2 --> G1
-  G3 --> P2
-  G1 --> T --> E --> D --> R
-  R --> C1 --> C2 --> S --> O2
+  G1 --> LLMFlow
+  G1 --> DetFlow
+  G2 --> DetFlow
+  G3 --> DetFlow
+  CF1 --> O2
+  CF2 --> O2
+  SYN --> O1
   R --> O1
-  T --> O3
-
+  G1 --> O3
 ```
 
 Complete method index (quick)
 -----------------------------
-The following is the public surface implemented by `CRCAgent` in
-`swarms/agents/cr_ca_agent.py`. See the code for full docstrings and math.
+The following is the public surface implemented by `CRCAAgent` (Lite) in
+`ceca_lite/crca-lite.py` (canonical import: `swarms/agents/cr_ca_agent.py`).
+See the code for full docstrings and math.
+
+LLM integration
+- `_get_cr_ca_schema()` — CR-CA function calling schema for structured reasoning
+- `step(task)` — Execute a single step of LLM-based causal reasoning
+- `_build_causal_prompt(task)` — Build causal analysis prompt with graph context
+- `_build_memory_context()` — Build memory context from previous analysis steps
+- `_synthesize_causal_analysis(task)` — Synthesize final causal analysis using LLM
+- `_run_llm_causal_analysis(task)` — Run multi-loop LLM-based causal analysis
 
 Core graph & state
 - `_ensure_node_exists(node)` — ensure node present in internal maps
@@ -142,14 +182,23 @@ Estimation, analysis & utilities
 - `identify_causal_chain(start, end)` — BFS shortest path
 - `detect_change_points(series, threshold=2.5)` — simple detector
 
-Advanced functions (Restricted((Does exist)))
+Advanced (optional / Pro)
 - `learn_structure(...)`, `plan_interventions(...)`, `gradient_based_intervention_optimization(...)`,
   `convex_intervention_optimization(...)`, `evolutionary_multi_objective_optimization(...)`,
   `probabilistic_nested_simulation(...)`, `deep_root_cause_analysis(...)`, and more.
 
 Return shape from `run()`
 -------------------------
-`run()` returns a dictionary with at least the following keys:
+`run()` returns a dictionary with different keys depending on mode:
+
+**LLM Mode** (when `task` is a string):
+- `task`: the provided task/problem string
+- `causal_analysis`: synthesized causal analysis report (string)
+- `counterfactual_scenarios`: list of `CounterfactualScenario` objects
+- `causal_graph_info`: {"nodes": [...], "edges": [...], "is_dag": bool}
+- `analysis_steps`: list of analysis steps with memory context
+
+**Deterministic Mode** (when `initial_state` is a dict):
 - `initial_state`: the provided input state (dict)
 - `evolved_state`: state after applying `max_steps` of the evolution operator
 - `counterfactual_scenarios`: list of `CounterfactualScenario` with name/interventions/expected_outcomes/probability/reasoning
@@ -158,28 +207,45 @@ Return shape from `run()`
 
 Usage patterns & examples
 -------------------------
-1) Script-style (preferred for simple programs)
+1) LLM-based causal analysis (sophisticated reasoning)
 
 ```python
-agent = CRCAgent(variables=["a","b","c"])
+agent = CRCAAgent(
+    variables=["a","b","c"],
+    model_name="gpt-4o",
+    max_loops=3
+)
+agent.add_causal_relationship("a","b", strength=0.8)
+
+# LLM mode: pass task as string
+task = "Analyze the causal relationship between a and b"
+res = agent.run(task=task)
+print(res["causal_analysis"])
+print(res["analysis_steps"])
+```
+
+2) Deterministic simulation (script-style)
+
+```python
+agent = CRCAAgent(variables=["a","b","c"])
 agent.add_causal_relationship("a","b", strength=0.8)
 state = {"a":1.0, "b":2.0, "c":3.0}
-res = agent.run(state, max_steps=2)
+res = agent.run(initial_state=state, max_steps=2)
 print(res["evolved_state"])
 ```
 
-2) Orchestration / agent-style (JSON payloads)
+3) Orchestration / agent-style (JSON payloads)
 
 ```python
 payload = '{"a":1.0,"b":2.0,"c":3.0}'
-res = agent.run(payload, max_steps=1)
+res = agent.run(initial_state=payload, max_steps=1)
 if "error" in res:
     print("Bad payload:", res["error"])
 else:
     print("Evolved:", res["evolved_state"])
 ```
 
-3) Lower-level testing & research
+4) Lower-level testing & research
 
 ```python
 pred = agent._predict_outcomes({"a":1.0,"b":2.0},{"a":0.0})
@@ -188,19 +254,28 @@ print(pred)
 
 Design notes & limitations
 --------------------------
-- Linearity: default `_predict_outcomes` is linear in standardized z-space. To model non-linear dynamics, subclass `CRCAgent` and override `_predict_outcomes`.
-- Probabilities: scenario probability is a heuristic proximity measure (Mahalanobis-like) — not a formal posterior.
-- Stats: the engine auto-fills standardization stats with sensible defaults (`mean=observed`, `std=1.0`) via `ensure_standardization_stats` to avoid degenerate std=0 cases.
-- Dependencies: Lite intentionally avoids heavy libs (pandas/scipy/cvxpy/LLM) in the core file.
+- **LLM Integration**: Uses swarms Agent infrastructure for LLM calls. Configure model via `model_name` parameter. Multi-loop reasoning enabled by default.
+- **Dual-mode operation**: Automatically selects LLM mode (task string) or deterministic mode (initial_state dict). Both modes generate counterfactuals using deterministic methods.
+- **Linearity**: default `_predict_outcomes` is linear in standardized z-space. To model non-linear dynamics, subclass `CRCAAgent` and override `_predict_outcomes`.
+- **Probabilities**: scenario probability is a heuristic proximity measure (Mahalanobis-like) — not a formal posterior.
+- **Stats**: the engine auto-fills standardization stats with sensible defaults (`mean=observed`, `std=1.0`) via `ensure_standardization_stats` to avoid degenerate std=0 cases.
+- **Dependencies**: Lite intentionally avoids heavy libs (pandas/scipy/cvxpy) but includes LLM integration via swarms Agent base.
 
 Extending & integration
 -----------------------
 For advanced capabilities (structure learning, Bayesian inference, optimization,
-LLM-driven analysis), build separate modules that import `CRCAgent` as the
-deterministic simulation core and add the richer logic there (keeps Lite auditable).
+extensive statistical methods), use the full `CRCAAgent` in `swarms/agents/cr_ca_agent.py`.
+The Lite version provides core causal reasoning with LLM support while maintaining minimal dependencies.
 
 References
 ----------
 - Pearl, J. (2009). *Causality: Models, Reasoning, and Inference*.
 - Pearl, J., & Mackenzie, D. (2018). *The Book of Why*.
+
+---
+CRCAAgent (Lite) — lightweight causal reasoning Agent with LLM integration for Swarms.
+
+Implementation: `ceca_lite/crca-lite.py`  
+Canonical import: `from swarms.agents.cr_ca_agent import CRCAAgent`
+
 
