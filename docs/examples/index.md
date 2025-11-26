@@ -149,9 +149,9 @@ This index organizes **100+ production-ready examples** from our [Swarms Example
 ### Hierarchical and Sequential Workflows
 | Category | Example | Description |
 |----------|---------|-------------|
-| Hierarchical | [Hierarchical Swarm Example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hiearchical_swarm/hiearchical_examples/hierarchical_swarm_example.py) | Multi-level hierarchical agent organization |
-| Hierarchical Basic | [Hierarchical Swarm Basic](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hiearchical_swarm/hiearchical_swarm-example.py) | Simplified hierarchical swarm implementation |
-| Hierarchical Advanced | [Hierarchical Advanced](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hiearchical_swarm/hierarchical_swarm_example.py) | Advanced hierarchical swarm with complex agent relationships |
+| Hierarchical | [Hierarchical Swarm Example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hierarchical_swarm/hierarchical_examples/hierarchical_swarm_example.py) | Multi-level hierarchical agent organization |
+| Hierarchical Basic | [Hierarchical Swarm Basic](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hierarchical_swarm/hierarchical_swarm-example.py) | Simplified hierarchical swarm implementation |
+| Hierarchical Advanced | [Hierarchical Advanced](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hierarchical_swarm/hierarchical_swarm_example.py) | Advanced hierarchical swarm with complex agent relationships |
 | Sequential Workflow | [Sequential Workflow Example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/sequential_workflow/sequential_workflow_example.py) | Linear workflow with agents processing tasks in sequence |
 | Sequential Swarm | [Sequential Swarm Example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/sequential_workflow/sequential_swarm_example.py) | Sequential swarm with coordinated task execution |
 
