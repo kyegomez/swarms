@@ -19,7 +19,6 @@ References:
 
 import asyncio
 import contextlib
-import json
 import random
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
