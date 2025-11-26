@@ -26,3 +26,6 @@ numpy
 schedule
 uvloop; sys_platform == 'linux' or sys_platform == 'darwin' # linux or macos only
 winloop; sys_platform == 'win32' # windows only
+opentelemetry-api>=1.20.0
+opentelemetry-sdk>=1.20.0
+opentelemetry-exporter-otlp>=1.20.0
