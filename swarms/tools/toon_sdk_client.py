@@ -19,6 +19,7 @@ References:
 
 import asyncio
 import contextlib
+import os
 import random
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -39,7 +40,6 @@ from swarms.schemas.toon_schemas import (
     TOONSerializationOptions,
     TOONToolDefinition,
 )
-from swarms.utils.index import exists
 
 
 # Custom Exceptions

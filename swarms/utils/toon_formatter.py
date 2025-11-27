@@ -18,7 +18,7 @@ References:
 
 import json
 import re
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 

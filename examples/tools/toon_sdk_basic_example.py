@@ -15,7 +15,6 @@ Expected Output:
     - TOON format: ~75 tokens (50% reduction)
 """
 
-import asyncio
 from swarms.schemas.toon_schemas import TOONConnection
 from swarms.tools.toon_sdk_client import (
     TOONSDKClient,
@@ -136,7 +135,7 @@ def example_2_sdk_client():
             verbose=True,
         )
 
-        print(f"\nTOON Encoded:")
+        print("\nTOON Encoded:")
         print(toon_str)
 
         # Synchronous decoding
@@ -146,11 +145,11 @@ def example_2_sdk_client():
             verbose=True,
         )
 
-        print(f"\nDecoded JSON:")
+        print("\nDecoded JSON:")
         print(decoded)
 
     except Exception as e:
-        print(f"\nNote: This example requires a valid TOON API key.")
+        print("\nNote: This example requires a valid TOON API key.")
         print(f"Error: {e}")
 
 
@@ -198,7 +197,7 @@ async def example_3_async_sdk():
                 print(f"Product {i+1} JSON: {decoded}")
 
     except Exception as e:
-        print(f"\nNote: This example requires a valid TOON API key.")
+        print("\nNote: This example requires a valid TOON API key.")
         print(f"Error: {e}")
 
 
@@ -241,9 +240,9 @@ def example_4_llm_prompt_optimization():
     print(f"Reduction: {(1 - len(toon_str)/len(json_str)):.1%}")
 
     # Show sample
-    print(f"\nFirst 200 chars of JSON:")
+    print("\nFirst 200 chars of JSON:")
     print(json_str[:200] + "...")
-    print(f"\nFirst 200 chars of TOON:")
+    print("\nFirst 200 chars of TOON:")
     print(toon_str[:200] + "...")
 
 

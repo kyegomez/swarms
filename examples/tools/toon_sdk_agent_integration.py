@@ -17,11 +17,10 @@ Expected Benefits:
     - More context within token limits
 """
 
-import asyncio
 from swarms import Agent
-from swarms.schemas.toon_schemas import TOONConnection, TOONSerializationOptions
+from swarms.schemas.toon_schemas import TOONConnection
 from swarms.tools.toon_sdk_client import TOONSDKClient
-from swarms.utils.toon_formatter import TOONFormatter, optimize_for_llm
+from swarms.utils.toon_formatter import TOONFormatter
 
 
 # Example 1: Agent with TOON-Optimized System Prompt
@@ -141,15 +140,17 @@ def example_2_multi_agent_toon():
             "currency": "USD",
         }
 
-    collector_agent = Agent(
-        agent_name="Data-Collector",
-        model_name="gpt-4o",
-        max_loops=1,
-        tools=[collect_sales_data],
-        system_prompt="""You are a data collection agent.
-Collect sales data using the collect_sales_data tool.
-Format your output as structured data only, no commentary.""",
-    )
+    # Agent 1: Data Collector (optional - could be used for automated collection)
+    # For this example, we'll use the tool directly
+    # collector_agent = Agent(
+    #     agent_name="Data-Collector",
+    #     model_name="gpt-4o",
+    #     max_loops=1,
+    #     tools=[collect_sales_data],
+    #     system_prompt="""You are a data collection agent.
+    # Collect sales data using the collect_sales_data tool.
+    # Format your output as structured data only, no commentary.""",
+    # )
 
     # Agent 2: Data Analyzer (receives TOON-compressed data)
     analyzer_agent = Agent(
@@ -225,7 +226,7 @@ async def example_3_toon_tool_registry():
             openai_tools = client.get_tools_as_openai_format()
 
             # Create agent with TOON tools
-            agent = Agent(
+            toon_agent = Agent(
                 agent_name="TOON-Enabled-Agent",
                 model_name="gpt-4o",
                 max_loops=1,
@@ -235,10 +236,10 @@ These tools automatically compress data for efficient processing.
 Use them to retrieve and analyze information.""",
             )
 
-            print("\nAgent created with TOON tools!")
+            print(f"\nAgent '{toon_agent.agent_name}' created with {len(openai_tools)} TOON tools!")
 
     except Exception as e:
-        print(f"\nNote: Requires valid TOON API key")
+        print("\nNote: Requires valid TOON API key")
         print(f"Error: {e}")
 
 
