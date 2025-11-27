@@ -2493,9 +2493,9 @@ This index organizes **100+ production-ready examples** from our [Swarms Example
 ### Hierarchical and Sequential Workflows
 | Category | Example | Description |
 |----------|---------|-------------|
-| Hierarchical | [Hierarchical Swarm Example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hiearchical_swarm/hiearchical_examples/hierarchical_swarm_example.py) | Multi-level hierarchical agent organization |
-| Hierarchical Basic | [Hierarchical Swarm Basic](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hiearchical_swarm/hiearchical_swarm-example.py) | Simplified hierarchical swarm implementation |
-| Hierarchical Advanced | [Hierarchical Advanced](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hiearchical_swarm/hierarchical_swarm_example.py) | Advanced hierarchical swarm with complex agent relationships |
+| Hierarchical | [Hierarchical Swarm Example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hierarchical_swarm/hierarchical_examples/hierarchical_swarm_example.py) | Multi-level hierarchical agent organization |
+| Hierarchical Basic | [Hierarchical Swarm Basic](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hierarchical_swarm/hierarchical_swarm-example.py) | Simplified hierarchical swarm implementation |
+| Hierarchical Advanced | [Hierarchical Advanced](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hierarchical_swarm/hierarchical_swarm_example.py) | Advanced hierarchical swarm with complex agent relationships |
 | Sequential Workflow | [Sequential Workflow Example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/sequential_workflow/sequential_workflow_example.py) | Linear workflow with agents processing tasks in sequence |
 | Sequential Swarm | [Sequential Swarm Example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/sequential_workflow/sequential_swarm_example.py) | Sequential swarm with coordinated task execution |
 
@@ -21048,9 +21048,9 @@ dispute_swarm = SwarmRouter(
 )
 
 
-hybrid_hiearchical_swarm = HybridHierarchicalClusterSwarm(
-    name="hybrid-hiearchical-swarm",
-    description="A hybrid hiearchical swarm that uses a hybrid hiearchical peer model to solve complex tasks.",
+hybrid_hierarchical_swarm = HybridHierarchicalClusterSwarm(
+    name="hybrid-hierarchical-swarm",
+    description="A hybrid hierarchical swarm that uses a hybrid hierarchical peer model to solve complex tasks.",
     swarms=[
         litigation_swarm,
         corporate_swarm,
@@ -21065,7 +21065,7 @@ hybrid_hiearchical_swarm = HybridHierarchicalClusterSwarm(
 
 
 if __name__ == "__main__":
-    hybrid_hiearchical_swarm.run(
+    hybrid_hierarchical_swarm.run(
         "What is the best way to file for a patent? for ai technology "
     )
 
@@ -21083,7 +21083,7 @@ This page provides simple, practical examples of how to use the `HierarchicalSwa
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized financial analysis agents
 market_research_agent = Agent(
@@ -21131,7 +21131,7 @@ print(result)
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized development agents
 frontend_developer_agent = Agent(
@@ -21179,7 +21179,7 @@ print(result)
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create analysis agents
 market_agent = Agent(
@@ -21213,7 +21213,7 @@ print("Director Feedback:", feedback)
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create analysis agents
 market_agent = Agent(
@@ -21253,7 +21253,7 @@ for i, result in enumerate(results):
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized research agents
 research_manager = Agent(
@@ -41395,7 +41395,7 @@ flowchart TD
 ```python
 
 from swarms import Agent, SwarmRouter
-from swarms.structs.hybrid_hiearchical_peer_swarm import (
+from swarms.structs.hybrid_hierarchical_peer_swarm import (
     HybridHierarchicalClusterSwarm,
 )
 
@@ -41493,9 +41493,9 @@ dispute_swarm = SwarmRouter(
 )
 
 
-hybrid_hiearchical_swarm = HybridHierarchicalClusterSwarm(
-    name="hybrid-hiearchical-swarm",
-    description="A hybrid hiearchical swarm that uses a hybrid hiearchical peer model to solve complex tasks.",
+hybrid_hierarchical_swarm = HybridHierarchicalClusterSwarm(
+    name="hybrid-hierarchical-swarm",
+    description="A hybrid hierarchical swarm that uses a hybrid hierarchical peer model to solve complex tasks.",
     swarms=[
         litigation_swarm,
         corporate_swarm,
@@ -41510,7 +41510,7 @@ hybrid_hiearchical_swarm = HybridHierarchicalClusterSwarm(
 
 
 if __name__ == "__main__":
-    hybrid_hiearchical_swarm.run(
+    hybrid_hierarchical_swarm.run(
         "What is the best way to file for a patent? for ai technology "
     )
 
@@ -41788,7 +41788,7 @@ Executes the hierarchical swarm for a specified number of feedback loops, proces
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized agents
 research_agent = Agent(
@@ -41841,7 +41841,7 @@ Runs a single step of the hierarchical swarm, executing one complete cycle of pl
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create development agents
 frontend_agent = Agent(
@@ -41894,7 +41894,7 @@ Executes the hierarchical swarm for a list of tasks, processing each task throug
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create analysis agents
 market_agent = Agent(
@@ -41936,7 +41936,7 @@ for i, result in enumerate(results):
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized financial agents
 market_research_agent = Agent(
@@ -41984,7 +41984,7 @@ print(result)
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized development agents
 frontend_developer_agent = Agent(
@@ -42392,7 +42392,7 @@ Hierarchical architectures enable structured, iterative, and scalable problem-so
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized agents
 research_agent = Agent(

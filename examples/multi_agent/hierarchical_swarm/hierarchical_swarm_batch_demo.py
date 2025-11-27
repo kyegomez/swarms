@@ -8,7 +8,7 @@ to handle multiple tasks sequentially with real-time feedback.
 
 import time
 from typing import Callable
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 from swarms.agents import Agent
 
 

@@ -15,7 +15,7 @@ The streaming callback allows you to:
 import time
 
 from swarms.structs.agent import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 
 def streaming_callback(agent_name: str, chunk: str, is_final: bool):

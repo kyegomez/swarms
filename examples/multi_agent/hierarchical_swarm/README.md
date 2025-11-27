@@ -12,14 +12,14 @@ This directory contains examples demonstrating hierarchical swarm patterns for m
 - [hierarchical_swarm_streaming_example.py](hierarchical_swarm_streaming_example.py) - Streaming example
 - [hs_interactive.py](hs_interactive.py) - Interactive hierarchical swarm
 - [hs_stock_team.py](hs_stock_team.py) - Stock trading team
-- [hybrid_hiearchical_swarm.py](hybrid_hiearchical_swarm.py) - Hybrid approach
-- [sector_analysis_hiearchical_swarm.py](sector_analysis_hiearchical_swarm.py) - Sector analysis
+- [hybrid_hierarchical_swarm.py](hybrid_hierarchical_swarm.py) - Hybrid approach
+- [sector_analysis_hierarchical_swarm.py](sector_analysis_hierarchical_swarm.py) - Sector analysis
 - [display_hierarchy_example.py](display_hierarchy_example.py) - Visualize swarm hierarchy structure
 
 ## Subdirectories
 
-- [hiearchical_examples/](hiearchical_examples/) - Additional hierarchical examples
-- [hiearchical_swarm_ui/](hiearchical_swarm_ui/) - UI components for hierarchical swarms
+- [hierarchical_examples/](hierarchical_examples/) - Additional hierarchical examples
+- [hierarchical_swarm_ui/](hierarchical_swarm_ui/) - UI components for hierarchical swarms
 
 ## Overview
 

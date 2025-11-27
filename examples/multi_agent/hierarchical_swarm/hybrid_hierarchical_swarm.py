@@ -1,5 +1,5 @@
 from swarms import Agent, SwarmRouter
-from swarms.structs.hybrid_hiearchical_peer_swarm import (
+from swarms.structs.hybrid_hierarchical_peer_swarm import (
     HybridHierarchicalClusterSwarm,
 )
 
@@ -103,9 +103,9 @@ dispute_swarm = SwarmRouter(
 )
 
 
-hybrid_hiearchical_swarm = HybridHierarchicalClusterSwarm(
-    name="hybrid-hiearchical-swarm",
-    description="A hybrid hiearchical swarm that uses a hybrid hiearchical peer model to solve complex tasks.",
+hybrid_hierarchical_swarm = HybridHierarchicalClusterSwarm(
+    name="hybrid-hierarchical-swarm",
+    description="A hybrid hierarchical swarm that uses a hybrid hierarchical peer model to solve complex tasks.",
     swarms=[
         litigation_swarm,
         corporate_swarm,
@@ -120,6 +120,6 @@ hybrid_hiearchical_swarm = HybridHierarchicalClusterSwarm(
 
 
 if __name__ == "__main__":
-    hybrid_hiearchical_swarm.run(
+    hybrid_hierarchical_swarm.run(
         "What are the most effective methods for filing a patent in the field of AI technology? Please provide a list of user-friendly platforms that facilitate the patent filing process, along with their website links."
     )

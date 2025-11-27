@@ -85,7 +85,7 @@ Displays a visual tree representation of the hierarchical swarm structure, showi
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized agents
 research_agent = Agent(
@@ -160,7 +160,7 @@ Executes the hierarchical swarm for a specified number of feedback loops, proces
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized agents
 research_agent = Agent(
@@ -194,7 +194,7 @@ print(result)
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 def streaming_callback(agent_name: str, chunk: str, is_final: bool):
     """Callback function for real-time streaming of agent outputs."""
@@ -270,7 +270,7 @@ Execute the hierarchical swarm for multiple tasks in sequence. Processes a list 
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create analysis agents
 market_agent = Agent(
@@ -312,7 +312,7 @@ for i, result in enumerate(results):
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized financial agents
 market_research_agent = Agent(
@@ -360,7 +360,7 @@ print(result)
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized development agents
 frontend_developer_agent = Agent(

@@ -395,7 +395,7 @@ def test_spreadsheet_swarm():
 def test_hierarchical_swarm():
     """Test HierarchicalSwarm structure"""
     try:
-        from swarms.structs.hiearchical_swarm import SwarmSpec
+        from swarms.structs.hierarchical_swarm import SwarmSpec
         from swarms.utils.litellm_wrapper import LiteLLM
 
         # Create worker agents
