@@ -215,6 +215,48 @@ result = research_swarm.run(task=task)
 print(result)
 ```
 
+## Visualizing Swarm Hierarchy
+
+You can visualize the hierarchical structure of your swarm before executing tasks using the `display_hierarchy()` method:
+
+```python
+from swarms import Agent
+from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+
+# Create specialized agents
+research_agent = Agent(
+    agent_name="Research-Analyst",
+    agent_description="Specialized in comprehensive research and data gathering",
+    model_name="gpt-4o-mini",
+)
+
+analysis_agent = Agent(
+    agent_name="Data-Analyst",
+    agent_description="Expert in data analysis and pattern recognition",
+    model_name="gpt-4o-mini",
+)
+
+strategy_agent = Agent(
+    agent_name="Strategy-Consultant",
+    agent_description="Specialized in strategic planning and recommendations",
+    model_name="gpt-4o-mini",
+)
+
+# Create hierarchical swarm
+swarm = HierarchicalSwarm(
+    name="Swarms Corporation Operations",
+    description="Enterprise-grade hierarchical swarm for complex task execution",
+    agents=[research_agent, analysis_agent, strategy_agent],
+    max_loops=1,
+    director_model_name="claude-haiku-4-5",
+)
+
+# Display the hierarchy visualization
+swarm.display_hierarchy()
+```
+
+This will output a visual tree structure showing the Director and all worker agents, making it easy to understand the swarm's organizational structure before executing tasks.
+
 ## Key Takeaways
 
 1. **Agent Specialization**: Create agents with specific, well-defined expertise areas
@@ -222,5 +264,6 @@ print(result)
 3. **Appropriate Loop Count**: Set `max_loops` based on task complexity (1-3 for most tasks)
 4. **Verbose Logging**: Enable verbose mode during development for debugging
 5. **Context Preservation**: The swarm maintains full conversation history automatically
+6. **Hierarchy Visualization**: Use `display_hierarchy()` to visualize swarm structure before execution
 
 For more detailed information about the `HierarchicalSwarm` API and advanced usage patterns, see the [main documentation](hierarchical_swarm.md). 

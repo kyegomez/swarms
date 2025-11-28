@@ -22,6 +22,8 @@ from swarms.agents.create_agents_from_yaml import (
 
 from swarms.structs.agent import Agent
 from swarms.structs.agent_loader import AgentLoader
+from swarms.structs.llm_council import LLMCouncil
+from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.utils.formatter import formatter
 
 load_dotenv()
@@ -625,6 +627,18 @@ def create_command_table() -> Table:
             "setup-check",
             "Run a comprehensive environment setup check",
         ),
+        (
+            "llm-council",
+            "Run the LLM Council with multiple agents collaborating on a task",
+        ),
+        (
+            "heavy-swarm",
+            "Run HeavySwarm with specialized agents for complex task analysis",
+        ),
+        (
+            "features",
+            "Display all available features and actions in a comprehensive table",
+        ),
     ]
 
     for cmd, desc in commands:
@@ -639,7 +653,7 @@ def create_detailed_command_table() -> Table:
         show_header=True,
         header_style=f"bold {COLORS['primary']}",
         border_style=COLORS["secondary"],
-        title="🚀 Swarms CLI - Complete Command Reference",
+        title="🚀Swarms CLI - Complete Command Reference",
         title_style=f"bold {COLORS['primary']}",
         padding=(0, 1),
         show_lines=True,
@@ -744,6 +758,27 @@ def create_detailed_command_table() -> Table:
             "usage": "swarms setup-check [--verbose]",
             "args": "--verbose",
         },
+        {
+            "cmd": "llm-council",
+            "category": "Collaboration",
+            "desc": "Run LLM Council with multiple agents",
+            "usage": "swarms llm-council --task 'Your question here' [--verbose]",
+            "args": "--task, --verbose",
+        },
+        {
+            "cmd": "heavy-swarm",
+            "category": "Execution",
+            "desc": "Run HeavySwarm with specialized agents",
+            "usage": "swarms heavy-swarm --task 'Your task here' [--loops-per-agent 1] [--question-agent-model-name gpt-4o-mini] [--worker-model-name gpt-4o-mini] [--random-loops-per-agent] [--verbose]",
+            "args": "--task, --loops-per-agent, --question-agent-model-name, --worker-model-name, --random-loops-per-agent, --verbose",
+        },
+        {
+            "cmd": "features",
+            "category": "Info",
+            "desc": "Display all available features and actions",
+            "usage": "swarms features",
+            "args": "None",
+        },
     ]
 
     for cmd_info in commands:
@@ -756,6 +791,225 @@ def create_detailed_command_table() -> Table:
         )
 
     return table
+
+
+def show_features():
+    """
+    Display all available CLI features and actions in a comprehensive table.
+    """
+    console.print(
+        "\n[bold]🚀 Swarms CLI - All Available Features[/bold]\n",
+        style=COLORS["primary"],
+    )
+
+    # Create main features table
+    features_table = Table(
+        show_header=True,
+        header_style=f"bold {COLORS['primary']}",
+        border_style=COLORS["secondary"],
+        title="✨ Complete Feature Reference",
+        title_style=f"bold {COLORS['primary']}",
+        padding=(0, 1),
+        show_lines=True,
+        expand=True,
+    )
+
+    # Add columns
+    features_table.add_column(
+        "Feature",
+        style=f"bold {COLORS['accent']}",
+        width=20,
+        no_wrap=True,
+    )
+    features_table.add_column(
+        "Category",
+        style="bold cyan",
+        width=15,
+        justify="center",
+    )
+    features_table.add_column(
+        "Description",
+        style="white",
+        width=50,
+        no_wrap=False,
+    )
+    features_table.add_column(
+        "Command",
+        style="dim yellow",
+        width=35,
+        no_wrap=False,
+    )
+    features_table.add_column(
+        "Key Parameters",
+        style="dim magenta",
+        width=30,
+        no_wrap=False,
+    )
+
+    # Define all features
+    features = [
+        {
+            "feature": "Environment Setup",
+            "category": "Setup",
+            "desc": "Check and verify your Swarms environment configuration",
+            "command": "swarms setup-check [--verbose]",
+            "params": "--verbose",
+        },
+        {
+            "feature": "Onboarding",
+            "category": "Setup",
+            "desc": "Run environment setup check (alias for setup-check)",
+            "command": "swarms onboarding [--verbose]",
+            "params": "--verbose",
+        },
+        {
+            "feature": "API Key Management",
+            "category": "Setup",
+            "desc": "Retrieve API keys from the Swarms platform",
+            "command": "swarms get-api-key",
+            "params": "None",
+        },
+        {
+            "feature": "Authentication",
+            "category": "Auth",
+            "desc": "Verify login status and initialize authentication cache",
+            "command": "swarms check-login",
+            "params": "None",
+        },
+        {
+            "feature": "YAML Agent Execution",
+            "category": "Execution",
+            "desc": "Execute agents from YAML configuration files",
+            "command": "swarms run-agents --yaml-file agents.yaml",
+            "params": "--yaml-file",
+        },
+        {
+            "feature": "Markdown Agent Loading",
+            "category": "Loading",
+            "desc": "Load agents from markdown files with YAML frontmatter",
+            "command": "swarms load-markdown --markdown-path ./agents/",
+            "params": "--markdown-path, --concurrent",
+        },
+        {
+            "feature": "Custom Agent Creation",
+            "category": "Creation",
+            "desc": "Create and run a custom agent with specified parameters",
+            "command": "swarms agent --name 'Agent' --task 'Task' --system-prompt 'Prompt'",
+            "params": "--name, --task, --system-prompt, --model-name, --temperature, --max-loops, --verbose",
+        },
+        {
+            "feature": "Auto Swarm Generation",
+            "category": "AI Generation",
+            "desc": "Automatically generate and execute an autonomous swarm configuration",
+            "command": "swarms autoswarm --task 'analyze data' --model gpt-4",
+            "params": "--task, --model",
+        },
+        {
+            "feature": "LLM Council",
+            "category": "Collaboration",
+            "desc": "Run LLM Council with multiple agents collaborating and evaluating responses",
+            "command": "swarms llm-council --task 'Your question' [--verbose]",
+            "params": "--task, --verbose",
+        },
+        {
+            "feature": "HeavySwarm",
+            "category": "Execution",
+            "desc": "Run HeavySwarm with specialized agents for complex task analysis",
+            "command": "swarms heavy-swarm --task 'Your task' [options]",
+            "params": "--task, --loops-per-agent, --question-agent-model-name, --worker-model-name, --random-loops-per-agent, --verbose",
+        },
+        {
+            "feature": "Package Upgrade",
+            "category": "Maintenance",
+            "desc": "Update Swarms to the latest version",
+            "command": "swarms auto-upgrade",
+            "params": "None",
+        },
+        {
+            "feature": "Support Booking",
+            "category": "Support",
+            "desc": "Schedule a strategy session with the Swarms team",
+            "command": "swarms book-call",
+            "params": "None",
+        },
+        {
+            "feature": "Help Documentation",
+            "category": "Info",
+            "desc": "Display comprehensive help message with all commands",
+            "command": "swarms help",
+            "params": "None",
+        },
+        {
+            "feature": "Features List",
+            "category": "Info",
+            "desc": "Display all available features and actions in a table",
+            "command": "swarms features",
+            "params": "None",
+        },
+    ]
+
+    # Add rows to table
+    for feat in features:
+        features_table.add_row(
+            feat["feature"],
+            feat["category"],
+            feat["desc"],
+            feat["command"],
+            feat["params"],
+        )
+
+    console.print(features_table)
+
+    # Add category summary
+    console.print("\n[bold cyan]📊 Feature Categories:[/bold cyan]\n")
+
+    category_table = Table(
+        show_header=True,
+        header_style=f"bold {COLORS['primary']}",
+        border_style=COLORS["secondary"],
+        padding=(0, 2),
+    )
+
+    category_table.add_column("Category", style="bold cyan", width=20)
+    category_table.add_column(
+        "Count", style="bold white", justify="center", width=10
+    )
+    category_table.add_column("Features", style="dim white", width=60)
+
+    # Count features by category
+    categories = {}
+    for feat in features:
+        cat = feat["category"]
+        if cat not in categories:
+            categories[cat] = []
+        categories[cat].append(feat["feature"])
+
+    for category, feature_list in sorted(categories.items()):
+        category_table.add_row(
+            category,
+            str(len(feature_list)),
+            ", ".join(feature_list),
+        )
+
+    console.print(category_table)
+
+    # Add usage tips
+    tips_panel = Panel(
+        "[bold cyan]💡 Quick Tips:[/bold cyan]\n"
+        "• Use [yellow]swarms features[/yellow] to see this table anytime\n"
+        "• Use [yellow]swarms help[/yellow] for detailed command documentation\n"
+        "• Use [yellow]swarms setup-check --verbose[/yellow] for detailed diagnostics\n"
+        "• Most commands support [yellow]--verbose[/yellow] for detailed output\n"
+        "• Use [yellow]swarms <command> --help[/yellow] for command-specific help",
+        title="📚 Usage Tips",
+        border_style=COLORS["success"],
+        padding=(1, 2),
+    )
+    console.print(tips_panel)
+
+    console.print(
+        "\n[dim]For more information, visit: https://docs.swarms.world[/dim]"
+    )
 
 
 def show_help():
@@ -771,7 +1025,10 @@ def show_help():
         "• [yellow]swarms onboarding[/yellow] - Environment setup check\n"
         "• [yellow]swarms setup-check[/yellow] - Check your environment\n"
         "• [yellow]swarms agent --name 'MyAgent' --task 'Hello World'[/yellow] - Create agent\n"
-        "• [yellow]swarms autoswarm --task 'analyze data' --model gpt-4[/yellow] - Auto-generate swarm",
+        "• [yellow]swarms autoswarm --task 'analyze data' --model gpt-4[/yellow] - Auto-generate swarm\n"
+        "• [yellow]swarms llm-council --task 'Your question'[/yellow] - Run LLM Council\n"
+        "• [yellow]swarms heavy-swarm --task 'Your task'[/yellow] - Run HeavySwarm\n"
+        "• [yellow]swarms features[/yellow] - View all available features",
         title="⚡ Quick Usage Guide",
         border_style=COLORS["secondary"],
         padding=(1, 2),
@@ -1028,6 +1285,189 @@ def load_markdown_agents(
         return []
 
 
+def run_heavy_swarm(
+    task: str,
+    loops_per_agent: int = 1,
+    question_agent_model_name: str = "gpt-4o-mini",
+    worker_model_name: str = "gpt-4o-mini",
+    random_loops_per_agent: bool = False,
+    verbose: bool = False,
+):
+    """
+    Run the HeavySwarm with a given task.
+
+    Args:
+        task: The task/query for the HeavySwarm to process
+        loops_per_agent: Number of execution loops each agent should perform
+        question_agent_model_name: Model name for question generation
+        worker_model_name: Model name for specialized worker agents
+        random_loops_per_agent: Enable random number of loops per agent (1-10 range)
+        verbose: Whether to show verbose output
+    """
+    try:
+        console.print(
+            "[yellow]🚀 Initializing HeavySwarm...[/yellow]"
+        )
+
+        # Create progress display
+        progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        )
+
+        with progress:
+            # Add initial task
+            init_task = progress.add_task(
+                "Initializing swarm...", total=None
+            )
+
+            # Create HeavySwarm
+            progress.update(
+                init_task,
+                description="Creating HeavySwarm with specialized agents...",
+            )
+            swarm = HeavySwarm(
+                loops_per_agent=loops_per_agent,
+                question_agent_model_name=question_agent_model_name,
+                worker_model_name=worker_model_name,
+                random_loops_per_agent=random_loops_per_agent,
+                verbose=verbose,
+            )
+
+            # Update progress
+            progress.update(
+                init_task,
+                description="Swarm initialized! Processing task...",
+            )
+
+            # Run the swarm
+            result = swarm.run(task=task)
+
+            # Update progress on completion
+            progress.update(
+                init_task,
+                description="Task completed!",
+                completed=True,
+            )
+
+        # Display results
+        if result:
+            console.print(
+                "\n[bold green]✓ HeavySwarm completed successfully![/bold green]"
+            )
+
+            # Display result in a panel
+            result_panel = Panel(
+                str(result),
+                title="HeavySwarm Final Response",
+                border_style="green",
+                padding=(1, 2),
+            )
+            console.print(result_panel)
+
+            return result
+        else:
+            console.print(
+                "[yellow]⚠ HeavySwarm completed but returned no results.[/yellow]"
+            )
+            return None
+
+    except Exception as e:
+        show_error(
+            "HeavySwarm Error",
+            f"Failed to run HeavySwarm: {str(e)}\n\n"
+            "Please check:\n"
+            "1. Your API keys are set correctly\n"
+            "2. You have network connectivity\n"
+            "3. The task is properly formatted",
+        )
+        return None
+
+
+def run_llm_council(task: str, verbose: bool = True):
+    """
+    Run the LLM Council with a given task.
+
+    Args:
+        task: The task/query for the LLM Council to process
+        verbose: Whether to show verbose output
+    """
+    try:
+        console.print(
+            "[yellow]🏛️  Initializing LLM Council...[/yellow]"
+        )
+
+        # Create progress display
+        progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        )
+
+        with progress:
+            # Add initial task
+            init_task = progress.add_task(
+                "Initializing council...", total=None
+            )
+
+            # Create LLM Council
+            progress.update(
+                init_task,
+                description="Creating LLM Council with default members...",
+            )
+            council = LLMCouncil(verbose=verbose)
+
+            # Update progress
+            progress.update(
+                init_task,
+                description="Council initialized! Processing task...",
+            )
+
+            # Run the council
+            result = council.run(query=task)
+
+            # Update progress on completion
+            progress.update(
+                init_task,
+                description="Task completed!",
+                completed=True,
+            )
+
+        # Display results
+        if result:
+            console.print(
+                "\n[bold green]✓ LLM Council completed successfully![/bold green]"
+            )
+
+            # Display result in a panel
+            result_panel = Panel(
+                str(result),
+                title="LLM Council Final Response",
+                border_style="green",
+                padding=(1, 2),
+            )
+            console.print(result_panel)
+
+            return result
+        else:
+            console.print(
+                "[yellow]⚠ LLM Council completed but returned no results.[/yellow]"
+            )
+            return None
+
+    except Exception as e:
+        show_error(
+            "LLM Council Error",
+            f"Failed to run LLM Council: {str(e)}\n\n"
+            "Please check:\n"
+            "1. Your API keys are set correctly\n"
+            "2. You have network connectivity\n"
+            "3. The task is properly formatted",
+        )
+        return None
+
+
 def create_swarm_agent(
     name: str,
     description: str,
@@ -1158,6 +1598,9 @@ def main():
                 "book-call",
                 "autoswarm",
                 "setup-check",
+                "llm-council",
+                "heavy-swarm",
+                "features",
             ],
             help="Command to execute",
         )
@@ -1285,6 +1728,30 @@ def main():
             type=str,
             help="MCP URL for the agent",
         )
+        # HeavySwarm specific arguments
+        parser.add_argument(
+            "--loops-per-agent",
+            type=int,
+            default=1,
+            help="Number of execution loops each agent should perform (default: 1)",
+        )
+        parser.add_argument(
+            "--question-agent-model-name",
+            type=str,
+            default="gpt-4o-mini",
+            help="Model name for question generation agent (default: gpt-4o-mini)",
+        )
+        parser.add_argument(
+            "--worker-model-name",
+            type=str,
+            default="gpt-4o-mini",
+            help="Model name for specialized worker agents (default: gpt-4o-mini)",
+        )
+        parser.add_argument(
+            "--random-loops-per-agent",
+            action="store_true",
+            help="Enable random number of loops per agent (1-10 range)",
+        )
 
         args = parser.parse_args()
 
@@ -1297,6 +1764,8 @@ def main():
                 run_setup_check(verbose=args.verbose)
             elif args.command == "help":
                 show_help()
+            elif args.command == "features":
+                show_features()
             elif args.command == "get-api-key":
                 get_api_key()
             elif args.command == "check-login":
@@ -1517,6 +1986,29 @@ def main():
                 run_autoswarm(args.task, args.model)
             elif args.command == "setup-check":
                 run_setup_check(verbose=args.verbose)
+            elif args.command == "llm-council":
+                if not args.task:
+                    show_error(
+                        "Missing required argument: --task",
+                        "Example usage: swarms llm-council --task 'What is the best approach to solve this problem?'",
+                    )
+                    exit(1)
+                run_llm_council(task=args.task, verbose=args.verbose)
+            elif args.command == "heavy-swarm":
+                if not args.task:
+                    show_error(
+                        "Missing required argument: --task",
+                        "Example usage: swarms heavy-swarm --task 'Analyze the current market trends'",
+                    )
+                    exit(1)
+                run_heavy_swarm(
+                    task=args.task,
+                    loops_per_agent=args.loops_per_agent,
+                    question_agent_model_name=args.question_agent_model_name,
+                    worker_model_name=args.worker_model_name,
+                    random_loops_per_agent=args.random_loops_per_agent,
+                    verbose=args.verbose,
+                )
         except Exception as e:
             console.print(
                 f"[{COLORS['error']}]Error: {str(e)}[/{COLORS['error']}]"

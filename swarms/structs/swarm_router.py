@@ -256,7 +256,7 @@ class SwarmRouter:
             heavy_swarm_swarm_show_output
         )
         self.chairman_model = chairman_model
-        
+
         # Initialize swarm factory for O(1) lookup performance
         self._swarm_factory = self._initialize_swarm_factory()
         self._swarm_cache = {}  # Cache for created swarms
@@ -446,7 +446,7 @@ class SwarmRouter:
             aggregation_strategy=self.aggregation_strategy,
             show_dashboard=False,
         )
-        
+
     def _create_llm_council(self, *args, **kwargs):
         """Factory function for LLMCouncil."""
         return LLMCouncil(

@@ -65,18 +65,24 @@ python examples/multi_agent/llm_council_examples/medical_diagnosis_council.py
 
 ## Key Features
 
-- **Multiple Perspectives**: Each council member (GPT-5.1, Gemini, Claude, Grok) provides unique insights
-- **Peer Review**: Members evaluate and rank each other's responses anonymously
-- **Synthesis**: Chairman combines the best elements from all responses
-- **Transparency**: See both individual responses and evaluation rankings
+| Feature              | Description                                                                                             |
+|----------------------|---------------------------------------------------------------------------------------------------------|
+| **Multiple Perspectives** | Each council member (GPT-5.1, Gemini, Claude, Grok) provides unique insights                         |
+| **Peer Review**           | Members evaluate and rank each other's responses anonymously                                         |
+| **Synthesis**             | Chairman combines the best elements from all responses                                               |
+| **Transparency**          | See both individual responses and evaluation rankings                                                |
+
 
 ## Council Members
 
 The default council consists of:
-- **GPT-5.1-Councilor**: Analytical and comprehensive
-- **Gemini-3-Pro-Councilor**: Concise and well-processed
-- **Claude-Sonnet-4.5-Councilor**: Thoughtful and balanced
-- **Grok-4-Councilor**: Creative and innovative
+
+| Council Member                 | Description                   |
+|-------------------------------|-------------------------------|
+| **GPT-5.1-Councilor**         | Analytical and comprehensive  |
+| **Gemini-3-Pro-Councilor**    | Concise and well-processed    |
+| **Claude-Sonnet-4.5-Councilor** | Thoughtful and balanced     |
+| **Grok-4-Councilor**          | Creative and innovative       |
 
 ## Customization
 
