@@ -962,16 +962,18 @@ def show_features():
 
     # Add category summary
     console.print("\n[bold cyan]📊 Feature Categories:[/bold cyan]\n")
-    
+
     category_table = Table(
         show_header=True,
         header_style=f"bold {COLORS['primary']}",
         border_style=COLORS["secondary"],
         padding=(0, 2),
     )
-    
+
     category_table.add_column("Category", style="bold cyan", width=20)
-    category_table.add_column("Count", style="bold white", justify="center", width=10)
+    category_table.add_column(
+        "Count", style="bold white", justify="center", width=10
+    )
     category_table.add_column("Features", style="dim white", width=60)
 
     # Count features by category
