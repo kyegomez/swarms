@@ -23,9 +23,10 @@ from swarms.structs.agent_rearrange import AgentRearrange
 from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.council_as_judge import CouncilAsAJudge
+from swarms.structs.debate_with_judge import DebateWithJudge
 from swarms.structs.groupchat import GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 from swarms.structs.interactive_groupchat import InteractiveGroupChat
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.majority_voting import MajorityVoting
@@ -49,7 +50,7 @@ SwarmType = Literal[
     "GroupChat",
     "MultiAgentRouter",
     "AutoSwarmBuilder",
-    "HiearchicalSwarm",
+    "HierarchicalSwarm",
     "auto",
     "MajorityVoting",
     "MALT",
@@ -58,6 +59,7 @@ SwarmType = Literal[
     "HeavySwarm",
     "BatchedGridWorkflow",
     "LLMCouncil",
+    "DebateWithJudge",
 ]
 
 
@@ -306,11 +308,22 @@ class SwarmRouter:
 
             if (
                 self.swarm_type != "HeavySwarm"
+                and self.swarm_type != "DebateWithJudge"
                 and self.agents is None
             ):
                 raise SwarmRouterConfigError(
                     "SwarmRouter: No agents provided for the swarm. Check the docs to learn of required parameters. https://docs.swarms.world/en/latest/swarms/structs/agent/"
                 )
+
+            if self.swarm_type == "DebateWithJudge":
+                if self.agents is None or len(self.agents) != 3:
+                    raise SwarmRouterConfigError(
+                        "SwarmRouter: DebateWithJudge requires exactly 3 agents: "
+                        "pro_agent (arguing in favor), con_agent (arguing against), "
+                        "and judge_agent (evaluating and synthesizing). "
+                        f"Provided {len(self.agents) if self.agents else 0} agent(s). "
+                        "Check the docs: https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
+                    )
 
             if (
                 self.swarm_type == "AgentRearrange"
@@ -421,7 +434,7 @@ class SwarmRouter:
             "MALT": self._create_malt,
             "CouncilAsAJudge": self._create_council_as_judge,
             "InteractiveGroupChat": self._create_interactive_group_chat,
-            "HiearchicalSwarm": self._create_hierarchical_swarm,
+            "HierarchicalSwarm": self._create_hierarchical_swarm,
             "MixtureOfAgents": self._create_mixture_of_agents,
             "MajorityVoting": self._create_majority_voting,
             "GroupChat": self._create_group_chat,
@@ -430,6 +443,7 @@ class SwarmRouter:
             "ConcurrentWorkflow": self._create_concurrent_workflow,
             "BatchedGridWorkflow": self._create_batched_grid_workflow,
             "LLMCouncil": self._create_llm_council,
+            "DebateWithJudge": self._create_debate_with_judge,
         }
 
     def _create_heavy_swarm(self, *args, **kwargs):
@@ -455,6 +469,17 @@ class SwarmRouter:
             output_type=self.output_type,
             verbose=self.verbose,
             chairman_model=self.chairman_model,
+        )
+
+    def _create_debate_with_judge(self, *args, **kwargs):
+        """Factory function for DebateWithJudge."""
+        return DebateWithJudge(
+            pro_agent=self.agents[0],
+            con_agent=self.agents[1],
+            judge_agent=self.agents[2],
+            max_rounds=self.max_loops,
+            output_type=self.output_type,
+            verbose=self.verbose,
         )
 
     def _create_agent_rearrange(self, *args, **kwargs):

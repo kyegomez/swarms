@@ -125,6 +125,7 @@ The `SwarmRouter` supports many various multi-agent architectures for various ap
 | `HeavySwarm` | Heavy swarm architecture with question and worker agents |
 | `BatchedGridWorkflow` | Batched grid workflow for parallel task processing |
 | `LLMCouncil` | Council of specialized LLM agents with peer review and synthesis |
+| `DebateWithJudge` | Debate architecture with Pro/Con agents and a Judge for self-refinement |
 | `auto` | Automatically selects best swarm type via embedding search |
 
 ## Basic Usage
@@ -481,6 +482,64 @@ LLMCouncil creates a council of specialized agents (GPT-5.1, Gemini, Claude, Gro
 3. A Chairman synthesizes all responses and evaluations into a final comprehensive answer
 
 The council automatically tracks all messages in a conversation object and supports flexible output formats. Note: LLMCouncil uses default council members and doesn't require the `agents` parameter.
+
+### DebateWithJudge
+
+Use Case: Structured debate architecture where two agents (Pro and Con) present opposing arguments, and a Judge agent evaluates and synthesizes the arguments over multiple rounds to progressively refine the answer.
+
+```python
+from swarms import Agent, SwarmRouter
+
+# Create three specialized agents for the debate
+pro_agent = Agent(
+    agent_name="Pro-Agent",
+    system_prompt="You are an expert at presenting strong, well-reasoned arguments in favor of positions. "
+                  "You provide compelling evidence and logical reasoning to support your stance.",
+    model_name="gpt-4.1",
+    max_loops=1,
+)
+
+con_agent = Agent(
+    agent_name="Con-Agent",
+    system_prompt="You are an expert at presenting strong, well-reasoned counter-arguments. "
+                  "You identify weaknesses in opposing arguments and present compelling evidence against positions.",
+    model_name="gpt-4.1",
+    max_loops=1,
+)
+
+judge_agent = Agent(
+    agent_name="Judge-Agent",
+    system_prompt="You are an impartial judge evaluating debates. You carefully assess both arguments, "
+                  "identify strengths and weaknesses, and provide refined synthesis that incorporates "
+                  "the best elements from both sides.",
+    model_name="gpt-4.1",
+    max_loops=1,
+)
+
+# Initialize the SwarmRouter with DebateWithJudge
+debate_router = SwarmRouter(
+    name="DebateWithJudge",
+    description="Structured debate with Pro/Con agents and Judge for self-refinement",
+    swarm_type="DebateWithJudge",
+    agents=[pro_agent, con_agent, judge_agent],  # Must be exactly 3 agents
+    max_loops=3,  # Number of debate rounds
+    output_type="str-all-except-first",  # Output format
+    verbose=True  # Show progress and intermediate results
+)
+
+# Run a debate on a topic
+result = debate_router.run(
+    "Should artificial intelligence development be regulated by governments?"
+)
+```
+
+DebateWithJudge implements a multi-round debate system where:
+1. **Pro Agent** presents arguments in favor of the topic
+2. **Con Agent** presents counter-arguments against the topic
+3. **Judge Agent** evaluates both arguments and provides synthesis
+4. The process repeats for N rounds (specified by `max_loops`), with each round refining the discussion based on the judge's feedback
+
+The architecture progressively improves the answer through iterative refinement, making it ideal for complex topics requiring thorough analysis from multiple perspectives. Note: DebateWithJudge requires exactly 3 agents (pro_agent, con_agent, judge_agent) in that order.
 
 ## Advanced Features
 
