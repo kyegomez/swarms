@@ -14,6 +14,7 @@ This directory contains examples demonstrating hierarchical swarm patterns for m
 - [hs_stock_team.py](hs_stock_team.py) - Stock trading team
 - [hybrid_hiearchical_swarm.py](hybrid_hiearchical_swarm.py) - Hybrid approach
 - [sector_analysis_hiearchical_swarm.py](sector_analysis_hiearchical_swarm.py) - Sector analysis
+- [display_hierarchy_example.py](display_hierarchy_example.py) - Visualize swarm hierarchy structure
 
 ## Subdirectories
 

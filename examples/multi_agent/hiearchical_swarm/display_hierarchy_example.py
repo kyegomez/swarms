@@ -1,4 +1,4 @@
-from swarms import SwarmRouter, Agent
+from swarms import Agent, HierarchicalSwarm
 
 # Create specialized agents
 research_agent = Agent(
@@ -25,16 +25,23 @@ strategy_agent = Agent(
     verbose=False,
 )
 
-router = SwarmRouter(
-    name="SwarmRouter",
-    description="Routes tasks to specialized agents based on their capabilities",
+# Create hierarchical swarm with interactive dashboard
+swarm = HierarchicalSwarm(
+    name="Swarms Corporation Operations",
+    description="Enterprise-grade hierarchical swarm for complex task execution",
     agents=[research_agent, analysis_agent, strategy_agent],
-    swarm_type="MajorityVoting",
     max_loops=1,
-    verbose=False,
+    interactive=False,  # Enable the Arasaka dashboard
+    director_model_name="claude-haiku-4-5",
+    director_temperature=0.7,
+    director_top_p=None,
+    planning_enabled=True,
 )
 
-result = router.run(
-    "Conduct a research analysis on water stocks and etfs"
-)
-print(result)
+
+print(swarm.display_hierarchy())
+
+# out = swarm.run(
+#     "Conduct a research analysis on water stocks and etfs"
+# )
+# print(out)

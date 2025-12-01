@@ -1,10 +1,10 @@
-import json
 import asyncio
 import concurrent.futures
+import json
 import time
-from enum import Enum
-from typing import Any, Dict, List, Optional
 import uuid
+from enum import Enum
+from typing import Any, Dict, Iterator, List, Optional, Set
 
 import networkx as nx
 
@@ -16,12 +16,539 @@ except ImportError:
     GRAPHVIZ_AVAILABLE = False
     graphviz = None
 
+try:
+    import rustworkx as rx
+
+    RUSTWORKX_AVAILABLE = True
+except ImportError:
+    RUSTWORKX_AVAILABLE = False
+    rx = None
+
 from swarms.structs.agent import Agent  # noqa: F401
 from swarms.structs.conversation import Conversation
 from swarms.utils.get_cpu_cores import get_cpu_cores
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="graph_workflow")
+
+
+class GraphBackend:
+    """
+    Abstract base class for graph backends.
+    Provides a unified interface for different graph libraries.
+    """
+
+    def add_node(self, node_id: str, **attrs) -> None:
+        """
+        Add a node to the graph.
+
+        Args:
+            node_id (str): The unique identifier of the node.
+            **attrs: Additional attributes for the node.
+        """
+        raise NotImplementedError
+
+    def add_edge(self, source: str, target: str, **attrs) -> None:
+        """
+        Add an edge to the graph.
+
+        Args:
+            source (str): The source node ID.
+            target (str): The target node ID.
+            **attrs: Additional attributes for the edge.
+        """
+        raise NotImplementedError
+
+    def in_degree(self, node_id: str) -> int:
+        """
+        Get the in-degree of a node.
+
+        Args:
+            node_id (str): The node ID.
+
+        Returns:
+            int: The in-degree of the node.
+        """
+        raise NotImplementedError
+
+    def out_degree(self, node_id: str) -> int:
+        """
+        Get the out-degree of a node.
+
+        Args:
+            node_id (str): The node ID.
+
+        Returns:
+            int: The out-degree of the node.
+        """
+        raise NotImplementedError
+
+    def predecessors(self, node_id: str) -> Iterator[str]:
+        """
+        Get the predecessors of a node.
+
+        Args:
+            node_id (str): The node ID.
+
+        Returns:
+            Iterator[str]: Iterator of predecessor node IDs.
+        """
+        raise NotImplementedError
+
+    def reverse(self) -> "GraphBackend":
+        """
+        Return a reversed copy of the graph.
+
+        Returns:
+            GraphBackend: A new backend instance with reversed edges.
+        """
+        raise NotImplementedError
+
+    def topological_generations(self) -> List[List[str]]:
+        """
+        Get topological generations (layers) of the graph.
+
+        Returns:
+            List[List[str]]: List of layers, where each layer is a list of node IDs.
+        """
+        raise NotImplementedError
+
+    def simple_cycles(self) -> List[List[str]]:
+        """
+        Find simple cycles in the graph.
+
+        Returns:
+            List[List[str]]: List of cycles, where each cycle is a list of node IDs.
+        """
+        raise NotImplementedError
+
+    def descendants(self, node_id: str) -> Set[str]:
+        """
+        Get all descendants of a node.
+
+        Args:
+            node_id (str): The node ID.
+
+        Returns:
+            Set[str]: Set of descendant node IDs.
+        """
+        raise NotImplementedError
+
+
+class NetworkXBackend(GraphBackend):
+    """
+    NetworkX backend implementation.
+    """
+
+    def __init__(self):
+        """
+        Initialize the NetworkX backend.
+        """
+        self.graph = nx.DiGraph()
+
+    def add_node(self, node_id: str, **attrs) -> None:
+        """
+        Add a node to the NetworkX graph.
+
+        Args:
+            node_id (str): The unique identifier of the node.
+            **attrs: Additional attributes for the node.
+        """
+        self.graph.add_node(node_id, **attrs)
+
+    def add_edge(self, source: str, target: str, **attrs) -> None:
+        """
+        Add an edge to the NetworkX graph.
+
+        Args:
+            source (str): The source node ID.
+            target (str): The target node ID.
+            **attrs: Additional attributes for the edge.
+        """
+        self.graph.add_edge(source, target, **attrs)
+
+    def in_degree(self, node_id: str) -> int:
+        """
+        Get the in-degree of a node.
+
+        Args:
+            node_id (str): The node ID.
+
+        Returns:
+            int: The in-degree of the node.
+        """
+        return self.graph.in_degree(node_id)
+
+    def out_degree(self, node_id: str) -> int:
+        """
+        Get the out-degree of a node.
+
+        Args:
+            node_id (str): The node ID.
+
+        Returns:
+            int: The out-degree of the node.
+        """
+        return self.graph.out_degree(node_id)
+
+    def predecessors(self, node_id: str) -> Iterator[str]:
+        """
+        Get the predecessors of a node.
+
+        Args:
+            node_id (str): The node ID.
+
+        Returns:
+            Iterator[str]: Iterator of predecessor node IDs.
+        """
+        return self.graph.predecessors(node_id)
+
+    def reverse(self) -> "NetworkXBackend":
+        """
+        Return a reversed copy of the graph.
+
+        Returns:
+            NetworkXBackend: A new backend instance with reversed edges.
+        """
+        reversed_backend = NetworkXBackend()
+        reversed_backend.graph = self.graph.reverse()
+        return reversed_backend
+
+    def topological_generations(self) -> List[List[str]]:
+        """
+        Get topological generations (layers) of the graph.
+
+        Returns:
+            List[List[str]]: List of layers, where each layer is a list of node IDs.
+        """
+        return list(nx.topological_generations(self.graph))
+
+    def simple_cycles(self) -> List[List[str]]:
+        """
+        Find simple cycles in the graph.
+
+        Returns:
+            List[List[str]]: List of cycles, where each cycle is a list of node IDs.
+        """
+        return list(nx.simple_cycles(self.graph))
+
+    def descendants(self, node_id: str) -> Set[str]:
+        """
+        Get all descendants of a node.
+
+        Args:
+            node_id (str): The node ID.
+
+        Returns:
+            Set[str]: Set of descendant node IDs.
+        """
+        return nx.descendants(self.graph, node_id)
+
+
+class RustworkxBackend(GraphBackend):
+    """
+    Rustworkx backend implementation.
+    Uses integer indices internally but exposes string node IDs.
+    """
+
+    def __init__(self):
+        """
+        Initialize the Rustworkx backend.
+        """
+        if not RUSTWORKX_AVAILABLE:
+            raise ImportError(
+                "rustworkx is not installed. Install it with: pip install rustworkx"
+            )
+        self.graph = rx.PyDiGraph()
+        # Mapping from node ID (string) to node index (int)
+        self._node_id_to_index: Dict[str, int] = {}
+        # Mapping from node index (int) to node ID (string)
+        self._index_to_node_id: Dict[int, str] = {}
+
+    def _get_or_create_node_index(self, node_id: str) -> int:
+        """
+        Get the node index for a given node ID, creating it if necessary.
+
+        Args:
+            node_id (str): The node ID.
+
+        Returns:
+            int: The node index.
+        """
+        if node_id not in self._node_id_to_index:
+            node_index = self.graph.add_node(node_id)
+            self._node_id_to_index[node_id] = node_index
+            self._index_to_node_id[node_index] = node_id
+        return self._node_id_to_index[node_id]
+
+    def add_node(self, node_id: str, **attrs) -> None:
+        """
+        Add a node to the Rustworkx graph.
+
+        Args:
+            node_id (str): The unique identifier of the node.
+            **attrs: Additional attributes for the node (stored in node data).
+        """
+        if node_id not in self._node_id_to_index:
+            # Store node data as a dict with the node_id and attributes
+            node_data = {"node_id": node_id, **attrs}
+            node_index = self.graph.add_node(node_data)
+            self._node_id_to_index[node_id] = node_index
+            self._index_to_node_id[node_index] = node_id
+        else:
+            # Update existing node data
+            node_index = self._node_id_to_index[node_id]
+            node_data = self.graph[node_index]
+            if isinstance(node_data, dict):
+                node_data.update(attrs)
+            else:
+                self.graph[node_index] = {"node_id": node_id, **attrs}
+
+    def add_edge(self, source: str, target: str, **attrs) -> None:
+        """
+        Add an edge to the Rustworkx graph.
+
+        Args:
+            source (str): The source node ID.
+            target (str): The target node ID.
+            **attrs: Additional attributes for the edge (stored in edge data).
+        """
+        source_idx = self._get_or_create_node_index(source)
+        target_idx = self._get_or_create_node_index(target)
+        edge_data = attrs if attrs else None
+        self.graph.add_edge(source_idx, target_idx, edge_data)
+
+    def in_degree(self, node_id: str) -> int:
+        """
+        Get the in-degree of a node.
+
+        Args:
+            node_id (str): The node ID.
+
+        Returns:
+            int: The in-degree of the node.
+        """
+        if node_id not in self._node_id_to_index:
+            return 0
+        node_index = self._node_id_to_index[node_id]
+        return self.graph.in_degree(node_index)
+
+    def out_degree(self, node_id: str) -> int:
+        """
+        Get the out-degree of a node.
+
+        Args:
+            node_id (str): The node ID.
+
+        Returns:
+            int: The out-degree of the node.
+        """
+        if node_id not in self._node_id_to_index:
+            return 0
+        node_index = self._node_id_to_index[node_id]
+        return self.graph.out_degree(node_index)
+
+    def predecessors(self, node_id: str) -> Iterator[str]:
+        """
+        Get the predecessors of a node.
+
+        Args:
+            node_id (str): The node ID.
+
+        Returns:
+            Iterator[str]: Iterator of predecessor node IDs.
+        """
+        if node_id not in self._node_id_to_index:
+            return iter([])
+        target_index = self._node_id_to_index[node_id]
+        # Use edge list to find predecessors (more reliable than predecessors() method)
+        result = []
+        for edge in self.graph.edge_list():
+            source_idx, target_idx = edge
+            if target_idx == target_index:
+                result.append(self._index_to_node_id[source_idx])
+        return iter(result)
+
+    def reverse(self) -> "RustworkxBackend":
+        """
+        Return a reversed copy of the graph.
+
+        Returns:
+            RustworkxBackend: A new backend instance with reversed edges.
+        """
+        reversed_backend = RustworkxBackend()
+        # Copy the graph structure
+        reversed_backend.graph = self.graph.copy()
+        # Reverse the edges
+        reversed_backend.graph.reverse()
+        # Copy the mappings
+        reversed_backend._node_id_to_index = (
+            self._node_id_to_index.copy()
+        )
+        reversed_backend._index_to_node_id = (
+            self._index_to_node_id.copy()
+        )
+        return reversed_backend
+
+    def topological_generations(self) -> List[List[str]]:
+        """
+        Get topological generations (layers) of the graph.
+
+        Returns:
+            List[List[str]]: List of layers, where each layer is a list of node IDs.
+        """
+        try:
+            # Get all node indices
+            all_indices = list(self._node_id_to_index.values())
+            if not all_indices:
+                return []
+
+            # Use layer-by-layer approach similar to NetworkX topological_generations
+            layers = []
+            remaining = set(all_indices)
+            processed = set()
+
+            while remaining:
+                # Find all nodes with in-degree 0 considering only edges from processed nodes
+                # In rustworkx, we need to check if all predecessors are in processed set
+                layer = []
+                # First pass: identify nodes that can be added to this layer
+                # (without modifying remaining/processed during iteration)
+                nodes_to_add = []
+                for idx in list(remaining):
+                    # Get all predecessors using edge list
+                    pred_indices = []
+                    for edge in self.graph.edge_list():
+                        source_idx, target_idx = edge
+                        if target_idx == idx:
+                            pred_indices.append(source_idx)
+                    # Check if all predecessors have been processed (or node has no predecessors)
+                    # A node can be added to the layer if:
+                    # 1. It has no predecessors (entry node), OR
+                    # 2. All its predecessors have already been processed (from previous layers)
+                    if not pred_indices:
+                        # No predecessors - this is an entry node
+                        nodes_to_add.append(idx)
+                    elif all(
+                        pred_idx in processed
+                        for pred_idx in pred_indices
+                    ):
+                        # All predecessors have been processed in previous layers
+                        nodes_to_add.append(idx)
+
+                # Second pass: add identified nodes to the layer and update sets
+                for idx in nodes_to_add:
+                    layer.append(self._index_to_node_id[idx])
+                    remaining.remove(idx)
+                    processed.add(idx)
+
+                if not layer:
+                    # Cycle detected or error, break
+                    break
+
+                layers.append(layer)
+
+            # If there are remaining nodes, they form a cycle - add them as a final layer
+            if remaining:
+                cycle_layer = [
+                    self._index_to_node_id[idx] for idx in remaining
+                ]
+                layers.append(cycle_layer)
+
+            return (
+                layers
+                if layers
+                else [
+                    [
+                        self._index_to_node_id[idx]
+                        for idx in all_indices
+                    ]
+                ]
+            )
+        except Exception as e:
+            logger.warning(
+                f"Error in rustworkx topological_generations: {e}, falling back to simple approach"
+            )
+            # Fallback: return all nodes in one layer
+            return [
+                [node_id for node_id in self._node_id_to_index.keys()]
+            ]
+
+    def simple_cycles(self) -> List[List[str]]:
+        """
+        Find simple cycles in the graph.
+
+        Returns:
+            List[List[str]]: List of cycles, where each cycle is a list of node IDs.
+        """
+        try:
+            # Convert to NetworkX temporarily for cycle detection
+            # This is a limitation of rustworkx - it doesn't have simple_cycles
+            # We'll use a workaround by converting temporarily
+            import networkx as nx
+
+            nx_graph = nx.DiGraph()
+            for node_id in self._node_id_to_index.keys():
+                nx_graph.add_node(node_id)
+            for edge in self.graph.edge_list():
+                source_idx, target_idx = edge
+                source_id = self._index_to_node_id[source_idx]
+                target_id = self._index_to_node_id[target_idx]
+                nx_graph.add_edge(source_id, target_id)
+
+            cycles = list(nx.simple_cycles(nx_graph))
+            return cycles
+        except Exception as e:
+            logger.warning(
+                f"Error in rustworkx simple_cycles: {e}, returning empty list"
+            )
+            return []
+
+    def descendants(self, node_id: str) -> Set[str]:
+        """
+        Get all descendants of a node.
+
+        Args:
+            node_id (str): The node ID.
+
+        Returns:
+            Set[str]: Set of descendant node IDs.
+        """
+        if node_id not in self._node_id_to_index:
+            return set()
+        node_index = self._node_id_to_index[node_id]
+        # Use BFS to find all descendants
+        descendants = set()
+        queue = [node_index]
+        visited = {node_index}
+
+        while queue:
+            current_idx = queue.pop(0)
+            succ_data = self.graph.successors(current_idx)
+            for succ in succ_data:
+                # Handle both dict (node data) and int (index) returns
+                if isinstance(succ, dict):
+                    succ_node_id = succ.get("node_id")
+                    if (
+                        succ_node_id
+                        and succ_node_id in self._node_id_to_index
+                    ):
+                        succ_idx = self._node_id_to_index[
+                            succ_node_id
+                        ]
+                    else:
+                        continue
+                elif isinstance(succ, int):
+                    succ_idx = succ
+                else:
+                    continue
+
+                if succ_idx not in visited:
+                    visited.add(succ_idx)
+                    descendants.add(self._index_to_node_id[succ_idx])
+                    queue.append(succ_idx)
+
+        return descendants
 
 
 class NodeType(str, Enum):
@@ -129,17 +656,37 @@ class Edge:
         Returns:
             Edge: A new Edge instance.
         """
-        src = (
-            source_node.id
-            if isinstance(source_node, Node)
-            else source_node
-        )
-        tgt = (
-            target_node.id
-            if isinstance(target_node, Node)
-            else target_node
-        )
-        return cls(source=src, target=tgt, **kwargs)
+        # Handle source node: extract ID from Node, Agent, or use string directly
+        if isinstance(source_node, Node):
+            src = source_node.id
+        elif hasattr(source_node, "agent_name"):
+            # Agent object - extract agent_name
+            src = getattr(source_node, "agent_name", None)
+            if src is None:
+                raise ValueError(
+                    "Source agent does not have an agent_name attribute"
+                )
+        else:
+            # Assume it's already a string ID
+            src = source_node
+
+        # Handle target node: extract ID from Node, Agent, or use string directly
+        if isinstance(target_node, Node):
+            tgt = target_node.id
+        elif hasattr(target_node, "agent_name"):
+            # Agent object - extract agent_name
+            tgt = getattr(target_node, "agent_name", None)
+            if tgt is None:
+                raise ValueError(
+                    "Target agent does not have an agent_name attribute"
+                )
+        else:
+            # Assume it's already a string ID
+            tgt = target_node
+
+        # Put all kwargs into metadata dict
+        metadata = kwargs if kwargs else None
+        return cls(source=src, target=tgt, metadata=metadata)
 
 
 class GraphWorkflow:
@@ -151,7 +698,7 @@ class GraphWorkflow:
         edges (List[Edge]): A list of edges in the graph, where each edge is represented by an Edge object.
         entry_points (List[str]): A list of node IDs that serve as entry points to the graph.
         end_points (List[str]): A list of node IDs that serve as end points of the graph.
-        graph (nx.DiGraph): A directed graph object from the NetworkX library representing the workflow graph.
+        graph_backend (GraphBackend): A graph backend object (NetworkX or Rustworkx) representing the workflow graph.
         task (str): The task to be executed by the workflow.
         _compiled (bool): Whether the graph has been compiled for optimization.
         _sorted_layers (List[List[str]]): Pre-computed topological layers for faster execution.
@@ -174,6 +721,7 @@ class GraphWorkflow:
         task: Optional[str] = None,
         auto_compile: bool = True,
         verbose: bool = False,
+        backend: str = "networkx",
     ):
         self.id = id
         self.verbose = verbose
@@ -181,14 +729,30 @@ class GraphWorkflow:
         if self.verbose:
             logger.info("Initializing GraphWorkflow")
             logger.debug(
-                f"GraphWorkflow parameters: nodes={len(nodes) if nodes else 0}, edges={len(edges) if edges else 0}, max_loops={max_loops}, auto_compile={auto_compile}"
+                f"GraphWorkflow parameters: nodes={len(nodes) if nodes else 0}, edges={len(edges) if edges else 0}, max_loops={max_loops}, auto_compile={auto_compile}, backend={backend}"
             )
 
         self.nodes = nodes or {}
         self.edges = edges or []
         self.entry_points = entry_points or []
         self.end_points = end_points or []
-        self.graph = nx.DiGraph()
+
+        # Initialize graph backend
+        if backend.lower() == "rustworkx":
+            if not RUSTWORKX_AVAILABLE:
+                logger.warning(
+                    "rustworkx is not available, falling back to networkx. Install with: pip install rustworkx"
+                )
+                self.graph_backend = NetworkXBackend()
+            else:
+                self.graph_backend = RustworkxBackend()
+                if self.verbose:
+                    logger.info("Using rustworkx backend")
+        else:
+            self.graph_backend = NetworkXBackend()
+            if self.verbose:
+                logger.info("Using networkx backend")
+
         self.max_loops = max_loops
         self.task = task
         self.name = name
@@ -208,15 +772,20 @@ class GraphWorkflow:
 
         self.conversation = Conversation()
 
-        # Rebuild the NetworkX graph from nodes and edges if provided
+        # Rebuild the graph from nodes and edges if provided
         if self.nodes:
+            backend_name = (
+                "rustworkx"
+                if isinstance(self.graph_backend, RustworkxBackend)
+                else "networkx"
+            )
             if self.verbose:
                 logger.info(
-                    f"Adding {len(self.nodes)} nodes to NetworkX graph"
+                    f"Adding {len(self.nodes)} nodes to {backend_name} graph"
                 )
 
             for node_id, node in self.nodes.items():
-                self.graph.add_node(
+                self.graph_backend.add_node(
                     node_id,
                     type=node.type,
                     agent=node.agent,
@@ -228,9 +797,14 @@ class GraphWorkflow:
                     )
 
         if self.edges:
+            backend_name = (
+                "rustworkx"
+                if isinstance(self.graph_backend, RustworkxBackend)
+                else "networkx"
+            )
             if self.verbose:
                 logger.info(
-                    f"Adding {len(self.edges)} edges to NetworkX graph"
+                    f"Adding {len(self.edges)} edges to {backend_name} graph"
                 )
 
             valid_edges = 0
@@ -239,7 +813,7 @@ class GraphWorkflow:
                     edge.source in self.nodes
                     and edge.target in self.nodes
                 ):
-                    self.graph.add_edge(
+                    self.graph_backend.add_edge(
                         edge.source,
                         edge.target,
                         **(edge.metadata or {}),
@@ -328,8 +902,8 @@ class GraphWorkflow:
             if self.verbose:
                 logger.debug("Computing topological layers")
 
-            sorted_layers = list(
-                nx.topological_generations(self.graph)
+            sorted_layers = (
+                self.graph_backend.topological_generations()
             )
             self._sorted_layers = sorted_layers
 
@@ -380,7 +954,7 @@ class GraphWorkflow:
                 raise ValueError(error_msg)
 
             self.nodes[node.id] = node
-            self.graph.add_node(
+            self.graph_backend.add_node(
                 node.id,
                 type=node.type,
                 agent=node.agent,
@@ -434,7 +1008,7 @@ class GraphWorkflow:
                 raise ValueError(error_msg)
 
             self.edges.append(edge)
-            self.graph.add_edge(
+            self.graph_backend.add_edge(
                 edge.source, edge.target, **(edge.metadata or {})
             )
             self._invalidate_compilation()
@@ -492,7 +1066,7 @@ class GraphWorkflow:
                     raise ValueError(error_msg)
 
                 self.edges.append(edge)
-                self.graph.add_edge(
+                self.graph_backend.add_edge(
                     edge.source, edge.target, **(edge.metadata or {})
                 )
                 created_edges.append(edge)
@@ -560,7 +1134,7 @@ class GraphWorkflow:
                     raise ValueError(error_msg)
 
                 self.edges.append(edge)
-                self.graph.add_edge(
+                self.graph_backend.add_edge(
                     edge.source, edge.target, **(edge.metadata or {})
                 )
                 created_edges.append(edge)
@@ -629,7 +1203,7 @@ class GraphWorkflow:
                         raise ValueError(error_msg)
 
                     self.edges.append(edge)
-                    self.graph.add_edge(
+                    self.graph_backend.add_edge(
                         edge.source,
                         edge.target,
                         **(edge.metadata or {}),
@@ -860,7 +1434,9 @@ class GraphWorkflow:
 
         try:
             self.entry_points = [
-                n for n in self.nodes if self.graph.in_degree(n) == 0
+                n
+                for n in self.nodes
+                if self.graph_backend.in_degree(n) == 0
             ]
 
             if self.verbose:
@@ -888,7 +1464,9 @@ class GraphWorkflow:
 
         try:
             self.end_points = [
-                n for n in self.nodes if self.graph.out_degree(n) == 0
+                n
+                for n in self.nodes
+                if self.graph_backend.out_degree(n) == 0
             ]
 
             if self.verbose:
@@ -921,7 +1499,7 @@ class GraphWorkflow:
 
         if node_id not in self._predecessors_cache:
             self._predecessors_cache[node_id] = tuple(
-                self.graph.predecessors(node_id)
+                self.graph_backend.predecessors(node_id)
             )
 
         return self._predecessors_cache[node_id]
@@ -2228,8 +2806,8 @@ class GraphWorkflow:
             isolated = [
                 n
                 for n in self.nodes
-                if self.graph.in_degree(n) == 0
-                and self.graph.out_degree(n) == 0
+                if self.graph_backend.in_degree(n) == 0
+                and self.graph_backend.out_degree(n) == 0
             ]
             if isolated:
                 result["warnings"].append(
@@ -2238,7 +2816,7 @@ class GraphWorkflow:
 
             # Check for cyclic dependencies
             try:
-                cycles = list(nx.simple_cycles(self.graph))
+                cycles = self.graph_backend.simple_cycles()
                 if cycles:
                     result["warnings"].append(
                         f"Found {len(cycles)} cycles in workflow"
@@ -2268,7 +2846,7 @@ class GraphWorkflow:
                 reachable = set()
                 for entry in self.entry_points:
                     reachable.update(
-                        nx.descendants(self.graph, entry)
+                        self.graph_backend.descendants(entry)
                     )
                     reachable.add(entry)
 
@@ -2289,11 +2867,11 @@ class GraphWorkflow:
 
             # Check for dead-end nodes (cannot reach any exit point)
             if self.end_points:
-                reverse_graph = self.graph.reverse()
+                reverse_graph = self.graph_backend.reverse()
                 reachable_to_exit = set()
                 for exit_point in self.end_points:
                     reachable_to_exit.update(
-                        nx.descendants(reverse_graph, exit_point)
+                        reverse_graph.descendants(exit_point)
                     )
                     reachable_to_exit.add(exit_point)
 

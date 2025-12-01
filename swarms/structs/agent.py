@@ -2584,91 +2584,129 @@ class Agent:
                         task=task, *args, **kwargs
                     )
 
-                if hasattr(streaming_response, "__iter__") and not isinstance(streaming_response, str):
+                if hasattr(
+                    streaming_response, "__iter__"
+                ) and not isinstance(streaming_response, str):
                     complete_response = ""
                     token_count = 0
                     final_chunk = None
                     first_chunk = None
-                    
+
                     for chunk in streaming_response:
                         if first_chunk is None:
                             first_chunk = chunk
-                        
-                        if hasattr(chunk, "choices") and chunk.choices[0].delta.content:
+
+                        if (
+                            hasattr(chunk, "choices")
+                            and chunk.choices[0].delta.content
+                        ):
                             content = chunk.choices[0].delta.content
                             complete_response += content
                             token_count += 1
-                            
+
                             # Schema per token outputted
                             token_info = {
                                 "token_index": token_count,
-                                "model": getattr(chunk, 'model', self.get_current_model()),
-                                "id": getattr(chunk, 'id', ''),
-                                "created": getattr(chunk, 'created', int(time.time())),
-                                "object": getattr(chunk, 'object', 'chat.completion.chunk'),
+                                "model": getattr(
+                                    chunk,
+                                    "model",
+                                    self.get_current_model(),
+                                ),
+                                "id": getattr(chunk, "id", ""),
+                                "created": getattr(
+                                    chunk, "created", int(time.time())
+                                ),
+                                "object": getattr(
+                                    chunk,
+                                    "object",
+                                    "chat.completion.chunk",
+                                ),
                                 "token": content,
-                                "system_fingerprint": getattr(chunk, 'system_fingerprint', ''),
-                                "finish_reason": chunk.choices[0].finish_reason,
-                                "citations": getattr(chunk, 'citations', None),
-                                "provider_specific_fields": getattr(chunk, 'provider_specific_fields', None),
-                                "service_tier": getattr(chunk, 'service_tier', 'default'),
-                                "obfuscation": getattr(chunk, 'obfuscation', None),
-                                "usage": getattr(chunk, 'usage', None),
+                                "system_fingerprint": getattr(
+                                    chunk, "system_fingerprint", ""
+                                ),
+                                "finish_reason": chunk.choices[
+                                    0
+                                ].finish_reason,
+                                "citations": getattr(
+                                    chunk, "citations", None
+                                ),
+                                "provider_specific_fields": getattr(
+                                    chunk,
+                                    "provider_specific_fields",
+                                    None,
+                                ),
+                                "service_tier": getattr(
+                                    chunk, "service_tier", "default"
+                                ),
+                                "obfuscation": getattr(
+                                    chunk, "obfuscation", None
+                                ),
+                                "usage": getattr(
+                                    chunk, "usage", None
+                                ),
                                 "logprobs": chunk.choices[0].logprobs,
-                                "timestamp": time.time()
+                                "timestamp": time.time(),
                             }
-                            
+
                             print(f"ResponseStream {token_info}")
-                            
+
                             if streaming_callback is not None:
                                 streaming_callback(token_info)
-                        
+
                         final_chunk = chunk
-                    
-                    #Final ModelResponse to stream
-                    if final_chunk and hasattr(final_chunk, 'usage') and final_chunk.usage:
+
+                    # Final ModelResponse to stream
+                    if (
+                        final_chunk
+                        and hasattr(final_chunk, "usage")
+                        and final_chunk.usage
+                    ):
                         usage = final_chunk.usage
-                        print(f"ModelResponseStream(id='{getattr(final_chunk, 'id', 'N/A')}', "
-                              f"created={getattr(final_chunk, 'created', 'N/A')}, "
-                              f"model='{getattr(final_chunk, 'model', self.get_current_model())}', "
-                              f"object='{getattr(final_chunk, 'object', 'chat.completion.chunk')}', "
-                              f"system_fingerprint='{getattr(final_chunk, 'system_fingerprint', 'N/A')}', "
-                              f"choices=[StreamingChoices(finish_reason='{final_chunk.choices[0].finish_reason}', "
-                              f"index=0, delta=Delta(provider_specific_fields=None, content=None, role=None, "
-                              f"function_call=None, tool_calls=None, audio=None), logprobs=None)], "
-                              f"provider_specific_fields=None, "
-                              f"usage=Usage(completion_tokens={usage.completion_tokens}, "
-                              f"prompt_tokens={usage.prompt_tokens}, "
-                              f"total_tokens={usage.total_tokens}, "
-                              f"completion_tokens_details=CompletionTokensDetailsWrapper("
-                              f"accepted_prediction_tokens={usage.completion_tokens_details.accepted_prediction_tokens}, "
-                              f"audio_tokens={usage.completion_tokens_details.audio_tokens}, "
-                              f"reasoning_tokens={usage.completion_tokens_details.reasoning_tokens}, "
-                              f"rejected_prediction_tokens={usage.completion_tokens_details.rejected_prediction_tokens}, "
-                              f"text_tokens={usage.completion_tokens_details.text_tokens}), "
-                              f"prompt_tokens_details=PromptTokensDetailsWrapper("
-                              f"audio_tokens={usage.prompt_tokens_details.audio_tokens}, "
-                              f"cached_tokens={usage.prompt_tokens_details.cached_tokens}, "
-                              f"text_tokens={usage.prompt_tokens_details.text_tokens}, "
-                              f"image_tokens={usage.prompt_tokens_details.image_tokens})))")
+                        print(
+                            f"ModelResponseStream(id='{getattr(final_chunk, 'id', 'N/A')}', "
+                            f"created={getattr(final_chunk, 'created', 'N/A')}, "
+                            f"model='{getattr(final_chunk, 'model', self.get_current_model())}', "
+                            f"object='{getattr(final_chunk, 'object', 'chat.completion.chunk')}', "
+                            f"system_fingerprint='{getattr(final_chunk, 'system_fingerprint', 'N/A')}', "
+                            f"choices=[StreamingChoices(finish_reason='{final_chunk.choices[0].finish_reason}', "
+                            f"index=0, delta=Delta(provider_specific_fields=None, content=None, role=None, "
+                            f"function_call=None, tool_calls=None, audio=None), logprobs=None)], "
+                            f"provider_specific_fields=None, "
+                            f"usage=Usage(completion_tokens={usage.completion_tokens}, "
+                            f"prompt_tokens={usage.prompt_tokens}, "
+                            f"total_tokens={usage.total_tokens}, "
+                            f"completion_tokens_details=CompletionTokensDetailsWrapper("
+                            f"accepted_prediction_tokens={usage.completion_tokens_details.accepted_prediction_tokens}, "
+                            f"audio_tokens={usage.completion_tokens_details.audio_tokens}, "
+                            f"reasoning_tokens={usage.completion_tokens_details.reasoning_tokens}, "
+                            f"rejected_prediction_tokens={usage.completion_tokens_details.rejected_prediction_tokens}, "
+                            f"text_tokens={usage.completion_tokens_details.text_tokens}), "
+                            f"prompt_tokens_details=PromptTokensDetailsWrapper("
+                            f"audio_tokens={usage.prompt_tokens_details.audio_tokens}, "
+                            f"cached_tokens={usage.prompt_tokens_details.cached_tokens}, "
+                            f"text_tokens={usage.prompt_tokens_details.text_tokens}, "
+                            f"image_tokens={usage.prompt_tokens_details.image_tokens})))"
+                        )
                     else:
-                        print(f"ModelResponseStream(id='{getattr(final_chunk, 'id', 'N/A')}', "
-                              f"created={getattr(final_chunk, 'created', 'N/A')}, "
-                              f"model='{getattr(final_chunk, 'model', self.get_current_model())}', "
-                              f"object='{getattr(final_chunk, 'object', 'chat.completion.chunk')}', "
-                              f"system_fingerprint='{getattr(final_chunk, 'system_fingerprint', 'N/A')}', "
-                              f"choices=[StreamingChoices(finish_reason='{final_chunk.choices[0].finish_reason}', "
-                              f"index=0, delta=Delta(provider_specific_fields=None, content=None, role=None, "
-                              f"function_call=None, tool_calls=None, audio=None), logprobs=None)], "
-                              f"provider_specific_fields=None)")
-                    
-                    
+                        print(
+                            f"ModelResponseStream(id='{getattr(final_chunk, 'id', 'N/A')}', "
+                            f"created={getattr(final_chunk, 'created', 'N/A')}, "
+                            f"model='{getattr(final_chunk, 'model', self.get_current_model())}', "
+                            f"object='{getattr(final_chunk, 'object', 'chat.completion.chunk')}', "
+                            f"system_fingerprint='{getattr(final_chunk, 'system_fingerprint', 'N/A')}', "
+                            f"choices=[StreamingChoices(finish_reason='{final_chunk.choices[0].finish_reason}', "
+                            f"index=0, delta=Delta(provider_specific_fields=None, content=None, role=None, "
+                            f"function_call=None, tool_calls=None, audio=None), logprobs=None)], "
+                            f"provider_specific_fields=None)"
+                        )
+
                     self.llm.stream = original_stream
                     return complete_response
                 else:
                     self.llm.stream = original_stream
                     return streaming_response
-            
+
             elif self.streaming_on and hasattr(self.llm, "stream"):
                 original_stream = self.llm.stream
                 self.llm.stream = True
