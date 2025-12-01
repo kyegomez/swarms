@@ -123,11 +123,32 @@ def test_llm_council_run():
         query = "What is 2 + 2? Provide a brief answer."
         result = council.run(query)
         
+        # Basic assertions
         assert result is not None, "Result should not be None"
         assert council.conversation is not None, "Conversation should exist"
-        assert len(council.conversation.messages) > 0, "Conversation should have messages"
+        assert len(council.conversation.conversation_history) > 0, "Conversation should have messages"
+        
+        # Enhanced assertions to verify workflow steps
+        messages = council.conversation.conversation_history
+        
+        # Step 1: Verify User query was added
+        user_messages = [msg for msg in messages if msg.get("role") == "User"]
+        assert len(user_messages) > 0, "User query should be in conversation"
+        
+        # Step 2: Verify all council members responded
+        member_responses = [msg for msg in messages if msg.get("role") in ["TestAgent1", "TestAgent2"]]
+        assert len(member_responses) == len(custom_members), f"All {len(custom_members)} council members should have responded"
+        
+        # Step 3: Verify evaluations were performed
+        evaluation_messages = [msg for msg in messages if "-Evaluation" in msg.get("role", "")]
+        assert len(evaluation_messages) == len(custom_members), f"All {len(custom_members)} members should have evaluated"
+        
+        # Step 4: Verify Chairman synthesis occurred
+        chairman_messages = [msg for msg in messages if msg.get("role") == "Chairman"]
+        assert len(chairman_messages) > 0, "Chairman should have synthesized final response"
         
         logger.info("✓ Run method test passed")
+        logger.info(f"✓ Verified {len(member_responses)} member responses, {len(evaluation_messages)} evaluations, and {len(chairman_messages)} chairman synthesis")
         
     except Exception as e:
         logger.error(f"✗ Run method test failed: {e}")
