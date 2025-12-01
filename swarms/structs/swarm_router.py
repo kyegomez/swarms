@@ -471,24 +471,6 @@ class SwarmRouter:
             chairman_model=self.chairman_model,
         )
 
-    def _create_debate_with_judge(self, *args, **kwargs):
-        """Factory function for DebateWithJudge."""
-        if len(self.agents) != 3:
-            raise SwarmRouterConfigError(
-                "DebateWithJudge requires exactly 3 agents: "
-                "pro_agent (arguing in favor), con_agent (arguing against), "
-                "and judge_agent (evaluating and synthesizing). "
-                f"Provided {len(self.agents)} agent(s)."
-            )
-
-        return DebateWithJudge(
-            pro_agent=self.agents[0],
-            con_agent=self.agents[1],
-            judge_agent=self.agents[2],
-            max_rounds=self.max_loops,
-            output_type=self.output_type,
-            verbose=self.verbose,
-        )
 
     def _create_agent_rearrange(self, *args, **kwargs):
         """Factory function for AgentRearrange."""
