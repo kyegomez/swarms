@@ -20,7 +20,7 @@ This directory contains comprehensive guides and tutorials for using Swarms effe
 - [setup_and_test.py](graphworkflow_guide/setup_and_test.py) - Setup and testing utilities
 
 ## Hierarchical Marketing Team
-- [hiearchical_marketing_team.py](hiearchical_marketing_team.py) - Marketing team hierarchy example
+- [hierarchical_marketing_team.py](hierarchical_marketing_team.py) - Marketing team hierarchy example
 
 ## Nano Banana Jarvis Agent
 - [img_gen_nano_banana.py](nano_banana_jarvis_agent/img_gen_nano_banana.py) - Image generation with Nano Banana

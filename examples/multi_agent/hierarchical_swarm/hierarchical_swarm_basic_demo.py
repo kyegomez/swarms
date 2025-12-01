@@ -5,7 +5,7 @@ Basic Hierarchical Swarm Streaming Demo
 Minimal example showing the core streaming callback functionality.
 """
 
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 from swarms.agents import Agent
 
 

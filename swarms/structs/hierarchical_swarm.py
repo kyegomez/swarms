@@ -36,7 +36,7 @@ from rich.table import Table
 from rich.text import Text
 from rich.tree import Tree
 
-from swarms.prompts.hiearchical_system_prompt import (
+from swarms.prompts.hierarchical_system_prompt import (
     HIEARCHICAL_SWARM_SYSTEM_PROMPT,
     DIRECTOR_PLANNING_PROMPT,
 )
