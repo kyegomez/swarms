@@ -26,7 +26,7 @@ from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.debate_with_judge import DebateWithJudge
 from swarms.structs.groupchat import GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
-from swarms.structs.hiearchical_swarm import HiearchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 from swarms.structs.interactive_groupchat import InteractiveGroupChat
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.majority_voting import MajorityVoting
@@ -50,7 +50,7 @@ SwarmType = Literal[
     "GroupChat",
     "MultiAgentRouter",
     "AutoSwarmBuilder",
-    "HiearchicalSwarm",
+    "HierarchicalSwarm",
     "auto",
     "MajorityVoting",
     "MALT",
@@ -434,7 +434,7 @@ class SwarmRouter:
             "MALT": self._create_malt,
             "CouncilAsAJudge": self._create_council_as_judge,
             "InteractiveGroupChat": self._create_interactive_group_chat,
-            "HiearchicalSwarm": self._create_hierarchical_swarm,
+            "HierarchicalSwarm": self._create_hierarchical_swarm,
             "MixtureOfAgents": self._create_mixture_of_agents,
             "MajorityVoting": self._create_majority_voting,
             "GroupChat": self._create_group_chat,
@@ -471,6 +471,16 @@ class SwarmRouter:
             chairman_model=self.chairman_model,
         )
 
+    def _create_debate_with_judge(self, *args, **kwargs):
+        """Factory function for DebateWithJudge."""
+        return DebateWithJudge(
+            pro_agent=self.agents[0],
+            con_agent=self.agents[1],
+            judge_agent=self.agents[2],
+            max_rounds=self.max_loops,
+            output_type=self.output_type,
+            verbose=self.verbose,
+        )
 
     def _create_agent_rearrange(self, *args, **kwargs):
         """Factory function for AgentRearrange."""
