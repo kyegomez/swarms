@@ -19,6 +19,7 @@ pytest
 networkx
 aiofiles
 httpx
+requests
 # vllm>=0.2.0
 aiohttp
 mcp
