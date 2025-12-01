@@ -43,7 +43,7 @@ Multi-agent architectures leverage these communication patterns to ensure that a
 | Hybrid Hierarchical Cluster      | Combines hierarchical and peer-to-peer communication patterns for complex workflows.                                                                                   | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/hhcs/)     | Complex enterprise workflows, multi-department coordination                                       |
 | Batched Grid Workflow             | Executes tasks in a batched grid format, where each agent processes a different task simultaneously in parallel.                                                       | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/batched_grid_workflow/)              | Parallel task processing, batch operations, grid-based task distribution                         |
 | LLM Council                       | Orchestrates multiple specialized LLM agents to collaboratively answer queries through structured peer review and synthesis.                                            | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/llm_council/)                        | Multi-model evaluation, peer review systems, collaborative AI decision-making                    |
-| Debate with Judge                 | A debate architecture where two agents (Pro and Con) debate a topic, with a Judge agent evaluating arguments and providing refined synthesis over multiple rounds.   | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/debate_with_judge/)                 | Argument analysis, decision refinement, structured debates, iterative improvement                |
+| Debate with Judge                 | A debate architecture with Pro and Con agents debating topics, evaluated by a Judge. Supports preset agents, agent lists, or individual configuration for flexible setup.   | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/debate_with_judge/)                 | Argument analysis, decision refinement, structured debates, iterative improvement                |
 | Self MoA Seq                      | Sequential self-mixture of agents that generates multiple candidate responses and synthesizes them sequentially using a sliding window approach.                      | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/self_moa_seq/)                       | High-quality response generation, ensemble methods, sequential synthesis                          |
 | Swarm Rearrange                   | Orchestrates multiple swarms in sequential or parallel flow patterns, providing thread-safe operations for managing swarm execution.                                     | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/swarm_rearrange/)                    | Multi-swarm coordination, complex workflow orchestration, swarm composition                       |
 
@@ -688,7 +688,7 @@ graph TD
 ### Debate with Judge
 
 **Overview:**
-Debate architecture with self-refinement through a judge agent, enabling Pro and Con agents to debate a topic with iterative refinement. The judge evaluates arguments and provides synthesis for progressive improvement.
+Debate architecture with self-refinement through a judge agent, enabling Pro and Con agents to debate a topic with iterative refinement. The judge evaluates arguments and provides synthesis for progressive improvement. Supports preset agents for quick setup, agent lists, or individual agent configuration.
 
 **Use Cases:**
 
@@ -700,6 +700,12 @@ Debate architecture with self-refinement through a judge agent, enabling Pro and
 
 - Multi-perspective analysis
 
+
+**Initialization Options:**
+
+- `preset_agents=True`: Use built-in optimized agents (simplest)
+- `agents=[pro, con, judge]`: Provide a list of 3 agents
+- Individual parameters: `pro_agent`, `con_agent`, `judge_agent`
 
 **[Learn More](https://docs.swarms.world/en/latest/swarms/structs/debate_with_judge/)**
 
@@ -717,7 +723,7 @@ graph TD
     G --> H
     
     H --> I[Judge Synthesis]
-    I --> J{More Rounds?}
+    I --> J{More Loops?}
     J -->|Yes| C
     J -->|No| K[Final Output]
 ```

@@ -29,6 +29,7 @@ graph TD
 | Judge Agent              | An impartial evaluator that analyzes both arguments and provides synthesis                   |
 | Iterative Refinement     | The process repeats for multiple rounds, each round building upon the judge's previous synthesis |
 | Progressive Improvement  | Each round refines the answer by incorporating feedback and addressing weaknesses            |
+| Preset Agents            | Built-in optimized agents that can be used without manual configuration                      |
 
 ## Class Definition: `DebateWithJudge`
 
@@ -36,12 +37,15 @@ graph TD
 class DebateWithJudge:
     def __init__(
         self,
-        pro_agent: Agent,
-        con_agent: Agent,
-        judge_agent: Agent,
-        max_rounds: int = 3,
+        pro_agent: Optional[Agent] = None,
+        con_agent: Optional[Agent] = None,
+        judge_agent: Optional[Agent] = None,
+        agents: Optional[List[Agent]] = None,
+        preset_agents: bool = False,
+        max_loops: int = 3,
         output_type: str = "str-all-except-first",
         verbose: bool = True,
+        model_name: str = "gpt-4o-mini",
     ):
 ```
 
@@ -49,12 +53,73 @@ class DebateWithJudge:
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `pro_agent` | `Agent` | Required | The agent arguing in favor (Pro position) |
-| `con_agent` | `Agent` | Required | The agent arguing against (Con position) |
-| `judge_agent` | `Agent` | Required | The judge agent that evaluates arguments and provides synthesis |
-| `max_rounds` | `int` | `3` | Maximum number of debate rounds to execute |
+| `pro_agent` | `Optional[Agent]` | `None` | The agent arguing in favor (Pro position). Not required if using `agents` list or `preset_agents`. |
+| `con_agent` | `Optional[Agent]` | `None` | The agent arguing against (Con position). Not required if using `agents` list or `preset_agents`. |
+| `judge_agent` | `Optional[Agent]` | `None` | The judge agent that evaluates arguments and provides synthesis. Not required if using `agents` list or `preset_agents`. |
+| `agents` | `Optional[List[Agent]]` | `None` | A list of exactly 3 agents in order: `[pro_agent, con_agent, judge_agent]`. Takes precedence over individual agent parameters. |
+| `preset_agents` | `bool` | `False` | If `True`, creates default Pro, Con, and Judge agents automatically with optimized system prompts. |
+| `max_loops` | `int` | `3` | Maximum number of debate rounds to execute |
 | `output_type` | `str` | `"str-all-except-first"` | Format for the output conversation history |
 | `verbose` | `bool` | `True` | Whether to enable verbose logging |
+| `model_name` | `str` | `"gpt-4o-mini"` | The model name to use for preset agents |
+
+### Initialization Options
+
+The `DebateWithJudge` class supports three ways to configure agents:
+
+#### Option 1: Preset Agents (Simplest)
+
+Use built-in agents with optimized system prompts for debates:
+
+```python
+from swarms import DebateWithJudge
+
+# Create debate system with preset agents
+debate = DebateWithJudge(
+    preset_agents=True,
+    max_loops=3,
+    model_name="gpt-4o-mini"  # Optional: specify model
+)
+
+result = debate.run("Should AI be regulated?")
+```
+
+#### Option 2: List of Agents
+
+Provide a list of exactly 3 agents (Pro, Con, Judge):
+
+```python
+from swarms import Agent, DebateWithJudge
+
+# Create your custom agents
+agents = [pro_agent, con_agent, judge_agent]
+
+# Create debate system with agent list
+debate = DebateWithJudge(
+    agents=agents,
+    max_loops=3
+)
+
+result = debate.run("Is remote work better than office work?")
+```
+
+#### Option 3: Individual Agent Parameters
+
+Provide each agent separately (original behavior):
+
+```python
+from swarms import Agent, DebateWithJudge
+
+# Create debate system with individual agents
+debate = DebateWithJudge(
+    pro_agent=my_pro_agent,
+    con_agent=my_con_agent,
+    judge_agent=my_judge_agent,
+    max_loops=3
+)
+
+result = debate.run("Should we colonize Mars?")
+```
 
 ## API Reference
 
@@ -94,7 +159,71 @@ def run(self, task: str) -> Union[str, List, dict]
    - **Topic Refinement**: Judge's synthesis becomes the topic for the next round
 4. **Result Formatting**: Returns the final result formatted according to `output_type`
 
-**Example:**
+**Example 1: Using Preset Agents (Simplest):**
+
+```python
+from swarms import DebateWithJudge
+
+# Create the DebateWithJudge system with preset agents
+debate_system = DebateWithJudge(
+    preset_agents=True,
+    max_loops=3,
+    output_type="str-all-except-first",
+    verbose=True,
+)
+
+# Define the debate topic
+topic = (
+    "Should artificial intelligence be regulated by governments? "
+    "Discuss the balance between innovation and safety."
+)
+
+# Run the debate
+result = debate_system.run(task=topic)
+print(result)
+```
+
+**Example 2: Using Agent List:**
+
+```python
+from swarms import Agent, DebateWithJudge
+
+# Create custom agents
+pro_agent = Agent(
+    agent_name="Pro-Agent",
+    system_prompt="You are a skilled debater who argues in favor of positions...",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+)
+
+con_agent = Agent(
+    agent_name="Con-Agent",
+    system_prompt="You are a skilled debater who argues against positions...",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+)
+
+judge_agent = Agent(
+    agent_name="Judge-Agent",
+    system_prompt="You are an impartial judge who evaluates debates...",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+)
+
+# Create the DebateWithJudge system using agent list
+debate_system = DebateWithJudge(
+    agents=[pro_agent, con_agent, judge_agent],
+    max_loops=3,
+    output_type="str-all-except-first",
+    verbose=True,
+)
+
+# Run the debate
+result = debate_system.run(task="Should AI be regulated?")
+print(result)
+```
+
+**Example 3: Using Individual Agent Parameters:**
 
 ```python
 from swarms import Agent, DebateWithJudge
@@ -143,7 +272,7 @@ debate_system = DebateWithJudge(
     pro_agent=pro_agent,
     con_agent=con_agent,
     judge_agent=judge_agent,
-    max_rounds=3,
+    max_loops=3,
     output_type="str-all-except-first",
     verbose=True,
 )
@@ -282,9 +411,10 @@ print(final_answer)
 | `pro_agent` | `Agent` | The agent arguing in favor (Pro position) |
 | `con_agent` | `Agent` | The agent arguing against (Con position) |
 | `judge_agent` | `Agent` | The judge agent that evaluates arguments |
-| `max_rounds` | `int` | Maximum number of debate rounds |
+| `max_loops` | `int` | Maximum number of debate rounds |
 | `output_type` | `str` | Format for returned results |
 | `verbose` | `bool` | Whether verbose logging is enabled |
+| `model_name` | `str` | Model name used for preset agents |
 | `conversation` | `Conversation` | Conversation history management object |
 
 ## Output Types
@@ -301,6 +431,21 @@ The `output_type` parameter controls how the conversation history is formatted:
 
 ## Usage Patterns
 
+### Quick Start with Preset Agents
+
+The fastest way to get started - no agent configuration needed:
+
+```python
+from swarms import DebateWithJudge
+
+# Create debate system with built-in optimized agents
+debate = DebateWithJudge(preset_agents=True, max_loops=3)
+
+# Run a debate
+result = debate.run("Should universal basic income be implemented?")
+print(result)
+```
+
 ### Single Topic Debate
 
 For focused debate and refinement on a single complex topic:
@@ -312,6 +457,26 @@ result = debate_system.run("Should universal basic income be implemented?")
 # With custom output format
 debate_system.output_type = "dict"
 result = debate_system.run("Should universal basic income be implemented?")
+```
+
+### Using Agent List
+
+Pass a list of 3 agents for flexible configuration:
+
+```python
+from swarms import Agent, DebateWithJudge
+
+# Create or obtain agents from various sources
+my_agents = [pro_agent, con_agent, judge_agent]
+
+# Create debate with agent list
+debate = DebateWithJudge(
+    agents=my_agents,
+    max_loops=3,
+    verbose=True
+)
+
+result = debate.run("Is nuclear energy the solution to climate change?")
 ```
 
 ### Batch Processing
@@ -359,14 +524,45 @@ technical_debate = DebateWithJudge(
     pro_agent=technical_pro,
     con_agent=technical_con,
     judge_agent=technical_judge,
-    max_rounds=5,  # More rounds for complex technical topics
+    max_loops=5,  # More rounds for complex technical topics
     verbose=True,
 )
 ```
 
 ## Usage Examples
 
-### Example 1: Policy Debate on AI Regulation
+### Example 1: Quick Start with Preset Agents
+
+The simplest way to use `DebateWithJudge` - no manual agent configuration needed:
+
+```python
+from swarms import DebateWithJudge
+
+# Create the DebateWithJudge system with preset agents
+debate_system = DebateWithJudge(
+    preset_agents=True,
+    max_loops=3,
+    model_name="gpt-4o-mini",  # Specify model for preset agents
+    output_type="str-all-except-first",
+    verbose=True,
+)
+
+# Define the debate topic
+topic = (
+    "Should artificial intelligence be regulated by governments? "
+    "Discuss the balance between innovation and safety."
+)
+
+# Run the debate
+result = debate_system.run(task=topic)
+print(result)
+
+# Get the final refined answer
+final_answer = debate_system.get_final_answer()
+print(final_answer)
+```
+
+### Example 2: Policy Debate with Custom Agents
 
 This example demonstrates using `DebateWithJudge` for a comprehensive policy debate on AI regulation, with multiple rounds of refinement.
 
@@ -425,7 +621,7 @@ debate_system = DebateWithJudge(
     pro_agent=pro_agent,
     con_agent=con_agent,
     judge_agent=judge_agent,
-    max_rounds=3,
+    max_loops=3,
     output_type="str-all-except-first",
     verbose=True,
 )
@@ -448,7 +644,47 @@ final_answer = debate_system.get_final_answer()
 print(final_answer)
 ```
 
-### Example 2: Technical Architecture Debate with Batch Processing
+### Example 3: Using Agent List
+
+This example demonstrates using the `agents` list parameter to provide agents:
+
+```python
+from swarms import Agent, DebateWithJudge
+
+# Create your agents
+pro = Agent(
+    agent_name="Microservices-Pro",
+    system_prompt="You advocate for microservices architecture...",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+)
+
+con = Agent(
+    agent_name="Monolith-Pro", 
+    system_prompt="You advocate for monolithic architecture...",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+)
+
+judge = Agent(
+    agent_name="Architecture-Judge",
+    system_prompt="You evaluate architecture debates...",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+)
+
+# Create debate with agent list
+debate = DebateWithJudge(
+    agents=[pro, con, judge],  # Pass as list
+    max_loops=2,
+    verbose=True,
+)
+
+result = debate.run("Should a startup use microservices or monolithic architecture?")
+print(result)
+```
+
+### Example 4: Technical Architecture Debate with Batch Processing
 
 This example demonstrates using `batched_run` to process multiple technical architecture questions, comparing different approaches to system design.
 
@@ -497,7 +733,7 @@ architecture_debate = DebateWithJudge(
     pro_agent=pro_agent,
     con_agent=con_agent,
     judge_agent=judge_agent,
-    max_rounds=2,  # Fewer rounds for more focused technical debates
+    max_loops=2,  # Fewer rounds for more focused technical debates
     output_type="str-all-except-first",
     verbose=True,
 )
@@ -518,7 +754,7 @@ for result in results:
     print(result)
 ```
 
-### Example 3: Business Strategy Debate with Custom Configuration
+### Example 5: Business Strategy Debate with Custom Configuration
 
 This example demonstrates a business strategy debate with custom agent configurations, multiple rounds, and accessing conversation history.
 
@@ -575,7 +811,7 @@ strategy_debate = DebateWithJudge(
     pro_agent=pro_agent,
     con_agent=con_agent,
     judge_agent=judge_agent,
-    max_rounds=4,  # More rounds for complex strategic discussions
+    max_loops=4,  # More rounds for complex strategic discussions
     output_type="dict",  # Use dict format for structured analysis
     verbose=True,
 )
@@ -609,18 +845,27 @@ print(final_answer)
 ### Agent Configuration
 
 !!! tip "Agent Configuration Best Practices"
+    - **Preset Agents**: Use `preset_agents=True` for quick setup with optimized prompts
+    - **Custom Agents**: For specialized domains, create custom agents with domain-specific prompts
     - **Pro Agent**: Should be configured with expertise in the topic area and strong argumentation skills
     - **Con Agent**: Should be configured to identify weaknesses and provide compelling alternatives
     - **Judge Agent**: Should be configured with broad expertise and impartial evaluation capabilities
     - Use appropriate models for the complexity of the debate topic
     - Consider using more powerful models for the Judge agent
 
-### Round Configuration
+### Initialization Strategy
 
-!!! note "Round Configuration Tips"
-    - Use 2-3 rounds for most topics
-    - Use 4-5 rounds for complex, multi-faceted topics
-    - More rounds allow for deeper refinement but increase execution time
+!!! info "Choosing an Initialization Method"
+    - **`preset_agents=True`**: Best for quick prototyping and general-purpose debates
+    - **`agents=[...]` list**: Best when you have agents from external sources or dynamic creation
+    - **Individual parameters**: Best for maximum control and explicit configuration
+
+### Loop Configuration
+
+!!! note "Loop Configuration Tips"
+    - Use 2-3 loops (`max_loops`) for most topics
+    - Use 4-5 loops for complex, multi-faceted topics
+    - More loops allow for deeper refinement but increase execution time
     - Consider the trade-off between refinement quality and cost
 
 ### Output Format Selection
@@ -646,25 +891,31 @@ print(final_answer)
 !!! danger "Common Problems"
     **Issue**: Agents not following their roles
 
-    **Solution**: Ensure system prompts clearly define each agent's role and expertise
+    **Solution**: Ensure system prompts clearly define each agent's role and expertise. Consider using `preset_agents=True` for well-tested prompts.
 
     ---
 
-    **Issue**: Judge synthesis not improving over rounds
+    **Issue**: Judge synthesis not improving over loops
 
-    **Solution**: Increase `max_rounds` or improve Judge agent's system prompt to emphasize refinement
+    **Solution**: Increase `max_loops` or improve Judge agent's system prompt to emphasize refinement
 
     ---
 
     **Issue**: Debate results are too generic
 
-    **Solution**: Use more specific system prompts and provide detailed context in the task
+    **Solution**: Use more specific system prompts and provide detailed context in the task. Custom agents often produce better domain-specific results.
 
     ---
 
     **Issue**: Execution time is too long
 
-    **Solution**: Reduce `max_rounds`, use faster models, or process fewer topics in batch
+    **Solution**: Reduce `max_loops`, use faster models, or process fewer topics in batch
+
+    ---
+
+    **Issue**: ValueError when initializing
+
+    **Solution**: Ensure you provide one of: (1) all three agents, (2) an agents list with exactly 3 agents, or (3) `preset_agents=True`
 
 ## Contributing
 

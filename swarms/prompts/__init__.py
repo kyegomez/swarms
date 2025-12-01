@@ -8,6 +8,11 @@ from swarms.prompts.operations_agent_prompt import (
 )
 from swarms.prompts.product_agent_prompt import PRODUCT_AGENT_PROMPT
 from swarms.prompts.prompt import Prompt
+from swarms.prompts.autonomous_agent_prompt import (
+    AUTONOMOUS_AGENT_SYSTEM_PROMPT,
+    get_autonomous_agent_prompt,
+    get_autonomous_agent_prompt_with_context,
+)
 
 __all__ = [
     "CODE_INTERPRETER",
@@ -18,4 +23,7 @@ __all__ = [
     "PRODUCT_AGENT_PROMPT",
     "DOCUMENTATION_WRITER_SOP",
     "Prompt",
+    "AUTONOMOUS_AGENT_SYSTEM_PROMPT",
+    "get_autonomous_agent_prompt",
+    "get_autonomous_agent_prompt_with_context",
 ]

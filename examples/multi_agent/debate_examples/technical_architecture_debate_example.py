@@ -49,7 +49,7 @@ architecture_debate = DebateWithJudge(
     pro_agent=pro_agent,
     con_agent=con_agent,
     judge_agent=judge_agent,
-    max_rounds=2,  # Fewer rounds for more focused technical debates
+    max_loops=2,  # Fewer loops for more focused technical debates
     output_type="str-all-except-first",
     verbose=True,
 )
