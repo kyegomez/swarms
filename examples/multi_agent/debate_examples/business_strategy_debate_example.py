@@ -52,12 +52,12 @@ judge_agent = Agent(
     max_loops=1,
 )
 
-# Create the debate system with extended rounds for complex strategy discussions
+# Create the debate system with extended loops for complex strategy discussions
 strategy_debate = DebateWithJudge(
     pro_agent=pro_agent,
     con_agent=con_agent,
     judge_agent=judge_agent,
-    max_rounds=4,  # More rounds for complex strategic discussions
+    max_loops=4,  # More loops for complex strategic discussions
     output_type="dict",  # Use dict format for structured analysis
     verbose=True,
 )

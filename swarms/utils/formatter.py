@@ -13,6 +13,7 @@ from rich.progress import (
 from rich.table import Table
 from rich.text import Text
 from rich.spinner import Spinner
+from rich.tree import Tree
 
 from rich.markdown import Markdown
 
@@ -719,6 +720,85 @@ class Formatter:
             self._dashboard_live.stop()
             self.console.print()  # Add blank line after stopping
             self._dashboard_live = None
+
+    def print_plan_tree(
+        self,
+        task_description: str,
+        steps: List[Dict[str, Any]],
+        print_on: bool = True,
+    ) -> None:
+        """
+        Print the plan as a beautiful tree using Rich.
+
+        Args:
+            task_description: Description of the main task
+            steps: List of step dictionaries with step_id, description, priority, and optional dependencies
+            print_on: Whether to print to console (True) or just log (False)
+        """
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        # Create root tree
+        tree = Tree(
+            f"[bold cyan]📋 Plan: {task_description}[/bold cyan]"
+        )
+
+        # Priority color mapping
+        priority_colors = {
+            "critical": "red",
+            "high": "yellow",
+            "medium": "blue",
+            "low": "green",
+        }
+
+        priority_icons = {
+            "critical": "🔴",
+            "high": "🟠",
+            "medium": "🟡",
+            "low": "🟢",
+        }
+
+        # Create a mapping of step_id to tree nodes for dependency handling
+        step_nodes = {}
+
+        # First pass: create all nodes
+        for step in steps:
+            step_id = step.get("step_id", "")
+            description = step.get("description", "")
+            priority = step.get("priority", "medium").lower()
+            dependencies = step.get("dependencies", [])
+
+            priority_color = priority_colors.get(priority, "white")
+            priority_icon = priority_icons.get(priority, "○")
+
+            # Create step label with priority indicator
+            step_label = (
+                f"[{priority_color}]{priority_icon} {step_id}[/{priority_color}]: "
+                f"{description}"
+            )
+
+            # Add dependencies info if present
+            if dependencies:
+                deps_text = ", ".join(dependencies)
+                step_label += f" [dim](depends on: {deps_text})[/dim]"
+
+            # Add node to tree
+            step_node = tree.add(step_label)
+            step_nodes[step_id] = step_node
+
+        # Print the tree
+        if print_on:
+            self.console.print("\n")
+            self.console.print(tree)
+            self.console.print("")
+        else:
+            # Even if print_on is False, log the tree structure
+            logger.info(f"Plan created: {task_description}")
+            for step in steps:
+                logger.info(
+                    f"  - {step.get('step_id')} ({step.get('priority')}): {step.get('description')}"
+                )
 
 
 # Global formatter instance with markdown output enabled by default
