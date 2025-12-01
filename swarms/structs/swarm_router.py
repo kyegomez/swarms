@@ -26,7 +26,7 @@ from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.debate_with_judge import DebateWithJudge
 from swarms.structs.groupchat import GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
-from swarms.structs.hierarchical_swarm import HierarchicalSwarm
+from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 from swarms.structs.interactive_groupchat import InteractiveGroupChat
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.majority_voting import MajorityVoting
