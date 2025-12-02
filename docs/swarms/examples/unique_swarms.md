@@ -294,7 +294,6 @@ flowchart TD
 ## Common Use Cases
 
 1. **Data Processing Pipelines**
-   - Linear Swarm
    - Circular Swarm
 
 2. **Distributed Computing**

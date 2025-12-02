@@ -24130,7 +24130,6 @@ flowchart LR
 
 - Maintains strict ordering of task processing
 
-
 ### Star Swarm
 ```python
 def star_swarm(agents: AgentListType, tasks: List[str], return_full_history: bool = True)
@@ -24364,7 +24363,6 @@ flowchart TD
 ## Common Use Cases
 
 1. **Data Processing Pipelines**
-   - Linear Swarm
    - Circular Swarm
 
 2. **Distributed Computing**
