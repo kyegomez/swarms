@@ -312,40 +312,6 @@ swarms load-markdown --markdown-path ./agents/ --concurrent
 
 ---
 
-## CI/CD Integration
-
-### GitHub Actions
-
-```yaml
-# .github/workflows/run-agents.yml
-name: Run Agent Pipeline
-
-on:
-  schedule:
-    - cron: '0 9 * * 1'  # Every Monday at 9 AM
-
-jobs:
-  run-agents:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      
-      - name: Install Swarms
-        run: pip install swarms
-      
-      - name: Run Agents
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: swarms run-agents --yaml-file agents.yaml
-```
-
----
-
 ## Next Steps
 
 - [CLI Agent Guide](./cli_agent_guide.md) - Create agents from command line
