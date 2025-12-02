@@ -121,30 +121,6 @@ def run_healthcare_grid_swarm():
     print(result)
 
 
-def run_finance_linear_swarm():
-    """Loan approval process using linear swarm"""
-    print_separator()
-    print("FINANCE - LOAN APPROVAL PROCESS (Linear Swarm)")
-
-    agents = create_finance_agents()[:3]
-    tasks = [
-        "Review loan application and credit history",
-        "Assess risk factors and compliance requirements",
-        "Generate final loan recommendation",
-    ]
-
-    print("\nTasks:")
-    for i, task in enumerate(tasks, 1):
-        print(f"{i}. {task}")
-
-    result = linear_swarm(agents, tasks)
-    print("\nResults:")
-    for log in result["history"]:
-        print(f"\n{log['agent_name']}:")
-        print(f"Task: {log['task']}")
-        print(f"Response: {log['response']}")
-
-
 def run_healthcare_star_swarm():
     """Complex medical case management using star swarm"""
     print_separator()
