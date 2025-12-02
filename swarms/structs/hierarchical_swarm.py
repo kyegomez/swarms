@@ -667,7 +667,7 @@ class HierarchicalSwarm:
         add_collaboration_prompt: bool = True,
         director_feedback_on: bool = True,
         interactive: bool = False,
-        director_system_prompt: str = HIEARCHICAL_SWARM_SYSTEM_PROMPT,
+        director_system_prompt: str = HIERARCHICAL_SWARM_SYSTEM_PROMPT,
         multi_agent_prompt_improvements: bool = False,
         director_temperature: float = 0.7,
         director_top_p: float = 0.9,
@@ -1279,7 +1279,7 @@ class HierarchicalSwarm:
                 agent_description="Director module that provides feedback to the worker agents",
                 model_name=self.director_model_name,
                 max_loops=1,
-                system_prompt=HIEARCHICAL_SWARM_SYSTEM_PROMPT,
+                system_prompt=HIERARCHICAL_SWARM_SYSTEM_PROMPT,
             )
 
             output = feedback_director.run(
