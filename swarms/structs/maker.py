@@ -179,7 +179,9 @@ class MAKER:
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.temperature_first = temperature_first
-        self.max_workers = max_workers if max_workers is not None else k
+        self.max_workers = (
+            max_workers if max_workers is not None else k
+        )
         self.verbose = verbose
         self.max_retries_per_step = max_retries_per_step
         self.agents = agents
@@ -245,10 +247,16 @@ class MAKER:
         if self.temperature < 0 or self.temperature > 2:
             raise ValueError("temperature must be between 0 and 2")
         if self.max_retries_per_step < 1:
-            raise ValueError("max_retries_per_step must be at least 1")
+            raise ValueError(
+                "max_retries_per_step must be at least 1"
+            )
 
     def _default_format_prompt(
-        self, task: str, state: Any, step_idx: int, previous_result: Any
+        self,
+        task: str,
+        state: Any,
+        step_idx: int,
+        previous_result: Any,
     ) -> str:
         """
         Default prompt formatter.
@@ -268,7 +276,9 @@ class MAKER:
             prompt_parts.insert(1, f"Current state: {state}")
 
         if previous_result is not None:
-            prompt_parts.insert(-1, f"Previous result: {previous_result}")
+            prompt_parts.insert(
+                -1, f"Previous result: {previous_result}"
+            )
 
         prompt_parts.append("Provide the result for this step.")
 
@@ -341,7 +351,11 @@ class MAKER:
         Returns:
             An Agent instance configured for single-step execution.
         """
-        temp = temperature if temperature is not None else self.temperature
+        temp = (
+            temperature
+            if temperature is not None
+            else self.temperature
+        )
 
         agent = Agent(
             agent_name=f"MAKER-MicroAgent-{uuid.uuid4().hex[:8]}",
@@ -395,16 +409,21 @@ class MAKER:
         elif isinstance(result, dict):
             return tuple(
                 sorted(
-                    (k, self._make_hashable(v)) for k, v in result.items()
+                    (k, self._make_hashable(v))
+                    for k, v in result.items()
                 )
             )
         elif isinstance(result, set):
-            return frozenset(self._make_hashable(item) for item in result)
+            return frozenset(
+                self._make_hashable(item) for item in result
+            )
         else:
             # Fall back to string representation
             return str(result)
 
-    def _unhash_result(self, hashable: Any, original_type: type) -> Any:
+    def _unhash_result(
+        self, hashable: Any, original_type: type
+    ) -> Any:
         """
         Convert a hashable result back to its original type.
 
@@ -418,11 +437,23 @@ class MAKER:
         if original_type in (str, int, float, bool, type(None)):
             return hashable
         elif original_type is list:
-            return list(hashable) if isinstance(hashable, tuple) else hashable
+            return (
+                list(hashable)
+                if isinstance(hashable, tuple)
+                else hashable
+            )
         elif original_type is dict:
-            return dict(hashable) if isinstance(hashable, tuple) else hashable
+            return (
+                dict(hashable)
+                if isinstance(hashable, tuple)
+                else hashable
+            )
         elif original_type is set:
-            return set(hashable) if isinstance(hashable, frozenset) else hashable
+            return (
+                set(hashable)
+                if isinstance(hashable, frozenset)
+                else hashable
+            )
         else:
             return hashable
 
@@ -456,7 +487,9 @@ class MAKER:
         self.stats["total_samples"] += 1
 
         agent = self._get_agent(temperature)
-        prompt = self.format_prompt(task, state, step_idx, previous_result)
+        prompt = self.format_prompt(
+            task, state, step_idx, previous_result
+        )
 
         try:
             response = agent.run(task=prompt)
@@ -465,7 +498,9 @@ class MAKER:
             if not self.validate_response(response, self.max_tokens):
                 self.stats["red_flagged"] += 1
                 if self.verbose:
-                    logger.debug(f"Red-flagged response at step {step_idx + 1}")
+                    logger.debug(
+                        f"Red-flagged response at step {step_idx + 1}"
+                    )
                 return None
 
             # Parse the response
@@ -522,11 +557,17 @@ class MAKER:
 
         while samples_this_step < self.max_retries_per_step:
             # Use temperature 0 for first vote, then configured temperature
-            temp = self.temperature_first if is_first_vote else self.temperature
+            temp = (
+                self.temperature_first
+                if is_first_vote
+                else self.temperature
+            )
             is_first_vote = False
 
             # Get a vote
-            result = self.get_vote(task, state, step_idx, previous_result, temp)
+            result = self.get_vote(
+                task, state, step_idx, previous_result, temp
+            )
             samples_this_step += 1
 
             if result is None:
@@ -553,7 +594,9 @@ class MAKER:
             if current_count >= max_other + self.k:
                 # We have a winner!
                 self.stats["votes_per_step"].append(votes_this_step)
-                self.stats["samples_per_step"].append(samples_this_step)
+                self.stats["samples_per_step"].append(
+                    samples_this_step
+                )
 
                 if self.verbose:
                     logger.debug(
@@ -605,13 +648,23 @@ class MAKER:
             ... )
         """
         if not task:
-            raise ValueError("task is required - this is the objective to complete")
+            raise ValueError(
+                "task is required - this is the objective to complete"
+            )
         if max_steps is None:
-            raise ValueError("max_steps is required - specify how many steps to execute")
+            raise ValueError(
+                "max_steps is required - specify how many steps to execute"
+            )
 
         if self.verbose:
-            logger.info(f"Starting MAKER with {max_steps} steps, k={self.k}")
-            logger.info(f"Task: {task[:100]}..." if len(task) > 100 else f"Task: {task}")
+            logger.info(
+                f"Starting MAKER with {max_steps} steps, k={self.k}"
+            )
+            logger.info(
+                f"Task: {task[:100]}..."
+                if len(task) > 100
+                else f"Task: {task}"
+            )
 
         # Initialize state
         state = self.initial_state
@@ -620,11 +673,18 @@ class MAKER:
         previous_result = None
 
         for step_idx in range(max_steps):
-            if self.verbose and (step_idx + 1) % max(1, max_steps // 10) == 0:
-                logger.info(f"Progress: {step_idx + 1}/{max_steps} steps completed")
+            if (
+                self.verbose
+                and (step_idx + 1) % max(1, max_steps // 10) == 0
+            ):
+                logger.info(
+                    f"Progress: {step_idx + 1}/{max_steps} steps completed"
+                )
 
             # Do voting for this step
-            result, response = self.do_voting(task, state, step_idx, previous_result)
+            result, response = self.do_voting(
+                task, state, step_idx, previous_result
+            )
 
             # Record the result
             results.append(result)
@@ -678,15 +738,23 @@ class MAKER:
             ... )
         """
         if not task:
-            raise ValueError("task is required - this is the objective to complete")
+            raise ValueError(
+                "task is required - this is the objective to complete"
+            )
         if stop_condition is None:
             raise ValueError("stop_condition must be provided")
 
         state = self.initial_state
 
         if self.verbose:
-            logger.info(f"Starting MAKER (conditional), max_steps={max_steps}, k={self.k}")
-            logger.info(f"Task: {task[:100]}..." if len(task) > 100 else f"Task: {task}")
+            logger.info(
+                f"Starting MAKER (conditional), max_steps={max_steps}, k={self.k}"
+            )
+            logger.info(
+                f"Task: {task[:100]}..."
+                if len(task) > 100
+                else f"Task: {task}"
+            )
 
         results = []
         previous_result = None
@@ -695,14 +763,20 @@ class MAKER:
             # Check stop condition
             if stop_condition(state, results, step_idx):
                 if self.verbose:
-                    logger.info(f"Stop condition met at step {step_idx + 1}")
+                    logger.info(
+                        f"Stop condition met at step {step_idx + 1}"
+                    )
                 break
 
             if self.verbose and (step_idx + 1) % 10 == 0:
-                logger.info(f"Progress: {step_idx + 1} steps completed")
+                logger.info(
+                    f"Progress: {step_idx + 1} steps completed"
+                )
 
             # Do voting for this step
-            result, response = self.do_voting(task, state, step_idx, previous_result)
+            result, response = self.do_voting(
+                task, state, step_idx, previous_result
+            )
 
             results.append(result)
             state = self.update_state(state, result, step_idx)
@@ -714,7 +788,9 @@ class MAKER:
 
         return results
 
-    def run_parallel_voting(self, task: str, max_steps: int = None) -> List[Any]:
+    def run_parallel_voting(
+        self, task: str, max_steps: int = None
+    ) -> List[Any]:
         """
         Run MAKER with parallel vote sampling.
 
@@ -730,22 +806,37 @@ class MAKER:
             List of results from each step.
         """
         if not task:
-            raise ValueError("task is required - this is the objective to complete")
+            raise ValueError(
+                "task is required - this is the objective to complete"
+            )
         if max_steps is None:
-            raise ValueError("max_steps is required - specify how many steps to execute")
+            raise ValueError(
+                "max_steps is required - specify how many steps to execute"
+            )
 
         state = self.initial_state
 
         if self.verbose:
-            logger.info(f"Starting MAKER (parallel) with {max_steps} steps, k={self.k}")
-            logger.info(f"Task: {task[:100]}..." if len(task) > 100 else f"Task: {task}")
+            logger.info(
+                f"Starting MAKER (parallel) with {max_steps} steps, k={self.k}"
+            )
+            logger.info(
+                f"Task: {task[:100]}..."
+                if len(task) > 100
+                else f"Task: {task}"
+            )
 
         results = []
         previous_result = None
 
         for step_idx in range(max_steps):
-            if self.verbose and (step_idx + 1) % max(1, max_steps // 10) == 0:
-                logger.info(f"Progress: {step_idx + 1}/{max_steps} steps completed")
+            if (
+                self.verbose
+                and (step_idx + 1) % max(1, max_steps // 10) == 0
+            ):
+                logger.info(
+                    f"Progress: {step_idx + 1}/{max_steps} steps completed"
+                )
 
             result, response = self._do_voting_parallel(
                 task, state, step_idx, previous_result
@@ -826,7 +917,9 @@ class MAKER:
                     if hashable_result not in votes:
                         votes[hashable_result] = 0
                         responses[hashable_result] = response
-                        original_types[hashable_result] = original_type
+                        original_types[hashable_result] = (
+                            original_type
+                        )
                     votes[hashable_result] += 1
 
         # Check if we have a winner, continue sequentially if not
@@ -840,8 +933,12 @@ class MAKER:
                 )
 
                 if leader_count >= max_other + self.k:
-                    self.stats["votes_per_step"].append(votes_this_step)
-                    self.stats["samples_per_step"].append(samples_this_step)
+                    self.stats["votes_per_step"].append(
+                        votes_this_step
+                    )
+                    self.stats["samples_per_step"].append(
+                        samples_this_step
+                    )
 
                     final_result = self._unhash_result(
                         leader, original_types[leader]
@@ -850,7 +947,11 @@ class MAKER:
 
             # No winner yet, get more votes sequentially
             result = self.get_vote(
-                task, state, step_idx, previous_result, self.temperature
+                task,
+                state,
+                step_idx,
+                previous_result,
+                self.temperature,
             )
             samples_this_step += 1
 
@@ -873,10 +974,14 @@ class MAKER:
         logger.info("=" * 50)
         logger.info("MAKER Execution Statistics")
         logger.info("=" * 50)
-        logger.info(f"Steps completed: {self.stats['steps_completed']}")
+        logger.info(
+            f"Steps completed: {self.stats['steps_completed']}"
+        )
         logger.info(f"Total samples: {self.stats['total_samples']}")
         logger.info(f"Total valid votes: {self.stats['total_votes']}")
-        logger.info(f"Red-flagged responses: {self.stats['red_flagged']}")
+        logger.info(
+            f"Red-flagged responses: {self.stats['red_flagged']}"
+        )
 
         if self.stats["votes_per_step"]:
             avg_votes = sum(self.stats["votes_per_step"]) / len(
@@ -890,14 +995,20 @@ class MAKER:
             avg_samples = sum(self.stats["samples_per_step"]) / len(
                 self.stats["samples_per_step"]
             )
-            logger.info(f"Average samples per step: {avg_samples:.2f}")
+            logger.info(
+                f"Average samples per step: {avg_samples:.2f}"
+            )
 
-        red_flag_rate = self.stats["red_flagged"] / max(1, self.stats["total_samples"])
+        red_flag_rate = self.stats["red_flagged"] / max(
+            1, self.stats["total_samples"]
+        )
         logger.info(f"Red-flag rate: {red_flag_rate:.2%}")
         logger.info("=" * 50)
 
     def estimate_cost(
-        self, total_steps: int, target_success_probability: float = 0.95
+        self,
+        total_steps: int,
+        target_success_probability: float = 0.95,
     ) -> Dict[str, Any]:
         """
         Estimate the expected cost of solving a task with given steps.
@@ -917,7 +1028,9 @@ class MAKER:
             valid_rate = self.stats["total_votes"] / max(
                 1, self.stats["total_samples"]
             )
-            p = valid_rate * 0.99  # Assume 99% of valid votes are correct
+            p = (
+                valid_rate * 0.99
+            )  # Assume 99% of valid votes are correct
         else:
             p = 0.99  # Default assumption
 
@@ -928,7 +1041,9 @@ class MAKER:
         if p > 0.5:
             ratio = (1 - p) / p
             try:
-                k_min = math.ceil(math.log(t ** (-1 / s) - 1) / math.log(ratio))
+                k_min = math.ceil(
+                    math.log(t ** (-1 / s) - 1) / math.log(ratio)
+                )
             except (ValueError, ZeroDivisionError):
                 k_min = 1
         else:
@@ -973,72 +1088,6 @@ class MAKER:
             "votes_per_step": [],
             "samples_per_step": [],
         }
-        self.conversation = Conversation(name=f"maker_{self.name}_{self.id}")
-
-
-if __name__ == "__main__":
-    import re
-
-    # Example: Using MAKER for a simple step-by-step task
-    print("MAKER: General-purpose example")
-    print("=" * 50)
-
-    # Define task-specific functions for a counting task
-    def format_counting_prompt(task, state, step_idx, previous_result):
-        """Format prompt for counting task."""
-        if previous_result is None:
-            return f"{task}\nThis is step 1. What is the first number? Reply with just the number."
-        return f"{task}\nThe previous number was {previous_result}. What is the next number? Reply with just the number."
-
-    def parse_counting_response(response):
-        """Parse the counting response to extract the number."""
-        numbers = re.findall(r"\d+", response)
-        if numbers:
-            return int(numbers[0])
-        return response.strip()
-
-    def validate_counting_response(response, max_tokens):
-        """Validate counting response."""
-        if len(response) > max_tokens * 4:
-            return False
-        return bool(re.search(r"\d+", response))
-
-    # Create MAKER instance
-    maker = MAKER(
-        name="CountingExample",
-        description="MAKER example: counting numbers",
-        model_name="gpt-4o-mini",
-        system_prompt="You are a helpful assistant. When asked to count, respond with just the number, nothing else.",
-        format_prompt=format_counting_prompt,
-        parse_response=parse_counting_response,
-        validate_response=validate_counting_response,
-        k=2,
-        max_tokens=100,
-        temperature=0.1,
-        verbose=True,
-    )
-
-    print("\nRunning MAKER to count from 1 to 10...")
-
-    # Run the solver with the task as the main input
-    try:
-        results = maker.run(
-            task="Count from 1 to 10, one number at a time",
-            max_steps=10,
+        self.conversation = Conversation(
+            name=f"maker_{self.name}_{self.id}"
         )
-        print(f"\nResults: {results}")
-        print("Expected: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]")
-
-        # Show statistics
-        stats = maker.get_statistics()
-        print("\nStatistics:")
-        print(f"  Steps completed: {stats['steps_completed']}")
-        print(f"  Total samples: {stats['total_samples']}")
-        print(f"  Red-flagged: {stats['red_flagged']}")
-        if stats["votes_per_step"]:
-            print(
-                f"  Avg votes per step: {sum(stats['votes_per_step'])/len(stats['votes_per_step']):.2f}"
-            )
-    except Exception as e:
-        print(f"Error: {e}")
-        print("(This example requires an API key to be configured)")

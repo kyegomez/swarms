@@ -306,7 +306,6 @@ class SwarmRouter:
                     "See https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
                 )
 
-
             if (
                 self.swarm_type == "AgentRearrange"
                 and self.rearrange_flow is None

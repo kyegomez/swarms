@@ -356,9 +356,19 @@ nav:
     - Paper Implementations: "examples/paper_implementations.md"
     - Templates & Applications: "examples/templates.md"
     - Community Resources: "examples/community_resources.md"
-    - CLI Examples: "swarms/cli/cli_examples.md"
+
+    - CLI Guides:
+      - Overview: "examples/cli_guides_overview.md"
+      - CLI Quickstart: "swarms/cli/cli_quickstart.md"
+      - Creating Agents from CLI: "swarms/cli/cli_agent_guide.md"
+      - YAML Configuration: "swarms/cli/cli_yaml_guide.md"
+      - LLM Council CLI: "swarms/cli/cli_llm_council_guide.md"
+      - Heavy Swarm CLI: "swarms/cli/cli_heavy_swarm_guide.md"
+      - CLI Multi-Agent Commands: "examples/cli_multi_agent_quickstart.md"
+      - CLI Examples: "swarms/cli/cli_examples.md"
 
     - Basic Examples:
+      - Overview: "examples/basic_examples_overview.md"
       - Individual Agents:
         - Basic Agent: "swarms/examples/basic_agent.md"
         - Tool Usage:
@@ -374,6 +384,7 @@ nav:
           - Agent Output Types: "swarms/examples/agent_output_types.md"
           - Gradio Chat Interface: "swarms/ui/main.md"
           - Agent with Gemini Nano Banana: "swarms/examples/jarvis_agent.md"
+          - Agent Marketplace Publishing: "examples/marketplace_publishing_quickstart.md"
         - LLM Providers:
           - Language Models:
             - Overview: "swarms/examples/model_providers.md"
@@ -391,7 +402,9 @@ nav:
 
 
 
+
     - Advanced Examples:
+      - Overview: "examples/multi_agent_architectures_overview.md"
       - Multi-Agent Architectures:
         - HierarchicalSwarm Examples: "swarms/examples/hierarchical_swarm_example.md"
         - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
@@ -407,20 +420,26 @@ nav:
         - Agents as Tools: "swarms/examples/agents_as_tools.md"
         - Aggregate Multi-Agent Responses: "swarms/examples/aggregate.md"
         - Interactive GroupChat Example: "swarms/examples/igc_example.md"
+        - LLM Council Quickstart: "examples/llm_council_quickstart.md"
+        - DebateWithJudge Quickstart: "examples/debate_quickstart.md"
+        - GraphWorkflow with Rustworkx: "examples/graphworkflow_quickstart.md"
         - BatchedGridWorkflow Examples:
           - Simple BatchedGridWorkflow: "swarms/examples/batched_grid_simple_example.md"
           - Advanced BatchedGridWorkflow: "swarms/examples/batched_grid_advanced_example.md"
-        - Applications:
-          - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
-          - Hiearchical Marketing Team: "examples/marketing_team.md"
-          - Gold ETF Research with HeavySwarm: "examples/gold_etf_research.md"
-          - Hiring Swarm: "examples/hiring_swarm.md"
-          - Advanced Research: "examples/av.md"
-          - Real Estate Swarm: "examples/realestate_swarm.md"
-          - Job Finding Swarm: "examples/job_finding.md"
-          - Mergers & Aquisition (M&A) Advisory Swarm: "examples/ma_swarm.md"
+    
+    - Applications:
+      - Overview: "examples/applications_overview.md"
+      - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
+      - Hiearchical Marketing Team: "examples/marketing_team.md"
+      - Gold ETF Research with HeavySwarm: "examples/gold_etf_research.md"
+      - Hiring Swarm: "examples/hiring_swarm.md"
+      - Advanced Research: "examples/av.md"
+      - Real Estate Swarm: "examples/realestate_swarm.md"
+      - Job Finding Swarm: "examples/job_finding.md"
+      - Mergers & Aquisition (M&A) Advisory Swarm: "examples/ma_swarm.md"
     
     - Tools & Integrations:
+      - Overview: "examples/tools_integrations_overview.md"
       - Web Search with Exa: "examples/exa_search.md"
       - Browser Use: "examples/browser_use.md"
       - Yahoo Finance: "swarms/examples/yahoo_finance.md"
@@ -430,13 +449,16 @@ nav:
         - Multi-MCP Agent Integration: "swarms/examples/multi_mcp_agent.md"
 
     - RAG:
+      - Overview: "examples/rag_examples_overview.md"
       - RAG with Qdrant: "swarms/RAG/qdrant_rag.md"
 
     - Apps:
+      - Overview: "examples/apps_examples_overview.md"
       - Web Scraper Agents: "developer_guides/web_scraper.md"
       - Smart Database: "examples/smart_database.md"
       
     - AOP:
+      - Overview: "examples/aop_examples_overview.md"
       - Medical AOP Example: "examples/aop_medical.md"
 
     - X402:

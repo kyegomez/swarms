@@ -1,16 +1,16 @@
 import asyncio
 import base64
+import socket
 import traceback
 import uuid
 from pathlib import Path
 from typing import List, Optional
-import socket
 
 import litellm
-from pydantic import BaseModel
 import requests
 from litellm import completion, supports_vision
 from loguru import logger
+from pydantic import BaseModel
 
 
 class LiteLLMException(Exception):
@@ -401,70 +401,6 @@ class LiteLLM:
             else:
                 # Store other types of runtime_args for debugging
                 completion_params["runtime_args"] = runtime_args
-
-    # def output_for_tools(self, response: any):
-    #     """
-    #     Process tool calls from the LLM response and return formatted output.
-
-    #     Args:
-    #         response: The response object from the LLM API call
-
-    #     Returns:
-    #         dict or list: Formatted tool call data, or default response if no tool calls
-    #     """
-    #     try:
-    #         # Convert response to dict if it's a Pydantic model
-    #         if hasattr(response, "model_dump"):
-    #             response_dict = response.model_dump()
-    #         else:
-    #             response_dict = response
-
-    #         print(f"Response dict: {response_dict}")
-
-    #         # Check if tool_calls exists and is not None
-    #         if (
-    #             response_dict.get("choices")
-    #             and response_dict["choices"][0].get("message")
-    #             and response_dict["choices"][0]["message"].get(
-    #                 "tool_calls"
-    #             )
-    #             and len(
-    #                 response_dict["choices"][0]["message"][
-    #                     "tool_calls"
-    #                 ]
-    #             )
-    #             > 0
-    #         ):
-    #             tool_call = response_dict["choices"][0]["message"][
-    #                 "tool_calls"
-    #             ][0]
-    #             if "function" in tool_call:
-    #                 return {
-    #                     "function": {
-    #                         "name": tool_call["function"].get(
-    #                             "name", ""
-    #                         ),
-    #                         "arguments": tool_call["function"].get(
-    #                             "arguments", "{}"
-    #                         ),
-    #                     }
-    #                 }
-    #             else:
-    #                 # Handle case where tool_call structure is different
-    #                 return tool_call
-    #         else:
-    #             # Return a default response when no tool calls are present
-    #             logger.warning(
-    #                 "No tool calls found in response, returning default response"
-    #             )
-    #             return {
-    #                 "function": {
-    #                     "name": "no_tool_call",
-    #                     "arguments": "{}",
-    #                 }
-    #             }
-    #     except Exception as e:
-    #         logger.error(f"Error processing tool calls: {str(e)} Traceback: {traceback.format_exc()}")
 
     def output_for_tools(self, response: any):
         """

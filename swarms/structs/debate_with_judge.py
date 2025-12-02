@@ -105,12 +105,12 @@ class DebateWithJudge:
         >>> # Using preset agents (simplest approach)
         >>> debate = DebateWithJudge(preset_agents=True, max_loops=3)
         >>> result = debate.run("Should AI be regulated?")
-        
+
         >>> # Using a list of agents
         >>> agents = [pro_agent, con_agent, judge_agent]
         >>> debate = DebateWithJudge(agents=agents, max_loops=3)
         >>> result = debate.run("Is remote work better than office work?")
-        
+
         >>> # Using individual agent parameters
         >>> debate = DebateWithJudge(
         ...     pro_agent=my_pro_agent,
@@ -235,7 +235,11 @@ class DebateWithJudge:
             return
 
         # Option 2: Use individual agent parameters
-        if pro_agent is not None and con_agent is not None and judge_agent is not None:
+        if (
+            pro_agent is not None
+            and con_agent is not None
+            and judge_agent is not None
+        ):
             self.pro_agent = pro_agent
             self.con_agent = con_agent
             self.judge_agent = judge_agent
@@ -321,9 +325,7 @@ class DebateWithJudge:
         # Execute N loops of debate and refinement
         for round_num in range(self.max_loops):
             if self.verbose:
-                logger.info(
-                    f"Loop {round_num + 1}/{self.max_loops}"
-                )
+                logger.info(f"Loop {round_num + 1}/{self.max_loops}")
 
             # Step 1: Pro agent presents argument
             pro_prompt = self._create_pro_prompt(
