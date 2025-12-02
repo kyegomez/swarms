@@ -107,49 +107,6 @@ def grid_swarm(
     return history_output_formatter(conversation, output_type)
 
 
-# Linear Swarm: Agents process tasks in a sequential linear manner
-def linear_swarm(
-    agents: AgentListType,
-    tasks: List[str],
-    output_type: OutputType = "dict",
-) -> Union[Dict[str, Any], List[str]]:
-    """
-    Implements a linear swarm where agents process tasks in a sequential manner.
-
-    Args:
-        agents (AgentListType): A list of Agent objects to participate in the swarm.
-        tasks (List[str]): A list of tasks to be processed by the agents.
-        output_type (OutputType, optional): The format of the output. Defaults to "dict".
-
-    Returns:
-        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
-            If output_type is "dict", returns a dictionary containing the conversation history.
-            If output_type is "list", returns a list of responses.
-
-    Raises:
-        ValueError: If agents or tasks lists are empty.
-    """
-    if not agents or not tasks:
-        raise ValueError("Agents and tasks lists cannot be empty.")
-
-    conversation = Conversation()
-
-    for agent in agents:
-        if tasks:
-            task = tasks.pop(0)
-            conversation.add(
-                role="User",
-                content=task,
-            )
-            response = agent.run(conversation.get_str())
-            conversation.add(
-                role=agent.agent_name,
-                content=response,
-            )
-
-    return history_output_formatter(conversation, output_type)
-
-
 # Star Swarm: A central agent first processes all tasks, followed by others
 def star_swarm(
     agents: AgentListType,

@@ -8,7 +8,6 @@ from swarms.structs.swarming_architectures import (
     exponential_swarm,
     fibonacci_swarm,
     grid_swarm,
-    linear_swarm,
     mesh_swarm,
     one_to_three,
     prime_swarm,
@@ -119,30 +118,6 @@ def run_healthcare_grid_swarm():
     result = grid_swarm(agents, tasks)
     print("\nGrid swarm processing completed")
     print(result)
-
-
-def run_finance_linear_swarm():
-    """Loan approval process using linear swarm"""
-    print_separator()
-    print("FINANCE - LOAN APPROVAL PROCESS (Linear Swarm)")
-
-    agents = create_finance_agents()[:3]
-    tasks = [
-        "Review loan application and credit history",
-        "Assess risk factors and compliance requirements",
-        "Generate final loan recommendation",
-    ]
-
-    print("\nTasks:")
-    for i, task in enumerate(tasks, 1):
-        print(f"{i}. {task}")
-
-    result = linear_swarm(agents, tasks)
-    print("\nResults:")
-    for log in result["history"]:
-        print(f"\n{log['agent_name']}:")
-        print(f"Task: {log['task']}")
-        print(f"Response: {log['response']}")
 
 
 def run_healthcare_star_swarm():
@@ -287,7 +262,6 @@ async def run_all_examples():
 
     # Finance examples
     run_finance_circular_swarm()
-    run_finance_linear_swarm()
     run_finance_mesh_swarm()
     run_mathematical_finance_swarms()
 

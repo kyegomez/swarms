@@ -8,7 +8,6 @@ from swarms.structs.swarming_architectures import (
     geometric_swarm,
     grid_swarm,
     harmonic_swarm,
-    linear_swarm,
     log_swarm,
     mesh_swarm,
     one_to_one,
@@ -67,21 +66,6 @@ def test_grid_swarm():
 
     assert isinstance(result, list)
     assert len(result) > 0
-
-
-def test_linear_swarm():
-    """Test linear swarm sequential processing"""
-    agents = create_test_agents(3)
-    tasks = ["Research task", "Write content", "Review output"]
-
-    result = linear_swarm(agents, tasks)
-
-    assert isinstance(result, list)
-    assert len(result) > 0
-
-    for log in result:
-        assert "role" in log
-        assert "content" in log
 
 
 def test_star_swarm():
