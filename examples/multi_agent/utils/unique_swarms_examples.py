@@ -8,7 +8,6 @@ from swarms.structs.swarming_architectures import (
     exponential_swarm,
     fibonacci_swarm,
     grid_swarm,
-    linear_swarm,
     mesh_swarm,
     one_to_three,
     prime_swarm,
@@ -263,7 +262,6 @@ async def run_all_examples():
 
     # Finance examples
     run_finance_circular_swarm()
-    run_finance_linear_swarm()
     run_finance_mesh_swarm()
     run_mathematical_finance_swarms()
 
