@@ -37,7 +37,7 @@ from rich.text import Text
 from rich.tree import Tree
 
 from swarms.prompts.hierarchical_system_prompt import (
-    HIEARCHICAL_SWARM_SYSTEM_PROMPT,
+    HIERARCHICAL_SWARM_SYSTEM_PROMPT,
     DIRECTOR_PLANNING_PROMPT,
 )
 from swarms.prompts.multi_agent_collab_prompt import (
