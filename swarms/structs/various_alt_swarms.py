@@ -119,60 +119,6 @@ class CircularSwarm(BaseSwarm):
         return self._format_return()
 
 
-class LinearSwarm(BaseSwarm):
-    """
-    Implements a linear swarm where agents process tasks sequentially.
-    """
-
-    def __init__(
-        self,
-        agents: AgentListType,
-        name: str = "LinearSwarm",
-        description: str = "A linear swarm where agents process tasks sequentially",
-        output_type: str = "dict",
-    ):
-        """
-        Initialize the LinearSwarm.
-
-        Args:
-            agents: List of Agent objects or nested list of Agent objects
-            name: Name of the swarm
-            description: Description of the swarm's purpose
-            output_type: Type of output format, one of 'dict', 'list', 'string', 'json', 'yaml', 'xml', etc.
-        """
-        super().__init__(agents, name, description, output_type)
-
-    def run(self, tasks: List[str]) -> Union[Dict, List, str]:
-        """
-        Run the linear swarm with the given tasks
-
-        Args:
-            tasks: List of tasks to be processed
-
-        Returns:
-            Union[Dict, List, str]: The conversation history in the requested format
-        """
-        if not self.agents or not tasks:
-            raise ValueError(
-                "Agents and tasks lists cannot be empty."
-            )
-
-        tasks_copy = tasks.copy()
-        responses = []
-
-        for agent in self.agents:
-            if tasks_copy:
-                task = tasks_copy.pop(0)
-                response = agent.run(task)
-                self.conversation.add(
-                    role=agent.agent_name,
-                    content=response,
-                )
-                responses.append(response)
-
-        return self._format_return()
-
-
 class StarSwarm(BaseSwarm):
     """
     Implements a star swarm where a central agent processes all tasks, followed by others.
