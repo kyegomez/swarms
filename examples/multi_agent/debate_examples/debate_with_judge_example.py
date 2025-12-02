@@ -1,4 +1,3 @@
-
 from swarms import DebateWithJudge
 
 debate_system = DebateWithJudge(

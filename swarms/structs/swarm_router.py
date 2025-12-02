@@ -26,7 +26,7 @@ from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.debate_with_judge import DebateWithJudge
 from swarms.structs.groupchat import GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
-from swarms.structs.hierarchical_swarm import HierarchicalSwarm
+from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 from swarms.structs.interactive_groupchat import InteractiveGroupChat
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.majority_voting import MajorityVoting
@@ -305,25 +305,6 @@ class SwarmRouter:
                     f"Valid types are: {', '.join(valid_swarm_types)}. "
                     "See https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
                 )
-
-            if (
-                self.swarm_type != "HeavySwarm"
-                and self.swarm_type != "DebateWithJudge"
-                and self.agents is None
-            ):
-                raise SwarmRouterConfigError(
-                    "SwarmRouter: No agents provided for the swarm. Check the docs to learn of required parameters. https://docs.swarms.world/en/latest/swarms/structs/agent/"
-                )
-
-            if self.swarm_type == "DebateWithJudge":
-                if self.agents is None or len(self.agents) != 3:
-                    raise SwarmRouterConfigError(
-                        "SwarmRouter: DebateWithJudge requires exactly 3 agents: "
-                        "pro_agent (arguing in favor), con_agent (arguing against), "
-                        "and judge_agent (evaluating and synthesizing). "
-                        f"Provided {len(self.agents) if self.agents else 0} agent(s). "
-                        "Check the docs: https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
-                    )
 
             if (
                 self.swarm_type == "AgentRearrange"
