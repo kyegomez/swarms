@@ -106,7 +106,6 @@ def grid_swarm(
 
     return history_output_formatter(conversation, output_type)
 
-
 # Star Swarm: A central agent first processes all tasks, followed by others
 def star_swarm(
     agents: AgentListType,
