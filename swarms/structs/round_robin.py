@@ -18,10 +18,14 @@ class RoundRobinSwarm:
     """
     A swarm implementation that executes tasks in a round-robin fashion.
 
+    This swarm implements an AutoGen-style communication pattern where agents
+    are shuffled randomly each loop for varied interaction patterns. Each agent
+    receives the full conversation context to build upon others' responses.
+
     Args:
         name (str): Name of the swarm. Defaults to "RoundRobinSwarm".
         description (str): Description of the swarm's purpose.
-        agents (List[Agent], optional): List of agents in the swarm. Defaults to None.
+        agents (List[Agent]): List of agents in the swarm. Required.
         verbose (bool, optional): Flag to enable verbose mode. Defaults to False.
         max_loops (int, optional): Maximum number of loops to run. Defaults to 1.
         callback (callable, optional): Callback function to be called after each loop. Defaults to None.
@@ -29,14 +33,25 @@ class RoundRobinSwarm:
         output_type (OutputType, optional): Type of output format. Defaults to "final".
 
     Attributes:
+        name (str): Name of the swarm.
+        description (str): Description of the swarm's purpose.
         agents (List[Agent]): List of agents in the swarm.
         verbose (bool): Flag to enable verbose mode.
         max_loops (int): Maximum number of loops to run.
+        callback (callable): Callback function executed after each loop.
         index (int): Current index of the agent being executed.
+        max_retries (int): Maximum number of retries for agent execution.
+        output_type (OutputType): Type of output format.
         conversation (Conversation): Conversation history for the swarm.
 
     Methods:
-        run(task: str, *args, **kwargs) -> Any: Executes the given task on the agents in a round-robin fashion.
+        run(task: str, *args, **kwargs) -> Union[str, dict, list]:
+            Executes the given task on the agents in a round-robin fashion.
+        run_batch(tasks: List[str]) -> List:
+            Executes multiple tasks sequentially, returning results for each.
+
+    Raises:
+        ValueError: If no agents are provided during initialization.
 
     """
 
@@ -217,5 +232,22 @@ class RoundRobinSwarm:
             logger.error(f"Round-robin execution failed: {str(e)}")
             raise
 
-    def run_batch(self, tasks: List[str]):
+    def run_batch(self, tasks: List[str]) -> List[Union[str, dict, list]]:
+        """
+        Execute multiple tasks sequentially through the round-robin swarm.
+
+        Each task is processed independently through the full round-robin
+        execution cycle, with agents collaborating on each task in turn.
+
+        Args:
+            tasks (List[str]): A list of task strings to be executed.
+
+        Returns:
+            List[Union[str, dict, list]]: A list of results, one for each task,
+                in the format specified by output_type.
+
+        Example:
+            >>> swarm = RoundRobinSwarm(agents=[agent1, agent2])
+            >>> results = swarm.run_batch(["Task 1", "Task 2", "Task 3"])
+        """
         return [self.run(task) for task in tasks]
