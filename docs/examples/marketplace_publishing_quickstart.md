@@ -74,9 +74,6 @@ my_agent = Agent(
         }
     ],
     
-    # Required: Tags and capabilities
-    tags=["finance", "crypto", "stocks", "analysis"],
-    capabilities=["market-analysis", "risk-assessment", "portfolio-optimization"]
 )
 ```
 
@@ -170,8 +167,6 @@ print(result)
 |-------|------|-------------|
 | `publish_to_marketplace` | `bool` | Set to `True` to enable publishing |
 | `use_cases` | `List[Dict]` | List of use case dictionaries with `title` and `description` |
-| `tags` | `List[str]` | Keywords for discovery |
-| `capabilities` | `List[str]` | Agent capabilities for matching |
 
 ### Use Case Format
 
@@ -243,31 +238,15 @@ print(response)
 
 ---
 
-## Monetization
-
-To create a paid agent:
-
-```python
-from swarms.utils.swarms_marketplace_utils import add_prompt_to_marketplace
-
-response = add_prompt_to_marketplace(
-    name="Premium Analysis Agent",
-    prompt="Your premium agent prompt...",
-    description="Advanced analysis capabilities",
-    use_cases=[...],
-    tags="premium, advanced",
-    category="finance",
-    is_free=False,         # Paid agent
-    price_usd=9.99         # Price per use
-)
-```
 
 ---
 
 ## Next Steps
 
-- Visit [Swarms Marketplace](https://swarms.world) to browse published agents
-- Learn about [Marketplace Documentation](../swarms_platform/share_and_discover.md)
-- Explore [Monetization Options](../swarms_platform/monetize.md)
-- See [API Key Management](../swarms_platform/apikeys.md)
+| Next Step | Description |
+|-----------|-------------|
+| [Swarms Marketplace](https://swarms.world) | Browse published agents |
+| [Marketplace Documentation](../swarms_platform/share_and_discover.md) | Learn how to publish and discover agents |
+| [Monetization Options](../swarms_platform/monetize.md) | Explore ways to monetize your agent |
+| [API Key Management](../swarms_platform/apikeys.md) | Manage your API keys for publishing and access |
 

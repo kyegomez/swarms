@@ -882,6 +882,8 @@ class OneToOne:
         self,
         sender: Agent,
         receiver: Agent,
+        name: str = "OneToOne",
+        description: str = "A one-to-one communication pattern between two agents",
         output_type: str = "dict",
     ):
         """
@@ -890,10 +892,14 @@ class OneToOne:
         Args:
             sender: The sender agent
             receiver: The receiver agent
+            name: Name of the communication pattern
+            description: Description of the communication pattern's purpose
             output_type: Type of output format, one of 'dict', 'list', 'string', 'json', 'yaml', 'xml', etc.
         """
         self.sender = sender
         self.receiver = receiver
+        self.name = name
+        self.description = description
         self.output_type = output_type
         self.conversation = Conversation()
 
@@ -959,6 +965,8 @@ class Broadcast:
         self,
         sender: Agent,
         receivers: AgentListType,
+        name: str = "Broadcast",
+        description: str = "A broadcast communication pattern from one agent to many agents",
         output_type: str = "dict",
     ):
         """
@@ -967,6 +975,8 @@ class Broadcast:
         Args:
             sender: The sender agent
             receivers: List of receiver agents
+            name: Name of the communication pattern
+            description: Description of the communication pattern's purpose
             output_type: Type of output format, one of 'dict', 'list', 'string', 'json', 'yaml', 'xml', etc.
         """
         self.sender = sender
@@ -975,6 +985,8 @@ class Broadcast:
             if isinstance(receivers[0], list)
             else receivers
         )
+        self.name = name
+        self.description = description
         self.output_type = output_type
         self.conversation = Conversation()
 
@@ -1027,6 +1039,8 @@ class OneToThree:
         self,
         sender: Agent,
         receivers: AgentListType,
+        name: str = "OneToThree",
+        description: str = "A one-to-three communication pattern from one agent to exactly three agents",
         output_type: str = "dict",
     ):
         """
@@ -1035,6 +1049,8 @@ class OneToThree:
         Args:
             sender: The sender agent
             receivers: List of exactly three receiver agents
+            name: Name of the communication pattern
+            description: Description of the communication pattern's purpose
             output_type: Type of output format, one of 'dict', 'list', 'string', 'json', 'yaml', 'xml', etc.
         """
         if len(receivers) != 3:
@@ -1044,6 +1060,8 @@ class OneToThree:
 
         self.sender = sender
         self.receivers = receivers
+        self.name = name
+        self.description = description
         self.output_type = output_type
         self.conversation = Conversation()
 

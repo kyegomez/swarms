@@ -986,8 +986,10 @@ class GraphWorkflow:
                 f"Error in GraphWorkflow.add_node for agent {getattr(agent, 'agent_name', 'unnamed')}: {e}"
             )
             raise e
-        
-    def add_nodes(self, agents: List[Agent], batch_size: int = 10, **kwargs: Any) -> None:
+
+    def add_nodes(
+        self, agents: List[Agent], batch_size: int = 10, **kwargs: Any
+    ) -> None:
         """
         Add multiple agents to the workflow graph concurrently in batches.
 
@@ -996,18 +998,24 @@ class GraphWorkflow:
             batch_size (int): Number of agents to add concurrently in a batch. Defaults to 8.
             **kwargs: Additional keyword arguments for each node addition.
         """
-        
+
         try:
-            with concurrent.futures.ThreadPoolExecutor(max_workers = self._max_workers) as executor:
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=self._max_workers
+            ) as executor:
                 # Process agents in batches
                 for i in range(0, len(agents), batch_size):
-                    batch = agents[i:i + batch_size]
+                    batch = agents[i : i + batch_size]
                     futures = [
-                        executor.submit(self.add_node, agent, **kwargs)
+                        executor.submit(
+                            self.add_node, agent, **kwargs
+                        )
                         for agent in batch
                     ]
                     # Ensure all nodes in batch are added before next batch
-                    for future in concurrent.futures.as_completed(futures):
+                    for future in concurrent.futures.as_completed(
+                        futures
+                    ):
                         future.result()
         except Exception as e:
             logger.exception(
@@ -2292,7 +2300,6 @@ class GraphWorkflow:
                 f"Error in GraphWorkflow.visualize_simple: {e}"
             )
             raise e
-        
 
     def to_json(
         self,

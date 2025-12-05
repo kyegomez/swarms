@@ -4,7 +4,6 @@ This directory contains examples demonstrating integration with external agent s
 
 ## Examples
 
-- [custom_agent_example.py](custom_agent_example.py) - Custom agent implementation
 - [openai_assistant_wrapper.py](openai_assistant_wrapper.py) - OpenAI Assistant integration wrapper
 
 ## Overview
