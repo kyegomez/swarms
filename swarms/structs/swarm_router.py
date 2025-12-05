@@ -39,6 +39,7 @@ from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 from swarms.structs.llm_council import LLMCouncil
+from swarms.structs.round_robin import RoundRobinSwarm
 
 logger = initialize_logger(log_folder="swarm_router")
 
@@ -60,6 +61,7 @@ SwarmType = Literal[
     "BatchedGridWorkflow",
     "LLMCouncil",
     "DebateWithJudge",
+    "RoundRobin",
 ]
 
 
@@ -157,6 +159,7 @@ class SwarmRouter:
         - MixtureOfAgents: Combines multiple agent types for diverse tasks
         - SequentialWorkflow: Executes tasks sequentially
         - ConcurrentWorkflow: Executes tasks in parallel
+        - RoundRobin: Executes tasks in a round-robin fashion, cycling through agents
         - "auto": Automatically selects best swarm type via embedding search
 
     Methods:
@@ -425,6 +428,7 @@ class SwarmRouter:
             "BatchedGridWorkflow": self._create_batched_grid_workflow,
             "LLMCouncil": self._create_llm_council,
             "DebateWithJudge": self._create_debate_with_judge,
+            "RoundRobin": self._create_round_robin_swarm,
         }
 
     def _create_heavy_swarm(self, *args, **kwargs):
@@ -595,6 +599,19 @@ class SwarmRouter:
             agents=self.agents,
             max_loops=self.max_loops,
             output_type=self.output_type,
+            *args,
+            **kwargs,
+        )
+
+    def _create_round_robin_swarm(self, *args, **kwargs):
+        """Factory function for RoundRobinSwarm."""
+        return RoundRobinSwarm(
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
+            max_loops=self.max_loops,
+            verbose=self.verbose,
+            return_json_on=self.return_json,
             *args,
             **kwargs,
         )
