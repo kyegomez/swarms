@@ -22,7 +22,7 @@ Canonical import
 Use the canonical agent import in application code:
 
 ```python
-from swarms.agents.cr_ca_agent import CRCAAgent
+from path.to.crca_agent import CRCAAgent
 ```
 
 Quickstart
@@ -30,7 +30,7 @@ Quickstart
 Minimal example — deterministic mode: initialize, add edges, evolve state and get counterfactuals:
 
 ```python
-from swarms.agents.cr_ca_agent import CRCAAgent
+from path.to.crca_agent import CRCAAgent
 
 agent = CRCAAgent(variables=["price", "demand", "inventory"])
 agent.add_causal_relationship("price", "demand", strength=-0.5)
@@ -48,7 +48,7 @@ LLM-based causal analysis example
 ----------------------------------
 
 ```python
-from swarms.agents.cr_ca_agent import CRCAAgent
+from path.to.crca_agent import CRCAAgent
 
 agent = CRCAAgent(
     variables=["price", "demand", "inventory"],
@@ -71,12 +71,236 @@ Agent-style JSON payload example (orchestrators)
 
 ```python
 import json
-from swarms.agents.cr_ca_agent import CRCAAgent
+from path.to.crca_agent import CRCAAgent
 
 agent = CRCAAgent(variables=["price","demand","inventory"])
 payload = json.dumps({"price": 100.0, "demand": 1000.0})
 out = agent.run(initial_state=payload, target_variables=["price"], max_steps=1)
 print(out["evolved_state"])
+```
+
+Complete example: Full workflow with system prompt
+--------------------------------------------------
+This example demonstrates a complete workflow from imports to execution, including
+system prompt configuration, causal graph construction, and both LLM and deterministic modes.
+
+```python
+"""
+Complete CRCAAgent example: Full workflow from initialization to execution
+"""
+
+# 1. Imports
+from typing import Dict, Any
+from path.to.crca_agent import CRCAAgent
+
+# 2. System prompt configuration
+# Define a custom system prompt for domain-specific causal reasoning
+SYSTEM_PROMPT = """You are an expert causal reasoning analyst specializing in economic systems.
+Your role is to:
+- Identify causal relationships between economic variables
+- Analyze how interventions affect system outcomes
+- Generate plausible counterfactual scenarios
+- Provide clear, evidence-based causal explanations
+
+When analyzing causal relationships:
+1. Consider both direct and indirect causal paths
+2. Account for confounding factors
+3. Evaluate intervention plausibility
+4. Quantify expected causal effects when possible
+
+Always ground your analysis in the provided causal graph structure and observed data."""
+
+# 3. Agent initialization with system prompt
+agent = CRCAAgent(
+    variables=["price", "demand", "inventory", "supply", "competition"],
+    agent_name="economic-causal-analyst",
+    agent_description="Expert economic causal reasoning agent",
+    model_name="gpt-4o",  # or "gpt-4o-mini" for faster/cheaper analysis
+    max_loops=3,  # Number of reasoning loops for LLM-based analysis
+    system_prompt=SYSTEM_PROMPT,
+    verbose=True,  # Enable detailed logging
+)
+
+# 4. Build causal graph: Add causal relationships
+# Price negatively affects demand (higher price → lower demand)
+agent.add_causal_relationship("price", "demand", strength=-0.5)
+
+# Demand negatively affects inventory (higher demand → lower inventory)
+agent.add_causal_relationship("demand", "inventory", strength=-0.2)
+
+# Supply positively affects inventory (higher supply → higher inventory)
+agent.add_causal_relationship("supply", "inventory", strength=0.3)
+
+# Competition negatively affects price (more competition → lower price)
+agent.add_causal_relationship("competition", "price", strength=-0.4)
+
+# Price positively affects supply (higher price → more supply)
+agent.add_causal_relationship("price", "supply", strength=0.2)
+
+# 5. Verify graph structure
+print("Causal Graph Nodes:", agent.get_nodes())
+print("Causal Graph Edges:", agent.get_edges())
+print("Is DAG:", agent.is_dag())
+
+# 6. Example 1: LLM-based causal analysis (sophisticated reasoning)
+print("\n" + "="*80)
+print("EXAMPLE 1: LLM-Based Causal Analysis")
+print("="*80)
+
+task = """
+Analyze the causal relationship between price increases and inventory levels.
+Consider both direct and indirect causal paths. What interventions could
+stabilize inventory while maintaining profitability?
+"""
+
+result = agent.run(task=task)
+
+print("\n--- Causal Analysis Report ---")
+print(result["causal_analysis"])
+
+print("\n--- Counterfactual Scenarios ---")
+for i, scenario in enumerate(result["counterfactual_scenarios"][:3], 1):
+    print(f"\nScenario {i}: {scenario.name}")
+    print(f"  Interventions: {scenario.interventions}")
+    print(f"  Expected Outcomes: {scenario.expected_outcomes}")
+    print(f"  Probability: {scenario.probability:.3f}")
+    print(f"  Reasoning: {scenario.reasoning}")
+
+print("\n--- Causal Graph Info ---")
+print(f"Nodes: {result['causal_graph_info']['nodes']}")
+print(f"Edges: {result['causal_graph_info']['edges']}")
+print(f"Is DAG: {result['causal_graph_info']['is_dag']}")
+
+# 7. Example 2: Deterministic simulation (script-style)
+print("\n" + "="*80)
+print("EXAMPLE 2: Deterministic Causal Simulation")
+print("="*80)
+
+# Initial state
+initial_state = {
+    "price": 100.0,
+    "demand": 1000.0,
+    "inventory": 5000.0,
+    "supply": 2000.0,
+    "competition": 5.0,
+}
+
+# Run deterministic evolution
+simulation_result = agent.run(
+    initial_state=initial_state,
+    target_variables=["price", "demand", "inventory"],
+    max_steps=3,  # Evolve for 3 time steps
+)
+
+print("\n--- Initial State ---")
+for var, value in initial_state.items():
+    print(f"  {var}: {value}")
+
+print("\n--- Evolved State (after 3 steps) ---")
+for var, value in simulation_result["evolved_state"].items():
+    print(f"  {var}: {value:.2f}")
+
+print("\n--- Counterfactual Scenarios ---")
+for i, scenario in enumerate(simulation_result["counterfactual_scenarios"][:3], 1):
+    print(f"\nScenario {i}: {scenario.name}")
+    print(f"  Interventions: {scenario.interventions}")
+    print(f"  Expected Outcomes: {scenario.expected_outcomes}")
+    print(f"  Probability: {scenario.probability:.3f}")
+
+# 8. Example 3: Causal chain identification
+print("\n" + "="*80)
+print("EXAMPLE 3: Causal Chain Analysis")
+print("="*80)
+
+chain = agent.identify_causal_chain("competition", "inventory")
+if chain:
+    print(f"Causal chain from 'competition' to 'inventory': {' → '.join(chain)}")
+else:
+    print("No direct causal chain found")
+
+# 9. Example 4: Analyze causal strength
+print("\n" + "="*80)
+print("EXAMPLE 4: Causal Strength Analysis")
+print("="*80)
+
+strength_analysis = agent.analyze_causal_strength("price", "inventory")
+print(f"Direct edge strength: {strength_analysis.get('direct_strength', 'N/A')}")
+print(f"Path strength: {strength_analysis.get('path_strength', 'N/A')}")
+
+# 10. Example 5: Custom intervention prediction
+print("\n" + "="*80)
+print("EXAMPLE 5: Custom Intervention Prediction")
+print("="*80)
+
+# What if we reduce price by 20%?
+interventions = {"price": 80.0}  # 20% reduction from 100
+predicted = agent._predict_outcomes(initial_state, interventions)
+
+print("\nIntervention: Reduce price from 100 to 80 (20% reduction)")
+print("Predicted outcomes:")
+for var, value in predicted.items():
+    if var in initial_state:
+        change = value - initial_state[var]
+        change_pct = (change / initial_state[var]) * 100 if initial_state[var] != 0 else 0
+        print(f"  {var}: {initial_state[var]:.2f} → {value:.2f} ({change_pct:+.1f}%)")
+
+print("\n" + "="*80)
+print("Example execution complete!")
+print("="*80)
+```
+
+Expected output structure
+-------------------------
+The `run()` method returns different structures depending on the mode:
+
+**LLM Mode** (task string):
+```python
+{
+    "task": str,  # The provided task string
+    "causal_analysis": str,  # Synthesized analysis report
+    "counterfactual_scenarios": List[CounterfactualScenario],  # Generated scenarios
+    "causal_graph_info": {
+        "nodes": List[str],
+        "edges": List[Tuple[str, str]],
+        "is_dag": bool
+    },
+    "analysis_steps": List[Dict[str, Any]]  # Step-by-step reasoning history
+}
+```
+
+**Deterministic Mode** (initial_state dict):
+```python
+{
+    "initial_state": Dict[str, float],  # Input state
+    "evolved_state": Dict[str, float],  # State after max_steps evolution
+    "counterfactual_scenarios": List[CounterfactualScenario],  # Generated scenarios
+    "causal_graph_info": {
+        "nodes": List[str],
+        "edges": List[Tuple[str, str]],
+        "is_dag": bool
+    },
+    "steps": int  # Number of evolution steps applied
+}
+```
+
+System prompt best practices
+-----------------------------
+1. **Domain-specific guidance**: Include domain knowledge relevant to your causal model
+2. **Causal reasoning principles**: Reference Pearl's causal hierarchy (association, intervention, counterfactual)
+3. **Output format**: Specify desired analysis structure and detail level
+4. **Plausibility constraints**: Guide the agent on what interventions are realistic
+5. **Quantification**: Encourage numerical estimates when appropriate
+
+Example system prompt template:
+```python
+SYSTEM_PROMPT = """You are a {domain} causal reasoning expert.
+Your analysis should:
+- Identify {specific_relationships}
+- Consider {relevant_factors}
+- Generate {scenario_types}
+- Provide {output_format}
+
+Ground your reasoning in the causal graph structure provided."""
 ```
 
 Why use `run()`
@@ -145,8 +369,7 @@ flowchart TB
 Complete method index (quick)
 -----------------------------
 The following is the public surface implemented by `CRCAAgent` (Lite) in
-`ceca_lite/crca-lite.py` (canonical import: `swarms/agents/cr_ca_agent.py`).
-See the code for full docstrings and math.
+`ceca_lite/crca-lite.py`.
 
 LLM integration
 - `_get_cr_ca_schema()` — CR-CA function calling schema for structured reasoning
@@ -264,18 +487,12 @@ Design notes & limitations
 Extending & integration
 -----------------------
 For advanced capabilities (structure learning, Bayesian inference, optimization,
-extensive statistical methods), use the full `CRCAAgent` in `swarms/agents/cr_ca_agent.py`.
+extensive statistical methods), use the full CRCA Agent featured [WIP]
 The Lite version provides core causal reasoning with LLM support while maintaining minimal dependencies.
 
 References
 ----------
 - Pearl, J. (2009). *Causality: Models, Reasoning, and Inference*.
 - Pearl, J., & Mackenzie, D. (2018). *The Book of Why*.
-
----
-CRCAAgent (Lite) — lightweight causal reasoning Agent with LLM integration for Swarms.
-
-Implementation: `ceca_lite/crca-lite.py`  
-Canonical import: `from swarms.agents.cr_ca_agent import CRCAAgent`
 
 
