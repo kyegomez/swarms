@@ -87,7 +87,7 @@ Choose the most appropriate architecture based on task requirements:
 - **GroupChat**: Collaborative discussion and consensus-building approach
 - **MultiAgentRouter**: Intelligent routing and load balancing across agents
 - **AutoSwarmBuilder**: Self-organizing and self-optimizing agent teams
-- **HiearchicalSwarm**: Layered decision-making with management and execution tiers
+- **HierarchicalSwarm**: Layered decision-making with management and execution tiers
 - **MajorityVoting**: Democratic decision-making with voting mechanisms
 - **MALT**: Multi-agent learning and training with knowledge sharing
 - **CouncilAsAJudge**: Deliberative decision-making with expert panels

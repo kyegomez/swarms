@@ -24,7 +24,7 @@ def create_medical_unit_swarm(client, patient_info):
     return client.swarms.run(
         name="Hospital Medical Unit",
         description="A simulated hospital unit with a doctor (leader), nurses, and a medical assistant collaborating on patient care.",
-        swarm_type="HiearchicalSwarm",
+        swarm_type="HierarchicalSwarm",
         task=patient_info,
         agents=[
             {

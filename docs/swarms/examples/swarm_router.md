@@ -158,7 +158,7 @@ router = SwarmRouter(
 | `"GroupChat"` | Enable group chat between agents |
 | `"MultiAgentRouter"` | Route tasks to appropriate agents |
 | `"AutoSwarmBuilder"` | Automatically build swarm configuration |
-| `"HiearchicalSwarm"` | Hierarchical agent organization |
+| `"HierarchicalSwarm"` | Hierarchical agent organization |
 | `"MajorityVoting"` | Use majority voting for decisions |
 | `"MALT"` | Multi-Agent Learning and Training |
 | `"CouncilAsAJudge"` | Council-based evaluation system |

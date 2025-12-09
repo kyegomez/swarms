@@ -285,7 +285,7 @@ nav:
         - Heavy Swarm: "swarms/structs/heavy_swarm.md"
         - Social Algorithms: "swarms/structs/social_algorithms.md"
 
-        - Hiearchical Architectures:
+        - Hierarchical Architectures:
           - Overview: "swarms/structs/multi_swarm_orchestration.md"
           - HierarchicalSwarm: "swarms/structs/hierarchical_swarm.md"
           - Hierarchical Structured Communication Framework: "swarms/structs/hierarchical_structured_communication_framework.md"
@@ -430,7 +430,7 @@ nav:
     - Applications:
       - Overview: "examples/applications_overview.md"
       - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
-      - Hiearchical Marketing Team: "examples/marketing_team.md"
+      - Hierarchical Marketing Team: "examples/marketing_team.md"
       - Gold ETF Research with HeavySwarm: "examples/gold_etf_research.md"
       - Hiring Swarm: "examples/hiring_swarm.md"
       - Advanced Research: "examples/av.md"

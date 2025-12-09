@@ -1,5 +1,5 @@
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 
 def test_hierarchical_swarm_basic_initialization():

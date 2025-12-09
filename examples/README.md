@@ -85,7 +85,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 
 - **[guides/](guides/)** - Comprehensive guides and tutorials including demos, generation length blog, geo guesser agent, graph workflow guide, hackathon examples, hierarchical marketing team, nano banana Jarvis agent, smart database, web scraper agents, workshops, x402 examples, and workshop examples (840_update, 850_workshop).
   - [README.md](guides/README.md) - Guides documentation
-  - [hiearchical_marketing_team.py](guides/hiearchical_marketing_team.py) - Hierarchical marketing team example
+  - [hierarchical_marketing_team.py](guides/hierarchical_marketing_team.py) - Hierarchical marketing team example
   - [demos/](guides/demos/) - Various demonstration examples
   - [hackathons/](guides/hackathons/) - Hackathon project examples
   - [workshops/](guides/workshops/) - Workshop examples
@@ -140,7 +140,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 ### Multi-Agent Patterns
 
 - [Duo Agent](multi_agent/duo_agent.py) - Two-agent collaboration
-- [Hierarchical Swarm](multi_agent/hiearchical_swarm/hierarchical_swarm_example.py) - Hierarchical agent structures
+- [Hierarchical Swarm](multi_agent/hierarchical_swarm/hierarchical_swarm_example.py) - Hierarchical agent structures
 - [Group Chat](multi_agent/groupchat/interactive_groupchat_example.py) - Multi-agent conversations
 - [Graph Workflow](multi_agent/graphworkflow_examples/graph_workflow_example.py) - Graph-based workflows
 - [Social Algorithms](multi_agent/social_algorithms_examples/) - Various social algorithm patterns

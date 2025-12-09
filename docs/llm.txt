@@ -2493,9 +2493,9 @@ This index organizes **100+ production-ready examples** from our [Swarms Example
 ### Hierarchical and Sequential Workflows
 | Category | Example | Description |
 |----------|---------|-------------|
-| Hierarchical | [Hierarchical Swarm Example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hiearchical_swarm/hiearchical_examples/hierarchical_swarm_example.py) | Multi-level hierarchical agent organization |
-| Hierarchical Basic | [Hierarchical Swarm Basic](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hiearchical_swarm/hiearchical_swarm-example.py) | Simplified hierarchical swarm implementation |
-| Hierarchical Advanced | [Hierarchical Advanced](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hiearchical_swarm/hierarchical_swarm_example.py) | Advanced hierarchical swarm with complex agent relationships |
+| Hierarchical | [Hierarchical Swarm Example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hierarchical_swarm/hierarchical_examples/hierarchical_swarm_example.py) | Multi-level hierarchical agent organization |
+| Hierarchical Basic | [Hierarchical Swarm Basic](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hierarchical_swarm/hierarchical_swarm-example.py) | Simplified hierarchical swarm implementation |
+| Hierarchical Advanced | [Hierarchical Advanced](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/hierarchical_swarm/hierarchical_swarm_example.py) | Advanced hierarchical swarm with complex agent relationships |
 | Sequential Workflow | [Sequential Workflow Example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/sequential_workflow/sequential_workflow_example.py) | Linear workflow with agents processing tasks in sequence |
 | Sequential Swarm | [Sequential Swarm Example](https://github.com/kyegomez/swarms/blob/master/examples/multi_agent/sequential_workflow/sequential_swarm_example.py) | Sequential swarm with coordinated task execution |
 
@@ -21048,9 +21048,9 @@ dispute_swarm = SwarmRouter(
 )
 
 
-hybrid_hiearchical_swarm = HybridHierarchicalClusterSwarm(
-    name="hybrid-hiearchical-swarm",
-    description="A hybrid hiearchical swarm that uses a hybrid hiearchical peer model to solve complex tasks.",
+hybrid_hierarchical_swarm = HybridHierarchicalClusterSwarm(
+    name="hybrid-hierarchical-swarm",
+    description="A hybrid hierarchical swarm that uses a hybrid hierarchical peer model to solve complex tasks.",
     swarms=[
         litigation_swarm,
         corporate_swarm,
@@ -21065,7 +21065,7 @@ hybrid_hiearchical_swarm = HybridHierarchicalClusterSwarm(
 
 
 if __name__ == "__main__":
-    hybrid_hiearchical_swarm.run(
+    hybrid_hierarchical_swarm.run(
         "What is the best way to file for a patent? for ai technology "
     )
 
@@ -21083,7 +21083,7 @@ This page provides simple, practical examples of how to use the `HierarchicalSwa
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized financial analysis agents
 market_research_agent = Agent(
@@ -21131,7 +21131,7 @@ print(result)
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized development agents
 frontend_developer_agent = Agent(
@@ -21179,7 +21179,7 @@ print(result)
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create analysis agents
 market_agent = Agent(
@@ -21213,7 +21213,7 @@ print("Director Feedback:", feedback)
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create analysis agents
 market_agent = Agent(
@@ -21253,7 +21253,7 @@ for i, result in enumerate(results):
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized research agents
 research_manager = Agent(
@@ -38165,7 +38165,7 @@ cron_job.run("Perform analysis")
 
 ### Cron Jobs With Multi-Agent Structures
 
-You can also run Cron Jobs with multi-agent structures like `SequentialWorkflow`, `ConcurrentWorkflow`, `HiearchicalSwarm`, and other methods. 
+You can also run Cron Jobs with multi-agent structures like `SequentialWorkflow`, `ConcurrentWorkflow`, `HierarchicalSwarm`, and other methods. 
 
 - Just initialize the class as the agent parameter in the `CronJob(agent=swarm)`
 
@@ -41343,7 +41343,7 @@ flowchart TD
 ```python
 
 from swarms import Agent, SwarmRouter
-from swarms.structs.hybrid_hiearchical_peer_swarm import (
+from swarms.structs.hybrid_hierarchical_peer_swarm import (
     HybridHierarchicalClusterSwarm,
 )
 
@@ -41441,9 +41441,9 @@ dispute_swarm = SwarmRouter(
 )
 
 
-hybrid_hiearchical_swarm = HybridHierarchicalClusterSwarm(
-    name="hybrid-hiearchical-swarm",
-    description="A hybrid hiearchical swarm that uses a hybrid hiearchical peer model to solve complex tasks.",
+hybrid_hierarchical_swarm = HybridHierarchicalClusterSwarm(
+    name="hybrid-hierarchical-swarm",
+    description="A hybrid hierarchical swarm that uses a hybrid hierarchical peer model to solve complex tasks.",
     swarms=[
         litigation_swarm,
         corporate_swarm,
@@ -41458,7 +41458,7 @@ hybrid_hiearchical_swarm = HybridHierarchicalClusterSwarm(
 
 
 if __name__ == "__main__":
-    hybrid_hiearchical_swarm.run(
+    hybrid_hierarchical_swarm.run(
         "What is the best way to file for a patent? for ai technology "
     )
 
@@ -41736,7 +41736,7 @@ Executes the hierarchical swarm for a specified number of feedback loops, proces
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized agents
 research_agent = Agent(
@@ -41789,7 +41789,7 @@ Runs a single step of the hierarchical swarm, executing one complete cycle of pl
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create development agents
 frontend_agent = Agent(
@@ -41842,7 +41842,7 @@ Executes the hierarchical swarm for a list of tasks, processing each task throug
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create analysis agents
 market_agent = Agent(
@@ -41884,7 +41884,7 @@ for i, result in enumerate(results):
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized financial agents
 market_research_agent = Agent(
@@ -41932,7 +41932,7 @@ print(result)
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized development agents
 frontend_developer_agent = Agent(
@@ -42340,7 +42340,7 @@ Hierarchical architectures enable structured, iterative, and scalable problem-so
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized agents
 research_agent = Agent(
@@ -45395,7 +45395,7 @@ print(out)
 # Multi-Agent Orchestration:
 Swarms was designed to faciliate the communication between many different and specialized agents from a vast array of other frameworks such as langchain, autogen, crew, and more.
 
-In traditional swarm theory, there are many types of swarms usually for very specialized use-cases and problem sets. Such as Hiearchical and sequential are great for accounting and sales, because there is usually a boss coordinator agent that distributes a workload to other specialized agents.
+In traditional swarm theory, there are many types of swarms usually for very specialized use-cases and problem sets. Such as Hierarchical and sequential are great for accounting and sales, because there is usually a boss coordinator agent that distributes a workload to other specialized agents.
 
 
 | **Name**                      | **Description**                                                                                                                                                         | **Code Link**               | **Use Cases**                                                                                     |
@@ -48809,7 +48809,7 @@ The `SwarmRouter` supports many various multi-agent architectures for various ap
 | `GroupChat` | Facilitates communication among agents in a group chat format |
 | `MultiAgentRouter` | Routes tasks between multiple agents |
 | `AutoSwarmBuilder` | Automatically builds swarm structure |
-| `HiearchicalSwarm` | Hierarchical organization of agents |
+| `HierarchicalSwarm` | Hierarchical organization of agents |
 | `MajorityVoting` | Uses majority voting for decision making |
 | `MALT` | Multi-Agent Language Tasks |
 | `CouncilAsAJudge` | Council-based judgment system |
@@ -49062,7 +49062,7 @@ hierarchical_router = SwarmRouter(
     description="Hierarchical organization of agents with a director",
     max_loops=3,
     agents=[director, analyst1, analyst2, researcher],
-    swarm_type="HiearchicalSwarm",
+    swarm_type="HierarchicalSwarm",
     return_all_history=True
 )
 
@@ -55782,7 +55782,7 @@ This comprehensive guide outlines production-grade best practices for using the 
         | `GroupChat` | Collaborative solving | - Brainstorming<br>- Decision making<br>- Problem solving<br>- Strategy development |
         | `MultiAgentRouter` | Task distribution | - Load balancing<br>- Specialized processing<br>- Resource optimization<br>- Service routing |
         | `AutoSwarmBuilder` | Automated setup | - Quick prototyping<br>- Simple tasks<br>- Testing<br>- MVP development |
-        | `HiearchicalSwarm` | Complex organization | - Project management<br>- Research analysis<br>- Enterprise workflows<br>- Team automation |
+        | `HierarchicalSwarm` | Complex organization | - Project management<br>- Research analysis<br>- Enterprise workflows<br>- Team automation |
         | `MajorityVoting` | Consensus needs | - Quality assurance<br>- Decision validation<br>- Risk assessment<br>- Content moderation |
 
 === "Application Patterns"
@@ -55791,7 +55791,7 @@ This comprehensive guide outlines production-grade best practices for using the 
         
         | Application | Recommended Swarm | Benefits |
         |------------|-------------------|-----------|
-        | **Team Automation** | `HiearchicalSwarm` | - Automated team coordination<br>- Clear responsibility chain<br>- Scalable team structure |
+        | **Team Automation** | `HierarchicalSwarm` | - Automated team coordination<br>- Clear responsibility chain<br>- Scalable team structure |
         | **Research Pipeline** | `SequentialWorkflow` | - Structured research process<br>- Quality control at each stage<br>- Comprehensive output |
         | **Trading System** | `ConcurrentWorkflow` | - Multi-market coverage<br>- Real-time analysis<br>- Risk distribution |
         | **Content Factory** | `MixtureOfAgents` | - Automated content creation<br>- Consistent quality<br>- High throughput |
@@ -55852,7 +55852,7 @@ Use this framework to select the optimal swarm architecture for your use case:
 
 1. **Task Complexity Analysis**
     - Simple tasks → `AutoSwarmBuilder`
-    - Complex tasks → `HiearchicalSwarm` or `MultiAgentRouter`
+    - Complex tasks → `HierarchicalSwarm` or `MultiAgentRouter`
     - Dynamic tasks → `AgentRearrange`
 
 2. **Workflow Pattern**
@@ -55870,7 +55870,7 @@ Use this framework to select the optimal swarm architecture for your use case:
 === "Finance"
     
     !!! example "Financial Applications"
-        - Risk Analysis: `HiearchicalSwarm`
+        - Risk Analysis: `HierarchicalSwarm`
         - Market Research: `MixtureOfAgents`
         - Trading Strategies: `ConcurrentWorkflow`
         - Portfolio Management: `SpreadSheetSwarm`
@@ -55888,7 +55888,7 @@ Use this framework to select the optimal swarm architecture for your use case:
     !!! example "Legal Applications"
         - Document Review: `SequentialWorkflow`
         - Case Analysis: `MixtureOfAgents`
-        - Compliance Check: `HiearchicalSwarm`
+        - Compliance Check: `HierarchicalSwarm`
         - Contract Analysis: `ConcurrentWorkflow`
 
 ## Production Best Practices
@@ -57095,15 +57095,15 @@ Key features:
 
 # File: swarms_cloud/hierarchical_swarm.md
 
-# HiearchicalSwarm
+# HierarchicalSwarm
 
 *Implements structured, multi-level task management with clear authority*
 
-**Swarm Type**: `HiearchicalSwarm`
+**Swarm Type**: `HierarchicalSwarm`
 
 ## Overview
 
-The HiearchicalSwarm implements a structured, multi-level approach to task management with clear lines of authority and delegation. This architecture organizes agents in a hierarchical structure where manager agents coordinate and oversee worker agents, enabling efficient task distribution and quality control.
+The HierarchicalSwarm implements a structured, multi-level approach to task management with clear lines of authority and delegation. This architecture organizes agents in a hierarchical structure where manager agents coordinate and oversee worker agents, enabling efficient task distribution and quality control.
 
 Key features:
 - **Structured Hierarchy**: Clear organizational structure with managers and workers
@@ -57120,7 +57120,7 @@ Key features:
 
 ## API Usage
 
-### Basic HiearchicalSwarm Example
+### Basic HierarchicalSwarm Example
 
 === "Shell (curl)"
     ```bash
@@ -57130,7 +57130,7 @@ Key features:
       -d '{
         "name": "Market Research ",
         "description": "Parallel market research across different sectors",
-        "swarm_type": "HiearchicalSwarm",
+        "swarm_type": "HierarchicalSwarm",
         "task": "Research and analyze market opportunities in AI, healthcare, fintech, and e-commerce sectors",
         "agents": [
             {
@@ -57186,7 +57186,7 @@ Key features:
     swarm_config = {
         "name": "Market Research ",
         "description": "Parallel market research across different sectors",
-        "swarm_type": "HiearchicalSwarm",
+        "swarm_type": "HierarchicalSwarm",
         "task": "Research and analyze market opportunities in AI, healthcare, fintech, and e-commerce sectors",
         "agents": [
             {
@@ -57233,7 +57233,7 @@ Key features:
     
     if response.status_code == 200:
         result = response.json()
-        print("HiearchicalSwarm completed successfully!")
+        print("HierarchicalSwarm completed successfully!")
         print(f"Cost: ${result['metadata']['billing_info']['total_cost']}")
         print(f"Execution time: {result['metadata']['execution_time_seconds']} seconds")
         print(f"Project plan: {result['output']}")
@@ -57248,7 +57248,7 @@ Key features:
     "status": "success",
     "swarm_name": "Market Research Auto",
     "description": "Parallel market research across different sectors",
-    "swarm_type": "HiearchicalSwarm",
+    "swarm_type": "HierarchicalSwarm",
     "output": [
         {
             "role": "System",
@@ -62320,7 +62320,7 @@ Available swarm types for different execution patterns.
 | `GroupChat` | Agents interact in a group chat format |
 | `MultiAgentRouter` | Routes tasks between multiple agents |
 | `AutoSwarmBuilder` | Automatically builds swarm structure |
-| `HiearchicalSwarm` | Hierarchical organization of agents |
+| `HierarchicalSwarm` | Hierarchical organization of agents |
 | `Auto` | Automatically selects the best swarm type |
 | `MajorityVoting` | Agents vote on decisions |
 | `Malt` | Multi-Agent Language Tasks |
@@ -63282,7 +63282,7 @@ The `swarm_type` parameter defines the architecture and collaboration pattern of
 | `GroupChat` | Agents collaborate in a discussion format to solve problems |
 | `MultiAgentRouter` | Routes subtasks to specialized agents based on their capabilities |
 | `AutoSwarmBuilder` | Automatically designs and builds an optimal swarm based on the task |
-| `HiearchicalSwarm` | Organizes agents in a hierarchical structure with managers and workers |
+| `HierarchicalSwarm` | Organizes agents in a hierarchical structure with managers and workers |
 | `MajorityVoting` | Uses a consensus mechanism where multiple agents vote on the best solution |
 | `auto` | Automatically selects the most appropriate swarm type for the given task |
 
