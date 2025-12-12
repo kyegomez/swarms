@@ -35,6 +35,7 @@ The Hierarchical Swarm follows a clear workflow pattern:
 | **Comprehensive Logging**    | Detailed logging for debugging and monitoring                                                |
 | **Live Streaming**           | Real-time streaming callbacks for monitoring agent outputs                                   |
 | **Token-by-Token Updates**   | Watch text formation in real-time as agents generate responses                               |
+| **Hierarchy Visualization**  | Visual tree representation of swarm structure with `display_hierarchy()`                     |
 
 ## Constructor
 
@@ -69,6 +70,65 @@ Initializes a new HierarchicalSwarm instance.
 | `ValueError` | If no agents are provided or max_loops is invalid |
 
 ## Core Methods
+
+### `display_hierarchy()`
+
+Displays a visual tree representation of the hierarchical swarm structure, showing the Director at the top level and all worker agents as children branches. This method uses Rich formatting to create an aesthetically pleasing console output that helps visualize the organizational structure of the swarm.
+
+#### Returns
+
+| Type | Description |
+|------|-------------|
+| `None` | Prints the hierarchy visualization to the console |
+
+#### Example
+
+```python
+from swarms import Agent
+from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+
+# Create specialized agents
+research_agent = Agent(
+    agent_name="Research-Analyst",
+    agent_description="Specialized in comprehensive research and data gathering",
+    model_name="gpt-4o-mini",
+)
+
+analysis_agent = Agent(
+    agent_name="Data-Analyst",
+    agent_description="Expert in data analysis and pattern recognition",
+    model_name="gpt-4o-mini",
+)
+
+strategy_agent = Agent(
+    agent_name="Strategy-Consultant",
+    agent_description="Specialized in strategic planning and recommendations",
+    model_name="gpt-4o-mini",
+)
+
+# Create hierarchical swarm
+swarm = HierarchicalSwarm(
+    name="Swarms Corporation Operations",
+    description="Enterprise-grade hierarchical swarm for complex task execution",
+    agents=[research_agent, analysis_agent, strategy_agent],
+    max_loops=1,
+    director_model_name="claude-haiku-4-5",
+)
+
+# Display the hierarchy visualization
+swarm.display_hierarchy()
+```
+
+The output will show a visual tree structure like:
+```
+┌─ HierarchicalSwarm Hierarchy: Swarms Corporation Operations ─┐
+│                                                               │
+│ 🎯 Director [claude-haiku-4-5]                               │
+│ ├─ 🤖 Research-Analyst [gpt-4o-mini] - Specialized in...   │
+│ ├─ 🤖 Data-Analyst [gpt-4o-mini] - Expert in data...        │
+│ └─ 🤖 Strategy-Consultant [gpt-4o-mini] - Specialized...   │
+└───────────────────────────────────────────────────────────────┘
+```
 
 ### `run()`
 

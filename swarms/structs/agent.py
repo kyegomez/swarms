@@ -3309,7 +3309,7 @@ class Agent:
 
             # Get the text content from the tool response
             # execute_tool_call_simple returns a string directly, not an object with content attribute
-            text_content = f"MCP Tool Response: \n\n {json.dumps(tool_response, indent=2)}"
+            text_content = f"MCP Tool Response: \n\n {json.dumps(tool_response, indent=2, sort_keys=True)}"
 
             if self.print_on is True:
                 formatter.print_panel(

@@ -8,15 +8,13 @@ agent = Agent(
     dynamic_temperature_enabled=True,
     max_loops=1,
     dynamic_context_window=True,
-    streaming_on=False,
     top_p=None,
-    # stream=True,
+    streaming_on=True,
+    interactive=False,
 )
 
 out = agent.run(
     task="What are the top five best energy stocks across nuclear, solar, gas, and other energy sources?",
-    n=1,
 )
 
-for token in out:
-    print(token, end="", flush=True)
+print(out)

@@ -1,51 +1,43 @@
-#!/usr/bin/env python3
-"""
-Basic Graph Workflow Example
-
-A minimal example showing how to use GraphWorkflow with backend selection.
-"""
-
 from swarms.structs.graph_workflow import GraphWorkflow
 from swarms.structs.agent import Agent
 
-agent_one = Agent(agent_name="research_agent", model="gpt-4o-mini")
+agent_one = Agent(
+    agent_name="research_agent",
+    model_name="gpt-4o-mini",
+    name="Research Agent",
+    agent_description="Agent responsible for gathering and summarizing research information.",
+)
 agent_two = Agent(
-    agent_name="research_agent_two", model="gpt-4o-mini"
+    agent_name="research_agent_two",
+    model_name="gpt-4o-mini",
+    name="Analysis Agent",
+    agent_description="Agent that analyzes the research data provided and processes insights.",
 )
 agent_three = Agent(
-    agent_name="research_agent_three", model="gpt-4o-mini"
+    agent_name="research_agent_three",
+    model_name="gpt-4o-mini",
+    agent_description="Agent tasked with structuring analysis into a final report or output.",
 )
 
+# Create workflow with backend selection
+workflow = GraphWorkflow(
+    name="Basic Example",
+    verbose=True,
+)
 
-def main():
-    """
-    Run a basic graph workflow example without print statements.
-    """
-    # Create agents
+workflow.add_nodes([agent_one, agent_two, agent_three])
 
-    # Create workflow with backend selection
-    workflow = GraphWorkflow(
-        name="Basic Example",
-        verbose=True,
-    )
+# Create simple chain using the actual agent names
+workflow.add_edge("research_agent", "research_agent_two")
+workflow.add_edge("research_agent_two", "research_agent_three")
 
-    # Add agents to workflow
-    workflow.add_node(agent_one)
-    workflow.add_node(agent_two)
-    workflow.add_node(agent_three)
+workflow.visualize()
 
-    # Create simple chain using the actual agent names
-    workflow.add_edge("research_agent", "research_agent_two")
-    workflow.add_edge("research_agent_two", "research_agent_three")
+# Compile the workflow
+workflow.compile()
 
-    # Compile the workflow
-    workflow.compile()
+# Run the workflow
+task = "Complete a simple task"
+results = workflow.run(task)
 
-    # Run the workflow
-    task = "Complete a simple task"
-    results = workflow.run(task)
-    return results
-
-
-if __name__ == "__main__":
-    main()
+print(results)

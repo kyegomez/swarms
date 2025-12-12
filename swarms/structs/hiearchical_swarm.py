@@ -34,10 +34,11 @@ from rich.live import Live
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
+from rich.tree import Tree
 
 from swarms.prompts.hiearchical_system_prompt import (
-    HIEARCHICAL_SWARM_SYSTEM_PROMPT,
     DIRECTOR_PLANNING_PROMPT,
+    HIEARCHICAL_SWARM_SYSTEM_PROMPT,
 )
 from swarms.prompts.multi_agent_collab_prompt import (
     MULTI_AGENT_COLLAB_PROMPT_TWO,
@@ -748,6 +749,77 @@ class HierarchicalSwarm:
             add_to_conversation=False,
         )
 
+    def display_hierarchy(self) -> None:
+        """
+        Display the hierarchical structure of the swarm using Rich Tree.
+
+        This method creates a visual tree representation showing the Director
+        at the top level and all worker agents as children branches. The tree
+        is printed to the console with rich formatting.
+
+        The hierarchy visualization helps understand the organizational structure
+        of the swarm, with the Director coordinating all worker agents.
+        """
+        console = Console()
+
+        # Create the root tree with Director
+        director_label = Text()
+        director_label.append("🎯 ", style="bold red")
+        director_label.append(self.director_name, style="bold white")
+        director_label.append(
+            f" [{self.director_model_name}]", style="dim cyan"
+        )
+
+        tree = Tree(director_label, guide_style="bold red")
+
+        # Add each worker agent as a branch
+        for agent in self.agents:
+            agent_label = Text()
+
+            # Get agent name
+            if hasattr(agent, "agent_name"):
+                agent_name = agent.agent_name
+            elif hasattr(agent, "name"):
+                agent_name = agent.name
+            else:
+                agent_name = f"Agent_{self.agents.index(agent)}"
+
+            # Get agent model if available
+            model_info = ""
+            if hasattr(agent, "model_name"):
+                model_info = f" [{agent.model_name}]"
+            elif hasattr(agent, "llm") and hasattr(
+                agent.llm, "model"
+            ):
+                model_info = f" [{agent.llm.model}]"
+
+            # Get agent description if available
+            description = ""
+            if hasattr(agent, "agent_description"):
+                description = f" - {agent.agent_description[:50]}"
+            elif hasattr(agent, "description"):
+                description = f" - {agent.description[:50]}"
+
+            agent_label.append("🤖 ", style="bold cyan")
+            agent_label.append(agent_name, style="bold cyan")
+            if model_info:
+                agent_label.append(model_info, style="dim cyan")
+            if description:
+                agent_label.append(description, style="dim white")
+
+            # Add agent as a branch
+            tree.add(agent_label)
+
+        # Create a panel with the tree
+        panel = Panel(
+            tree,
+            title=f"[bold white]HierarchicalSwarm Hierarchy: {self.name}[/bold white]",
+            border_style="red",
+            padding=(1, 2),
+        )
+
+        console.print(panel)
+
     def prepare_worker_agents(self):
         for agent in self.agents:
             prompt = (
@@ -914,6 +986,7 @@ class HierarchicalSwarm:
             logger.error(
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
+            raise e
 
     def agents_no_print(self):
         for agent in self.agents:

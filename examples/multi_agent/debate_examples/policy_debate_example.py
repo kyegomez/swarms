@@ -59,7 +59,7 @@ debate_system = DebateWithJudge(
     pro_agent=pro_agent,
     con_agent=con_agent,
     judge_agent=judge_agent,
-    max_rounds=3,
+    max_loops=3,
     output_type="str-all-except-first",
     verbose=True,
 )

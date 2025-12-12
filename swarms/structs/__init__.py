@@ -34,6 +34,7 @@ from swarms.structs.interactive_groupchat import (
     random_speaker,
     round_robin_speaker,
 )
+from swarms.structs.llm_council import LLMCouncil
 from swarms.structs.ma_blocks import (
     aggregate,
     find_agent_by_name,
@@ -89,7 +90,6 @@ from swarms.structs.swarming_architectures import (
     geometric_swarm,
     grid_swarm,
     harmonic_swarm,
-    linear_swarm,
     log_swarm,
     mesh_swarm,
     one_to_one,
@@ -127,7 +127,6 @@ __all__ = [
     "geometric_swarm",
     "grid_swarm",
     "harmonic_swarm",
-    "linear_swarm",
     "log_swarm",
     "mesh_swarm",
     "one_to_one",
@@ -161,6 +160,7 @@ __all__ = [
     "get_swarms_info",
     "AutoSwarmBuilder",
     "CouncilAsAJudge",
+    "LLMCouncil",
     "batch_agent_execution",
     "aggregate",
     "find_agent_by_name",

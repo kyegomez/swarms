@@ -23,6 +23,7 @@ from swarms.structs.agent_rearrange import AgentRearrange
 from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.council_as_judge import CouncilAsAJudge
+from swarms.structs.debate_with_judge import DebateWithJudge
 from swarms.structs.groupchat import GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
@@ -37,6 +38,8 @@ from swarms.telemetry.log_executions import log_execution
 from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.structs.llm_council import LLMCouncil
+from swarms.structs.round_robin import RoundRobinSwarm
 
 logger = initialize_logger(log_folder="swarm_router")
 
@@ -48,7 +51,7 @@ SwarmType = Literal[
     "GroupChat",
     "MultiAgentRouter",
     "AutoSwarmBuilder",
-    "HiearchicalSwarm",
+    "HierarchicalSwarm",
     "auto",
     "MajorityVoting",
     "MALT",
@@ -56,6 +59,9 @@ SwarmType = Literal[
     "InteractiveGroupChat",
     "HeavySwarm",
     "BatchedGridWorkflow",
+    "LLMCouncil",
+    "DebateWithJudge",
+    "RoundRobin",
 ]
 
 
@@ -153,6 +159,7 @@ class SwarmRouter:
         - MixtureOfAgents: Combines multiple agent types for diverse tasks
         - SequentialWorkflow: Executes tasks sequentially
         - ConcurrentWorkflow: Executes tasks in parallel
+        - RoundRobin: Executes tasks in a round-robin fashion, cycling through agents
         - "auto": Automatically selects best swarm type via embedding search
 
     Methods:
@@ -210,6 +217,7 @@ class SwarmRouter:
         verbose: bool = False,
         worker_tools: List[Callable] = None,
         aggregation_strategy: str = "synthesis",
+        chairman_model: str = "gpt-5.1",
         *args,
         **kwargs,
     ):
@@ -252,6 +260,7 @@ class SwarmRouter:
         self.heavy_swarm_swarm_show_output = (
             heavy_swarm_swarm_show_output
         )
+        self.chairman_model = chairman_model
 
         # Initialize swarm factory for O(1) lookup performance
         self._swarm_factory = self._initialize_swarm_factory()
@@ -298,14 +307,6 @@ class SwarmRouter:
                     f"SwarmRouter: Invalid swarm_type '{self.swarm_type}'. "
                     f"Valid types are: {', '.join(valid_swarm_types)}. "
                     "See https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
-                )
-
-            if (
-                self.swarm_type != "HeavySwarm"
-                and self.agents is None
-            ):
-                raise SwarmRouterConfigError(
-                    "SwarmRouter: No agents provided for the swarm. Check the docs to learn of required parameters. https://docs.swarms.world/en/latest/swarms/structs/agent/"
                 )
 
             if (
@@ -417,7 +418,7 @@ class SwarmRouter:
             "MALT": self._create_malt,
             "CouncilAsAJudge": self._create_council_as_judge,
             "InteractiveGroupChat": self._create_interactive_group_chat,
-            "HiearchicalSwarm": self._create_hierarchical_swarm,
+            "HierarchicalSwarm": self._create_hierarchical_swarm,
             "MixtureOfAgents": self._create_mixture_of_agents,
             "MajorityVoting": self._create_majority_voting,
             "GroupChat": self._create_group_chat,
@@ -425,6 +426,9 @@ class SwarmRouter:
             "SequentialWorkflow": self._create_sequential_workflow,
             "ConcurrentWorkflow": self._create_concurrent_workflow,
             "BatchedGridWorkflow": self._create_batched_grid_workflow,
+            "LLMCouncil": self._create_llm_council,
+            "DebateWithJudge": self._create_debate_with_judge,
+            "RoundRobin": self._create_round_robin_swarm,
         }
 
     def _create_heavy_swarm(self, *args, **kwargs):
@@ -440,6 +444,27 @@ class SwarmRouter:
             worker_tools=self.worker_tools,
             aggregation_strategy=self.aggregation_strategy,
             show_dashboard=False,
+        )
+
+    def _create_llm_council(self, *args, **kwargs):
+        """Factory function for LLMCouncil."""
+        return LLMCouncil(
+            name=self.name,
+            description=self.description,
+            output_type=self.output_type,
+            verbose=self.verbose,
+            chairman_model=self.chairman_model,
+        )
+
+    def _create_debate_with_judge(self, *args, **kwargs):
+        """Factory function for DebateWithJudge."""
+        return DebateWithJudge(
+            pro_agent=self.agents[0],
+            con_agent=self.agents[1],
+            judge_agent=self.agents[2],
+            max_rounds=self.max_loops,
+            output_type=self.output_type,
+            verbose=self.verbose,
         )
 
     def _create_agent_rearrange(self, *args, **kwargs):
@@ -574,6 +599,19 @@ class SwarmRouter:
             agents=self.agents,
             max_loops=self.max_loops,
             output_type=self.output_type,
+            *args,
+            **kwargs,
+        )
+
+    def _create_round_robin_swarm(self, *args, **kwargs):
+        """Factory function for RoundRobinSwarm."""
+        return RoundRobinSwarm(
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
+            max_loops=self.max_loops,
+            verbose=self.verbose,
+            return_json_on=self.return_json,
             *args,
             **kwargs,
         )

@@ -32,21 +32,20 @@ Multi-agent architectures leverage these communication patterns to ensure that a
 | Graph Workflow                    | Agents collaborate in a directed acyclic graph (DAG) format to manage dependencies and parallel tasks.                                                                  | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/graph_workflow/)                    | AI-driven software development pipelines, complex project management                              |
 | Group Chat                        | Agents engage in a chat-like interaction to reach decisions collaboratively.                                                                                           | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/group_chat/)                        | Real-time collaborative decision-making, contract negotiations                                    |
 | Interactive Group Chat           | Enhanced group chat with dynamic speaker selection and interaction patterns.                                                                                           | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/interactive_groupchat/)             | Advanced collaborative decision-making, dynamic team coordination                                 |
-| Agent Registry                    | A centralized registry where agents are stored, retrieved, and invoked dynamically.                                                                                     | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/agent_registry/)                    | Dynamic agent management, evolving recommendation engines                                         |
 | SpreadSheet                       | Manages tasks at scale, tracking agent outputs in a structured format like CSV files.                                                                                   | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)                 | Large-scale marketing analytics, financial audits                                                 |
 | Router                            | Routes and chooses the architecture based on the task requirements and available agents.                                                                               | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)                       | Dynamic task routing, adaptive architecture selection, optimized agent allocation                 |
 | Heavy                             | High-performance architecture for handling intensive computational tasks with multiple agents.                                                                         | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/heavy_swarm/)                       | Large-scale data processing, intensive computational workflows                                    |
-| Deep Research                     | Specialized architecture for conducting in-depth research tasks across multiple domains.                                                                               | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/deep_research_swarm/)               | Academic research, market analysis, comprehensive data investigation                              |
-| De-Hallucination                  | Architecture designed to reduce and eliminate hallucinations in AI outputs through consensus.                                                                          | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/de_hallucination_swarm/)            | Fact-checking, content verification, reliable information generation                              |
 | Council as Judge                  | Multiple agents act as a council to evaluate and judge outputs or decisions.                                                                                           | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/council_of_judges/)                     | Quality assessment, decision validation, peer review processes                                    |
 | MALT                              | Specialized architecture for complex language processing tasks across multiple agents.                                                                                | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/malt/)                              | Natural language processing, translation, content generation                                      |
 | Majority Voting                   | Agents vote on decisions with the majority determining the final outcome.                                                                                              | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/majorityvoting/)                   | Democratic decision-making, consensus building, error reduction                                   |
 | Round Robin                       | Tasks are distributed cyclically among agents in a rotating order.                                                                                                     | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/round_robin_swarm/)                       | Load balancing, fair task distribution, resource optimization                                     |
 | Auto-Builder                      | Automatically constructs and configures multi-agent systems based on requirements.                                                                                    | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/auto_swarm_builder/)                | Dynamic system creation, adaptive architectures, rapid prototyping                               |
 | Hybrid Hierarchical Cluster      | Combines hierarchical and peer-to-peer communication patterns for complex workflows.                                                                                   | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/hhcs/)     | Complex enterprise workflows, multi-department coordination                                       |
-| Election                          | Agents participate in democratic voting processes to select leaders or make collective decisions.                                                                      | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/election_swarm/)                    | Democratic governance, consensus building, leadership selection                                   |
-| Dynamic Conversational           | Adaptive conversation management with dynamic agent selection and interaction patterns.                                                                              | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/dynamic_conversational_swarm/)      | Adaptive chatbots, dynamic customer service, contextual conversations                            |
-| Tree                              | Hierarchical tree structure for organizing agents in parent-child relationships.                                                                                      | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/tree_swarm/)                        | Organizational hierarchies, decision trees, taxonomic classification                             |
+| Batched Grid Workflow             | Executes tasks in a batched grid format, where each agent processes a different task simultaneously in parallel.                                                       | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/batched_grid_workflow/)              | Parallel task processing, batch operations, grid-based task distribution                         |
+| LLM Council                       | Orchestrates multiple specialized LLM agents to collaboratively answer queries through structured peer review and synthesis.                                            | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/llm_council/)                        | Multi-model evaluation, peer review systems, collaborative AI decision-making                    |
+| Debate with Judge                 | A debate architecture with Pro and Con agents debating topics, evaluated by a Judge. Supports preset agents, agent lists, or individual configuration for flexible setup.   | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/debate_with_judge/)                 | Argument analysis, decision refinement, structured debates, iterative improvement                |
+| Self MoA Seq                      | Sequential self-mixture of agents that generates multiple candidate responses and synthesizes them sequentially using a sliding window approach.                      | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/self_moa_seq/)                       | High-quality response generation, ensemble methods, sequential synthesis                          |
+| Swarm Rearrange                   | Orchestrates multiple swarms in sequential or parallel flow patterns, providing thread-safe operations for managing swarm execution.                                     | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/swarm_rearrange/)                    | Multi-swarm coordination, complex workflow orchestration, swarm composition                       |
 
 ---
 
@@ -84,6 +83,7 @@ graph TD
 A dynamic architecture where agents rearrange themselves based on task requirements and environmental conditions. Agents can adapt their roles, positions, and relationships to optimize performance for different scenarios.
 
 **Use Cases:**
+
 - Adaptive manufacturing lines that reconfigure based on product requirements
 
 - Dynamic sales territory realignment based on market conditions
@@ -123,6 +123,7 @@ graph TD
 Multiple agents operate independently and simultaneously on different tasks. Each agent works on its own task without dependencies on the others.
 
 **Use Cases:**
+
 - Tasks that can be processed independently, such as parallel data analysis
 
 - Large-scale simulations where multiple scenarios are run simultaneously
@@ -204,6 +205,7 @@ graph TD
 Makes it easy to manage thousands of agents in one place: a CSV file. Initialize any number of agents and run loops of agents on tasks.
 
 **Use Cases:**
+
 - Multi-threaded execution: Execute agents on multiple threads
 
 - Save agent outputs into CSV file
@@ -242,12 +244,52 @@ graph TD
 
 ---
 
+### Batched Grid Workflow
+
+**Overview:**
+Multi-agent orchestration pattern that executes tasks in a batched grid format, where each agent processes different tasks simultaneously. Provides structured parallel processing with conversation state management.
+
+**Use Cases:**
+
+- Parallel task processing
+
+- Grid-based agent execution
+
+- Batch operations
+
+- Multi-task multi-agent coordination
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/batched_grid_workflow/)**
+
+```mermaid
+graph TD
+    A[Task Batch] --> B[BatchedGridWorkflow]
+    B --> C[Initialize Agents]
+    C --> D[Create Grid]
+    
+    D --> E[Agent 1: Task 1]
+    D --> F[Agent 2: Task 2]
+    D --> G[Agent N: Task N]
+    
+    E --> H[Collect Results]
+    F --> H
+    G --> H
+    
+    H --> I[Update Conversation]
+    I --> J[Next Iteration]
+    J --> D
+```
+
+---
+
 ### Mixture of Agents
 
 **Overview:**
 Combines multiple agents with different capabilities and expertise to solve complex problems that require diverse skill sets.
 
 **Use Cases:**
+
 - Financial forecasting requiring different analytical approaches
 
 - Complex problem-solving needing diverse expertise
@@ -282,6 +324,7 @@ graph TD
 Organizes agents in a directed acyclic graph (DAG) format, enabling complex dependencies and parallel execution paths.
 
 **Use Cases:**
+
 - AI-driven software development pipelines
 
 - Complex project management with dependencies
@@ -311,6 +354,7 @@ graph TD
 Enables agents to engage in chat-like interactions to reach decisions collaboratively through discussion and consensus building.
 
 **Use Cases:**
+
 - Real-time collaborative decision-making
 
 - Contract negotiations
@@ -345,6 +389,7 @@ graph TD
 Enhanced version of Group Chat with dynamic speaker selection, priority-based communication, and advanced interaction patterns.
 
 **Use Cases:**
+
 - Advanced collaborative decision-making
 
 - Dynamic team coordination
@@ -378,49 +423,13 @@ graph TD
 
 ---
 
-### Agent Registry
-
-**Overview:**
-A centralized registry system where agents are stored, retrieved, and invoked dynamically. The registry maintains metadata about agent capabilities, availability, and performance metrics, enabling intelligent agent selection and management.
-
-**Use Cases:**
-- Dynamic agent management in large-scale systems
-
-- Evolving recommendation engines that adapt agent selection
-
-- Service discovery in distributed agent systems
-
-
-**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/agent_registry/)**
-
-```mermaid
-graph TD
-    A[Agent Registration] --> B[Registry Database]
-    B --> C[Agent Metadata]
-    C --> D[Capabilities]
-    C --> E[Performance Metrics]
-    C --> F[Availability Status]
-    
-    G[Task Request] --> H[Registry Query Engine]
-    H --> I[Agent Discovery]
-    I --> J[Capability Matching]
-    J --> K[Agent Selection]
-    
-    K --> L[Agent Invocation]
-    L --> M[Task Execution]
-    M --> N[Performance Tracking]
-    N --> O[Registry Update]
-    O --> B
-```
-
----
-
 ### Router Architecture
 
 **Overview:**
 Intelligently routes tasks to the most appropriate agents or architectures based on task requirements and agent capabilities.
 
 **Use Cases:**
+
 - Dynamic task routing
 
 - Adaptive architecture selection
@@ -458,6 +467,7 @@ graph TD
 High-performance architecture designed for handling intensive computational tasks with multiple agents working on resource-heavy operations.
 
 **Use Cases:**
+
 - Large-scale data processing
 
 - Intensive computational workflows
@@ -493,6 +503,7 @@ graph TD
 Specialized architecture for conducting comprehensive research tasks across multiple domains with iterative refinement and cross-validation.
 
 **Use Cases:**
+
 - Academic research projects
 
 - Market analysis and intelligence
@@ -528,6 +539,7 @@ graph TD
 Architecture specifically designed to reduce and eliminate hallucinations in AI outputs through consensus mechanisms and fact-checking protocols.
 
 **Use Cases:**
+
 - Fact-checking and verification
 
 - Content validation
@@ -558,12 +570,52 @@ graph TD
 
 ---
 
+### Self MoA Seq
+
+**Overview:**
+Ensemble method that generates multiple candidate responses from a single high-performing model and synthesizes them sequentially using a sliding window approach. Keeps context within bounds while leveraging diversity across samples.
+
+**Use Cases:**
+
+- Response synthesis
+
+- Ensemble methods
+
+- Sequential aggregation
+
+- Quality improvement through diversity
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/self_moa_seq/)**
+
+```mermaid
+graph TD
+    A[Task] --> B[Proposer Agent]
+    B --> C[Generate Samples]
+    C --> D[Sample 1]
+    C --> E[Sample 2]
+    C --> F[Sample N]
+    
+    D --> G[Sliding Window]
+    E --> G
+    F --> G
+    
+    G --> H[Aggregator Agent]
+    H --> I[Biased Synthesis]
+    I --> J{More Iterations?}
+    J -->|Yes| G
+    J -->|No| K[Final Output]
+```
+
+---
+
 ### Council as Judge
 
 **Overview:**
 Multiple agents act as a council to evaluate, judge, and validate outputs or decisions through collaborative assessment.
 
 **Use Cases:**
+
 - Quality assessment and validation
 
 - Decision validation processes
@@ -594,12 +646,97 @@ graph TD
 
 ---
 
+### LLM Council
+
+**Overview:**
+Orchestrates multiple specialized LLM agents to collaboratively answer queries through structured peer review and synthesis. Different models evaluate and rank each other's work, often selecting responses from other models as superior.
+
+**Use Cases:**
+
+- Multi-model collaboration
+
+- Peer review processes
+
+- Model evaluation and synthesis
+
+- Cross-model consensus building
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/llm_council/)**
+
+```mermaid
+graph TD
+    A[User Query] --> B[Council Members]
+    
+    B --> C[GPT Councilor]
+    B --> D[Gemini Councilor]
+    B --> E[Claude Councilor]
+    B --> F[Grok Councilor]
+    
+    C --> G[Responses]
+    D --> G
+    E --> G
+    F --> G
+    
+    G --> H[Anonymize & Evaluate]
+    H --> I[Chairman Synthesis]
+    I --> J[Final Response]
+```
+
+---
+
+### Debate with Judge
+
+**Overview:**
+Debate architecture with self-refinement through a judge agent, enabling Pro and Con agents to debate a topic with iterative refinement. The judge evaluates arguments and provides synthesis for progressive improvement. Supports preset agents for quick setup, agent lists, or individual agent configuration.
+
+**Use Cases:**
+
+- Structured debates
+
+- Argument evaluation
+
+- Iterative refinement of positions
+
+- Multi-perspective analysis
+
+
+**Initialization Options:**
+
+- `preset_agents=True`: Use built-in optimized agents (simplest)
+- `agents=[pro, con, judge]`: Provide a list of 3 agents
+- Individual parameters: `pro_agent`, `con_agent`, `judge_agent`
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/debate_with_judge/)**
+
+```mermaid
+graph TD
+    A[Topic] --> B[DebateWithJudge]
+    B --> C[Pro Agent]
+    B --> D[Con Agent]
+    B --> E[Judge Agent]
+    
+    C --> F[Pro Argument]
+    D --> G[Con Argument]
+    
+    F --> H[Judge Evaluation]
+    G --> H
+    
+    H --> I[Judge Synthesis]
+    I --> J{More Loops?}
+    J -->|Yes| C
+    J -->|No| K[Final Output]
+```
+
+---
+
 ### MALT Architecture
 
 **Overview:**
 Specialized architecture for complex language processing tasks that require coordination between multiple language-focused agents.
 
 **Use Cases:**
+
 - Natural language processing pipelines
 
 - Translation and localization
@@ -637,6 +774,7 @@ graph TD
 Agents vote on decisions with the majority determining the final outcome, providing democratic decision-making and error reduction through consensus.
 
 **Use Cases:**
+
 - Democratic decision-making processes
 
 - Consensus building
@@ -675,6 +813,7 @@ graph TD
 Automatically constructs and configures multi-agent systems based on requirements, enabling dynamic system creation and adaptation.
 
 **Use Cases:**
+
 - Dynamic system creation
 
 - Adaptive architectures
@@ -706,12 +845,55 @@ graph TD
 
 ---
 
+### Swarm Rearrange
+
+**Overview:**
+Orchestrates multiple swarms in sequential or parallel flow patterns with thread-safe operations and flow validation. Provides comprehensive swarm management and coordination capabilities.
+
+**Use Cases:**
+
+- Multi-swarm orchestration
+
+- Flow pattern management
+
+- Swarm coordination
+
+- Sequential and parallel swarm execution
+
+
+**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/swarm_rearrange/)**
+
+```mermaid
+graph TD
+    A[Swarm Pool] --> B[SwarmRearrange]
+    B --> C[Flow Pattern]
+    
+    C --> D[Sequential Flow]
+    C --> E[Parallel Flow]
+    
+    D --> F[Swarm 1]
+    F --> G[Swarm 2]
+    G --> H[Swarm N]
+    
+    E --> I[Swarm 1]
+    E --> J[Swarm 2]
+    E --> K[Swarm N]
+    
+    H --> L[Result Aggregation]
+    I --> L
+    J --> L
+    K --> L
+```
+
+---
+
 ### Hybrid Hierarchical Cluster
 
 **Overview:**
 Combines hierarchical and peer-to-peer communication patterns for complex workflows that require both centralized coordination and distributed collaboration.
 
 **Use Cases:**
+
 - Complex enterprise workflows
 
 - Multi-department coordination
@@ -753,6 +935,7 @@ graph TD
 Agents participate in democratic voting processes to select leaders or make collective decisions.
 
 **Use Cases:**
+
 - Democratic governance
 
 - Consensus building
@@ -794,6 +977,7 @@ graph TD
 Adaptive conversation management with dynamic agent selection and interaction patterns.
 
 **Use Cases:**
+
 - Adaptive chatbots
 
 - Dynamic customer service
@@ -833,6 +1017,7 @@ graph TD
 Hierarchical tree structure for organizing agents in parent-child relationships.
 
 **Use Cases:**
+
 - Organizational hierarchies
 
 - Decision trees

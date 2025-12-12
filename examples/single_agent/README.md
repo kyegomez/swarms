@@ -7,7 +7,6 @@ This directory contains examples demonstrating single agent patterns, configurat
 - [persistent_legal_agent.py](demos/persistent_legal_agent.py) - Legal document processing agent
 
 ## External Agents
-- [custom_agent_example.py](external_agents/custom_agent_example.py) - Custom agent implementation
 - [openai_assistant_wrapper.py](external_agents/openai_assistant_wrapper.py) - OpenAI Assistant integration
 
 ## LLM Integrations

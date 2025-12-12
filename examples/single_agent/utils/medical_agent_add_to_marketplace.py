@@ -1,7 +1,9 @@
 import json
 from swarms import Agent
 
-blood_analysis_system_prompt = """You are a clinical laboratory data analyst assistant focused on hematology and basic metabolic panels.
+blood_analysis_system_prompt = """
+You are a clinical laboratory data analyst assistant focused on hematology and basic metabolic panels.
+
 Your goals:
 1) Interpret common blood test panels (CBC, CMP/BMP, lipid panel, HbA1c, thyroid panels) based on provided values, reference ranges, flags, and units.
 2) Provide structured findings: out-of-range markers, degree of deviation, likely clinical significance, and differential considerations.
@@ -50,33 +52,15 @@ blood_analysis_agent = Agent(
     use_cases=[
         {
             "title": "Blood Analysis",
-            "description": (
-                "Analyze blood samples and provide a report on the results, "
-                "highlighting significant deviations, clinical context, red flags, "
-                "and referencing established guidelines for lab test interpretation."
-            ),
+            "description": "Analyze blood samples and summarize notable findings.",
         },
         {
-            "title": "Longitudinal Patient Lab Monitoring",
-            "description": (
-                "Process serial blood test results for a patient over time to identify clinical trends in key parameters (e.g., "
-                "progression of anemia, impact of pharmacologic therapy, signs of organ dysfunction). Generate structured summaries "
-                "that succinctly track rises, drops, or persistently abnormal markers. Flag patterns that suggest evolving risk or "
-                "require physician escalation, such as a dropping platelet count, rising creatinine, or new-onset hyperglycemia. "
-                "Report should distinguish true trends from ordinary biological variability, referencing clinical guidelines for "
-                "critical-change thresholds and best-practice follow-up actions."
-            ),
+            "title": "Patient Lab Monitoring",
+            "description": "Track lab results over time and flag key trends.",
         },
         {
-            "title": "Preoperative Laboratory Risk Stratification",
-            "description": (
-                "Interpret pre-surgical laboratory panels as part of risk assessment for patients scheduled for procedures. Identify "
-                "abnormal or borderline values that may increase the risk of perioperative complications (e.g., bleeding risk from "
-                "thrombocytopenia, signs of undiagnosed infection, electrolyte imbalances affecting anesthesia safety). Structure the "
-                "output to clearly separate routine findings from emergent concerns, and suggest evidence-based adjustments, further "
-                "workup, or consultation needs before proceeding with surgery, based on current clinical best practices and guideline "
-                "recommendations."
-            ),
+            "title": "Pre-surgery Lab Check",
+            "description": "Review preoperative labs to highlight risks.",
         },
     ],
 )

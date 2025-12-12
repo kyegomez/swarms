@@ -12,8 +12,10 @@ from typing import Any, Callable, Dict, List, Literal, Optional
 from uuid import uuid4
 
 from loguru import logger
+from mcp.server.auth.settings import AuthSettings
 from mcp.server.fastmcp import FastMCP
 from mcp.server.lowlevel.server import LifespanResultT
+from mcp.server.transport_security import TransportSecuritySettings
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
@@ -21,7 +23,6 @@ from swarms.tools.mcp_client_tools import (
     get_tools_for_multiple_mcp_servers,
 )
 
-from mcp.server.fastmcp import AuthSettings, TransportSecuritySettings
 
 class TaskStatus(Enum):
     """Status of a task in the queue."""
@@ -603,7 +604,13 @@ class AOP:
         log_level: Literal[
             "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
         ] = "INFO",
-        lifespan: Callable[[FastMCP[LifespanResultT]], AbstractAsyncContextManager[LifespanResultT]] | None = None,
+        lifespan: (
+            Callable[
+                [FastMCP[LifespanResultT]],
+                AbstractAsyncContextManager[LifespanResultT],
+            ]
+            | None
+        ) = None,
         auth: AuthSettings | None = None,
         transport_security: TransportSecuritySettings | None = None,
         *args,
@@ -672,6 +679,7 @@ class AOP:
         self.tool_configs: Dict[str, AgentToolConfig] = {}
         self.task_queues: Dict[str, TaskQueue] = {}
         self.transport = transport
+
         self.mcp_server = FastMCP(
             name=server_name,
             port=port,
