@@ -17,6 +17,7 @@ This example demonstrates a practical customer support system with:
 ✅ **No Cloud Services**: Runs completely locally
 ✅ **Free Dependencies**: ChromaDB is open-source and free
 ✅ **Semantic Search**: Vector similarity for intelligent knowledge retrieval
+✅ **Intelligent Caching**: Automatic response caching saves tokens and improves speed
 ✅ **Production-Ready**: Easy to extend and deploy
 
 ## Architecture
@@ -72,6 +73,21 @@ graph TB
 - Billing assistance
 - Product information
 - Contextual responses from vector DB
+
+### 4. Response Caching System
+**Purpose**: Automatically cache and reuse responses for similar queries
+
+**How It Works**:
+1. Every customer query is checked against cached responses
+2. If a similar query exists (85%+ similarity), cached response is returned
+3. New responses are automatically saved to cache
+4. Saves API tokens and improves response time
+
+**Benefits**:
+- **Token Savings**: Reuses responses instead of calling LLM
+- **Faster Responses**: Instant retrieval from vector DB
+- **Consistent Answers**: Same questions get same quality answers
+- **Learning System**: Gets better over time as cache grows
 
 ## Quick Start
 
@@ -191,6 +207,37 @@ for entry in KNOWLEDGE_ENTRIES:
     )
 ```
 
+### Caching System
+
+```python
+# Create conversation history collection for caching
+conversation_history = chroma_client.get_or_create_collection(
+    name="conversation_history",
+    metadata={"description": "Past queries and responses"}
+)
+
+def check_cached_response(query: str, similarity_threshold: float = 0.85):
+    """Check if similar query was already answered"""
+    results = conversation_history.query(
+        query_texts=[query],
+        n_results=1
+    )
+
+    # If similarity > 85%, return cached response
+    if results["distances"][0][0] < 0.3:  # Low distance = high similarity
+        return True, results["metadatas"][0][0]["response"]
+
+    return False, ""
+
+def save_to_cache(query: str, response: str):
+    """Save query-response pair for future reuse"""
+    conversation_history.add(
+        ids=[f"conv_{hash(query)}_{time.time()}"],
+        documents=[query],
+        metadatas=[{"response": response, "timestamp": time.time()}]
+    )
+```
+
 ### Query Vector Database
 
 ```python
@@ -307,6 +354,39 @@ The system can handle various types of customer support queries:
 - Provides refund request steps
 - Sets timeline expectations
 
+### Caching in Action
+
+**First Query:**
+```
+👤 You: I can't log into my account
+
+💾 Checking cache for similar queries...
+❌ No similar query found in cache. Processing with agents...
+🔍 Searching knowledge base...
+🤖 Processing with support agents...
+
+🤖 SUPPORT AGENT:
+I understand you're having trouble logging in...
+[Full response]
+
+💾 Saving response to cache for future queries...
+✅ Cached successfully!
+```
+
+**Similar Query Later:**
+```
+👤 You: Can't sign in to my account
+
+💾 Checking cache for similar queries...
+✅ Found cached response! (Saving tokens 🎉)
+
+🤖 SUPPORT AGENT (from cache):
+I understand you're having trouble logging in...
+[Same cached response - instant, no LLM call!]
+
+💡 This response was retrieved from cache. No tokens used! 🎉
+```
+
 ## Customization
 
 ### Adding More Knowledge
@@ -338,6 +418,26 @@ def create_expanded_support_agents():
     return [triage_agent, support_agent, escalation_agent]
 ```
 
+### Adjusting Cache Sensitivity
+
+Control when to use cached responses:
+
+```python
+# More aggressive caching (70% similarity)
+response, cached = handle_support_query(query, agents, cache_threshold=0.70)
+
+# Stricter caching (90% similarity)
+response, cached = handle_support_query(query, agents, cache_threshold=0.90)
+
+# Disable caching
+response, cached = handle_support_query(query, agents, use_cache=False)
+```
+
+**Recommended Thresholds:**
+- `0.85` (default) - Good balance, catches paraphrased questions
+- `0.90` - Strict, only very similar questions
+- `0.70` - Aggressive, broader matching (more token savings, less accuracy)
+
 ### Persistent Storage
 
 For production, save ChromaDB to disk:
@@ -348,7 +448,7 @@ from chromadb import PersistentClient
 # Use persistent storage instead of in-memory
 chroma_client = PersistentClient(path="./chroma_db")
 
-# Database persists between runs
+# Database persists between runs (including cached responses!)
 ```
 
 ### Load Knowledge from Files
