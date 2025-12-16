@@ -410,6 +410,7 @@ nav:
         - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
         - Group Chat Example: "swarms/examples/groupchat_example.md"
         - Sequential Workflow Example: "swarms/examples/sequential_example.md"
+        - AgentRearrange Example: "swarms/examples/agent_rearrange_example.md"
         - SwarmRouter Example: "swarms/examples/swarm_router.md"
         - MultiAgentRouter Minimal Example: "swarms/examples/multi_agent_router_minimal.md"
         - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
