@@ -45,7 +45,7 @@ Hierarchical architectures enable structured, iterative, and scalable problem-so
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized agents
 research_agent = Agent(

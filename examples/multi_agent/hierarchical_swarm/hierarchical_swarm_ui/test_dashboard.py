@@ -2,7 +2,7 @@
 Test script for the Arasaka Dashboard functionality.
 """
 
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 from swarms.structs.agent import Agent
 
 
