@@ -104,6 +104,9 @@ from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.swarms_marketplace_utils import (
     add_prompt_to_marketplace,
 )
+from swarms.utils.fetch_prompts_marketplace import (
+    fetch_prompts_from_marketplace,
+)
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -270,6 +273,10 @@ class Agent:
         artifacts_output_path (str): The artifacts output path
         artifacts_file_extension (str): The artifacts file extension (.pdf, .md, .txt, )
         scheduled_run_date (datetime): The date and time to schedule the task
+        marketplace_prompt_id (str): The unique UUID identifier of a prompt from the Swarms marketplace.
+            When provided, the agent will automatically fetch and load the prompt from the marketplace
+            as the system prompt. This enables one-line prompt loading from the Swarms marketplace.
+            Requires the SWARMS_API_KEY environment variable to be set.
 
     Methods:
         run: Run the agent
@@ -323,6 +330,15 @@ class Agent:
     ... )
     >>> response = agent.run("Generate a report on the financials.")
     >>> # Will try gpt-4o first, then gpt-4o-mini, then gpt-3.5-turbo if each fails
+
+    >>> # Marketplace prompt example - load a prompt in one line
+    >>> agent = Agent(
+    ...     model_name="gpt-4.1",
+    ...     marketplace_prompt_id="550e8400-e29b-41d4-a716-446655440000",
+    ...     max_loops=1
+    ... )
+    >>> response = agent.run("Execute the marketplace prompt task")
+    >>> # The agent automatically loads the system prompt from the Swarms marketplace
 
     """
 
@@ -472,6 +488,7 @@ class Agent:
         mode: Literal["interactive", "fast", "standard"] = "standard",
         publish_to_marketplace: bool = False,
         use_cases: Optional[List[Dict[str, Any]]] = None,
+        marketplace_prompt_id: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -625,6 +642,11 @@ class Agent:
         self.capabilities = capabilities
         self.mode = mode
         self.publish_to_marketplace = publish_to_marketplace
+        self.marketplace_prompt_id = marketplace_prompt_id
+
+        # Load prompt from marketplace if marketplace_prompt_id is provided
+        if self.marketplace_prompt_id is not None:
+            self._load_prompt_from_marketplace()
 
         # Initialize transforms
         if transforms is None:
@@ -964,6 +986,71 @@ class Agent:
                 f"Error Adding MCP Tools to Agent: {self.agent_name} Error: {e} Traceback: {traceback.format_exc()}"
             )
             raise e
+
+    def _load_prompt_from_marketplace(self) -> None:
+        """
+        Load a prompt from the Swarms marketplace using the marketplace_prompt_id.
+
+        This method fetches the prompt content from the Swarms marketplace API
+        and sets it as the agent's system prompt. If the agent_name and agent_description
+        are not already set, they will be populated from the marketplace prompt data.
+
+        The method uses the fetch_prompts_from_marketplace utility function to retrieve
+        the prompt data, which includes the prompt name, description, and content.
+
+        Raises:
+            ValueError: If the prompt cannot be found in the marketplace.
+            Exception: If there's an error fetching the prompt from the API.
+
+        Note:
+            Requires the SWARMS_API_KEY environment variable to be set for
+            authenticated API access.
+        """
+        try:
+            logger.info(
+                f"Loading prompt from marketplace with ID: {self.marketplace_prompt_id}"
+            )
+
+            result = fetch_prompts_from_marketplace(
+                prompt_id=self.marketplace_prompt_id,
+                return_params_on=True,
+            )
+
+            if result is None:
+                raise ValueError(
+                    f"Prompt with ID '{self.marketplace_prompt_id}' not found in the marketplace. "
+                    "Please verify the prompt ID is correct."
+                )
+
+            name, description, prompt = result
+
+            # Set the system prompt from the marketplace
+            if prompt:
+                self.system_prompt = prompt
+                logger.info(
+                    f"Successfully loaded prompt '{name}' from marketplace"
+                )
+
+            # Optionally set agent name and description if not already set
+            if name and self.agent_name == "swarm-worker-01":
+                self.agent_name = name
+                self.name = name
+
+            if description and self.agent_description is None:
+                self.agent_description = description
+                self.description = description
+
+            if self.print_on:
+                self.pretty_print(
+                    f"🛒 [MARKETPLACE] Loaded prompt '{name}' from Swarms Marketplace",
+                    loop_count=0,
+                )
+
+        except Exception as e:
+            logger.error(
+                f"Error loading prompt from marketplace: {e} Traceback: {traceback.format_exc()}"
+            )
+            raise
 
     def setup_config(self):
         # The max_loops will be set dynamically if the dynamic_loop

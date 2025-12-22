@@ -164,10 +164,10 @@ class RoundRobinSwarm:
             # Add initial task to conversation
             self.conversation.add(role="User", content=task)
             n = len(self.agents)
-            
+
             # Build agent names list for context
             agent_names = [agent.agent_name for agent in self.agents]
-            
+
             logger.info(
                 f"Starting randomized round-robin execution with task on {n} agents: {agent_names}"
             )
@@ -180,15 +180,17 @@ class RoundRobinSwarm:
                 # Shuffle agents randomly each loop for varied interaction patterns
                 shuffled_agents = self.agents.copy()
                 random.shuffle(shuffled_agents)
-                
+
                 logger.debug(
                     f"Agent order for loop {loop + 1}: {[a.agent_name for a in shuffled_agents]}"
                 )
 
                 for i, current_agent in enumerate(shuffled_agents):
                     # Get current conversation context
-                    conversation_context = self.conversation.return_history_as_string()
-                    
+                    conversation_context = (
+                        self.conversation.return_history_as_string()
+                    )
+
                     # Build collaborative prompt with context
                     collaborative_task = f"""{conversation_context}
 
@@ -200,7 +202,10 @@ class RoundRobinSwarm:
 
                     try:
                         result = self._execute_agent(
-                            current_agent, collaborative_task, *args, **kwargs
+                            current_agent,
+                            collaborative_task,
+                            *args,
+                            **kwargs,
                         )
                     except Exception as e:
                         logger.error(
@@ -232,7 +237,9 @@ class RoundRobinSwarm:
             logger.error(f"Round-robin execution failed: {str(e)}")
             raise
 
-    def run_batch(self, tasks: List[str]) -> List[Union[str, dict, list]]:
+    def run_batch(
+        self, tasks: List[str]
+    ) -> List[Union[str, dict, list]]:
         """
         Execute multiple tasks sequentially through the round-robin swarm.
 
