@@ -235,6 +235,7 @@ nav:
       - Reference: "swarms/structs/agent.md"
       - Tools and MCP: "swarms/tools/tools_examples.md"
       - Multi-Agent Helpers: "swarms/structs/agent_multi_agent_communication.md"
+      - Loading Prompts from Marketplace: "swarms/examples/marketplace_prompt_loading.md"
       
       - Capabilities:
         - Fallback Models: "swarms/utils/fallback_models.md"
@@ -385,7 +386,6 @@ nav:
           - Gradio Chat Interface: "swarms/ui/main.md"
           - Agent with Gemini Nano Banana: "swarms/examples/jarvis_agent.md"
           - Agent Marketplace Publishing: "examples/marketplace_publishing_quickstart.md"
-          - Loading Prompts from Marketplace: "swarms/examples/marketplace_prompt_loading.md"
         - LLM Providers:
           - Language Models:
             - Overview: "swarms/examples/model_providers.md"
@@ -476,7 +476,6 @@ nav:
     - Overview: "swarms_platform/index.md"
     - Marketplace:
       - Share and Discover Agents, Prompts, and Tools: "swarms_platform/share_and_discover.md"
-      - Loading Prompts into Agents: "swarms/examples/marketplace_prompt_loading.md"
       - Monetize Your Prompts, Agents, and Tools: "swarms_platform/monetize.md"
     - Platform:
       - Customize Your Sidebar: "swarms_platform/apps_page.md"
