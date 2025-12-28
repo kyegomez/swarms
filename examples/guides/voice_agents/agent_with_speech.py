@@ -17,13 +17,13 @@ agent = Agent(
 # Create the streaming TTS callback
 tts_callback = StreamingTTSCallback(voice="alloy", model="tts-1")
 
-# # Run the agent with streaming TTS callback
-# out = agent.run(
-#     task="What are the top five best energy stocks across nuclear, solar, gas, and other energy sources?",
-#     streaming_callback=tts_callback,
-# )
+# Run the agent with streaming TTS callback
+out = agent.run(
+    task="What are the top five best energy stocks across nuclear, solar, gas, and other energy sources?",
+    streaming_callback=tts_callback,
+)
 
-# # Flush any remaining text in the buffer
-# tts_callback.flush()
+# Flush any remaining text in the buffer
+tts_callback.flush()
 
-# print(out)
+print(out)
