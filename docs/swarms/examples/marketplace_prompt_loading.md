@@ -49,8 +49,14 @@ To find prompt IDs:
 
 1. Visit the [Swarms Marketplace](https://swarms.world/marketplace)
 2. Browse or search for prompts that fit your use case
-3. Click on a prompt to view its details
-4. Copy the prompt's UUID from the URL or the prompt details page
+3. Click on a prompt to view its details page
+4. **Copy the prompt ID from the URL** - The prompt ID is the UUID in the URL path
+
+**Example:**
+- Marketplace URL: `https://swarms.world/prompt/75fc0d28-b0d0-4372-bc04-824aa388b7d2`
+- Prompt ID: `75fc0d28-b0d0-4372-bc04-824aa388b7d2`
+
+The prompt ID can also be found in the **Metadata** section of the prompt listing page.
 
 ## Complete Example
 

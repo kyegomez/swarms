@@ -385,7 +385,6 @@ nav:
           - Agent Output Types: "swarms/examples/agent_output_types.md"
           - Gradio Chat Interface: "swarms/ui/main.md"
           - Agent with Gemini Nano Banana: "swarms/examples/jarvis_agent.md"
-          - Agent Marketplace Publishing: "examples/marketplace_publishing_quickstart.md"
         - LLM Providers:
           - Language Models:
             - Overview: "swarms/examples/model_providers.md"
@@ -472,6 +471,11 @@ nav:
     - X402:
       - x402 Quickstart Example: "examples/x402_payment_integration.md"
       - X402 Discovery Query Agent: "examples/x402_discovery_query.md"
+
+    - Marketplace:
+      - Overview: "examples/marketplace_examples_overview.md"
+      - Loading Prompts from Marketplace: "swarms/examples/marketplace_prompt_loading.md"
+      - Publishing Agents to Marketplace: "examples/marketplace_publishing_quickstart.md"
 
 
   - Swarms Cloud API:
