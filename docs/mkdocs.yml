@@ -441,6 +441,11 @@ nav:
       - Job Finding Swarm: "examples/job_finding.md"
       - Mergers & Aquisition (M&A) Advisory Swarm: "examples/ma_swarm.md"
     
+    - Voice Agents:
+      - Overview: "swarms/examples/voice_agents_overview.md"
+      - Single Speech Agent: "swarms/examples/single_agent_speech.md"
+      - Multi-Agent Speech Debate: "swarms/examples/multi_agent_speech_debate.md"
+    
     - Tools & Integrations:
       - Overview: "examples/tools_integrations_overview.md"
       - Web Search with Exa: "examples/exa_search.md"

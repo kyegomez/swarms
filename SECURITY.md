@@ -36,4 +36,3 @@ Once the vulnerability has been thoroughly assessed, we will take the necessary 
 We aim to respond to all vulnerability reports in a timely manner and work towards resolving them as quickly as possible. We thank you for your contribution to the security of our software.
 
 Please note that any vulnerability reports that are not related to the specified versions or do not provide sufficient information may be declined.
-
