@@ -87,6 +87,9 @@ from swarms.tools.py_func_to_openai_func_str import (
 )
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.dynamic_context_window import dynamic_auto_chunking
+from swarms.utils.fetch_prompts_marketplace import (
+    fetch_prompts_from_marketplace,
+)
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
 from swarms.utils.generate_keys import generate_api_key
@@ -103,9 +106,6 @@ from swarms.utils.output_types import OutputType
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.swarms_marketplace_utils import (
     add_prompt_to_marketplace,
-)
-from swarms.utils.fetch_prompts_marketplace import (
-    fetch_prompts_from_marketplace,
 )
 
 
@@ -124,6 +124,11 @@ def parse_done_token(response: str) -> bool:
 def agent_id():
     """Generate an agent id"""
     return f"agent-{uuid.uuid4().hex}"
+
+
+def get_workspace_dir():
+    """Get the workspace directory"""
+    return os.getenv("WORKSPACE_DIR")
 
 
 # Agent output types
@@ -223,6 +228,7 @@ class Agent:
         traceback_handlers (Any): The traceback handlers
         streaming_on (bool): Enable basic streaming with formatted panels
         stream (bool): Enable detailed token-by-token streaming with metadata (citations, tokens used, etc.)
+        streaming_callback (Optional[Callable[[str], None]]): Callback function to receive streaming tokens in real-time. Defaults to None.
         docs (List[str]): The list of documents
         docs_folder (str): The folder containing the documents
         verbose (bool): Enable verbose mode
@@ -267,7 +273,9 @@ class Agent:
         frequency_penalty (float): The frequency penalty
         presence_penalty (float): The presence penalty
         temperature (float): The temperature
-        workspace_dir (str): The workspace directory
+        workspace_dir (str, optional): Ignored - workspace directory is always read from
+            the 'workspace_dir' environment variable. Defaults to 'agent_workspace' if
+            the environment variable is not set.
         timeout (int): The timeout
         artifacts_on (bool): Enable artifacts
         artifacts_output_path (str): The artifacts output path
@@ -384,6 +392,7 @@ class Agent:
         traceback_handlers: Optional[Any] = None,
         streaming_on: Optional[bool] = False,
         stream: Optional[bool] = False,
+        streaming_callback: Optional[Callable[[str], None]] = None,
         docs: List[str] = None,
         docs_folder: Optional[str] = None,
         verbose: Optional[bool] = False,
@@ -429,7 +438,6 @@ class Agent:
         frequency_penalty: float = 0.8,
         presence_penalty: float = 0.6,
         temperature: float = 0.5,
-        workspace_dir: str = "agent_workspace",
         timeout: Optional[int] = None,
         # short_memory: Optional[str] = None,
         created_at: float = time.time(),
@@ -536,6 +544,7 @@ class Agent:
         self.traceback_handlers = traceback_handlers
         self.streaming_on = streaming_on
         self.stream = stream
+        self.streaming_callback = streaming_callback
         self.docs = docs
         self.docs_folder = docs_folder
         self.verbose = verbose
@@ -580,7 +589,9 @@ class Agent:
         self.frequency_penalty = frequency_penalty
         self.presence_penalty = presence_penalty
         self.temperature = temperature
-        self.workspace_dir = workspace_dir
+        # Always use environment variable for workspace_dir, ignore user input
+        # Fallback to default if environment variable is not set
+        self.workspace_dir = get_workspace_dir()
         self.timeout = timeout
         self.created_at = created_at
         self.return_step_meta = return_step_meta
@@ -743,6 +754,63 @@ class Agent:
                     self.use_cases if self.use_cases else None
                 ),
             )
+
+    def _get_agent_workspace_dir(self) -> str:
+        """
+        Get the agent-specific workspace directory path.
+
+        Creates a unique subdirectory for each agent instance in the format:
+        workspace_dir/agents/{name-of-agent}-{uuid}/
+
+        Returns:
+            str: The full path to the agent-specific workspace directory.
+        """
+        # Generate a sanitized agent name in "name-of-agent" format (lowercase with hyphens)
+        if self.agent_name:
+            # Convert to lowercase and replace spaces/special chars with hyphens
+            safe_agent_name = (
+                self.agent_name.lower()
+                .replace(" ", "-")
+                .replace("_", "-")
+                .replace("/", "-")
+                .replace("\\", "-")
+                .replace(":", "-")
+                .replace("*", "-")
+                .replace("?", "-")
+                .replace('"', "-")
+                .replace("<", "-")
+                .replace(">", "-")
+                .replace("|", "-")
+                # Remove multiple consecutive hyphens
+                .replace("--", "-")
+                .replace("--", "-")
+                .strip("-")
+            )
+        else:
+            safe_agent_name = "agent"
+
+        # Extract UUID from agent ID
+        if self.id.startswith("agent-"):
+            agent_uuid = self.id.replace("agent-", "")
+        else:
+            agent_uuid = self.id
+
+        # Limit UUID length for directory name (use last 12 chars for brevity)
+        agent_uuid_short = (
+            agent_uuid[-12:] if len(agent_uuid) > 12 else agent_uuid
+        )
+
+        # Create directory name: {name-of-agent}-{uuid} (no "agent-" prefix)
+        dir_name = f"{safe_agent_name}-{agent_uuid_short}"
+
+        # Create full path: workspace_dir/agents/{name-of-agent}-{uuid}/
+        agents_dir = os.path.join(self.workspace_dir, "agents")
+        agent_workspace = os.path.join(agents_dir, dir_name)
+
+        # Ensure directory exists
+        os.makedirs(agent_workspace, exist_ok=True)
+
+        return agent_workspace
 
     def handle_handoffs(self, task: Optional[str] = None):
         router = MultiAgentRouter(
@@ -1333,12 +1401,17 @@ class Agent:
             if self.autosave:
                 log_agent_data(self.to_dict())
                 self.save()
+                self._autosave_config_step(loop_count=0)
 
             while (
                 self.max_loops == "auto"
                 or loop_count < self.max_loops
             ):
                 loop_count += 1
+
+                # Autosave config at the start of each loop step
+                if self.autosave:
+                    self._autosave_config_step(loop_count=loop_count)
 
                 # Handle RAG query every loop
                 if (
@@ -1470,6 +1543,12 @@ class Agent:
 
                         success = True  # Mark as successful to exit the retry loop
 
+                        # Autosave config after successful step
+                        if self.autosave:
+                            self._autosave_config_step(
+                                loop_count=loop_count
+                            )
+
                     except (
                         BadRequestError,
                         InternalServerError,
@@ -1480,6 +1559,9 @@ class Agent:
                         if self.autosave is True:
                             log_agent_data(self.to_dict())
                             self.save()
+                            self._autosave_config_step(
+                                loop_count=loop_count
+                            )
 
                         logger.error(
                             f"Attempt {attempt+1}/{self.retry_attempts}: Error generating response in loop {loop_count} for agent '{self.agent_name}': {str(e)} | Traceback: {traceback.format_exc()}"
@@ -1491,6 +1573,9 @@ class Agent:
                     if self.autosave is True:
                         log_agent_data(self.to_dict())
                         self.save()
+                        self._autosave_config_step(
+                            loop_count=loop_count
+                        )
 
                     logger.error(
                         "Failed to generate a valid response after"
@@ -1546,8 +1631,8 @@ class Agent:
 
             if self.autosave is True:
                 log_agent_data(self.to_dict())
-
                 self.save()
+                self._autosave_config_step(loop_count=loop_count)
 
             # Output formatting based on output_type
             return history_output_formatter(
@@ -1558,12 +1643,81 @@ class Agent:
             self._handle_run_error(error)
 
         except KeyboardInterrupt as error:
+            # Save config on interrupt
+            if self.autosave:
+                try:
+                    self._autosave_config_step(loop_count=None)
+                except Exception:
+                    pass  # Don't let autosave errors mask the interrupt
             self._handle_run_error(error)
+
+    def _autosave_config_step(
+        self, loop_count: Optional[int] = None
+    ) -> None:
+        """
+        Save the agent's configuration dictionary to a JSON file in the agent-specific workspace directory.
+        This method is called at each step of the agent's run to maintain an up-to-date
+        configuration snapshot. It only runs when autosave is enabled.
+
+        Args:
+            loop_count (Optional[int]): The current loop count for logging purposes. Defaults to None.
+
+        Note:
+            This method handles errors gracefully to ensure it doesn't interrupt the main execution.
+            The saved file will be named `config.json` in the agent-specific workspace directory:
+            workspace_dir/agents/{name-of-agent}-{uuid}/config.json
+        """
+        if not self.autosave:
+            return
+
+        try:
+            # Get agent-specific workspace directory
+            agent_workspace = self._get_agent_workspace_dir()
+
+            # Save as config.json in the agent-specific directory
+            file_path = os.path.join(agent_workspace, "config.json")
+
+            # Get the current configuration dictionary
+            config_dict = self.to_dict()
+
+            # Add metadata about when this was saved
+            config_dict["_autosave_metadata"] = {
+                "timestamp": time.strftime(
+                    "%Y-%m-%d %H:%M:%S", time.localtime()
+                ),
+                "loop_count": loop_count,
+                "agent_id": self.id,
+                "agent_name": self.agent_name,
+            }
+
+            # Write to JSON file atomically (write to temp file first, then rename)
+            temp_path = file_path + ".tmp"
+            with open(temp_path, "w", encoding="utf-8") as f:
+                json.dump(
+                    config_dict, f, indent=2, ensure_ascii=False
+                )
+
+            # Atomic rename
+            os.replace(temp_path, file_path)
+
+            if self.verbose and loop_count is not None:
+                logger.debug(
+                    f"Autosaved config at loop {loop_count} to {file_path}"
+                )
+
+        except Exception as e:
+            # Log error but don't raise - we don't want autosave to break execution
+            logger.warning(
+                f"Failed to autosave config step for agent '{self.agent_name}': {e}"
+            )
 
     def _handle_run_error(self, error: any):
         if self.autosave is True:
+            # Save full state
             self.save()
             log_agent_data(self.to_dict())
+            # Also save config step on error
+            self._autosave_config_step(loop_count=None)
 
         # Get detailed error information
         error_type = type(error).__name__
@@ -1835,16 +1989,20 @@ class Agent:
         """
         Save the agent state to a file using SafeStateManager with atomic writing
         and backup functionality. Automatically handles complex objects and class instances.
+        Files are saved in the agent-specific workspace directory: workspace_dir/agent-{agent_name}-{uuid}/
 
         Args:
-            file_path (str, optional): Custom path to save the state.
-                                    If None, uses configured paths.
+            file_path (str, optional): Custom path to save the state. If relative, will be saved in
+                                    the agent-specific workspace directory. If None, uses configured paths.
 
         Raises:
             OSError: If there are filesystem-related errors
             Exception: For other unexpected errors
         """
         try:
+            # Get agent-specific workspace directory
+            agent_workspace = self._get_agent_workspace_dir()
+
             # Determine the save path
             resolved_path = (
                 file_path
@@ -1856,14 +2014,19 @@ class Agent:
             if not resolved_path.endswith(".json"):
                 resolved_path += ".json"
 
-            # Create full path including workspace directory
-            full_path = os.path.join(
-                self.workspace_dir, resolved_path
-            )
+            # If file_path is absolute, use it as-is; otherwise, use agent workspace
+            if file_path and os.path.isabs(file_path):
+                full_path = file_path
+            else:
+                # Create full path in agent-specific workspace directory
+                full_path = os.path.join(
+                    agent_workspace, resolved_path
+                )
+
             backup_path = full_path + ".backup"
             temp_path = full_path + ".temp"
 
-            # Ensure workspace directory exists
+            # Ensure directory exists
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
 
             # First save to temporary file using SafeStateManager
@@ -2569,30 +2732,48 @@ class Agent:
         return toml.dumps(self.to_dict(), *args, **kwargs)
 
     def model_dump_json(self):
+        """
+        Save the agent model configuration to JSON in the agent-specific workspace directory.
+
+        Returns:
+            str: Message indicating where the file was saved.
+        """
+        agent_workspace = self._get_agent_workspace_dir()
         logger.info(
-            f"Saving {self.agent_name} model to JSON in the {self.workspace_dir} directory"
+            f"Saving {self.agent_name} model to JSON in the {agent_workspace} directory"
         )
 
         create_file_in_folder(
-            self.workspace_dir,
+            agent_workspace,
             f"{self.agent_name}.json",
             str(self.to_json()),
         )
 
-        return f"Model saved to {self.workspace_dir}/{self.agent_name}.json"
+        return (
+            f"Model saved to {agent_workspace}/{self.agent_name}.json"
+        )
 
     def model_dump_yaml(self):
+        """
+        Save the agent model configuration to YAML in the agent-specific workspace directory.
+
+        Returns:
+            str: Message indicating where the file was saved.
+        """
+        agent_workspace = self._get_agent_workspace_dir()
         logger.info(
-            f"Saving {self.agent_name} model to YAML in the {self.workspace_dir} directory"
+            f"Saving {self.agent_name} model to YAML in the {agent_workspace} directory"
         )
 
         create_file_in_folder(
-            self.workspace_dir,
+            agent_workspace,
             f"{self.agent_name}.yaml",
             str(self.to_yaml()),
         )
 
-        return f"Model saved to {self.workspace_dir}/{self.agent_name}.yaml"
+        return (
+            f"Model saved to {agent_workspace}/{self.agent_name}.yaml"
+        )
 
     def handle_tool_schema_ops(self):
         if exists(self.tool_schema):
@@ -2950,6 +3131,15 @@ class Agent:
         if not isinstance(task, str):
             task = format_data_structure(task)
 
+        # Use instance streaming_callback if not provided in method call
+        # Priority: local callback (method parameter) > instance callback (__init__)
+        # Check both: use local if provided, otherwise fall back to instance callback
+        # If both are None, streaming_callback remains None
+        if streaming_callback is None:
+            if self.streaming_callback is not None:
+                streaming_callback = self.streaming_callback
+            # else: both are None, streaming_callback stays None
+
         try:
             if exists(imgs):
                 output = self.run_multiple_images(
@@ -3009,6 +3199,12 @@ class Agent:
                 self._handle_run_error(e)
 
         except KeyboardInterrupt:
+            # Save config on interrupt
+            if self.autosave:
+                try:
+                    self._autosave_config_step(loop_count=None)
+                except Exception:
+                    pass  # Don't let autosave errors mask the interrupt
             logger.warning(
                 f"Agent Name: {self.agent_name} Keyboard interrupt detected. "
                 "If autosave is enabled, the agent's state will be saved to the workspace directory. "
@@ -3142,20 +3338,46 @@ class Agent:
     def handle_artifacts(
         self, text: str, file_output_path: str, file_extension: str
     ) -> None:
-        """Handle creating and saving artifacts with error handling."""
+        """
+        Handle creating and saving artifacts with error handling.
+        Artifacts are saved in the agent-specific workspace directory if the path is relative.
+
+        Args:
+            text (str): The content to save as an artifact.
+            file_output_path (str): The path where the artifact should be saved. If relative,
+                                  will be saved in the agent-specific workspace directory.
+            file_extension (str): The file extension for the artifact (e.g., '.md', '.txt', '.pdf').
+        """
         try:
             # Ensure file_extension starts with a dot
             if not file_extension.startswith("."):
                 file_extension = "." + file_extension
+
+            # Get agent-specific workspace directory
+            agent_workspace = self._get_agent_workspace_dir()
 
             # If file_output_path doesn't have an extension, treat it as a directory
             # and create a default filename based on timestamp
             if not os.path.splitext(file_output_path)[1]:
                 timestamp = time.strftime("%Y%m%d_%H%M%S")
                 filename = f"artifact_{timestamp}{file_extension}"
-                full_path = os.path.join(file_output_path, filename)
+                # If path is relative, use agent workspace; otherwise use as-is
+                if os.path.isabs(file_output_path):
+                    full_path = os.path.join(
+                        file_output_path, filename
+                    )
+                else:
+                    full_path = os.path.join(
+                        agent_workspace, file_output_path, filename
+                    )
             else:
-                full_path = file_output_path
+                # If path is absolute, use as-is; otherwise use agent workspace
+                if os.path.isabs(file_output_path):
+                    full_path = file_output_path
+                else:
+                    full_path = os.path.join(
+                        agent_workspace, file_output_path
+                    )
 
             # Create the directory if it doesn't exist
             os.makedirs(os.path.dirname(full_path), exist_ok=True)

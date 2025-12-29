@@ -800,6 +800,87 @@ class Formatter:
                     f"  - {step.get('step_id')} ({step.get('priority')}): {step.get('description')}"
                 )
 
+    def display_hierarchy(
+        self,
+        director_name: str,
+        director_model_name: str,
+        agents: List[Any],
+        swarm_name: str,
+    ) -> None:
+        """
+        Display the hierarchical structure of the swarm using Rich Tree.
+
+        This method creates a visual tree representation showing the Director
+        at the top level and all worker agents as children branches. The tree
+        is printed to the console with rich formatting.
+
+        The hierarchy visualization helps understand the organizational structure
+        of the swarm, with the Director coordinating all worker agents.
+
+        Args:
+            director_name (str): Name of the director agent.
+            director_model_name (str): Model name used by the director.
+            agents (List[Any]): List of worker agents in the swarm.
+            swarm_name (str): Name of the hierarchical swarm.
+        """
+        # Create the root tree with Director
+        director_label = Text()
+        director_label.append("🎯 ", style="bold red")
+        director_label.append(director_name, style="bold white")
+        director_label.append(
+            f" [{director_model_name}]", style="dim cyan"
+        )
+
+        tree = Tree(director_label, guide_style="bold red")
+
+        # Add each worker agent as a branch
+        for agent in agents:
+            agent_label = Text()
+
+            # Get agent name
+            if hasattr(agent, "agent_name"):
+                agent_name = agent.agent_name
+            elif hasattr(agent, "name"):
+                agent_name = agent.name
+            else:
+                agent_name = f"Agent_{agents.index(agent)}"
+
+            # Get agent model if available
+            model_info = ""
+            if hasattr(agent, "model_name"):
+                model_info = f" [{agent.model_name}]"
+            elif hasattr(agent, "llm") and hasattr(
+                agent.llm, "model"
+            ):
+                model_info = f" [{agent.llm.model}]"
+
+            # Get agent description if available
+            description = ""
+            if hasattr(agent, "agent_description"):
+                description = f" - {agent.agent_description[:500]}"
+            elif hasattr(agent, "description"):
+                description = f" - {agent.description[:500]}"
+
+            agent_label.append("🤖 ", style="bold cyan")
+            agent_label.append(agent_name, style="bold cyan")
+            if model_info:
+                agent_label.append(model_info, style="dim cyan")
+            if description:
+                agent_label.append(description, style="dim white")
+
+            # Add agent as a branch
+            tree.add(agent_label)
+
+        # Create a panel with the tree
+        panel = Panel(
+            tree,
+            title=f"[bold white]HierarchicalSwarm Hierarchy: {swarm_name}[/bold white]",
+            border_style="red",
+            padding=(1, 2),
+        )
+
+        self.console.print(panel)
+
 
 # Global formatter instance with markdown output enabled by default
 formatter = Formatter(md=False)

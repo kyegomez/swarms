@@ -62,12 +62,13 @@ Connect your agents to various language model providers:
 | **Groq** | Ultra-fast inference with Groq | [View Example](../swarms/examples/groq.md) |
 | **Cohere** | Cohere Command models | [View Example](../swarms/examples/cohere.md) |
 | **DeepSeek** | DeepSeek models integration | [View Example](../swarms/examples/deepseek.md) |
-| **Ollama** | Local models with Ollama | [View Example](../swarms/examples/ollama.md) |
+| **Ollama** | Local models with Ollama (simple & custom wrapper) | [View Example](../swarms/examples/ollama.md) |
 | **OpenRouter** | Access multiple providers via OpenRouter | [View Example](../swarms/examples/openrouter.md) |
 | **XAI** | Grok models from xAI | [View Example](../swarms/examples/xai.md) |
 | **Azure OpenAI** | Enterprise Azure deployment | [View Example](../swarms/examples/azure.md) |
 | **Llama4** | Meta's Llama 4 models | [View Example](../swarms/examples/llama4.md) |
 | **Custom Base URL** | Connect to any OpenAI-compatible API | [View Example](../swarms/examples/custom_base_url_example.md) |
+| **vLLM Custom Wrapper** | High-performance local inference with vLLM | [View Example](../swarms/examples/vllm_custom_wrapper.md) |
 
 ---
 

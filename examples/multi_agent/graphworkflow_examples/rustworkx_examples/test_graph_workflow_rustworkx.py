@@ -465,7 +465,7 @@ class TestRustworkxBackend:
         layers2 = workflow._sorted_layers.copy()
         compiled2 = workflow._compiled
 
-        assert compiled1 == compiled2 == True
+        assert compiled1 == compiled2 is True
         assert layers1 == layers2
 
     def test_rustworkx_node_metadata(self):

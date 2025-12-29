@@ -621,7 +621,6 @@ def test_agent_registry_find_agent_by_id():
 
         registry.add(agent)
 
-        agent_id = agent.id
         found_agent = registry.find_agent_by_id(agent.agent_name)
 
         assert (

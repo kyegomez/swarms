@@ -106,6 +106,58 @@ AZURE_API_VERSION=2024-02-15-preview
 !!! note "No API Key Required"
     Ollama can be run locally without API keys, making it perfect for development and testing.
 
+## Custom Wrappers for Local Models
+
+For advanced use cases, you can create custom wrapper classes for local model deployments. This approach gives you full control over the LLM interface:
+
+### vLLM Custom Wrapper
+
+vLLM is a high-performance LLM inference engine. Create a custom wrapper to use it with Swarms:
+
+```python
+from swarms import Agent
+from vllm_wrapper import VLLMWrapper
+
+# Create custom vLLM wrapper
+vllm_llm = VLLMWrapper(
+    model_name="meta-llama/Llama-2-7b-chat-hf",
+    temperature=0.7,
+)
+
+# Use with Agent
+agent = Agent(
+    agent_name="vLLM-Agent",
+    llm=vllm_llm,  # Pass custom wrapper
+    max_loops=1,
+)
+```
+
+See the [vLLM Custom Wrapper Guide](vllm_custom_wrapper.md) for detailed instructions.
+
+### Ollama Custom Wrapper
+
+Create a custom wrapper for Ollama to have full control over the interface:
+
+```python
+from swarms import Agent
+from ollama_wrapper import OllamaWrapper
+
+# Create custom Ollama wrapper
+ollama_llm = OllamaWrapper(
+    model_name="llama2",
+    temperature=0.7,
+)
+
+# Use with Agent
+agent = Agent(
+    agent_name="Ollama-Agent",
+    llm=ollama_llm,  # Pass custom wrapper
+    max_loops=1,
+)
+```
+
+See the [Ollama Guide](ollama.md) for both simple and custom wrapper approaches.
+
 ## Advanced Features
 
 ### Multi-Model Workflows

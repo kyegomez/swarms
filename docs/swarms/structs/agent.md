@@ -71,6 +71,7 @@ The `Agent` class establishes a conversational loop with a language model, allow
 | `saved_state_path` | `Optional[str]` | File path for saving and loading the agent's state. |
 | `autosave` | `Optional[bool]` | Boolean indicating whether to automatically save the agent's state. |
 | `context_length` | `Optional[int]` | Maximum length of the context window (in tokens) for the LLM. |
+| `transforms` | `Optional[Union[TransformConfig, dict]]` | Message transformation configuration for handling context limits. |
 | `user_name` | `Optional[str]` | Name used to represent the user in the conversation. |
 | `self_healing_enabled` | `Optional[bool]` | Boolean indicating whether to attempt self-healing in case of errors. |
 | `code_interpreter` | `Optional[bool]` | Boolean indicating whether to interpret and execute code snippets. |
@@ -79,11 +80,14 @@ The `Agent` class establishes a conversational loop with a language model, allow
 | `list_of_pdf` | `Optional[str]` | List of file paths for PDF documents to be ingested. |
 | `tokenizer` | `Optional[Any]` | Instance of a tokenizer used for token counting and management. |
 | `long_term_memory` | `Optional[Union[Callable, Any]]` | Instance of a `BaseVectorDatabase` implementation for long-term memory management. |
+| `fallback_model_name` | `Optional[str]` | The fallback model name to use if primary model fails. |
+| `fallback_models` | `Optional[List[str]]` | List of model names to try in order. First model is primary, rest are fallbacks. |
 | `preset_stopping_token` | `Optional[bool]` | Boolean indicating whether to use a preset stopping token. |
 | `traceback` | `Optional[Any]` | Object used for traceback handling. |
 | `traceback_handlers` | `Optional[Any]` | List of traceback handlers. |
 | `streaming_on` | `Optional[bool]` | Boolean indicating whether to stream responses. |
 | `stream` | `Optional[bool]` | Boolean indicating whether to enable detailed token-by-token streaming with metadata. |
+| `streaming_callback` | `Optional[Callable[[str], None]]` | Callback function to receive streaming tokens in real-time. |
 | `docs` | `List[str]` | List of document paths or contents to be ingested. |
 | `docs_folder` | `Optional[str]` | Path to a folder containing documents to be ingested. |
 | `verbose` | `Optional[bool]` | Boolean indicating whether to print verbose output. |
@@ -93,6 +97,10 @@ The `Agent` class establishes a conversational loop with a language model, allow
 | `metadata` | `Optional[Dict[str, Any]]` | Dictionary containing metadata for the agent. |
 | `callbacks` | `Optional[List[Callable]]` | List of callable functions to be called during execution. |
 | `handoffs` | `Optional[Union[Sequence[Callable], Any]]` | List of Agent instances that can be delegated tasks to. When provided, the agent will use a MultiAgentRouter to intelligently route tasks to the most appropriate specialized agent. |
+| `capabilities` | `Optional[List[str]]` | List of strings describing the agent's capabilities. |
+| `mode` | `Literal["interactive", "fast", "standard"]` | Execution mode: "interactive" for real-time interaction, "fast" for optimized performance, "standard" for default behavior. |
+| `publish_to_marketplace` | `bool` | Boolean indicating whether to publish the agent's prompt to the Swarms marketplace. |
+| `marketplace_prompt_id` | `Optional[str]` | Unique UUID identifier of a prompt from the Swarms marketplace. When provided, the agent will automatically fetch and load the prompt as the system prompt. |
 | `search_algorithm` | `Optional[Callable]` | Callable function for long-term memory retrieval. |
 | `logs_to_filename` | `Optional[str]` | File path for logging agent activities. |
 | `evaluator` | `Optional[Callable]` | Callable function for evaluating the agent's responses. |
@@ -155,6 +163,7 @@ The `Agent` class establishes a conversational loop with a language model, allow
 | `safety_prompt_on` | `bool` | Boolean indicating whether to enable safety prompts |
 | `random_models_on` | `bool` | Boolean indicating whether to randomly select models |
 | `mcp_config` | `Optional[MCPConnection]` | MCPConnection object containing MCP configuration |
+| `mcp_configs` | `Optional[MultipleMCPConnections]` | MultipleMCPConnections object for managing multiple MCP server connections |
 | `top_p` | `Optional[float]` | Float representing the top-p sampling parameter |
 | `conversation_schema` | `Optional[ConversationSchema]` | ConversationSchema object for conversation formatting |
 | `llm_base_url` | `Optional[str]` | String representing the base URL for the LLM API |
@@ -164,6 +173,10 @@ The `Agent` class establishes a conversational loop with a language model, allow
 | `summarize_multiple_images` | `bool` | Boolean indicating whether to summarize multiple image outputs |
 | `tool_retry_attempts` | `int` | Integer representing the number of retry attempts for tool execution |
 | `reasoning_prompt_on` | `bool` | Boolean indicating whether to enable reasoning prompts |
+| `reasoning_effort` | `Optional[str]` | Reasoning effort level for reasoning-enabled models (e.g., "low", "medium", "high") |
+| `reasoning_enabled` | `bool` | Boolean indicating whether to enable reasoning capabilities |
+| `thinking_tokens` | `Optional[int]` | Maximum number of thinking tokens for reasoning models |
+| `drop_params` | `bool` | Boolean indicating whether to drop parameters during processing |
 | `dynamic_context_window` | `bool` | Boolean indicating whether to dynamically adjust context window |
 | `show_tool_execution_output` | `bool` | Boolean indicating whether to show tool execution output |
 | `created_at` | `float` | Float representing the timestamp when the agent was created |
@@ -1036,7 +1049,8 @@ The `run` method now supports several new parameters for advanced functionality:
 |----------------|-----------------------------------------------------|
 | `mcp_url`      | Connect to a single MCP server                      |
 | `mcp_urls`     | Connect to multiple MCP servers                     |
-| `mcp_config`   | Advanced MCP configuration options                  |
+| `mcp_config`   | Advanced MCP configuration options for a single server |
+| `mcp_configs`  | MultipleMCPConnections object for managing multiple MCP server connections |
 
 ### Advanced Reasoning and Safety
 
@@ -1045,6 +1059,9 @@ The `run` method now supports several new parameters for advanced functionality:
 | `react_on`           | Enable ReAct reasoning for complex problem-solving                 |
 | `safety_prompt_on`   | Add safety constraints to agent responses                          |
 | `reasoning_prompt_on`| Enable multi-loop reasoning for complex tasks                      |
+| `reasoning_enabled` | Enable reasoning capabilities for supported models (e.g., o1)     |
+| `reasoning_effort`   | Set reasoning effort level: "low", "medium", or "high"            |
+| `thinking_tokens`   | Maximum number of thinking tokens for reasoning models            |
 
 ### Performance and Resource Management
 
@@ -1104,6 +1121,215 @@ The `run` method now supports several new parameters for advanced functionality:
 
 
 
+
+### Reasoning and Advanced Capabilities
+
+| Parameter                | Description                                                              |
+|--------------------------|--------------------------------------------------------------------------|
+| `reasoning_enabled`      | Enable reasoning capabilities for supported models                       |
+| `reasoning_effort`       | Set reasoning effort level ("low", "medium", "high")                    |
+| `thinking_tokens`        | Maximum number of thinking tokens for reasoning models                   |
+| `drop_params`            | Drop parameters during processing for optimization                       |
+
+### Execution Modes and Marketplace
+
+| Parameter                | Description                                                              |
+|--------------------------|--------------------------------------------------------------------------|
+| `mode`                   | Execution mode: "interactive", "fast", or "standard"                    |
+| `capabilities`           | List of agent capabilities for documentation and routing                 |
+| `publish_to_marketplace` | Publish agent prompt to Swarms marketplace                              |
+| `marketplace_prompt_id`  | Load prompt from Swarms marketplace by UUID                              |
+
+### Message Transforms and Context Management
+
+| Parameter                | Description                                                              |
+|--------------------------|--------------------------------------------------------------------------|
+| `transforms`             | TransformConfig for handling context limits and message transformations |
+| `conversation_schema`    | ConversationSchema for custom conversation formatting                    |
+
+## Simple Examples for New Features
+
+### Fallback Models
+
+```python
+from swarms import Agent
+
+# Agent with fallback models - automatically switches if primary fails
+agent = Agent(
+    model_name="gpt-4o",
+    fallback_models=["gpt-4o-mini", "gpt-3.5-turbo"],
+    max_loops=1
+)
+
+# Will try gpt-4o first, then fallback to gpt-4o-mini if it fails
+response = agent.run("Analyze this data")
+```
+
+### Marketplace Prompt Loading
+
+```python
+from swarms import Agent
+
+# Load a prompt from the Swarms marketplace
+agent = Agent(
+    model_name="gpt-4o-mini",
+    marketplace_prompt_id="550e8400-e29b-41d4-a716-446655440000",
+    max_loops=1
+)
+
+# Agent automatically loads the system prompt from marketplace
+response = agent.run("Execute the marketplace prompt task")
+```
+
+### Reasoning-Enabled Models
+
+```python
+from swarms import Agent
+
+# Agent with reasoning capabilities
+agent = Agent(
+    model_name="o1-preview",
+    reasoning_enabled=True,
+    reasoning_effort="high",
+    thinking_tokens=10000,
+    max_loops=1
+)
+
+response = agent.run("Solve this complex mathematical problem step by step")
+```
+
+### Execution Modes
+
+```python
+from swarms import Agent
+
+# Fast mode - optimized for performance (reduces verbosity)
+fast_agent = Agent(
+    model_name="gpt-4o-mini",
+    mode="fast",  # Disables print_on and verbose automatically
+    max_loops=1
+)
+
+# Interactive mode - for real-time conversations
+interactive_agent = Agent(
+    model_name="gpt-4o-mini",
+    mode="interactive",
+    max_loops=5
+)
+
+# Standard mode - default behavior
+standard_agent = Agent(
+    model_name="gpt-4o-mini",
+    mode="standard",
+    max_loops=1
+)
+```
+
+### Streaming Callback
+
+```python
+from swarms import Agent
+
+# Define a custom streaming callback
+def my_streaming_callback(token: str):
+    print(token, end="", flush=True)
+
+# Agent with streaming callback
+agent = Agent(
+    model_name="gpt-4o-mini",
+    streaming_callback=my_streaming_callback,
+    max_loops=1
+)
+
+# Tokens will be streamed to the callback in real-time
+response = agent.run("Tell me a story")
+```
+
+### Multiple MCP Connections
+
+```python
+from swarms import Agent
+from swarms.schemas.mcp_schemas import MultipleMCPConnections
+
+# Configure multiple MCP servers
+mcp_configs = MultipleMCPConnections(
+    connections=[
+        {"server_path": "http://localhost:8000", "server_name": "server1"},
+        {"server_path": "http://localhost:8001", "server_name": "server2"}
+    ]
+)
+
+agent = Agent(
+    model_name="gpt-4o-mini",
+    mcp_configs=mcp_configs,
+    max_loops=1
+)
+
+response = agent.run("Use tools from both MCP servers")
+```
+
+### Message Transforms for Context Management
+
+```python
+from swarms import Agent
+from swarms.structs.transforms import TransformConfig
+
+# Configure message transforms to handle long contexts
+transforms = TransformConfig(
+    max_tokens=8000,
+    strategy="truncate_oldest"
+)
+
+agent = Agent(
+    model_name="gpt-4o-mini",
+    transforms=transforms,
+    context_length=100000,
+    max_loops=1
+)
+
+# Agent will automatically manage context length
+response = agent.run("Process this very long conversation history")
+```
+
+### Agent with Capabilities
+
+```python
+from swarms import Agent
+
+# Agent with defined capabilities for better routing
+agent = Agent(
+    model_name="gpt-4o-mini",
+    agent_name="Data-Analysis-Agent",
+    capabilities=["data_analysis", "statistics", "visualization"],
+    max_loops=1
+)
+
+response = agent.run("Analyze this dataset")
+```
+
+### Publishing to Marketplace
+
+```python
+from swarms import Agent
+
+# Agent configured to publish prompt to marketplace
+agent = Agent(
+    model_name="gpt-4o-mini",
+    agent_name="Financial-Advisor",
+    agent_description="Expert financial advisor agent",
+    system_prompt="You are an expert financial advisor...",
+    tags=["finance", "advisor"],
+    capabilities=["financial_planning", "investment_advice"],
+    use_cases=[
+        {"title": "Retirement Planning", "description": "Help users plan for retirement"},
+        {"title": "Investment Analysis", "description": "Analyze investment opportunities"}
+    ],
+    publish_to_marketplace=True,
+    max_loops=1
+)
+
+# Prompt will be published to marketplace on initialization
+```
 
 ## Best Practices
 

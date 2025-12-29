@@ -368,66 +368,63 @@ nav:
       - CLI Multi-Agent Commands: "examples/cli_multi_agent_quickstart.md"
       - CLI Examples: "swarms/cli/cli_examples.md"
 
-    - Basic Examples:
+    - Agent Examples:
       - Overview: "examples/basic_examples_overview.md"
-      - Individual Agents:
-        - Basic Agent: "swarms/examples/basic_agent.md"
-        - Tool Usage:
-          - Agents with Vision and Tool Usage: "swarms/examples/vision_tools.md"
-          - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
-          - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
-          - Message Transforms for Context Management: "swarms/structs/transforms.md"
-        - Vision:
-          - Agents with Vision: "swarms/examples/vision_processing.md"
-          - Agent with Multiple Images: "swarms/examples/multiple_images.md"
-        - Utils:
-          - Agent with Streaming: "examples/agent_stream.md"
-          - Agent Output Types: "swarms/examples/agent_output_types.md"
-          - Gradio Chat Interface: "swarms/ui/main.md"
-          - Agent with Gemini Nano Banana: "swarms/examples/jarvis_agent.md"
-        - LLM Providers:
-          - Language Models:
-            - Overview: "swarms/examples/model_providers.md"
-            - OpenAI: "swarms/examples/openai_example.md"
-            - Anthropic: "swarms/examples/claude.md"
-            - Groq: "swarms/examples/groq.md"
-            - Cohere: "swarms/examples/cohere.md"
-            - DeepSeek: "swarms/examples/deepseek.md"
-            - Ollama: "swarms/examples/ollama.md"
-            - OpenRouter: "swarms/examples/openrouter.md"
-            - XAI: "swarms/examples/xai.md"
-            - Azure OpenAI: "swarms/examples/azure.md"
-            - Llama4: "swarms/examples/llama4.md"
-            - Custom Base URL & API Keys: "swarms/examples/custom_base_url_example.md"
+      - Basic Agent: "swarms/examples/basic_agent.md"
+      - Tool Usage:
+        - Agents with Vision and Tool Usage: "swarms/examples/vision_tools.md"
+        - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
+        - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
+        - Pydantic Structured Outputs Tutorial: "swarms/examples/pydantic_structured_outputs_tutorial.md"
+        - Message Transforms for Context Management: "swarms/structs/transforms.md"
+      - Vision:
+        - Agents with Vision: "swarms/examples/vision_processing.md"
+        - Agent with Multiple Images: "swarms/examples/multiple_images.md"
+      - Utils:
+        - Agent with Streaming: "examples/agent_stream.md"
+        - Agent Output Types: "swarms/examples/agent_output_types.md"
+        - Gradio Chat Interface: "swarms/ui/main.md"
+        - Agent with Gemini Nano Banana: "swarms/examples/jarvis_agent.md"
+      - LLM Providers:
+        - Language Models:
+          - Overview: "swarms/examples/model_providers.md"
+          - OpenAI: "swarms/examples/openai_example.md"
+          - Anthropic: "swarms/examples/claude.md"
+          - Groq: "swarms/examples/groq.md"
+          - Cohere: "swarms/examples/cohere.md"
+          - DeepSeek: "swarms/examples/deepseek.md"
+          - Ollama: "swarms/examples/ollama.md"
+          - OpenRouter: "swarms/examples/openrouter.md"
+          - XAI: "swarms/examples/xai.md"
+          - Azure OpenAI: "swarms/examples/azure.md"
+          - Llama4: "swarms/examples/llama4.md"
+          - Custom Base URL & API Keys: "swarms/examples/custom_base_url_example.md"
+          - vLLM Custom Wrapper: "swarms/examples/vllm_custom_wrapper.md"
 
-
-
-
-    - Advanced Examples:
+    - Multi-Agent Examples:
       - Overview: "examples/multi_agent_architectures_overview.md"
-      - Multi-Agent Architectures:
-        - HierarchicalSwarm Examples: "swarms/examples/hierarchical_swarm_example.md"
-        - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
-        - Group Chat Example: "swarms/examples/groupchat_example.md"
-        - Sequential Workflow Example: "swarms/examples/sequential_example.md"
-        - AgentRearrange Example: "swarms/examples/agent_rearrange_example.md"
-        - SwarmRouter Example: "swarms/examples/swarm_router.md"
-        - MultiAgentRouter Minimal Example: "swarms/examples/multi_agent_router_minimal.md"
-        - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
-        - GraphWorkflow Example: "swarms/examples/graphworkflow_example.md"
-        - Multi-Agentic Patterns with GraphWorkflow: "swarms/examples/graphworkflow_rustworkx_patterns.md"
-        - Mixture of Agents Example: "swarms/examples/moa_example.md"
-        - LLM Council Examples: "examples/llm_council_examples.md"
-        - Unique Swarms: "swarms/examples/unique_swarms.md"
-        - Agents as Tools: "swarms/examples/agents_as_tools.md"
-        - Aggregate Multi-Agent Responses: "swarms/examples/aggregate.md"
-        - Interactive GroupChat Example: "swarms/examples/igc_example.md"
-        - LLM Council Quickstart: "examples/llm_council_quickstart.md"
-        - DebateWithJudge Quickstart: "examples/debate_quickstart.md"
-        - GraphWorkflow with Rustworkx: "examples/graphworkflow_quickstart.md"
-        - BatchedGridWorkflow Examples:
-          - Simple BatchedGridWorkflow: "swarms/examples/batched_grid_simple_example.md"
-          - Advanced BatchedGridWorkflow: "swarms/examples/batched_grid_advanced_example.md"
+      - HierarchicalSwarm Examples: "swarms/examples/hierarchical_swarm_example.md"
+      - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
+      - Group Chat Example: "swarms/examples/groupchat_example.md"
+      - Sequential Workflow Example: "swarms/examples/sequential_example.md"
+      - AgentRearrange Example: "swarms/examples/agent_rearrange_example.md"
+      - SwarmRouter Example: "swarms/examples/swarm_router.md"
+      - MultiAgentRouter Minimal Example: "swarms/examples/multi_agent_router_minimal.md"
+      - ConcurrentWorkflow Example: "swarms/examples/concurrent_workflow.md"
+      - GraphWorkflow Example: "swarms/examples/graphworkflow_example.md"
+      - Multi-Agentic Patterns with GraphWorkflow: "swarms/examples/graphworkflow_rustworkx_patterns.md"
+      - Mixture of Agents Example: "swarms/examples/moa_example.md"
+      - LLM Council Examples: "examples/llm_council_examples.md"
+      - Unique Swarms: "swarms/examples/unique_swarms.md"
+      - Agents as Tools: "swarms/examples/agents_as_tools.md"
+      - Aggregate Multi-Agent Responses: "swarms/examples/aggregate.md"
+      - Interactive GroupChat Example: "swarms/examples/igc_example.md"
+      - LLM Council Quickstart: "examples/llm_council_quickstart.md"
+      - DebateWithJudge Quickstart: "examples/debate_quickstart.md"
+      - GraphWorkflow with Rustworkx: "examples/graphworkflow_quickstart.md"
+      - BatchedGridWorkflow Examples:
+        - Simple BatchedGridWorkflow: "swarms/examples/batched_grid_simple_example.md"
+        - Advanced BatchedGridWorkflow: "swarms/examples/batched_grid_advanced_example.md"
     
     - Applications:
       - Overview: "examples/applications_overview.md"

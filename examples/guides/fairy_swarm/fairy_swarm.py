@@ -233,7 +233,7 @@ def create_todo_tool(shared_todos: "SharedTodoList") -> Callable:
             JSON string with the created todo info
         """
         todo_id = f"todo-{uuid.uuid4().hex[:8]}"
-        todo = shared_todos.add_todo(
+        shared_todos.add_todo(
             todo_id=todo_id,
             title=title,
             description=description,
@@ -1824,7 +1824,7 @@ Create a unified, polished final output that integrates all the work done by the
 
         try:
             # Run coordination loops
-            coordination_result = self._run_coordination_loop(task)
+            self._run_coordination_loop(task)
 
             # Synthesize final result
             final_output = self._synthesize_results()
