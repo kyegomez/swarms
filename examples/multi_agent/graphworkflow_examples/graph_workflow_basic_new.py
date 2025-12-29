@@ -1,5 +1,4 @@
-from swarms.structs.graph_workflow import GraphWorkflow
-from swarms.structs.agent import Agent
+from swarms import Agent, GraphWorkflow
 
 agent_one = Agent(
     agent_name="research_agent",

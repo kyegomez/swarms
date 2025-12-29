@@ -1,5 +1,5 @@
 from swarms import Agent
-from voice_agents import StreamingTTSCallback
+from voice_agents.main import StreamingTTSCallback
 
 # Initialize the agent
 agent = Agent(
@@ -10,12 +10,12 @@ agent = Agent(
     max_loops=1,
     dynamic_context_window=True,
     top_p=None,
-    streaming_on=True,
-    interactive=False,
 )
 
 # Create the streaming TTS callback
-tts_callback = StreamingTTSCallback(voice="alloy", model="tts-1")
+tts_callback = StreamingTTSCallback(
+    voice="alloy", model="openai/tts-1", stream_mode=True
+)
 
 # Run the agent with streaming TTS callback
 out = agent.run(

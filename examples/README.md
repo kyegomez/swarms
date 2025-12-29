@@ -148,6 +148,18 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [moa_seq_example.py](reasoning_agents/moa_seq_example.py) | MOA sequential example |
 | [agent_judge_examples/](reasoning_agents/agent_judge_examples/) | Agent judge evaluation systems |
 | [reasoning_agent_router_examples/](reasoning_agents/reasoning_agent_router_examples/) | Reasoning agent router examples |
+| [voice_agents/](voice_agents/) | Voice and speech-enabled agent examples including agent speech, agent with speech, and debate with speech capabilities |
+| [agent_speech.py](voice_agents/agent_speech.py) | Agent with speech capabilities |
+| [agent_with_speech.py](voice_agents/agent_with_speech.py) | Speech-enabled agent implementation |
+| [debate_with_speech.py](voice_agents/debate_with_speech.py) | Multi-agent debate with speech capabilities |
+
+### Marketplace
+
+| Example | Description |
+|---------|-------------|
+| [marketplace/](marketplace/) | Swarms marketplace prompt integration examples for using pre-built prompts from the marketplace |
+| [marketplace_prompt_example.py](marketplace/marketplace_prompt_example.py) | Example of using marketplace prompts with agents |
+| [zia_agent.py](marketplace/zia_agent.py) | Zia agent implementation using marketplace prompts |
 
 ### Guides & Tutorials
 
@@ -239,6 +251,8 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | Looking for guides? | Visit [guides/](guides/) for comprehensive tutorials |
 | Need RAG? | Try [single_agent/rag/](single_agent/rag/) for RAG examples |
 | Want reasoning agents? | Check out [reasoning_agents/](reasoning_agents/) for reasoning agent examples |
+| Interested in marketplace prompts? | Explore [marketplace/](marketplace/) for marketplace prompt integration examples |
+| Want voice/speech capabilities? | Check out [voice_agents/](voice_agents/) for speech-enabled agent examples |
 
 ## Key Examples by Category
 
@@ -286,6 +300,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [External Agents](single_agent/external_agents/) | External agent integrations |
 | [Onboarding](single_agent/onboard/) | Agent onboarding examples |
 | [Tools Integration](single_agent/tools/) | Comprehensive tool integration examples |
+| [Voice Agents](voice_agents/) | Speech-enabled agent examples |
 
 ### Tool Integrations
 
@@ -321,6 +336,13 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [GPT-OSS](models/gpt_oss_examples/) | GPT-OSS examples |
 | [Llama 4](models/llama4_examples/) | Llama 4 examples |
 | [vLLM](models/vllm/) | vLLM integration examples |
+
+### Marketplace Examples
+
+| Example | Description |
+|---------|-------------|
+| [Marketplace Prompt](marketplace/marketplace_prompt_example.py) | Using marketplace prompts with agents |
+| [Zia Agent](marketplace/zia_agent.py) | Zia agent with marketplace prompt integration |
 
 ### CLI Examples
 

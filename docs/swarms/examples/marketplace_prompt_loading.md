@@ -2,8 +2,6 @@
 
 Load production-ready prompts from the Swarms Marketplace directly into your agents with a single parameter. This feature enables one-line prompt loading, making it easy to leverage community-created prompts without manual copy-pasting.
 
-## Overview
-
 The Swarms Marketplace hosts a collection of expertly crafted prompts for various use cases. Instead of manually copying prompts or managing them in separate files, you can now load them directly into your agent using the `marketplace_prompt_id` parameter.
 
 ## Prerequisites
