@@ -1,5 +1,4 @@
 from swarms import Agent
-import json
 
 # Initialize the agent
 agent = Agent(
@@ -14,4 +13,8 @@ agent = Agent(
     interactive=False,
 )
 
-print(json.dumps(agent.to_dict(), indent=4))
+out = agent.run(
+    task="What are the top five best energy stocks across nuclear, solar, gas, and other energy sources?",
+)
+
+print(out)
