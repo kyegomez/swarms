@@ -50,6 +50,11 @@ class TestStructure(BaseStructure):
 def test_base_structure_initialization():
     """Test BaseStructure initialization."""
     try:
+        # Set environment variable for workspace_dir
+        original_value = os.environ.get("WORKSPACE_DIR")
+        test_workspace = "/tmp/test_workspace"
+        os.environ["WORKSPACE_DIR"] = test_workspace
+
         structure = BaseStructure()
         assert (
             structure is not None
@@ -71,8 +76,8 @@ def test_base_structure_initialization():
             structure.save_error_path == "./errors"
         ), "Default error path should be set"
         assert (
-            structure.workspace_dir == "./workspace"
-        ), "Default workspace dir should be set"
+            structure.workspace_dir == test_workspace
+        ), "Workspace dir should be set from environment variable"
 
         structure2 = BaseStructure(
             name="TestStructure",
@@ -81,8 +86,13 @@ def test_base_structure_initialization():
             save_artifact_path="/tmp/artifacts",
             save_metadata_path="/tmp/metadata",
             save_error_path="/tmp/errors",
-            workspace_dir="/tmp/workspace",
         )
+
+        # Restore original value
+        if original_value is None:
+            os.environ.pop("WORKSPACE_DIR", None)
+        else:
+            os.environ["WORKSPACE_DIR"] = original_value
         assert (
             structure2.name == "TestStructure"
         ), "Custom name should be set"

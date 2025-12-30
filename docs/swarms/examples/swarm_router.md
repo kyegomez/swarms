@@ -130,7 +130,7 @@ except Exception as e:
     print(f"Error occurred: {str(e)}")
 ```
 
-### 2. Custom Configuration
+### 2. Custom Configuration with Autosave
 
 ```python
 router = SwarmRouter(
@@ -139,10 +139,15 @@ router = SwarmRouter(
     agents=[data_extractor_agent, summarizer_agent, financial_analyst_agent],
     swarm_type="SequentialWorkflow",
     max_loops=3,
-    autosave=True,
+    autosave=True,  # Enable automatic saving of config, state, and metadata
     verbose=True,
     output_type="json"
 )
+
+# When autosave is enabled:
+# - config.json is saved on initialization to workspace_dir/swarms/SwarmRouter/CustomRouter-{timestamp}/
+# - state.json and metadata.json are saved after each run() call
+result = router.run("Analyze the investment opportunity")
 ```
 
 # SwarmType Reference

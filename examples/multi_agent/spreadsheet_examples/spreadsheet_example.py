@@ -36,7 +36,6 @@ swarm = SpreadSheetSwarm(
     agents=agents,
     max_loops=1,
     autosave=False,
-    workspace_dir="./swarm_outputs",
 )
 
 # Run all agents with the same task

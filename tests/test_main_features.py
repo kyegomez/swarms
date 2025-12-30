@@ -22,6 +22,7 @@ from swarms import (
     HierarchicalSwarm,
 )
 
+from swarms.utils.workspace_utils import get_workspace_dir
 from swarms.structs.tree_swarm import ForestSwarm, Tree, TreeAgent
 
 load_dotenv()
@@ -36,11 +37,7 @@ def write_markdown_report(
     results: List[Dict[str, Any]], filename: str
 ):
     """Write test results to a markdown file"""
-    workspace_dir = os.getenv("WORKSPACE_DIR")
-    if not workspace_dir:
-        raise ValueError(
-            "WORKSPACE_DIR environment variable is not set"
-        )
+    workspace_dir = get_workspace_dir()
 
     test_runs_dir = os.path.join(workspace_dir, "test_runs")
     if not os.path.exists(test_runs_dir):

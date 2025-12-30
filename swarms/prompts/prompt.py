@@ -13,6 +13,7 @@ from pydantic.v1 import validator
 
 from swarms.tools.base_tool import BaseTool
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.workspace_utils import get_workspace_dir
 
 logger = initialize_logger("prompt")
 
@@ -77,7 +78,7 @@ class Prompt(BaseModel):
         description="Flag to enable or disable auto-generating the prompt",
     )
     parent_folder: str = Field(
-        default=os.getenv("WORKSPACE_DIR"),
+        default_factory=get_workspace_dir,
         description="The folder where the autosave folder is in",
     )
     llm: Any = None
@@ -232,8 +233,9 @@ class Prompt(BaseModel):
         """
         Autosaves the prompt to a specified folder within WORKSPACE_DIR.
         """
-        workspace_dir = os.getenv("WORKSPACE_DIR")
-        if not workspace_dir:
+        try:
+            workspace_dir = get_workspace_dir()
+        except ValueError:
             logger.error(
                 "WORKSPACE_DIR environment variable is not set."
             )

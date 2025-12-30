@@ -1,4 +1,3 @@
-import os
 import asyncio
 import json
 import uuid
@@ -22,6 +21,7 @@ from swarms.structs.conversation import Conversation
 from swarms.structs.omni_agent_types import AgentType
 from pydantic import BaseModel
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.workspace_utils import get_workspace_dir
 
 logger = initialize_logger(log_folder="base_swarm")
 
@@ -765,7 +765,7 @@ class BaseSwarm(ABC):
         content = self.export_output_schema()
 
         create_file_in_folder(
-            os.getenv("WORKSPACE_DIR"),
+            get_workspace_dir(),
             self.metadata_filename,
             content=content,
         )

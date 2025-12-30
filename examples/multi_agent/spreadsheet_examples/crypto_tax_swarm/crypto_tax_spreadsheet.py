@@ -7,7 +7,6 @@ swarm = SpreadSheetSwarm(
     name="Crypto-Tax-Optimization-Swarm",
     description="A swarm of agents performing concurrent financial analysis tasks",
     max_loops=1,
-    workspace_dir="./workspace",
     load_path="crypto_tax_swarm_spreadsheet.csv",
 )
 

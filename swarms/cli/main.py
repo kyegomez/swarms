@@ -25,6 +25,7 @@ from swarms.structs.agent_loader import AgentLoader
 from swarms.structs.llm_council import LLMCouncil
 from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.utils.formatter import formatter
+from swarms.utils.workspace_utils import get_workspace_dir
 
 load_dotenv()
 
@@ -89,7 +90,10 @@ def show_ascii_art():
 
 def check_workspace_dir() -> tuple[bool, str, str]:
     """Check if WORKSPACE_DIR environment variable is set."""
-    workspace_dir = os.getenv("WORKSPACE_DIR")
+    try:
+        workspace_dir = get_workspace_dir()
+    except ValueError:
+        workspace_dir = None
     if workspace_dir:
         path = Path(workspace_dir)
         if path.exists():

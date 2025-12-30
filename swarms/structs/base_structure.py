@@ -8,6 +8,8 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Callable
 
+from swarms.utils.workspace_utils import get_workspace_dir
+
 
 import psutil
 
@@ -75,7 +77,6 @@ class BaseStructure:
         save_artifact_path: Optional[str] = "./artifacts",
         save_metadata_path: Optional[str] = "./metadata",
         save_error_path: Optional[str] = "./errors",
-        workspace_dir: Optional[str] = "./workspace",
     ):
         super().__init__()
         self.name = name
@@ -84,7 +85,7 @@ class BaseStructure:
         self.save_artifact_path = save_artifact_path
         self.save_metadata_path = save_metadata_path
         self.save_error_path = save_error_path
-        self.workspace_dir = workspace_dir
+        self.workspace_dir = get_workspace_dir()
 
     def run(self, *args, **kwargs):
         """Run the structure."""

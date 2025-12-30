@@ -25,7 +25,6 @@ def __init__(
     autosave: bool = True,
     save_file_path: str = None,
     max_loops: int = 1,
-    workspace_dir: str = os.getenv("WORKSPACE_DIR"),
     load_path: str = None,
     verbose: bool = False,
     *args,
@@ -43,7 +42,6 @@ def __init__(
 | `autosave` | `bool` | `True` | Whether to enable autosave of swarm metadata |
 | `save_file_path` | `str` | `None` | File path to save swarm metadata as CSV. If `None`, auto-generated based on workspace_dir |
 | `max_loops` | `int` | `1` | Number of times to repeat the swarm tasks |
-| `workspace_dir` | `str` | `os.getenv("WORKSPACE_DIR")` | Directory path of the workspace |
 | `load_path` | `str` | `None` | Path to CSV file containing agent configurations. Required if `agents` is `None` |
 | `verbose` | `bool` | `False` | Whether to enable verbose logging |
 | `*args` | `Any` | - | Additional positional arguments |
@@ -59,7 +57,6 @@ def __init__(
 | `autosave` | `bool` | Whether autosave is enabled |
 | `save_file_path` | `str` | File path where swarm metadata is saved |
 | `max_loops` | `int` | Number of times to repeat tasks |
-| `workspace_dir` | `str` | Directory path of the workspace |
 | `load_path` | `str` | Path to CSV file for agent configurations |
 | `verbose` | `bool` | Whether verbose logging is enabled |
 | `outputs` | `List[Dict]` | List of completed task outputs |
@@ -69,6 +66,8 @@ def __init__(
 #### Note
 
 Either `agents` or `load_path` must be provided. If both are provided, `agents` will be used.
+
+**Workspace Directory**: The `workspace_dir` is automatically set from the `WORKSPACE_DIR` environment variable. Ensure this environment variable is set before initializing the swarm.
 
 ---
 
@@ -295,7 +294,6 @@ swarm = SpreadSheetSwarm(
     agents=agents,
     max_loops=1,
     autosave=False,
-    workspace_dir="./swarm_outputs",
 )
 
 # Run all agents with the same task
@@ -326,7 +324,6 @@ swarm = SpreadSheetSwarm(
     load_path="agents.csv",
     max_loops=1,
     autosave=True,
-    workspace_dir="./csv_swarm_outputs",
 )
 
 # Run agents with their configured tasks
@@ -365,7 +362,6 @@ swarm = SpreadSheetSwarm(
     agents=agents,
     max_loops=3,  # Each agent will run the task 3 times
     autosave=True,
-    workspace_dir="./content_outputs",
 )
 
 # Run the same task multiple times
@@ -398,7 +394,6 @@ swarm = SpreadSheetSwarm(
     agents=agents,
     max_loops=1,
     autosave=True,
-    workspace_dir="./data_analysis_outputs",
 )
 
 # Run the task

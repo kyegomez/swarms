@@ -11,6 +11,7 @@ from swarms.structs.multi_agent_exec import (
 from swarms.structs.omni_agent_types import AgentType
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.workspace_utils import get_workspace_dir
 
 logger = initialize_logger(log_folder="spreadsheet_swarm")
 
@@ -34,10 +35,12 @@ class SpreadSheetSwarm:
         autosave (bool, optional): Whether to enable autosave of swarm metadata. Defaults to True.
         save_file_path (str, optional): The file path to save the swarm metadata as a CSV file. Defaults to "spreedsheet_swarm.csv".
         max_loops (int, optional): The number of times to repeat the swarm tasks. Defaults to 1.
-        workspace_dir (str, optional): The directory path of the workspace. Defaults to the value of the "WORKSPACE_DIR" environment variable.
         load_path (str, optional): Path to CSV file containing agent configurations. Required if agents is None.
         *args: Additional positional arguments.
         **kwargs: Additional keyword arguments.
+
+    Note:
+        The workspace_dir is automatically set from the WORKSPACE_DIR environment variable.
 
     Note:
         Either 'agents' or 'load_path' must be provided. If both are provided, 'agents' will be used.
@@ -51,7 +54,6 @@ class SpreadSheetSwarm:
         autosave: bool = True,
         save_file_path: str = None,
         max_loops: int = 1,
-        workspace_dir: str = os.getenv("WORKSPACE_DIR"),
         load_path: str = None,
         verbose: bool = False,
         *args,
@@ -63,7 +65,7 @@ class SpreadSheetSwarm:
         self.save_file_path = save_file_path
         self.autosave = autosave
         self.max_loops = max_loops
-        self.workspace_dir = workspace_dir
+        self.workspace_dir = get_workspace_dir()
         self.load_path = load_path
         self.verbose = verbose
 

@@ -10,6 +10,7 @@ from pydantic.v1 import validator
 
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.workspace_utils import get_workspace_dir
 
 logger = initialize_logger(log_folder="main_artifact")
 
@@ -48,7 +49,7 @@ class Artifact(BaseModel):
     """
 
     folder_path: str = Field(
-        default=os.getenv("WORKSPACE_DIR"),
+        default_factory=get_workspace_dir,
         description="The path to the folder",
     )
     file_path: str = Field(..., description="The path to the file")

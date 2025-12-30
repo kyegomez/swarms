@@ -13,7 +13,16 @@ def temp_workspace(tmp_path):
     """Create a temporary workspace directory for test isolation."""
     workspace = tmp_path / "test_workspace"
     workspace.mkdir()
-    return str(workspace)
+    workspace_path = str(workspace)
+    # Set environment variable for workspace_dir
+    original_value = os.environ.get("WORKSPACE_DIR")
+    os.environ["WORKSPACE_DIR"] = workspace_path
+    yield workspace_path
+    # Restore original value
+    if original_value is None:
+        os.environ.pop("WORKSPACE_DIR", None)
+    else:
+        os.environ["WORKSPACE_DIR"] = original_value
 
 
 @pytest.fixture
@@ -64,7 +73,6 @@ def test_swarm_initialization_basic(temp_workspace):
         name="Test Swarm",
         description="Test swarm description",
         agents=[agent],
-        workspace_dir=temp_workspace,
     )
 
     assert swarm.name == "Test Swarm"
@@ -96,7 +104,6 @@ def test_swarm_initialization_multiple_agents(temp_workspace):
     swarm = SpreadSheetSwarm(
         name="Multi Agent Swarm",
         agents=agents,
-        workspace_dir=temp_workspace,
     )
 
     assert len(swarm.agents) == 2
@@ -117,7 +124,6 @@ def test_swarm_initialization_custom_max_loops(temp_workspace):
         name="Custom Loop Swarm",
         agents=[agent],
         max_loops=3,
-        workspace_dir=temp_workspace,
     )
 
     assert swarm.max_loops == 3
@@ -135,7 +141,6 @@ def test_swarm_initialization_autosave_disabled(temp_workspace):
     swarm = SpreadSheetSwarm(
         agents=[agent],
         autosave=False,
-        workspace_dir=temp_workspace,
     )
 
     assert swarm.autosave is False
@@ -152,7 +157,6 @@ def test_swarm_save_file_path_generation(temp_workspace):
 
     swarm = SpreadSheetSwarm(
         agents=[agent],
-        workspace_dir=temp_workspace,
     )
 
     assert swarm.save_file_path is not None
@@ -191,7 +195,6 @@ def test_track_output_single(temp_workspace):
 
     swarm = SpreadSheetSwarm(
         agents=[agent],
-        workspace_dir=temp_workspace,
     )
 
     swarm._track_output("test_agent", "Test task", "Test result")
@@ -218,7 +221,6 @@ def test_track_output_multiple(temp_workspace):
 
     swarm = SpreadSheetSwarm(
         agents=agents,
-        workspace_dir=temp_workspace,
     )
 
     for i in range(1, 4):
@@ -244,7 +246,6 @@ def test_track_output_increments_counter(temp_workspace):
 
     swarm = SpreadSheetSwarm(
         agents=[agent],
-        workspace_dir=temp_workspace,
     )
 
     initial_count = swarm.tasks_completed
@@ -268,7 +269,6 @@ def test_load_from_csv_basic(sample_csv_file, temp_workspace):
     swarm = SpreadSheetSwarm(
         agents=[agent],
         load_path=sample_csv_file,
-        workspace_dir=temp_workspace,
     )
 
     swarm._load_from_csv()
@@ -298,7 +298,6 @@ def test_load_from_csv_creates_agents(
     swarm = SpreadSheetSwarm(
         agents=[agent],
         load_path=sample_csv_file,
-        workspace_dir=temp_workspace,
     )
 
     swarm._load_from_csv()
@@ -322,7 +321,6 @@ def test_load_from_nonexistent_csv(temp_workspace):
     swarm = SpreadSheetSwarm(
         agents=[agent],
         load_path="nonexistent_file.csv",
-        workspace_dir=temp_workspace,
     )
 
     # Error is caught and logged, not raised
@@ -342,7 +340,6 @@ def test_save_to_csv_creates_file(temp_workspace):
 
     swarm = SpreadSheetSwarm(
         agents=[agent],
-        workspace_dir=temp_workspace,
     )
 
     swarm._track_output("test_agent", "Test task", "Test result")
@@ -362,7 +359,6 @@ def test_save_to_csv_headers(temp_workspace):
 
     swarm = SpreadSheetSwarm(
         agents=[agent],
-        workspace_dir=temp_workspace,
     )
 
     swarm._track_output("test_agent", "Test task", "Test result")
@@ -391,7 +387,6 @@ def test_save_to_csv_data(temp_workspace):
 
     swarm = SpreadSheetSwarm(
         agents=[agent],
-        workspace_dir=temp_workspace,
     )
 
     swarm._track_output("test_agent", "Test task", "Test result")
@@ -422,7 +417,6 @@ def test_save_to_csv_appends(temp_workspace):
 
     swarm = SpreadSheetSwarm(
         agents=[agent],
-        workspace_dir=temp_workspace,
     )
 
     swarm._track_output("test_agent", "Task 1", "Result 1")
@@ -458,7 +452,6 @@ def test_export_to_json_structure(temp_workspace):
         name="JSON Test Swarm",
         description="Testing JSON export",
         agents=[agent],
-        workspace_dir=temp_workspace,
     )
 
     swarm._track_output("test_agent", "Test task", "Test result")
@@ -489,7 +482,6 @@ def test_export_to_json_outputs(temp_workspace):
 
     swarm = SpreadSheetSwarm(
         agents=[agent],
-        workspace_dir=temp_workspace,
     )
 
     swarm._track_output("test_agent", "Task 1", "Result 1")
@@ -515,7 +507,6 @@ def test_export_to_json_valid_format(temp_workspace):
 
     swarm = SpreadSheetSwarm(
         agents=[agent],
-        workspace_dir=temp_workspace,
     )
 
     json_output = swarm.export_to_json()
@@ -534,7 +525,6 @@ def test_export_empty_swarm_to_json(temp_workspace):
 
     swarm = SpreadSheetSwarm(
         agents=[agent],
-        workspace_dir=temp_workspace,
     )
 
     json_output = swarm.export_to_json()
@@ -557,7 +547,6 @@ def test_reliability_check_passes(temp_workspace):
     swarm = SpreadSheetSwarm(
         agents=[agent],
         max_loops=1,
-        workspace_dir=temp_workspace,
     )
 
     assert swarm is not None
@@ -575,7 +564,6 @@ def test_reliability_check_verbose(temp_workspace):
     swarm = SpreadSheetSwarm(
         agents=[agent],
         verbose=True,
-        workspace_dir=temp_workspace,
     )
 
     assert swarm.verbose is True

@@ -16,7 +16,8 @@ Main class for routing tasks to different swarm types.
 | `max_loops` | int | Maximum number of loops to perform |
 | `agents` | List[Union[Agent, Callable]] | List of Agent objects or callable functions |
 | `swarm_type` | SwarmType | Type of swarm to be used |
-| `autosave` | bool | Flag to enable/disable autosave |
+| `autosave` | bool | Flag to enable/disable autosave. When enabled, automatically saves swarm configuration, state, and metadata to `workspace_dir/swarms/SwarmRouter/{swarm-name}-{timestamp}/`. Saves `config.json` on initialization, and `state.json` + `metadata.json` after each run. Defaults to `False` |
+| `autosave_use_timestamp` | bool | If `True`, use timestamp in directory name; if `False`, use UUID. Defaults to `True` |
 | `rearrange_flow` | str | The flow for the AgentRearrange swarm type |
 | `return_json` | bool | Flag to enable/disable returning the result in JSON format |
 | `auto_generate_prompts` | bool | Flag to enable/disable auto generation of prompts |
@@ -542,6 +543,46 @@ DebateWithJudge implements a multi-round debate system where:
 The architecture progressively improves the answer through iterative refinement, making it ideal for complex topics requiring thorough analysis from multiple perspectives. Note: DebateWithJudge requires exactly 3 agents (pro_agent, con_agent, judge_agent) in that order.
 
 ## Advanced Features
+
+### Autosave Functionality
+
+The SwarmRouter supports automatic saving of configurations, state, and metadata when `autosave=True`. This feature helps with persistence, debugging, and tracking swarm executions.
+
+**Directory Structure:**
+```
+workspace_dir/
+└── swarms/
+    └── SwarmRouter/
+        └── {swarm-name}-{timestamp}/
+            ├── config.json      # Initial configuration
+            ├── state.json       # Current state (conversation, logs)
+            └── metadata.json    # Execution metadata
+```
+
+**Files Saved:**
+- **config.json**: Contains the initial swarm configuration, including all parameters set during initialization
+- **state.json**: Contains the current state including conversation history and logs
+- **metadata.json**: Contains execution metadata including task details, results summary, and execution timestamps
+
+**Example:**
+
+```python
+router = SwarmRouter(
+    name="MySwarm",
+    description="Example swarm with autosave",
+    agents=[agent1, agent2],
+    swarm_type="SequentialWorkflow",
+    autosave=True,  # Enable autosave
+    autosave_use_timestamp=True,  # Use timestamp in directory name
+    max_loops=1
+)
+
+# Configuration is automatically saved on initialization
+# State and metadata are saved after each run
+result = router.run("Analyze the market trends")
+```
+
+**Note:** The `WORKSPACE_DIR` environment variable must be set for autosave to work. If not set, autosave will be silently disabled.
 
 ### Processing Documents
 

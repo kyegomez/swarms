@@ -28,18 +28,22 @@ from swarms.structs.groupchat import GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 from swarms.structs.interactive_groupchat import InteractiveGroupChat
+from swarms.structs.llm_council import LLMCouncil
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.majority_voting import MajorityVoting
 from swarms.structs.malt import MALT
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.multi_agent_router import MultiAgentRouter
+from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.telemetry.log_executions import log_execution
 from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
-from swarms.structs.llm_council import LLMCouncil
-from swarms.structs.round_robin import RoundRobinSwarm
+from swarms.utils.swarm_autosave import (
+    autosave_swarm,
+    get_swarm_workspace_dir,
+)
 
 logger = initialize_logger(log_folder="swarm_router")
 
@@ -128,7 +132,12 @@ class SwarmRouter:
         max_loops (int, optional): Maximum number of execution loops. Defaults to 1.
         agents (List[Union[Agent, Callable]], optional): List of Agent objects or callables to use. Defaults to empty list.
         swarm_type (SwarmType, optional): Type of swarm to use. Defaults to "SequentialWorkflow".
-        autosave (bool, optional): Whether to enable autosaving. Defaults to False.
+        autosave (bool, optional): Whether to enable autosaving of swarm configuration, state, and metadata.
+            When enabled, saves to workspace_dir/swarms/SwarmRouter/{swarm-name}-{timestamp}/.
+            Saves config.json on initialization, and state.json + metadata.json after each run.
+            Defaults to False.
+        autosave_use_timestamp (bool, optional): If True, use timestamp in directory name; if False, use UUID.
+            Defaults to True.
         flow (str, optional): Flow configuration string. Defaults to None.
         return_json (bool, optional): Whether to return results as JSON. Defaults to False.
         auto_generate_prompts (bool, optional): Whether to auto-generate agent prompts. Defaults to False.
@@ -218,6 +227,7 @@ class SwarmRouter:
         worker_tools: List[Callable] = None,
         aggregation_strategy: str = "synthesis",
         chairman_model: str = "gpt-5.1",
+        autosave_use_timestamp: bool = True,
         *args,
         **kwargs,
     ):
@@ -261,13 +271,54 @@ class SwarmRouter:
             heavy_swarm_swarm_show_output
         )
         self.chairman_model = chairman_model
+        self.autosave = autosave
+        self.autosave_use_timestamp = autosave_use_timestamp
+        self.swarm_workspace_dir = None
 
         # Initialize swarm factory for O(1) lookup performance
         self._swarm_factory = self._initialize_swarm_factory()
         self._swarm_cache = {}  # Cache for created swarms
 
+        # Setup autosave workspace if enabled
+        if self.autosave:
+            self._setup_autosave()
+
         # Reliability check
         self.reliability_check()
+
+    def _setup_autosave(self):
+        """
+        Setup autosave workspace directory and save initial configuration.
+
+        Creates the workspace directory structure and saves the initial
+        configuration if autosave is enabled.
+        """
+        try:
+            class_name = self.__class__.__name__
+            swarm_name = self.name or "swarm-router"
+            self.swarm_workspace_dir = get_swarm_workspace_dir(
+                class_name, swarm_name, self.autosave_use_timestamp
+            )
+
+            if self.swarm_workspace_dir:
+                # Save initial configuration
+                autosave_swarm(
+                    self,
+                    self.swarm_workspace_dir,
+                    save_config=True,
+                    save_state=False,
+                    save_metadata=False,
+                )
+                if self.verbose:
+                    logger.info(
+                        f"Autosave enabled. Swarm workspace: {self.swarm_workspace_dir}"
+                    )
+        except Exception as e:
+            logger.warning(
+                f"Failed to setup autosave for SwarmRouter: {e}"
+            )
+            # Don't raise - autosave failures shouldn't break initialization
+            self.swarm_workspace_dir = None
 
     def reliability_check(self):
         """Perform reliability checks on swarm configuration.
@@ -758,6 +809,29 @@ class SwarmRouter:
                 swarm_architecture="swarm_router",
                 enabled_on=self.telemetry_enabled,
             )
+
+            # Autosave after successful execution
+            if self.autosave and self.swarm_workspace_dir:
+                try:
+                    autosave_swarm(
+                        self,
+                        self.swarm_workspace_dir,
+                        save_config=False,  # Don't overwrite initial config
+                        save_state=True,
+                        save_metadata=True,
+                        execution_result=result,
+                        additional_data={
+                            "execution_metadata": {
+                                "task": task if task else None,
+                                "tasks": tasks if tasks else None,
+                                "status": "completed",
+                            }
+                        },
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to autosave after execution: {e}"
+                    )
 
             return result
         except SwarmRouterRunError as e:

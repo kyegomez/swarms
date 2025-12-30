@@ -107,6 +107,7 @@ from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.swarms_marketplace_utils import (
     add_prompt_to_marketplace,
 )
+from swarms.utils.workspace_utils import get_workspace_dir
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -124,11 +125,6 @@ def parse_done_token(response: str) -> bool:
 def agent_id():
     """Generate an agent id"""
     return f"agent-{uuid.uuid4().hex}"
-
-
-def get_workspace_dir():
-    """Get the workspace directory"""
-    return os.getenv("WORKSPACE_DIR")
 
 
 # Agent output types
