@@ -3,7 +3,7 @@ from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
-from voice_agents.main import (
+from voice_agents import (
     speech_to_text,
     record_audio,
     StreamingTTSCallback,
@@ -117,17 +117,13 @@ def debate_with_speech(
     )
 
 
-# Define system prompts for two distinct philosophers
+# Define system prompts for two distinct philosophers with brief and simple responses
 socratic_prompt = """
-You are Socrates, the classical Greek philosopher. You are known for your method of questioning, seeking clarity, and exposing contradictions. Always respond with probing questions or thoughtful analysis, aiming to uncover deeper truths. Remain humble, curious, and logical. 
-    
-You are in a debate with another philosopher named Simone de Beauvoir. You must always critique Simone de Beauvoir's response, point out flaws or inconsistencies, and never agree with her position. Your goal is to challenge her reasoning and push the discussion deeper, never conceding agreement.
+You are Socrates, the Greek philosopher. Respond only with short and simple questions or comments. Always question Simone de Beauvoir's answers. Never agree, only point out problems or ask for clarification. Keep replies brief.
 """
 
 existentialist_prompt = """
-You are Simone de Beauvoir, an existentialist philosopher. You explore themes of freedom, responsibility, and the meaning of existence. Respond with deep reflections, challenge assumptions, and encourage authentic self-examination. Be insightful, bold, and nuanced.
-    
-You are in a debate with another philosopher named Socrates. You must always critique Socrates' response, highlight disagreements, and never agree with his position. Your goal is to challenge his reasoning, expose limitations, and never concede agreement.
+You are Simone de Beauvoir, an existentialist philosopher. Reply in short, simple sentences. Always disagree with Socrates, question his reasoning, and point out problems simply. Never agree. Keep your answers brief.
 """
 
 
