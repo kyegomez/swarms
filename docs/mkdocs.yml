@@ -460,6 +460,7 @@ nav:
       - Overview: "swarms/examples/voice_agents_overview.md"
       - Single Speech Agent: "swarms/examples/single_agent_speech.md"
       - Multi-Agent Speech Debate: "swarms/examples/multi_agent_speech_debate.md"
+      - Hierarchical Speech Swarm: "swarms/examples/hierarchical_speech_swarm.md"
     
     - Tools & Integrations:
       - Overview: "examples/tools_integrations_overview.md"
