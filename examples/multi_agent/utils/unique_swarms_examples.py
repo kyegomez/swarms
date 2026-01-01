@@ -9,7 +9,6 @@ from swarms.structs.swarming_architectures import (
     fibonacci_swarm,
     grid_swarm,
     mesh_swarm,
-    one_to_three,
     prime_swarm,
     sigmoid_swarm,
     sinusoidal_swarm,
@@ -247,7 +246,7 @@ async def run_communication_examples():
 
     print("\nHealthcare Emergency:")
     print(f"Case: {emergency_case}")
-    result = await one_to_three(
+    result = await broadcast(
         health_sender, health_receivers, emergency_case
     )
     print("\nConsultation Results:")

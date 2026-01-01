@@ -1099,5 +1099,5 @@ class OneToThree:
             )
 
         except Exception as error:
-            logger.error(f"Error in one_to_three: {error}")
+            logger.error(f"Error in OneToThree: {error}")
             raise error

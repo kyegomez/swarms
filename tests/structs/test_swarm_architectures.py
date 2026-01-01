@@ -5,14 +5,10 @@ from swarms.structs.swarming_architectures import (
     broadcast,
     circular_swarm,
     exponential_swarm,
-    geometric_swarm,
     grid_swarm,
     harmonic_swarm,
-    log_swarm,
     mesh_swarm,
     one_to_one,
-    one_to_three,
-    power_swarm,
     pyramid_swarm,
     sigmoid_swarm,
     sinusoidal_swarm,
@@ -124,36 +120,6 @@ def test_pyramid_swarm():
         assert "content" in log
 
 
-def test_power_swarm():
-    """Test power swarm mathematical pattern"""
-    agents = create_test_agents(8)
-    tasks = [
-        "Calculate in Power Swarm",
-        "Process in Power Swarm",
-        "Analyze in Power Swarm",
-    ]
-
-    result = power_swarm(agents, tasks.copy())
-
-    assert isinstance(result, list)
-    assert len(result) > 0
-
-
-def test_log_swarm():
-    """Test log swarm mathematical pattern"""
-    agents = create_test_agents(8)
-    tasks = [
-        "Calculate in Log Swarm",
-        "Process in Log Swarm",
-        "Analyze in Log Swarm",
-    ]
-
-    result = log_swarm(agents, tasks.copy())
-
-    assert isinstance(result, list)
-    assert len(result) > 0
-
-
 def test_exponential_swarm():
     """Test exponential swarm mathematical pattern"""
     agents = create_test_agents(8)
@@ -164,21 +130,6 @@ def test_exponential_swarm():
     ]
 
     result = exponential_swarm(agents, tasks.copy())
-
-    assert isinstance(result, list)
-    assert len(result) > 0
-
-
-def test_geometric_swarm():
-    """Test geometric swarm mathematical pattern"""
-    agents = create_test_agents(8)
-    tasks = [
-        "Calculate in Geometric Swarm",
-        "Process in Geometric Swarm",
-        "Analyze in Geometric Swarm",
-    ]
-
-    result = geometric_swarm(agents, tasks.copy())
 
     assert isinstance(result, list)
     assert len(result) > 0
@@ -264,19 +215,6 @@ def test_one_to_one():
     for log in result:
         assert "role" in log
         assert "content" in log
-
-
-@pytest.mark.asyncio
-async def test_one_to_three():
-    """Test one-to-three communication pattern"""
-    sender = create_test_agent("Sender")
-    receivers = create_test_agents(3)
-    task = "Process and relay this message"
-
-    result = await one_to_three(sender, receivers, task)
-
-    assert isinstance(result, list)
-    assert len(result) > 0
 
 
 @pytest.mark.asyncio
