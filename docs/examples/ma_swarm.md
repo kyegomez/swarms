@@ -306,7 +306,7 @@ class MAAdvisorySwarm:
         self.exa_search_results = []
         self.search_queries = []
         self.current_iteration = 0
-        self.max_iterations = 1  # Limiting to 1 iteration for full sequential demo
+        self.max_loops = 1  # Limiting to 1 loop for full sequential demo
         self.analysis_concluded = False
         
         self.handle_initial_processing()
@@ -521,7 +521,7 @@ class MAAdvisorySwarm:
         """
         self.conversation.add(role=self.user_name, content=initial_user_input)
         
-        while not self.analysis_concluded and self.current_iteration < self.max_iterations:
+        while not self.analysis_concluded and self.current_iteration < self.max_loops:
             self.current_iteration += 1
             logger.info(f"Starting analysis iteration {self.current_iteration}")
             

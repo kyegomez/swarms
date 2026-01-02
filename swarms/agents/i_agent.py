@@ -19,6 +19,7 @@ Workflow:
 """
 
 from typing import List, Tuple
+import warnings
 from loguru import logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -50,21 +51,33 @@ class IterativeReflectiveExpansion:
         agent_name: str = "General-Reasoning-Agent",
         description: str = "A reasoning agent that can answer questions and help with tasks.",
         agent: Agent = None,
-        max_iterations: int = 5,
+        max_loops: int = 5,
         system_prompt: str = GENERAL_REASONING_AGENT_SYS_PROMPT,
         model_name: str = "gpt-4o-mini",
         output_type: OutputType = "dict",
+        max_iterations: int = None,  # Deprecated parameter for backward compatibility
     ) -> None:
         """
         Initialize the Iterative Reflective Expansion engine.
 
         :param agent: The Swarms agent instance used to perform reasoning tasks.
-        :param max_iterations: Maximum number of iterations for the reasoning process.
+        :param max_loops: Maximum number of loops for the reasoning process.
+        :param max_iterations: (Deprecated) Use max_loops instead. This parameter is maintained for backward compatibility.
         """
+        # Handle backward compatibility for max_iterations
+        if max_iterations is not None:
+            warnings.warn(
+                "The 'max_iterations' parameter is deprecated and will be removed in a future version. "
+                "Please use 'max_loops' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            max_loops = max_iterations
+
         self.agent_name = agent_name
         self.description = description
         self.agent = agent
-        self.max_iterations = max_iterations
+        self.max_loops = max_loops
         self.output_type = output_type
         self.system_prompt = system_prompt
         self.conversation = Conversation()
@@ -255,9 +268,9 @@ class IterativeReflectiveExpansion:
         candidate_paths = self.generate_initial_hypotheses(task)
         memory_pool: List[str] = []
 
-        for iteration in range(self.max_iterations):
+        for iteration in range(self.max_loops):
             logger.info(
-                f"Iteration {iteration + 1}/{self.max_iterations}"
+                f"Iteration {iteration + 1}/{self.max_loops}"
             )
             expanded_paths: List[str] = []
 
@@ -292,7 +305,7 @@ class IterativeReflectiveExpansion:
 #     Main function to execute the Iterative Reflective Expansion algorithm on a sample problem.
 #     """
 #     problem_statement = "What is the 40th prime number?"
-#     reasoning_engine = IterativeReflectiveExpansion(max_iterations=1)
+#     reasoning_engine = IterativeReflectiveExpansion(max_loops=1)
 #     final_solution = reasoning_engine.run(problem_statement)
 #     print("Final Solution:")
 #     print(final_solution)

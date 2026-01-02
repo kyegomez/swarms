@@ -366,7 +366,7 @@ The `JobSearchSwarm` processes the job search through a continuous, iterative wo
 3.  **Phase 3: Curate Results (`curate_results`)**: The `Lisa-Results-Curator` agent reviews, filters, and organizes the search results, presenting top recommendations and asking for user feedback to guide further iterations.
 4.  **Phase 4: Get User Feedback (`end`)**: In a full implementation, this stage gathers explicit user feedback to determine if the search needs refinement or can be concluded. For demonstration, this is a simulated step.
 
-The swarm continues these phases in a loop until the `search_concluded` flag is set to `True` or `max_iterations` is reached.
+The swarm continues these phases in a loop until the `search_concluded` flag is set to `True` or `max_loops` is reached.
 
 ## Customization
 
@@ -377,7 +377,7 @@ You can customize the `JobSearchSwarm` by modifying the `JobSearchSwarm` class p
 *   **`output_type`**: Specify the desired output format for the conversation history (e.g., "json" or "list").
 *   **`max_loops`**: Control the number of internal reasoning iterations each agent performs (set during agent initialization).
 *   **`system_prompt`**: Modify the `REQUIREMENTS_ANALYZER_PROMPT`, `SEARCH_EXECUTOR_PROMPT`, and `RESULTS_CURATOR_PROMPT` to refine agent behavior and output.
-*   **`max_iterations`**: Limit the total number of search cycles the swarm performs.
+*   **`max_loops`**: Limit the total number of search cycles the swarm performs.
 
 ## Best Practices
 
@@ -386,7 +386,7 @@ To get the most out of the AI Job Finding Swarm:
 *   **Provide Clear Requirements**: Start with a detailed and unambiguous `initial_user_input` to help the Requirements Analyzer generate effective queries.
 *   **Iterate and Refine**: In a live application, leverage the user feedback loop to continuously refine search criteria and improve result relevance.
 *   **Monitor Agent Outputs**: Regularly review the outputs from each agent to ensure they are performing as expected and to identify areas for prompt improvement.
-*   **Manage API Usage**: Be mindful of your Exa API key usage, especially when experimenting with `max_iterations` or a large number of search queries.
+*   **Manage API Usage**: Be mindful of your Exa API key usage, especially when experimenting with `max_loops` or a large number of search queries.
 
 ## Limitations
 

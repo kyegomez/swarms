@@ -797,12 +797,12 @@ Remember: You are part of a team. Your response should reflect that you've read,
         # Track which agents have spoken to ensure all get a chance
         spoken_agents = set()
         last_response = ""
-        max_iterations = (
+        max_loops = (
             len(mentioned_agents) * 3
-        )  # Allow more iterations for parallel
+        )  # Allow more loops for parallel
         iteration = 0
 
-        while iteration < max_iterations and len(spoken_agents) < len(
+        while iteration < max_loops and len(spoken_agents) < len(
             mentioned_agents
         ):
             # Determine next speaker(s) using dynamic function

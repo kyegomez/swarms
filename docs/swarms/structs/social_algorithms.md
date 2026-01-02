@@ -453,7 +453,7 @@ def creative_collaboration_algorithm(agents, task, **kwargs):
     client = next(agent for agent in agents if "Client" in agent.agent_name)
     
     # Algorithm parameters
-    max_iterations = kwargs.get("max_iterations", 5)
+    max_loops = kwargs.get("max_loops", 5)
     feedback_threshold = kwargs.get("feedback_threshold", 0.8)
     
     # Initialize creative state
@@ -504,7 +504,7 @@ def creative_collaboration_algorithm(agents, task, **kwargs):
     marketing_strategy = strategist.run(strategy_prompt)
     
     # Phase 3: Iterative Creative Development
-    for iteration in range(1, max_iterations + 1):
+    for iteration in range(1, max_loops + 1):
         creative_state["iteration"] = iteration
         
         # Generate creative concepts
@@ -676,7 +676,7 @@ creative_algorithm = SocialAlgorithms(
 # Execute the algorithm
 result = creative_algorithm.run(
     "Create a comprehensive marketing campaign for a new eco-friendly smartphone",
-    algorithm_args={"max_iterations": 5, "feedback_threshold": 0.8}
+    algorithm_args={"max_loops": 5, "feedback_threshold": 0.8}
 )
 ```
 
@@ -1148,7 +1148,7 @@ def swarm_intelligence_algorithm(agents, task, **kwargs):
     exploiters = [agent for agent in agents if "Exploiter" in agent.agent_name]
     coordinator_agent = next(agent for agent in agents if "Coordinator" in agent.agent_name)
     
-    max_iterations = kwargs.get("max_iterations", 8)
+    max_loops = kwargs.get("max_loops", 8)
     exploration_ratio = kwargs.get("exploration_ratio", 0.6)
     
     # Initialize swarm state
@@ -1173,7 +1173,7 @@ def swarm_intelligence_algorithm(agents, task, **kwargs):
         agent_positions[agent.agent_name] = exploration_focus
     
     # Phase 2: Swarm Dynamics
-    for iteration in range(1, max_iterations + 1):
+    for iteration in range(1, max_loops + 1):
         # Calculate pheromone trails
         for discovery in swarm_knowledge:
             solution_key = discovery["focus"]

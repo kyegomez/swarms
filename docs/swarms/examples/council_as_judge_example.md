@@ -592,9 +592,9 @@ generator = Agent(model_name="gpt-4o-mini", max_loops=1)
 evaluator = CouncilAsAJudge(model_name="gpt-4o-mini")
 
 task = "Explain neural networks"
-max_iterations = 3
+max_loops = 3
 
-for iteration in range(max_iterations):
+for iteration in range(max_loops):
     # Generate content
     response = generator.run(task)
 

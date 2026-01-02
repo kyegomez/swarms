@@ -7,7 +7,7 @@ def test_ire_agent_initialization():
 
     assert agent is not None
     assert agent.agent_name == "General-Reasoning-Agent"
-    assert agent.max_iterations == 5
+    assert agent.max_loops == 5
     assert agent.output_type == "dict"
     assert agent.agent is not None
 
@@ -17,14 +17,14 @@ def test_ire_agent_custom_initialization():
     agent = IterativeReflectiveExpansion(
         agent_name="Custom-IRE-Agent",
         description="A custom reasoning agent",
-        max_iterations=3,
+        max_loops=3,
         model_name="gpt-4o",
         output_type="string",
     )
 
     assert agent.agent_name == "Custom-IRE-Agent"
     assert agent.description == "A custom reasoning agent"
-    assert agent.max_iterations == 3
+    assert agent.max_loops == 3
     assert agent.output_type == "string"
 
 
@@ -33,7 +33,7 @@ def test_ire_agent_execution():
     agent = IterativeReflectiveExpansion(
         agent_name="Test-IRE-Agent",
         model_name="gpt-4o",
-        max_iterations=2,
+        max_loops=2,
         output_type="dict",
     )
 
@@ -51,7 +51,7 @@ def test_ire_agent_generate_hypotheses():
     """Test IRE agent hypothesis generation"""
     agent = IterativeReflectiveExpansion(
         agent_name="Hypothesis-Test-Agent",
-        max_iterations=1,
+        max_loops=1,
     )
 
     task = "How can we reduce carbon emissions?"
@@ -68,7 +68,7 @@ def test_ire_agent_workflow():
         agent_name="Workflow-Test-Agent",
         description="Agent for testing complete workflow",
         model_name="gpt-4o",
-        max_iterations=2,
+        max_loops=2,
         output_type="dict",
     )
 

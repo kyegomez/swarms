@@ -62,7 +62,7 @@ def swarm_intelligence_algorithm(agents, task, **kwargs):
         agent for agent in agents if "Coordinator" in agent.agent_name
     )
 
-    max_iterations = kwargs.get("max_iterations", 8)
+    max_loops = kwargs.get("max_loops", 8)
     exploration_ratio = kwargs.get(
         "exploration_ratio", 0.6
     )  # 60% exploration, 40% exploitation
@@ -120,7 +120,7 @@ def swarm_intelligence_algorithm(agents, task, **kwargs):
     swarm_knowledge.extend(initial_discoveries)
 
     # Phase 2: Swarm Dynamics - Multiple Iterations
-    for iteration in range(1, max_iterations + 1):
+    for iteration in range(1, max_loops + 1):
         coordinator_agent.run(
             f"Swarm iteration {iteration} - observing emergent patterns"
         )
@@ -328,7 +328,7 @@ def swarm_intelligence_algorithm(agents, task, **kwargs):
         "pheromone_trails": pheromone_trails,
         "emergent_solutions": emergent_solutions,
         "final_synthesis": final_synthesis,
-        "total_iterations": max_iterations,
+        "total_loops": max_loops,
         "total_discoveries": len(swarm_knowledge),
         "algorithm_type": "swarm_intelligence",
     }
@@ -355,7 +355,7 @@ if __name__ == "__main__":
     result = social_alg.run(
         "Find innovative solutions for sustainable urban transportation",
         algorithm_args={
-            "max_iterations": 8,
+            "max_loops": 8,
             "exploration_ratio": 0.6,
         },
     )

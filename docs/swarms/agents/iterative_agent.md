@@ -46,7 +46,7 @@ graph TD
 | Argument       | Type   | Default | Description |
 |----------------|--------|---------|-------------|
 | agent          | Agent  | None    | The Swarms agent instance used to perform reasoning tasks. |
-| max_iterations | int    | 5       | Maximum number of iterations for the reasoning process. |
+| max_loops      | int    | 5       | Maximum number of loops for the reasoning process. |
 | return_list    | bool   | False   | If True, returns the conversation as a list of messages. |
 | return_dict    | bool   | False   | If True, returns the conversation as a dictionary of messages. |
 | prompt         | str    | GENERAL_REASONING_AGENT_SYS_PROMPT | The system prompt for the agent. |
@@ -71,7 +71,7 @@ graph TD
 from swarms import IterativeReflectiveExpansion
 
 agent = IterativeReflectiveExpansion(
-    max_iterations=3,
+    max_loops=3,
 )
 
 agent.run("What is the 40th prime number?")

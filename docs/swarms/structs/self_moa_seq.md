@@ -6,7 +6,7 @@
 
 - **Phase 2**: Aggregate responses in windows with an aggregator agent, biasing toward the current best.
 
-- **Phase 3**: Iterate until all samples are processed or `max_iterations` is reached.
+- **Phase 3**: Iterate until all samples are processed or `max_loops` is reached.
 
 ---
 
@@ -52,7 +52,7 @@ Create a new `SelfMoASeq` instance.
 | temperature | float | 0.7 | No | Sampling temperature for the proposer; must be in [0, 2]. |
 | window_size | int | 6 | No | Total window size used during aggregation. Must be ≥ 2. |
 | reserved_slots | int | 3 | No | Number of slots reserved for the current best (and possibly other fixed items) in the window. Must be < `window_size`. |
-| max_iterations | int | 10 | No | Maximum aggregation iterations. Must be ≥ 1. |
+| max_loops | int | 10 | No | Maximum aggregation loops. Must be ≥ 1. |
 | max_tokens | int | 2000 | No | Token budget to consider for downstream consumers. Not enforced internally. |
 | num_samples | int | 30 | No | Number of candidate responses to generate overall; must be ≥ 2. |
 | enable_logging | bool | True | No | Enable internal logging via `loguru`. |
@@ -241,7 +241,7 @@ medical_moa = SelfMoASeq(
     temperature=0.8,  # Higher creativity for diverse medical perspectives
     window_size=8,    # Larger window for complex medical reasoning
     num_samples=12,   # More samples for comprehensive analysis
-    max_iterations=15,
+    max_loops=15,
     verbose=True,
     proposer_model_name="gpt-4o",  # Use same model for consistency
     aggregator_model_name="gpt-4o"
@@ -288,7 +288,7 @@ creative_moa = SelfMoASeq(
     temperature=1.2,  # High creativity for writing
     window_size=4,    # Smaller window for focused synthesis
     num_samples=6,    # Moderate number of samples
-    max_iterations=8,
+    max_loops=8,
     verbose=True,
     proposer_model_name="gpt-4o",      # Creative model for generation
     aggregator_model_name="gpt-4o-mini", # Efficient model for synthesis
