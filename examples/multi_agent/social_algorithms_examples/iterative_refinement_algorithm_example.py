@@ -50,7 +50,7 @@ def iterative_refinement_algorithm(agents, task, **kwargs):
     quality_agent = agents[3]
     coordinator_agent = agents[4]
 
-    max_iterations = kwargs.get("max_iterations", 4)
+    max_loops = kwargs.get("max_loops", 4)
     quality_threshold = kwargs.get("quality_threshold", 8.0)
 
     # Initialize tracking variables
@@ -87,7 +87,7 @@ def iterative_refinement_algorithm(agents, task, **kwargs):
     )
 
     # Phase 2: Iterative Refinement Rounds
-    for iteration in range(2, max_iterations + 1):
+    for iteration in range(2, max_loops + 1):
         coordinator_agent.run(
             f"Starting iteration {iteration} of refinement process"
         )
@@ -287,7 +287,7 @@ if __name__ == "__main__":
     result = social_alg.run(
         "Create a comprehensive technical documentation for a new API",
         algorithm_args={
-            "max_iterations": 4,
+            "max_loops": 4,
             "quality_threshold": 8.0,
         },
     )

@@ -201,7 +201,7 @@ class ReasoningAgentRouter:
             description=self.description,
             model_name=self.model_name,
             system_prompt=self.system_prompt,
-            max_iterations=self.num_samples,
+            max_loops=self.num_samples,
             output_type=self.output_type,
         )
 

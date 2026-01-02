@@ -16,7 +16,7 @@ def basic_seq():
         num_samples=3,
         window_size=4,
         reserved_slots=2,
-        max_iterations=5,
+        max_loops=5,
         verbose=False,
         enable_logging=False,
     )
@@ -57,7 +57,7 @@ def test_default_initialization():
     assert seq.temperature == 0.7
     assert seq.window_size == 6
     assert seq.reserved_slots == 3
-    assert seq.max_iterations == 10
+    assert seq.max_loops == 10
     assert seq.max_tokens == 2000
     assert seq.num_samples == 30
     assert seq.enable_logging is True
@@ -76,7 +76,7 @@ def test_custom_initialization():
         temperature=0.5,
         window_size=8,
         reserved_slots=2,
-        max_iterations=15,
+        max_loops=15,
         max_tokens=3000,
         num_samples=20,
         enable_logging=False,
@@ -94,7 +94,7 @@ def test_custom_initialization():
     assert seq.temperature == 0.5
     assert seq.window_size == 8
     assert seq.reserved_slots == 2
-    assert seq.max_iterations == 15
+    assert seq.max_loops == 15
     assert seq.max_tokens == 3000
     assert seq.num_samples == 20
     assert seq.enable_logging is False
@@ -152,17 +152,17 @@ def test_temperature_validation():
         SelfMoASeq(temperature=-0.1)
 
 
-def test_max_iterations_validation():
-    """Test max_iterations parameter validation."""
-    # Valid max_iterations
-    seq = SelfMoASeq(max_iterations=5)
-    assert seq.max_iterations == 5
+def test_max_loops_validation():
+    """Test max_loops parameter validation."""
+    # Valid max_loops
+    seq = SelfMoASeq(max_loops=5)
+    assert seq.max_loops == 5
 
-    # Invalid max_iterations
+    # Invalid max_loops
     with pytest.raises(
-        ValueError, match="max_iterations must be at least 1"
+        ValueError, match="max_loops must be at least 1"
     ):
-        SelfMoASeq(max_iterations=0)
+        SelfMoASeq(max_loops=0)
 
 
 def test_num_samples_validation():
@@ -447,16 +447,16 @@ def test_run_invalid_task(basic_seq):
         basic_seq.run(None)
 
 
-def test_run_max_iterations_reached(basic_seq, mock_agents):
-    """Test run method when max iterations are reached."""
+def test_run_max_loops_reached(basic_seq, mock_agents):
+    """Test run method when max loops are reached."""
     proposer, aggregator = mock_agents
 
     # Configure mocks
     proposer.run.return_value = "Generated sample"
     aggregator.run.return_value = "Aggregated result"
 
-    # Set max_iterations to 1 to trigger the warning
-    basic_seq.max_iterations = 1
+    # Set max_loops to 1 to trigger the warning
+    basic_seq.max_loops = 1
 
     with patch.object(basic_seq, "proposer", proposer), patch.object(
         basic_seq, "aggregator", aggregator
@@ -586,7 +586,7 @@ def test_full_integration_small_samples():
         num_samples=2,
         window_size=3,
         reserved_slots=1,
-        max_iterations=2,
+        max_loops=2,
         verbose=False,
         enable_logging=False,
     )
@@ -645,7 +645,7 @@ def test_minimum_valid_configuration():
     seq = SelfMoASeq(
         window_size=2,
         reserved_slots=1,
-        max_iterations=1,
+        max_loops=1,
         num_samples=2,
         verbose=False,
         enable_logging=False,
@@ -653,7 +653,7 @@ def test_minimum_valid_configuration():
 
     assert seq.window_size == 2
     assert seq.reserved_slots == 1
-    assert seq.max_iterations == 1
+    assert seq.max_loops == 1
     assert seq.num_samples == 2
 
 
@@ -685,7 +685,7 @@ def test_large_configuration():
     seq = SelfMoASeq(
         window_size=20,
         reserved_slots=5,
-        max_iterations=50,
+        max_loops=50,
         num_samples=100,
         max_retries=10,
         retry_delay=5.0,
@@ -697,7 +697,7 @@ def test_large_configuration():
 
     assert seq.window_size == 20
     assert seq.reserved_slots == 5
-    assert seq.max_iterations == 50
+    assert seq.max_loops == 50
     assert seq.num_samples == 100
     assert seq.max_retries == 10
     assert seq.retry_delay == 5.0

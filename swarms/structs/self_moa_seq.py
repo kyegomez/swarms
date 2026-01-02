@@ -1,6 +1,7 @@
 from datetime import datetime
 from functools import wraps
 from typing import Any, Dict, List, Optional
+import warnings
 
 from loguru import logger
 from tenacity import (
@@ -64,7 +65,7 @@ class SelfMoASeq:
         temperature: float = 0.7,
         window_size: int = 6,
         reserved_slots: int = 3,
-        max_iterations: int = 10,
+        max_loops: int = 10,
         max_tokens: int = 2000,
         num_samples: int = 30,
         enable_logging: bool = True,
@@ -78,7 +79,18 @@ class SelfMoASeq:
         retry_max_delay: float = 60.0,
         additional_kwargs: Dict[str, Any] = {},
         top_p: Optional[float] = None,
+        max_iterations: int = None,  # Deprecated parameter for backward compatibility
     ):
+        # Handle backward compatibility for max_iterations
+        if max_iterations is not None:
+            warnings.warn(
+                "The 'max_iterations' parameter is deprecated and will be removed in a future version. "
+                "Please use 'max_loops' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            max_loops = max_iterations
+
         # Validate parameters
         if window_size < 2:
             raise ValueError("window_size must be at least 2")
@@ -88,8 +100,8 @@ class SelfMoASeq:
             )
         if not 0 <= temperature <= 2:
             raise ValueError("temperature must be between 0 and 2")
-        if max_iterations < 1:
-            raise ValueError("max_iterations must be at least 1")
+        if max_loops < 1:
+            raise ValueError("max_loops must be at least 1")
         if num_samples < 2:
             raise ValueError("num_samples must be at least 2")
         if max_retries < 0:
@@ -106,7 +118,7 @@ class SelfMoASeq:
         self.temperature = temperature
         self.window_size = window_size
         self.reserved_slots = reserved_slots
-        self.max_iterations = max_iterations
+        self.max_loops = max_loops
         self.max_tokens = max_tokens
         self.num_samples = num_samples
         self.enable_logging = enable_logging
@@ -342,9 +354,9 @@ class SelfMoASeq:
                     best_output,
                 )
 
-                if aggregation_step >= self.max_iterations:
+                if aggregation_step >= self.max_loops:
                     logger.warning(
-                        f"Reached max aggregation iterations ({self.max_iterations})"
+                        f"Reached max aggregation loops ({self.max_loops})"
                     )
                     break
 
