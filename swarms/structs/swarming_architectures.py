@@ -646,5 +646,3 @@ async def broadcast(
     except Exception as error:
         logger.error(f"Error during broadcast: {error}")
         raise error
-
-

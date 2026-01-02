@@ -14,10 +14,10 @@ Example:
     >>> print(f"Prompt: {name}")
 """
 
-import os
 import traceback
 from typing import Any, Dict, Optional, Tuple, Union
 from urllib.parse import quote
+from swarms.utils.swarms_marketplace_utils import check_swarms_api_key
 
 import httpx
 from loguru import logger
@@ -135,13 +135,7 @@ def fetch_prompts_from_marketplace(
     if not prompt_id and not name:
         raise ValueError("Either prompt_id or name must be provided")
 
-    api_key = os.getenv("SWARMS_API_KEY")
-
-    if api_key is None:
-        raise ValueError(
-            "Swarms API key is not set. Please set the SWARMS_API_KEY environment variable. "
-            "You can get your key here: https://swarms.world/platform/api-keys"
-        )
+    api_key = check_swarms_api_key()
 
     # New endpoint
     base_url = "https://swarms.world/api/get-prompts"

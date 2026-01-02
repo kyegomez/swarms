@@ -4,6 +4,38 @@ from typing import Any, Dict, List
 
 import httpx
 from loguru import logger
+from functools import lru_cache
+
+
+@lru_cache(maxsize=1)
+def check_swarms_api_key() -> str:
+    """
+    Checks for the presence of the Swarms API key in the environment variable.
+
+    Returns:
+        str: The value of the SWARMS_API_KEY environment variable.
+
+    Raises:
+        ValueError: If SWARMS_API_KEY is not set or is empty.
+
+    Usage:
+        This function is used to ensure that a valid Swarms API key is available
+        before making API requests to the Swarms platform. If the key is not set,
+        an informative error will be raised with guidance for the user to obtain or set their key.
+
+    Example:
+        >>> api_key = check_swarms_api_key()
+        >>> # Use the api_key for further requests to Swarms API
+    """
+    api_key = os.getenv("SWARMS_API_KEY")
+
+    if api_key is None or api_key.strip() == "":
+        raise ValueError(
+            "Swarms API key is not set. Please set the SWARMS_API_KEY environment variable. "
+            "You can get your key here: https://swarms.world/platform/api-keys"
+        )
+
+    return api_key
 
 
 def add_prompt_to_marketplace(
@@ -41,13 +73,8 @@ def add_prompt_to_marketplace(
     """
     try:
         url = "https://swarms.world/api/add-prompt"
-        api_key = os.getenv("SWARMS_API_KEY")
 
-        if api_key is None or api_key.strip() == "":
-            raise ValueError(
-                "Swarms API key is not set. Please set the SWARMS_API_KEY environment variable. "
-                "You can get your key here: https://swarms.world/platform/api-keys"
-            )
+        api_key = check_swarms_api_key()
 
         # Log that we have an API key (without exposing it)
         logger.debug(

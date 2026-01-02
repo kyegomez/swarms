@@ -411,7 +411,9 @@ nav:
         - AutoSwarmBuilder Tutorial: "swarms/examples/auto_swarm_builder_example.md"
         - SwarmRouter: "swarms/examples/swarm_router.md"
         - MultiAgentRouter: "swarms/examples/multi_agent_router_minimal.md"
+        - ModelRouter: "swarms/examples/model_router_example.md"
         - AgentRearrange: "swarms/examples/agent_rearrange_example.md"
+        - SwarmRearrange: "swarms/examples/swarm_rearrange_example.md"
 
       - Voting & Consensus:
         - MajorityVoting Quickstart: "examples/majority_voting_quickstart.md"
@@ -422,6 +424,8 @@ nav:
         - LLM Council Examples: "examples/llm_council_examples.md"
         - DebateWithJudge Quickstart: "examples/debate_quickstart.md"
         - Mixture of Agents: "swarms/examples/moa_example.md"
+        - SelfMoASeq: "swarms/examples/self_moa_seq_example.md"
+        - MALT: "swarms/examples/malt_example.md"
 
       - Workflow Patterns:
         - Sequential Workflow: "swarms/examples/sequential_example.md"
@@ -444,6 +448,7 @@ nav:
         - Unique Swarms: "swarms/examples/unique_swarms.md"
         - Agents as Tools: "swarms/examples/agents_as_tools.md"
         - Aggregate Responses: "swarms/examples/aggregate.md"
+        - SpreadSheetSwarm: "swarms/examples/spreadsheet_swarm_example.md"
     
     - Applications:
       - Overview: "examples/applications_overview.md"
