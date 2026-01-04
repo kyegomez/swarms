@@ -49,7 +49,7 @@ self_moa = SelfMoASeq(
     window_size=6,
     reserved_slots=3,
     num_samples=30,
-    max_iterations=10,
+    max_loops=10,
     verbose=True,
 )
 ```
@@ -71,7 +71,7 @@ print(result)
 - **window_size**: Number of samples to process in each aggregation window
 - **reserved_slots**: Number of slots reserved for the best output in each window
 - **num_samples**: Total number of samples to generate
-- **max_iterations**: Maximum number of aggregation iterations
+- **max_loops**: Maximum number of aggregation iterations
 - **verbose**: Whether to show detailed progress
 
 ## Output Structure
@@ -133,7 +133,7 @@ self_moa = SelfMoASeq(
 self_moa = SelfMoASeq(
     num_samples=30,
     window_size=6,
-    max_iterations=10,
+    max_loops=10,
 )
 
 result = self_moa.run("""

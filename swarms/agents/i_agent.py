@@ -19,7 +19,6 @@ Workflow:
 """
 
 from typing import List, Tuple
-import warnings
 from loguru import logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -55,25 +54,13 @@ class IterativeReflectiveExpansion:
         system_prompt: str = GENERAL_REASONING_AGENT_SYS_PROMPT,
         model_name: str = "gpt-4o-mini",
         output_type: OutputType = "dict",
-        max_iterations: int = None,  # Deprecated parameter for backward compatibility
     ) -> None:
         """
         Initialize the Iterative Reflective Expansion engine.
 
         :param agent: The Swarms agent instance used to perform reasoning tasks.
         :param max_loops: Maximum number of loops for the reasoning process.
-        :param max_iterations: (Deprecated) Use max_loops instead. This parameter is maintained for backward compatibility.
         """
-        # Handle backward compatibility for max_iterations
-        if max_iterations is not None:
-            warnings.warn(
-                "The 'max_iterations' parameter is deprecated and will be removed in a future version. "
-                "Please use 'max_loops' instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            max_loops = max_iterations
-
         self.agent_name = agent_name
         self.description = description
         self.agent = agent
@@ -269,9 +256,7 @@ class IterativeReflectiveExpansion:
         memory_pool: List[str] = []
 
         for iteration in range(self.max_loops):
-            logger.info(
-                f"Iteration {iteration + 1}/{self.max_loops}"
-            )
+            logger.info(f"Iteration {iteration + 1}/{self.max_loops}")
             expanded_paths: List[str] = []
 
             for path in candidate_paths:

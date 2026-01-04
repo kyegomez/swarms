@@ -1,7 +1,6 @@
 from datetime import datetime
 from functools import wraps
 from typing import Any, Dict, List, Optional
-import warnings
 
 from loguru import logger
 from tenacity import (
@@ -79,18 +78,7 @@ class SelfMoASeq:
         retry_max_delay: float = 60.0,
         additional_kwargs: Dict[str, Any] = {},
         top_p: Optional[float] = None,
-        max_iterations: int = None,  # Deprecated parameter for backward compatibility
     ):
-        # Handle backward compatibility for max_iterations
-        if max_iterations is not None:
-            warnings.warn(
-                "The 'max_iterations' parameter is deprecated and will be removed in a future version. "
-                "Please use 'max_loops' instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            max_loops = max_iterations
-
         # Validate parameters
         if window_size < 2:
             raise ValueError("window_size must be at least 2")

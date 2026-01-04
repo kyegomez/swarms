@@ -319,6 +319,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [hiearchical_marketing_team.py](guides/hiearchical_marketing_team.py) | Hierarchical marketing team example |
 | [840_update/](guides/840_update/) | Update examples from version 8.4.0 including agent rearrange, auto swarm builder, and fallback examples |
 | [850_workshop/](guides/850_workshop/) | Workshop examples from version 8.5.0 including AOP, MOA, peer review, and concurrent examples |
+| [880_update_changelog_examples/](guides/880_update_changelog_examples/) | Changelog examples showcasing new features including marketplace integration, multi-agent structures, workflow orchestration, voice agents, evaluation & debate, routing, and autosaving |
 | [demos/](guides/demos/) | Various demonstration examples including apps, crypto, finance, insurance, legal, medical, real estate, science, and synthetic data |
 | [fairy_swarm/](guides/fairy_swarm/) | Fairy swarm examples and implementations |
 | [generation_length_blog/](guides/generation_length_blog/) | Long-form content generation examples |

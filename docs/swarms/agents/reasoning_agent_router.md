@@ -137,7 +137,6 @@ graph TD
     **Optional Parameters**
 
     - max_loops
-    - max_iterations (deprecated, use max_loops)
     - output_type
 
 === "ReflexionAgent"
