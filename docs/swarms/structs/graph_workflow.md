@@ -1202,28 +1202,19 @@ workflow.add_nodes([agent1, agent2, agent3])
 
 ## Best Practices for Production
 
-### Performance Optimization
+| Category                  | Best Practice                                                                                  | Description                                                                                                  |
+|---------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| **Performance Optimization** | Choose the right backend           | Use Rustworkx for graphs with 100+ nodes                                                                     |
+|                           | Enable auto-compilation              | Set `auto_compile=True` for automatic optimization                                                           |
+|                           | Use batch operations                 | Add multiple agents with `add_nodes()` instead of individual `add_node()` calls                              |
+|                           | Compile before execution             | Call `workflow.compile()` before running large workflows                                                     |
+|                           | Monitor performance                  | Enable `verbose=True` to track execution metrics                                                             |
+| **Reliability**           | Validate graphs                      | Check for cycles before execution                                                                            |
+|                           | Handle agent failures                | Implement error handling in agent prompts                                                                    |
+|                           | Test with both backends              | Ensure compatibility between NetworkX and Rustworkx                                                          |
+|                           | Use version control                  | Track workflow definitions with `to_json()` and `save_to_file()`                                             |
+| **Scalability**           | Start with NetworkX                  | Develop and test with the default backend                                                                    |
+|                           | Switch to Rustworkx                  | Migrate to Rustworkx when scaling to production                                                              |
+|                           | Monitor memory                       | Watch memory usage on large graphs                                                                           |
+|                           | Optimize batch size                  | Tune `batch_size` parameter in `add_nodes()` for your workload                                               |
 
-1. **Choose the right backend** - Use Rustworkx for graphs with 100+ nodes
-2. **Enable auto-compilation** - Set `auto_compile=True` for automatic optimization
-3. **Use batch operations** - Add multiple agents with `add_nodes()` instead of individual `add_node()` calls
-4. **Compile before execution** - Call `workflow.compile()` before running large workflows
-5. **Monitor performance** - Enable `verbose=True` to track execution metrics
-
-### Reliability
-
-1. **Validate graphs** - Check for cycles before execution
-2. **Handle agent failures** - Implement error handling in agent prompts
-3. **Test with both backends** - Ensure compatibility between NetworkX and Rustworkx
-4. **Use version control** - Track workflow definitions with `to_json()` and `save_to_file()`
-
-### Scalability
-
-1. **Start with NetworkX** - Develop and test with the default backend
-2. **Switch to Rustworkx** - Migrate to Rustworkx when scaling to production
-3. **Monitor memory** - Watch memory usage on large graphs
-4. **Optimize batch size** - Tune `batch_size` parameter in `add_nodes()` for your workload
-
----
-
-The GraphWorkflow system represents a significant advancement in multi-agent orchestration, providing the tools needed to build complex, scalable, and maintainable AI workflows.
