@@ -55,9 +55,8 @@ workflow = GraphWorkflow(
     verbose=True
 )
 
-# Add agents as nodes
-workflow.add_node(research_agent)
-workflow.add_node(analysis_agent)
+# Add agents as nodes using batch processing
+workflow.add_nodes([research_agent, analysis_agent])
 
 # Connect agents with edges
 workflow.add_edge("ResearchAgent", "AnalysisAgent")
@@ -122,9 +121,8 @@ workflow = GraphWorkflow(
     verbose=True
 )
 
-# Add all agents
-for agent in [data_collector, technical_analyst, market_analyst, synthesis_agent]:
-    workflow.add_node(agent)
+# Add all agents at once using batch processing (faster than individual add_node calls)
+workflow.add_nodes([data_collector, technical_analyst, market_analyst, synthesis_agent])
 
 # Create fan-out pattern: data collector feeds both analysts
 workflow.add_edges_from_source(
