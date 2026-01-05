@@ -1,5 +1,5 @@
 """
-Test script for the Arasaka Dashboard functionality.
+Test script for the Hierarchical Swarms Dashboard functionality.
 """
 
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
@@ -35,7 +35,7 @@ def test_dashboard():
         verbose=True,
     )
 
-    print("🧪 Testing Arasaka Dashboard...")
+    print("🧪 Testing Hierarchical Swarms Dashboard...")
     print("📊 Dashboard should appear and prompt for task input")
 
     # Run with a simple task

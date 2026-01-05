@@ -1,5 +1,5 @@
 """
-Debug script for the Arasaka Dashboard to test agent output display.
+Debug script for the Hierarchical Swarms Dashboard to test agent output display.
 """
 
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm

@@ -452,7 +452,7 @@ class HeavySwarm:
 
         This method creates and displays a professionally styled information table containing
         all key swarm configuration parameters including models, timeouts, and operational
-        settings. The display uses Arasaka-inspired styling with red headers and borders.
+        settings. The display uses Swarms-inspired styling with red headers and borders.
 
         The dashboard includes:
         - Swarm identification (name, description)
@@ -470,7 +470,7 @@ class HeavySwarm:
         if not self.show_dashboard:
             return
 
-        # Create swarm info table with Arasaka styling
+        # Create swarm info table with Swarms styling
         info_table = Table(
             title="⚡ HEAVYSWARM CONFIGURATION",
             show_header=True,
@@ -494,7 +494,7 @@ class HeavySwarm:
             "Aggregation Strategy", self.aggregation_strategy
         )
 
-        # Display dashboard with professional Arasaka styling
+        # Display dashboard with professional Swarms styling
         self.console.print(
             Panel(
                 info_table,
@@ -1193,7 +1193,7 @@ class HeavySwarm:
 
         Dashboard Features:
         - Individual progress bars for each of the 4 specialized agents
-        - Real-time status updates with professional Arasaka-inspired styling
+        - Real-time status updates with professional Swarms-inspired styling
         - Animated dots and progress indicators for visual engagement
         - Color-coded status messages (red for processing, white for completion)
         - Completion summary with mission accomplished messaging

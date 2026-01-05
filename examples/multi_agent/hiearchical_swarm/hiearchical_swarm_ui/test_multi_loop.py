@@ -1,5 +1,5 @@
 """
-Test script for multi-loop agent tracking in the Arasaka Dashboard.
+Test script for multi-loop agent tracking in the Hierarchical Swarms Dashboard.
 """
 
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm

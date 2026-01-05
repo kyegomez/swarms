@@ -56,7 +56,7 @@ from swarms.utils.output_types import OutputType
 
 class HierarchicalSwarmDashboard:
     """
-    Futuristic Arasaka Corporation-style dashboard for hierarchical swarm monitoring.
+    Futuristic Swarms Corporation-style dashboard for hierarchical swarm monitoring.
 
     This dashboard provides a professional, enterprise-grade interface with red and black
     color scheme, real-time monitoring of swarm operations, and cyberpunk aesthetics.
@@ -74,7 +74,7 @@ class HierarchicalSwarmDashboard:
 
     def __init__(self, swarm_name: str = "Swarms Corporation"):
         """
-        Initialize the Arasaka dashboard.
+        Initialize the Hierarchical Swarms dashboard.
 
         Args:
             swarm_name (str): Name of the swarm to display in the dashboard

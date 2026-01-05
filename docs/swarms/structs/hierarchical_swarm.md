@@ -36,6 +36,8 @@ The Hierarchical Swarm follows a clear workflow pattern:
 | **Live Streaming**           | Real-time streaming callbacks for monitoring agent outputs                                   |
 | **Token-by-Token Updates**   | Watch text formation in real-time as agents generate responses                               |
 | **Hierarchy Visualization**  | Visual tree representation of swarm structure with `display_hierarchy()`                     |
+| **Interactive Dashboard**    | Real-time Hierarchical Swarms dashboard for monitoring swarm operations                |
+| **Advanced Planning**        | Optional planning phase before task distribution for better coordination                     |
 
 ## Constructor
 
@@ -54,8 +56,16 @@ Initializes a new HierarchicalSwarm instance.
 | `max_loops` | `int` | `1` | No | Maximum number of feedback loops between director and agents (must be > 0) |
 | `output_type` | `OutputType` | `"dict-all-except-first"` | No | Format for output (dict, str, list) |
 | `director_model_name` | `str` | `"gpt-4o-mini"` | No | Model name for the main director agent |
+| `director_name` | `str` | `"Director"` | No | Name identifier for the director agent |
+| `director_temperature` | `float` | `0.7` | No | Temperature setting for the director agent (controls randomness) |
+| `director_top_p` | `float` | `0.9` | No | Top-p (nucleus) sampling parameter for the director agent |
+| `director_system_prompt` | `str` | `HIEARCHICAL_SWARM_SYSTEM_PROMPT` | No | System prompt for the director agent |
 | `director_feedback_on` | `bool` | `True` | No | Whether director feedback is enabled |
-| `interactive` | `bool` | `False` | No | Enable interactive mode with dashboard visualization |
+| `feedback_director_model_name` | `str` | `"gpt-4o-mini"` | No | Model name for the feedback director agent |
+| `add_collaboration_prompt` | `bool` | `True` | No | Whether to add collaboration prompts to worker agents |
+| `multi_agent_prompt_improvements` | `bool` | `False` | No | Enable enhanced multi-agent collaboration prompts |
+| `interactive` | `bool` | `False` | No | Enable interactive mode with Hierarchical Swarms dashboard visualization |
+| `planning_enabled` | `bool` | `True` | No | Enable planning phase before task distribution |
 
 #### Returns
 
@@ -84,26 +94,31 @@ Displays a visual tree representation of the hierarchical swarm structure, showi
 #### Example
 
 ```python
-from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms import Agent, HierarchicalSwarm
 
 # Create specialized agents
 research_agent = Agent(
     agent_name="Research-Analyst",
     agent_description="Specialized in comprehensive research and data gathering",
     model_name="gpt-4o-mini",
+    max_loops=1,
+    verbose=False,
 )
 
 analysis_agent = Agent(
     agent_name="Data-Analyst",
     agent_description="Expert in data analysis and pattern recognition",
     model_name="gpt-4o-mini",
+    max_loops=1,
+    verbose=False,
 )
 
 strategy_agent = Agent(
     agent_name="Strategy-Consultant",
     agent_description="Specialized in strategic planning and recommendations",
     model_name="gpt-4o-mini",
+    max_loops=1,
+    verbose=False,
 )
 
 # Create hierarchical swarm
@@ -112,7 +127,11 @@ swarm = HierarchicalSwarm(
     description="Enterprise-grade hierarchical swarm for complex task execution",
     agents=[research_agent, analysis_agent, strategy_agent],
     max_loops=1,
+    interactive=False,  # Set to True to enable the Hierarchical Swarms dashboard
     director_model_name="claude-haiku-4-5",
+    director_temperature=0.7,
+    director_top_p=None,
+    planning_enabled=True,
 )
 
 # Display the hierarchy visualization
@@ -159,20 +178,23 @@ Executes the hierarchical swarm for a specified number of feedback loops, proces
 #### Example
 
 ```python
-from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms import Agent, HierarchicalSwarm
 
 # Create specialized agents
 research_agent = Agent(
     agent_name="Research-Specialist",
     agent_description="Expert in market research and analysis",
-    model_name="gpt-4.1",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+    verbose=False,
 )
 
 financial_agent = Agent(
     agent_name="Financial-Analyst",
     agent_description="Specialist in financial analysis and valuation",
-    model_name="gpt-4.1",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+    verbose=False,
 )
 
 # Initialize the hierarchical swarm
@@ -181,7 +203,8 @@ swarm = HierarchicalSwarm(
     description="A hierarchical swarm for comprehensive financial analysis",
     agents=[research_agent, financial_agent],
     max_loops=2,
-    verbose=True,
+    director_model_name="gpt-4o-mini",
+    planning_enabled=True,
 )
 
 # Execute a complex task
@@ -193,8 +216,7 @@ print(result)
 #### Streaming Callback Example
 
 ```python
-from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms import Agent, HierarchicalSwarm
 
 def streaming_callback(agent_name: str, chunk: str, is_final: bool):
     """Callback function for real-time streaming of agent outputs."""
@@ -234,7 +256,7 @@ swarm = HierarchicalSwarm(
     name="Streaming-Analysis-Swarm",
     agents=agents,
     max_loops=1,
-    verbose=True,
+    director_model_name="gpt-4o-mini",
 )
 
 # Execute with streaming
@@ -269,8 +291,7 @@ Execute the hierarchical swarm for multiple tasks in sequence. Processes a list 
 #### Example (batched_run method)
 
 ```python
-from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms import Agent, HierarchicalSwarm
 
 # Create analysis agents
 market_agent = Agent(
@@ -291,7 +312,7 @@ swarm = HierarchicalSwarm(
     description="A hierarchical swarm for comprehensive analysis",
     agents=[market_agent, technical_agent],
     max_loops=2,
-    verbose=True,
+    director_model_name="gpt-4o-mini",
 )
 
 # Execute multiple tasks
@@ -311,8 +332,7 @@ for i, result in enumerate(results):
 ### Financial Analysis Swarm
 
 ```python
-from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms import Agent, HierarchicalSwarm
 
 # Create specialized financial agents
 market_research_agent = Agent(
@@ -347,7 +367,8 @@ financial_analysis_swarm = HierarchicalSwarm(
     description="A hierarchical swarm for comprehensive financial analysis with specialized agents",
     agents=[market_research_agent, financial_analyst_agent],
     max_loops=2,
-    verbose=True,
+    director_model_name="claude-3-sonnet-20240229",
+    planning_enabled=True,
 )
 
 # Execute financial analysis
@@ -359,8 +380,7 @@ print(result)
 ### Development Department Swarm
 
 ```python
-from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms import Agent, HierarchicalSwarm
 
 # Create specialized development agents
 frontend_developer_agent = Agent(
@@ -395,7 +415,8 @@ development_department_swarm = HierarchicalSwarm(
     description="A fully autonomous development department with specialized agents",
     agents=[frontend_developer_agent, backend_developer_agent],
     max_loops=3,
-    verbose=True,
+    director_model_name="claude-3-sonnet-20240229",
+    planning_enabled=True,
 )
 
 # Execute development project
@@ -403,6 +424,97 @@ task = "Create a simple web app that allows users to upload a file and then down
 result = development_department_swarm.run(task=task)
 print(result)
 ```
+
+## Interactive Dashboard
+
+The `HierarchicalSwarm` includes an optional interactive dashboard that provides real-time monitoring of swarm operations. When `interactive=True`, the dashboard displays a futuristic Swarms Corporation-style interface with:
+
+- **Real-time Status Updates**: Monitor director and agent statuses as tasks execute
+- **Agent Monitoring Matrix**: Track all agents across multiple loops with full output history
+- **Director Operations Panel**: View the director's plan and current orders
+- **Progress Tracking**: See runtime, completion percentage, and loop progress
+- **Full Output Display**: View complete agent outputs without truncation
+
+### Enabling the Dashboard
+
+```python
+from swarms import Agent, HierarchicalSwarm
+
+# Create agents
+research_agent = Agent(
+    agent_name="Research-Analyst",
+    agent_description="Specialized in comprehensive research",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+    verbose=False,
+)
+
+# Create swarm with interactive dashboard
+swarm = HierarchicalSwarm(
+    name="Swarms Corporation Operations",
+    description="Enterprise-grade hierarchical swarm",
+    agents=[research_agent],
+    max_loops=2,
+    interactive=True,  # Enable the Hierarchical Swarms dashboard
+    director_model_name="gpt-4o-mini",
+    planning_enabled=True,
+)
+
+# Run with dashboard visualization
+result = swarm.run("Conduct a research analysis on water stocks and ETFs")
+```
+
+The dashboard automatically:
+- Starts when `run()` is called
+- Updates in real-time as agents execute tasks
+- Displays full conversation history across loops
+- Shows director plans and orders
+- Stops automatically when execution completes
+
+### Dashboard Features
+
+| Feature | Description |
+|---------|-------------|
+| **Operations Status** | Shows swarm name, description, director info, loop progress, and runtime |
+| **Director Operations** | Displays the director's plan and current task orders |
+| **Agent Monitoring Matrix** | Table view showing all agents, their status, tasks, and outputs across loops |
+| **Detailed View** | Full output history for each agent in each loop |
+| **Real-time Updates** | Dashboard refreshes automatically as operations progress |
+
+## Planning Feature
+
+The `planning_enabled` parameter controls whether the director performs an initial planning phase before creating task orders. When enabled, the director:
+
+1. **Analyzes the Task**: Reviews the task and conversation history
+2. **Creates a Strategic Plan**: Develops a comprehensive approach before distributing orders
+3. **Distributes Orders**: Assigns specific tasks to agents based on the plan
+
+### Planning Configuration
+
+```python
+swarm = HierarchicalSwarm(
+    name="Planning-Swarm",
+    agents=[agent1, agent2],
+    max_loops=2,
+    planning_enabled=True,  # Enable planning phase
+    director_model_name="gpt-4o-mini",
+    director_temperature=0.7,  # Control planning creativity
+    director_top_p=0.9,  # Control planning focus
+)
+```
+
+### When to Use Planning
+
+- **Complex Multi-Step Tasks**: Tasks requiring strategic coordination
+- **Uncertain Requirements**: When the task needs analysis before execution
+- **Resource Optimization**: When you want the director to optimize agent assignments
+- **Quality Over Speed**: When thorough planning is more important than speed
+
+### When to Disable Planning
+
+- **Simple Tasks**: Straightforward tasks that don't need strategic planning
+- **Performance Critical**: When minimizing latency is important
+- **Well-Defined Workflows**: When the task structure is already clear
 
 ## Output Types
 
@@ -480,11 +592,14 @@ def live_paragraph_callback(agent_name: str, chunk: str, is_final: bool):
 | **Agent Specialization**     | Create agents with specific, well-defined expertise areas                                        |
 | **Clear Task Descriptions**  | Provide detailed, actionable task descriptions                                                  |
 | **Appropriate Loop Count**   | Set `max_loops` based on task complexity (1-3 for most tasks)                                   |
-| **Verbose Logging**          | Enable verbose mode during development for debugging                                             |
+| **Director Configuration**   | Adjust `director_temperature` (0.7-0.9) and `director_top_p` (0.9-0.95) for desired creativity |
+| **Planning Strategy**        | Enable `planning_enabled` for complex tasks, disable for simple or performance-critical tasks   |
+| **Interactive Dashboard**    | Use `interactive=True` during development for real-time monitoring and debugging                 |
 | **Context Preservation**     | Leverage the built-in conversation history for continuity                                       |
 | **Error Handling**           | Implement proper error handling for production use                                              |
 | **Streaming Callbacks**      | Use streaming callbacks for real-time monitoring and user feedback                              |
 | **Callback Performance**     | Keep streaming callbacks lightweight to avoid blocking the main execution thread                |
+| **Model Selection**          | Choose appropriate models for director (coordination) vs agents (specialization)              |
 
 ## Error Handling
 
@@ -497,7 +612,12 @@ The `HierarchicalSwarm` includes comprehensive error handling with detailed logg
 
 ## Performance Considerations
 
-- **Loop Optimization**: Balance between thoroughness and performance with `max_loops`
-- **Agent Count**: More agents increase coordination overhead
-- **Model Selection**: Choose appropriate models for your use case and budget
-- **Verbose Mode**: Disable verbose logging in production for better performance
+| Consideration              | Description                                                                                           |
+|---------------------------|-------------------------------------------------------------------------------------------------------|
+| **Loop Optimization**      | Balance between thoroughness and performance with `max_loops`                                         |
+| **Agent Count**            | More agents increase coordination overhead                                                            |
+| **Model Selection**        | Choose appropriate models for your use case and budget                                                |
+| **Planning Overhead**      | Disable `planning_enabled` if you need faster execution                                               |
+| **Dashboard Impact**       | The interactive dashboard adds minimal overhead but provides valuable insights                        |
+| **Director Temperature**   | Lower values (0.5-0.7) for consistent results, higher (0.8-1.0) for creativity                       |
+| **Top-P Sampling**         | Use `director_top_p=None` to disable and rely only on temperature                                     |

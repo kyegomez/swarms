@@ -12,7 +12,7 @@ analysis_agent = Agent(
 swarm = HierarchicalSwarm(
     agents=[research_agent, analysis_agent],
     max_loops=1,
-    interactive=True,  # Enable the Arasaka dashboard
+    interactive=True,  # Enable the Hierarchical Swarms dashboard
     multi_agent_prompt_improvements=True,
 )
 
