@@ -35,6 +35,12 @@ from swarms.utils.output_types import HistoryOutputType
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.try_except_wrapper import try_except_wrapper
+from swarms.utils.agent_marketplace import (
+    query_agents,
+    get_agent_by_id,
+    install_agent,
+    list_available_categories,
+)
 
 __all__ = [
     "csv_to_text",
@@ -60,4 +66,8 @@ __all__ = [
     "LiteLLM",
     "NetworkConnectionError",
     "LiteLLMException",
+    "query_agents",
+    "get_agent_by_id",
+    "install_agent",
+    "list_available_categories",
 ]

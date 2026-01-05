@@ -365,6 +365,7 @@ nav:
       - YAML Configuration: "swarms/cli/cli_yaml_guide.md"
       - LLM Council CLI: "swarms/cli/cli_llm_council_guide.md"
       - Heavy Swarm CLI: "swarms/cli/cli_heavy_swarm_guide.md"
+      - Marketplace CLI: "swarms/cli/cli_marketplace_guide.md"
       - CLI Multi-Agent Commands: "examples/cli_multi_agent_quickstart.md"
       - CLI Examples: "swarms/cli/cli_examples.md"
 

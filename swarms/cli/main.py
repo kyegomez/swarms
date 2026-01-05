@@ -4,6 +4,7 @@ import sys
 import time
 import webbrowser
 from pathlib import Path
+from typing import Dict, List
 
 from dotenv import load_dotenv
 from rich.align import Align
@@ -18,6 +19,12 @@ from swarms.agents.auto_generate_swarm_config import (
 )
 from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
+)
+from swarms.utils.agent_marketplace import (
+    query_agents,
+    get_agent_by_id,
+    install_agent,
+    list_available_categories,
 )
 
 from swarms.structs.agent import Agent
@@ -643,6 +650,10 @@ def create_command_table() -> Table:
             "features",
             "Display all available features and actions in a comprehensive table",
         ),
+        (
+            "marketplace",
+            "Search, browse, and install agents from the Swarms marketplace",
+        ),
     ]
 
     for cmd, desc in commands:
@@ -782,6 +793,13 @@ def create_detailed_command_table() -> Table:
             "desc": "Display all available features and actions",
             "usage": "swarms features",
             "args": "None",
+        },
+        {
+            "cmd": "marketplace",
+            "category": "Marketplace",
+            "desc": "Search, browse, and install agents from Swarms marketplace",
+            "usage": "swarms marketplace [search|list|info|install] [options]",
+            "args": "--query, --category, --free-only, --output-dir, --limit",
         },
     ]
 
@@ -950,6 +968,34 @@ def show_features():
             "command": "swarms features",
             "params": "None",
         },
+        {
+            "feature": "Marketplace Search",
+            "category": "Marketplace",
+            "desc": "Search for agents in the Swarms marketplace by keyword or category",
+            "command": "swarms marketplace search --query 'keyword'",
+            "params": "--query, --category, --free-only, --limit",
+        },
+        {
+            "feature": "Marketplace List",
+            "category": "Marketplace",
+            "desc": "List all available agents in the Swarms marketplace",
+            "command": "swarms marketplace list",
+            "params": "--category, --free-only, --limit",
+        },
+        {
+            "feature": "Marketplace Info",
+            "category": "Marketplace",
+            "desc": "View detailed information about a marketplace agent",
+            "command": "swarms marketplace info <agent-id>",
+            "params": "agent-id (positional)",
+        },
+        {
+            "feature": "Marketplace Install",
+            "category": "Marketplace",
+            "desc": "Install an agent from the marketplace to your local directory",
+            "command": "swarms marketplace install <agent-id>",
+            "params": "--output-dir",
+        },
     ]
 
     # Add rows to table
@@ -1032,6 +1078,7 @@ def show_help():
         "• [yellow]swarms autoswarm --task 'analyze data' --model gpt-4[/yellow] - Auto-generate swarm\n"
         "• [yellow]swarms llm-council --task 'Your question'[/yellow] - Run LLM Council\n"
         "• [yellow]swarms heavy-swarm --task 'Your task'[/yellow] - Run HeavySwarm\n"
+        "• [yellow]swarms marketplace search --query 'trading'[/yellow] - Search marketplace agents\n"
         "• [yellow]swarms features[/yellow] - View all available features",
         title="⚡ Quick Usage Guide",
         border_style=COLORS["secondary"],
@@ -1472,6 +1519,315 @@ def run_llm_council(task: str, verbose: bool = True):
         return None
 
 
+def run_marketplace_search(
+    query: str = None,
+    category: str = None,
+    free_only: bool = False,
+    limit: int = 20,
+):
+    """Search for agents in the marketplace."""
+    try:
+        console.print(
+            "[yellow]Searching marketplace for agents...[/yellow]"
+        )
+
+        with create_spinner("Searching...") as progress:
+            task = progress.add_task("Querying marketplace...")
+            result = query_agents(
+                search=query,
+                category=category,
+                free_only=free_only,
+                limit=limit,
+            )
+            progress.remove_task(task)
+
+        # Parse results
+        if isinstance(result, list):
+            agents = result
+        elif isinstance(result, dict):
+            agents = result.get("agents", result.get("data", []))
+            if not isinstance(agents, list):
+                agents = [result] if result.get("id") else []
+        else:
+            agents = []
+
+        if not agents:
+            console.print(
+                "[yellow]No agents found matching your criteria.[/yellow]"
+            )
+            return
+
+        # Create results table
+        table = Table(
+            show_header=True,
+            header_style=f"bold {COLORS['primary']}",
+            border_style=COLORS["secondary"],
+            title=f"Marketplace Agents ({len(agents)} found)",
+            padding=(0, 1),
+        )
+
+        table.add_column("ID", style="dim cyan", width=12, no_wrap=True)
+        table.add_column("Name", style="bold white", width=25)
+        table.add_column("Category", style="cyan", width=12)
+        table.add_column("Price", style="green", width=8)
+        table.add_column("Description", style="dim white", width=40)
+
+        for agent in agents:
+            agent_id = agent.get("id", "N/A")
+            # Truncate ID for display
+            display_id = agent_id[:10] + "..." if len(agent_id) > 12 else agent_id
+            name = agent.get("name", "Unknown")
+            cat = agent.get("category", "general")
+            is_free = agent.get("is_free", True)
+            price = "Free" if is_free else f"${agent.get('price_usd', 0):.2f}"
+            desc = agent.get("description", "No description")
+            # Truncate description
+            if len(desc) > 40:
+                desc = desc[:37] + "..."
+
+            table.add_row(display_id, name, cat, price, desc)
+
+        console.print(table)
+
+        # Show usage hint
+        console.print(
+            "\n[dim]Use 'swarms marketplace info <agent-id>' for details[/dim]"
+        )
+        console.print(
+            "[dim]Use 'swarms marketplace install <agent-id>' to install[/dim]"
+        )
+
+    except ValueError as e:
+        show_error(
+            "API Key Error",
+            str(e) + "\n\nGet your API key at: https://swarms.world/platform/api-keys",
+        )
+    except Exception as e:
+        show_error(
+            "Search Error",
+            f"Failed to search marketplace: {str(e)}",
+        )
+
+
+def run_marketplace_list(
+    category: str = None,
+    free_only: bool = False,
+    limit: int = 20,
+):
+    """List available agents in the marketplace."""
+    run_marketplace_search(
+        query=None,
+        category=category,
+        free_only=free_only,
+        limit=limit,
+    )
+
+
+def get_all_agents_for_lookup(limit: int = 100, timeout: float = 30.0) -> List[Dict]:
+    """Fetch all agents for ID lookup."""
+    try:
+        result = query_agents(limit=limit, timeout=timeout)
+        if isinstance(result, list):
+            return result
+        return result.get("agents", result.get("data", []))
+    except Exception:
+        return []
+
+
+def run_marketplace_info(agent_id: str):
+    """Display detailed information about an agent."""
+    try:
+        console.print(
+            f"[yellow]Fetching agent details for: {agent_id}[/yellow]"
+        )
+
+        with create_spinner("Fetching...") as progress:
+            task = progress.add_task("Getting agent info...")
+            agent = get_agent_by_id(agent_id)
+            progress.remove_task(task)
+
+        if not agent:
+            show_error(
+                "Agent Not Found",
+                f"No agent found with ID: {agent_id}\n"
+                "Use 'swarms marketplace search' to find available agents.",
+            )
+            return
+
+        # Display agent details in a panel
+        name = agent.get("name", "Unknown")
+        description = agent.get("description", "No description available")
+        category = agent.get("category", "general")
+        language = agent.get("language", "python")
+        is_free = agent.get("is_free", True)
+        price = "Free" if is_free else f"${agent.get('price_usd', 0):.2f}"
+        tags = agent.get("tags", "")
+        requirements = agent.get("requirements", [])
+        use_cases = agent.get("useCases", [])
+
+        # Build info content
+        info_lines = [
+            f"[bold cyan]Name:[/bold cyan] {name}",
+            f"[bold cyan]ID:[/bold cyan] {agent_id}",
+            f"[bold cyan]Category:[/bold cyan] {category}",
+            f"[bold cyan]Language:[/bold cyan] {language}",
+            f"[bold cyan]Price:[/bold cyan] {price}",
+        ]
+
+        if tags:
+            info_lines.append(f"[bold cyan]Tags:[/bold cyan] {tags}")
+
+        info_lines.append("")
+        info_lines.append(f"[bold cyan]Description:[/bold cyan]")
+        info_lines.append(f"  {description}")
+
+        if requirements:
+            info_lines.append("")
+            info_lines.append("[bold cyan]Requirements:[/bold cyan]")
+            for req in requirements:
+                info_lines.append(f"  - {req}")
+
+        if use_cases:
+            info_lines.append("")
+            info_lines.append("[bold cyan]Use Cases:[/bold cyan]")
+            for uc in use_cases:
+                title = uc.get("title", "")
+                desc = uc.get("description", "")
+                if title:
+                    info_lines.append(f"  - [bold]{title}[/bold]: {desc}")
+
+        info_panel = Panel(
+            "\n".join(info_lines),
+            title=f"Agent: {name}",
+            border_style=COLORS["success"],
+            padding=(1, 2),
+        )
+        console.print(info_panel)
+
+        # Show install command
+        console.print(
+            f"\n[dim]To install: swarms marketplace install {agent_id}[/dim]"
+        )
+
+    except ValueError as e:
+        show_error(
+            "API Key Error",
+            str(e) + "\n\nGet your API key at: https://swarms.world/platform/api-keys",
+        )
+    except Exception as e:
+        show_error(
+            "Info Error",
+            f"Failed to get agent info: {str(e)}",
+        )
+
+
+def run_marketplace_install(agent_id: str, output_dir: str = "."):
+    """Install an agent from the marketplace to a local directory."""
+    try:
+        console.print(
+            f"[yellow]Installing agent: {agent_id}[/yellow]"
+        )
+        console.print(f"[dim]Output directory: {output_dir}[/dim]")
+
+        with create_spinner("Installing...") as progress:
+            task = progress.add_task("Downloading and creating agent file...")
+            result = install_agent(agent_id=agent_id, output_dir=output_dir)
+            progress.remove_task(task)
+
+        if result.get("success"):
+            success_panel = Panel(
+                f"[bold green]Agent installed successfully![/bold green]\n\n"
+                f"[cyan]Name:[/cyan] {result.get('agent_name')}\n"
+                f"[cyan]File:[/cyan] {result.get('file_path')}\n"
+                f"[cyan]Description:[/cyan] {result.get('description', 'N/A')}",
+                title="Installation Complete",
+                border_style=COLORS["success"],
+                padding=(1, 2),
+            )
+            console.print(success_panel)
+        else:
+            show_error(
+                "Installation Failed",
+                "Agent installation did not complete successfully.",
+            )
+
+    except ValueError as e:
+        show_error(
+            "Installation Error",
+            str(e),
+        )
+    except Exception as e:
+        show_error(
+            "Installation Error",
+            f"Failed to install agent: {str(e)}",
+        )
+
+
+def show_marketplace_help():
+    """Display help for marketplace commands."""
+    console.print(
+        "\n[bold]Swarms Marketplace Commands[/bold]\n",
+        style=COLORS["primary"],
+    )
+
+    table = Table(
+        show_header=True,
+        header_style=f"bold {COLORS['primary']}",
+        border_style=COLORS["secondary"],
+        title="Available Marketplace Commands",
+        padding=(0, 2),
+    )
+
+    table.add_column("Command", style="bold white", width=35)
+    table.add_column("Description", style="dim white", width=50)
+
+    commands = [
+        (
+            "marketplace search --query <text>",
+            "Search for agents by keyword",
+        ),
+        (
+            "marketplace search --category <cat>",
+            "Search agents by category",
+        ),
+        (
+            "marketplace list",
+            "List all available agents",
+        ),
+        (
+            "marketplace list --free-only",
+            "List only free agents",
+        ),
+        (
+            "marketplace info <agent-id>",
+            "View detailed agent information",
+        ),
+        (
+            "marketplace install <agent-id>",
+            "Install agent to current directory",
+        ),
+        (
+            "marketplace install <id> --output-dir ./agents",
+            "Install agent to specific directory",
+        ),
+    ]
+
+    for cmd, desc in commands:
+        table.add_row(cmd, desc)
+
+    console.print(table)
+
+    # Show available categories
+    categories = list_available_categories()
+    console.print(
+        f"\n[bold cyan]Available Categories:[/bold cyan] {', '.join(categories)}"
+    )
+
+    console.print(
+        "\n[dim]Get your API key at: https://swarms.world/platform/api-keys[/dim]"
+    )
+
+
 def create_swarm_agent(
     name: str,
     description: str,
@@ -1605,8 +1961,51 @@ def main():
                 "llm-council",
                 "heavy-swarm",
                 "features",
+                "marketplace",
             ],
             help="Command to execute",
+        )
+        # Marketplace subcommand argument
+        parser.add_argument(
+            "marketplace_action",
+            nargs="?",
+            choices=["search", "list", "info", "install"],
+            help="Marketplace action (search, list, info, install)",
+        )
+        # Marketplace agent ID argument (for info and install)
+        parser.add_argument(
+            "agent_id",
+            nargs="?",
+            type=str,
+            help="Agent ID for marketplace info/install commands",
+        )
+        # Marketplace search/list arguments
+        parser.add_argument(
+            "--query",
+            type=str,
+            help="Search query for marketplace agents",
+        )
+        parser.add_argument(
+            "--category",
+            type=str,
+            help="Filter marketplace agents by category",
+        )
+        parser.add_argument(
+            "--free-only",
+            action="store_true",
+            help="Show only free agents in marketplace",
+        )
+        parser.add_argument(
+            "--limit",
+            type=int,
+            default=20,
+            help="Maximum number of results to show (default: 20)",
+        )
+        parser.add_argument(
+            "--output-dir",
+            type=str,
+            default=".",
+            help="Output directory for installing marketplace agents (default: current directory)",
         )
         parser.add_argument(
             "--yaml-file",
@@ -2013,6 +2412,56 @@ def main():
                     random_loops_per_agent=args.random_loops_per_agent,
                     verbose=args.verbose,
                 )
+            elif args.command == "marketplace":
+                # Handle marketplace subcommands
+                action = args.marketplace_action
+
+                if not action:
+                    # No action specified, show help
+                    show_marketplace_help()
+                elif action == "search":
+                    if not args.query and not args.category:
+                        show_error(
+                            "Missing search criteria",
+                            "Please provide --query or --category\n"
+                            "Example: swarms marketplace search --query 'trading'\n"
+                            "Example: swarms marketplace search --category 'finance'",
+                        )
+                        exit(1)
+                    run_marketplace_search(
+                        query=args.query,
+                        category=args.category,
+                        free_only=args.free_only,
+                        limit=args.limit,
+                    )
+                elif action == "list":
+                    run_marketplace_list(
+                        category=args.category,
+                        free_only=args.free_only,
+                        limit=args.limit,
+                    )
+                elif action == "info":
+                    if not args.agent_id:
+                        show_error(
+                            "Missing agent ID",
+                            "Please provide an agent ID\n"
+                            "Example: swarms marketplace info abc123-def456",
+                        )
+                        exit(1)
+                    run_marketplace_info(agent_id=args.agent_id)
+                elif action == "install":
+                    if not args.agent_id:
+                        show_error(
+                            "Missing agent ID",
+                            "Please provide an agent ID\n"
+                            "Example: swarms marketplace install abc123-def456\n"
+                            "Example: swarms marketplace install abc123 --output-dir ./agents",
+                        )
+                        exit(1)
+                    run_marketplace_install(
+                        agent_id=args.agent_id,
+                        output_dir=args.output_dir,
+                    )
         except Exception as e:
             console.print(
                 f"[{COLORS['error']}]Error: {str(e)}[/{COLORS['error']}]"

@@ -16,6 +16,7 @@ The Swarms CLI is a comprehensive command-line interface for managing and execut
   - [setup-check Command](#setup-check-command)
   - [llm-council Command](#llm-council-command)
   - [heavy-swarm Command](#heavy-swarm-command)
+  - [marketplace Command](#marketplace-command)
   - [features Command](#features-command)
 - [Error Handling](#error-handling)
 - [Examples](#examples)
@@ -63,6 +64,7 @@ swarms <command> [options]
 | `setup-check` | Run comprehensive environment setup check | None |
 | `llm-council` | Run LLM Council with multiple agents collaborating on a task | `--task` |
 | `heavy-swarm` | Run HeavySwarm with specialized agents for complex task analysis | `--task` |
+| `marketplace` | Search, browse, and install agents from Swarms Marketplace | Subcommand |
 
 ## Global Arguments
 
@@ -340,6 +342,60 @@ HeavySwarm includes specialized agents for different aspects of analysis:
 - Technical analysis and evaluation
 - Comprehensive report generation
 - Multi-faceted problem solving
+
+### `marketplace` Command
+
+Search, browse, and install agents from the [Swarms Marketplace](https://swarms.world).
+
+```bash
+swarms marketplace <action> [options]
+```
+
+#### Actions
+
+| Action | Description |
+|--------|-------------|
+| `search` | Search for agents by keyword |
+| `list` | List available agents |
+| `info <id>` | View agent details |
+| `install <id>` | Install agent locally |
+
+#### Arguments
+
+| Argument | Type | Default | Description |
+|----------|------|---------|-------------|
+| `--query` | `str` | None | Search keyword for agent names/descriptions |
+| `--category` | `str` | None | Filter by category |
+| `--free-only` | `bool` | `False` | Show only free agents |
+| `--limit` | `int` | `20` | Maximum results (1-100) |
+| `--output-dir` | `str` | `.` | Directory for installed agents |
+
+**Examples:**
+```bash
+# Show marketplace help
+swarms marketplace
+
+# List available agents
+swarms marketplace list --limit 10
+
+# Search for agents
+swarms marketplace search --query "trading" --category "finance"
+
+# View agent details
+swarms marketplace info a2e3d0d3-9b6a-40a3-9904-000f2e1d03e3
+
+# Install agent to directory
+swarms marketplace install a2e3d0d3-9b6a-40a3-9904-000f2e1d03e3 --output-dir ./agents
+```
+
+**Available Categories:**
+`finance`, `research`, `coding`, `content`, `data-analysis`, `automation`, `customer-service`, `healthcare`, `legal`, `marketing`, `education`, `general`
+
+**Prerequisites:**
+- Set `SWARMS_API_KEY` environment variable
+- Get your API key at: [https://swarms.world/platform/api-keys](https://swarms.world/platform/api-keys)
+
+For detailed documentation, see [CLI Marketplace Guide](cli_marketplace_guide.md).
 
 ### `features` Command
 
