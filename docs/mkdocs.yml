@@ -494,6 +494,7 @@ nav:
     - X402:
       - x402 Quickstart Example: "examples/x402_payment_integration.md"
       - X402 Discovery Query Agent: "examples/x402_discovery_query.md"
+      - X402 Tools Agent: "swarms/examples/x402_tools_agent.md"
 
     - Marketplace:
       - Overview: "examples/marketplace_examples_overview.md"
