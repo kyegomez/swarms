@@ -374,7 +374,6 @@ nav:
       - Tool Usage:
         - Agents with Vision and Tool Usage: "swarms/examples/vision_tools.md"
         - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
-        - Agents with Multiple Tools: "swarms/examples/agent_multiple_tools_example.md"
         - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
         - Pydantic Structured Outputs Tutorial: "swarms/examples/pydantic_structured_outputs_tutorial.md"
         - Message Transforms for Context Management: "swarms/structs/transforms.md"
