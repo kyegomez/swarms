@@ -26,6 +26,7 @@ from swarms.structs.llm_council import LLMCouncil
 from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.utils.formatter import formatter
 from swarms.utils.workspace_utils import get_workspace_dir
+from swarms.utils.fetch_prompts_marketplace import fetch_prompts_from_marketplace
 
 load_dotenv()
 
@@ -1732,6 +1733,11 @@ def main():
             type=str,
             help="MCP URL for the agent",
         )
+        parser.add_argument(
+            "--marketplace-prompt-id",
+            type=str,
+            help="Fetch system prompt from Swarms marketplace using this prompt ID",
+        )
         # HeavySwarm specific arguments
         parser.add_argument(
             "--loops-per-agent",
@@ -1908,31 +1914,59 @@ def main():
                         "[dim]You can now use these agents in your code or run them interactively.[/dim]"
                     )
             elif args.command == "agent":
+                # Handle marketplace prompt ID
+                system_prompt = args.system_prompt
+                agent_name = args.name
+                agent_description = args.description
+                marketplace_prompt_id = getattr(args, "marketplace_prompt_id", None)
+
+                if marketplace_prompt_id:
+                    try:
+                        console.print(
+                            f"[yellow]Fetching prompt from marketplace: {marketplace_prompt_id}[/yellow]"
+                        )
+                        result = fetch_prompts_from_marketplace(prompt_id=marketplace_prompt_id)
+                        if result is None:
+                            show_error(
+                                "Prompt Not Found",
+                                f"No prompt found with ID: {marketplace_prompt_id}",
+                            )
+                            exit(1)
+                        mp_name, mp_description, mp_prompt = result
+                        system_prompt = mp_prompt
+                        # Use marketplace name/description as fallback if not provided
+                        if not agent_name:
+                            agent_name = mp_name or "MarketplaceAgent"
+                        if not agent_description:
+                            agent_description = mp_description or "Agent using marketplace prompt"
+                        console.print("[green]✓ Loaded prompt from marketplace[/green]")
+                    except Exception as e:
+                        show_error(
+                            "Marketplace Error",
+                            f"Failed to fetch prompt: {str(e)}",
+                        )
+                        exit(1)
+
                 # Validate required arguments
-                required_args = [
-                    "name",
-                    "description",
-                    "system_prompt",
-                    "task",
-                ]
-                missing_args = [
-                    arg
-                    for arg in required_args
-                    if not getattr(args, arg)
-                ]
+                missing_args = []
+                if not agent_name:
+                    missing_args.append("name")
+                if not agent_description:
+                    missing_args.append("description")
+                if not system_prompt:
+                    missing_args.append("system_prompt or --marketplace-prompt-id")
+                if not args.task:
+                    missing_args.append("task")
 
                 if missing_args:
                     show_error(
                         "Missing required arguments",
-                        f"Required arguments: {', '.join(missing_args)}\n\n"
+                        f"Required: {', '.join(missing_args)}\n\n"
                         "Example usage:\n"
-                        "python cli.py agent \\\n"
-                        "  --name 'Trading Agent' \\\n"
-                        "  --description 'Advanced trading agent' \\\n"
-                        "  --system-prompt 'You are an expert trader...' \\\n"
-                        "  --task 'Analyze market trends' \\\n"
-                        "  --model-name 'gpt-4' \\\n"
-                        "  --temperature 0.1",
+                        "swarms agent --name 'Agent' --description 'Desc' \\\n"
+                        "  --system-prompt 'You are...' --task 'Do this'\n\n"
+                        "Or with marketplace prompt:\n"
+                        "swarms agent --marketplace-prompt-id '<id>' --task 'Do this'",
                     )
                     exit(1)
 
@@ -1964,9 +1998,9 @@ def main():
 
                 # Create and run the custom agent
                 result = create_swarm_agent(
-                    name=args.name,
-                    description=args.description,
-                    system_prompt=args.system_prompt,
+                    name=agent_name,
+                    description=agent_description,
+                    system_prompt=system_prompt,
                     model_name=args.model_name,
                     task=args.task,
                     **additional_params,
@@ -1974,7 +2008,7 @@ def main():
 
                 if result:
                     console.print(
-                        f"\n[bold green]Agent '{args.name}' executed successfully![/bold green]"
+                        f"\n[bold green]Agent '{agent_name}' executed successfully![/bold green]"
                     )
             elif args.command == "book-call":
                 webbrowser.open(
