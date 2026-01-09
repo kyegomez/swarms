@@ -227,6 +227,7 @@ This index organizes **100+ production-ready examples** from our [Swarms Example
 ### Industry Applications
 | Category | Example | Description |
 |----------|---------|-------------|
+| Customer Support | [Customer Support Swarm](../swarms/examples/customer_support_swarm.md) | Production-ready multi-agent customer support system with intelligent routing, specialized agents, and knowledge base integration |
 | Finance | [Accountant Team](https://github.com/The-Swarm-Corporation/swarms-examples/blob/main/examples/applications/demos/accountant_team/account_team2_example.py) | Multi-agent system for financial analysis, bookkeeping, and tax planning |
 | Marketing | [Ad Generation](https://github.com/The-Swarm-Corporation/swarms-examples/blob/main/examples/applications/demos/ad_gen/ad_gen_example.py) | Collaborative ad creation with copywriting and design agents |
 | Aerospace | [Space Traffic Control](https://github.com/The-Swarm-Corporation/swarms-examples/blob/main/examples/applications/demos/agentic_space_traffic_control/game.py) | Complex simulation of space traffic management with multiple coordinating agents |
