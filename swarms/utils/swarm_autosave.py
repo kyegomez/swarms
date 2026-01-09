@@ -66,6 +66,50 @@ def get_swarm_workspace_dir(
     return swarm_dir
 
 
+def get_swarm_workspace_dir_simple(swarm_name: str) -> str:
+    """
+    Get the workspace directory path for a swarm instance using simplified structure.
+
+    Creates a directory structure: workspace_dir/swarms/{swarm-name}/
+
+    This is the recommended structure for better organization and persistence.
+    Files are saved as:
+    - workspace_dir/swarms/{swarm-name}/config.json
+    - workspace_dir/swarms/{swarm-name}/state.json
+    - workspace_dir/swarms/{swarm-name}/metadata.json
+    - workspace_dir/swarms/{swarm-name}/logs/ (if applicable)
+    - workspace_dir/swarms/{swarm-name}/artifacts/ (if applicable)
+
+    Args:
+        swarm_name (str): The name of the swarm instance.
+
+    Returns:
+        str: The full path to the swarm's workspace directory, or None if workspace_dir is not set.
+    """
+    try:
+        workspace_dir = get_workspace_dir()
+    except ValueError:
+        logger.warning(
+            "WORKSPACE_DIR not set, cannot create swarm workspace directory"
+        )
+        return None
+
+    # Sanitize swarm name for filesystem compatibility
+    swarm_name = _sanitize_name(swarm_name)
+
+    # Create directory structure: workspace_dir/swarms/{swarm-name}/
+    swarm_dir = os.path.join(workspace_dir, "swarms", swarm_name)
+
+    # Create directory if it doesn't exist
+    os.makedirs(swarm_dir, exist_ok=True)
+
+    # Create subdirectories for better organization
+    os.makedirs(os.path.join(swarm_dir, "logs"), exist_ok=True)
+    os.makedirs(os.path.join(swarm_dir, "artifacts"), exist_ok=True)
+
+    return swarm_dir
+
+
 def _sanitize_name(name: str) -> str:
     """
     Sanitize a name for filesystem compatibility.
@@ -184,7 +228,30 @@ def save_swarm_state(
         }
 
         # Add conversation history if available
-        if hasattr(swarm_instance, "swarm") and hasattr(
+        # Try direct conversation attribute first
+        if hasattr(swarm_instance, "conversation"):
+            try:
+                conversation = swarm_instance.conversation
+                if hasattr(conversation, "to_dict"):
+                    state_dict["conversation"] = conversation.to_dict()
+                elif hasattr(conversation, "conversation_history"):
+                    state_dict["conversation"] = conversation.conversation_history
+            except Exception as e:
+                logger.debug(f"Could not save conversation: {e}")
+        # Try agent_rearrange conversation (for SequentialWorkflow)
+        elif hasattr(swarm_instance, "agent_rearrange") and hasattr(
+            swarm_instance.agent_rearrange, "conversation"
+        ):
+            try:
+                conversation = swarm_instance.agent_rearrange.conversation
+                if hasattr(conversation, "to_dict"):
+                    state_dict["conversation"] = conversation.to_dict()
+                elif hasattr(conversation, "conversation_history"):
+                    state_dict["conversation"] = conversation.conversation_history
+            except Exception as e:
+                logger.debug(f"Could not save conversation: {e}")
+        # Try nested swarm conversation
+        elif hasattr(swarm_instance, "swarm") and hasattr(
             swarm_instance.swarm, "conversation"
         ):
             try:
@@ -310,6 +377,7 @@ def autosave_swarm(
     save_metadata: bool = False,
     execution_result: Optional[Any] = None,
     additional_data: Optional[Dict[str, Any]] = None,
+    use_simple_structure: bool = True,
 ) -> Dict[str, Optional[str]]:
     """
     Automatically save swarm configuration, state, and metadata.
@@ -322,6 +390,9 @@ def autosave_swarm(
         save_metadata (bool): Whether to save metadata. Defaults to False.
         execution_result (Optional[Any]): The result of execution for metadata.
         additional_data (Optional[Dict[str, Any]]): Additional data to include.
+        use_simple_structure (bool): If True, use simple structure (workspace_dir/swarms/{swarm-name}/).
+                                     If False, use legacy structure with class-name and timestamp.
+                                     Defaults to True.
 
     Returns:
         Dict[str, Optional[str]]: Dictionary with paths to saved files.
@@ -330,11 +401,14 @@ def autosave_swarm(
 
     # Generate workspace directory if not provided
     if swarm_workspace_dir is None:
-        class_name = swarm_instance.__class__.__name__
         swarm_name = getattr(swarm_instance, "name", "unnamed")
-        swarm_workspace_dir = get_swarm_workspace_dir(
-            class_name, swarm_name, use_timestamp=True
-        )
+        if use_simple_structure:
+            swarm_workspace_dir = get_swarm_workspace_dir_simple(swarm_name)
+        else:
+            class_name = swarm_instance.__class__.__name__
+            swarm_workspace_dir = get_swarm_workspace_dir(
+                class_name, swarm_name, use_timestamp=True
+            )
 
     if not swarm_workspace_dir:
         logger.warning("Could not create swarm workspace directory")

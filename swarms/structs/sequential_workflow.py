@@ -9,6 +9,10 @@ from swarms.structs.agent import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.utils.swarm_autosave import (
+    get_swarm_workspace_dir_simple,
+    autosave_swarm,
+)
 
 logger = initialize_logger(log_folder="sequential_workflow")
 
@@ -49,6 +53,7 @@ class SequentialWorkflow:
         shared_memory_system: callable = None,
         multi_agent_collab_prompt: bool = False,
         team_awareness: bool = False,
+        autosave: bool = False,
         *args,
         **kwargs,
     ):
@@ -79,9 +84,15 @@ class SequentialWorkflow:
         self.shared_memory_system = shared_memory_system
         self.multi_agent_collab_prompt = multi_agent_collab_prompt
         self.team_awareness = team_awareness
+        self.autosave = autosave
 
         self.reliability_check()
         self.flow = self.sequential_flow()
+
+        # Setup autosave workspace directory
+        self.swarm_workspace_dir = None
+        if self.autosave:
+            self._setup_autosave()
 
         self.agent_rearrange = AgentRearrange(
             name=self.name,
@@ -91,6 +102,7 @@ class SequentialWorkflow:
             max_loops=self.max_loops,
             output_type=self.output_type,
             team_awareness=self.team_awareness,
+            autosave=False,  # We handle autosave at SequentialWorkflow level
         )
 
     def reliability_check(self):
@@ -120,6 +132,34 @@ class SequentialWorkflow:
         logger.info(
             f"Sequential Workflow Name: {self.name} is ready to run."
         )
+
+    def _setup_autosave(self):
+        """
+        Setup autosave workspace directory and save initial configuration.
+
+        Creates the workspace directory structure: workspace_dir/swarms/{swarm-name}/
+        and saves the initial configuration to config.json.
+        """
+        try:
+            swarm_name = self.name or "sequential-workflow"
+            self.swarm_workspace_dir = get_swarm_workspace_dir_simple(swarm_name)
+
+            if self.swarm_workspace_dir:
+                # Save initial configuration
+                autosave_swarm(
+                    self,
+                    self.swarm_workspace_dir,
+                    save_config=True,
+                    save_state=False,
+                    save_metadata=False,
+                    use_simple_structure=True,
+                )
+                logger.info(
+                    f"Autosave enabled. Swarm workspace: {self.swarm_workspace_dir}"
+                )
+        except Exception as e:
+            logger.warning(f"Failed to setup autosave for SequentialWorkflow: {e}")
+            self.swarm_workspace_dir = None
 
     def sequential_flow(self):
         """
@@ -185,10 +225,33 @@ class SequentialWorkflow:
         """
         try:
             # prompt = f"{MULTI_AGENT_COLLAB_PROMPT}\n\n{task}"
-            return self.agent_rearrange.run(
+            result = self.agent_rearrange.run(
                 task=task,
                 img=img,
             )
+
+            # Autosave after successful execution
+            if self.autosave and self.swarm_workspace_dir:
+                try:
+                    autosave_swarm(
+                        self,
+                        self.swarm_workspace_dir,
+                        save_config=False,  # Don't overwrite initial config
+                        save_state=True,
+                        save_metadata=True,
+                        execution_result=result,
+                        additional_data={
+                            "execution_metadata": {
+                                "task": task,
+                                "status": "completed",
+                            }
+                        },
+                        use_simple_structure=True,
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to autosave after execution: {e}")
+
+            return result
 
         except Exception as e:
             logger.error(
