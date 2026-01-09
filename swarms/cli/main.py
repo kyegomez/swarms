@@ -1732,6 +1732,11 @@ def main():
             type=str,
             help="MCP URL for the agent",
         )
+        parser.add_argument(
+            "--marketplace-prompt-id",
+            type=str,
+            help="Fetch system prompt from Swarms marketplace using this prompt ID",
+        )
         # HeavySwarm specific arguments
         parser.add_argument(
             "--loops-per-agent",
@@ -1909,12 +1914,11 @@ def main():
                     )
             elif args.command == "agent":
                 # Validate required arguments
-                required_args = [
-                    "name",
-                    "description",
-                    "system_prompt",
-                    "task",
-                ]
+                # system_prompt not required if marketplace_prompt_id provided
+                required_args = ["name", "description", "task"]
+                if not getattr(args, "marketplace_prompt_id", None):
+                    required_args.append("system_prompt")
+
                 missing_args = [
                     arg
                     for arg in required_args
@@ -1955,6 +1959,7 @@ def main():
                     "saved_state_path": "saved_state_path",
                     "user_name": "user_name",
                     "mcp_url": "mcp_url",
+                    "marketplace_prompt_id": "marketplace_prompt_id",
                 }
 
                 for cli_arg, agent_param in param_mapping.items():
