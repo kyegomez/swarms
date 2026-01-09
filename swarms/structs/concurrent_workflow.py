@@ -11,6 +11,10 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.swarm_autosave import (
+    get_swarm_workspace_dir_simple,
+    autosave_swarm,
+)
 
 logger = initialize_logger(log_folder="concurrent_workflow")
 
@@ -71,7 +75,7 @@ class ConcurrentWorkflow:
         name: str = "ConcurrentWorkflow",
         description: str = "Execution of multiple agents concurrently",
         agents: List[Union[Agent, Callable]] = None,
-        auto_save: bool = True,
+        autosave: bool = False,
         output_type: str = "dict-all-except-first",
         max_loops: int = 1,
         auto_generate_prompts: bool = False,
@@ -81,7 +85,7 @@ class ConcurrentWorkflow:
         self.name = name
         self.description = description
         self.agents = agents
-        self.auto_save = auto_save
+        self.autosave = autosave
         self.max_loops = max_loops
         self.auto_generate_prompts = auto_generate_prompts
         self.output_type = output_type
@@ -104,8 +108,41 @@ class ConcurrentWorkflow:
             name=f"concurrent_workflow_name_{name}_id_{self.id}_conversation"
         )
 
+        # Setup autosave workspace directory
+        self.swarm_workspace_dir = None
+        if self.autosave:
+            self._setup_autosave()
+
         if self.show_dashboard is True:
             self.agents = self.fix_agents()
+
+    def _setup_autosave(self):
+        """
+        Setup autosave workspace directory and save initial configuration.
+
+        Creates the workspace directory structure: workspace_dir/swarms/{swarm-name}/
+        and saves the initial configuration to config.json.
+        """
+        try:
+            swarm_name = self.name or "concurrent-workflow"
+            self.swarm_workspace_dir = get_swarm_workspace_dir_simple(swarm_name)
+
+            if self.swarm_workspace_dir:
+                # Save initial configuration
+                autosave_swarm(
+                    self,
+                    self.swarm_workspace_dir,
+                    save_config=True,
+                    save_state=False,
+                    save_metadata=False,
+                    use_simple_structure=True,
+                )
+                logger.info(
+                    f"Autosave enabled. Swarm workspace: {self.swarm_workspace_dir}"
+                )
+        except Exception as e:
+            logger.warning(f"Failed to setup autosave for ConcurrentWorkflow: {e}")
+            self.swarm_workspace_dir = None
 
     def fix_agents(self):
         """
@@ -554,6 +591,28 @@ class ConcurrentWorkflow:
                 result = self._run(
                     task, img, imgs, streaming_callback
                 )
+
+            # Autosave after successful execution
+            if self.autosave and self.swarm_workspace_dir:
+                try:
+                    autosave_swarm(
+                        self,
+                        self.swarm_workspace_dir,
+                        save_config=False,  # Don't overwrite initial config
+                        save_state=True,
+                        save_metadata=True,
+                        execution_result=result,
+                        additional_data={
+                            "execution_metadata": {
+                                "task": task,
+                                "status": "completed",
+                            }
+                        },
+                        use_simple_structure=True,
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to autosave after execution: {e}")
+
             return result
         finally:
             # Always cleanup resources

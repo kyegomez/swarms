@@ -28,6 +28,10 @@ from typing import Any, Callable, List, Optional, Union
 
 from loguru import logger
 from pydantic import BaseModel, Field
+from swarms.utils.swarm_autosave import (
+    get_swarm_workspace_dir_simple,
+    autosave_swarm,
+)
 from rich.console import Console
 from rich.layout import Layout
 from rich.live import Live
@@ -672,6 +676,7 @@ class HierarchicalSwarm:
         director_temperature: float = 0.7,
         director_top_p: float = 0.9,
         planning_enabled: bool = True,
+        autosave: bool = False,
         *args,
         **kwargs,
     ):
@@ -719,8 +724,42 @@ class HierarchicalSwarm:
         self.director_temperature = director_temperature
         self.director_top_p = director_top_p
         self.planning_enabled = planning_enabled
+        self.autosave = autosave
+
+        # Setup autosave workspace directory
+        self.swarm_workspace_dir = None
+        if self.autosave:
+            self._setup_autosave()
 
         self.initialize_swarm()
+
+    def _setup_autosave(self):
+        """
+        Setup autosave workspace directory and save initial configuration.
+
+        Creates the workspace directory structure: workspace_dir/swarms/{swarm-name}/
+        and saves the initial configuration to config.json.
+        """
+        try:
+            swarm_name = self.name or "hierarchical-swarm"
+            self.swarm_workspace_dir = get_swarm_workspace_dir_simple(swarm_name)
+
+            if self.swarm_workspace_dir:
+                # Save initial configuration
+                autosave_swarm(
+                    self,
+                    self.swarm_workspace_dir,
+                    save_config=True,
+                    save_state=False,
+                    save_metadata=False,
+                    use_simple_structure=True,
+                )
+                logger.info(
+                    f"Autosave enabled. Swarm workspace: {self.swarm_workspace_dir}"
+                )
+        except Exception as e:
+            logger.warning(f"Failed to setup autosave for HierarchicalSwarm: {e}")
+            self.swarm_workspace_dir = None
 
     def initialize_swarm(self):
         if self.interactive:
@@ -1167,9 +1206,32 @@ class HierarchicalSwarm:
                 self.dashboard.update_director_status("COMPLETED")
                 self.dashboard.stop()
 
-            return history_output_formatter(
+            result = history_output_formatter(
                 conversation=self.conversation, type=self.output_type
             )
+
+            # Autosave after successful execution
+            if self.autosave and self.swarm_workspace_dir:
+                try:
+                    autosave_swarm(
+                        self,
+                        self.swarm_workspace_dir,
+                        save_config=False,  # Don't overwrite initial config
+                        save_state=True,
+                        save_metadata=True,
+                        execution_result=result,
+                        additional_data={
+                            "execution_metadata": {
+                                "task": task,
+                                "status": "completed",
+                            }
+                        },
+                        use_simple_structure=True,
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to autosave after execution: {e}")
+
+            return result
 
         except Exception as e:
             # Stop dashboard on error
