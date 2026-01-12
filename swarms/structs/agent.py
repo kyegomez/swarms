@@ -640,6 +640,9 @@ class Agent:
         self.dynamic_context_window = dynamic_context_window
         self.show_tool_execution_output = show_tool_execution_output
         self.mcp_configs = mcp_configs
+
+        # Tool execution tracking for summary display
+        self._tool_execution_log: List[Dict[str, Any]] = []
         self.reasoning_effort = reasoning_effort
         self.drop_params = drop_params
         self.thinking_tokens = thinking_tokens
@@ -3162,6 +3165,10 @@ class Agent:
                     **kwargs,
                 )
 
+            # Print tool execution summary if any tools were executed
+            self.print_tool_summary()
+            self.clear_tool_execution_log()
+
             return output
 
         except (
@@ -3581,6 +3588,32 @@ class Agent:
         self, response: any, current_loop: Optional[int] = 0
     ):
         try:
+            # Try to extract MCP tool info for visualization
+            mcp_tool_name = "MCP Tool"
+            mcp_tool_args = {}
+            try:
+                if isinstance(response, dict):
+                    # Try to get tool name from response
+                    if "name" in response:
+                        mcp_tool_name = response.get("name", "MCP Tool")
+                    if "arguments" in response:
+                        mcp_tool_args = response.get("arguments", {})
+                    elif "input" in response:
+                        mcp_tool_args = response.get("input", {})
+                elif isinstance(response, list) and len(response) > 0:
+                    first_item = response[0]
+                    if hasattr(first_item, "name"):
+                        mcp_tool_name = first_item.name
+                    if hasattr(first_item, "input"):
+                        mcp_tool_args = first_item.input or {}
+            except Exception:
+                pass
+
+            # Display MCP tool call before execution
+            if self.print_on:
+                formatter.print_tool_call(mcp_tool_name, mcp_tool_args, "mcp")
+
+            start_time = time.time()
 
             if exists(self.mcp_url):
                 # Execute the tool call
@@ -3604,24 +3637,29 @@ class Agent:
                     urls=self.mcp_urls,
                     output_type="json",
                 )
-                # tool_response = format_data_structure(tool_response)
-
-                # print(f"Multiple MCP Tool Response: {tool_response}")
             else:
                 raise AgentMCPConnectionError(
                     "mcp_url must be either a string URL or MCPConnection object"
                 )
 
+            duration = time.time() - start_time
+
             # Get the text content from the tool response
             # execute_tool_call_simple returns a string directly, not an object with content attribute
-            text_content = f"MCP Tool Response: \n\n {json.dumps(tool_response, indent=2, sort_keys=True)}"
+            text_content = json.dumps(tool_response, indent=2, sort_keys=True)
 
+            # Track MCP tool execution for summary
+            self._tool_execution_log.append({
+                "tool_name": f"MCP:{mcp_tool_name}",
+                "status": "success",
+                "duration": duration,
+                "tokens": 0,
+                "result_preview": text_content[:100] if text_content else "",
+            })
+
+            # Display MCP tool result with colored visualization
             if self.print_on is True:
-                formatter.print_panel(
-                    content=text_content,
-                    title="MCP Tool Response: 🛠️",
-                    style="green",
-                )
+                formatter.print_mcp_tool_result(text_content, duration)
 
             # Add to the memory
             self.short_memory.add(
@@ -3759,6 +3797,64 @@ class Agent:
         available_models = self.get_available_models()
         return len(available_models) > 1
 
+    def _extract_tool_info(self, response: Any) -> list:
+        """
+        Extract tool names and arguments from the LLM response for visualization.
+
+        Args:
+            response: The LLM response containing tool calls
+
+        Returns:
+            List of tuples: [(tool_name, tool_args), ...]
+        """
+        tool_info = []
+        try:
+            # Handle list of tool call items
+            if isinstance(response, list):
+                for item in response:
+                    # Handle object with .function attribute
+                    if hasattr(item, "function"):
+                        name = getattr(item.function, "name", "unknown")
+                        args_str = getattr(item.function, "arguments", "{}")
+                        try:
+                            args = json.loads(args_str) if isinstance(args_str, str) else args_str
+                        except json.JSONDecodeError:
+                            args = {"raw": args_str}
+                        tool_info.append((name, args))
+                    # Handle dict with 'function' key
+                    elif isinstance(item, dict) and "function" in item:
+                        func_info = item.get("function", {})
+                        name = func_info.get("name", "unknown")
+                        args_str = func_info.get("arguments", "{}")
+                        try:
+                            args = json.loads(args_str) if isinstance(args_str, str) else args_str
+                        except json.JSONDecodeError:
+                            args = {"raw": args_str}
+                        tool_info.append((name, args))
+
+            # Handle dict response (OpenAI API format)
+            elif isinstance(response, dict):
+                # Check for choices[].message.tool_calls format
+                choices = response.get("choices", [])
+                for choice in choices:
+                    message = choice.get("message", {})
+                    tool_calls = message.get("tool_calls", [])
+                    for tc in tool_calls:
+                        if tc.get("type") == "function":
+                            func_info = tc.get("function", {})
+                            name = func_info.get("name", "unknown")
+                            args_str = func_info.get("arguments", "{}")
+                            try:
+                                args = json.loads(args_str) if isinstance(args_str, str) else args_str
+                            except json.JSONDecodeError:
+                                args = {"raw": args_str}
+                            tool_info.append((name, args))
+
+        except Exception as e:
+            logger.debug(f"Could not extract tool info: {e}")
+
+        return tool_info
+
     def execute_tools(self, response: any, loop_count: int):
         # Handle None response gracefully
         if response is None:
@@ -3768,37 +3864,89 @@ class Agent:
             )
             return
 
+        # Extract tool info for visualization
+        tool_info = self._extract_tool_info(response)
+
+        # Display tool calls before execution
+        if self.print_on and tool_info:
+            for tool_name, tool_args in tool_info:
+                formatter.print_tool_call(tool_name, tool_args, "function")
+
+        start_time = time.time()
+        status = "success"
         try:
             output = self.tool_struct.execute_function_calls_from_api_response(
                 response
             )
         except Exception as e:
             # Retry the tool call
-            output = self.tool_struct.execute_function_calls_from_api_response(
-                response
-            )
+            try:
+                output = self.tool_struct.execute_function_calls_from_api_response(
+                    response
+                )
+            except Exception as retry_e:
+                status = "error"
+                output = str(retry_e)
+                logger.error(f"Error executing tools: {retry_e}")
+                duration = time.time() - start_time
+                # Display error result
+                if self.print_on and tool_info:
+                    for tool_name, _ in tool_info:
+                        formatter.print_tool_result(
+                            tool_name, status, output, duration, True
+                        )
+                raise retry_e
 
             if output is None:
                 logger.error(f"Error executing tools: {e}")
                 raise e
+
+        duration = time.time() - start_time
 
         self.short_memory.add(
             role="Tool Executor",
             content=format_data_structure(output),
         )
 
-        if self.print_on is True:
-            if self.show_tool_execution_output is True:
+        # Track tool execution for summary
+        output_str = format_data_structure(output)
+        if tool_info:
+            for tool_name, _ in tool_info:
+                self._tool_execution_log.append({
+                    "tool_name": tool_name,
+                    "status": status,
+                    "duration": duration,
+                    "tokens": 0,  # Token tracking can be added later
+                    "result_preview": output_str[:100] if output_str else "",
+                })
 
-                self.pretty_print(
-                    f"Tool Executed Successfully [{time.strftime('%H:%M:%S')}] \n\nTool Output: {format_data_structure(output)}",
-                    loop_count,
-                )
+        # Display tool results with colored visualization
+        if self.print_on is True:
+            if tool_info:
+                for tool_name, _ in tool_info:
+                    formatter.print_tool_result(
+                        tool_name,
+                        status,
+                        output_str,
+                        duration,
+                        self.show_tool_execution_output,
+                    )
             else:
-                self.pretty_print(
-                    f"Tool Executed Successfully [{time.strftime('%H:%M:%S')}]",
-                    loop_count,
+                # Fallback if we couldn't extract tool info
+                formatter.print_tool_result(
+                    "Tool",
+                    status,
+                    output_str,
+                    duration,
+                    self.show_tool_execution_output,
                 )
+                self._tool_execution_log.append({
+                    "tool_name": "Tool",
+                    "status": status,
+                    "duration": duration,
+                    "tokens": 0,
+                    "result_preview": output_str[:100] if output_str else "",
+                })
 
         # Now run the LLM again without tools - create a temporary LLM instance
         # instead of modifying the cached one
@@ -3830,6 +3978,25 @@ class Agent:
 
     def list_output_types(self):
         return OutputType
+
+    def print_tool_summary(self) -> None:
+        """
+        Print a summary of all tool executions and clear the log.
+        This should be called at the end of a run to show all tool activity.
+        """
+        if self._tool_execution_log and self.print_on:
+            formatter.print_tool_execution_summary(
+                self._tool_execution_log,
+                title=f"Tool Execution Summary - {self.agent_name}",
+            )
+
+    def clear_tool_execution_log(self) -> None:
+        """Clear the tool execution log."""
+        self._tool_execution_log = []
+
+    def get_tool_execution_log(self) -> List[Dict[str, Any]]:
+        """Get the tool execution log."""
+        return self._tool_execution_log.copy()
 
     def run_multiple_images(
         self, task: str, imgs: List[str], *args, **kwargs

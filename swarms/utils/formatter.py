@@ -9,6 +9,8 @@ from rich.progress import (
     Progress,
     SpinnerColumn,
     TextColumn,
+    BarColumn,
+    TimeElapsedColumn,
 )
 from rich.table import Table
 from rich.text import Text
@@ -357,10 +359,10 @@ class Formatter:
         }.get(status.lower(), "white")
 
         status_symbol = {
-            "completed": "✓",
-            "pending": "○",
-            "error": "✗",
-        }.get(status.lower(), "•")
+            "completed": "[OK]",
+            "pending": "[..]",
+            "error": "[!!]",
+        }.get(status.lower(), "[--]")
 
         return Text(f"{status_symbol} {status}", style=status_style)
 
@@ -455,7 +457,7 @@ class Formatter:
         for category, items in data.items():
             table.add_row(category, "\n".join(items))
 
-        self.console.print(f"\n🔥 {title}:", style="bold yellow")
+        self.console.print(f"\n[*] {title}:", style="bold yellow")
         self.console.print(table)
 
     def print_progress(
@@ -556,7 +558,7 @@ class Formatter:
             """Create panel with proper text wrapping using Rich's built-in capabilities"""
             panel_title = f"[white]{title}[/white]"
             if is_complete:
-                panel_title += " [bold green]✅[/bold green]"
+                panel_title += " [bold green][DONE][/bold green]"
 
             # Add blinking cursor if still streaming
             display_text = Text.from_markup("")
@@ -741,7 +743,7 @@ class Formatter:
 
         # Create root tree
         tree = Tree(
-            f"[bold cyan]📋 Plan: {task_description}[/bold cyan]"
+            f"[bold cyan][PLAN] {task_description}[/bold cyan]"
         )
 
         # Priority color mapping
@@ -752,11 +754,12 @@ class Formatter:
             "low": "green",
         }
 
+        # ASCII priority indicators
         priority_icons = {
-            "critical": "🔴",
-            "high": "🟠",
-            "medium": "🟡",
-            "low": "🟢",
+            "critical": "[!!!]",
+            "high": "[!!]",
+            "medium": "[!]",
+            "low": "[.]",
         }
 
         # Create a mapping of step_id to tree nodes for dependency handling
@@ -770,7 +773,7 @@ class Formatter:
             dependencies = step.get("dependencies", [])
 
             priority_color = priority_colors.get(priority, "white")
-            priority_icon = priority_icons.get(priority, "○")
+            priority_icon = priority_icons.get(priority, "[-]")
 
             # Create step label with priority indicator
             step_label = (
@@ -825,7 +828,7 @@ class Formatter:
         """
         # Create the root tree with Director
         director_label = Text()
-        director_label.append("🎯 ", style="bold red")
+        director_label.append("[DIR] ", style="bold red")
         director_label.append(director_name, style="bold white")
         director_label.append(
             f" [{director_model_name}]", style="dim cyan"
@@ -861,7 +864,7 @@ class Formatter:
             elif hasattr(agent, "description"):
                 description = f" - {agent.description[:500]}"
 
-            agent_label.append("🤖 ", style="bold cyan")
+            agent_label.append("[AGT] ", style="bold cyan")
             agent_label.append(agent_name, style="bold cyan")
             if model_info:
                 agent_label.append(model_info, style="dim cyan")
@@ -879,6 +882,349 @@ class Formatter:
             padding=(1, 2),
         )
 
+        self.console.print(panel)
+
+    def print_tool_call(
+        self,
+        tool_name: str,
+        tool_args: Dict[str, Any],
+        tool_type: str = "function",
+    ) -> None:
+        """
+        Display a tool call with structured formatting and colors.
+
+        Args:
+            tool_name: Name of the tool being called
+            tool_args: Dictionary of arguments passed to the tool
+            tool_type: Type of tool - "function" or "mcp"
+        """
+        import time as time_module
+
+        timestamp = time_module.strftime("%H:%M:%S")
+
+        # Format arguments
+        if tool_args:
+            args_lines = []
+            for key, value in tool_args.items():
+                args_lines.append(f"  {key}: {value}")
+            args_str = "\n".join(args_lines)
+        else:
+            args_str = "  (no arguments)"
+
+        # Choose style based on tool type
+        if tool_type == "mcp":
+            indicator = "[>]"
+            style = "cyan"
+            title = f"MCP Tool Call [{timestamp}]"
+        else:
+            indicator = "[*]"
+            style = "yellow"
+            title = f"Tool Call [{timestamp}]"
+
+        content = Text()
+        content.append(f"{indicator} ", style=f"bold {style}")
+        content.append(f"{tool_name}\n", style="bold white")
+        content.append(args_str, style="dim white")
+
+        panel = Panel(
+            content,
+            title=f"[bold {style}]{title}[/bold {style}]",
+            border_style=style,
+            padding=(0, 1),
+        )
+        self.console.print(panel)
+
+    def print_tool_result(
+        self,
+        tool_name: str,
+        status: str,
+        output: Any,
+        duration: float,
+        show_output: bool = True,
+    ) -> None:
+        """
+        Display a tool execution result with status and timing.
+
+        Args:
+            tool_name: Name of the tool that was executed
+            status: Execution status - "success" or "error"
+            output: The output from the tool execution
+            duration: Execution duration in seconds
+            show_output: Whether to display the full output
+        """
+        import time as time_module
+
+        timestamp = time_module.strftime("%H:%M:%S")
+
+        # Choose style and indicator based on status
+        if status == "success":
+            indicator = "[+]"
+            style = "green"
+        else:
+            indicator = "[x]"
+            style = "red"
+
+        content = Text()
+        content.append(f"{indicator} ", style=f"bold {style}")
+        content.append(f"{tool_name}", style="bold white")
+        content.append(f" ({duration:.2f}s)", style="dim white")
+
+        if show_output and output:
+            output_str = str(output)
+            # Truncate if too long
+            if len(output_str) > 500:
+                output_str = output_str[:500] + "..."
+            content.append(f"\n\nOutput:\n", style="bold white")
+            content.append(output_str, style="white")
+
+        panel = Panel(
+            content,
+            title=f"[bold {style}]Tool Result [{timestamp}][/bold {style}]",
+            border_style=style,
+            padding=(0, 1),
+        )
+        self.console.print(panel)
+
+    def print_mcp_tool_result(
+        self,
+        output: Any,
+        duration: float,
+    ) -> None:
+        """
+        Display an MCP tool execution result.
+
+        Args:
+            output: The output from the MCP tool execution
+            duration: Execution duration in seconds
+        """
+        import time as time_module
+
+        timestamp = time_module.strftime("%H:%M:%S")
+
+        content = Text()
+        content.append("[>] ", style="bold cyan")
+        content.append("MCP Tool", style="bold white")
+        content.append(f" ({duration:.2f}s)", style="dim white")
+
+        output_str = str(output)
+        if len(output_str) > 1000:
+            output_str = output_str[:1000] + "..."
+        content.append(f"\n\n{output_str}", style="white")
+
+        panel = Panel(
+            content,
+            title=f"[bold cyan]MCP Tool Result [{timestamp}][/bold cyan]",
+            border_style="cyan",
+            padding=(0, 1),
+        )
+        self.console.print(panel)
+
+    def print_tool_execution_summary(
+        self,
+        executions: List[Dict[str, Any]],
+        title: str = "Tool Execution Summary",
+    ) -> None:
+        """
+        Display a summary table of all tool executions.
+
+        Args:
+            executions: List of execution records, each containing:
+                - tool_name: Name of the tool
+                - status: "success" or "error"
+                - duration: Execution time in seconds
+                - tokens: Optional token count
+                - result_preview: Optional preview of result
+            title: Title for the summary table
+        """
+        if not executions:
+            return
+
+        table = Table(
+            show_header=True,
+            header_style="bold magenta",
+            border_style="bright_blue",
+            title=f"[bold cyan]{title}[/bold cyan]",
+            title_justify="left",
+        )
+
+        table.add_column("Tool", style="cyan", width=25)
+        table.add_column("Status", style="white", width=10, justify="center")
+        table.add_column("Duration", style="white", width=12, justify="right")
+        table.add_column("Tokens", style="white", width=10, justify="right")
+        table.add_column("Result", style="dim white", width=40, overflow="ellipsis")
+
+        total_duration = 0.0
+        total_tokens = 0
+        success_count = 0
+        error_count = 0
+
+        for exec_info in executions:
+            tool_name = exec_info.get("tool_name", "Unknown")
+            status = exec_info.get("status", "unknown")
+            duration = exec_info.get("duration", 0.0)
+            tokens = exec_info.get("tokens", 0)
+            result_preview = exec_info.get("result_preview", "")
+
+            total_duration += duration
+            total_tokens += tokens if tokens else 0
+
+            # Status indicator
+            if status == "success":
+                status_text = Text("[OK]", style="bold green")
+                success_count += 1
+            elif status == "error":
+                status_text = Text("[!!]", style="bold red")
+                error_count += 1
+            else:
+                status_text = Text("[--]", style="dim white")
+
+            # Truncate result preview
+            if result_preview and len(str(result_preview)) > 40:
+                result_preview = str(result_preview)[:37] + "..."
+
+            table.add_row(
+                tool_name,
+                status_text,
+                f"{duration:.2f}s",
+                str(tokens) if tokens else "-",
+                str(result_preview) if result_preview else "-",
+            )
+
+        # Add summary row
+        table.add_section()
+        summary_status = Text(
+            f"[OK]:{success_count} [!!]:{error_count}",
+            style="bold white",
+        )
+        table.add_row(
+            Text("TOTAL", style="bold white"),
+            summary_status,
+            Text(f"{total_duration:.2f}s", style="bold white"),
+            Text(str(total_tokens) if total_tokens else "-", style="bold white"),
+            Text(f"{len(executions)} executions", style="bold white"),
+        )
+
+        self.console.print(table)
+
+    def create_tool_progress(
+        self,
+        tool_name: str,
+        tool_type: str = "function",
+    ) -> Progress:
+        """
+        Create a progress indicator for tool execution.
+
+        Args:
+            tool_name: Name of the tool being executed
+            tool_type: Type of tool - "function" or "mcp"
+
+        Returns:
+            Progress: A Rich Progress instance configured for tool execution
+        """
+        if tool_type == "mcp":
+            style = "cyan"
+            prefix = "[>]"
+        else:
+            style = "yellow"
+            prefix = "[*]"
+
+        progress = Progress(
+            SpinnerColumn(style=style),
+            TextColumn(f"[bold {style}]{prefix}[/bold {style}]"),
+            TextColumn(f"[bold white]{tool_name}[/bold white]"),
+            BarColumn(bar_width=20, style=style, complete_style=f"bold {style}"),
+            TimeElapsedColumn(),
+            console=self.console,
+            transient=True,
+        )
+        return progress
+
+    def print_tool_with_progress(
+        self,
+        tool_name: str,
+        tool_fn: Callable,
+        tool_args: Dict[str, Any],
+        tool_type: str = "function",
+    ) -> Any:
+        """
+        Execute a tool with a progress indicator.
+
+        Args:
+            tool_name: Name of the tool
+            tool_fn: The tool function to execute
+            tool_args: Arguments to pass to the tool
+            tool_type: Type of tool - "function" or "mcp"
+
+        Returns:
+            The result of the tool execution
+        """
+        import time as time_module
+
+        timestamp = time_module.strftime("%H:%M:%S")
+
+        # Display tool call info
+        self.print_tool_call(tool_name, tool_args, tool_type)
+
+        # Create and run progress
+        progress = self.create_tool_progress(tool_name, tool_type)
+
+        start_time = time.time()
+        status = "success"
+        result = None
+
+        with progress:
+            task = progress.add_task("Executing...", total=None)
+            try:
+                result = tool_fn(**tool_args)
+                progress.update(task, completed=True)
+            except Exception as e:
+                status = "error"
+                result = str(e)
+                progress.update(task, completed=True)
+
+        duration = time.time() - start_time
+
+        # Display result
+        self.print_tool_result(tool_name, status, result, duration, True)
+
+        return result
+
+    def print_token_usage(
+        self,
+        prompt_tokens: int,
+        completion_tokens: int,
+        total_tokens: int,
+        model: str = "",
+    ) -> None:
+        """
+        Display token usage metrics.
+
+        Args:
+            prompt_tokens: Number of tokens in the prompt
+            completion_tokens: Number of tokens in the completion
+            total_tokens: Total tokens used
+            model: Optional model name
+        """
+        import time as time_module
+
+        timestamp = time_module.strftime("%H:%M:%S")
+
+        content = Text()
+        content.append("[i] ", style="bold blue")
+        content.append("Token Usage", style="bold white")
+        if model:
+            content.append(f" ({model})", style="dim white")
+        content.append("\n\n", style="white")
+        content.append(f"  Prompt:     {prompt_tokens:,}\n", style="white")
+        content.append(f"  Completion: {completion_tokens:,}\n", style="white")
+        content.append(f"  Total:      {total_tokens:,}", style="bold white")
+
+        panel = Panel(
+            content,
+            title=f"[bold blue]Token Metrics [{timestamp}][/bold blue]",
+            border_style="blue",
+            padding=(0, 1),
+        )
         self.console.print(panel)
 
 
