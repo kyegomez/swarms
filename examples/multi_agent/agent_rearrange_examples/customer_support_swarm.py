@@ -25,6 +25,12 @@ knowledge_collection = chroma_client.get_or_create_collection(
     metadata={"description": "TechCorp product information and support knowledge"}
 )
 
+# Create collection for conversation history (query caching)
+conversation_history = chroma_client.get_or_create_collection(
+    name="conversation_history",
+    metadata={"description": "Past customer queries and responses for caching"}
+)
+
 # Company knowledge base entries to store in vector DB
 KNOWLEDGE_ENTRIES = [
     {
@@ -98,6 +104,77 @@ def query_knowledge_base(query: str, n_results: int = 3) -> str:
     return knowledge
 
 
+def check_cached_response(query: str, similarity_threshold: float = 0.85) -> tuple[bool, str]:
+    """
+    Check if a similar query was already answered.
+
+    Args:
+        query: The customer query
+        similarity_threshold: Minimum similarity score to use cached response (0-1)
+
+    Returns:
+        Tuple of (found, response) where found is True if cache hit
+    """
+    try:
+        results = conversation_history.query(
+            query_texts=[query],
+            n_results=1
+        )
+
+        if not results["documents"][0]:
+            return False, ""
+
+        # Check similarity score (ChromaDB returns distances, lower is more similar)
+        # We need to check if there's a metadata field with similarity or use distance
+        distances = results.get("distances", [[1.0]])[0]
+
+        if distances and distances[0] is not None:
+            # Convert distance to similarity (1 - distance for cosine)
+            # ChromaDB uses L2 distance by default, so we approximate
+            similarity = 1 - (distances[0] / 2)  # Normalize to 0-1 range
+
+            if similarity >= similarity_threshold:
+                cached_response = results["metadatas"][0][0].get("response", "")
+                if cached_response:
+                    return True, cached_response
+
+        return False, ""
+
+    except Exception as e:
+        print(f"Cache check error: {e}")
+        return False, ""
+
+
+def save_to_cache(query: str, response: str):
+    """
+    Save a query-response pair to the conversation history cache.
+
+    Args:
+        query: The customer query
+        response: The agent's response
+    """
+    try:
+        import time
+        import hashlib
+
+        # Create unique ID from query
+        query_id = hashlib.md5(query.encode()).hexdigest()
+
+        # Add to conversation history
+        conversation_history.add(
+            ids=[f"conv_{query_id}_{int(time.time())}"],
+            documents=[query],
+            metadatas=[{
+                "response": response,
+                "timestamp": time.time(),
+                "query_length": len(query)
+            }]
+        )
+
+    except Exception as e:
+        print(f"Cache save error: {e}")
+
+
 # Create specialized support agents that use the vector database
 def create_support_agents():
     """Create a team of specialized customer support agents with vector DB access"""
@@ -146,21 +223,44 @@ Format your response clearly with the solution and any next steps.
     return [triage_agent, support_agent]
 
 
-def handle_support_query(customer_query: str, agents: list) -> str:
-    """Handle a customer support query using vector DB + agents"""
+def handle_support_query(customer_query: str, agents: list, use_cache: bool = True,
+                         cache_threshold: float = 0.85) -> tuple[str, bool]:
+    """
+    Handle a customer support query using vector DB + agents with caching.
 
-    # Step 1: Query vector database for relevant knowledge
+    Args:
+        customer_query: The customer's question
+        agents: List of support agents
+        use_cache: Whether to check cache for similar queries
+        cache_threshold: Similarity threshold for cache hits (0-1, default 0.85)
+
+    Returns:
+        Tuple of (response, was_cached)
+    """
+
+    # Step 1: Check if we have a cached response for a similar query
+    if use_cache:
+        print("\n💾 Checking cache for similar queries...")
+        cache_hit, cached_response = check_cached_response(customer_query, cache_threshold)
+
+        if cache_hit:
+            print("✅ Found cached response! (Saving tokens 🎉)")
+            return cached_response, True
+
+        print("❌ No similar query found in cache. Processing with agents...")
+
+    # Step 2: Query vector database for relevant knowledge
     print("\n🔍 Searching knowledge base...")
     relevant_knowledge = query_knowledge_base(customer_query, n_results=3)
 
-    # Step 2: Combine query with knowledge for agent processing
+    # Step 3: Combine query with knowledge for agent processing
     enriched_query = f"""Customer Query: {customer_query}
 
 {relevant_knowledge}
 
 Based on the customer query and knowledge base information above, provide an appropriate response."""
 
-    # Step 3: Run through agent workflow
+    # Step 4: Run through agent workflow
     print("🤖 Processing with support agents...\n")
 
     workflow = SequentialWorkflow(
@@ -171,7 +271,14 @@ Based on the customer query and knowledge base information above, provide an app
     )
 
     result = workflow.run(enriched_query)
-    return result
+
+    # Step 5: Save to cache for future queries
+    if use_cache:
+        print("\n💾 Saving response to cache for future queries...")
+        save_to_cache(customer_query, result)
+        print("✅ Cached successfully!")
+
+    return result, False
 
 
 def interactive_console():
@@ -214,7 +321,20 @@ def interactive_console():
 
         # Process support query
         try:
-            handle_support_query(user_input, agents)
+            response, was_cached = handle_support_query(user_input, agents, use_cache=True)
+
+            # Print response with appropriate header
+            print("\n" + "=" * 80)
+            if was_cached:
+                print("🤖 SUPPORT AGENT (from cache):")
+            else:
+                print("🤖 SUPPORT AGENT:")
+            print("=" * 80)
+            print(f"\n{response}\n")
+            print("=" * 80)
+
+            if was_cached:
+                print("\n💡 This response was retrieved from cache. No tokens used! 🎉")
 
         except Exception as e:
             print(f"\n❌ Error processing query: {str(e)}")
@@ -241,7 +361,20 @@ def demo_mode():
         print(f"{'='*80}")
         print(f"\n👤 Customer: {query}\n")
 
-        handle_support_query(query, agents)
+        response, was_cached = handle_support_query(query, agents, use_cache=True)
+
+        # Print response
+        print("\n" + "=" * 80)
+        if was_cached:
+            print("🤖 SUPPORT AGENT (from cache):")
+        else:
+            print("🤖 SUPPORT AGENT:")
+        print("=" * 80)
+        print(f"\n{response}\n")
+        print("=" * 80)
+
+        if was_cached:
+            print("\n💡 This response was retrieved from cache. No tokens used! 🎉")
 
         if i < len(demo_queries):
             input("\nPress Enter to continue to next query...")
