@@ -38,7 +38,9 @@ The `Agent` class establishes a conversational loop with a language model, allow
 | **Sentiment Analysis**                   | Evaluates the sentiment of generated responses.                                                  |
 | **Output Filtering and Cleaning**        | Ensures generated responses meet specific criteria.                                              |
 | **Asynchronous and Concurrent Execution**| Supports efficient parallelization of tasks.                                                     |
-| **Planning and Reasoning**               | Implements techniques like algorithm of thoughts for enhanced decision-making.                   |
+| **Planning and Reasoning**               | Implements planning functionality for enhanced decision-making.                   |
+| **Autonomous Planning and Execution**    | When `max_loops="auto"`, automatically creates plans, executes subtasks, and generates summaries. Includes built-in tools for file operations, user communication, and workspace management. |
+| **Agent Handoffs and Task Delegation**   | Intelligently routes tasks to specialized agents based on capabilities and task requirements.      |
 
 
 
@@ -50,7 +52,6 @@ The `Agent` class establishes a conversational loop with a language model, allow
 |-----------|------|-------------|
 | `id` | `Optional[str]` | Unique identifier for the agent instance. |
 | `llm` | `Optional[Any]` | Language model instance used by the agent. |
-| `template` | `Optional[str]` | Template used for formatting responses. |
 | `max_loops` | `Optional[Union[int, str]]` | Maximum number of loops the agent can run. |
 | `stopping_condition` | `Optional[Callable[[str], bool]]` | Callable function determining when to stop looping. |
 | `loop_interval` | `Optional[int]` | Interval (in seconds) between loops. |
@@ -73,43 +74,18 @@ The `Agent` class establishes a conversational loop with a language model, allow
 | `context_length` | `Optional[int]` | Maximum length of the context window (in tokens) for the LLM. |
 | `transforms` | `Optional[Union[TransformConfig, dict]]` | Message transformation configuration for handling context limits. |
 | `user_name` | `Optional[str]` | Name used to represent the user in the conversation. |
-| `self_healing_enabled` | `Optional[bool]` | Boolean indicating whether to attempt self-healing in case of errors. |
-| `code_interpreter` | `Optional[bool]` | Boolean indicating whether to interpret and execute code snippets. |
 | `multi_modal` | `Optional[bool]` | Boolean indicating whether to support multimodal inputs. |
-| `pdf_path` | `Optional[str]` | File path of a PDF document to be ingested. |
-| `list_of_pdf` | `Optional[str]` | List of file paths for PDF documents to be ingested. |
 | `tokenizer` | `Optional[Any]` | Instance of a tokenizer used for token counting and management. |
 | `long_term_memory` | `Optional[Union[Callable, Any]]` | Instance of a `BaseVectorDatabase` implementation for long-term memory management. |
 | `fallback_model_name` | `Optional[str]` | The fallback model name to use if primary model fails. |
 | `fallback_models` | `Optional[List[str]]` | List of model names to try in order. First model is primary, rest are fallbacks. |
 | `preset_stopping_token` | `Optional[bool]` | Boolean indicating whether to use a preset stopping token. |
-| `traceback` | `Optional[Any]` | Object used for traceback handling. |
-| `traceback_handlers` | `Optional[Any]` | List of traceback handlers. |
 | `streaming_on` | `Optional[bool]` | Boolean indicating whether to stream responses. |
 | `stream` | `Optional[bool]` | Boolean indicating whether to enable detailed token-by-token streaming with metadata. |
 | `streaming_callback` | `Optional[Callable[[str], None]]` | Callback function to receive streaming tokens in real-time. |
-| `docs` | `List[str]` | List of document paths or contents to be ingested. |
-| `docs_folder` | `Optional[str]` | Path to a folder containing documents to be ingested. |
 | `verbose` | `Optional[bool]` | Boolean indicating whether to print verbose output. |
-| `parser` | `Optional[Callable]` | Callable function used for parsing input data. |
-| `best_of_n` | `Optional[int]` | Integer indicating the number of best responses to generate. |
-| `callback` | `Optional[Callable]` | Callable function to be called after each agent loop. |
-| `metadata` | `Optional[Dict[str, Any]]` | Dictionary containing metadata for the agent. |
-| `callbacks` | `Optional[List[Callable]]` | List of callable functions to be called during execution. |
-| `handoffs` | `Optional[Union[Sequence[Callable], Any]]` | List of Agent instances that can be delegated tasks to. When provided, the agent will use a MultiAgentRouter to intelligently route tasks to the most appropriate specialized agent. |
-| `capabilities` | `Optional[List[str]]` | List of strings describing the agent's capabilities. |
-| `mode` | `Literal["interactive", "fast", "standard"]` | Execution mode: "interactive" for real-time interaction, "fast" for optimized performance, "standard" for default behavior. |
-| `publish_to_marketplace` | `bool` | Boolean indicating whether to publish the agent's prompt to the Swarms marketplace. |
-| `marketplace_prompt_id` | `Optional[str]` | Unique UUID identifier of a prompt from the Swarms marketplace. When provided, the agent will automatically fetch and load the prompt as the system prompt. |
-| `search_algorithm` | `Optional[Callable]` | Callable function for long-term memory retrieval. |
-| `logs_to_filename` | `Optional[str]` | File path for logging agent activities. |
-| `evaluator` | `Optional[Callable]` | Callable function for evaluating the agent's responses. |
 | `stopping_func` | `Optional[Callable]` | Callable function used as a stopping condition. |
-| `custom_loop_condition` | `Optional[Callable]` | Callable function used as a custom loop condition. |
-| `sentiment_threshold` | `Optional[float]` | Float value representing the sentiment threshold for evaluating responses. |
 | `custom_exit_command` | `Optional[str]` | String representing a custom command for exiting the agent's loop. |
-| `sentiment_analyzer` | `Optional[Callable]` | Callable function for sentiment analysis on outputs. |
-| `limit_tokens_from_string` | `Optional[Callable]` | Callable function for limiting the number of tokens in a string. |
 | `custom_tools_prompt` | `Optional[Callable]` | Callable function for generating a custom prompt for tool usage. |
 | `tool_schema` | `ToolUsageType` | Data structure representing the schema for the agent's tools. |
 | `output_type` | `OutputType` | Type representing the expected output type of responses. |
@@ -119,38 +95,23 @@ The `Agent` class establishes a conversational loop with a language model, allow
 | `list_base_models` | `Optional[List[BaseModel]]` | List of base models used for generating tool schemas. |
 | `metadata_output_type` | `str` | String representing the output type for metadata. |
 | `state_save_file_type` | `str` | String representing the file type for saving the agent's state. |
-| `chain_of_thoughts` | `bool` | Boolean indicating whether to use the chain of thoughts technique. |
-| `algorithm_of_thoughts` | `bool` | Boolean indicating whether to use the algorithm of thoughts technique. |
-| `tree_of_thoughts` | `bool` | Boolean indicating whether to use the tree of thoughts technique. |
 | `tool_choice` | `str` | String representing the method for tool selection. |
-| `execute_tool` | `bool` | Boolean indicating whether to execute tools. |
 | `rules` | `str` | String representing the rules for the agent's behavior. |
-| `planning` | `Optional[str]` | Boolean indicating whether to perform planning. |
 | `planning_prompt` | `Optional[str]` | String representing the prompt for planning. |
-| `device` | `str` | String representing the device on which the agent should run. |
 | `custom_planning_prompt` | `str` | String representing a custom prompt for planning. |
 | `memory_chunk_size` | `int` | Integer representing the maximum size of memory chunks for long-term memory retrieval. |
-| `agent_ops_on` | `bool` | Boolean indicating whether agent operations should be enabled. |
-| `return_step_meta` | `Optional[bool]` | Boolean indicating whether to return JSON of all steps and additional metadata. |
-| `time_created` | `Optional[str]` | Float representing the time the agent was created. |
+| `tool_system_prompt` | `str` | String representing the system prompt for tools |
+| `max_tokens` | `int` | Integer representing the maximum number of tokens |
+| `temperature` | `float` | Float representing the temperature for the LLM |
+| `timeout` | `Optional[int]` | Integer representing the timeout for operations in seconds |
 | `tags` | `Optional[List[str]]` | Optional list of strings for tagging the agent. |
 | `use_cases` | `Optional[List[Dict[str, str]]]` | Optional list of dictionaries describing use cases for the agent. |
-| `step_pool` | `List[Step]` | List of Step objects representing the agent's execution steps. |
-| `print_every_step` | `Optional[bool]` | Boolean indicating whether to print every step of execution. |
-| `agent_output` | `ManySteps` | ManySteps object containing the agent's output and metadata. |
-| `data_memory` | `Optional[Callable]` | Optional callable for data memory operations. |
-| `load_yaml_path` | `str` | String representing the path to a YAML file for loading configurations. |
 | `auto_generate_prompt` | `bool` | Boolean indicating whether to automatically generate prompts. |
 | `rag_every_loop` | `bool` | Boolean indicating whether to query RAG database for context on every loop |
 | `plan_enabled` | `bool` | Boolean indicating whether planning functionality is enabled |
 | `artifacts_on` | `bool` | Boolean indicating whether to save artifacts from agent execution |
 | `artifacts_output_path` | `str` | File path where artifacts should be saved |
 | `artifacts_file_extension` | `str` | File extension to use for saved artifacts |
-| `all_cores` | `bool` | Boolean indicating whether to use all CPU cores |
-| `device_id` | `int` | ID of the GPU device to use if running on GPU |
-| `scheduled_run_date` | `Optional[datetime]` | Optional datetime for scheduling future agent runs |
-| `do_not_use_cluster_ops` | `bool` | Boolean indicating whether to avoid cluster operations |
-| `all_gpus` | `bool` | Boolean indicating whether to use all available GPUs |
 | `model_name` | `str` | String representing the name of the model to use |
 | `llm_args` | `dict` | Dictionary containing additional arguments for the LLM |
 | `load_state_path` | `str` | String representing the path to load state from |
@@ -165,29 +126,23 @@ The `Agent` class establishes a conversational loop with a language model, allow
 | `mcp_config` | `Optional[MCPConnection]` | MCPConnection object containing MCP configuration |
 | `mcp_configs` | `Optional[MultipleMCPConnections]` | MultipleMCPConnections object for managing multiple MCP server connections |
 | `top_p` | `Optional[float]` | Float representing the top-p sampling parameter |
-| `conversation_schema` | `Optional[ConversationSchema]` | ConversationSchema object for conversation formatting |
 | `llm_base_url` | `Optional[str]` | String representing the base URL for the LLM API |
 | `llm_api_key` | `Optional[str]` | String representing the API key for the LLM |
 | `tool_call_summary` | `bool` | Boolean indicating whether to summarize tool calls |
-| `output_raw_json_from_tool_call` | `bool` | Boolean indicating whether to output raw JSON from tool calls |
 | `summarize_multiple_images` | `bool` | Boolean indicating whether to summarize multiple image outputs |
 | `tool_retry_attempts` | `int` | Integer representing the number of retry attempts for tool execution |
 | `reasoning_prompt_on` | `bool` | Boolean indicating whether to enable reasoning prompts |
 | `reasoning_effort` | `Optional[str]` | Reasoning effort level for reasoning-enabled models (e.g., "low", "medium", "high") |
 | `reasoning_enabled` | `bool` | Boolean indicating whether to enable reasoning capabilities |
 | `thinking_tokens` | `Optional[int]` | Maximum number of thinking tokens for reasoning models |
-| `drop_params` | `bool` | Boolean indicating whether to drop parameters during processing |
 | `dynamic_context_window` | `bool` | Boolean indicating whether to dynamically adjust context window |
 | `show_tool_execution_output` | `bool` | Boolean indicating whether to show tool execution output |
-| `created_at` | `float` | Float representing the timestamp when the agent was created |
 | `workspace_dir` | `str` | String representing the workspace directory for the agent |
-| `timeout` | `Optional[int]` | Integer representing the timeout for operations in seconds |
-| `temperature` | `float` | Float representing the temperature for the LLM |
-| `max_tokens` | `int` | Integer representing the maximum number of tokens |
-| `frequency_penalty` | `float` | Float representing the frequency penalty |
-| `presence_penalty` | `float` | Float representing the presence penalty |
-| `tool_system_prompt` | `str` | String representing the system prompt for tools |
-| `log_directory` | `str` | String representing the directory for logs |
+| `handoffs` | `Optional[Union[Sequence[Callable], Any]]` | List of Agent instances that can be delegated tasks to. When provided, the agent will use a MultiAgentRouter to intelligently route tasks to the most appropriate specialized agent. |
+| `capabilities` | `Optional[List[str]]` | List of strings describing the agent's capabilities. |
+| `mode` | `Literal["interactive", "fast", "standard"]` | Execution mode: "interactive" for real-time interaction, "fast" for optimized performance, "standard" for default behavior. |
+| `publish_to_marketplace` | `bool` | Boolean indicating whether to publish the agent's prompt to the Swarms marketplace. |
+| `marketplace_prompt_id` | `Optional[str]` | Unique UUID identifier of a prompt from the Swarms marketplace. When provided, the agent will automatically fetch and load the prompt as the system prompt. |
 
 ## `Agent` Methods
 
@@ -467,65 +422,48 @@ The `Agent` class supports intelligent task delegation through the `handoffs` pa
 #### Basic Handoff Example
 
 ```python
-from swarms import Agent
+from swarms.structs.agent import Agent
 
 # Create specialized agents
-risk_metrics_agent = Agent(
-    agent_name="Risk-Metrics-Calculator",
-    agent_description="Calculates key risk metrics like VaR, Sharpe ratio, and volatility",
-    system_prompt="""You are a risk metrics specialist. Calculate and explain:
-    - Value at Risk (VaR)
-    - Sharpe ratio
-    - Volatility
-    - Maximum drawdown
-    - Beta coefficient
-    
-    Provide clear, numerical results with brief explanations.""",
-    max_loops=1,
+research_agent = Agent(
+    agent_name="ResearchAgent",
+    agent_description="Specializes in researching topics and providing detailed, factual information",
     model_name="gpt-4o-mini",
-    dynamic_temperature_enabled=True,
-)
-
-market_risk_agent = Agent(
-    agent_name="Market-Risk-Monitor",
-    agent_description="Monitors market conditions and identifies risk factors",
-    system_prompt="""You are a market risk monitor. Identify and assess:
-    - Market volatility trends
-    - Economic risk factors
-    - Geopolitical risks
-    - Interest rate risks
-    - Currency risks
-    
-    Provide current risk alerts and trends.""",
     max_loops=1,
-    dynamic_temperature_enabled=True,
+    system_prompt="You are a research specialist. Provide detailed, well-researched information about any topic, citing sources when possible.",
 )
 
-# Create main agent with handoffs
-portfolio_risk_agent = Agent(
-    agent_name="Portfolio-Risk-Analyzer",
-    agent_description="Analyzes portfolio diversification and concentration risk",
-    system_prompt="""You are a portfolio risk analyst. Focus on:
-    - Portfolio diversification analysis
-    - Concentration risk assessment
-    - Correlation analysis
-    - Sector/asset allocation risk
-    - Liquidity risk evaluation
-    
-    Provide actionable insights for risk reduction.""",
+code_agent = Agent(
+    agent_name="CodeExpertAgent",
+    agent_description="Expert in writing, reviewing, and explaining code across multiple programming languages",
+    model_name="gpt-4o-mini",
     max_loops=1,
-    dynamic_temperature_enabled=True,
-    handoffs=[
-        risk_metrics_agent,
-        market_risk_agent,
-    ],
+    system_prompt="You are a coding expert. Write, review, and explain code with a focus on best practices and clean code principles.",
 )
 
-# Run task - will be automatically delegated to appropriate agent
-response = portfolio_risk_agent.run(
-    "Calculate VaR and Sharpe ratio for a portfolio with 15% annual return and 20% volatility"
+writing_agent = Agent(
+    agent_name="WritingAgent",
+    agent_description="Skilled in creative and technical writing, content creation, and editing",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+    system_prompt="You are a writing specialist. Create, edit, and improve written content while maintaining appropriate tone and style.",
 )
-print(response)
+
+# Create a coordinator agent with handoffs enabled
+coordinator = Agent(
+    agent_name="CoordinatorAgent",
+    agent_description="Coordinates tasks and delegates to specialized agents",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+    handoffs=[research_agent, code_agent, writing_agent],
+    system_prompt="You are a coordinator agent. Analyze tasks and delegate them to the most appropriate specialized agent using the handoff_task tool. You can delegate to multiple agents if needed.",
+    output_type="all",
+)
+
+# Run task - will be automatically delegated to appropriate agent(s)
+task = "Call all the agents available to you and ask them how they are doing"
+result = coordinator.run(task=task)
+print(result)
 ```
 
 
@@ -539,72 +477,7 @@ print(response)
 
 ### Interactive Mode
 
-To enable interactive mode, set the `interactive` parameter to `True` when initializing the `Agent`:
-
-```python
-agent = Agent(
-    agent_name="Interactive-Agent",
-    model_name="claude-sonnet-4-20250514",
-    interactive=True,
-    system_prompt="You are an interactive agent. Engage in a conversation with the user.",
-)
-
-# Run the agent in interactive mode
-agent.run("Let's start a conversation")
-```
-
-### Undo Functionality
-
-```python
-# Feature 2: Undo functionality
-response = agent.run("Another task")
-print(f"Response: {response}")
-previous_state, message = agent.undo_last()
-print(message)
-```
-
-### Response Filtering
-
-```python
-# Feature 3: Response filtering
-agent.add_response_filter("report")
-response = agent.filtered_run("Generate a report on finance")
-print(response)
-```
-
-### Saving and Loading State
-
-```python
-# Save the agent state
-agent.save_state('saved_flow.json')
-
-# Load the agent state
-agent = Agent(llm=llm_instance, max_loops=5)
-agent.load('saved_flow.json')
-agent.run("Continue with the task")
-```
-
-### Async and Concurrent Execution
-
-```python
-# Run a task concurrently
-response = await agent.run_concurrent("Concurrent task")
-print(response)
-
-# Run multiple tasks concurrently
-tasks = [
-    {"task": "Task 1"},
-    {"task": "Task 2", "img": "path/to/image.jpg"},
-    {"task": "Task 3", "custom_param": 42}
-]
-responses = agent.bulk_run(tasks)
-print(responses)
-
-# Run multiple tasks in batch mode (new method)
-task_list = ["Analyze data", "Generate report", "Create summary"]
-batch_responses = agent.run_batched(task_list)
-print(f"Completed {len(batch_responses)} tasks in batch mode")
-```
+To enable interactive mode, set the `interactive` parameter to `True` when initializing the `Agent`. See the Examples section for a complete code example.
 
 
 ### Batch Processing with `run_batched`
@@ -730,79 +603,48 @@ print(agent.to_toml())
 
 ## Examples
 
-### Auto Generate Prompt + CPU Execution
+### Tool Integration Examples
 
+#### Basic Tool Example
 
-```python
-
-import os
-from swarms import Agent
-
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
-
-# Initialize the agent with automated prompt engineering enabled
-agent = Agent(
-    agent_name="Financial-Analysis-Agent",
-    system_prompt=None,  # System prompt is dynamically generated
-    model_name="gpt-4.1",
-    agent_description=None,
-    llm=model,
-    max_loops=1,
-    autosave=True,
-    dashboard=False,
-    verbose=False,
-    dynamic_temperature_enabled=True,
-    saved_state_path="finance_agent.json",
-    user_name="Human:",
-    return_step_meta=False,
-    output_type="string",
-    streaming_on=False,
-    auto_generate_prompt=True,  # Enable automated prompt engineering
-)
-
-# Run the agent with a task description and specify the device
-agent.run(
-    "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria",
-)
-
-# Print the dynamically generated system prompt
-print(agent.system_prompt)
-
-```
-
-### Token-by-Token Streaming
+Create a custom tool function and integrate it with an agent. The agent can then use the tool to execute terminal commands, extending its capabilities beyond text generation.
 
 ```python
 from swarms import Agent
+import subprocess
 
-# Initialize agent with detailed streaming
+def terminal(code: str):
+    """
+    Run code in the terminal.
+
+    Args:
+        code (str): The code to run in the terminal.
+
+    Returns:
+        str: The output of the code.
+    """
+    out = subprocess.run(code, shell=True, capture_output=True, text=True).stdout
+    return str(out)
+
+# Initialize the agent with a tool
 agent = Agent(
-    model_name="gpt-4.1",
-    max_loops=1,
-    stream=True,  # Enable detailed token-by-token streaming
+    agent_name="Terminal-Agent",
+    model_name="claude-sonnet-4-20250514",
+    tools=[terminal],
+    system_prompt="You are an agent that can execute terminal commands. Use the tools provided to assist the user.",
 )
 
-# Run with detailed streaming - each token shows metadata
-agent.run("Tell me a short story about a robot learning to paint.")
+# Run the agent
+response = agent.run("List the contents of the current directory")
+print(response)
 ```
 
-## Agent Structured Outputs
+#### Agent Structured Outputs with Tools
 
-- Create a structured output schema for the agent [List[Dict]]
-
-- Input in the `tools_list_dictionary` parameter
-
-- Output is a dictionary
-
-- Use the `str_to_dict` function to convert the output to a dictionary
+Use structured tool schemas (OpenAI function calling format) with an agent. The agent receives tool definitions as dictionaries and can call them to retrieve structured data, such as stock prices. The output can be converted from string to dictionary format for easier processing.
 
 ```python
-
 from dotenv import load_dotenv
-
 from swarms import Agent
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
@@ -844,7 +686,6 @@ tools = [
     }
 ]
 
-
 # Initialize the agent
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
@@ -859,24 +700,469 @@ out = agent.run(
 )
 
 print(out)
-
 print(type(out))
-
 print(str_to_dict(out))
-
 print(type(str_to_dict(out)))
+```
 
+#### Long-term Memory with Tools
 
+Integrate a vector database (ChromaDB) with an agent for long-term memory management. The agent can store and retrieve information from the vector database, enabling it to access previously learned knowledge and provide more contextually relevant responses.
+
+```python
+from swarms import Agent
+from swarms_memory import ChromaDB
+
+# Initialize ChromaDB
+chromadb = ChromaDB(
+    metric="cosine",
+    output_dir="finance_agent_rag",
+)
+
+# Initialize the agent with long-term memory
+agent = Agent(
+    agent_name="Financial-Analysis-Agent",
+    model_name="claude-sonnet-4-20250514",
+    long_term_memory=chromadb,
+    system_prompt="You are a financial analysis agent with access to long-term memory.",
+)
+
+# Run the agent
+response = agent.run("What are the components of a startup's stock incentive equity plan?")
+print(response)
+```
+
+### Handoffs Examples
+
+#### Basic Handoff Example
+
+Set up a multi-agent system with task delegation. Three specialized agents (ResearchAgent, CodeExpertAgent, and WritingAgent) are created, and a coordinator agent intelligently routes tasks to the most appropriate specialized agent(s) based on the task requirements. The coordinator can delegate to multiple agents if needed.
+
+```python
+from swarms.structs.agent import Agent
+
+# Create specialized agents
+research_agent = Agent(
+    agent_name="ResearchAgent",
+    agent_description="Specializes in researching topics and providing detailed, factual information",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+    system_prompt="You are a research specialist. Provide detailed, well-researched information about any topic, citing sources when possible.",
+)
+
+code_agent = Agent(
+    agent_name="CodeExpertAgent",
+    agent_description="Expert in writing, reviewing, and explaining code across multiple programming languages",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+    system_prompt="You are a coding expert. Write, review, and explain code with a focus on best practices and clean code principles.",
+)
+
+writing_agent = Agent(
+    agent_name="WritingAgent",
+    agent_description="Skilled in creative and technical writing, content creation, and editing",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+    system_prompt="You are a writing specialist. Create, edit, and improve written content while maintaining appropriate tone and style.",
+)
+
+# Create a coordinator agent with handoffs enabled
+coordinator = Agent(
+    agent_name="CoordinatorAgent",
+    agent_description="Coordinates tasks and delegates to specialized agents",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+    handoffs=[research_agent, code_agent, writing_agent],
+    system_prompt="You are a coordinator agent. Analyze tasks and delegate them to the most appropriate specialized agent using the handoff_task tool. You can delegate to multiple agents if needed.",
+    output_type="all",
+)
+
+# Run task - will be automatically delegated to appropriate agent(s)
+task = "Call all the agents available to you and ask them how they are doing"
+result = coordinator.run(task=task)
+print(result)
+```
+
+### Autonomous Agent Examples
+
+#### Autonomous Agent with Automatic Planning
+
+The autonomous agent mode uses `max_loops="auto"` to enable automatic planning and execution. The agent creates a structured plan with subtasks, executes them sequentially with dependency management, and generates a comprehensive summary. Ideal for complex tasks that require multi-step reasoning and planning, such as generating comprehensive financial reports.
+
+The Agent supports autonomous operation with automatic planning when `max_loops="auto"` is set. This enables the agent to create a plan, execute subtasks, and generate a comprehensive summary automatically.
+
+```python
+from swarms.structs.agent import Agent
+
+# Initialize the agent with autonomous mode
+agent = Agent(
+    agent_name="Quantitative-Trading-Agent",
+    agent_description="Advanced quantitative trading and algorithmic analysis agent",
+    model_name="gpt-4.1",
+    dynamic_temperature_enabled=True,
+    max_loops="auto",  # Enable autonomous planning and execution
+    dynamic_context_window=True,
+    top_p=None,
+    output_type="all",
+)
+
+# Define a complex task that requires planning
+quant_report_prompt = (
+    "You are an expert in quantitative trading and financial analysis. "
+    "Please generate a comprehensive, data-driven report on the top 5 publicly traded energy stocks as of today. "
+    "For each stock, include the following: \n"
+    "- Company name and ticker\n"
+    "- Brief business overview\n"
+    "- Key financial metrics (such as market cap, P/E ratio, recent performance)\n"
+    "- Recent news or notable events influencing the stock\n"
+    "- A concise analysis of why it is currently considered a top energy stock\n"
+    "Present your findings in a clear, organized format suitable for professional review."
+    "Only create 3 subtasks in your plan, make it very simple"
+)
+
+# Run the agent - it will automatically:
+# 1. Create a plan with subtasks
+# 2. Execute each subtask
+# 3. Generate a comprehensive summary
+out = agent.run(quant_report_prompt)
+print(out)
+```
+
+**Key Features of Autonomous Mode:**
+- **Automatic Planning**: The agent creates a structured plan with subtasks
+- **Subtask Execution**: Each subtask is executed sequentially with dependency management
+- **Comprehensive Summary**: Final summary includes all subtask results and insights
+- **Error Handling**: Built-in retry logic and error recovery for robust execution
+- **Built-in Tools**: Access to file operations, user communication, and workspace management tools
+
+#### Available Tools in Autonomous Mode
+
+When `max_loops="auto"` and `interactive=False`, the agent has access to specialized tools for task execution:
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `respond_to_user` | Send messages to the user with types (info, question, warning, error, success) | `message` (str), `message_type` (str, optional) |
+| `create_file` | Create a new file with specified content | `file_path` (str), `content` (str) |
+| `update_file` | Update an existing file with new content | `file_path` (str), `content` (str), `mode` (str: "replace" or "append") |
+| `read_file` | Read the contents of a file | `file_path` (str) |
+| `list_directory` | List files and directories in a specified path | `directory_path` (str, optional) |
+| `delete_file` | Delete a file (with safety checks) | `file_path` (str) |
+
+**File Operations and Workspace Directory:**
+
+All file operations use the agent's workspace directory structure:
+- **Workspace Location**: Set via `WORKSPACE_DIR` environment variable (defaults to `agent_workspace` if not set)
+- **Agent-Specific Directory**: Each agent gets its own workspace at `workspace_dir/agents/{agent-name}-{uuid}/`
+- **Relative Paths**: File paths provided to tools are relative to the agent's workspace directory
+- **Absolute Paths**: You can also use absolute paths for files outside the workspace
+
+**Example: Using Autonomous Tools**
+
+```python
+from swarms.structs.agent import Agent
+
+# Initialize autonomous agent
+agent = Agent(
+    agent_name="File-Management-Agent",
+    model_name="gpt-4.1",
+    max_loops="auto",
+    interactive=False,
+)
+
+# The agent can now use built-in tools during execution
+task = """
+Create a comprehensive report on renewable energy trends.
+1. Research current trends
+2. Create a markdown file with your findings
+3. Update the file with additional insights
+4. Read the file to verify content
+5. Send a message to the user when complete
+"""
+
+response = agent.run(task)
+# The agent will automatically:
+# - Create files in workspace_dir/agents/file-management-agent-{uuid}/
+# - Use create_file, update_file, read_file tools as needed
+# - Communicate with respond_to_user tool
+```
+
+### Loop Examples
+
+#### Multiple Loops Example
+
+Configure an agent with multiple reasoning loops. By setting `max_loops=3` and enabling `reasoning_prompt_on`, the agent performs iterative reasoning, allowing it to refine its thinking over multiple iterations. Useful for complex problems that require step-by-step analysis.
+
+```python
+from swarms import Agent
+
+# Agent with multiple loops for iterative reasoning
+agent = Agent(
+    agent_name="Iterative-Reasoning-Agent",
+    model_name="gpt-4.1",
+    max_loops=3,  # Run 3 reasoning loops
+    reasoning_prompt_on=True,
+    system_prompt="You are an agent that reasons through problems step by step.",
+)
+
+response = agent.run("Solve this complex problem step by step: [problem description]")
+print(response)
+```
+
+#### Dynamic Loops Example
+
+Dynamic loop configuration allows the agent to automatically determine the optimal number of reasoning loops based on task complexity. By setting `dynamic_loops=True`, the agent adapts its reasoning depth, using more loops for complex tasks and fewer for simple ones.
+
+```python
+from swarms import Agent
+
+# Agent with dynamic loops that adjust based on task complexity
+agent = Agent(
+    agent_name="Dynamic-Agent",
+    model_name="gpt-4.1",
+    dynamic_loops=True,  # Automatically determines number of loops
+    system_prompt="You are an adaptive agent that adjusts your reasoning depth based on task complexity.",
+)
+
+response = agent.run("Analyze this complex scenario and provide insights")
+print(response)
+```
+
+### Simple Examples
+
+#### Basic Agent Usage
+
+The simplest way to use an agent with minimal configuration. Only requires a model name and max_loops parameter. Perfect for getting started quickly with basic text generation tasks.
+
+```python
+from swarms import Agent
+
+# Simple agent with minimal configuration
+agent = Agent(
+    model_name="gpt-4o-mini",
+    max_loops=1,
+)
+
+response = agent.run("What is the capital of France?")
+print(response)
+```
+
+#### Interactive Mode
+
+Enable interactive mode for real-time conversation with the agent. When `interactive=True`, the agent prompts for user input after each response, creating a conversational loop. Useful for interactive applications, chatbots, or when you need to guide the agent through a multi-turn conversation.
+
+```python
+from swarms import Agent
+
+# Agent with interactive mode enabled
+agent = Agent(
+    agent_name="Interactive-Agent",
+    model_name="claude-sonnet-4-20250514",
+    interactive=True,
+    system_prompt="You are an interactive agent. Engage in a conversation with the user.",
+)
+
+# Run the agent in interactive mode
+agent.run("Let's start a conversation")
+```
+
+#### Auto Generate Prompt Example
+
+Automatic prompt generation creates optimized system prompts without manual engineering. When `auto_generate_prompt=True` and no system prompt is provided, the agent automatically generates a contextually appropriate prompt based on the agent name, description, and task. This feature uses AI to create prompts, reducing the need for manual prompt engineering.
+
+```python
+import os
+from swarms import Agent
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Initialize the agent with automated prompt engineering enabled
+agent = Agent(
+    agent_name="Financial-Analysis-Agent",
+    system_prompt=None,  # System prompt is dynamically generated
+    model_name="gpt-4.1",
+    agent_description=None,
+    max_loops=1,
+    autosave=True,
+    dashboard=False,
+    verbose=False,
+    dynamic_temperature_enabled=True,
+    saved_state_path="finance_agent.json",
+    user_name="Human:",
+    output_type="string",
+    streaming_on=False,
+    auto_generate_prompt=True,  # Enable automated prompt engineering
+)
+
+# Run the agent with a task description
+agent.run(
+    "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria",
+)
+
+# Print the dynamically generated system prompt
+print(agent.system_prompt)
+```
+
+#### Token-by-Token Streaming
+
+Enable detailed token-by-token streaming with metadata. When `stream=True`, the agent streams each token as it's generated, providing real-time feedback and detailed metadata including token count, model information, citations, and usage statistics. Useful for building interactive UIs or monitoring agent behavior in real-time.
+
+```python
+from swarms import Agent
+
+# Initialize agent with detailed streaming
+agent = Agent(
+    model_name="gpt-4.1",
+    max_loops=1,
+    stream=True,  # Enable detailed token-by-token streaming
+)
+
+# Run with detailed streaming - each token shows metadata
+agent.run("Tell me a short story about a robot learning to paint.")
+```
+
+#### Undo Functionality
+
+Revert the agent's last response and restore the previous conversation state. Useful for correcting mistakes, exploring alternative responses, or implementing undo/redo functionality in applications.
+
+```python
+# Undo functionality
+response = agent.run("Another task")
+print(f"Response: {response}")
+previous_state, message = agent.undo_last()
+print(message)
+```
+
+#### Response Filtering
+
+Filter specific words or phrases from agent responses. By adding response filters, you can automatically replace or remove sensitive content, profanity, or unwanted terms from the agent's output. Useful for content moderation, compliance, or customizing output formatting.
+
+```python
+# Response filtering
+agent.add_response_filter("report")
+response = agent.filtered_run("Generate a report on finance")
+print(response)
+```
+
+#### Saving and Loading State
+
+Save and restore agent state to persist conversations and configurations across sessions. The agent can save its current state to a JSON file and load it later to continue from where it left off. Essential for long-running tasks, debugging, or maintaining conversation continuity.
+
+```python
+# Save the agent state
+agent.save_state('saved_flow.json')
+
+# Load the agent state
+agent = Agent(model_name="gpt-4o-mini", max_loops=5)
+agent.load('saved_flow.json')
+agent.run("Continue with the task")
+```
+
+#### Autosave Functionality
+
+The agent supports automatic saving of configuration and state when `autosave=True`. This ensures your work is preserved even if the agent encounters errors or is interrupted.
+
+**How Autosave Works:**
+
+- **Configuration Saving**: At each loop step, the agent saves its configuration to `workspace_dir/agents/{agent-name}-{uuid}/config.json`
+- **State Saving**: Full agent state is saved on errors, interruptions, or when explicitly called
+- **Workspace Structure**: Each agent gets its own isolated workspace directory
+- **Atomic Writes**: Files are written atomically (via temporary files) to prevent corruption
+- **Metadata Tracking**: Each save includes metadata (timestamp, loop count, agent ID)
+
+**Autosave Configuration:**
+
+```python
+from swarms import Agent
+
+# Enable autosave
+agent = Agent(
+    model_name="gpt-4o-mini",
+    agent_name="autosave-demo",
+    max_loops=5,
+    autosave=True,  # Enable automatic saving
+    verbose=True,
+)
+
+# Run task - configuration is saved at each step
+response = agent.run("Complete a complex multi-step task")
+
+# Access the agent's workspace directory
+workspace = agent._get_agent_workspace_dir()
+print(f"Files saved to: {workspace}")
+
+# Files created:
+# - config.json: Agent configuration at each step
+# - {agent_name}_state.json: Full agent state
+```
+
+**Autosave File Structure:**
+
+```
+workspace_dir/
+└── agents/
+    └── {agent-name}-{uuid}/
+        ├── config.json          # Configuration saved at each step
+        ├── {agent_name}_state.json  # Full state on save()
+        └── [other files created by agent tools]
+```
+
+**Workspace Directory Configuration:**
+
+The workspace directory is controlled by the `WORKSPACE_DIR` environment variable:
+
+```python
+import os
+
+# Set workspace directory via environment variable
+os.environ["WORKSPACE_DIR"] = "/path/to/my/workspace"
+
+# Or it defaults to 'agent_workspace' in current directory
+agent = Agent(
+    model_name="gpt-4o-mini",
+    autosave=True,
+)
+
+# Each agent gets its own subdirectory
+# workspace_dir/agents/{agent-name}-{uuid}/
+```
+
+**Note:** The `workspace_dir` parameter in Agent initialization is ignored. The workspace is always read from the `WORKSPACE_DIR` environment variable, ensuring consistent file organization across all agents.
+
+#### Async and Concurrent Execution
+
+Run tasks asynchronously or in parallel for improved performance. The agent supports concurrent execution of multiple tasks, batch processing, and async operations. Ideal for processing large datasets, handling multiple requests simultaneously, or optimizing throughput in production environments.
+
+```python
+# Run a task concurrently
+response = await agent.run_concurrent("Concurrent task")
+print(response)
+
+# Run multiple tasks concurrently
+tasks = [
+    {"task": "Task 1"},
+    {"task": "Task 2", "img": "path/to/image.jpg"},
+    {"task": "Task 3", "custom_param": 42}
+]
+responses = agent.bulk_run(tasks)
+print(responses)
+
+# Run multiple tasks in batch mode
+task_list = ["Analyze data", "Generate report", "Create summary"]
+batch_responses = agent.run_batched(task_list)
+print(f"Completed {len(batch_responses)} tasks in batch mode")
 ```
 
 ## Comprehensive Agent Configuration Examples
 
 ### Advanced Agent with All New Features
 
+A comprehensive example showcasing an agent configured with multiple advanced features including memory management, reasoning, MCP integration, artifacts, and batch processing. This demonstrates how to combine various capabilities for production-ready applications.
+
 ```python
 from swarms import Agent
 from swarms_memory import ChromaDB
-from datetime import datetime, timedelta
 
 # Initialize advanced agent with comprehensive configuration
 agent = Agent(
@@ -890,13 +1176,6 @@ agent = Agent(
     dynamic_loops=True,
     interactive=False,
     dashboard=True,
-    
-    # Device and Resource Management
-    device="gpu",
-    device_id=0,
-    all_cores=True,
-    all_gpus=False,
-    do_not_use_cluster_ops=True,
     
     # Memory and Context Management
     context_length=100000,
@@ -928,8 +1207,6 @@ agent = Agent(
     temperature=0.3,
     max_tokens=8000,
     top_p=0.95,
-    frequency_penalty=0.1,
-    presence_penalty=0.1,
     
     # MCP Integration
     mcp_url="http://localhost:8000",
@@ -940,18 +1217,13 @@ agent = Agent(
     retry_attempts=3,
     retry_interval=2,
     
-    # Scheduling
-    scheduled_run_date=datetime.now() + timedelta(hours=1),
-    
     # Metadata and Organization
     tags=["analysis", "multi-modal", "advanced"],
     use_cases=[{"name": "Data Analysis", "description": "Process and analyze complex datasets"}],
     
     # Verbosity and Logging
     verbose=True,
-    print_on=True,
-    print_every_step=True,
-    log_directory="./logs"
+    print_on=True
 )
 
 # Run with multiple images and streaming
@@ -983,6 +1255,8 @@ validated_response = agent.run(
 
 ### MCP-Enabled Agent Example
 
+Connect an agent to Model Context Protocol (MCP) servers to access external tools and resources. The agent can connect to single or multiple MCP servers, enabling integration with external APIs, databases, and services through a standardized protocol.
+
 ```python
 from swarms import Agent
 from swarms.schemas.mcp_schemas import MCPConnection
@@ -1000,8 +1274,7 @@ mcp_agent = Agent(
     system_prompt="You are an agent with access to external tools via MCP.",
     mcp_config=mcp_config,
     mcp_urls=["http://localhost:8000", "http://localhost:8001"],
-    tool_call_summary=True,
-    output_raw_json_from_tool_call=True
+    tool_call_summary=True
 )
 
 # Run with MCP tools
@@ -1009,6 +1282,8 @@ response = mcp_agent.run("Use the available tools to analyze the current system 
 ```
 
 ### Multi-Image Processing Agent
+
+Process multiple images concurrently and automatically summarize the results. The agent can analyze multiple images in parallel and generate a comprehensive summary of findings across all images, making it ideal for batch image analysis tasks.
 
 ```python
 # Initialize agent optimized for image processing
@@ -1032,6 +1307,209 @@ analysis = image_agent.run(
 # The agent will automatically summarize results if summarize_multiple_images=True
 print(f"Analysis complete: {len(analysis)} images processed")
 ```
+
+## Simple Examples for New Features
+
+### Fallback Models
+
+Configure multiple models as fallbacks for improved reliability. If the primary model fails, the agent automatically switches to the next model in the fallback list. Ensures task completion even when individual models encounter errors or rate limits.
+
+```python
+from swarms import Agent
+
+# Agent with fallback models - automatically switches if primary fails
+agent = Agent(
+    model_name="gpt-4o",
+    fallback_models=["gpt-4o-mini", "gpt-3.5-turbo"],
+    max_loops=1
+)
+
+# Will try gpt-4o first, then fallback to gpt-4o-mini if it fails
+response = agent.run("Analyze this data")
+```
+
+### Marketplace Prompt Loading
+
+Load pre-built prompts directly from the Swarms marketplace using a prompt ID. The agent automatically fetches and applies the prompt as its system prompt, enabling one-line prompt loading without manual configuration. Requires the SWARMS_API_KEY environment variable.
+
+```python
+from swarms import Agent
+
+# Load a prompt from the Swarms marketplace
+agent = Agent(
+    model_name="gpt-4o-mini",
+    marketplace_prompt_id="550e8400-e29b-41d4-a716-446655440000",
+    max_loops=1
+)
+
+# Agent automatically loads the system prompt from marketplace
+response = agent.run("Execute the marketplace prompt task")
+```
+
+### Reasoning-Enabled Models
+
+Configure agents to use reasoning-enabled models like o1-preview. These models perform internal reasoning before generating responses, making them ideal for complex mathematical problems, logical puzzles, and tasks requiring deep analytical thinking. Control reasoning effort and thinking token limits.
+
+```python
+from swarms import Agent
+
+# Agent with reasoning capabilities
+agent = Agent(
+    model_name="o1-preview",
+    reasoning_enabled=True,
+    reasoning_effort="high",
+    thinking_tokens=10000,
+    max_loops=1
+)
+
+response = agent.run("Solve this complex mathematical problem step by step")
+```
+
+### Execution Modes
+
+Choose from three execution modes to optimize agent behavior: "fast" for performance (reduces verbosity), "interactive" for real-time conversations, and "standard" for default balanced behavior. Each mode automatically configures print and verbose settings appropriately.
+
+```python
+from swarms import Agent
+
+# Fast mode - optimized for performance (reduces verbosity)
+fast_agent = Agent(
+    model_name="gpt-4o-mini",
+    mode="fast",  # Disables print_on and verbose automatically
+    max_loops=1
+)
+
+# Interactive mode - for real-time conversations
+interactive_agent = Agent(
+    model_name="gpt-4o-mini",
+    mode="interactive",
+    max_loops=5
+)
+
+# Standard mode - default behavior
+standard_agent = Agent(
+    model_name="gpt-4o-mini",
+    mode="standard",
+    max_loops=1
+)
+```
+
+### Streaming Callback
+
+Provide a custom callback function to receive streaming tokens in real-time. The callback is invoked for each token as it's generated, enabling custom UI updates, progress tracking, or integration with streaming interfaces. Useful for building responsive applications that display results as they're generated.
+
+```python
+from swarms import Agent
+
+# Define a custom streaming callback
+def my_streaming_callback(token: str):
+    print(token, end="", flush=True)
+
+# Agent with streaming callback
+agent = Agent(
+    model_name="gpt-4o-mini",
+    streaming_callback=my_streaming_callback,
+    max_loops=1
+)
+
+# Tokens will be streamed to the callback in real-time
+response = agent.run("Tell me a story")
+```
+
+### Multiple MCP Connections
+
+Connect to multiple MCP servers simultaneously to access tools and resources from different sources. The agent can use tools from all connected servers, enabling integration with diverse external services and APIs through a unified interface.
+
+```python
+from swarms import Agent
+from swarms.schemas.mcp_schemas import MultipleMCPConnections
+
+# Configure multiple MCP servers
+mcp_configs = MultipleMCPConnections(
+    connections=[
+        {"server_path": "http://localhost:8000", "server_name": "server1"},
+        {"server_path": "http://localhost:8001", "server_name": "server2"}
+    ]
+)
+
+agent = Agent(
+    model_name="gpt-4o-mini",
+    mcp_configs=mcp_configs,
+    max_loops=1
+)
+
+response = agent.run("Use tools from both MCP servers")
+```
+
+### Message Transforms for Context Management
+
+Automatically manage long conversation histories by transforming messages when context limits are approached. Configure strategies like truncating oldest messages, summarizing, or chunking to maintain conversation quality while staying within token limits. Essential for long-running conversations or document processing.
+
+```python
+from swarms import Agent
+from swarms.structs.transforms import TransformConfig
+
+# Configure message transforms to handle long contexts
+transforms = TransformConfig(
+    max_tokens=8000,
+    strategy="truncate_oldest"
+)
+
+agent = Agent(
+    model_name="gpt-4o-mini",
+    transforms=transforms,
+    context_length=100000,
+    max_loops=1
+)
+
+# Agent will automatically manage context length
+response = agent.run("Process this very long conversation history")
+```
+
+### Agent with Capabilities
+
+Define agent capabilities as metadata for better task routing and documentation. Capabilities help other agents or routing systems understand what an agent can do, enabling intelligent task delegation and agent discovery. Useful for multi-agent systems and marketplace listings.
+
+```python
+from swarms import Agent
+
+# Agent with defined capabilities for better routing
+agent = Agent(
+    model_name="gpt-4o-mini",
+    agent_name="Data-Analysis-Agent",
+    capabilities=["data_analysis", "statistics", "visualization"],
+    max_loops=1
+)
+
+response = agent.run("Analyze this dataset")
+```
+
+### Publishing to Marketplace
+
+Publish your agent's prompt to the Swarms marketplace for sharing and reuse. When `publish_to_marketplace=True`, the agent automatically publishes its system prompt along with metadata (name, description, tags, capabilities, use cases) on initialization. Requires use_cases to be provided and SWARMS_API_KEY environment variable.
+
+```python
+from swarms import Agent
+
+# Agent configured to publish prompt to marketplace
+agent = Agent(
+    model_name="gpt-4o-mini",
+    agent_name="Financial-Advisor",
+    agent_description="Expert financial advisor agent",
+    system_prompt="You are an expert financial advisor...",
+    tags=["finance", "advisor"],
+    capabilities=["financial_planning", "investment_advice"],
+    use_cases=[
+        {"title": "Retirement Planning", "description": "Help users plan for retirement"},
+        {"title": "Investment Analysis", "description": "Analyze investment opportunities"}
+    ],
+    publish_to_marketplace=True,
+    max_loops=1
+)
+
+# Prompt will be published to marketplace on initialization
+```
+
 
 ## New Features and Parameters
 
@@ -1071,15 +1549,6 @@ The `run` method now supports several new parameters for advanced functionality:
 | `tool_retry_attempts`    | Configure retry behavior for tool execution                              |
 | `summarize_multiple_images` | Automatically summarize results from multiple image processing         |
 
-### Device and Resource Management
-
-| Parameter                | Description                                                              |
-|--------------------------|--------------------------------------------------------------------------|
-| `device`                 | Specify CPU or GPU execution (`"cpu"` or `"gpu"`)                      |
-| `device_id`              | Specify which GPU device to use                                          |
-| `all_cores`              | Enable use of all available CPU cores                                    |
-| `all_gpus`               | Enable use of all available GPUs                                         |
-| `do_not_use_cluster_ops` | Control cluster operation usage                                          |
 
 ### Advanced Memory and Context
 
@@ -1097,7 +1566,6 @@ The `run` method now supports several new parameters for advanced functionality:
 | `artifacts_on`           | Enable saving artifacts from agent execution                             |
 | `artifacts_output_path`  | Specify where to save artifacts                                          |
 | `artifacts_file_extension` | Control artifact file format                                            |
-| `output_raw_json_from_tool_call` | Control tool call output format                                    |
 
 ### Enhanced Tool Management
 
@@ -1116,8 +1584,6 @@ The `run` method now supports several new parameters for advanced functionality:
 | `llm_base_url`           | Specify custom LLM API endpoint                                          |
 | `llm_api_key`            | Provide LLM API key directly                                             |
 | `top_p`                  | Control top-p sampling parameter                                         |
-| `frequency_penalty`      | Control frequency penalty                                                 |
-| `presence_penalty`       | Control presence penalty                                                  |
 
 
 
@@ -1129,7 +1595,6 @@ The `run` method now supports several new parameters for advanced functionality:
 | `reasoning_enabled`      | Enable reasoning capabilities for supported models                       |
 | `reasoning_effort`       | Set reasoning effort level ("low", "medium", "high")                    |
 | `thinking_tokens`        | Maximum number of thinking tokens for reasoning models                   |
-| `drop_params`            | Drop parameters during processing for optimization                       |
 
 ### Execution Modes and Marketplace
 
@@ -1145,191 +1610,7 @@ The `run` method now supports several new parameters for advanced functionality:
 | Parameter                | Description                                                              |
 |--------------------------|--------------------------------------------------------------------------|
 | `transforms`             | TransformConfig for handling context limits and message transformations |
-| `conversation_schema`    | ConversationSchema for custom conversation formatting                    |
 
-## Simple Examples for New Features
-
-### Fallback Models
-
-```python
-from swarms import Agent
-
-# Agent with fallback models - automatically switches if primary fails
-agent = Agent(
-    model_name="gpt-4o",
-    fallback_models=["gpt-4o-mini", "gpt-3.5-turbo"],
-    max_loops=1
-)
-
-# Will try gpt-4o first, then fallback to gpt-4o-mini if it fails
-response = agent.run("Analyze this data")
-```
-
-### Marketplace Prompt Loading
-
-```python
-from swarms import Agent
-
-# Load a prompt from the Swarms marketplace
-agent = Agent(
-    model_name="gpt-4o-mini",
-    marketplace_prompt_id="550e8400-e29b-41d4-a716-446655440000",
-    max_loops=1
-)
-
-# Agent automatically loads the system prompt from marketplace
-response = agent.run("Execute the marketplace prompt task")
-```
-
-### Reasoning-Enabled Models
-
-```python
-from swarms import Agent
-
-# Agent with reasoning capabilities
-agent = Agent(
-    model_name="o1-preview",
-    reasoning_enabled=True,
-    reasoning_effort="high",
-    thinking_tokens=10000,
-    max_loops=1
-)
-
-response = agent.run("Solve this complex mathematical problem step by step")
-```
-
-### Execution Modes
-
-```python
-from swarms import Agent
-
-# Fast mode - optimized for performance (reduces verbosity)
-fast_agent = Agent(
-    model_name="gpt-4o-mini",
-    mode="fast",  # Disables print_on and verbose automatically
-    max_loops=1
-)
-
-# Interactive mode - for real-time conversations
-interactive_agent = Agent(
-    model_name="gpt-4o-mini",
-    mode="interactive",
-    max_loops=5
-)
-
-# Standard mode - default behavior
-standard_agent = Agent(
-    model_name="gpt-4o-mini",
-    mode="standard",
-    max_loops=1
-)
-```
-
-### Streaming Callback
-
-```python
-from swarms import Agent
-
-# Define a custom streaming callback
-def my_streaming_callback(token: str):
-    print(token, end="", flush=True)
-
-# Agent with streaming callback
-agent = Agent(
-    model_name="gpt-4o-mini",
-    streaming_callback=my_streaming_callback,
-    max_loops=1
-)
-
-# Tokens will be streamed to the callback in real-time
-response = agent.run("Tell me a story")
-```
-
-### Multiple MCP Connections
-
-```python
-from swarms import Agent
-from swarms.schemas.mcp_schemas import MultipleMCPConnections
-
-# Configure multiple MCP servers
-mcp_configs = MultipleMCPConnections(
-    connections=[
-        {"server_path": "http://localhost:8000", "server_name": "server1"},
-        {"server_path": "http://localhost:8001", "server_name": "server2"}
-    ]
-)
-
-agent = Agent(
-    model_name="gpt-4o-mini",
-    mcp_configs=mcp_configs,
-    max_loops=1
-)
-
-response = agent.run("Use tools from both MCP servers")
-```
-
-### Message Transforms for Context Management
-
-```python
-from swarms import Agent
-from swarms.structs.transforms import TransformConfig
-
-# Configure message transforms to handle long contexts
-transforms = TransformConfig(
-    max_tokens=8000,
-    strategy="truncate_oldest"
-)
-
-agent = Agent(
-    model_name="gpt-4o-mini",
-    transforms=transforms,
-    context_length=100000,
-    max_loops=1
-)
-
-# Agent will automatically manage context length
-response = agent.run("Process this very long conversation history")
-```
-
-### Agent with Capabilities
-
-```python
-from swarms import Agent
-
-# Agent with defined capabilities for better routing
-agent = Agent(
-    model_name="gpt-4o-mini",
-    agent_name="Data-Analysis-Agent",
-    capabilities=["data_analysis", "statistics", "visualization"],
-    max_loops=1
-)
-
-response = agent.run("Analyze this dataset")
-```
-
-### Publishing to Marketplace
-
-```python
-from swarms import Agent
-
-# Agent configured to publish prompt to marketplace
-agent = Agent(
-    model_name="gpt-4o-mini",
-    agent_name="Financial-Advisor",
-    agent_description="Expert financial advisor agent",
-    system_prompt="You are an expert financial advisor...",
-    tags=["finance", "advisor"],
-    capabilities=["financial_planning", "investment_advice"],
-    use_cases=[
-        {"title": "Retirement Planning", "description": "Help users plan for retirement"},
-        {"title": "Investment Analysis", "description": "Analyze investment opportunities"}
-    ],
-    publish_to_marketplace=True,
-    max_loops=1
-)
-
-# Prompt will be published to marketplace on initialization
-```
 
 ## Best Practices
 
@@ -1341,14 +1622,12 @@ agent = Agent(
 | `long_term_memory`                                      | Leverage long_term_memory for tasks that require persistent information.                         |
 | `interactive` & `dashboard`                             | Use interactive mode for real-time conversations and dashboard for monitoring.                   |
 | `sentiment_analysis`                                    | Implement sentiment_analysis for applications requiring tone management.                         |
-| `autosave`, `save`/`load`                               | Utilize autosave and save/load methods for continuity across sessions.                           |
+| `autosave`, `save`/`load`                               | Utilize autosave and save/load methods for continuity across sessions. Autosave saves configuration at each step to `workspace_dir/agents/{agent-name}-{uuid}/config.json`. Files created by agent tools are saved in the agent's workspace directory. |
 | `dynamic_context_window` & `tokens_checks`              | Optimize token usage with dynamic_context_window and tokens_checks methods.                      |
 | `concurrent` & `async` methods                          | Use concurrent and async methods for performance-critical applications.                          |
 | `analyze_feedback`                                      | Regularly review and analyze feedback using the analyze_feedback method.                         |
 | `artifacts_on`                                          | Use artifacts_on to save important outputs from agent execution.                                 |
-| `device` & `device_id`                                  | Configure device and device_id appropriately for optimal performance.                            |
 | `rag_every_loop`                                        | Enable rag_every_loop when continuous context from long-term memory is needed.                   |
-| `scheduled_run_date`                                    | Use scheduled_run_date for automated task scheduling.                                            |
 | `run_batched`                                           | Leverage run_batched for efficient processing of multiple related tasks.                         |
 | `mcp_url` or `mcp_urls`                                 | Use mcp_url or mcp_urls to extend agent capabilities with external tools.                        |
 | `react_on`                                              | Enable react_on for complex reasoning tasks requiring step-by-step analysis.                     |

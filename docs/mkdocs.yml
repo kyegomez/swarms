@@ -233,6 +233,9 @@ nav:
       - Overview: "swarms/framework/agents_explained.md"
       - Quickstart: "swarms/agents/index.md"
       - Reference: "swarms/structs/agent.md"
+      - Fully Autonomous Agent Tutorial: "swarms/examples/autonomous_agent_tutorial.md"
+      - Agent Handoffs Tutorial: "swarms/examples/agent_handoff_tutorial.md"
+      - Autosave Tutorial: "swarms/examples/autosave_tutorial.md"
       - Tools and MCP: "swarms/tools/tools_examples.md"
       - Multi-Agent Helpers: "swarms/structs/agent_multi_agent_communication.md"
       - Loading Prompts from Marketplace: "swarms/examples/marketplace_prompt_loading.md"
@@ -371,6 +374,9 @@ nav:
     - Agent Examples:
       - Overview: "examples/basic_examples_overview.md"
       - Basic Agent: "swarms/examples/basic_agent.md"
+      - Autonomous Agent: "swarms/examples/autonomous_agent_tutorial.md"
+      - Agent Handoff: "swarms/examples/agent_handoff_tutorial.md"
+      - Autosave: "swarms/examples/autosave_tutorial.md"
       - Tool Usage:
         - Agents with Vision and Tool Usage: "swarms/examples/vision_tools.md"
         - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
