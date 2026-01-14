@@ -236,7 +236,8 @@ nav:
       - Tools and MCP: "swarms/tools/tools_examples.md"
       - Multi-Agent Helpers: "swarms/structs/agent_multi_agent_communication.md"
       - Loading Prompts from Marketplace: "swarms/examples/marketplace_prompt_loading.md"
-      
+      - Agent Skills: "swarms/agents/agent_skills.md"
+
       - Capabilities:
         - Fallback Models: "swarms/utils/fallback_models.md"
         - Running Agents with YAML: "swarms/agents/create_agents_yaml.md"
@@ -371,6 +372,11 @@ nav:
     - Agent Examples:
       - Overview: "examples/basic_examples_overview.md"
       - Basic Agent: "swarms/examples/basic_agent.md"
+      - Agent Skills:
+        - Overview: "swarms/examples/agent_skills_overview.md"
+        - Basic Skills Usage: "swarms/examples/agent_with_skills.md"
+        - Creating Custom Skills: "swarms/examples/agent_with_custom_skill.md"
+        - Multiple Skills: "swarms/examples/agent_with_multiple_skills.md"
       - Tool Usage:
         - Agents with Vision and Tool Usage: "swarms/examples/vision_tools.md"
         - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
