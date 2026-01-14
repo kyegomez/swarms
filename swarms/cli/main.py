@@ -897,9 +897,9 @@ def show_features():
         {
             "feature": "Custom Agent Creation",
             "category": "Creation",
-            "desc": "Create and run a custom agent with specified parameters",
-            "command": "swarms agent --name 'Agent' --task 'Task' --system-prompt 'Prompt'",
-            "params": "--name, --task, --system-prompt, --model-name, --temperature, --max-loops, --verbose",
+            "desc": "Create and run a custom agent with specified parameters. Use --max-loops auto for autonomous planning and execution.",
+            "command": "swarms agent --name 'Agent' --task 'Task' --system-prompt 'Prompt' [--max-loops auto]",
+            "params": "--name, --task, --system-prompt, --model-name, --temperature, --max-loops (int or 'auto'), --verbose",
         },
         {
             "feature": "Auto Swarm Generation",
@@ -1659,8 +1659,8 @@ def main():
         )
         parser.add_argument(
             "--max-loops",
-            type=int,
-            help="Maximum number of loops for the agent",
+            type=str,
+            help="Maximum number of loops for the agent (integer or 'auto' for autonomous loop structure with automatic planning, subtask execution, and summarization)",
         )
         parser.add_argument(
             "--auto-generate-prompt",
@@ -1965,7 +1965,21 @@ def main():
                 for cli_arg, agent_param in param_mapping.items():
                     value = getattr(args, cli_arg)
                     if value is not None:
-                        additional_params[agent_param] = value
+                        # Special handling for max_loops to support both "auto" and integers
+                        if agent_param == "max_loops":
+                            if value.lower() == "auto":
+                                additional_params[agent_param] = "auto"
+                            else:
+                                try:
+                                    additional_params[agent_param] = int(value)
+                                except ValueError:
+                                    show_error(
+                                        "Invalid max_loops value",
+                                        "max_loops must be an integer or 'auto' for autonomous loop structure",
+                                    )
+                                    exit(1)
+                        else:
+                            additional_params[agent_param] = value
 
                 # Create and run the custom agent
                 result = create_swarm_agent(
