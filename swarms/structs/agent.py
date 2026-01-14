@@ -1561,6 +1561,14 @@ class Agent:
 
             self.short_memory.add(role=self.user_name, content=task)
 
+            # Progressive skill activation: load Tier 2 skill content when relevant
+            try:
+                activated = self.activate_relevant_skills(task)
+                if activated and self.verbose:
+                    logger.info(f"Activated skills for task: {activated}")
+            except Exception as e:
+                logger.warning(f"Skill activation failed: {e}")
+
             # Handle RAG query only once
             if (
                 self.long_term_memory is not None
@@ -4426,6 +4434,68 @@ Subtask Breakdown:
                         f"Failed to load full skill {skill_name}: {e}"
                     )
         return None
+
+    def activate_relevant_skills(self, task: str, threshold: float = 0.15) -> List[str]:
+        """
+        Activate and progressively load skills relevant to the current task.
+
+        This implements a simple Tier 2 progressive disclosure strategy:
+        - Scans loaded `self.skills_metadata` (Tier 1)
+        - Scores relevance by simple word overlap between `task` and skill
+          `name` + `description` + short `content` preview
+        - For skills above the `threshold`, loads the full SKILL.md (Tier 2)
+          and injects it into the agent's short-term context (system role)
+
+        Args:
+            task: The current user task/prompt
+            threshold: Fractional overlap threshold to consider a skill relevant
+
+        Returns:
+            List of skill names that were activated (loaded)
+        """
+        activated = []
+        if not task or not self.skills_metadata:
+            return activated
+
+        task_tokens = set([w.strip().lower() for w in task.split() if w.strip()])
+
+        # Ensure we have a set to track already-activated skills
+        if not hasattr(self, "_activated_skills"):
+            self._activated_skills = set()
+
+        for skill in self.skills_metadata:
+            name = skill.get("name", "").lower()
+            desc = (skill.get("description", "") or "").lower()
+            preview = (skill.get("content", "") or "").lower()
+
+            # Build candidate token set
+            candidate_tokens = set()
+            candidate_tokens.update(name.split())
+            candidate_tokens.update(desc.split())
+            candidate_tokens.update(preview.split()[:40])
+
+            if not candidate_tokens:
+                continue
+
+            overlap = len(task_tokens.intersection(candidate_tokens))
+            score = overlap / max(1, len(candidate_tokens))
+
+            if score >= threshold and name not in self._activated_skills:
+                # Load full skill content (Tier 2)
+                full = self.load_full_skill(skill.get("name"))
+                if full:
+                    content = (
+                        f"[Skill Activated: {skill.get('name')}]\n\n{full}"
+                    )
+                    try:
+                        self.short_memory.add(role="system", content=content)
+                        self._activated_skills.add(name)
+                        activated.append(skill.get("name"))
+                        logger.info(f"Activated skill: {skill.get('name')}")
+                    except Exception as e:
+                        logger.warning(f"Failed to inject skill {name}: {e}")
+
+        return activated
 
     def run(
         self,
