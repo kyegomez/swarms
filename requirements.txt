@@ -28,3 +28,7 @@ numpy
 schedule
 uvloop; sys_platform == 'linux' or sys_platform == 'darwin' # linux or macos only
 winloop; sys_platform == 'win32' # windows only
+# Optional: OpenTelemetry for improved telemetry/tracing. Install if you want tracing export
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-exporter-otlp
