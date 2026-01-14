@@ -690,6 +690,20 @@ class Agent:
                 ),
             )
 
+        # Telemetry: log agent creation/initialization to swarms telemetry platform.
+        # This can be disabled by setting environment variable `SWARMS_TELEMETRY_ENABLED` to
+        # `0`, `false`, or `no`.
+        try:
+            telemetry_flag = os.getenv("SWARMS_TELEMETRY_ENABLED", "true").lower()
+            if telemetry_flag in ("1", "true", "yes"):
+                try:
+                    log_agent_data(self.to_dict())
+                except Exception:
+                    pass
+        except Exception:
+            # Do not let telemetry errors prevent agent initialization
+            pass
+
     def _get_agent_workspace_dir(self) -> str:
         """
         Get the agent-specific workspace directory path.
