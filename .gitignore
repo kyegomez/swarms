@@ -286,6 +286,15 @@ flycheck_*.el
 # network security
 /network-security.data
 
+# Agent Skills - User-created skill directories
+# Keep example_skills/ committed for reference
+# Ignore common user skill directory patterns
+/skills/
+/my_skills/
+/custom_skills/
+/*_skills/
+!example_skills/
+
 
 
 

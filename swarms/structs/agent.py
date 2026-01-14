@@ -263,6 +263,11 @@ class Agent:
             When provided, the agent will automatically fetch and load the prompt from the marketplace
             as the system prompt. This enables one-line prompt loading from the Swarms marketplace.
             Requires the SWARMS_API_KEY environment variable to be set.
+        skills_dir (str): Path to directory containing Agent Skills in SKILL.md format.
+            Implements Anthropic's Agent Skills framework for modular, composable capabilities.
+            Each subdirectory should contain a SKILL.md file with YAML frontmatter (name, description)
+            and markdown instructions. Skills are auto-loaded into system prompt for context-aware activation.
+            Example: skills_dir="./skills" loads from ./skills/*/SKILL.md
 
     Methods:
         run: Run the agent
@@ -275,6 +280,8 @@ class Agent:
         step: Step through the agent
         graceful_shutdown: Gracefully shutdown the agent
         run_with_timeout: Run the agent with a timeout
+        load_skills_metadata: Load Agent Skills metadata from directory
+        load_full_skill: Load complete skill content (Tier 2 loading)
         analyze_feedback: Analyze the feedback
         undo_last: Undo the last response
         add_response_filter: Add a response filter
@@ -424,11 +431,14 @@ class Agent:
         publish_to_marketplace: bool = False,
         use_cases: Optional[List[Dict[str, Any]]] = None,
         marketplace_prompt_id: Optional[str] = None,
+        skills_dir: Optional[str] = None,
         *args,
         **kwargs,
     ):
         # super().__init__(*args, **kwargs)
         self.id = id
+        self.skills_dir = skills_dir
+        self.skills_metadata = []
         self.llm = llm
         self.max_loops = max_loops
         self.stopping_condition = stopping_condition
@@ -606,6 +616,19 @@ class Agent:
 
         if self.react_on is True:
             self.system_prompt += REACT_SYS_PROMPT
+
+        # Load Agent Skills if skills_dir is provided
+        if self.skills_dir:
+            self.skills_metadata = self.load_skills_metadata(
+                self.skills_dir
+            )
+            if self.skills_metadata:
+                self.system_prompt += self._build_skills_prompt(
+                    self.skills_metadata
+                )
+                logger.info(
+                    f"Loaded {len(self.skills_metadata)} skills from {self.skills_dir}"
+                )
 
         if self.autosave is True:
             log_agent_data(self.to_dict())
@@ -4258,6 +4281,151 @@ Subtask Breakdown:
             )
 
         logger.info("SOP Uploaded into the memory")
+
+    def load_skills_metadata(
+        self, skills_dir: str
+    ) -> List[Dict[str, str]]:
+        """
+        Load skill metadata from SKILL.md files in the skills directory.
+
+        Implements Tier 1 loading from Anthropic's Agent Skills framework:
+        loads skill name and description into memory for context-aware activation.
+
+        Args:
+            skills_dir: Path to directory containing skill folders.
+                Each folder should contain a SKILL.md file with YAML frontmatter.
+
+        Returns:
+            List of skill metadata dicts with 'name', 'description', 'path', 'content'
+
+        Example:
+            >>> agent = Agent(skills_dir="./skills")
+            >>> # Loads all skills from ./skills/*/SKILL.md
+        """
+        skills = []
+
+        if not os.path.exists(skills_dir):
+            logger.warning(f"Skills directory not found: {skills_dir}")
+            return skills
+
+        for skill_folder in os.listdir(skills_dir):
+            skill_path = os.path.join(skills_dir, skill_folder)
+
+            if not os.path.isdir(skill_path):
+                continue
+
+            skill_file = os.path.join(skill_path, "SKILL.md")
+
+            if not os.path.exists(skill_file):
+                continue
+
+            try:
+                with open(skill_file, "r", encoding="utf-8") as f:
+                    content = f.read()
+
+                # Parse YAML frontmatter
+                if content.startswith("---"):
+                    parts = content.split("---", 2)
+                    if len(parts) >= 3:
+                        frontmatter = yaml.safe_load(parts[1])
+                        skills.append(
+                            {
+                                "name": frontmatter.get(
+                                    "name", skill_folder
+                                ),
+                                "description": frontmatter.get(
+                                    "description", ""
+                                ),
+                                "path": skill_file,
+                                "content": (
+                                    parts[2].strip()
+                                    if len(parts) > 2
+                                    else ""
+                                ),
+                            }
+                        )
+                        logger.info(
+                            f"Loaded skill: {frontmatter.get('name')}"
+                        )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to load skill from {skill_file}: {e}"
+                )
+                continue
+
+        return skills
+
+    def _build_skills_prompt(
+        self, skills: List[Dict[str, str]]
+    ) -> str:
+        """
+        Build the skills section to append to system prompt.
+
+        Loads full skill content (YAML frontmatter + markdown instructions)
+        into the system prompt for immediate availability.
+
+        Args:
+            skills: List of skill metadata dicts from load_skills_metadata()
+
+        Returns:
+            Formatted skills prompt section to append to system_prompt
+
+        Example:
+            >>> skills = [{"name": "financial-analysis", "description": "DCF modeling", "content": "..."}]
+            >>> prompt = agent._build_skills_prompt(skills)
+            >>> # Returns formatted skills section with full instructions
+        """
+        if not skills:
+            return ""
+
+        prompt = "\n\n# Available Skills\n\n"
+        prompt += "You have access to the following specialized skills. "
+        prompt += "Follow their instructions when relevant:\n\n"
+
+        for skill in skills:
+            prompt += f"## {skill['name']}\n\n"
+            prompt += f"**Description**: {skill['description']}\n\n"
+            prompt += skill['content']
+            prompt += "\n\n---\n\n"
+
+        return prompt
+
+    def load_full_skill(self, skill_name: str) -> Optional[str]:
+        """
+        Load the full content of a specific skill (Tier 2 loading).
+
+        This implements Tier 2 progressive disclosure: loads the complete
+        SKILL.md content when the skill is actively needed, rather than
+        loading everything upfront.
+
+        Args:
+            skill_name: Name of the skill to load (from metadata)
+
+        Returns:
+            Full skill content (markdown below frontmatter) or None if not found
+
+        Example:
+            >>> agent = Agent(skills_dir="./skills")
+            >>> content = agent.load_full_skill("financial-analysis")
+            >>> # Returns full markdown instructions for the skill
+        """
+        for skill in self.skills_metadata:
+            if skill["name"] == skill_name:
+                try:
+                    with open(
+                        skill["path"], "r", encoding="utf-8"
+                    ) as f:
+                        content = f.read()
+                    # Return everything after frontmatter
+                    if content.startswith("---"):
+                        parts = content.split("---", 2)
+                        if len(parts) >= 3:
+                            return parts[2].strip()
+                except Exception as e:
+                    logger.error(
+                        f"Failed to load full skill {skill_name}: {e}"
+                    )
+        return None
 
     def run(
         self,
