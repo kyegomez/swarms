@@ -62,6 +62,13 @@ from swarms.schemas.mcp_schemas import (
     MultipleMCPConnections,
 )
 from swarms.structs.agent_roles import agent_roles
+from swarms.structs.agent_state_manager import AgentStateManager
+from swarms.structs.agent_state_recovery import (
+    StateRecovery,
+    StateMigration,
+    StateTransformation,
+    StateDiagnostics,
+)
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.structs.multi_agent_router import MultiAgentRouter
@@ -665,6 +672,9 @@ class Agent:
             self.transforms = MessageTransforms(config)
         else:
             pass
+
+        # Initialize advanced state management system
+        self._init_state_manager()
 
         self.fallback_models = fallback_models or []
         self.current_model_index = 0
@@ -2308,7 +2318,419 @@ class Agent:
         logger.info("Shutting down the system...")
         return self.save()
 
-    def analyze_feedback(self):
+    def _init_state_manager(self) -> None:
+        """
+        Initialize the advanced state management system for the agent.
+        Sets up state persistence, recovery, and checkpoint capabilities.
+        """
+        try:
+            # Determine state directory
+            state_dir = self.load_state_path or os.path.join(
+                self.workspace_dir, "agent_states"
+            )
+
+            # Initialize the state manager
+            self.state_manager = AgentStateManager(
+                agent_id=self.id,
+                agent_name=self.agent_name,
+                base_dir=state_dir,
+                max_checkpoints=10,
+                auto_checkpoint=self.autosave,
+            )
+
+            # Load previous state if load_state_path is provided
+            if self.load_state_path and os.path.exists(
+                self.load_state_path
+            ):
+                try:
+                    self._load_state_from_manager(self.load_state_path)
+                except Exception as e:
+                    logger.warning(
+                        f"Could not load state from {self.load_state_path}: {e}"
+                    )
+                    # Attempt recovery if loading fails
+                    self._attempt_state_recovery()
+
+            logger.info(
+                f"Initialized state manager for agent: {self.agent_name}"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to initialize state manager: {e}")
+            # Don't fail agent initialization if state manager fails
+            self.state_manager = None
+
+    def _load_state_from_manager(self, file_path: str) -> None:
+        """
+        Load agent state using the state manager.
+
+        Args:
+            file_path: Path to state file to load
+        """
+        try:
+            state = self.state_manager.load_state(file_path)
+
+            # Apply loaded state to agent
+            for key, value in state.items():
+                if not key.startswith("_") and hasattr(self, key):
+                    try:
+                        setattr(self, key, value)
+                    except Exception as e:
+                        logger.debug(
+                            f"Could not set attribute {key}: {e}"
+                        )
+
+            logger.info(f"Successfully loaded agent state from {file_path}")
+
+        except Exception as e:
+            logger.error(f"Error loading state: {e}")
+            raise
+
+    def _attempt_state_recovery(self) -> Optional[Dict[str, Any]]:
+        """
+        Attempt to recover agent state from available backups or checkpoints.
+
+        Returns:
+            Recovered state dictionary or None if recovery fails
+        """
+        try:
+            if not self.state_manager:
+                return None
+
+            agent_dir = self.state_manager.agent_dir
+            recovered_state = StateRecovery.attempt_recovery(agent_dir)
+
+            if recovered_state:
+                logger.info("Successfully recovered agent state")
+                # Optionally apply recovered state
+                self._apply_recovered_state(recovered_state)
+                return recovered_state
+            else:
+                logger.warning("State recovery failed")
+                return None
+
+        except Exception as e:
+            logger.error(f"Error during state recovery: {e}")
+            return None
+
+    def _apply_recovered_state(self, state: Dict[str, Any]) -> None:
+        """
+        Apply a recovered state to the agent.
+
+        Args:
+            state: Recovered state dictionary
+        """
+        try:
+            for key, value in state.items():
+                if not key.startswith("_"):
+                    try:
+                        setattr(self, key, value)
+                    except Exception as e:
+                        logger.debug(
+                            f"Could not restore attribute {key}: {e}"
+                        )
+
+            logger.info("Applied recovered state to agent")
+
+        except Exception as e:
+            logger.error(f"Error applying recovered state: {e}")
+
+    def create_checkpoint(
+        self,
+        tags: Optional[List[str]] = None,
+        description: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Create a named checkpoint of the current agent state.
+
+        This allows you to save the agent's state at key points during execution
+        and restore to these checkpoints later.
+
+        Args:
+            tags: Optional list of tags for categorizing the checkpoint
+            description: Human-readable description of what this checkpoint represents
+
+        Returns:
+            str: Path to the created checkpoint, or None if creation fails
+
+        Example:
+            >>> agent = Agent(model_name="gpt-4")
+            >>> checkpoint_path = agent.create_checkpoint(
+            ...     tags=["pre-analysis", "production"],
+            ...     description="Checkpoint before analyzing user query"
+            ... )
+            >>> # Do some work...
+            >>> agent.restore_checkpoint(checkpoint_path)
+        """
+        try:
+            if not self.state_manager:
+                logger.warning("State manager not initialized")
+                return None
+
+            state = self.get_saveable_state()
+            checkpoint_path = self.state_manager.create_checkpoint(
+                state=state,
+                tags=tags,
+                description=description,
+            )
+
+            logger.info(f"Created checkpoint: {checkpoint_path}")
+            return checkpoint_path
+
+        except Exception as e:
+            logger.error(f"Failed to create checkpoint: {e}")
+            return None
+
+    def restore_checkpoint(
+        self, checkpoint_id: Optional[str] = None
+    ) -> bool:
+        """
+        Restore agent state from a checkpoint.
+
+        Allows you to revert the agent to a previously saved state, including
+        conversation history, memory, and configuration.
+
+        Args:
+            checkpoint_id: ID or filename of checkpoint to restore.
+                          If None, restores the most recent checkpoint.
+
+        Returns:
+            bool: True if restoration successful, False otherwise
+
+        Example:
+            >>> agent = Agent(model_name="gpt-4")
+            >>> checkpoint_path = agent.create_checkpoint()
+            >>> # ... agent state changes ...
+            >>> agent.restore_checkpoint(checkpoint_path)
+        """
+        try:
+            if not self.state_manager:
+                logger.warning("State manager not initialized")
+                return False
+
+            state = self.state_manager.restore_checkpoint(checkpoint_id)
+            self._apply_recovered_state(state)
+
+            logger.info("Successfully restored checkpoint")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to restore checkpoint: {e}")
+            return False
+
+    def list_checkpoints(
+        self, tag: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        List all available checkpoints for this agent.
+
+        Args:
+            tag: Optional tag to filter checkpoints by
+
+        Returns:
+            List of checkpoint information dictionaries
+
+        Example:
+            >>> agent = Agent(model_name="gpt-4")
+            >>> checkpoints = agent.list_checkpoints()
+            >>> for cp in checkpoints:
+            ...     print(f"{cp['filename']}: {cp['description']}")
+        """
+        try:
+            if not self.state_manager:
+                return []
+
+            return self.state_manager.list_checkpoints(tag=tag)
+
+        except Exception as e:
+            logger.error(f"Failed to list checkpoints: {e}")
+            return []
+
+    def save_checkpoint(
+        self,
+        file_path: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        description: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Save agent state to a file with enhanced persistence.
+
+        Uses the advanced state manager for atomic operations, backups,
+        and metadata tracking.
+
+        Args:
+            file_path: Optional custom file path
+            tags: Optional tags for organizing states
+            description: Human-readable description
+
+        Returns:
+            str: Path to saved state file, or None if save fails
+        """
+        try:
+            if not self.state_manager:
+                # Fall back to legacy save method
+                self.save(file_path)
+                return file_path
+
+            state = self.get_saveable_state()
+            saved_path = self.state_manager.save_state(
+                state=state,
+                file_format="json",
+                tags=tags,
+                description=description,
+                is_checkpoint=False,
+            )
+
+            logger.info(f"Saved agent checkpoint: {saved_path}")
+            return saved_path
+
+        except Exception as e:
+            logger.error(f"Failed to save checkpoint: {e}")
+            return None
+
+    def load_checkpoint(self, file_path: str) -> bool:
+        """
+        Load agent state from a checkpoint file.
+
+        Args:
+            file_path: Path to checkpoint file to load
+
+        Returns:
+            bool: True if load successful, False otherwise
+        """
+        try:
+            if not self.state_manager:
+                self.load(file_path)
+                return True
+
+            state = self.state_manager.load_state(file_path)
+            self._apply_recovered_state(state)
+
+            logger.info(f"Loaded checkpoint: {file_path}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to load checkpoint: {e}")
+            return False
+
+    def get_state_summary(self) -> Dict[str, Any]:
+        """
+        Get a comprehensive summary of the agent's state management status.
+
+        Returns information about saved states, checkpoints, and state health.
+
+        Returns:
+            Dict containing state management information
+
+        Example:
+            >>> agent = Agent(model_name="gpt-4")
+            >>> summary = agent.get_state_summary()
+            >>> print(f"Total checkpoints: {summary['total_checkpoints']}")
+            >>> print(f"State dir: {summary['state_directory']}")
+        """
+        try:
+            if not self.state_manager:
+                return {
+                    "status": "disabled",
+                    "message": "State manager not initialized",
+                }
+
+            return self.state_manager.export_state_summary()
+
+        except Exception as e:
+            logger.error(f"Failed to get state summary: {e}")
+            return {"status": "error", "message": str(e)}
+
+    def validate_state(self) -> Dict[str, bool]:
+        """
+        Validate all stored state files for integrity.
+
+        Checks checksums and file formats to ensure state files are not corrupted.
+
+        Returns:
+            Dict mapping state file paths to validation results
+
+        Example:
+            >>> agent = Agent(model_name="gpt-4")
+            >>> validation = agent.validate_state()
+            >>> if all(validation.values()):
+            ...     print("All states are valid")
+        """
+        try:
+            if not self.state_manager:
+                return {}
+
+            return self.state_manager.validate_all_states()
+
+        except Exception as e:
+            logger.error(f"Failed to validate state: {e}")
+            return {}
+
+    def cleanup_old_checkpoints(self, days_old: int = 7) -> int:
+        """
+        Remove checkpoints older than specified number of days.
+
+        Helps manage disk space by removing old checkpoints while keeping
+        recent ones for recovery purposes.
+
+        Args:
+            days_old: Age threshold in days (default: 7)
+
+        Returns:
+            int: Number of checkpoints removed
+
+        Example:
+            >>> agent = Agent(model_name="gpt-4")
+            >>> removed = agent.cleanup_old_checkpoints(days_old=30)
+            >>> print(f"Removed {removed} old checkpoints")
+        """
+        try:
+            if not self.state_manager:
+                return 0
+
+            removed_count = self.state_manager.cleanup_old_checkpoints(
+                days_old
+            )
+            logger.info(f"Cleaned up {removed_count} old checkpoints")
+            return removed_count
+
+        except Exception as e:
+            logger.error(f"Failed to cleanup old checkpoints: {e}")
+            return 0
+
+    def get_state_health(self) -> Dict[str, Any]:
+        """
+        Perform comprehensive health check on the agent's current state.
+
+        Validates state structure, checks for corruption, and provides diagnostics.
+
+        Returns:
+            Dict containing health check results and diagnostics
+
+        Example:
+            >>> agent = Agent(model_name="gpt-4")
+            >>> health = agent.get_state_health()
+            >>> if health['is_valid']:
+            ...     print("Agent state is healthy")
+        """
+        try:
+            state = self.get_saveable_state()
+            health = StateDiagnostics.check_state_health(state)
+
+            # Add agent-specific health information
+            health["agent_id"] = self.id
+            health["agent_name"] = self.agent_name
+            health["timestamp"] = datetime.now().isoformat()
+
+            return health
+
+        except Exception as e:
+            logger.error(f"Failed to check state health: {e}")
+            return {
+                "is_valid": False,
+                "errors": [str(e)],
+            }
+
         """Analyze the feedback for issues"""
         feedback_counts = {}
         for feedback in self.feedback:
