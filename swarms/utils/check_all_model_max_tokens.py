@@ -1,5 +1,4 @@
 from litellm import model_list, get_max_tokens
-from swarms.utils.formatter import formatter
 
 # Add model overrides here
 MODEL_MAX_TOKEN_OVERRIDES = {
@@ -7,24 +6,26 @@ MODEL_MAX_TOKEN_OVERRIDES = {
 }
 
 
-def check_all_model_max_tokens():
+def check_all_model_max_tokens(
+    as_list: bool = False, print_on: bool = True
+):
     """
     Check and display the maximum token limits for all available models.
 
-    This function iterates through all models in the litellm model list and attempts
-    to retrieve their maximum token limits. For models that are not properly mapped
-    in litellm, it checks for custom overrides in MODEL_MAX_TOKEN_OVERRIDES.
+    Args:
+        as_list (bool): If True, returns a list of model/token dicts.
+                        If False, returns a formatted string.
 
     Returns:
-        None: Prints the results to console using formatter.print_panel()
+        list or str: List of results or formatted string, depending on as_list.
 
     Note:
-        Models that are not mapped in litellm and have no override set will be
+        Models not mapped in litellm and with no override set will be
         marked with a [WARNING] in the output.
     """
-    text = ""
+    results = []
     for model in model_list:
-        # skip model names
+        model_info = {}
         try:
             max_tokens = get_max_tokens(model)
         except Exception:
@@ -32,12 +33,38 @@ def check_all_model_max_tokens():
                 model, "[NOT MAPPED]"
             )
             if max_tokens == "[NOT MAPPED]":
-                text += f"[WARNING] {model}: not mapped in litellm and no override set.\n"
-        text += f"{model}: {max_tokens}\n"
-        text += "─" * 80 + "\n"  # Add borderline for each model
-    formatter.print_panel(text, "All Model Max Tokens")
-    return text
+                model_info["warning"] = (
+                    f"[WARNING] {model}: not mapped in litellm and no override set."
+                )
+        model_info["model"] = model
+        model_info["max_tokens"] = max_tokens
+        results.append(model_info)
+
+    if as_list:
+        return results
+    else:
+        text = ""
+        for model_info in results:
+            if "warning" in model_info:
+                text += f"{model_info['warning']}\n"
+            text += (
+                f"{model_info['model']}: {model_info['max_tokens']}\n"
+            )
+            text += "─" * 80 + "\n"
+        if print_on:
+            print(text)
+        return text
 
 
-# if __name__ == "__main__":
-#     print(check_all_model_max_tokens())
+def get_single_model_max_tokens(model_name: str) -> int:
+    """
+    Get the maximum token limit for a single model.
+    """
+    try:
+        return get_max_tokens(model_name)
+    except Exception:
+        raise ValueError(f"Model {model_name} not found in litellm")
+
+
+if __name__ == "__main__":
+    print(check_all_model_max_tokens(as_list=True))

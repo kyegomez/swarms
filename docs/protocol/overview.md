@@ -259,7 +259,7 @@ diy_memory/)
 
 **Example:**
 
-- `agent_cache.py`, `concurrent_wrapper.py`, `file_processing.py`, `formatter.py`, etc.
+- `agent_cache.py`, `file_processing.py`, `formatter.py`, etc.
 
 
 ### `telemetry/`

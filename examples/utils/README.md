@@ -14,9 +14,6 @@ This directory contains utility examples and helper functions for various Swarms
 - [redis_conversation.py](communication_examples/redis_conversation.py) - Redis-based conversations
 - [sqlite_conversation.py](communication_examples/sqlite_conversation.py) - SQLite conversation storage
 
-## Concurrent Wrapper
-- [concurrent_wrapper_examples.py](concurrent_wrapper_examples.py) - Concurrent execution wrapper examples
-
 ## Miscellaneous
 - [agent_map_test.py](misc/agent_map_test.py) - Agent mapping testing
 - [conversation_simple.py](misc/conversation_simple.py) - Simple conversation handling

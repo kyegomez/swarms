@@ -1,18 +1,31 @@
 def exists(val):
+    """Check if a value is not None.
+
+    Args:
+        val: The value to check.
+
+    Returns:
+        bool: True if val is not None, False otherwise.
+    """
     return val is not None
 
 
 def format_dict_to_string(data: dict, indent_level=0, use_colon=True):
     """
-    Recursively formats a dictionary into a multi-line string.
+    Recursively format a dictionary into a multi-line string.
 
     Args:
-        data (dict): The dictionary to format
-        indent_level (int): Current indentation level for nested structures
-        use_colon (bool): Whether to use "key: value" or "key value" format
+        data (dict): The dictionary to format.
+        indent_level (int, optional): The current indentation level for nested structures.
+        use_colon (bool, optional): If True, use "key: value" formatting;
+            if False, use "key value" formatting.
 
     Returns:
-        str: Formatted string representation of the dictionary
+        str: Multi-line readable string representing the structure of the input dictionary.
+
+    Example:
+        >>> format_dict_to_string({"a": 1, "b": {"c": 2}})
+        'a: 1\nb:\n  c: 2'
     """
     if not isinstance(data, dict):
         return str(data)
@@ -23,14 +36,12 @@ def format_dict_to_string(data: dict, indent_level=0, use_colon=True):
 
     for key, value in data.items():
         if isinstance(value, dict):
-            # Recursive case: nested dictionary
             lines.append(f"{indent}{key}:")
             nested_string = format_dict_to_string(
                 value, indent_level + 1, use_colon
             )
             lines.append(nested_string)
         else:
-            # Base case: simple key-value pair
             lines.append(f"{indent}{key}{separator}{value}")
 
     return "\n".join(lines)
@@ -40,15 +51,32 @@ def format_data_structure(
     data: any, indent_level: int = 0, max_depth: int = 10
 ) -> str:
     """
-    Fast formatter for any Python data structure into readable new-line format.
+    Format any Python data structure into a readable, indented, multi-line string.
+
+    Recursively handles common container types, including dict, list, tuple, set, as well
+    as custom objects with __dict__. Optionally limits recursion via max_depth.
 
     Args:
-        data: Any Python data structure to format
-        indent_level (int): Current indentation level for nested structures
-        max_depth (int): Maximum depth to prevent infinite recursion
+        data: The data structure (dict, list, tuple, set, str, int, float, bool, None, or object) to format.
+        indent_level (int, optional): The current indentation level for nested structures. Default is 0.
+        max_depth (int, optional): The maximum depth to recurse into nested objects. Defaults to 10.
 
     Returns:
-        str: Formatted string representation with new lines
+        str: Readable multi-line string representation of the input structure.
+
+    Example:
+        >>> d = {"users": [{"name": "Alice", "scores": [95, 87]}, {"name": "Bob", "scores": [80]}]}
+        >>> print(format_data_structure(d))
+        users:
+          [0]:
+            name: Alice
+            scores:
+              [0]: 95
+              [1]: 87
+          [1]:
+            name: Bob
+            scores:
+              [0]: 80
     """
     if indent_level >= max_depth:
         return f"{'  ' * indent_level}... (max depth reached)"
@@ -161,6 +189,8 @@ def format_data_structure(
             return f"{indent}{data} ({data_type.__name__})"
 
 
+# Example usage:
+#
 # test_dict = {
 #     "name": "John",
 #     "age": 30,
@@ -171,14 +201,12 @@ def format_data_structure(
 #         "zip": "12345"
 #     }
 # }
-
+#
 # print(format_dict_to_string(test_dict))
-
-
-# # Example usage of format_data_structure:
+#
 # if __name__ == "__main__":
 #     # Test different data structures
-
+#
 #     # Dictionary
 #     test_dict = {
 #         "name": "John",
@@ -191,25 +219,25 @@ def format_data_structure(
 #     print("=== Dictionary ===")
 #     print(format_data_structure(test_dict))
 #     print()
-
+#
 #     # List
 #     test_list = ["apple", "banana", {"nested": "dict"}, [1, 2, 3]]
 #     print("=== List ===")
 #     print(format_data_structure(test_list))
 #     print()
-
+#
 #     # Tuple
 #     test_tuple = ("first", "second", {"key": "value"}, (1, 2))
 #     print("=== Tuple ===")
 #     print(format_data_structure(test_tuple))
 #     print()
-
+#
 #     # Set
 #     test_set = {"apple", "banana", "cherry"}
 #     print("=== Set ===")
 #     print(format_data_structure(test_set))
 #     print()
-
+#
 #     # Mixed complex structure
 #     complex_data = {
 #         "users": [

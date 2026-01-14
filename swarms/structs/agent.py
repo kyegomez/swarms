@@ -122,7 +122,7 @@ from swarms.utils.swarms_marketplace_utils import (
     add_prompt_to_marketplace,
 )
 from swarms.utils.workspace_utils import get_workspace_dir
-
+from swarms.utils.check_all_model_max_tokens import get_single_model_max_tokens
 
 def stop_when_repeats(response: str) -> bool:
     # Stop if the word stop appears in the response
@@ -338,6 +338,11 @@ class Agent:
     def __init__(
         self,
         id: Optional[str] = agent_id(),
+        agent_name: Optional[str] = "swarm-worker-01",
+        agent_description: Optional[
+            str
+        ] = "An autonomous agent that can perform tasks and learn from experience powered by Swarms",
+        system_prompt: Optional[str] = AGENT_SYSTEM_PROMPT_3,
         llm: Optional[Any] = None,
         max_loops: Optional[Union[int, str]] = 1,
         stopping_condition: Optional[Callable[[str], bool]] = None,
@@ -349,9 +354,6 @@ class Agent:
         dynamic_loops: Optional[bool] = False,
         interactive: Optional[bool] = False,
         dashboard: Optional[bool] = False,
-        agent_name: Optional[str] = "swarm-worker-01",
-        agent_description: Optional[str] = None,
-        system_prompt: Optional[str] = AGENT_SYSTEM_PROMPT_3,
         # TODO: Change to callable, then parse the callable to a string
         tools: List[Callable] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
@@ -359,7 +361,7 @@ class Agent:
         sop_list: Optional[List[str]] = None,
         saved_state_path: Optional[str] = None,
         autosave: Optional[bool] = False,
-        context_length: Optional[int] = 16000,
+        context_length: Optional[int] = None,
         transforms: Optional[Union[TransformConfig, dict]] = None,
         user_name: Optional[str] = "Human",
         multi_modal: Optional[bool] = None,
@@ -455,7 +457,6 @@ class Agent:
         self.dynamic_loops = dynamic_loops
         self.user_name = user_name
         self.context_length = context_length
-
         self.sop = sop
         self.sop_list = sop_list
         self.tools = tools
@@ -542,6 +543,10 @@ class Agent:
         self.mode = mode
         self.publish_to_marketplace = publish_to_marketplace
         self.marketplace_prompt_id = marketplace_prompt_id
+        
+        
+        # Yes, this works: it sets context_length based on the model_name, defaulting to 16000 if not set.
+        self.context_length = get_single_model_max_tokens(model_name) if model_name else 16000
 
         if self.max_loops == "auto":
             self.system_prompt = None
@@ -2110,28 +2115,15 @@ class Agent:
             >>> # 3. Generate a comprehensive summary
         """
         try:
+
+            self.short_memory.add(role=self.user_name, content=task)
+
             # Reset autonomous loop state
             self.autonomous_subtasks = []
             self.current_subtask_index = 0
             self.subtask_status = {}
             self.plan_created = False
             self.think_call_count = 0
-
-            # Load autonomous agent prompt if available
-            try:
-                from swarms.prompts.autonomous_agent_prompt import (
-                    get_autonomous_agent_prompt,
-                )
-
-                self.system_prompt = get_autonomous_agent_prompt()
-                # Reinitialize LLM with new prompt
-                if self.llm is not None:
-                    self.llm.system_prompt = self.system_prompt
-            except ImportError:
-                if self.verbose:
-                    logger.warning(
-                        "Autonomous agent prompt not available, using default system prompt"
-                    )
 
             # Add planning tools to tools_list_dictionary
             planning_tools = get_autonomous_planning_tools()
@@ -4479,22 +4471,26 @@ Subtask Breakdown:
             >>> agent.run(task="Who won the World Cup?", streaming_callback=print)
         """
 
-        # If interactive mode is enabled and no task is provided, prompt the user
-        if self.interactive and (
+        # # If interactive mode is enabled and no task is provided, prompt the user
+        # if self.interactive and (
+        #     task is None
+        #     or (isinstance(task, str) and task.strip() == "")
+        if (
             task is None
-            or (isinstance(task, str) and task.strip() == "")
+            or isinstance(task, str)
+            and task.strip() == ""
         ):
-            if self.print_on:
-                self.pretty_print(
-                    "Interactive mode enabled. Please enter your initial task:",
-                    loop_count=0,
-                )
+            # Always show prompt when asking for initial task, even if print_on is False
+            self.pretty_print(
+                "Interactive mode enabled. Please enter your initial task:",
+                loop_count=0,
+            )
             task = input("You: ").strip()
+
             if not task:
-                logger.warning(
+                raise ValueError(
                     "No task provided. Exiting interactive mode."
                 )
-                return None
 
         if not isinstance(task, str):
             task = format_data_structure(task)
@@ -4508,13 +4504,8 @@ Subtask Breakdown:
                 streaming_callback = self.streaming_callback
             # else: both are None, streaming_callback stays None
 
-        # Check if we should use autonomous loop structure
-        use_autonomous_loop = (
-            self.max_loops == "auto" and self.interactive is False
-        )
-
         try:
-            if use_autonomous_loop:
+            if self.max_loops == "auto":
                 # Use autonomous loop structure: plan -> execute subtasks -> summary
                 output = self._run_autonomous_loop(
                     task=task,
