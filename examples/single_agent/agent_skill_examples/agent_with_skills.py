@@ -9,7 +9,6 @@ Note: This example uses the example_skills directory in the root of the repo.
       To use your own skills, create a skills directory and point to it.
 """
 
-import os
 from pathlib import Path
 from swarms import Agent
 

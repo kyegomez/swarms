@@ -351,7 +351,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [README.md](utils/README.md) | Utils documentation |
 | [agent_loader/](utils/agent_loader/) | Agent loading utilities |
 | [communication_examples/](utils/communication_examples/) | Agent communication patterns including DuckDB, Pulsar, Redis, and SQLite |
-| [concurrent_wrapper_examples.py](utils/concurrent_wrapper_examples.py) | Concurrent processing wrappers |
 | [fetch_prompt.py](utils/fetch_prompt.py) | Prompt fetching utilities |
 | [litellm_connect_issue.py](utils/litellm_connect_issue.py) | LiteLLM connection issue examples |
 | [litellm_network_error_handling.py](utils/litellm_network_error_handling.py) | LiteLLM network error handling |

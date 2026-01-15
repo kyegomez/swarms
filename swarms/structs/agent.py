@@ -122,6 +122,10 @@ from swarms.utils.swarms_marketplace_utils import (
     add_prompt_to_marketplace,
 )
 from swarms.utils.workspace_utils import get_workspace_dir
+from swarms.utils.check_all_model_max_tokens import (
+    get_single_model_max_tokens,
+)
+from swarms.structs.dynamic_skills_loader import DynamicSkillsLoader
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -338,6 +342,11 @@ class Agent:
     def __init__(
         self,
         id: Optional[str] = agent_id(),
+        agent_name: Optional[str] = "swarm-worker-01",
+        agent_description: Optional[
+            str
+        ] = "An autonomous agent that can perform tasks and learn from experience powered by Swarms",
+        system_prompt: Optional[str] = AGENT_SYSTEM_PROMPT_3,
         llm: Optional[Any] = None,
         max_loops: Optional[Union[int, str]] = 1,
         stopping_condition: Optional[Callable[[str], bool]] = None,
@@ -349,9 +358,6 @@ class Agent:
         dynamic_loops: Optional[bool] = False,
         interactive: Optional[bool] = False,
         dashboard: Optional[bool] = False,
-        agent_name: Optional[str] = "swarm-worker-01",
-        agent_description: Optional[str] = None,
-        system_prompt: Optional[str] = AGENT_SYSTEM_PROMPT_3,
         # TODO: Change to callable, then parse the callable to a string
         tools: List[Callable] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
@@ -359,7 +365,7 @@ class Agent:
         sop_list: Optional[List[str]] = None,
         saved_state_path: Optional[str] = None,
         autosave: Optional[bool] = False,
-        context_length: Optional[int] = 16000,
+        context_length: Optional[int] = None,
         transforms: Optional[Union[TransformConfig, dict]] = None,
         user_name: Optional[str] = "Human",
         multi_modal: Optional[bool] = None,
@@ -455,7 +461,6 @@ class Agent:
         self.dynamic_loops = dynamic_loops
         self.user_name = user_name
         self.context_length = context_length
-
         self.sop = sop
         self.sop_list = sop_list
         self.tools = tools
@@ -543,6 +548,13 @@ class Agent:
         self.publish_to_marketplace = publish_to_marketplace
         self.marketplace_prompt_id = marketplace_prompt_id
 
+        # Yes, this works: it sets context_length based on the model_name, defaulting to 16000 if not set.
+        self.context_length = (
+            get_single_model_max_tokens(model_name)
+            if model_name
+            else 16000
+        )
+
         if self.max_loops == "auto":
             self.system_prompt = None
 
@@ -617,19 +629,6 @@ class Agent:
         if self.react_on is True:
             self.system_prompt += REACT_SYS_PROMPT
 
-        # Load Agent Skills if skills_dir is provided
-        if self.skills_dir:
-            self.skills_metadata = self.load_skills_metadata(
-                self.skills_dir
-            )
-            if self.skills_metadata:
-                self.system_prompt += self._build_skills_prompt(
-                    self.skills_metadata
-                )
-                logger.info(
-                    f"Loaded {len(self.skills_metadata)} skills from {self.skills_dir}"
-                )
-
         if self.autosave is True:
             log_agent_data(self.to_dict())
 
@@ -688,6 +687,85 @@ class Agent:
                 use_cases=(
                     self.use_cases if self.use_cases else None
                 ),
+            )
+
+    def handle_skills(self, task: Optional[str] = None):
+        """
+        Handle skills loading based on task similarity.
+
+        Args:
+            task: Optional task description. If provided, loads skills dynamically
+                  based on similarity to the task. If not provided, loads all skills statically.
+        """
+        if task is not None:
+            # Dynamic skills loading based on task
+            self._load_dynamic_skills_for_task(task)
+        else:
+            # Static skills loading (original behavior)
+            self._load_static_skills()
+
+    def _load_static_skills(self):
+        """Load all skills statically (original behavior)."""
+        skills_prompt = (
+            "\n\n# Available Skills\n\n"
+            "You have access to the following specialized skills. "
+            "Follow their instructions when relevant:\n\n"
+        )
+
+        self.system_prompt += skills_prompt
+
+        self.skills_metadata = self.load_skills_metadata(
+            self.skills_dir
+        )
+
+        if self.skills_metadata:
+            self.system_prompt += self._build_skills_prompt(
+                self.skills_metadata
+            )
+            logger.info(
+                f"Loaded {len(self.skills_metadata)} skills from {self.skills_dir}"
+            )
+
+    def _load_dynamic_skills_for_task(self, task: str):
+        """
+        Load skills dynamically based on task similarity.
+
+        Args:
+            task: The task description to match skills against
+        """
+        # Initialize the dynamic skills loader if not already done
+        if (
+            not hasattr(self, "dynamic_skills_loader")
+            or self.dynamic_skills_loader is None
+        ):
+            self.dynamic_skills_loader = DynamicSkillsLoader(
+                self.skills_dir
+            )
+
+        logger.info(
+            f"Loading dynamic skills for task: {task[:100]}..."
+        )
+
+        relevant_skills = (
+            self.dynamic_skills_loader.load_relevant_skills(task)
+        )
+
+        if relevant_skills:
+            skills_prompt = (
+                "\n\n# Available Skills\n\n"
+                "You have access to the following specialized skills. "
+                "Follow their instructions when relevant:\n\n"
+            )
+            self.system_prompt += skills_prompt
+            self.system_prompt += self._build_skills_prompt(
+                relevant_skills
+            )
+            logger.info(
+                f"Dynamically loaded {len(relevant_skills)} relevant skills for task: {task[:100]}..."
+            )
+        else:
+            logger.info(
+                f"No relevant skills found for task: {task[:100]}..."
             )
 
     def _get_agent_workspace_dir(self) -> str:
@@ -2110,28 +2188,15 @@ class Agent:
             >>> # 3. Generate a comprehensive summary
         """
         try:
+
+            self.short_memory.add(role=self.user_name, content=task)
+
             # Reset autonomous loop state
             self.autonomous_subtasks = []
             self.current_subtask_index = 0
             self.subtask_status = {}
             self.plan_created = False
             self.think_call_count = 0
-
-            # Load autonomous agent prompt if available
-            try:
-                from swarms.prompts.autonomous_agent_prompt import (
-                    get_autonomous_agent_prompt,
-                )
-
-                self.system_prompt = get_autonomous_agent_prompt()
-                # Reinitialize LLM with new prompt
-                if self.llm is not None:
-                    self.llm.system_prompt = self.system_prompt
-            except ImportError:
-                if self.verbose:
-                    logger.warning(
-                        "Autonomous agent prompt not available, using default system prompt"
-                    )
 
             # Add planning tools to tools_list_dictionary
             planning_tools = get_autonomous_planning_tools()
@@ -4305,7 +4370,9 @@ Subtask Breakdown:
         skills = []
 
         if not os.path.exists(skills_dir):
-            logger.warning(f"Skills directory not found: {skills_dir}")
+            logger.warning(
+                f"Skills directory not found: {skills_dir}"
+            )
             return skills
 
         for skill_folder in os.listdir(skills_dir):
@@ -4379,13 +4446,15 @@ Subtask Breakdown:
             return ""
 
         prompt = "\n\n# Available Skills\n\n"
-        prompt += "You have access to the following specialized skills. "
+        prompt += (
+            "You have access to the following specialized skills. "
+        )
         prompt += "Follow their instructions when relevant:\n\n"
 
         for skill in skills:
             prompt += f"## {skill['name']}\n\n"
             prompt += f"**Description**: {skill['description']}\n\n"
-            prompt += skill['content']
+            prompt += skill["content"]
             prompt += "\n\n---\n\n"
 
         return prompt
@@ -4479,22 +4548,29 @@ Subtask Breakdown:
             >>> agent.run(task="Who won the World Cup?", streaming_callback=print)
         """
 
-        # If interactive mode is enabled and no task is provided, prompt the user
-        if self.interactive and (
+        # # If interactive mode is enabled and no task is provided, prompt the user
+        # if self.interactive and (
+        #     task is None
+        #     or (isinstance(task, str) and task.strip() == "")
+        if (
             task is None
-            or (isinstance(task, str) and task.strip() == "")
+            or isinstance(task, str)
+            and task.strip() == ""
         ):
-            if self.print_on:
-                self.pretty_print(
-                    "Interactive mode enabled. Please enter your initial task:",
-                    loop_count=0,
-                )
+            # Always show prompt when asking for initial task, even if print_on is False
+            self.pretty_print(
+                "Interactive mode enabled. Please enter your initial task:",
+                loop_count=0,
+            )
             task = input("You: ").strip()
+
             if not task:
-                logger.warning(
+                raise ValueError(
                     "No task provided. Exiting interactive mode."
                 )
-                return None
+
+        if exists(self.skills_dir):
+            self.handle_skills(task=task)
 
         if not isinstance(task, str):
             task = format_data_structure(task)
@@ -4508,13 +4584,8 @@ Subtask Breakdown:
                 streaming_callback = self.streaming_callback
             # else: both are None, streaming_callback stays None
 
-        # Check if we should use autonomous loop structure
-        use_autonomous_loop = (
-            self.max_loops == "auto" and self.interactive is False
-        )
-
         try:
-            if use_autonomous_loop:
+            if self.max_loops == "auto":
                 # Use autonomous loop structure: plan -> execute subtasks -> summary
                 output = self._run_autonomous_loop(
                     task=task,
