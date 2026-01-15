@@ -1,0 +1,5 @@
+[
+  {"id": 1, "input": "market_up", "expected": "buy", "options": ["buy", "hold", "sell"]},
+  {"id": 2, "input": "market_down", "expected": "sell", "options": ["buy", "hold", "sell"]},
+  {"id": 3, "input": "flat_vol", "expected": "hold", "options": ["buy", "hold", "sell"]}
+]
