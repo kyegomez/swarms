@@ -18,6 +18,9 @@ from rich.align import Align
 import time
 import random
 import statistics
+import argparse
+import os
+import difflib
 
 console = Console()
 
@@ -34,6 +37,10 @@ CONFIG = {
     # path to optional JSON eval dataset (if present it will override built-in dataset)
     "eval_dataset_path": "examples/eval_dataset.json",
 }
+
+# Require explicit environment opt-in before instantiating real Agent instances
+# to avoid accidental API calls / costs. Set SWARMS_ALLOW_REAL_AGENT=1 to allow.
+
 
 TASK = "Collect market data, synthesize signals, and propose top 3 actions."
 
@@ -60,6 +67,13 @@ def load_eval_dataset(path: str):
     except Exception:
         pass
     return None
+
+
+def compute_similarity(a: str, b: str) -> float:
+    try:
+        return difflib.SequenceMatcher(None, str(a), str(b)).ratio()
+    except Exception:
+        return 0.0
 
 def title_text(text: str) -> Text:
     return Text(text, style="bold red on black")
@@ -139,58 +153,75 @@ def main() -> None:
 
 
 def evaluate_agents(agents, dataset):
-    """Simulate evaluating each agent against the dataset and return normalized scores."""
+    """Evaluate agents and return a dict of metrics per agent.
+
+    Returns: {agent: {"correct": int, "total": int, "accuracy": float, "avg_similarity": float}}
+    """
     scores = {}
     # if configured, try to call real Agent.run for each agent
     use_real = CONFIG.get("use_real_agents", False)
     real_agent_class = None
     if use_real:
-        try:
-            from swarms.structs.agent import Agent as RealAgent
-            real_agent_class = RealAgent
-        except Exception:
+        # require explicit opt-in via env var to avoid accidental external API usage
+        if os.environ.get("SWARMS_ALLOW_REAL_AGENT") == "1":
+            try:
+                from swarms.structs.agent import Agent as RealAgent
+                real_agent_class = RealAgent
+            except Exception:
+                real_agent_class = None
+        else:
+            console.print(Panel(Text("Real agent instantiation blocked: set SWARMS_ALLOW_REAL_AGENT=1 to allow.", style="bold yellow"), border_style="red"))
             real_agent_class = None
 
     for a in agents:
         correct = 0
+        similarities = []
+        total = len(dataset)
         if real_agent_class:
             try:
-                # create a minimal Agent; real configs may be more complex
                 agent = real_agent_class(agent_name=a, model_name=CONFIG.get("model"))
                 for case in dataset:
                     out = agent.run(task=case["input"]) or ""
-                    # naive scoring: check expected token in output
-                    if str(case.get("expected", "")).lower() in str(out).lower():
+                    sim = compute_similarity(out, case.get("expected", ""))
+                    similarities.append(sim)
+                    if case.get("expected", "").lower() in str(out).lower():
                         correct += 1
             except Exception:
-                # fallback to simulated scoring on failure
+                # fallback to deterministic simulated agent
                 seed = abs(hash(a)) % (2 ** 32)
                 rng = random.Random(seed)
                 for case in dataset:
                     resp = rng.choice(case["options"])
+                    sim = compute_similarity(resp, case.get("expected", ""))
+                    similarities.append(sim)
                     if resp == case["expected"]:
                         correct += 1
         else:
-            # deterministic pseudo-randomness per agent for reproducible demos
             seed = abs(hash(a)) % (2 ** 32)
             rng = random.Random(seed)
             for case in dataset:
-                # agent 'responds' by sampling an option; real system would call the agent
                 resp = rng.choice(case["options"])
+                sim = compute_similarity(resp, case.get("expected", ""))
+                similarities.append(sim)
                 if resp == case["expected"]:
                     correct += 1
-        # score in [0,1]
-        scores[a] = correct / max(1, len(dataset))
+
+        accuracy = correct / max(1, total)
+        avg_sim = sum(similarities) / max(1, len(similarities)) if similarities else 0.0
+        scores[a] = {"correct": correct, "total": total, "accuracy": accuracy, "avg_similarity": avg_sim}
     return scores
 
 
 def show_scores_panel(scores):
     t = Table(expand=True, show_header=True, header_style="bold red")
     t.add_column("Agent", style="red")
-    t.add_column("Score", style="white")
-    for a, s in sorted(scores.items(), key=lambda x: x[1], reverse=True):
-        s_text = Text(f"{s:.2f}", style="bold green" if s >= 0.5 else "yellow")
-        t.add_row(Text(a, style="bold red"), s_text)
+    t.add_column("Accuracy", style="white")
+    t.add_column("AvgSim", style="white")
+    # sort by accuracy then similarity
+    for a, s in sorted(scores.items(), key=lambda x: (x[1]["accuracy"], x[1]["avg_similarity"]), reverse=True):
+        acc_text = Text(f"{s['accuracy']:.2f}", style="bold green" if s["accuracy"] >= 0.5 else "yellow")
+        sim_text = Text(f"{s['avg_similarity']:.2f}", style="bold green" if s["avg_similarity"] >= 0.5 else "yellow")
+        t.add_row(Text(a, style="bold red"), acc_text, sim_text)
     console.print(Panel(t, title=Text("Evaluation Results", style="bold red"), border_style="red"))
 
 
