@@ -561,140 +561,7 @@ for i, message in enumerate(conversation_history, 1):
 
 ---
 
-## 7. ForestSwarm: Dynamic Agent Selection
-
-[📖 Documentation](https://docs.swarms.world/en/latest/swarms/structs/forest_swarm/)
-
-ForestSwarm dynamically selects the most suitable agent or combination of agents for a given task from a pool of available agents. This architecture uses decision trees to route tasks to specialized agents based on task characteristics, expertise matching, and context.
-
-Best For: ForestSwarm is ideal for task routing based on complexity or domain, expertise optimization, dynamic agent selection, adaptive workflows, and specialized service routing.
-
-Advantages: This architecture optimizes for agent expertise, adapts to different task types, enables efficient resource allocation, and provides scalable agent pool management.
-
-Trade-offs: ForestSwarm requires careful agent profiling, has decision logic complexity, may need training data for optimal routing, and involves initial setup overhead.
-
-### Architecture Diagram
-
-```mermaid
-graph TD
-    A[Task Input] --> B{Task Analysis}
-
-    B --> C{Complexity?}
-    B --> D{Domain?}
-    B --> E{Urgency?}
-
-    C -->|Simple| F[Basic Agent]
-    C -->|Complex| G[Expert Agent]
-
-    D -->|Technical| H[Technical Specialist]
-    D -->|Creative| I[Creative Specialist]
-
-    E -->|High| J[Priority Agent]
-    E -->|Normal| K[Standard Agent]
-
-    F --> L[Task Execution]
-    G --> L
-    H --> L
-    I --> L
-    J --> L
-    K --> L
-
-    L --> M[Result]
-
-```
-
-### Code Example
-
-```python
-from swarms import Agent, ForestSwarm
-
-# Create a diverse pool of specialized agents
-basic_analyst = Agent(
-    agent_name="BasicAnalyst",
-    system_prompt="Handle straightforward analysis tasks and basic questions.",
-    model_name="anthropic/claude-sonnet-4-5",
-    top_p=None,
-    max_loops=1,
-    dynamic_temperature_enabled=True,
-)
-
-expert_researcher = Agent(
-    agent_name="ExpertResearcher",
-    system_prompt="Conduct deep research and complex analysis for challenging topics.",
-    model_name="anthropic/claude-sonnet-4-5",
-    top_p=None,
-    max_loops=1,
-    dynamic_temperature_enabled=True,
-)
-
-technical_specialist = Agent(
-    agent_name="TechnicalSpecialist",
-    system_prompt="Handle technical questions, code, and technical documentation.",
-    model_name="anthropic/claude-sonnet-4-5",
-    top_p=None,
-    max_loops=1,
-    dynamic_temperature_enabled=True,
-)
-
-creative_writer = Agent(
-    agent_name="CreativeWriter",
-    system_prompt="Create engaging content, stories, and creative writing tasks.",
-    model_name="anthropic/claude-sonnet-4-5",
-    top_p=None,
-    max_loops=1,
-    dynamic_temperature_enabled=True,
-)
-
-# Define agent capabilities and routing rules
-agent_configs = [
-    {
-        "agent": basic_analyst,
-        "capabilities": ["basic_analysis", "simple_questions"],
-        "complexity_threshold": 3  # 1-5 scale
-    },
-    {
-        "agent": expert_researcher,
-        "capabilities": ["deep_research", "complex_analysis"],
-        "complexity_threshold": 8
-    },
-    {
-        "agent": technical_specialist,
-        "capabilities": ["technical", "coding", "documentation"],
-        "complexity_threshold": 6
-    },
-    {
-        "agent": creative_writer,
-        "capabilities": ["writing", "creative", "content"],
-        "complexity_threshold": 5
-    }
-]
-
-# Create ForestSwarm with dynamic selection
-forest = ForestSwarm(
-    agents=agent_configs,
-    selection_criteria=["complexity", "domain", "task_type"],
-    verbose=True
-)
-
-# Test with different types of tasks
-tasks = [
-    "What is the capital of France?",  # Simple question
-    "Explain quantum computing in detail with mathematical foundations",  # Complex technical
-    "Write a short story about a robot learning to paint",  # Creative writing
-    "Research the latest developments in CRISPR gene editing",  # Complex research
-]
-
-for task in tasks:
-    print(f"\n=== Task: {task[:50]}... ===")
-    result = forest.run(task)
-    print(f"Selected Agent: {result['selected_agent']}")
-    print(f"Result: {result['output'][:200]}...")
-    print("-" * 60)
-```
-
----
-
-## 8. HierarchicalSwarm: Director-Worker Pattern
+## 7. HierarchicalSwarm: Director-Worker Pattern
 
 [📖 Documentation](https://docs.swarms.world/en/latest/swarms/structs/hierarchical_swarm/)
 
@@ -812,7 +679,7 @@ print(project_plan)
 
 ---
 
-## 9. HeavySwarm: Advanced Research Framework
+## 8. HeavySwarm: Advanced Research Framework
 
 [📖 Documentation](https://docs.swarms.world/en/latest/swarms/structs/heavy_swarm/)
 
@@ -875,7 +742,7 @@ print(investment_analysis)
 
 ---
 
-## 10. SwarmRouter: Universal Orchestrator
+## 9. SwarmRouter: Universal Orchestrator
 
 [📖 Documentation](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)
 
@@ -1002,7 +869,7 @@ print("=== SwarmRouter enables easy architecture switching! ===")
 
 ---
 
-## 11. Social Algorithms: Custom Communication Patterns
+## 10. Social Algorithms: Custom Communication Patterns
 
 [📖 Documentation](https://docs.swarms.world/en/latest/swarms/structs/social_algorithms/)
 
@@ -1121,7 +988,7 @@ print(f"Final Synthesis: {result['synthesis'][:300]}...")
 
 ---
 
-## 12. Agent Orchestration Protocol (AOP): Distributed Services
+## 11. Agent Orchestration Protocol (AOP): Distributed Services
 
 [📖 Documentation](https://docs.swarms.world/en/latest/swarms/structs/aop/)
 
@@ -1337,24 +1204,23 @@ print(result)
 
 ## Multi-Agent Architecture Comparison Table
 
-| Architecture | Best For | Key Features | Complexity | Use Case Examples |
-|-------------|----------|--------------|------------|-------------------|
-| **SequentialWorkflow** | Linear processes with clear dependencies | Step-by-step execution, predictable order | Low | Content creation, data pipelines, QA chains |
-| **ConcurrentWorkflow** | Independent parallel tasks | Maximum parallelism, resource efficiency | Low | Batch processing, market analysis, parallel research |
-| **AgentRearrange** | Complex non-linear relationships | Flexible routing syntax, dynamic connections | Medium | Adaptive workflows, multi-path processing |
-| **GraphWorkflow** | Complex dependency management | DAG orchestration, parallel execution | High | Software builds, project management, complex pipelines |
-| **MixtureOfAgents** | Expert consensus and collaboration | Parallel expert analysis, synthesis | Medium | Strategic decisions, comprehensive analysis, risk assessment |
-| **GroupChat** | Conversational collaboration | Multi-agent dialogue, brainstorming | Medium | Negotiations, creative ideation, debate |
-| **ForestSwarm** | Dynamic agent selection | Expertise-based routing, adaptive selection | Medium | Task routing, specialized service delivery |
-| **HierarchicalSwarm** | Complex project management | Director-worker pattern, feedback loops | High | Team coordination, strategic planning, quality control |
-| **HeavySwarm** | Deep research and analysis | Multi-phase investigation, verification | High | Academic research, strategic planning, comprehensive reports |
-| **SwarmRouter** | Architecture experimentation | Unified API, easy switching | Low | A/B testing, flexible deployments, unified management |
-| **Social Algorithms** | Custom interaction patterns | Programmable communication, extensibility | High | Research protocols, domain-specific workflows |
-| **Agent Orchestration Protocol** | Distributed systems | Service discovery, enterprise scalability | High | Large-scale deployments, cloud-native applications |
+| Name | Description | Docs |
+|------|-------------|------|
+| SequentialWorkflow | Simple linear task processing with step-by-step execution for workflows with clear dependencies. Ideal for content creation, data pipelines, and QA chains. | [📖](https://docs.swarms.world/en/latest/swarms/structs/sequential_workflow/) |
+| ConcurrentWorkflow | Parallel task execution enabling maximum parallelism for independent operations. Best for batch processing, market analysis, and parallel research. | [📖](https://docs.swarms.world/en/latest/swarms/structs/concurrentworkflow/) |
+| AgentRearrange | Flexible agent routing using dynamic syntax for complex non-linear relationships. Perfect for adaptive workflows and multi-path processing. | [📖](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/) |
+| GraphWorkflow | Complex dependency management using DAG orchestration for intricate projects. Suitable for software builds, project management, and complex pipelines. | [📖](https://docs.swarms.world/en/latest/swarms/structs/graph_workflow/) |
+| MixtureOfAgents | Expert collaboration through parallel analysis and synthesis for consensus building. Excellent for strategic decisions, comprehensive analysis, and risk assessment. | [📖](https://docs.swarms.world/en/latest/swarms/structs/moa/) |
+| GroupChat | Conversational collaboration enabling multi-agent dialogue and brainstorming. Great for negotiations, creative ideation, and debate. | [📖](https://docs.swarms.world/en/latest/swarms/structs/group_chat/) |
+| HierarchicalSwarm | Director-worker pattern for complex project management with feedback loops. Perfect for team coordination, strategic planning, and quality control. | [📖](https://docs.swarms.world/en/latest/swarms/structs/hierarchical_swarm/) |
+| HeavySwarm | Advanced research framework with multi-phase investigation and verification. Designed for academic research, strategic planning, and comprehensive reports. | [📖](https://docs.swarms.world/en/latest/swarms/structs/heavy_swarm/) |
+| SwarmRouter | Universal orchestrator providing single interface for all architectures. Enables easy architecture switching and A/B testing. | [📖](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/) |
+| Social Algorithms | Custom communication patterns with programmable agent interactions. Suitable for research protocols and domain-specific workflows. | [📖](https://docs.swarms.world/en/latest/swarms/structs/social_algorithms/) |
+| Agent Orchestration Protocol | Distributed services framework for scalable multi-agent systems. Built for large-scale deployments and cloud-native applications. | [📖](https://docs.swarms.world/en/latest/swarms/structs/aop/) |
 
 ### Advanced Considerations
 
-When considering task complexity, simple tasks work well with Sequential or Concurrent architectures while complex tasks benefit from MoA, HeavySwarm, or Hierarchical approaches. For time requirements, speed-critical tasks should use Concurrent or ForestSwarm while quality-critical tasks work better with MoA or HeavySwarm. Regarding coordination needs, high coordination scenarios benefit from Hierarchical or GroupChat architectures while low coordination situations work well with Concurrent or AgentRearrange. For scalability requirements, high scale deployments should use AOP or ForestSwarm while moderate scale applications can work with most architectures. Finally, when dealing with resource constraints, limited resources are best served by Sequential or simple Concurrent approaches while abundant resources enable the use of HeavySwarm or complex hierarchies.
+When considering task complexity, simple tasks work well with Sequential or Concurrent architectures while complex tasks benefit from MoA, HeavySwarm, or Hierarchical approaches. For time requirements, speed-critical tasks should use Concurrent or SwarmRouter while quality-critical tasks work better with MoA or HeavySwarm. Regarding coordination needs, high coordination scenarios benefit from Hierarchical or GroupChat architectures while low coordination situations work well with Concurrent or AgentRearrange. For scalability requirements, high scale deployments should use AOP or SwarmRouter while moderate scale applications can work with most architectures. Finally, when dealing with resource constraints, limited resources are best served by Sequential or simple Concurrent approaches while abundant resources enable the use of HeavySwarm or complex hierarchies.
 
 ### Performance Optimization Tips
 
