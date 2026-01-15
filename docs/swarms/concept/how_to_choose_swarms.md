@@ -31,8 +31,6 @@ graph TD
     C --> D[Agent 3<br/>Writer]
     D --> E[Final Output]
 
-    style A fill:#e1f5fe
-    style E fill:#c8e6c9
 ```
 
 ### Code Example
@@ -104,8 +102,6 @@ graph TD
 
     E --> F[Final Output]
 
-    style A fill:#e1f5fe
-    style F fill:#c8e6c9
 ```
 
 ### Code Example
@@ -186,8 +182,6 @@ graph TD
 
     E --> F[Final Output]
 
-    style A fill:#e1f5fe
-    style F fill:#c8e6c9
 ```
 
 ### Code Example
@@ -277,8 +271,6 @@ graph TD
     E --> G[Final Report]
     F --> G
 
-    style A fill:#e1f5fe
-    style G fill:#c8e6c9
 ```
 
 ### Code Example
@@ -402,8 +394,6 @@ graph TD
 
     E --> F[Comprehensive Solution]
 
-    style A fill:#e1f5fe
-    style F fill:#c8e6c9
 ```
 
 ### Code Example
@@ -504,8 +494,6 @@ graph TD
 
     G --> H[Consensus Reached]
 
-    style A fill:#e1f5fe
-    style H fill:#c8e6c9
 ```
 
 ### Code Example
@@ -613,8 +601,6 @@ graph TD
 
     L --> M[Result]
 
-    style A fill:#e1f5fe
-    style M fill:#c8e6c9
 ```
 
 ### Code Example
@@ -745,8 +731,6 @@ graph TD
 
     I --> J[Project Complete]
 
-    style A fill:#e1f5fe
-    style J fill:#c8e6c9
 ```
 
 ### Code Example
@@ -856,8 +840,6 @@ graph TD
 
     F --> G[Final Report<br/>Synthesis]
 
-    style A fill:#e1f5fe
-    style G fill:#c8e6c9
 ```
 
 ### Code Example
@@ -927,8 +909,6 @@ graph TD
     J --> L
     K --> L
 
-    style A fill:#e1f5fe
-    style L fill:#c8e6c9
 ```
 
 ### Code Example
@@ -1054,8 +1034,6 @@ graph TD
 
     H --> I[Final Result]
 
-    style A fill:#e1f5fe
-    style I fill:#c8e6c9
 ```
 
 ### Code Example
@@ -1181,8 +1159,6 @@ graph TD
 
     L --> M[Response to Client]
 
-    style A fill:#e1f5fe
-    style M fill:#c8e6c9
 ```
 
 ### Code Example
