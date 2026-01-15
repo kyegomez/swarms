@@ -22,9 +22,11 @@ Todo
 
 """
 
+import json
+import os
 import time
 import traceback
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -52,6 +54,10 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.output_types import OutputType
+from swarms.utils.swarm_autosave import (
+    autosave_swarm,
+    get_swarm_workspace_dir,
+)
 
 
 class HierarchicalSwarmDashboard:
@@ -672,6 +678,9 @@ class HierarchicalSwarm:
         director_temperature: float = 0.7,
         director_top_p: float = 0.9,
         planning_enabled: bool = True,
+        autosave: bool = False,
+        autosave_use_timestamp: bool = True,
+        verbose: bool = False,
         *args,
         **kwargs,
     ):
@@ -692,6 +701,9 @@ class HierarchicalSwarm:
             director_model_name (str): Model name for the main director agent.
             add_collaboration_prompt (bool): Whether to add collaboration prompts.
             director_feedback_on (bool): Whether director feedback is enabled.
+            autosave (bool): Whether to enable autosaving of swarm configuration, state, and metadata.
+            autosave_use_timestamp (bool): If True, use timestamp in directory name; if False, use UUID.
+            verbose (bool): Whether to enable verbose logging.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -719,6 +731,14 @@ class HierarchicalSwarm:
         self.director_temperature = director_temperature
         self.director_top_p = director_top_p
         self.planning_enabled = planning_enabled
+        self.autosave = autosave
+        self.autosave_use_timestamp = autosave_use_timestamp
+        self.verbose = verbose
+        self.swarm_workspace_dir = None
+
+        # Setup autosave workspace if enabled
+        if self.autosave:
+            self._setup_autosave()
 
         self.initialize_swarm()
 
@@ -814,6 +834,88 @@ class HierarchicalSwarm:
 
         if self.multi_agent_prompt_improvements:
             self.prepare_worker_agents()
+
+    def _setup_autosave(self):
+        """
+        Setup autosave workspace directory and save initial configuration.
+
+        Creates the workspace directory structure and saves the initial
+        configuration if autosave is enabled.
+        """
+        try:
+            class_name = self.__class__.__name__
+            swarm_name = self.name or "hierarchical-swarm"
+            self.swarm_workspace_dir = get_swarm_workspace_dir(
+                class_name, swarm_name, self.autosave_use_timestamp
+            )
+
+            if self.swarm_workspace_dir:
+                # Save initial configuration
+                autosave_swarm(
+                    self,
+                    self.swarm_workspace_dir,
+                    save_config=True,
+                    save_state=False,
+                    save_metadata=False,
+                )
+                if self.verbose:
+                    logger.info(
+                        f"Autosave enabled. Swarm workspace: {self.swarm_workspace_dir}"
+                    )
+        except Exception as e:
+            logger.warning(
+                f"Failed to setup autosave for HierarchicalSwarm: {e}"
+            )
+            # Don't raise - autosave failures shouldn't break initialization
+            self.swarm_workspace_dir = None
+
+    def _save_conversation_history(self):
+        """
+        Save conversation history as a separate JSON file to the workspace directory.
+
+        Saves the conversation history to:
+        workspace_dir/swarms/HierarchicalSwarm/{swarm-name}-{id}/conversation_history.json
+        """
+        if not self.swarm_workspace_dir:
+            return
+
+        try:
+            # Get conversation history
+            if hasattr(self, "conversation") and self.conversation:
+                if hasattr(self.conversation, "conversation_history"):
+                    conversation_data = self.conversation.conversation_history
+                elif hasattr(self.conversation, "to_dict"):
+                    conversation_data = self.conversation.to_dict()
+                else:
+                    conversation_data = []
+
+                # Create conversation history file path
+                conversation_path = os.path.join(
+                    self.swarm_workspace_dir, "conversation_history.json"
+                )
+
+                # Save conversation history as JSON
+                with open(conversation_path, "w", encoding="utf-8") as f:
+                    json.dump(
+                        conversation_data,
+                        f,
+                        indent=2,
+                        default=str,
+                    )
+
+                if self.verbose:
+                    logger.debug(
+                        f"Saved conversation history to {conversation_path}"
+                    )
+            else:
+                if self.verbose:
+                    logger.debug(
+                        "No conversation object found, skipping conversation history save"
+                    )
+        except Exception as e:
+            logger.warning(
+                f"Failed to save conversation history: {e}"
+            )
 
     def add_context_to_director(self):
         """
@@ -1167,9 +1269,36 @@ class HierarchicalSwarm:
                 self.dashboard.update_director_status("COMPLETED")
                 self.dashboard.stop()
 
-            return history_output_formatter(
+            result = history_output_formatter(
                 conversation=self.conversation, type=self.output_type
             )
+
+            # Autosave after successful execution
+            if self.autosave and self.swarm_workspace_dir:
+                try:
+                    autosave_swarm(
+                        self,
+                        self.swarm_workspace_dir,
+                        save_config=False,  # Don't overwrite initial config
+                        save_state=True,
+                        save_metadata=True,
+                        execution_result=result,
+                        additional_data={
+                            "execution_metadata": {
+                                "task": task if task else None,
+                                "status": "completed",
+                                "loops_completed": current_loop,
+                            }
+                        },
+                    )
+                    # Save conversation history as separate JSON file
+                    self._save_conversation_history()
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to autosave after execution: {e}"
+                    )
+
+            return result
 
         except Exception as e:
             # Stop dashboard on error
@@ -1177,10 +1306,36 @@ class HierarchicalSwarm:
                 self.dashboard.update_director_status("ERROR")
                 self.dashboard.stop()
 
+            # Autosave on error
+            if self.autosave and self.swarm_workspace_dir:
+                try:
+                    autosave_swarm(
+                        self,
+                        self.swarm_workspace_dir,
+                        save_config=False,  # Don't overwrite initial config
+                        save_state=True,
+                        save_metadata=True,
+                        execution_result=None,
+                        additional_data={
+                            "execution_metadata": {
+                                "task": task if task else None,
+                                "status": "error",
+                                "error": str(e),
+                            }
+                        },
+                    )
+                    # Save conversation history as separate JSON file
+                    self._save_conversation_history()
+                except Exception as autosave_error:
+                    logger.warning(
+                        f"Failed to autosave on error: {autosave_error}"
+                    )
+
             error_msg = f"[ERROR] Swarm run failed: {str(e)}"
             logger.error(
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
+            raise
 
     def _get_interactive_task(self) -> str:
         """
@@ -1610,3 +1765,72 @@ class HierarchicalSwarm:
             logger.error(
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
+
+    def _serialize_callable(
+        self, attr_value: Callable
+    ) -> Dict[str, Any]:
+        """
+        Serializes a callable object into a dictionary representation.
+
+        Args:
+            attr_value (Callable): The callable object to serialize.
+
+        Returns:
+            Dict[str, Any]: A dictionary representation of the callable.
+        """
+        return {
+            "type": "callable",
+            "name": getattr(attr_value, "__name__", str(attr_value)),
+            "module": getattr(attr_value, "__module__", None),
+            "repr": repr(attr_value),
+        }
+
+    def _serialize_attr(self, attr_name: str, attr_value: Any) -> Any:
+        """
+        Serializes an individual attribute, handling non-serializable objects.
+
+        Args:
+            attr_name (str): The name of the attribute.
+            attr_value (Any): The value of the attribute.
+
+        Returns:
+            Any: The serialized value of the attribute.
+        """
+        try:
+            if callable(attr_value):
+                return self._serialize_callable(attr_value)
+            elif hasattr(attr_value, "to_dict"):
+                return (
+                    attr_value.to_dict()
+                )  # Recursive serialization for nested objects
+            else:
+                json.dumps(
+                    attr_value
+                )  # Attempt to serialize to catch non-serializable objects
+                return attr_value
+        except (TypeError, ValueError):
+            return f"<Non-serializable: {type(attr_value).__name__}>"
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Converts all attributes of the class, including callables, into a dictionary.
+        Handles non-serializable attributes by converting them or skipping them.
+
+        Returns:
+            Dict[str, Any]: A dictionary representation of the class attributes.
+        """
+        # Create a copy to avoid mutating the original
+        dict_copy = self.__dict__.copy()
+        
+        # Exclude non-serializable or internal attributes
+        # Conversation is saved separately as conversation_history.json
+        excluded_keys = {
+            "dashboard",  # Dashboard is a UI component, not needed in config
+            "conversation",  # Conversation is saved separately
+        }
+        
+        return {
+            attr_name: self._serialize_attr(attr_name, attr_value)
+            for attr_name, attr_value in dict_copy.items()
+            if attr_name not in excluded_keys
+        }
