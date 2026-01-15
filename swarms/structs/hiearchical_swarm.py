@@ -675,7 +675,7 @@ class HierarchicalSwarm:
         director_temperature: float = 0.7,
         director_top_p: float = 0.9,
         planning_enabled: bool = True,
-        autosave: bool = True,
+        autosave: bool = False,
         verbose: bool = False,
         *args,
         **kwargs,
@@ -1720,71 +1720,4 @@ class HierarchicalSwarm:
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
 
-    def _serialize_callable(
-        self, attr_value: Callable
-    ) -> Dict[str, Any]:
-        """
-        Serializes a callable object into a dictionary representation.
-
-        Args:
-            attr_value (Callable): The callable object to serialize.
-
-        Returns:
-            Dict[str, Any]: A dictionary representation of the callable.
-        """
-        return {
-            "type": "callable",
-            "name": getattr(attr_value, "__name__", str(attr_value)),
-            "module": getattr(attr_value, "__module__", None),
-            "repr": repr(attr_value),
-        }
-
-    def _serialize_attr(self, attr_name: str, attr_value: Any) -> Any:
-        """
-        Serializes an individual attribute, handling non-serializable objects.
-
-        Args:
-            attr_name (str): The name of the attribute.
-            attr_value (Any): The value of the attribute.
-
-        Returns:
-            Any: The serialized value of the attribute.
-        """
-        try:
-            if callable(attr_value):
-                return self._serialize_callable(attr_value)
-            elif hasattr(attr_value, "to_dict"):
-                return (
-                    attr_value.to_dict()
-                )  # Recursive serialization for nested objects
-            else:
-                json.dumps(
-                    attr_value
-                )  # Attempt to serialize to catch non-serializable objects
-                return attr_value
-        except (TypeError, ValueError):
-            return f"<Non-serializable: {type(attr_value).__name__}>"
-
-    def to_dict(self) -> Dict[str, Any]:
-        """
-        Converts all attributes of the class, including callables, into a dictionary.
-        Handles non-serializable attributes by converting them or skipping them.
-
-        Returns:
-            Dict[str, Any]: A dictionary representation of the class attributes.
-        """
-        # Create a copy to avoid mutating the original
-        dict_copy = self.__dict__.copy()
-        
-        # Exclude non-serializable or internal attributes
-        # Conversation is saved separately as conversation_history.json
-        excluded_keys = {
-            "dashboard",  # Dashboard is a UI component, not needed in config
-            "conversation",  # Conversation is saved separately
-        }
-        
-        return {
-            attr_name: self._serialize_attr(attr_name, attr_value)
-            for attr_name, attr_value in dict_copy.items()
-            if attr_name not in excluded_keys
-        }
+   
