@@ -54,10 +54,7 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.output_types import OutputType
-from swarms.utils.swarm_autosave import (
-    autosave_swarm,
-    get_swarm_workspace_dir,
-)
+from swarms.utils.swarm_autosave import get_swarm_workspace_dir
 
 
 class HierarchicalSwarmDashboard:
@@ -701,7 +698,7 @@ class HierarchicalSwarm:
             director_model_name (str): Model name for the main director agent.
             add_collaboration_prompt (bool): Whether to add collaboration prompts.
             director_feedback_on (bool): Whether director feedback is enabled.
-            autosave (bool): Whether to enable autosaving of swarm configuration, state, and metadata.
+            autosave (bool): Whether to enable autosaving of conversation history.
             autosave_use_timestamp (bool): If True, use timestamp in directory name; if False, use UUID.
             verbose (bool): Whether to enable verbose logging.
             *args: Additional positional arguments.
@@ -837,10 +834,10 @@ class HierarchicalSwarm:
 
     def _setup_autosave(self):
         """
-        Setup autosave workspace directory and save initial configuration.
+        Setup workspace directory for saving conversation history.
 
-        Creates the workspace directory structure and saves the initial
-        configuration if autosave is enabled.
+        Creates the workspace directory structure if autosave is enabled.
+        Only conversation history will be saved to this directory.
         """
         try:
             class_name = self.__class__.__name__
@@ -850,17 +847,9 @@ class HierarchicalSwarm:
             )
 
             if self.swarm_workspace_dir:
-                # Save initial configuration
-                autosave_swarm(
-                    self,
-                    self.swarm_workspace_dir,
-                    save_config=True,
-                    save_state=False,
-                    save_metadata=False,
-                )
                 if self.verbose:
                     logger.info(
-                        f"Autosave enabled. Swarm workspace: {self.swarm_workspace_dir}"
+                        f"Autosave enabled. Conversation history will be saved to: {self.swarm_workspace_dir}"
                     )
         except Exception as e:
             logger.warning(
@@ -1273,29 +1262,13 @@ class HierarchicalSwarm:
                 conversation=self.conversation, type=self.output_type
             )
 
-            # Autosave after successful execution
+            # Save conversation history after successful execution
             if self.autosave and self.swarm_workspace_dir:
                 try:
-                    autosave_swarm(
-                        self,
-                        self.swarm_workspace_dir,
-                        save_config=False,  # Don't overwrite initial config
-                        save_state=True,
-                        save_metadata=True,
-                        execution_result=result,
-                        additional_data={
-                            "execution_metadata": {
-                                "task": task if task else None,
-                                "status": "completed",
-                                "loops_completed": current_loop,
-                            }
-                        },
-                    )
-                    # Save conversation history as separate JSON file
                     self._save_conversation_history()
                 except Exception as e:
                     logger.warning(
-                        f"Failed to autosave after execution: {e}"
+                        f"Failed to save conversation history: {e}"
                     )
 
             return result
@@ -1306,29 +1279,13 @@ class HierarchicalSwarm:
                 self.dashboard.update_director_status("ERROR")
                 self.dashboard.stop()
 
-            # Autosave on error
+            # Save conversation history on error
             if self.autosave and self.swarm_workspace_dir:
                 try:
-                    autosave_swarm(
-                        self,
-                        self.swarm_workspace_dir,
-                        save_config=False,  # Don't overwrite initial config
-                        save_state=True,
-                        save_metadata=True,
-                        execution_result=None,
-                        additional_data={
-                            "execution_metadata": {
-                                "task": task if task else None,
-                                "status": "error",
-                                "error": str(e),
-                            }
-                        },
-                    )
-                    # Save conversation history as separate JSON file
                     self._save_conversation_history()
-                except Exception as autosave_error:
+                except Exception as save_error:
                     logger.warning(
-                        f"Failed to autosave on error: {autosave_error}"
+                        f"Failed to save conversation history on error: {save_error}"
                     )
 
             error_msg = f"[ERROR] Swarm run failed: {str(e)}"
