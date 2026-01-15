@@ -391,6 +391,7 @@ nav:
       - Utils:
         - Agent with Streaming: "examples/agent_stream.md"
         - Agent Output Types: "swarms/examples/agent_output_types.md"
+        - Output Formats & Architectures: "examples/output_formats_and_architectures.md"
         - Gradio Chat Interface: "swarms/ui/main.md"
         - Agent with Gemini Nano Banana: "swarms/examples/jarvis_agent.md"
       - LLM Providers:
