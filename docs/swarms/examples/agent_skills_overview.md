@@ -1,181 +1,162 @@
-# Agent Skills Overview
+# Agent Skills
 
-Agent Skills is a simple, powerful way to specialize agents using markdown files. This guide covers everything you need to know to use skills in your Swarms agents.
+Agent Skills let you specialize AI agents using simple markdown files. Add domain expertise to your agents without writing code - just create `SKILL.md` files in a directory.
 
-## What are Agent Skills?
+## How It Works
 
-Agent Skills are modular capabilities defined in `SKILL.md` files that guide agent behavior. They enable you to:
+1. **Create Skills**: Write `SKILL.md` files with instructions for specific tasks
+2. **Load Directory**: Point your agent to a skills folder
+3. **Automatic Application**: Agent uses relevant skills based on your prompts
 
-- **Specialize agents** without modifying code
-- **Share expertise** across your team through skill libraries
-- **Maintain consistency** in how agents perform tasks
-- **Rapidly iterate** by editing markdown instead of rebuilding prompts
+## Performance Benefits
+
+Skills dramatically improve agent performance by:
+
+- **Domain Expertise**: Agents follow proven methodologies instead of generic responses
+- **Consistency**: Same approach every time for similar tasks
+- **Specialization**: Focus on specific domains rather than being general-purpose
+- **Rapid Iteration**: Edit markdown files instead of retraining models
 
 ## Quick Example
 
 ```python
 from swarms import Agent
 
-agent = Agent(
+# Without skills - generic response
+basic_agent = Agent(agent_name="Assistant", model_name="gpt-4o")
+basic_response = basic_agent.run("How do I analyze company financials?")
+# → Generic explanation
+
+# With skills - specialized response
+skilled_agent = Agent(
     agent_name="Financial Analyst",
     model_name="gpt-4o",
-    skills_dir="./example_skills",  # ← Just add this parameter!
-    max_loops=1
+    skills_dir="./skills"  # Contains financial-analysis skill
 )
-
-# Agent automatically follows financial-analysis skill instructions
-response = agent.run("Perform a DCF valuation for Tesla")
+skilled_response = skilled_agent.run("How do I analyze company financials?")
+# → Structured DCF methodology with specific steps
 ```
 
-## SKILL.md Format
+## Skill Schema
 
-Skills use a simple structure:
+Skills use a simple markdown format with YAML frontmatter:
 
-```yaml
+```markdown
 ---
-name: my-skill
-description: What this skill does
+name: financial-analysis
+description: Perform comprehensive financial analysis including DCF modeling and ratio analysis
 ---
 
-# Skill Instructions
+# Financial Analysis Skill
 
-Detailed guidance for the agent...
+When performing financial analysis, follow these systematic steps:
+
+## Core Methodology
+
+### 1. Data Collection
+- Gather income statement, balance sheet, cash flow
+- Verify data accuracy and completeness
+
+### 2. Financial Ratios
+Calculate key ratios:
+- EBITDA margin = (EBITDA / Revenue) × 100
+- Current ratio = Current Assets / Current Liabilities
+
+### 3. Valuation Models
+- DCF: Project cash flows and discount to present value
+- Comparables: Compare to similar companies
 
 ## Guidelines
-- Key principles
-- Best practices
-
-## Examples
-- Example use case 1
-- Example use case 2
+- Use conservative assumptions when uncertain
+- Cross-validate with multiple methods
+- Clearly document all assumptions
 ```
 
-## Directory Structure
+### Required Fields
 
-```
+| Field       | Type   | Description                          |
+|-------------|--------|--------------------------------------|
+| `name`      | string | Unique skill identifier              |
+| `description` | string | What the skill does and when to use it |
+
+### Directory Structure
+
+```text
 skills/
 ├── financial-analysis/
 │   └── SKILL.md
 ├── code-review/
 │   └── SKILL.md
-└── customer-support/
+└── data-visualization/
     └── SKILL.md
 ```
 
-## Core Concepts
+## Usage
 
-### 1. Skill Loading
-
-When you specify `skills_dir`, Swarms:
-1. Scans for subdirectories containing `SKILL.md`
-2. Parses YAML frontmatter (name, description)
-3. Loads full markdown content
-4. Injects into agent's system prompt
-
-### 2. Skill Activation
-
-Skills are **always active** once loaded. The agent sees all skill instructions and applies them when relevant to the task.
-
-### 3. Multiple Skills
-
-Agents can have multiple skills loaded simultaneously. They'll intelligently apply the right guidance based on the task.
-
-## Example Skills Included
-
-Swarms includes 3 production-ready skills:
-
-### Financial Analysis
-```bash
-example_skills/financial-analysis/SKILL.md
-```
-- DCF valuation methodology
-- Financial ratio analysis
-- Sensitivity analysis frameworks
-- Investment recommendations
-
-### Code Review
-```bash
-example_skills/code-review/SKILL.md
-```
-- Security vulnerability detection
-- Performance optimization checks
-- Best practices enforcement
-- Maintainability assessment
-
-### Data Visualization
-```bash
-example_skills/data-visualization/SKILL.md
-```
-- Chart type selection
-- Design principles
-- Color best practices
-- Storytelling frameworks
-
-## Common Use Cases
-
-### 1. Domain Expertise
-
-Add specialized knowledge:
 ```python
-# Financial analysis agent
+from swarms import Agent
+
+# Basic usage - load all skills from directory
 agent = Agent(
-    agent_name="Finance Expert",
-    skills_dir="./skills/finance"
+    agent_name="Specialist",
+    model_name="gpt-4o",
+    skills_dir="./skills"  # Points to folder with SKILL.md files
 )
+
+# Agent automatically uses relevant skills
+response = agent.run("Analyze this company's financial statements")
 ```
 
-### 2. Process Enforcement
+## Built-in Examples
 
-Ensure consistent methodologies:
-```python
-# Code review with company standards
-agent = Agent(
-    agent_name="Code Reviewer",
-    skills_dir="./skills/code-standards"
-)
+| Skill                | What it does                                | Example Prompt                  |
+|----------------------|---------------------------------------------|---------------------------------|
+| **financial-analysis** | DCF valuation, ratio analysis, financial modeling | "Perform DCF analysis on Tesla" |
+| **code-review**      | Security checks, performance optimization, best practices | "Review this Python code for issues" |
+| **data-visualization** | Chart selection, design principles, storytelling | "Best chart for showing sales trends" |
+
+## Creating Custom Skills
+
+1. Create a folder: `mkdir my-skills/customer-support`
+2. Add `SKILL.md`:
+
+```markdown
+---
+name: customer-support
+description: Handle customer inquiries with empathy and efficiency
+---
+
+# Customer Support Skill
+
+## Approach
+1. Acknowledge the issue
+2. Ask clarifying questions
+3. Provide clear solutions
+4. Offer follow-up help
+
+## Tone
+- Professional yet friendly
+- Patient and understanding
+- Solution-oriented
 ```
 
-### 3. Communication Styles
+1. Use with agent:
 
-Define tone and formatting:
 ```python
-# Customer support with brand voice
 agent = Agent(
     agent_name="Support Agent",
-    skills_dir="./skills/support"
+    model_name="gpt-4o",
+    skills_dir="./my-skills"
 )
 ```
-
-## Next Steps
-
-Explore the example guides:
-
-1. **[Basic Skills Usage](/swarms/examples/agent_with_skills/)** - Start here for your first skill
-2. **[Creating Custom Skills](/swarms/examples/agent_with_custom_skill/)** - Build your own skills
-3. **[Multiple Skills](/swarms/examples/agent_with_multiple_skills/)** - Use multiple skills together
-
-## Key Benefits
-
-- ✅ **Simple**: Just markdown files, no code needed
-- ✅ **Portable**: Standard format works across platforms
-- ✅ **Version Control**: Skills are just files - track with git
-- ✅ **Reusable**: Share skills across your organization
-- ✅ **Claude Code Compatible**: Works with Anthropic's ecosystem
 
 ## Compatibility
 
-Swarms Agent Skills implementation follows [Anthropic's Agent Skills](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills) standard, ensuring compatibility with Claude Code and other tools that use the same format.
+Agent Skills follow [Anthropic's Agent Skills](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills) standard, ensuring compatibility with Claude Code and other compliant tools.
 
-### What This Means
-
-- Skills created for Swarms work with Claude Code
-- Skills from Claude Code work with Swarms
-- Same `SKILL.md` format across platforms
-- Part of an emerging ecosystem standard
+Skills created for Swarms work with Claude Code, and vice versa.
 
 ## Resources
 
-- [Main Agent Skills Documentation](/swarms/agents/agent_skills/)
-- [Anthropic Agent Skills Blog](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)
-- [Official GitHub Repository](https://github.com/anthropics/skills)
-- [Code Examples](https://github.com/kyegomez/swarms/tree/master/examples/single_agent)
+- [Anthropic Agent Skills Specification](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)
+- [Code Examples](https://github.com/kyegomez/swarms/tree/master/examples/single_agent/agent_skill_examples)

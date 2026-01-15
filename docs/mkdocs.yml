@@ -375,12 +375,8 @@ nav:
     - Agent Examples:
       - Overview: "examples/basic_examples_overview.md"
       - Basic Agent: "swarms/examples/basic_agent.md"
-      - Agent Skills:
-        - Overview: "swarms/examples/agent_skills_overview.md"
-        - Basic Skills Usage: "swarms/examples/agent_with_skills.md"
-        - Creating Custom Skills: "swarms/examples/agent_with_custom_skill.md"
-        - Multiple Skills: "swarms/examples/agent_with_multiple_skills.md"
-      - Autonomous Agent: "swarms/examples/autonomous_agent_tutorial.md"
+      - Agent Skills: "swarms/examples/agent_skills_overview.md"
+      - Autonomous Agent: "sswarms/examples/autonomous_agent_tutorial.md"
       - Agent Handoff: "swarms/examples/agent_handoff_tutorial.md"
       - Autosave: "swarms/examples/autosave_tutorial.md"
       - Tool Usage:
