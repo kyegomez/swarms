@@ -675,8 +675,7 @@ class HierarchicalSwarm:
         director_temperature: float = 0.7,
         director_top_p: float = 0.9,
         planning_enabled: bool = True,
-        autosave: bool = False,
-        autosave_use_timestamp: bool = True,
+        autosave: bool = True,
         verbose: bool = False,
         *args,
         **kwargs,
@@ -699,7 +698,6 @@ class HierarchicalSwarm:
             add_collaboration_prompt (bool): Whether to add collaboration prompts.
             director_feedback_on (bool): Whether director feedback is enabled.
             autosave (bool): Whether to enable autosaving of conversation history.
-            autosave_use_timestamp (bool): If True, use timestamp in directory name; if False, use UUID.
             verbose (bool): Whether to enable verbose logging.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
@@ -729,7 +727,6 @@ class HierarchicalSwarm:
         self.director_top_p = director_top_p
         self.planning_enabled = planning_enabled
         self.autosave = autosave
-        self.autosave_use_timestamp = autosave_use_timestamp
         self.verbose = verbose
         self.swarm_workspace_dir = None
 
@@ -843,7 +840,7 @@ class HierarchicalSwarm:
             class_name = self.__class__.__name__
             swarm_name = self.name or "hierarchical-swarm"
             self.swarm_workspace_dir = get_swarm_workspace_dir(
-                class_name, swarm_name, self.autosave_use_timestamp
+                class_name, swarm_name, use_timestamp=True
             )
 
             if self.swarm_workspace_dir:
