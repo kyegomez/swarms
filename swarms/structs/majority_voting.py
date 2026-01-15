@@ -1,5 +1,6 @@
 import concurrent.futures
 import os
+import json
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, List
 
@@ -171,9 +172,7 @@ class MajorityVoting:
     def run(
         self,
         task: str,
-        streaming_callback: Optional[
-            Callable[[str, str, bool], None]
-        ] = None,
+        streaming_callback: Optional[Callable[[str], None]] = None,
         *args,
         **kwargs,
     ) -> List[Any]:
@@ -209,6 +208,16 @@ class MajorityVoting:
                     content=output,
                 )
 
+                # If streaming callback provided, emit agent output as a mini-json chunk
+                if streaming_callback is not None:
+                    try:
+                        payload = {"agent": agent.agent_name, "chunk": output}
+                        streaming_callback(json.dumps(payload))
+                        streaming_callback(json.dumps({"agent": agent.agent_name, "done": True}))
+                    except Exception:
+                        if self.verbose:
+                            logger.exception("streaming callback failed for agent output")
+
             # Set streaming_on for the consensus agent based on the provided streaming_callback
             self.consensus_agent.streaming_on = (
                 streaming_callback is not None
@@ -219,13 +228,14 @@ class MajorityVoting:
 
             if streaming_callback is not None:
 
-                def consensus_streaming_callback(chunk: str):
-                    """Wrapper for consensus agent streaming callback."""
+                def consensus_streaming_callback(chunk: str, done: bool = False):
+                    """Wrapper for consensus agent streaming callback emitting JSON strings."""
                     try:
                         if chunk is not None and chunk.strip():
-                            streaming_callback(
-                                consensus_agent_name, chunk, False
-                            )
+                            payload = {"agent": consensus_agent_name, "chunk": chunk}
+                            streaming_callback(json.dumps(payload))
+                        if done:
+                            streaming_callback(json.dumps({"agent": consensus_agent_name, "done": True}))
                     except Exception as callback_error:
                         if self.verbose:
                             logger.warning(

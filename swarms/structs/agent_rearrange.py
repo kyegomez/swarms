@@ -470,6 +470,7 @@ class AgentRearrange:
         self,
         agent_names: List[str],
         img: str = None,
+        streaming_callback: Optional[Callable[[str], None]] = None,
         *args,
         **kwargs,
     ) -> Dict[str, str]:
@@ -503,6 +504,31 @@ class AgentRearrange:
             self.agents[agent_name] for agent_name in agent_names
         ]
 
+        # Prepare streaming wrappers per-agent if callback provided
+        if streaming_callback is not None:
+            # wrapper produces mini-json chunks following OpenAI style
+            def make_agent_callback(name: str):
+                def _on_chunk(chunk: str, done: bool = False):
+                    try:
+                        if chunk is None:
+                            return
+                        payload = {"agent": name, "chunk": chunk}
+                        # send a single json chunk
+                        streaming_callback(json.dumps(payload))
+                        if done:
+                            # send done marker for this agent
+                            streaming_callback(json.dumps({"agent": name, "done": True}))
+                    except Exception:
+                        if self.verbose:
+                            logger.exception("streaming callback failed")
+
+                return _on_chunk
+
+            # attach per-agent callbacks
+            for a in agents_to_run:
+                a.streaming_on = True
+                a.streaming_callback = make_agent_callback(a.agent_name)
+
         # Run agents concurrently
         results = run_agents_concurrently(
             agents=agents_to_run,
@@ -527,6 +553,7 @@ class AgentRearrange:
         agent_name: str,
         tasks: List[str],
         img: str = None,
+        streaming_callback: Optional[Callable[[str], None]] = None,
         *args,
         **kwargs,
     ) -> str:
@@ -568,12 +595,36 @@ class AgentRearrange:
                 f"Added sequential awareness for {agent_name}: {awareness_info}"
             )
 
-        current_task = agent.run(
-            task=self.conversation.get_str(),
-            img=img,
-            *args,
-            **kwargs,
-        )
+        # If a streaming callback is provided, set agent to streaming mode
+        if streaming_callback is not None:
+            agent.streaming_on = True
+
+            def _agent_stream_wrapper(chunk: str, done: bool = False):
+                try:
+                    if chunk is None:
+                        return
+                    payload = {"agent": agent.agent_name, "chunk": chunk}
+                    streaming_callback(json.dumps(payload))
+                    if done:
+                        streaming_callback(json.dumps({"agent": agent.agent_name, "done": True}))
+                except Exception:
+                    if self.verbose:
+                        logger.exception("streaming callback failed")
+
+            current_task = agent.run(
+                task=self.conversation.get_str(),
+                img=img,
+                streaming_callback=_agent_stream_wrapper,
+                *args,
+                **kwargs,
+            )
+        else:
+            current_task = agent.run(
+                task=self.conversation.get_str(),
+                img=img,
+                *args,
+                **kwargs,
+            )
         current_task = any_to_str(current_task)
 
         self.conversation.add(agent.agent_name, current_task)
@@ -584,6 +635,7 @@ class AgentRearrange:
         self,
         task: str = None,
         img: str = None,
+        streaming_callback: Optional[Callable[[str], None]] = None,
         custom_tasks: Dict[str, str] = None,
         *args,
         **kwargs,
@@ -667,6 +719,7 @@ class AgentRearrange:
                             self._run_concurrent_workflow(
                                 agent_names=agent_names,
                                 img=img,
+                                streaming_callback=streaming_callback,
                                 *args,
                                 **kwargs,
                             )
@@ -680,6 +733,7 @@ class AgentRearrange:
                             agent_name=agent_name,
                             tasks=tasks,
                             img=img,
+                            streaming_callback=streaming_callback,
                             *args,
                             **kwargs,
                         )

@@ -163,6 +163,7 @@ class SequentialWorkflow:
         task: str,
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
+        streaming_callback: Optional[Callable[[str], None]] = None,
         *args,
         **kwargs,
     ):
@@ -188,6 +189,9 @@ class SequentialWorkflow:
             return self.agent_rearrange.run(
                 task=task,
                 img=img,
+                streaming_callback=streaming_callback,
+                *args,
+                **kwargs,
             )
 
         except Exception as e:
