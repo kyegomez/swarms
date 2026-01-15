@@ -25,9 +25,7 @@ agent = Agent(
 )
 
 print("=== Example 1: Financial Analysis Task ===")
-response1 = agent.run(
-    "What are the key steps in a DCF valuation?"
-)
+response1 = agent.run("What are the key steps in a DCF valuation?")
 print(response1[:300] + "...\n")
 
 print("=== Example 2: Code Review Task ===")
@@ -43,6 +41,6 @@ response3 = agent.run(
 print(response3[:300] + "...\n")
 
 # Check what skills are loaded
-print(f"\n=== Loaded Skills ===")
+print("\n=== Loaded Skills ===")
 for skill in agent.skills_metadata:
     print(f"- {skill['name']}: {skill['description'][:60]}...")

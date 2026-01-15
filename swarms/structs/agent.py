@@ -122,7 +122,11 @@ from swarms.utils.swarms_marketplace_utils import (
     add_prompt_to_marketplace,
 )
 from swarms.utils.workspace_utils import get_workspace_dir
-from swarms.utils.check_all_model_max_tokens import get_single_model_max_tokens
+from swarms.utils.check_all_model_max_tokens import (
+    get_single_model_max_tokens,
+)
+from swarms.structs.dynamic_skills_loader import DynamicSkillsLoader
+
 
 def stop_when_repeats(response: str) -> bool:
     # Stop if the word stop appears in the response
@@ -543,10 +547,13 @@ class Agent:
         self.mode = mode
         self.publish_to_marketplace = publish_to_marketplace
         self.marketplace_prompt_id = marketplace_prompt_id
-        
-        
+
         # Yes, this works: it sets context_length based on the model_name, defaulting to 16000 if not set.
-        self.context_length = get_single_model_max_tokens(model_name) if model_name else 16000
+        self.context_length = (
+            get_single_model_max_tokens(model_name)
+            if model_name
+            else 16000
+        )
 
         if self.max_loops == "auto":
             self.system_prompt = None
@@ -622,19 +629,6 @@ class Agent:
         if self.react_on is True:
             self.system_prompt += REACT_SYS_PROMPT
 
-        # Load Agent Skills if skills_dir is provided
-        if self.skills_dir:
-            self.skills_metadata = self.load_skills_metadata(
-                self.skills_dir
-            )
-            if self.skills_metadata:
-                self.system_prompt += self._build_skills_prompt(
-                    self.skills_metadata
-                )
-                logger.info(
-                    f"Loaded {len(self.skills_metadata)} skills from {self.skills_dir}"
-                )
-
         if self.autosave is True:
             log_agent_data(self.to_dict())
 
@@ -693,6 +687,85 @@ class Agent:
                 use_cases=(
                     self.use_cases if self.use_cases else None
                 ),
+            )
+
+    def handle_skills(self, task: Optional[str] = None):
+        """
+        Handle skills loading based on task similarity.
+
+        Args:
+            task: Optional task description. If provided, loads skills dynamically
+                  based on similarity to the task. If not provided, loads all skills statically.
+        """
+        if task is not None:
+            # Dynamic skills loading based on task
+            self._load_dynamic_skills_for_task(task)
+        else:
+            # Static skills loading (original behavior)
+            self._load_static_skills()
+
+    def _load_static_skills(self):
+        """Load all skills statically (original behavior)."""
+        skills_prompt = (
+            "\n\n# Available Skills\n\n"
+            "You have access to the following specialized skills. "
+            "Follow their instructions when relevant:\n\n"
+        )
+
+        self.system_prompt += skills_prompt
+
+        self.skills_metadata = self.load_skills_metadata(
+            self.skills_dir
+        )
+
+        if self.skills_metadata:
+            self.system_prompt += self._build_skills_prompt(
+                self.skills_metadata
+            )
+            logger.info(
+                f"Loaded {len(self.skills_metadata)} skills from {self.skills_dir}"
+            )
+
+    def _load_dynamic_skills_for_task(self, task: str):
+        """
+        Load skills dynamically based on task similarity.
+
+        Args:
+            task: The task description to match skills against
+        """
+        # Initialize the dynamic skills loader if not already done
+        if (
+            not hasattr(self, "dynamic_skills_loader")
+            or self.dynamic_skills_loader is None
+        ):
+            self.dynamic_skills_loader = DynamicSkillsLoader(
+                self.skills_dir
+            )
+
+        logger.info(
+            f"Loading dynamic skills for task: {task[:100]}..."
+        )
+
+        relevant_skills = (
+            self.dynamic_skills_loader.load_relevant_skills(task)
+        )
+
+        if relevant_skills:
+            skills_prompt = (
+                "\n\n# Available Skills\n\n"
+                "You have access to the following specialized skills. "
+                "Follow their instructions when relevant:\n\n"
+            )
+            self.system_prompt += skills_prompt
+            self.system_prompt += self._build_skills_prompt(
+                relevant_skills
+            )
+            logger.info(
+                f"Dynamically loaded {len(relevant_skills)} relevant skills for task: {task[:100]}..."
+            )
+        else:
+            logger.info(
+                f"No relevant skills found for task: {task[:100]}..."
             )
 
     def _get_agent_workspace_dir(self) -> str:
@@ -4297,7 +4370,9 @@ Subtask Breakdown:
         skills = []
 
         if not os.path.exists(skills_dir):
-            logger.warning(f"Skills directory not found: {skills_dir}")
+            logger.warning(
+                f"Skills directory not found: {skills_dir}"
+            )
             return skills
 
         for skill_folder in os.listdir(skills_dir):
@@ -4371,13 +4446,15 @@ Subtask Breakdown:
             return ""
 
         prompt = "\n\n# Available Skills\n\n"
-        prompt += "You have access to the following specialized skills. "
+        prompt += (
+            "You have access to the following specialized skills. "
+        )
         prompt += "Follow their instructions when relevant:\n\n"
 
         for skill in skills:
             prompt += f"## {skill['name']}\n\n"
             prompt += f"**Description**: {skill['description']}\n\n"
-            prompt += skill['content']
+            prompt += skill["content"]
             prompt += "\n\n---\n\n"
 
         return prompt
@@ -4491,6 +4568,9 @@ Subtask Breakdown:
                 raise ValueError(
                     "No task provided. Exiting interactive mode."
                 )
+
+        if exists(self.skills_dir):
+            self.handle_skills(task=task)
 
         if not isinstance(task, str):
             task = format_data_structure(task)

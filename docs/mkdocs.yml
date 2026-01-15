@@ -415,7 +415,7 @@ nav:
 
     - Multi-Agent Examples:
       - Overview: "examples/multi_agent_architectures_overview.md"
-      - **Choosing Multi-Agent Architecture: Complete Guide**: "swarms/concept/how_to_choose_swarms.md"
+      - Guide to Choosing Multi-Agent Architectures: "swarms/concept/how_to_choose_swarms.md"
 
       - Hierarchical & Orchestration:
         - HierarchicalSwarm: "swarms/examples/hierarchical_swarm_example.md"
