@@ -675,7 +675,7 @@ class HierarchicalSwarm:
         director_temperature: float = 0.7,
         director_top_p: float = 0.9,
         planning_enabled: bool = True,
-        autosave: bool = False,
+        autosave: bool = True,
         verbose: bool = False,
         *args,
         **kwargs,
