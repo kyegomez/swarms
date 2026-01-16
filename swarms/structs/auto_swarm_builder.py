@@ -287,6 +287,8 @@ class AutoSwarmBuilder:
         self.additional_llm_args = additional_llm_args
         self.conversation = Conversation()
         self.agents_pool = []
+        # simple in-memory cache to avoid repeated LLM calls for identical prompts
+        self._create_agents_cache: dict[str, Any] = {}
 
         self.reliability_check()
 
@@ -402,12 +404,24 @@ class AutoSwarmBuilder:
             Exception: If there's an error during agent creation
         """
         try:
+            # return cached response when possible
+            if task in self._create_agents_cache:
+                logger.debug("AutoSwarmBuilder: returning cached agent spec for prompt")
+                return self._create_agents_cache[task]
+
             logger.info("Creating agents from specifications")
             model = self.build_llm_agent(config=Agents)
 
             agents_dictionary = model.run(task)
 
             agents_dictionary = json.loads(agents_dictionary)
+
+            # cache the result
+            try:
+                self._create_agents_cache[task] = agents_dictionary
+            except Exception:
+                # non-cacheable; ignore
+                pass
 
             return agents_dictionary
 
