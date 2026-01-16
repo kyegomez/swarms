@@ -764,6 +764,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         "auto-upgrade",
         "book-call",
         "autoswarm",
+        "hierarchical-auto",
         "setup-check",
         "llm-council",
         "heavy-swarm",
@@ -944,6 +945,27 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         "--model",
         type=str,
         help="Model name for autoswarm command",
+    )
+    parser.add_argument(
+        "--auto-build",
+        action="store_true",
+        help="Auto-build agents from the provided task prompt before running the hierarchical swarm",
+    )
+    parser.add_argument(
+        "--department",
+        type=str,
+        help="Department name to add auto-built agents to (optional)",
+    )
+    parser.add_argument(
+        "--no-parallel",
+        dest="parallel",
+        action="store_false",
+        help="Disable parallel execution of orders",
+    )
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        help="Maximum number of parallel workers when executing orders",
     )
     return parser
 
@@ -1351,6 +1373,48 @@ def handle_heavy_swarm(args: argparse.Namespace) -> None:
     )
 
 
+def handle_hierarchical_auto(args: argparse.Namespace) -> None:
+    """
+    Handle the hierarchical-auto command.
+
+    Optionally auto-builds agents from the task prompt using AutoSwarmBuilder,
+    then runs `HierarchicalSwarm` with the generated/available agents.
+    """
+    if not args.task:
+        show_error(
+            "Missing required argument: --task",
+            "Example usage: swarms hierarchical-auto --task 'Analyze market trends' --auto-build --department Market",
+        )
+        exit(1)
+
+    # Initialize swarm
+    swarm = HierarchicalSwarm(
+        name="hierarchical-auto",
+        description="Auto-built hierarchical swarm via CLI",
+        max_loops=1 if not args.max_loops else int(args.max_loops) if args.max_loops.isdigit() else 1,
+        interactive=False,
+        use_parallel_execution=getattr(args, "parallel", True),
+        max_workers=getattr(args, "max_workers", None),
+    )
+
+    # Auto-build if requested
+    if args.auto_build:
+        try:
+            swarm.auto_build_agents_from_prompt(args.task, department_name=getattr(args, "department", None))
+            console.print("[green]✓ Auto-built agents and added to swarm[/green]")
+        except Exception as e:
+            show_error("Auto-build failed", str(e))
+            return
+
+    # Run the swarm
+    try:
+        console.print(f"[yellow]Running hierarchical swarm for task: {args.task}[/yellow]")
+        result = swarm.run(task=args.task)
+        console.print(Panel(result or "No result", title="Hierarchical Swarm Result", border_style="green"))
+    except Exception as e:
+        show_error("Hierarchical swarm run failed", str(e))
+
+
 def handle_chat(args: argparse.Namespace) -> Optional[Agent]:
     """
     Handle the chat command for interactive chat agent.
@@ -1483,6 +1547,7 @@ def route_command(args: argparse.Namespace) -> None:
             "https://cal.com/swarms/swarms-strategy-session"
         ),
         "autoswarm": handle_autoswarm,
+        "hierarchical-auto": handle_hierarchical_auto,
         "setup-check": lambda args: run_setup_check(
             verbose=args.verbose
         ),

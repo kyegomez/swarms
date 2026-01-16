@@ -24,6 +24,7 @@ Todo
 
 import time
 import traceback
+import concurrent.futures
 from typing import Any, Callable, List, Optional, Union
 
 from loguru import logger
@@ -39,6 +40,8 @@ from swarms.prompts.hiearchical_system_prompt import (
     DIRECTOR_PLANNING_PROMPT,
     HIEARCHICAL_SWARM_SYSTEM_PROMPT,
 )
+from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
+from swarms.structs.department_manager import DepartmentManager
 from swarms.prompts.multi_agent_collab_prompt import (
     MULTI_AGENT_COLLAB_PROMPT_TWO,
 )
@@ -554,6 +557,9 @@ class HierarchicalSwarmDashboard:
             self.live_display.update(self._create_dashboard_layout())
 
 
+# DepartmentManager is implemented in swarms/structs/department_manager.py
+
+
 class HierarchicalOrder(BaseModel):
     """
     Represents a single task assignment within the hierarchical swarm.
@@ -659,6 +665,7 @@ class HierarchicalSwarm:
         description: str = "Distributed task swarm",
         director: Optional[Union[Agent, Callable, Any]] = None,
         agents: AgentListType = None,
+        departments: Optional[dict] = None,
         max_loops: int = 1,
         output_type: OutputType = "dict-all-except-first",
         feedback_director_model_name: str = "gpt-4o-mini",
@@ -672,6 +679,8 @@ class HierarchicalSwarm:
         director_temperature: float = 0.7,
         director_top_p: float = 0.9,
         planning_enabled: bool = True,
+        use_parallel_execution: bool = True,
+        max_workers: Optional[int] = None,
         *args,
         **kwargs,
     ):
@@ -719,6 +728,16 @@ class HierarchicalSwarm:
         self.director_temperature = director_temperature
         self.director_top_p = director_top_p
         self.planning_enabled = planning_enabled
+        # Department and parallel execution support
+        self.department_manager = DepartmentManager()
+        if departments:
+            for dept_name, dept_agents in departments.items():
+                self.department_manager.add_department(dept_name, dept_agents)
+            # if explicit agents not provided, flatten department agents
+            if not agents:
+                agents = self.department_manager.flatten_agents()
+        self.use_parallel_execution = use_parallel_execution
+        self.max_workers = max_workers
 
         self.initialize_swarm()
 
@@ -793,6 +812,11 @@ class HierarchicalSwarm:
         """
         self.conversation = Conversation(time_enabled=False)
 
+        # If departments exist, ensure agents list matches flattened departments
+        if hasattr(self, "department_manager") and self.department_manager.list_departments():
+            # always reflect departments into agents list
+            self.agents = self.department_manager.flatten_agents()
+
         # Reliability checks
         self.reliability_checks()
 
@@ -842,6 +866,58 @@ class HierarchicalSwarm:
             logger.error(
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}"
             )
+
+    def auto_build_agents_from_prompt(
+        self,
+        prompt: str,
+        department_name: Optional[str] = None,
+        builder_args: Optional[dict] = None,
+    ) -> list[Agent]:
+        """Use AutoSwarmBuilder to create agents from a natural-language prompt
+
+        Agents created are added to the swarm and optionally assigned to a department.
+        Returns the list of created Agent objects.
+        """
+        try:
+            builder_args = builder_args or {}
+            builder = AutoSwarmBuilder(
+                execution_type="return-agents-objects",
+                **builder_args,
+            )
+
+            agents = builder.run(prompt)
+
+            # If builder returned dict of specs, convert
+            if isinstance(agents, dict) or isinstance(agents, list):
+                try:
+                    agents = builder.create_agents_from_specs(agents)
+                except Exception:
+                    # if already Agent objects, pass
+                    pass
+
+            # Ensure we have list of Agent instances
+            new_agents: list[Agent] = []
+            for a in agents:
+                if isinstance(a, Agent):
+                    new_agents.append(a)
+
+            # Add to department if requested
+            if department_name:
+                for agent in new_agents:
+                    self.department_manager.add_agent_to_department(
+                        department_name, agent
+                    )
+
+            # Always append to primary agents list
+            if not self.agents:
+                self.agents = []
+            self.agents.extend(new_agents)
+
+            return new_agents
+
+        except Exception as e:
+            logger.error(f"Auto-build agents failed: {str(e)}\n{traceback.format_exc()}")
+            return []
 
     def setup_director(self):
         """
@@ -1487,6 +1563,8 @@ class HierarchicalSwarm:
         streaming_callback: Optional[
             Callable[[str, str, bool], None]
         ] = None,
+        parallel: Optional[bool] = None,
+        max_workers: Optional[int] = None,
     ):
         """
         Execute all orders from the director's output.
@@ -1509,35 +1587,86 @@ class HierarchicalSwarm:
         """
         try:
             outputs = []
-            for i, order in enumerate(orders):
-                # Update dashboard for agent execution
-                if self.interactive and self.dashboard:
-                    self.dashboard.update_agent_status(
+
+            # Decide whether to run in parallel
+            if parallel is None:
+                parallel = bool(getattr(self, "use_parallel_execution", True))
+
+            if not parallel:
+                # Sequential fallback
+                for i, order in enumerate(orders):
+                    if self.interactive and self.dashboard:
+                        self.dashboard.update_agent_status(
+                            order.agent_name,
+                            "RUNNING",
+                            order.task,
+                            "Processing...",
+                        )
+
+                    output = self.call_single_agent(
                         order.agent_name,
-                        "RUNNING",
                         order.task,
-                        "Processing...",
+                        streaming_callback=streaming_callback,
                     )
 
-                output = self.call_single_agent(
-                    order.agent_name,
-                    order.task,
-                    streaming_callback=streaming_callback,
-                )
+                    if self.interactive and self.dashboard:
+                        output_display = str(output)
+                        self.dashboard.update_agent_status(
+                            order.agent_name,
+                            "COMPLETED",
+                            order.task,
+                            output_display,
+                        )
 
-                # Update dashboard with completed status
-                if self.interactive and self.dashboard:
-                    # Always show full output without truncation
-                    output_display = str(output)
+                    outputs.append(output)
 
+                return outputs
+
+            # Parallel execution
+            workers = max_workers or getattr(self, "max_workers", None)
+            if workers is None:
+                workers = min(32, max(1, len(orders)))
+
+            # Mark all as running
+            if self.interactive and self.dashboard:
+                for order in orders:
                     self.dashboard.update_agent_status(
-                        order.agent_name,
-                        "COMPLETED",
-                        order.task,
-                        output_display,
+                        order.agent_name, "RUNNING", order.task, "Processing..."
                     )
 
-                outputs.append(output)
+            results_map = {}
+            with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as exc:
+                future_to_order = {
+                    exc.submit(
+                        self.call_single_agent,
+                        order.agent_name,
+                        order.task,
+                        streaming_callback,
+                    ): order
+                    for order in orders
+                }
+
+                for fut in concurrent.futures.as_completed(future_to_order):
+                    order = future_to_order[fut]
+                    try:
+                        out = fut.result()
+                    except Exception as e:
+                        out = f"[ERROR] {str(e)}"
+
+                    results_map[order.agent_name] = (order, out)
+
+                    # Update dashboard on completion
+                    if self.interactive and self.dashboard:
+                        self.dashboard.update_agent_status(
+                            order.agent_name,
+                            "COMPLETED",
+                            order.task,
+                            str(out),
+                        )
+
+            # Preserve original order in outputs
+            for order in orders:
+                outputs.append(results_map.get(order.agent_name, (order, None))[1])
 
             return outputs
 
