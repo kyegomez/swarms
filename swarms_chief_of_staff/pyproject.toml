@@ -1,0 +1,18 @@
+[project]
+name = "swarms-chief-of-staff"
+version = "0.1.0"
+description = "Swarms Chief of Staff: task orchestration that delegates research and spawns agents using swarms"
+requires-python = ">=3.9"
+
+[project.dependencies]
+python = "*"
+# depend on local swarms package during development
+swarms = {path = "..", develop = false}
+rich = "^13.0.0"
+typer = "^0.10.0"
+
+[project.scripts]
+swarms-chief = "swarms_chief_of_staff.cli:main"
+
+[tool.pytest]
+addopts = ["-q"]

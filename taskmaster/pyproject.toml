@@ -1,0 +1,15 @@
+[project]
+name = "taskmaster"
+version = "0.1.0"
+description = "Composable task manager that delegates research and spawns agents using swarms"
+requires-python = ">=3.9"
+
+[project.dependencies]
+python = "*"
+# runtime deps
+swarms = {path = "..", develop = false}
+typer = "^0.10.0"
+rich = "^13.0.0"
+
+[tool.pytest]
+addopts = ["-q"]
