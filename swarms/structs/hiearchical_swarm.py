@@ -55,6 +55,7 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.output_types import OutputType
 from swarms.utils.swarm_autosave import get_swarm_workspace_dir
+from swarms.utils.workspace_utils import get_workspace_dir
 
 
 class HierarchicalSwarmDashboard:
@@ -837,6 +838,17 @@ class HierarchicalSwarm:
         Only conversation history will be saved to this directory.
         """
         try:
+            # Set default workspace directory if not set
+            if not os.getenv("WORKSPACE_DIR"):
+                default_workspace = os.path.join(os.getcwd(), "agent_workspace")
+                os.environ["WORKSPACE_DIR"] = default_workspace
+                # Clear the cache so get_workspace_dir() picks up the new value
+                get_workspace_dir.cache_clear()
+                if self.verbose:
+                    logger.info(
+                        f"WORKSPACE_DIR not set, using default: {default_workspace}"
+                    )
+            
             class_name = self.__class__.__name__
             swarm_name = self.name or "hierarchical-swarm"
             self.swarm_workspace_dir = get_swarm_workspace_dir(
