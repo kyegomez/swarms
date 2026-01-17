@@ -54,8 +54,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # Set WORKSPACE_DIR if not already set
-    if not os.getenv("WORKSPACE_DIR"):
-        os.environ["WORKSPACE_DIR"] = "agent_workspace"
-    
     main()
