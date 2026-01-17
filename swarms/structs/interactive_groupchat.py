@@ -806,11 +806,13 @@ Remember: You are part of a team. Your response should reflect that you've read,
             mentioned_agents
         ):
             # Determine next speaker(s) using dynamic function
+            # Avoid passing duplicate 'strategy' if it's present in speaker_state
+            speaker_state = {k: v for k, v in (self.speaker_state or {}).items() if k != "strategy"}
             next_speakers = self.speaker_function(
                 mentioned_agents,
                 last_response,
                 strategy=strategy,
-                **self.speaker_state,
+                **speaker_state,
             )
 
             # Handle both single agent and multiple agents

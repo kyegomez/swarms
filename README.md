@@ -60,7 +60,7 @@ Swarms delivers a comprehensive, enterprise-grade multi-agent infrastructure pla
 
 ## 🔌 Supported Protocols & Integrations
 
-Swarms seamlessly integrates with industry-standard protocols, enabling powerful capabilities for tool integration, payment processing, and distributed agent orchestration.
+Swarms seamlessly integrates with industry-standard protocols and open specifications, unlocking powerful capabilities for tool integration, payment processing, distributed agent orchestration, and model interoperability.
 
 | Protocol | Description | Use Cases | Documentation |
 |----------|-------------|-----------|---------------|
@@ -68,6 +68,8 @@ Swarms seamlessly integrates with industry-standard protocols, enabling powerful
 | **[X402](https://docs.swarms.world/en/latest/examples/x402_payment_integration/)** | Cryptocurrency payment protocol for API endpoints. Enables monetization of agents with pay-per-use models. | • Agent monetization<br>• Payment gate protection<br>• Crypto payments<br>• Pay-per-use services | [X402 Quickstart](https://docs.swarms.world/en/latest/examples/x402_payment_integration/) |
 | **[AOP (Agent Orchestration Protocol)](https://docs.swarms.world/en/latest/examples/aop_medical/)** | Framework for deploying and managing agents as distributed services. Enables agent discovery, management, and execution through standardized protocols. | • Distributed agent deployment<br>• Agent discovery<br>• Service orchestration<br>• Scalable multi-agent systems | [AOP Reference](https://docs.swarms.world/en/latest/swarms/structs/aop/) |
 | **[Swarms Marketplace](https://swarms.world)** | Platform for discovering and sharing production-ready prompts, agents, and tools. Enables automatic prompt loading from the marketplace and publishing your own prompts directly from code. | • Prompt discovery and reuse<br>• One-line prompt loading<br>• Community prompt sharing<br>• Prompt monetization | [Marketplace Tutorial](https://docs.swarms.world/en/latest/swarms/examples/marketplace_prompt_loading/) |
+| **[Open Responses](https://www.openresponses.org/)** | Open-source specification and ecosystem for multi-provider, interoperable LLM interfaces based on the OpenAI Responses API. Provides a unified schema and tooling for calling language models, streaming results, and composing agentic workflows—independent of provider. | • Unified LLM interfaces<br>• Streaming outputs<br>• Multi-provider orchestration<br>• Interoperable agent workflows | [Open Responses Website](https://www.openresponses.org/) |
+| **[Agent Skills](https://docs.swarms.world/en/latest/swarms/agents/agent_skills/)** | Lightweight, markdown-based format for defining modular, reusable agent capabilities introduced by Anthropic. Enables specialization of agents without modifying code by loading skill definitions from simple SKILL.md files. | • Agent specialization<br>• Reusable skill libraries<br>• Code-free agent customization<br>• Claude Code compatibility | [Agent Skills Documentation](https://docs.swarms.world/en/latest/swarms/agents/agent_skills/) |
 
 
 ## Install 💻
