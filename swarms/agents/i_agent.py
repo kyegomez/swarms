@@ -51,6 +51,10 @@ class IterativeReflectiveExpansion:
         description: str = "A reasoning agent that can answer questions and help with tasks.",
         agent: Agent = None,
         max_loops: int = 5,
+        max_initial_hypotheses: int = 5,
+        max_revisions_per_path: int = 2,
+        max_paths_per_iteration: int = 20,
+        early_stop_score: float = 0.95,
         system_prompt: str = GENERAL_REASONING_AGENT_SYS_PROMPT,
         model_name: str = "gpt-4o-mini",
         output_type: OutputType = "dict",
@@ -76,6 +80,12 @@ class IterativeReflectiveExpansion:
             max_loops=1,
             dynamic_temperature_enabled=True,
         )
+        # Safeguards to prevent exponential path explosion
+        self.max_initial_hypotheses = max_initial_hypotheses
+        self.max_revisions_per_path = max_revisions_per_path
+        self.max_paths_per_iteration = max_paths_per_iteration
+        self.early_stop_score = early_stop_score
+        self.desired_solutions = 1
 
     def generate_initial_hypotheses(self, task: str) -> List[str]:
         """
@@ -100,6 +110,12 @@ class IterativeReflectiveExpansion:
             for line in response.split("\n")
             if line.strip()
         ]
+        # Cap the number of initial hypotheses to avoid too-large search
+        if len(hypotheses) > self.max_initial_hypotheses:
+            logger.info(
+                f"Capping initial hypotheses to {self.max_initial_hypotheses} (was {len(hypotheses)})"
+            )
+            hypotheses = hypotheses[: self.max_initial_hypotheses]
         logger.debug(f"Initial hypotheses: {hypotheses}")
         return hypotheses
 
@@ -187,6 +203,12 @@ class IterativeReflectiveExpansion:
             for line in response.split("\n")
             if line.strip()
         ]
+        # Cap the number of revised paths returned per original path
+        if len(revised_paths) > self.max_revisions_per_path:
+            logger.info(
+                f"Capping revised paths to {self.max_revisions_per_path} (was {len(revised_paths)})"
+            )
+            revised_paths = revised_paths[: self.max_revisions_per_path]
         logger.debug(f"Revised paths: {revised_paths}")
         return revised_paths
 
@@ -212,6 +234,12 @@ class IterativeReflectiveExpansion:
             for line in response.split("\n")
             if line.strip()
         ]
+        # Ensure we don't return more paths than allowed per iteration
+        if len(selected_paths) > self.max_paths_per_iteration:
+            logger.info(
+                f"Capping selected paths to {self.max_paths_per_iteration} (was {len(selected_paths)})"
+            )
+            selected_paths = selected_paths[: self.max_paths_per_iteration]
         logger.debug(f"Selected paths: {selected_paths}")
         return selected_paths
 
@@ -259,23 +287,34 @@ class IterativeReflectiveExpansion:
             logger.info(f"Iteration {iteration + 1}/{self.max_loops}")
             expanded_paths: List[str] = []
 
-            for path in candidate_paths:
+            # Limit how many paths we process this iteration to avoid explosion
+            paths_to_process = candidate_paths[: self.max_paths_per_iteration]
+            found_solutions = 0
+
+            for path in paths_to_process:
                 outcome, score, error_info = self.simulate_path(path)
-                # Use a threshold score of 0.7 (this can be adjusted)
-                if score < 0.7:
+                # Early stopping when we find sufficiently good solutions
+                if score >= self.early_stop_score:
+                    logger.info(f"High-scoring path found (score={score}), adding and checking stop condition")
+                    expanded_paths.append(path)
+                    found_solutions += 1
+                    if found_solutions >= self.desired_solutions:
+                        logger.info("Desired number of high-quality solutions found; breaking iteration early.")
+                        break
+
+                # Use a threshold score of 0.7 for considering revisions
+                elif score < 0.7:
                     feedback = self.meta_reflect(error_info)
                     revised_paths = self.revise_path(path, feedback)
                     expanded_paths.extend(revised_paths)
                 else:
                     expanded_paths.append(path)
 
-            memory_pool.extend(candidate_paths)
-            candidate_paths = self.select_promising_paths(
-                expanded_paths
-            )
-            logger.info(
-                f"Candidate paths for next iteration: {candidate_paths}"
-            )
+            # Only keep a bounded memory of past candidate paths to avoid unbounded growth
+            memory_pool.extend(paths_to_process[: self.max_paths_per_iteration])
+
+            candidate_paths = self.select_promising_paths(expanded_paths)
+            logger.info(f"Candidate paths for next iteration: {candidate_paths}")
 
         self.synthesize_solution(candidate_paths, memory_pool)
         logger.info("Final solution generated.")
