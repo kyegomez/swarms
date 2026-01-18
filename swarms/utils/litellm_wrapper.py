@@ -1028,7 +1028,41 @@ class LiteLLM:
             elif "gemini" in self.model_name.lower():
                 return gemini_output_img_handler(response)
             else:
-                return response.choices[0].message.content
+                # Support both object-style responses and dict-style responses
+                try:
+                    first = response.choices[0]
+                except Exception:
+                    return None
+
+                # If the choice is an object with `.message.content`
+                try:
+                    content = getattr(first, "message", None)
+                    if content is not None:
+                        return getattr(content, "content", None)
+                except Exception:
+                    pass
+
+                # If the choice is a dict-like structure
+                try:
+                    if isinstance(first, dict):
+                        msg = first.get("message") or first.get("choices") or first
+                        if isinstance(msg, dict):
+                            return msg.get("content")
+                        # support nested formats
+                        if isinstance(first.get("choices"), list) and len(first.get("choices")):
+                            c = first.get("choices")[0]
+                            if isinstance(c, dict):
+                                d = c.get("message") or c.get("delta") or c
+                                if isinstance(d, dict):
+                                    return d.get("content")
+                except Exception:
+                    pass
+
+                # Fallback: try attribute access on response.choices[0]
+                try:
+                    return getattr(response.choices[0], "content", None)
+                except Exception:
+                    return None
 
         except (
             requests.exceptions.ConnectionError,
