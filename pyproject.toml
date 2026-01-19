@@ -89,7 +89,7 @@ ruff = ">=0.5.1,<0.14.12"
 types-toml = "^0.10.8.1"
 types-pytz = ">=2023.3,<2026.0"
 types-chardet = "^5.0.4.6"
-mypy-protobuf = ">=3,<5"
+mypy-protobuf = ">=3,<6"
 
 
 [tool.poetry.group.test.dependencies]
