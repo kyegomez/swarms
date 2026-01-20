@@ -442,6 +442,15 @@ nav:
         - RoundRobinSwarm: "swarms/examples/roundrobin_example.md"
         - SocialAlgorithms: "swarms/examples/social_algorithms_example.md"
 
+      - Communication Patterns:
+        - Circular Swarm: "swarms/examples/circular_swarm_example.md"
+        - Grid Swarm: "swarms/examples/grid_swarm_example.md"
+        - Star Swarm: "swarms/examples/star_swarm_example.md"
+        - Mesh Swarm: "swarms/examples/mesh_swarm_example.md"
+        - Pyramid Swarm: "swarms/examples/pyramid_swarm_example.md"
+        - One-to-One Communication: "swarms/examples/one_to_one_example.md"
+        - Broadcast Communication: "swarms/examples/broadcast_example.md"
+
       - Utilities:
         - Unique Swarms: "swarms/examples/unique_swarms.md"
         - Agents as Tools: "swarms/examples/agents_as_tools.md"
