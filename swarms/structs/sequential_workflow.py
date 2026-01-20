@@ -53,7 +53,7 @@ class SequentialWorkflow:
         shared_memory_system: callable = None,
         multi_agent_collab_prompt: bool = False,
         team_awareness: bool = False,
-        autosave: bool = False,
+        autosave: bool = True,
         verbose: bool = False,
         *args,
         **kwargs,

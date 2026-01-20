@@ -81,7 +81,7 @@ class ConcurrentWorkflow:
         max_loops: int = 1,
         auto_generate_prompts: bool = False,
         show_dashboard: bool = False,
-        autosave: bool = False,
+        autosave: bool = True,
         verbose: bool = False,
     ):
         self.id = id if id is not None else swarm_id()
