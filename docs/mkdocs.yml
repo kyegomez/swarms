@@ -313,7 +313,6 @@ nav:
 
         - GroupChats:
           - GroupChat: "swarms/structs/group_chat.md"
-          - Interactive Group Chat: "swarms/structs/interactive_groupchat.md"
 
         - Workflows:
           - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
@@ -440,7 +439,6 @@ nav:
 
       - Group Communication:
         - GroupChat: "swarms/examples/groupchat_comprehensive_examples.md"
-        - Interactive GroupChat: "swarms/examples/igc_example.md"
         - RoundRobinSwarm: "swarms/examples/roundrobin_example.md"
         - SocialAlgorithms: "swarms/examples/social_algorithms_example.md"
 

@@ -167,8 +167,11 @@ result = router.run("Analyze the investment opportunity")
 | `"MajorityVoting"` | Use majority voting for decisions |
 | `"MALT"` | Multi-Agent Learning and Training |
 | `"CouncilAsAJudge"` | Council-based evaluation system |
-| `"InteractiveGroupChat"` | Interactive group chat with agents |
 | `"HeavySwarm"` | Heavy swarm for complex tasks |
+| `"BatchedGridWorkflow"` | Batched grid workflow for parallel task processing |
+| `"LLMCouncil"` | Council of specialized LLM agents with peer review |
+| `"DebateWithJudge"` | Debate architecture with Pro/Con agents and a Judge |
+| `"RoundRobin"` | Round-robin execution cycling through agents |
 | `"auto"` | Automatically select swarm type |
 
 # Best Practices

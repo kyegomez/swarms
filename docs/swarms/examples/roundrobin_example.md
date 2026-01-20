@@ -337,7 +337,7 @@ swarm = RoundRobinSwarm(
 | Architecture | When to Use Instead |
 |--------------|---------------------|
 | **[SequentialWorkflow](./sequential_example.md)** | When tasks must flow in fixed order |
-| **[InteractiveGroupChat](./igc_example.md)** | For real-time interactive discussions |
+| **[GroupChat](./groupchat_comprehensive_examples.md)** | For real-time interactive discussions |
 | **[MajorityVoting](./majority_voting_example.md)** | When you need consensus via voting |
 | **[GroupChat](./groupchat_example.md)** | For expertise-based speaker selection |
 

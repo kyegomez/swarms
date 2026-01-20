@@ -24,16 +24,16 @@ Main class for routing tasks to different swarm types.
 | `shared_memory_system` | Any | Shared memory system for agents |
 | `rules` | str | Rules to inject into every agent |
 | `documents` | List[str] | List of document file paths |
-| `output_type` | OutputType | Output format type (e.g., "string", "dict", "list", "json", "yaml", "xml") |
-| `speaker_fn` | callable | Speaker function for GroupChat swarm type |
+| `output_type` | OutputType | Output format type (e.g., "string", "dict", "list", "json", "yaml", "xml", "dict-all-except-first"). Defaults to "dict-all-except-first" |
+| `speaker_fn` | callable | Legacy speaker function for GroupChat swarm type (deprecated, use speaker_function instead) |
+| `speaker_function` | str | Speaker function name for GroupChat swarm type (e.g., "round-robin-speaker", "random-speaker", "priority-speaker", "random-dynamic-speaker") |
 | `load_agents_from_csv` | bool | Flag to enable/disable loading agents from CSV |
 | `csv_file_path` | str | Path to the CSV file for loading agents |
-| `return_entire_history` | bool | Flag to enable/disable returning the entire conversation history |
-| `multi_agent_collab_prompt` | bool | Whether to enable multi-agent collaboration prompts |
-| `list_all_agents` | bool | Flag to enable/disable listing all agents to each other |
+| `return_entire_history` | bool | Flag to enable/disable returning the entire conversation history. Defaults to `True` |
+| `multi_agent_collab_prompt` | bool | Whether to enable multi-agent collaboration prompts. Defaults to `True` |
+| `list_all_agents` | bool | Flag to enable/disable listing all agents to each other. Defaults to `False` |
 | `conversation` | Any | Conversation object for managing agent interactions |
 | `agents_config` | Optional[Dict[Any, Any]] | Configuration dictionary for agents |
-| `speaker_function` | str | Speaker function name for InteractiveGroupChat swarm type |
 | `heavy_swarm_loops_per_agent` | int | Number of loops per agent for HeavySwarm (default: 1) |
 | `heavy_swarm_question_agent_model_name` | str | Model name for the question agent in HeavySwarm (default: "gpt-4.1") |
 | `heavy_swarm_worker_model_name` | str | Model name for worker agents in HeavySwarm (default: "gpt-4.1") |
@@ -122,7 +122,6 @@ The `SwarmRouter` supports many various multi-agent architectures for various ap
 | `MajorityVoting` | Uses majority voting for decision making |
 | `MALT` | Multi-Agent Language Tasks |
 | `CouncilAsAJudge` | Council-based judgment system |
-| `InteractiveGroupChat` | Interactive group chat with user participation |
 | `HeavySwarm` | Heavy swarm architecture with question and worker agents |
 | `BatchedGridWorkflow` | Batched grid workflow for parallel task processing |
 | `LLMCouncil` | Council of specialized LLM agents with peer review and synthesis |
@@ -399,25 +398,6 @@ auto_router = SwarmRouter(
 
 result = auto_router.run("Conduct a comprehensive market analysis for Product X")
 ```
-
-### InteractiveGroupChat
-
-Use Case: Interactive group discussions with user participation.
-
-```python
-interactive_chat_router = SwarmRouter(
-    name="InteractiveGroupChat",
-    description="Interactive group chat with user participation",
-    max_loops=10,
-    agents=[financial_analyst, market_researcher, competitor_analyst],
-    swarm_type="InteractiveGroupChat",
-    output_type="string"
-)
-
-result = interactive_chat_router.run("Discuss the market trends and provide interactive analysis")
-```
-
-The InteractiveGroupChat allows for dynamic interaction between agents and users, enabling real-time participation in group discussions and decision-making processes. This is particularly useful for scenarios requiring human input or validation during the conversation flow.
 
 ### HeavySwarm
 

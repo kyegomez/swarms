@@ -36,15 +36,18 @@ Initializes a new GroupChat instance with the specified configuration.
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `id` | str | Unique identifier for the chat | auto-generated key |
+| `id` | str | Unique identifier for the chat | auto-generated key with prefix "swarms-" |
 | `name` | str | Name of the group chat | "GroupChat" |
-| `description` | str | Description of the chat's purpose | generic description |
+| `description` | str | Description of the chat's purpose | "A group chat for multiple agents" |
 | `agents` | List[Union[Agent, Callable]] | List of participating agents | empty list |
 | `max_loops` | int | Maximum conversation turns | 1 |
-| `output_type` | str | Type of output format | "string" |
-| `interactive` | bool | Whether to enable interactive mode | False |
-| `speaker_function` | Union[str, Callable] | Function to determine speaking order | round_robin_speaker |
-| `speaker_state` | dict | Initial state for speaker function | {"current_index": 0} |
+| `output_type` | str | Type of output format ("dict", "str", "all", etc.) | "dict" |
+| `interactive` | bool | Whether to enable interactive terminal session | False |
+| `speaker_function` | Union[str, Callable] | Function to determine speaking order. String options: "round-robin-speaker", "random-speaker", "priority-speaker", "random-dynamic-speaker" | None (defaults to round_robin_speaker) |
+| `speaker_state` | dict | Initial state/config for the speaker function (e.g., {"priorities": {...}} for priority-speaker, {"strategy": "sequential"} for random-dynamic-speaker) | None (defaults to {"current_index": 0}) |
+| `speaker_fn` | Callable | Legacy speaker function for backward compatibility (deprecated, use speaker_function instead) | None |
+| `rules` | str | Rules to inject into the conversation context | "" (empty string) |
+| `time_enabled` | bool | Whether to enable timestamps in conversation history | True |
 
 **Example:**
 
@@ -71,7 +74,7 @@ if __name__ == "__main__":
         name="Investment Advisory",
         description="Financial and tax analysis group",
         agents=agents,
-        speaker_fn=expertise_based,
+        speaker_function="round-robin-speaker",  # or use a custom callable
     )
 
     history = chat.run(
@@ -83,63 +86,141 @@ if __name__ == "__main__":
 
 ## Speaker Functions
 
+GroupChat supports multiple built-in speaker functions that control the order in which agents respond. You can use them by passing the function name as a string to `speaker_function`, or provide a custom callable.
 
-### Built-in Functions
+### Built-in Speaker Functions
+
+#### 1. Round Robin Speaker (`"round-robin-speaker"`)
+
+Agents speak in a fixed order, cycling through the list sequentially.
 
 ```python
-def round_robin(history: List[str], agent: Agent) -> bool:
-    """
-    Enables agents to speak in turns.
-    Returns True for each agent in sequence.
-    """
-    return True
+from swarms import Agent, GroupChat
 
-def expertise_based(history: List[str], agent: Agent) -> bool:
-    """
-    Enables agents to speak based on their expertise.
-    Returns True if agent's role matches conversation context.
-    """
-    return agent.system_prompt.lower() in history[-1].lower() if history else True
+chat = GroupChat(
+    agents=[agent1, agent2, agent3],
+    speaker_function="round-robin-speaker"
+)
+```
 
-def random_selection(history: List[str], agent: Agent) -> bool:
-    """
-    Randomly selects speaking agents.
-    Returns True/False with 50% probability.
-    """
-    import random
-    return random.choice([True, False])
+#### 2. Random Speaker (`"random-speaker"`)
 
-def most_recent(history: List[str], agent: Agent) -> bool:
-    """
-    Enables agents to respond to their mentions.
-    Returns True if agent was last speaker.
-    """
-    return agent.agent_name == history[-1].split(":")[0].strip() if history else True
+Agents are selected randomly to speak.
+
+```python
+chat = GroupChat(
+    agents=[agent1, agent2, agent3],
+    speaker_function="random-speaker"
+)
+```
+
+#### 3. Priority Speaker (`"priority-speaker"`)
+
+Agents are selected based on priority weights. Requires `speaker_state` with priorities.
+
+```python
+chat = GroupChat(
+    agents=[agent1, agent2, agent3],
+    speaker_function="priority-speaker",
+    speaker_state={
+        "priorities": {
+            "agent1": 0.5,  # 50% chance
+            "agent2": 0.3,  # 30% chance
+            "agent3": 0.2   # 20% chance
+        }
+    }
+)
+```
+
+#### 4. Random Dynamic Speaker (`"random-dynamic-speaker"`)
+
+First agent is randomly selected, then follows @mentions in responses. Supports "sequential" or "parallel" strategies.
+
+```python
+chat = GroupChat(
+    agents=[agent1, agent2, agent3],
+    speaker_function="random-dynamic-speaker",
+    speaker_state={"strategy": "sequential"}  # or "parallel"
+)
 ```
 
 ### Custom Speaker Function Example
 
+You can also provide a custom callable function. The function should accept a list of agent names and optional keyword arguments, and return the selected agent name(s).
+
 ```python
-def custom_speaker(history: List[str], agent: Agent) -> bool:
+from typing import List, Union
+
+def custom_speaker(agents: List[str], **kwargs) -> str:
     """
-    Custom speaker function with complex logic.
+    Custom speaker function that selects agents based on task keywords.
     
     Args:
-        history: Previous conversation messages
-        agent: Current agent being evaluated
+        agents: List of available agent names
+        **kwargs: Additional arguments (e.g., task, response, history)
         
     Returns:
-        bool: Whether agent should speak
+        str: Selected agent name
     """
-    # No history - let everyone speak
-    if not history:
-        return True
-        
-    last_message = history[-1].lower()
+    task = kwargs.get("task", "").lower()
     
-    # Check for agent expertise keywords
-    expertise_relevant = any(
-        keyword in last_message 
+    # Map keywords to agents
+    if "data" in task or "analyze" in task:
+        if "analyst" in agents:
+            return "analyst"
+    elif "research" in task or "information" in task:
+        if "researcher" in agents:
+            return "researcher"
+    elif "write" in task or "content" in task:
+        if "writer" in agents:
+            return "writer"
+    
+    # Default to first agent
+    return agents[0] if agents else None
+
+# Use the custom speaker function
+chat = GroupChat(
+    agents=[analyst, researcher, writer],
+    speaker_function=custom_speaker
+)
+```
+
+For dynamic speaker functions that follow @mentions, you can create a function that returns a list of agents:
+
+```python
+def custom_dynamic_speaker(
+    agents: List[str],
+    response: str = "",
+    strategy: str = "sequential",
+    **kwargs
+) -> Union[str, List[str]]:
+    """
+    Custom dynamic speaker function that follows @mentions.
+    
+    Args:
+        agents: List of available agent names
+        response: The previous agent's response (may contain @mentions)
+        strategy: "sequential" or "parallel"
+        **kwargs: Additional arguments
+        
+    Returns:
+        Union[str, List[str]]: Selected agent name(s)
+    """
+    import re
+    
+    # Extract @mentions from response
+    mentions = re.findall(r"@(\w+)", response)
+    valid_mentions = [m for m in mentions if m in agents]
+    
+    if valid_mentions:
+        if strategy == "sequential":
+            return valid_mentions[0]
+        else:  # parallel
+            return valid_mentions
+    
+    # If no mentions, return first agent
+    return agents[0] if agents else None
+``` 
         for keyword in agent.expertise_keywords
     )
     
