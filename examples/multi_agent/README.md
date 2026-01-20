@@ -78,6 +78,11 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [interactive_groupchat_example.py](groupchat/interactive_groupchat_example.py) - Interactive group chat
 - [quantum_physics_swarm.py](groupchat/quantum_physics_swarm.py) - Physics-focused group chat
 - [random_dynamic_speaker_example.py](groupchat/random_dynamic_speaker_example.py) - Dynamic speaker selection
+- [enhanced_collaboration_example.py](groupchat/enhanced_collaboration_example.py) - Enhanced collaboration patterns
+- [interactive_groupchat_speaker_example.py](groupchat/interactive_groupchat_speaker_example.py) - Speaker management
+- [medical_panel_example.py](groupchat/medical_panel_example.py) - Medical panel discussion
+- [speaker_function_examples.py](groupchat/speaker_function_examples.py) - Speaker function examples
+- [stream_example.py](groupchat/stream_example.py) - Streaming example
 - [groupchat_examples/](groupchat/groupchat_examples/) - Additional group chat patterns
 
 ## Heavy Swarm
@@ -100,12 +105,6 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [hiearchical_examples/](hiearchical_swarm/hiearchical_examples/) - Additional hierarchical examples
 - [hiearchical_swarm_ui/](hiearchical_swarm/hiearchical_swarm_ui/) - UI components
 - [hscf/](hiearchical_swarm/hscf/) - Hierarchical framework examples
-
-## Interactive Group Chat
-- [interactive_groupchat_speaker_example.py](interactive_groupchat_examples/interactive_groupchat_speaker_example.py) - Speaker management
-- [medical_panel_example.py](interactive_groupchat_examples/medical_panel_example.py) - Medical panel discussion
-- [speaker_function_examples.py](interactive_groupchat_examples/speaker_function_examples.py) - Speaker function examples
-- [stream_example.py](interactive_groupchat_examples/stream_example.py) - Streaming example
 
 ## Majority Voting
 - [majority_voting_example_new.py](majority_voting/majority_voting_example_new.py) - Updated voting example

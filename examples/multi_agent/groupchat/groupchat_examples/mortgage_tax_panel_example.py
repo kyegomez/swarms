@@ -2,15 +2,13 @@
 Mortgage and Tax Panel Discussion Example
 
 This example demonstrates a panel of mortgage and tax specialists discussing complex
-financial situations using InteractiveGroupChat with different speaker functions.
+financial situations using GroupChat with different speaker functions.
 The panel includes specialists from different financial fields who can collaborate
 on complex mortgage and tax planning cases.
 """
 
 from swarms import Agent
-from swarms.structs.interactive_groupchat import (
-    InteractiveGroupChat,
-)
+from swarms.structs.groupchat import GroupChat
 
 
 def create_mortgage_tax_panel():
@@ -131,7 +129,7 @@ def example_mortgage_tax_panel():
 
     agents = create_mortgage_tax_panel()
 
-    group_chat = InteractiveGroupChat(
+    group_chat = GroupChat(
         name="Mortgage and Tax Panel Discussion",
         description="A collaborative panel of mortgage and tax specialists discussing complex cases",
         agents=agents,

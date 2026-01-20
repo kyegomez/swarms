@@ -1,5 +1,5 @@
 from swarms import Agent
-from swarms.structs.interactive_groupchat import InteractiveGroupChat
+from swarms.structs.groupchat import GroupChat
 
 
 if __name__ == "__main__":
@@ -71,7 +71,7 @@ When developing computational methods, you think in terms of mathematical algori
     ]
 
     # Initialize another chat instance in interactive mode
-    interactive_chat = InteractiveGroupChat(
+    interactive_chat = GroupChat(
         name="Interactive Condensed Matter Physics Research Team",
         description="An interactive team of condensed matter physics experts providing comprehensive analysis of quantum materials, phase transitions, and emergent phenomena",
         agents=agents,

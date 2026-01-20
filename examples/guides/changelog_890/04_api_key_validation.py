@@ -12,7 +12,6 @@ Key features:
 - Prevents runtime failures due to authentication issues
 """
 
-import os
 from swarms.utils.swarms_marketplace_utils import check_swarms_api_key
 from swarms import Agent
 
@@ -28,7 +27,9 @@ try:
         max_loops=1,
     )
 
-    print("API key validation successful - agent created with marketplace integration")
+    print(
+        "API key validation successful - agent created with marketplace integration"
+    )
 
 except ValueError as e:
     print(f"API key validation failed: {e}")

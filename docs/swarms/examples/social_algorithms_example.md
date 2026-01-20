@@ -1,4 +1,4 @@
-# SocialAlgorithms: Practical Tutorial
+# SocialAlgorithms: Complete Guide
 
 A comprehensive guide to creating custom multi-agent communication patterns using the SocialAlgorithms framework.
 
@@ -33,7 +33,76 @@ A comprehensive guide to creating custom multi-agent communication patterns usin
 ## Installation
 
 ```bash
-pip install -U swarms
+pip install swarms
+```
+
+---
+
+## Quick Start
+
+### Step 1: Define Your Algorithm
+
+```python
+def research_analysis_synthesis(agents, task, **kwargs):
+    """
+    Custom algorithm: Research → Analysis → Synthesis
+    """
+    # Agent 0: Research
+    research = agents[0].run(f"Research the topic: {task}")
+
+    # Agent 1: Analyze the research
+    analysis = agents[1].run(f"Analyze this research: {research}")
+
+    # Agent 2: Synthesize findings
+    synthesis = agents[2].run(
+        f"Synthesize these findings:\nResearch: {research}\nAnalysis: {analysis}"
+    )
+
+    return {
+        "research": research,
+        "analysis": analysis,
+        "synthesis": synthesis
+    }
+```
+
+### Step 2: Create and Run
+
+```python
+from swarms import Agent, SocialAlgorithms
+
+# Create agents
+researcher = Agent(
+    agent_name="Researcher",
+    system_prompt="You are a research specialist. Gather comprehensive information.",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+)
+
+analyst = Agent(
+    agent_name="Analyst",
+    system_prompt="You are an analyst. Interpret data and identify insights.",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+)
+
+synthesizer = Agent(
+    agent_name="Synthesizer",
+    system_prompt="You synthesize information into clear recommendations.",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+)
+
+# Create social algorithm
+social_alg = SocialAlgorithms(
+    name="Research-Analysis-Synthesis",
+    agents=[researcher, analyst, synthesizer],
+    social_algorithm=research_analysis_synthesis,
+    verbose=True
+)
+
+# Run
+result = social_alg.run("The impact of AI on healthcare")
+print(result.final_outputs)
 ```
 
 ---

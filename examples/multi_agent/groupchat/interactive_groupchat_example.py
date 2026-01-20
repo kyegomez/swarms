@@ -1,5 +1,5 @@
 from swarms import Agent
-from swarms.structs.interactive_groupchat import InteractiveGroupChat
+from swarms.structs.groupchat import GroupChat
 
 
 if __name__ == "__main__":
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     ]
 
     # Initialize another chat instance in interactive mode
-    interactive_chat = InteractiveGroupChat(
+    interactive_chat = GroupChat(
         name="Interactive Financial Advisory Team",
         description="An interactive team of financial experts providing comprehensive financial advice",
         agents=agents,

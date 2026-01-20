@@ -1,4 +1,4 @@
-# CouncilAsAJudge: Practical Tutorial
+# CouncilAsAJudge: Complete Guide
 
 A comprehensive guide to using the CouncilAsAJudge architecture for multi-dimensional evaluation of task responses and AI-generated content.
 
@@ -8,12 +8,34 @@ The **CouncilAsAJudge** system is a sophisticated multi-agent evaluation archite
 
 | Feature | Description |
 |---------|-------------|
-| **Multi-Dimensional Analysis** | Six specialized judges evaluate different quality dimensions |
-| **Parallel Execution** | All judges run concurrently using ThreadPoolExecutor for maximum efficiency |
-| **Expert Judges** | Each judge specializes in one evaluation dimension with detailed rubrics |
-| **Comprehensive Synthesis** | Aggregator creates executive summary, detailed analysis, and recommendations |
+| **Multi-Dimensional Evaluation** | 6 specialized judges evaluate different quality dimensions |
+| **Parallel Execution** | All judges evaluate concurrently for maximum efficiency |
+| **Comprehensive Reports** | Aggregator synthesizes detailed technical analysis |
+| **Specialized Judges** | Each judge focuses on a specific evaluation criterion |
 | **Caching Optimization** | LRU cache for frequently used prompts and evaluations |
 | **Flexible Configuration** | Customizable models, cache size, and evaluation parameters |
+
+```
+Task Response
+     │
+     ▼
+┌────────────────────────────────────────┐
+│  Parallel Judge Evaluation             │
+├────────────────────────────────────────┤
+│  Accuracy Judge     → Analysis         │
+│  Helpfulness Judge  → Analysis         │
+│  Harmlessness Judge → Analysis         │
+│  Coherence Judge    → Analysis         │
+│  Conciseness Judge  → Analysis         │
+│  Adherence Judge    → Analysis         │
+└────────────────────────────────────────┘
+     │
+     ▼
+Aggregator Agent
+     │
+     ▼
+Comprehensive Evaluation Report
+```
 
 ### Evaluation Dimensions
 
@@ -49,24 +71,30 @@ The system evaluates responses across these six dimensions:
 ## Installation
 
 ```bash
-pip install -U swarms
+pip install swarms
 ```
 
 ---
 
-## Basic Example
+## Quick Start
+
+### Step 1: Create the Council
 
 ```python
 from swarms import CouncilAsAJudge
 
-# Initialize the council
+# Create the council judge
 council = CouncilAsAJudge(
-    name="Content-Quality-Evaluator",
-    description="Evaluates content quality across multiple dimensions",
-    model_name="gpt-4o-mini",
-    aggregation_model_name="gpt-4o-mini",
+    name="Quality-Evaluation-Council",
+    description="Evaluates response quality across multiple dimensions",
+    model_name="gpt-4o-mini",  # Model for judge agents
+    aggregation_model_name="gpt-4o-mini",  # Model for aggregator
 )
+```
 
+### Step 2: Evaluate a Response
+
+```python
 # Task with response to evaluate
 task_with_response = """
 Task: Explain the concept of machine learning to a beginner.
@@ -75,19 +103,11 @@ Response: Machine learning is a subset of artificial intelligence that enables c
 """
 
 # Run the evaluation
-evaluation_report = council.run(task=task_with_response)
+result = council.run(task=task_with_response)
 
-# Display the report
-print(evaluation_report)
+# Print the comprehensive evaluation
+print(result)
 ```
-
-### Output Structure
-
-The output includes:
-1. **Individual Judge Analyses**: Detailed feedback from each of the 6 judges
-2. **Executive Summary**: Key strengths, critical issues, overall assessment
-3. **Detailed Analysis**: Cross-dimensional patterns, specific examples, technical impact
-4. **Recommendations**: Prioritized improvements, technical suggestions, implementation considerations
 
 ---
 
@@ -106,7 +126,39 @@ The output includes:
 
 ---
 
-## Advanced Example 1: Evaluating AI Model Outputs
+## Complete Examples
+
+### Example 1: Basic Evaluation
+
+```python
+from swarms import CouncilAsAJudge
+
+# Initialize the council
+council = CouncilAsAJudge(
+    name="Content-Quality-Evaluator",
+    description="Evaluates content quality across multiple dimensions",
+    model_name="gpt-4o-mini",
+    aggregation_model_name="gpt-4o-mini",
+)
+
+# Task with response to evaluate
+task_with_response = """
+Task: Write documentation for a REST API endpoint that creates a new user.
+
+Response: POST /api/users - Creates a new user account. Send a JSON body with 'email', 'password', and 'name' fields. Returns 201 on success with user object, 400 for validation errors, 409 if email exists. Requires no authentication. Example: {"email": "user@example.com", "password": "secure123", "name": "John Doe"}
+"""
+
+# Run the evaluation
+evaluation = council.run(task=task_with_response)
+
+# Display results
+print("=" * 60)
+print("EVALUATION REPORT:")
+print("=" * 60)
+print(evaluation)
+```
+
+### Example 2: Evaluating AI Model Outputs
 
 Compare different AI model outputs to choose the best one:
 
@@ -157,11 +209,7 @@ print("="*60)
 print(eval_b)
 ```
 
----
-
-## Advanced Example 2: Evaluating Technical Documentation
-
-Assess quality of technical documentation:
+### Example 3: Evaluating Technical Documentation
 
 ```python
 from swarms import CouncilAsAJudge
@@ -225,23 +273,6 @@ Email address already registered.
 
 ### 401 Unauthorized
 Invalid or missing API key.
-
-## Example Request
-```bash
-curl -X POST https://api.example.com/api/users \\
-  -H "Content-Type: application/json" \\
-  -H "X-API-Key: your_api_key_here" \\
-  -d '{
-    "email": "john@example.com",
-    "password": "SecurePass123!",
-    "name": "John Doe"
-  }'
-```
-
-## Notes
-- Passwords are hashed using bcrypt before storage
-- Email verification is sent asynchronously
-- Rate limit: 10 requests per minute per API key
 """
 
 # Evaluate the documentation
@@ -250,54 +281,6 @@ evaluation = council.run(task=api_docs)
 print("DOCUMENTATION QUALITY EVALUATION:")
 print("="*60)
 print(evaluation)
-```
-
----
-
-## Advanced Example 3: Batch Evaluation
-
-Evaluate multiple responses efficiently:
-
-```python
-from swarms import CouncilAsAJudge
-
-council = CouncilAsAJudge(
-    name="Batch-Evaluator",
-    model_name="gpt-4o-mini",
-)
-
-# Multiple responses to evaluate
-responses = [
-    """
-    Task: What is recursion?
-    Response: Recursion is when a function calls itself.
-    """,
-    """
-    Task: What is recursion?
-    Response: Recursion is a programming technique where a function calls itself to solve a problem by breaking it into smaller subproblems. It requires a base case to stop the recursion and prevent infinite loops.
-    """,
-    """
-    Task: What is recursion?
-    Response: Recursion is a powerful programming concept where a function calls itself to solve complex problems by dividing them into simpler instances. Key components include: 1) Base case - stopping condition, 2) Recursive case - self-referential call with modified parameters, 3) Progress toward base case. Example: factorial(n) = n * factorial(n-1) with base case factorial(0) = 1. Common in tree traversal, sorting algorithms, and mathematical computations.
-    """,
-]
-
-# Evaluate each response
-results = []
-for i, response in enumerate(responses, 1):
-    print(f"\nEvaluating Response {i}...")
-    evaluation = council.run(task=response)
-    results.append(evaluation)
-    print(f"Response {i} evaluated.")
-
-# Display comparative summary
-print("\n" + "="*60)
-print("COMPARATIVE EVALUATION RESULTS:")
-print("="*60)
-for i, result in enumerate(results, 1):
-    print(f"\n### Response {i} ###")
-    print(result)
-    print("-"*60)
 ```
 
 ---
@@ -379,137 +362,21 @@ print(evaluation)
 # - Suggest specific topics to review
 ```
 
-### Use Case 3: Customer Support Response Quality
+---
 
-```python
-from swarms import CouncilAsAJudge
+## How It Works
 
-# Council for customer support evaluation
-council = CouncilAsAJudge(
-    name="Support-QA-Council",
-    description="Evaluates customer support response quality",
-    model_name="gpt-4o-mini",
-)
-
-# Support response to evaluate
-support_interaction = """
-Task: Customer asks - "My order #12345 hasn't arrived yet. It was supposed to be here 3 days ago. Can you help?"
-
-Response: I apologize for the delay with your order #12345. I've checked your tracking information and see that your package is currently in transit at the regional distribution center. Due to unexpected weather conditions in your area, deliveries are experiencing delays of 2-3 business days. Your package should arrive within the next 2 days. I've applied a $10 credit to your account for the inconvenience. You can track your order in real-time at [tracking link]. Is there anything else I can help you with?
-"""
-
-# Evaluate response quality
-evaluation = council.run(task=support_interaction)
-
-# Use for:
-# - Training support agents
-# - Quality assurance
-# - Identifying best practices
-# - Improving response templates
-
-print("SUPPORT RESPONSE EVALUATION:")
-print(evaluation)
-```
-
-### Use Case 4: Code Documentation Review
-
-```python
-from swarms import CouncilAsAJudge
-
-council = CouncilAsAJudge(
-    name="Code-Doc-Reviewer",
-    model_name="gpt-4o-mini",
-)
-
-# Code documentation to evaluate
-code_docs = """
-Task: Document the user authentication function.
-
-Response:
-```python
-def authenticate_user(username: str, password: str) -> Optional[User]:
-    '''
-    Authenticates a user with username and password.
-
-    Args:
-        username (str): The user's username
-        password (str): The user's password
-
-    Returns:
-        Optional[User]: User object if authentication succeeds, None otherwise
-
-    Raises:
-        ValueError: If username or password is empty
-        DatabaseError: If database connection fails
-
-    Example:
-        >>> user = authenticate_user("john_doe", "secret123")
-        >>> if user:
-        ...     print(f"Welcome {user.name}!")
-        ... else:
-        ...     print("Invalid credentials")
-
-    Note:
-        Password is hashed using bcrypt before comparison.
-        Failed attempts are logged for security monitoring.
-    '''
-    if not username or not password:
-        raise ValueError("Username and password required")
-
-    user = db.get_user(username)
-    if user and verify_password(password, user.password_hash):
-        return user
-    return None
-```
-"""
-
-evaluation = council.run(task=code_docs)
-print("CODE DOCUMENTATION EVALUATION:")
-print(evaluation)
-```
-
-### Use Case 5: Prompt Engineering Evaluation
-
-```python
-from swarms import CouncilAsAJudge, Agent
-
-# Council for evaluating prompts
-council = CouncilAsAJudge(
-    name="Prompt-Evaluator",
-    model_name="gpt-4o-mini",
-)
-
-# Test different prompts
-prompt_v1 = "Write a summary of machine learning."
-
-prompt_v2 = """
-Write a comprehensive summary of machine learning for business executives.
-
-Requirements:
-- 200-250 words
-- Focus on business value and ROI
-- Include 2-3 real-world examples
-- Avoid technical jargon
-- Highlight key trends for 2024
-"""
-
-# Generate responses with both prompts
-agent = Agent(model_name="gpt-4o-mini", max_loops=1)
-
-response_v1 = agent.run(prompt_v1)
-response_v2 = agent.run(prompt_v2)
-
-# Evaluate both
-eval_v1 = council.run(task=f"Task: {prompt_v1}\n\nResponse: {response_v1}")
-eval_v2 = council.run(task=f"Task: {prompt_v2}\n\nResponse: {response_v2}")
-
-# Compare to improve prompt engineering
-print("PROMPT V1 EVALUATION:")
-print(eval_v1)
-print("\n" + "="*60 + "\n")
-print("PROMPT V2 EVALUATION:")
-print(eval_v2)
-```
+1. **Task Submission**: Submit a task containing the response to evaluate
+2. **Parallel Evaluation**: Six judge agents evaluate concurrently:
+   - Each judge focuses on their specialized dimension
+   - Judges provide detailed, technical feedback
+   - Specific examples and improvement suggestions included
+3. **Aggregation**: Aggregator agent synthesizes all evaluations into:
+   - Executive summary of key strengths/weaknesses
+   - Cross-dimensional patterns and correlations
+   - Prioritized improvement recommendations
+   - Comprehensive technical report
+4. **Result**: Receive detailed evaluation report with actionable insights
 
 ---
 
@@ -581,59 +448,25 @@ evaluation = council.run(task=response)
 
 ---
 
-## Common Patterns
+## Evaluation Output
 
-### Pattern 1: Iterative Improvement Loop
+The council returns a comprehensive report including:
 
-```python
-from swarms import CouncilAsAJudge, Agent
+```markdown
+EXECUTIVE SUMMARY
+- Key strengths identified
+- Critical issues requiring attention
+- Overall assessment
 
-generator = Agent(model_name="gpt-4o-mini", max_loops=1)
-evaluator = CouncilAsAJudge(model_name="gpt-4o-mini")
+DETAILED ANALYSIS
+- Cross-dimensional patterns
+- Specific examples and implications
+- Technical impact assessment
 
-task = "Explain neural networks"
-max_loops = 3
-
-for iteration in range(max_loops):
-    # Generate content
-    response = generator.run(task)
-
-    # Evaluate
-    eval_input = f"Task: {task}\n\nResponse: {response}"
-    evaluation = evaluator.run(task=eval_input)
-
-    # Check if quality is sufficient
-    if "critical issues" not in evaluation.lower():
-        print(f"Success after {iteration + 1} iterations!")
-        break
-
-    # Refine task based on evaluation feedback
-    task = f"{task}\n\nPrevious attempt had issues. Improve on: {evaluation[:200]}"
-```
-
-### Pattern 2: A/B Testing Content
-
-```python
-from swarms import CouncilAsAJudge
-
-council = CouncilAsAJudge(model_name="gpt-4o-mini")
-
-# Evaluate different versions
-versions = {
-    "Version A": "Content A...",
-    "Version B": "Content B...",
-    "Version C": "Content C...",
-}
-
-evaluations = {}
-for version, content in versions.items():
-    eval_input = f"Task: Create engaging content\n\nResponse: {content}"
-    evaluations[version] = council.run(task=eval_input)
-
-# Compare and choose best version
-for version, evaluation in evaluations.items():
-    print(f"\n{version} Evaluation:")
-    print(evaluation)
+RECOMMENDATIONS
+- Prioritized improvement areas
+- Specific technical suggestions
+- Implementation considerations
 ```
 
 ---
@@ -643,86 +476,13 @@ for version, evaluation in evaluations.items():
 | Architecture | When to Use Instead |
 |--------------|---------------------|
 | **[MajorityVoting](./majority_voting_example.md)** | When you need multiple agents to independently solve a task and build consensus |
-| **[LLMCouncil](../examples/llm_council_examples.md)** | When you want agents to rank each other's generated responses |
+| **[LLMCouncil](./llm_council_examples.md)** | When you want agents to rank each other's generated responses |
 | **[DebateWithJudge](../examples/debate_quickstart.md)** | When you want two agents to argue opposing viewpoints |
-
----
-
-## API Reference
-
-### CouncilAsAJudge Class
-
-```python
-class CouncilAsAJudge:
-    def __init__(
-        self,
-        id: str = swarm_id(),
-        name: str = "CouncilAsAJudge",
-        description: str = "Evaluates task responses across multiple dimensions",
-        model_name: str = "gpt-4o-mini",
-        output_type: str = "final",
-        cache_size: int = 128,
-        random_model_name: bool = True,
-        max_loops: int = 1,
-        aggregation_model_name: str = "gpt-4o-mini",
-        judge_agent_model_name: Optional[str] = None,
-    )
-
-    def run(self, task: str) -> str:
-        """
-        Run the evaluation process across all dimensions.
-
-        Args:
-            task: Task containing the response to evaluate
-
-        Returns:
-            Comprehensive evaluation report
-        """
-```
-
-### Evaluation Dimensions
-
-```python
-EVAL_DIMENSIONS = {
-    "accuracy": "Factual accuracy assessment...",
-    "helpfulness": "Practical value evaluation...",
-    "harmlessness": "Safety and ethics assessment...",
-    "coherence": "Structural integrity analysis...",
-    "conciseness": "Communication efficiency evaluation...",
-    "instruction_adherence": "Requirement compliance assessment...",
-}
-```
-
----
-
-## Troubleshooting
-
-### Issue: Evaluation too slow
-
-**Solution**:
-- Reduce `cache_size` if memory constrained
-- Use `gpt-4o-mini` for all agents
-- Ensure parallel execution is working (check max_workers)
-
-### Issue: Inconsistent evaluations
-
-**Solution**:
-- Set `random_model_name=False` for deterministic results
-- Use the same model for all judges
-- Increase `cache_size` for better caching
-
-### Issue: Evaluation too generic
-
-**Solution**:
-- Provide more context in the task input
-- Include specific requirements in the task description
-- Use a more powerful model for aggregation
 
 ---
 
 ## Next Steps
 
-- Explore [CouncilAsAJudge Quickstart](../../examples/council_as_judge_quickstart.md)
 - See [GitHub Examples](https://github.com/kyegomez/swarms/tree/master/examples/multi_agent/council_of_judges)
-- Learn about [Multi-Agent Evaluation Patterns](../../examples/multi_agent_architectures_overview.md)
+- Learn about [Multi-Agent Evaluation Patterns](../examples/multi_agent_architectures_overview.md)
 - Try [MajorityVoting](./majority_voting_example.md) for consensus-based generation

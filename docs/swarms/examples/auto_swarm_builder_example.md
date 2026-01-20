@@ -1,4 +1,4 @@
-# AutoSwarmBuilder: Practical Tutorial
+# AutoSwarmBuilder: Complete Guide
 
 A comprehensive guide to using AutoSwarmBuilder for automatic multi-agent team generation and orchestration.
 
@@ -8,11 +8,31 @@ A comprehensive guide to using AutoSwarmBuilder for automatic multi-agent team g
 
 | Feature | Description |
 |---------|-------------|
-| **Intelligent Agent Generation** | Creates agents with roles, personalities, expertise, and limitations |
-| **Comprehensive System Prompts** | Generates detailed prompts including decision-making frameworks |
-| **Automatic Architecture Selection** | Chooses optimal swarm type for the task |
-| **Flexible Output Formats** | Returns agents, swarm configs, or agent objects |
+| **Automatic Agent Generation** | Creates agents with roles, personalities, and expertise based on task |
+| **Intelligent Architecture Selection** | Chooses optimal swarm type (Sequential, Concurrent, Hierarchical, etc.) |
+| **Comprehensive System Prompts** | Generates detailed prompts with decision-making frameworks |
+| **Flexible Execution** | Returns agents, swarm router config, or agent objects |
 | **Scalable Teams** | Generates from 2 to dozens of specialized agents |
+
+```
+Your Task Description
+        │
+        ▼
+   AutoSwarmBuilder
+   (Boss System Prompt)
+        │
+        ▼
+┌───────────────────────┐
+│ Auto-Generated Team   │
+│  - Agent Roles        │
+│  - Personalities      │
+│  - System Prompts     │
+│  - Architecture Type  │
+└───────────────────────┘
+        │
+        ▼
+    Ready to Run
+```
 
 ### When to Use AutoSwarmBuilder
 
@@ -33,12 +53,73 @@ A comprehensive guide to using AutoSwarmBuilder for automatic multi-agent team g
 ## Installation
 
 ```bash
-pip install -U swarms
+pip install swarms
 ```
 
 ---
 
-## Basic Example
+## Quick Start
+
+### Step 1: Import and Create
+
+```python
+from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
+
+# Initialize the builder
+swarm_builder = AutoSwarmBuilder(
+    name="Marketing-Team-Builder",
+    description="Builds marketing teams automatically",
+    model_name="gpt-4o",  # Boss agent model
+    max_loops=1,
+    execution_type="return-agents",  # or "return-swarm-router-config", "return-agents-objects"
+    verbose=True
+)
+```
+
+### Step 2: Generate and Run
+
+```python
+# Describe what you need
+task = "Create a marketing team with 4 agents: market researcher, content strategist, copywriter, and social media specialist. They should collaborate on launching a new AI product."
+
+# Auto-generate the team
+result = swarm_builder.run(task=task)
+
+# The builder creates:
+# - 4 agents with specialized roles
+# - Comprehensive system prompts for each
+# - Appropriate swarm architecture
+# - Ready-to-use configuration
+
+print(result)
+```
+
+---
+
+## Key Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `name` | `str` | Required | Name of the builder instance |
+| `description` | `str` | Required | Purpose/description of the builder |
+| `model_name` | `str` | `"gpt-4o"` | Model for boss agent |
+| `max_loops` | `int` | `1` | Loops for generation process |
+| `execution_type` | `str` | `"return-agents"` | Output format type |
+| `verbose` | `bool` | `False` | Enable detailed logging |
+
+### Execution Types
+
+| Type | Returns | Use Case |
+|------|---------|----------|
+| `"return-agents"` | List of agent dictionaries | Inspect and customize agents |
+| `"return-swarm-router-config"` | Complete SwarmRouter configuration | Ready-to-use swarm |
+| `"return-agents-objects"` | List of Agent objects | Direct execution |
+
+---
+
+## Complete Examples
+
+### Example 1: Content Creation Team
 
 ```python
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
@@ -48,7 +129,7 @@ import json
 swarm = AutoSwarmBuilder(
     name="Content-Creation-Team",
     description="Builds content creation teams",
-    model_name="gpt-4o",  # Boss agent model
+    model_name="gpt-4o",
     max_loops=1,
     execution_type="return-agents",
     verbose=True
@@ -72,36 +153,9 @@ team_config = swarm.run(task=task)
 print(json.dumps(team_config, indent=2))
 ```
 
----
-
-## Key Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `name` | `str` | Required | Name of the builder instance |
-| `description` | `str` | Required | Purpose/description of the builder |
-| `model_name` | `str` | `"gpt-4o"` | Model for boss agent |
-| `max_loops` | `int` | `1` | Loops for generation process |
-| `execution_type` | `str` | `"return-agents"` | Output format type |
-| `verbose` | `bool` | `False` | Enable detailed logging |
-
-### Execution Types
-
-| Type | Returns | Structure |
-|------|---------|-----------|
-| `"return-agents"` | List of agent dicts | `[{"agent_name": "...", "system_prompt": "...", "description": "..."}]` |
-| `"return-swarm-router-config"` | SwarmRouter config | Complete configuration ready to use |
-| `"return-agents-objects"` | List of Agent objects | Instantiated Agent objects |
-
----
-
-## Advanced Examples
-
-### Example 1: Financial Analysis Team
+### Example 2: Financial Analysis Team
 
 ```python
-from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
-
 swarm = AutoSwarmBuilder(
     name="Financial-Analysis-Builder",
     description="Creates specialized financial analysis teams",
@@ -139,7 +193,7 @@ for agent in team:
     print(f"Prompt Length: {len(agent['system_prompt'])} characters")
 ```
 
-### Example 2: Software Development Team
+### Example 3: Software Development Team
 
 ```python
 swarm = AutoSwarmBuilder(
@@ -168,7 +222,7 @@ swarm_config = swarm.run(task=task)
 # It includes the complete architecture and agent specifications
 ```
 
-### Example 3: Research Team
+### Example 4: Research Team
 
 ```python
 swarm = AutoSwarmBuilder(
@@ -202,7 +256,15 @@ for agent in agents:
 
 ## Use Cases
 
-### Use Case 1: Accounting Team
+| Scenario | Team Description |
+|----------|------------------|
+| **Content Creation** | "Writers, editors, SEO specialists for blog content" |
+| **Software Development** | "Full-stack developers, QA engineers, DevOps for microservices" |
+| **Financial Analysis** | "Financial analysts, risk managers, compliance officers for investment portfolio" |
+| **Customer Support** | "Support agents, escalation specialists, quality reviewers for customer service" |
+| **Research** | "Researchers, data scientists, literature reviewers for scientific study" |
+
+### Use Case: Accounting Team
 
 ```python
 task = """
@@ -227,63 +289,19 @@ swarm = AutoSwarmBuilder(
 team = swarm.run(task=task)
 ```
 
-### Use Case 2: Customer Support Team
-
-```python
-task = """
-Create a customer support team with specialized agents:
-
-- **Tier 1 Support**: Handle common questions, basic troubleshooting, ticket routing
-- **Technical Support**: Advanced troubleshooting, bug investigation, technical guidance
-- **Escalation Specialist**: Handle complex issues, coordinate with engineering, customer advocacy
-- **Quality Assurance**: Monitor support quality, provide feedback, identify training needs
-- **Knowledge Manager**: Maintain documentation, create FAQs, identify common patterns
-
-Team should provide 24/7 support for a SaaS platform with focus on customer satisfaction.
-"""
-
-swarm = AutoSwarmBuilder(
-    name="Support-Team-Builder",
-    model_name="gpt-4o",
-)
-
-team = swarm.run(task=task)
-```
-
-### Use Case 3: Marketing Campaign Team
-
-```python
-task = """
-Create a marketing team for product launch:
-
-- **Market Researcher**: Audience analysis, competitive research, trend identification
-- **Content Strategist**: Content calendar, messaging framework, brand voice
-- **Copywriter**: Ad copy, landing pages, email campaigns, social posts
-- **Social Media Manager**: Platform strategy, community engagement, influencer outreach
-- **Analytics Specialist**: Campaign performance, A/B testing, ROI analysis
-
-Team should collaborate on launching a new AI productivity tool targeting enterprise clients.
-"""
-
-swarm = AutoSwarmBuilder(
-    name="Marketing-Campaign-Builder",
-    model_name="gpt-4o",
-)
-
-team = swarm.run(task=task)
-```
-
 ---
 
-## Best Practices
+## How It Works
 
-1. **Be Extremely Specific**: Provide detailed role descriptions
-2. **Request Comprehensive Prompts**: Ask for "extremely detailed" and "comprehensive" prompts
-3. **Define Team Size**: Specify exact number of agents needed
-4. **Describe Collaboration**: Explain how agents should work together
-5. **Use Powerful Models**: gpt-4o or claude-sonnet-4 for best results
-6. **Review and Customize**: Always review generated agents before production use
-7. **Iterate**: Run multiple times with refined descriptions if needed
+1. **Task Analysis**: Boss agent analyzes your requirements
+2. **Agent Design**: Creates agents with:
+   - Unique roles and purposes
+   - Distinct personalities
+   - Comprehensive system prompts
+   - Specific capabilities and limitations
+3. **Architecture Selection**: Chooses optimal swarm type
+4. **Configuration Generation**: Outputs ready-to-use configuration
+5. **Return**: Provides agents in requested format
 
 ---
 
@@ -307,15 +325,17 @@ For each agent, the boss defines:
 - Limitations & Boundaries
 - Collaboration Strategy
 
-### Architecture Types
+### Supported Swarm Architectures
 The boss can select from 14+ swarm architectures:
 - AgentRearrange
 - MixtureOfAgents
+- SpreadSheetSwarm
 - SequentialWorkflow
 - ConcurrentWorkflow
+- GroupChat
+- MultiAgentRouter
 - HierarchicalSwarm
 - MajorityVoting
-- GroupChat
 - And more...
 
 ---
@@ -346,6 +366,18 @@ Includes complete SwarmRouter configuration with:
 - Swarm type selection
 - Architecture parameters
 - Ready to instantiate and run
+
+---
+
+## Best Practices
+
+1. **Be Extremely Specific**: Provide detailed role descriptions
+2. **Request Comprehensive Prompts**: Ask for "extremely detailed" and "comprehensive" prompts
+3. **Define Team Size**: Specify exact number of agents needed
+4. **Describe Collaboration**: Explain how agents should work together
+5. **Use Powerful Models**: gpt-4o or claude-sonnet-4 for best results
+6. **Review and Customize**: Always review generated agents before production use
+7. **Iterate**: Run multiple times with refined descriptions if needed
 
 ---
 
@@ -386,7 +418,6 @@ task = "Create cross-functional team: technical, business, creative, operational
 
 ## Next Steps
 
-- Explore [AutoSwarmBuilder Quickstart](../../examples/auto_swarm_builder_quickstart.md)
 - See [GitHub Examples](https://github.com/kyegomez/swarms/tree/master/examples/multi_agent/asb)
-- Learn about [Agent Design Principles](../../swarms/concept/agent_design.md)
+- Learn about [Agent Design Principles](../concept/agent_design.md)
 - Try [SwarmRouter](./swarm_router.md) for task routing

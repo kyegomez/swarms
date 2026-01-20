@@ -11,6 +11,7 @@ dataframe/
 .ruff_cache
 target/
 Cargo.lock
+.claude/
 .pytest_cache
 databases
 static/generated

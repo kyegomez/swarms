@@ -21,18 +21,15 @@ from swarms.structs.graph_workflow import (
 from swarms.structs.groupchat import (
     GroupChat,
     expertise_based,
+    priority_speaker,
+    random_dynamic_speaker,
+    random_speaker,
+    round_robin_speaker,
 )
 from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 from swarms.structs.hybrid_hiearchical_peer_swarm import (
     HybridHierarchicalClusterSwarm,
-)
-from swarms.structs.interactive_groupchat import (
-    InteractiveGroupChat,
-    priority_speaker,
-    random_dynamic_speaker,
-    random_speaker,
-    round_robin_speaker,
 )
 from swarms.structs.llm_council import LLMCouncil
 from swarms.structs.ma_blocks import (
@@ -144,6 +141,10 @@ __all__ = [
     "run_single_agent",
     "GroupChat",
     "expertise_based",
+    "round_robin_speaker",
+    "random_speaker",
+    "priority_speaker",
+    "random_dynamic_speaker",
     "MultiAgentRouter",
     "ModelRouter",
     "MALT",
@@ -157,7 +158,6 @@ __all__ = [
     "aggregate",
     "find_agent_by_name",
     "run_agent",
-    "InteractiveGroupChat",
     "round_robin_speaker",
     "random_speaker",
     "priority_speaker",

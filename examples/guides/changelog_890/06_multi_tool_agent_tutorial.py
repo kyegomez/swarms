@@ -13,7 +13,6 @@ Key concepts:
 - Result synthesis from diverse tool outputs
 """
 
-import os
 from swarms import Agent
 
 # Note: This example assumes swarms_tools package is installed
@@ -21,11 +20,19 @@ from swarms import Agent
 # For this demo, we'll show the pattern even if tools aren't available
 
 try:
-    from swarms_tools import exa_search, yahoo_finance_api, coin_gecko_coin_api
+    from swarms_tools import (
+        exa_search,
+        yahoo_finance_api,
+        coin_gecko_coin_api,
+    )
+
     TOOLS_AVAILABLE = True
 except ImportError:
-    print("swarms_tools package not available - showing conceptual example")
+    print(
+        "swarms_tools package not available - showing conceptual example"
+    )
     TOOLS_AVAILABLE = False
+
     # Mock tools for demonstration
     def exa_search(query: str) -> str:
         return f"Mock search results for: {query}"
@@ -36,6 +43,7 @@ except ImportError:
     def coin_gecko_coin_api(coin_id: str) -> str:
         return f"Mock crypto data for: {coin_id}"
 
+
 # Create a comprehensive multi-tool agent
 multi_tool_agent = Agent(
     agent_name="ComprehensiveAnalysisAgent",
@@ -45,11 +53,15 @@ multi_tool_agent = Agent(
     well-rounded analysis. Always cite your sources and explain your reasoning.""",
     model_name="gpt-4o-mini",
     max_loops=1,
-    tools=[
-        exa_search,           # Web search and research
-        yahoo_finance_api,    # Financial market data
-        coin_gecko_coin_api,  # Cryptocurrency information
-    ] if TOOLS_AVAILABLE else [],
+    tools=(
+        [
+            exa_search,  # Web search and research
+            yahoo_finance_api,  # Financial market data
+            coin_gecko_coin_api,  # Cryptocurrency information
+        ]
+        if TOOLS_AVAILABLE
+        else []
+    ),
 )
 
 # Complex analysis task requiring multiple tools

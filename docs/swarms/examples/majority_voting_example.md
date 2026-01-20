@@ -1,4 +1,4 @@
-# MajorityVoting: Practical Tutorial
+# MajorityVoting: Complete Guide
 
 A comprehensive guide to using the MajorityVoting architecture for robust multi-agent consensus building and decision making.
 
@@ -14,6 +14,18 @@ The **MajorityVoting** system is a multi-agent architecture that enables sophist
 | **Memory Retention** | Maintains full conversation history across all loops for context-aware refinement |
 | **Flexible Output** | Supports multiple output formats (dict, str, list) for different use cases |
 | **Comprehensive Evaluation** | Assesses accuracy, depth, relevance, clarity, unique perspectives, and innovation |
+
+```
+Agent A ─┐
+Agent B ─┼──> Concurrent Execution
+Agent C ─┘
+    │
+    ▼
+ Consensus Agent
+    │
+    ▼
+Synthesized Final Answer
+```
 
 ### When to Use MajorityVoting
 
@@ -35,70 +47,64 @@ The **MajorityVoting** system is a multi-agent architecture that enables sophist
 ## Installation
 
 ```bash
-pip install -U swarms
+pip install swarms
 ```
 
 ---
 
-## Basic Example
+## Quick Start
+
+### Step 1: Create Agents
 
 ```python
 from swarms import Agent, MajorityVoting
 
-# Create agents with different perspectives
+# Create specialized agents
 agent1 = Agent(
-    agent_name="Conservative-Analyst",
-    system_prompt=(
-        "You are a conservative financial advisor focused on "
-        "risk management, capital preservation, and long-term stability."
-    ),
+    agent_name="Financial-Analysis-Agent-1",
+    system_prompt="You are a conservative financial advisor focused on risk management and long-term stability.",
     model_name="gpt-4o-mini",
     max_loops=1,
 )
 
 agent2 = Agent(
-    agent_name="Growth-Analyst",
-    system_prompt=(
-        "You are a growth-oriented financial advisor focused on "
-        "high-potential opportunities, emerging markets, and innovation."
-    ),
+    agent_name="Financial-Analysis-Agent-2",
+    system_prompt="You are a growth-oriented financial advisor focused on high-potential opportunities.",
     model_name="gpt-4o-mini",
     max_loops=1,
 )
 
 agent3 = Agent(
-    agent_name="Balanced-Analyst",
-    system_prompt=(
-        "You are a balanced financial advisor focused on "
-        "diversification, risk-adjusted returns, and portfolio optimization."
-    ),
+    agent_name="Financial-Analysis-Agent-3",
+    system_prompt="You are a balanced financial advisor focused on diversification and risk-adjusted returns.",
     model_name="gpt-4o-mini",
     max_loops=1,
 )
+```
 
-# Initialize majority voting system
+### Step 2: Create the Voting System
+
+```python
+# Create the majority voting system
 voting_system = MajorityVoting(
     agents=[agent1, agent2, agent3],
     max_loops=1,
-    output_type="dict",
     verbose=True
 )
-
-# Run the voting system
-result = voting_system.run(
-    task="Create a comprehensive investment strategy for a 35-year-old with $100k to invest. Consider risk tolerance, time horizon, and diversification."
-)
-
-# Access the result
-print(result)
 ```
 
-### Output
+### Step 3: Run the Voting System
 
-The output will contain the conversation history including:
-1. Each agent's independent analysis
-2. The consensus agent's comprehensive evaluation and synthesis
-3. Final recommendations based on all perspectives
+```python
+# Define the task
+task = "Create a table of super high growth opportunities for AI. I have $40k to invest in ETFs, index funds, and more. Please create a table in markdown."
+
+# Run the voting system
+result = voting_system.run(task=task)
+
+# Print the result
+print(result)
+```
 
 ---
 
@@ -116,9 +122,64 @@ The output will contain the conversation history including:
 | `additional_consensus_agent_kwargs` | `dict` | `{}` | Additional keyword arguments for consensus agent initialization |
 | `autosave` | `bool` | `False` | Automatically save conversation history |
 
+### Output Types
+
+| Value | Description |
+|-------|-------------|
+| `"dict"` | Conversation history as dictionary with roles and content |
+| `"str"` | All messages formatted as a single string |
+| `"list"` | Messages as a list of dictionaries |
+
 ---
 
-## Advanced Example 1: Multi-Loop Consensus
+## Complete Examples
+
+### Example 1: Basic Financial Analysis
+
+```python
+from swarms import Agent, MajorityVoting
+
+# Create agents with different perspectives
+agents = [
+    Agent(
+        agent_name="Conservative-Analyst",
+        system_prompt="You are a conservative financial advisor focused on risk management and long-term stability.",
+        model_name="gpt-4o-mini",
+        max_loops=1,
+    ),
+    Agent(
+        agent_name="Growth-Analyst",
+        system_prompt="You are a growth-oriented financial advisor focused on high-potential opportunities.",
+        model_name="gpt-4o-mini",
+        max_loops=1,
+    ),
+    Agent(
+        agent_name="Balanced-Analyst",
+        system_prompt="You are a balanced financial advisor focused on diversification and risk-adjusted returns.",
+        model_name="gpt-4o-mini",
+        max_loops=1,
+    ),
+]
+
+# Create the majority voting system
+voting_system = MajorityVoting(
+    agents=agents,
+    max_loops=1,  # Single round of voting
+    output_type="dict",  # Return as dictionary
+    verbose=True
+)
+
+# Run a task
+task = "What are the top 3 AI investment opportunities for 2024?"
+result = voting_system.run(task=task)
+
+print("=" * 60)
+print("VOTING RESULT:")
+print("=" * 60)
+print(result)
+```
+
+### Example 2: Multi-Loop Consensus
 
 Multi-loop voting enables iterative refinement where agents see the consensus from previous rounds and refine their responses:
 
@@ -179,9 +240,7 @@ result = voting_system.run(
 # Loop 3: Final refinement based on consensus from Loop 2
 ```
 
----
-
-## Advanced Example 2: Custom Consensus Agent
+### Example 3: Custom Consensus Agent
 
 Customize the consensus agent for domain-specific evaluation:
 
@@ -254,50 +313,6 @@ result = voting_system.run(
 
 ---
 
-## Advanced Example 3: Batch Processing with Concurrent Execution
-
-Process multiple tasks efficiently:
-
-```python
-from swarms import Agent, MajorityVoting
-
-# Create agent team
-agents = [
-    Agent(agent_name="Analyst-1", system_prompt="Financial analyst specializing in equities", model_name="gpt-4o-mini", max_loops=1),
-    Agent(agent_name="Analyst-2", system_prompt="Financial analyst specializing in fixed income", model_name="gpt-4o-mini", max_loops=1),
-    Agent(agent_name="Analyst-3", system_prompt="Financial analyst specializing in alternative investments", model_name="gpt-4o-mini", max_loops=1),
-]
-
-voting_system = MajorityVoting(
-    agents=agents,
-    max_loops=1,
-    verbose=False  # Disable verbose for batch processing
-)
-
-# Multiple analysis tasks
-tasks = [
-    "Analyze the outlook for technology sector in 2024",
-    "Evaluate the impact of interest rate changes on bond markets",
-    "Assess cryptocurrency as an alternative investment",
-    "Review ESG investment opportunities",
-]
-
-# Sequential batch processing
-results = voting_system.batch_run(tasks)
-
-# Concurrent batch processing (faster)
-concurrent_results = voting_system.run_concurrently(tasks)
-
-# Display results
-for task, result in zip(tasks, results):
-    print(f"\n{'='*60}")
-    print(f"Task: {task}")
-    print(f"{'='*60}")
-    print(result)
-```
-
----
-
 ## Use Cases
 
 ### Use Case 1: Investment Strategy
@@ -362,98 +377,43 @@ voting = MajorityVoting(agents=agents, max_loops=1)
 result = voting.run("Should we build a native mobile app or responsive web app for our new product?")
 ```
 
-### Use Case 3: Research Synthesis
+### Use Case 3: Batch Processing
 
 ```python
 from swarms import Agent, MajorityVoting
 
-# Different research perspectives
-agents = [
-    Agent(
-        agent_name="Quantitative-Researcher",
-        system_prompt="You focus on quantitative analysis, statistical methods, and numerical data.",
-        model_name="gpt-4o-mini",
-        max_loops=1,
-    ),
-    Agent(
-        agent_name="Qualitative-Researcher",
-        system_prompt="You focus on qualitative analysis, thematic patterns, and contextual understanding.",
-        model_name="gpt-4o-mini",
-        max_loops=1,
-    ),
-    Agent(
-        agent_name="Literature-Reviewer",
-        system_prompt="You synthesize existing research, identify gaps, and connect findings across studies.",
-        model_name="gpt-4o-mini",
-        max_loops=1,
-    ),
+voting_system = MajorityVoting(
+    agents=[agent1, agent2, agent3],
+    max_loops=1
+)
+
+# Multiple tasks
+tasks = [
+    "What are the best cloud computing stocks?",
+    "Should I invest in renewable energy ETFs?",
+    "What's the outlook for semiconductor companies?",
 ]
 
-voting = MajorityVoting(agents=agents, max_loops=2)
-result = voting.run("Synthesize current research on the effectiveness of remote work on employee productivity")
+# Process all tasks
+results = voting_system.batch_run(tasks)
+
+for task, result in zip(tasks, results):
+    print(f"\nTask: {task}")
+    print(f"Result: {result[:200]}...")
 ```
 
-### Use Case 4: Legal Analysis
+---
 
-```python
-from swarms import Agent, MajorityVoting
+## How It Works
 
-# Different legal perspectives
-agents = [
-    Agent(
-        agent_name="Corporate-Lawyer",
-        system_prompt="You analyze from corporate law perspective: contracts, governance, and regulatory compliance.",
-        model_name="gpt-4o-mini",
-        max_loops=1,
-    ),
-    Agent(
-        agent_name="IP-Lawyer",
-        system_prompt="You analyze from intellectual property perspective: patents, trademarks, and licensing.",
-        model_name="gpt-4o-mini",
-        max_loops=1,
-    ),
-    Agent(
-        agent_name="Privacy-Lawyer",
-        system_prompt="You analyze from privacy law perspective: data protection, GDPR, and user consent.",
-        model_name="gpt-4o-mini",
-        max_loops=1,
-    ),
-]
-
-voting = MajorityVoting(agents=agents, max_loops=1)
-result = voting.run("Analyze legal considerations for launching a new AI-powered SaaS product in the EU")
-```
-
-### Use Case 5: Strategic Business Decision
-
-```python
-from swarms import Agent, MajorityVoting
-
-# Different business perspectives
-agents = [
-    Agent(
-        agent_name="CFO-Perspective",
-        system_prompt="You analyze from financial perspective: ROI, cash flow, and financial risk.",
-        model_name="gpt-4o-mini",
-        max_loops=1,
-    ),
-    Agent(
-        agent_name="CMO-Perspective",
-        system_prompt="You analyze from marketing perspective: brand impact, market positioning, and customer acquisition.",
-        model_name="gpt-4o-mini",
-        max_loops=1,
-    ),
-    Agent(
-        agent_name="CTO-Perspective",
-        system_prompt="You analyze from technology perspective: technical feasibility, scalability, and innovation.",
-        model_name="gpt-4o-mini",
-        max_loops=1,
-    ),
-]
-
-voting = MajorityVoting(agents=agents, max_loops=2)
-result = voting.run("Should we acquire a smaller competitor or build the technology in-house?")
-```
+1. **Concurrent Execution**: All agents run simultaneously on the same task
+2. **Independent Analysis**: Each agent provides its own perspective based on its system prompt
+3. **Consensus Evaluation**: The consensus agent:
+   - Evaluates each agent's response on multiple dimensions
+   - Compares and contrasts different viewpoints
+   - Identifies the strongest arguments
+   - Synthesizes a comprehensive final answer
+4. **Iterative Refinement** (if max_loops > 1): Agents see the consensus and refine their responses
 
 ---
 
@@ -553,20 +513,6 @@ agents = [
 analysis = MajorityVoting(agents=agents, max_loops=1)
 ```
 
-### Pattern 3: Multi-Perspective Research
-
-Different research methodologies:
-
-```python
-researchers = [
-    Agent(system_prompt="Empirical research approach with data focus..."),
-    Agent(system_prompt="Theoretical research approach with conceptual models..."),
-    Agent(system_prompt="Practical research approach with real-world applications..."),
-]
-
-research_team = MajorityVoting(agents=researchers, max_loops=2)
-```
-
 ---
 
 ## Related Architectures
@@ -575,73 +521,14 @@ research_team = MajorityVoting(agents=researchers, max_loops=2)
 |--------------|---------------------|
 | **[LLMCouncil](./llm_council_examples.md)** | When you want agents to rank each other's responses and a chairman to synthesize |
 | **[CouncilAsAJudge](./council_as_judge_example.md)** | When you need multi-dimensional evaluation (accuracy, helpfulness, etc.) with specialized judges |
-| **[DebateWithJudge](./debate_quickstart.md)** | When you want adversarial debate between two opposing positions |
+| **[DebateWithJudge](../examples/debate_quickstart.md)** | When you want adversarial debate between two opposing positions |
 | **[ConcurrentWorkflow](./concurrent_workflow.md)** | When agents work on different tasks rather than the same task |
 | **[SequentialWorkflow](./sequential_example.md)** | When tasks need to flow sequentially through agents |
 
 ---
 
-## API Reference
-
-### MajorityVoting Class
-
-```python
-class MajorityVoting:
-    def __init__(
-        self,
-        id: str = swarm_id(),
-        name: str = "MajorityVoting",
-        description: str = "A multi-loop majority voting system for agents",
-        agents: List[Agent] = None,
-        autosave: bool = False,
-        verbose: bool = False,
-        max_loops: int = 1,
-        output_type: str = "dict",
-        consensus_agent_prompt: str = CONSENSUS_AGENT_PROMPT,
-        consensus_agent_name: str = "Consensus-Agent",
-        consensus_agent_description: str = "An agent that uses consensus to generate a final answer.",
-        consensus_agent_model_name: str = "gpt-4.1",
-        additional_consensus_agent_kwargs: dict = {},
-    )
-
-    def run(self, task: str) -> Any:
-        """Run the majority voting system and return the consensus."""
-
-    def batch_run(self, tasks: List[str]) -> List[Any]:
-        """Run multiple tasks sequentially."""
-
-    def run_concurrently(self, tasks: List[str]) -> List[Any]:
-        """Run multiple tasks concurrently using ThreadPoolExecutor."""
-```
-
----
-
-## Troubleshooting
-
-### Issue: Agents producing too similar responses
-
-**Solution**: Ensure agents have truly distinct system prompts and perspectives.
-
-### Issue: Consensus agent not synthesizing well
-
-**Solution**: Use a more powerful model for the consensus agent or customize the consensus prompt.
-
-### Issue: Slow performance
-
-**Solution**:
-- Reduce `max_loops`
-- Use lighter models for agents (keep gpt-4o for consensus)
-- Use `run_concurrently()` for batch tasks
-
-### Issue: Output format not as expected
-
-**Solution**: Verify `output_type` parameter matches your needs ("dict", "str", or "list").
-
----
-
 ## Next Steps
 
-- Explore [MajorityVoting Quickstart](../../examples/majority_voting_quickstart.md)
-- See [GitHub Examples](https://github.com/kyegomez/swarms/tree/master/examples/multi_agent/majority_voting)
-- Learn about [Multi-Agent Architectures](../../examples/multi_agent_architectures_overview.md)
+- See [GitHub Examples](https://github.com/kyegomez/swarms/tree/master/examples/multi_agent/majority_voting) for more use cases
+- Learn about [Consensus Mechanisms](../concept/consensus_mechanisms.md) in multi-agent systems
 - Try [CouncilAsAJudge](./council_as_judge_example.md) for multi-dimensional evaluation

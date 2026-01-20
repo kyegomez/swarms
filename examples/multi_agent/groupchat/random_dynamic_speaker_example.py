@@ -2,7 +2,7 @@
 Medical Panel Discussion Example
 
 This example demonstrates a panel of medical specialists discussing treatment solutions
-for various diseases using InteractiveGroupChat with different speaker functions:
+for various diseases using GroupChat with different speaker functions:
 - Round Robin: Doctors speak in a fixed order
 - Random: Doctors speak in random order
 - Priority: Senior doctors speak first
@@ -13,9 +13,7 @@ on complex medical cases and treatment plans.
 """
 
 from swarms import Agent
-from swarms.structs.interactive_groupchat import (
-    InteractiveGroupChat,
-)
+from swarms.structs.groupchat import GroupChat
 
 
 def create_medical_panel():
@@ -134,7 +132,7 @@ def example_round_robin_panel():
 
     agents = create_medical_panel()
 
-    group_chat = InteractiveGroupChat(
+    group_chat = GroupChat(
         name="Medical Panel Discussion",
         description="A collaborative panel of medical specialists discussing complex cases",
         agents=agents,

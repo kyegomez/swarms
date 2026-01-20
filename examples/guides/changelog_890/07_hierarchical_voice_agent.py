@@ -13,9 +13,15 @@ try:
     from voice_agents import StreamingTTSCallback
 
     # Create TTS callbacks with distinct voices for each role
-    director_callback = StreamingTTSCallback(voice="alloy", model="openai/tts-1")
-    researcher_callback = StreamingTTSCallback(voice="onyx", model="openai/tts-1")
-    analyst_callback = StreamingTTSCallback(voice="nova", model="openai/tts-1")
+    director_callback = StreamingTTSCallback(
+        voice="alloy", model="openai/tts-1"
+    )
+    researcher_callback = StreamingTTSCallback(
+        voice="onyx", model="openai/tts-1"
+    )
+    analyst_callback = StreamingTTSCallback(
+        voice="nova", model="openai/tts-1"
+    )
 
     # Create hierarchical agents with voice capabilities
     director = Agent(
@@ -65,4 +71,6 @@ try:
     print(result)
 
 except ImportError:
-    print("Voice agents package not available. Install with: pip install voice-agents")
+    print(
+        "Voice agents package not available. Install with: pip install voice-agents"
+    )

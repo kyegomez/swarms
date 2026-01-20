@@ -31,7 +31,3 @@ This directory contains utility examples and helper functions for various Swarms
 
 ### Conversation Structure
 - [conversation_example_supabase.py](misc/conversation_structure/conversation_example_supabase.py) - Supabase conversation example
-
-## Telemetry
-- [class_method_example.py](telemetry/class_method_example.py) - Class method telemetry
-- [example_decorator_usage.py](telemetry/example_decorator_usage.py) - Decorator usage examples

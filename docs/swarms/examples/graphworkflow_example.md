@@ -1,6 +1,95 @@
-# GraphWorkflow Examples
+# GraphWorkflow: Complete Guide
 
-This page provides simple, practical examples of how to use `GraphWorkflow` for various real-world scenarios.
+A comprehensive guide to using `GraphWorkflow` for orchestrating complex multi-agent workflows with directed graphs.
+
+## Overview
+
+GraphWorkflow provides a powerful workflow orchestration system that creates directed graphs of agents for complex multi-agent collaboration. The **Rustworkx integration** delivers 5-10x faster performance for large-scale workflows.
+
+| Feature | Description |
+|---------|-------------|
+| **Directed Graph Structure** | Nodes are agents, edges define data flow |
+| **Dual Backend Support** | NetworkX (compatibility) or Rustworkx (performance) |
+| **Parallel Execution** | Multiple agents run simultaneously within layers |
+| **Automatic Compilation** | Optimizes workflow structure for efficient execution |
+| **5-10x Performance** | Rustworkx backend for high-throughput workflows |
+
+---
+
+## Quick Start
+
+### Step 1: Install and Import
+
+```bash
+pip install swarms rustworkx
+```
+
+```python
+from swarms import Agent, GraphWorkflow
+```
+
+### Step 2: Create the Workflow with Rustworkx Backend
+
+```python
+# Create specialized agents
+research_agent = Agent(
+    agent_name="ResearchAgent",
+    model_name="gpt-4o-mini",
+    system_prompt="You are a research specialist. Gather and analyze information.",
+    max_loops=1
+)
+
+analysis_agent = Agent(
+    agent_name="AnalysisAgent",
+    model_name="gpt-4o-mini",
+    system_prompt="You are an analyst. Process research findings and extract insights.",
+    max_loops=1
+)
+
+# Create workflow with rustworkx backend for better performance
+workflow = GraphWorkflow(
+    name="Research-Analysis-Pipeline",
+    backend="rustworkx",  # Use rustworkx for 5-10x faster performance
+    verbose=True
+)
+
+# Add agents as nodes using batch processing
+workflow.add_nodes([research_agent, analysis_agent])
+
+# Connect agents with edges
+workflow.add_edge("ResearchAgent", "AnalysisAgent")
+```
+
+### Step 3: Execute the Workflow
+
+```python
+# Execute the workflow
+results = workflow.run("What are the latest trends in renewable energy technology?")
+
+# Print results
+print(results)
+```
+
+---
+
+## NetworkX vs Rustworkx Backend
+
+| Graph Size | Recommended Backend | Performance |
+|------------|-------------------|-------------|
+| < 100 nodes | NetworkX | Minimal overhead |
+| 100-1000 nodes | Either | Both perform well |
+| 1000+ nodes | **Rustworkx** | 5-10x faster |
+| 10k+ nodes | **Rustworkx** | Essential |
+
+```python
+# NetworkX backend (default, maximum compatibility)
+workflow = GraphWorkflow(backend="networkx")
+
+# Rustworkx backend (high performance)
+workflow = GraphWorkflow(backend="rustworkx")
+```
+
+---
 
 ## Basic Example: Research and Analysis Pipeline
 

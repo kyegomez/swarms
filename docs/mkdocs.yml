@@ -416,8 +416,7 @@ nav:
       - Hierarchical & Orchestration:
         - HierarchicalSwarm: "swarms/examples/hierarchical_swarm_example.md"
         - Hybrid Hierarchical-Cluster Swarm: "swarms/examples/hhcs_examples.md"
-        - AutoSwarmBuilder Quickstart: "examples/auto_swarm_builder_quickstart.md"
-        - AutoSwarmBuilder Tutorial: "swarms/examples/auto_swarm_builder_example.md"
+        - AutoSwarmBuilder: "swarms/examples/auto_swarm_builder_example.md"
         - SwarmRouter: "swarms/examples/swarm_router.md"
         - MultiAgentRouter: "swarms/examples/multi_agent_router_minimal.md"
         - ModelRouter: "swarms/examples/model_router_example.md"
@@ -425,12 +424,9 @@ nav:
         - SwarmRearrange: "swarms/examples/swarm_rearrange_example.md"
 
       - Voting & Consensus:
-        - MajorityVoting Quickstart: "examples/majority_voting_quickstart.md"
-        - MajorityVoting Tutorial: "swarms/examples/majority_voting_example.md"
-        - CouncilAsAJudge Quickstart: "examples/council_as_judge_quickstart.md"
-        - CouncilAsAJudge Tutorial: "swarms/examples/council_as_judge_example.md"
-        - LLM Council Quickstart: "examples/llm_council_quickstart.md"
-        - LLM Council Examples: "examples/llm_council_examples.md"
+        - MajorityVoting: "swarms/examples/majority_voting_example.md"
+        - CouncilAsAJudge: "swarms/examples/council_as_judge_example.md"
+        - LLM Council: "swarms/examples/llm_council_examples.md"
         - DebateWithJudge Quickstart: "examples/debate_quickstart.md"
         - Mixture of Agents: "swarms/examples/moa_example.md"
         - SelfMoASeq: "swarms/examples/self_moa_seq_example.md"
@@ -439,19 +435,14 @@ nav:
       - Workflow Patterns:
         - Sequential Workflow: "swarms/examples/sequential_example.md"
         - Concurrent Workflow: "swarms/examples/concurrent_workflow.md"
-        - GraphWorkflow Example: "swarms/examples/graphworkflow_example.md"
-        - GraphWorkflow Patterns: "swarms/examples/graphworkflow_rustworkx_patterns.md"
-        - GraphWorkflow Quickstart: "examples/graphworkflow_quickstart.md"
-        - BatchedGridWorkflow (Simple): "swarms/examples/batched_grid_simple_example.md"
-        - BatchedGridWorkflow (Advanced): "swarms/examples/batched_grid_advanced_example.md"
+        - GraphWorkflow: "swarms/examples/graphworkflow_example.md"
+        - BatchedGridWorkflow: "swarms/examples/batched_grid_simple_example.md"
 
       - Group Communication:
-        - Group Chat: "swarms/examples/groupchat_example.md"
+        - GroupChat: "swarms/examples/groupchat_comprehensive_examples.md"
         - Interactive GroupChat: "swarms/examples/igc_example.md"
-        - RoundRobinSwarm Quickstart: "examples/roundrobin_quickstart.md"
-        - RoundRobinSwarm Tutorial: "swarms/examples/roundrobin_example.md"
-        - SocialAlgorithms Quickstart: "examples/social_algorithms_quickstart.md"
-        - SocialAlgorithms Tutorial: "swarms/examples/social_algorithms_example.md"
+        - RoundRobinSwarm: "swarms/examples/roundrobin_example.md"
+        - SocialAlgorithms: "swarms/examples/social_algorithms_example.md"
 
       - Utilities:
         - Unique Swarms: "swarms/examples/unique_swarms.md"

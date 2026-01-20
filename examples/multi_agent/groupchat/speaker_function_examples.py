@@ -1,7 +1,7 @@
 """
-InteractiveGroupChat Speaker Function Examples
+GroupChat Speaker Function Examples
 
-This example demonstrates how to use different speaker functions in the InteractiveGroupChat:
+This example demonstrates how to use different speaker functions in the GroupChat:
 - Round Robin: Agents speak in a fixed order, cycling through the list
 - Random: Agents speak in random order
 - Priority: Agents speak based on priority weights
@@ -11,10 +11,7 @@ The example also shows how agents can mention each other using @agent_name synta
 """
 
 from swarms import Agent
-from swarms.structs.interactive_groupchat import (
-    InteractiveGroupChat,
-    random_speaker,
-)
+from swarms.structs.groupchat import GroupChat, random_speaker
 
 
 def create_example_agents():
@@ -52,7 +49,7 @@ def example_random():
     agents = create_example_agents()
 
     # Create group chat with random speaker function
-    group_chat = InteractiveGroupChat(
+    group_chat = GroupChat(
         name="Random Team",
         description="A team that speaks in random order",
         agents=agents,

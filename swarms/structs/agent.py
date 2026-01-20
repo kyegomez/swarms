@@ -4021,7 +4021,8 @@ Subtask Breakdown:
 
         **Multimodal Support:**
         - If img is provided, passes it to llm.run() for vision-enabled models
-        - Automatically handles image path or URL strings
+        - Automatically handles image paths, URLs, data URIs, or raw base64-encoded strings
+        - Supports formats: file paths, HTTP/HTTPS URLs, data URIs (data:image/...;base64,...), and raw base64 strings
 
         **Error Handling:**
         - Catches AgentLLMError, BadRequestError, InternalServerError, AuthenticationError
@@ -4031,8 +4032,9 @@ Subtask Breakdown:
         Args:
             task (str): The task or prompt to send to the LLM. This is the main
                 input that the model will process.
-            img (Optional[str]): Optional image path or URL for multimodal processing.
-                Only used with vision-enabled models. Defaults to None.
+            img (Optional[str]): Optional image input for multimodal processing. Can be a file path, URL,
+                data URI (data:image/...;base64,...), or raw base64-encoded string. Only used with
+                vision-enabled models. Defaults to None.
             current_loop (int): The current loop iteration number. Used for:
                 - Streaming panel titles
                 - Progress tracking
@@ -4079,10 +4081,20 @@ Subtask Breakdown:
             ...     current_loop=1
             ... )
 
-            >>> # Multimodal call
+            >>> # Multimodal call with file path
             >>> response = agent.call_llm(
             ...     "Describe this image",
             ...     img="path/to/image.jpg",
+            ...     current_loop=1
+            ... )
+
+            >>> # Multimodal call with base64 string
+            >>> import base64
+            >>> with open("image.jpg", "rb") as f:
+            ...     img_base64 = base64.b64encode(f.read()).decode("utf-8")
+            >>> response = agent.call_llm(
+            ...     "Describe this image",
+            ...     img=img_base64,
             ...     current_loop=1
             ... )
         """
@@ -4523,8 +4535,11 @@ Subtask Breakdown:
 
         Args:
             task (Optional[str|Any]): Task for the agent to process. If not a string, will be formatted. Defaults to None.
-            img (Optional[str]): Path or reference to a single image input. Defaults to None.
-            imgs (Optional[List[str]]): List of multiple images if processing a batch. Defaults to None.
+            img (Optional[str]): Path, URL, data URI, or raw base64-encoded string for a single image input.
+                Supported formats: file paths (e.g., "image.jpg"), URLs (e.g., "https://example.com/image.png"),
+                data URIs (e.g., "data:image/jpeg;base64,..."), or raw base64 strings. Defaults to None.
+            imgs (Optional[List[str]]): List of multiple images if processing a batch. Each image can be a path,
+                URL, data URI, or raw base64 string. Defaults to None.
             correct_answer (Optional[str]): Ground truth answer for evaluation comparisons. Defaults to None.
             streaming_callback (Optional[Callable[[str], None]]): Function to receive streamed tokens as output is generated (real-time). If not given, uses self.streaming_callback if available. Defaults to None.
             n (int): How many outputs to generate (number of runs). Defaults to 1.
@@ -4546,6 +4561,11 @@ Subtask Breakdown:
             >>> agent.run("Describe this image", img="cat.png")
             >>> agent.run("Summarize", imgs=["a.png", "b.png"])
             >>> agent.run(task="Who won the World Cup?", streaming_callback=print)
+            >>> # Using base64-encoded image
+            >>> import base64
+            >>> with open("image.jpg", "rb") as f:
+            ...     img_base64 = base64.b64encode(f.read()).decode("utf-8")
+            >>> agent.run("Describe this image", img=img_base64)
         """
 
         # # If interactive mode is enabled and no task is provided, prompt the user

@@ -27,7 +27,6 @@ from swarms.structs.debate_with_judge import DebateWithJudge
 from swarms.structs.groupchat import GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
-from swarms.structs.interactive_groupchat import InteractiveGroupChat
 from swarms.structs.llm_council import LLMCouncil
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.majority_voting import MajorityVoting
@@ -36,7 +35,6 @@ from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.multi_agent_router import MultiAgentRouter
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
-from swarms.telemetry.log_executions import log_execution
 from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
@@ -60,7 +58,6 @@ SwarmType = Literal[
     "MajorityVoting",
     "MALT",
     "CouncilAsAJudge",
-    "InteractiveGroupChat",
     "HeavySwarm",
     "BatchedGridWorkflow",
     "LLMCouncil",
@@ -468,7 +465,6 @@ class SwarmRouter:
             "AgentRearrange": self._create_agent_rearrange,
             "MALT": self._create_malt,
             "CouncilAsAJudge": self._create_council_as_judge,
-            "InteractiveGroupChat": self._create_interactive_group_chat,
             "HierarchicalSwarm": self._create_hierarchical_swarm,
             "MixtureOfAgents": self._create_mixture_of_agents,
             "MajorityVoting": self._create_majority_voting,
@@ -557,17 +553,6 @@ class SwarmRouter:
             description=self.description,
             model_name=self.council_judge_model_name,
             output_type=self.output_type,
-        )
-
-    def _create_interactive_group_chat(self, *args, **kwargs):
-        """Factory function for InteractiveGroupChat."""
-        return InteractiveGroupChat(
-            name=self.name,
-            description=self.description,
-            agents=self.agents,
-            max_loops=self.max_loops,
-            output_type=self.output_type,
-            speaker_function=self.speaker_function,
         )
 
     def _create_hierarchical_swarm(self, *args, **kwargs):
@@ -778,14 +763,6 @@ class SwarmRouter:
         """
         self.swarm = self._create_swarm(task, *args, **kwargs)
 
-        log_execution(
-            swarm_id=self.id,
-            status="start",
-            swarm_config=self.to_dict(),
-            swarm_architecture="swarm_router",
-            enabled_on=self.telemetry_enabled,
-        )
-
         args = {}
 
         if tasks is not None:
@@ -801,14 +778,6 @@ class SwarmRouter:
                 result = self.swarm.run(**args, **kwargs)
             else:
                 result = self.swarm.run(**args, **kwargs)
-
-            log_execution(
-                swarm_id=self.id,
-                status="completion",
-                swarm_config=self.to_dict(),
-                swarm_architecture="swarm_router",
-                enabled_on=self.telemetry_enabled,
-            )
 
             # Autosave after successful execution
             if self.autosave and self.swarm_workspace_dir:

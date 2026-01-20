@@ -22,7 +22,9 @@ agent_fixed_loops = Agent(
     max_loops=3,
 )
 
-response1 = agent_fixed_loops.run("Explain how to bake chocolate chip cookies in 5 clear steps.")
+response1 = agent_fixed_loops.run(
+    "Explain how to bake chocolate chip cookies in 5 clear steps."
+)
 print(response1)
 
 agent_autonomous = Agent(
@@ -34,5 +36,7 @@ agent_autonomous = Agent(
     interactive=False,
 )
 
-response2 = agent_autonomous.run("Research the best electric vehicles available in 2026.")
+response2 = agent_autonomous.run(
+    "Research the best electric vehicles available in 2026."
+)
 print(response2)

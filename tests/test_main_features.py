@@ -11,7 +11,6 @@ from swarms import (
     AgentRearrange,
     ConcurrentWorkflow,
     GroupChat,
-    InteractiveGroupChat,
     MajorityVoting,
     MixtureOfAgents,
     MultiAgentRouter,
@@ -605,8 +604,8 @@ def test_multi_agent_router():
     }
 
 
-def test_interactive_groupchat():
-    """Test InteractiveGroupChat functionality"""
+def test_groupchat():
+    """Test GroupChat functionality"""
     agents = [
         create_test_agent(
             "Facilitator", "You facilitate group discussions."
@@ -621,19 +620,17 @@ def test_interactive_groupchat():
         ),
     ]
 
-    interactive_chat = InteractiveGroupChat(
-        agents=agents, max_loops=2
-    )
+    group_chat = GroupChat(agents=agents, max_loops=2)
 
-    response = interactive_chat.run(
+    response = group_chat.run(
         "Let's discuss the future of artificial intelligence."
     )
 
     assert response is not None
     return {
-        "test_name": "test_interactive_groupchat",
+        "test_name": "test_groupchat",
         "status": "passed",
-        "response": "InteractiveGroupChat completed",
+        "response": "GroupChat completed",
     }
 
 

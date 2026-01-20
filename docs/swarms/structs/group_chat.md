@@ -1,53 +1,52 @@
-# GroupChat Swarm Documentation
+# GroupChat Documentation
 
-A production-grade multi-agent system enabling sophisticated group conversations between AI agents with customizable speaking patterns, parallel processing capabilities, and comprehensive conversation tracking.
+The GroupChat is a sophisticated multi-agent system that enables interactive conversations between users and AI agents using @mentions. This system allows users to direct tasks to specific agents and facilitates collaborative responses when multiple agents are mentioned.
 
-## Advanced Configuration
+## Features
 
-### Agent Parameters
+| Feature | Description |
+|---------|-------------|
+| **@mentions Support** | Direct tasks to specific agents using @agent_name syntax |
+| **Multi-Agent Collaboration** | Multiple mentioned agents can see and respond to each other's tasks |
+| **Enhanced Collaborative Prompts** | Agents are trained to acknowledge, build upon, and synthesize each other's responses |
+| **Speaker Functions** | Control the order in which agents respond (round robin, random, priority, custom) |
+| **Dynamic Speaker Management** | Change speaker functions and priorities during runtime |
+| **Random Dynamic Speaker** | Advanced speaker function that follows @mentions in agent responses |
+| **Parallel and Sequential Strategies** | Support for both parallel and sequential agent execution |
+| **Callable Function Support** | Supports both Agent instances and callable functions as chat participants |
+| **Comprehensive Error Handling** | Custom error classes for different scenarios |
+| **Conversation History** | Maintains a complete history of the conversation |
+| **Flexible Output Formatting** | Configurable output format for conversation history |
+| **Interactive Terminal Mode** | Full REPL interface for real-time chat with agents |
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| agent_name | str | Required | Unique identifier for the agent |
-| system_prompt | str | Required | Role and behavior instructions |
-| llm | Any | Required | Language model instance |
-| max_loops | int | 1 | Maximum conversation turns |
-| autosave | bool | False | Enable conversation saving |
-| dashboard | bool | False | Enable monitoring dashboard |
-| verbose | bool | True | Enable detailed logging |
-| dynamic_temperature | bool | True | Enable dynamic temperature |
-| retry_attempts | int | 1 | Failed request retry count |
-| context_length | int | 200000 | Maximum context window |
-| output_type | str | "string" | Response format type |
-| streaming_on | bool | False | Enable streaming responses |
+## Installation
 
-### GroupChat Parameters
+```bash
+pip install swarms
+```
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| name | str | "GroupChat" | Chat group identifier |
-| description | str | "" | Purpose description |
-| agents | List[Agent] | [] | Participating agents |
-| speaker_fn | Callable | round_robin | Speaker selection function |
-| max_loops | int | 10 | Maximum conversation turns |
+## Methods Reference
 
+### Constructor (`__init__`)
 
-## Core Concepts
+**Description:**
+Initializes a new GroupChat instance with the specified configuration.
 
-The GroupChat system consists of several key components:
+**Arguments:**
 
-1. **Agents**: Individual AI agents with specialized knowledge and roles
-2. **Speaker Functions**: Control mechanisms for conversation flow
-3. **Chat History**: Structured conversation tracking
-4. **Response Models**: Pydantic models for data validation
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `id` | str | Unique identifier for the chat | auto-generated key |
+| `name` | str | Name of the group chat | "GroupChat" |
+| `description` | str | Description of the chat's purpose | generic description |
+| `agents` | List[Union[Agent, Callable]] | List of participating agents | empty list |
+| `max_loops` | int | Maximum conversation turns | 1 |
+| `output_type` | str | Type of output format | "string" |
+| `interactive` | bool | Whether to enable interactive mode | False |
+| `speaker_function` | Union[str, Callable] | Function to determine speaking order | round_robin_speaker |
+| `speaker_state` | dict | Initial state for speaker function | {"current_index": 0} |
 
-## Basic Usage
-
-```python
-
-import os
-from dotenv import load_dotenv
-from swarms import Agent, GroupChat, expertise_based
+**Example:**
 
 if __name__ == "__main__":
 

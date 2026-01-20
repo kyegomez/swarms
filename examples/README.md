@@ -30,7 +30,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [heavy_swarm_examples/](multi_agent/heavy_swarm_examples/) | Heavy swarm implementations for complex tasks |
 | [hiearchical_swarm/](multi_agent/hiearchical_swarm/) | Hierarchical swarm structures and patterns |
 | [hscf/](multi_agent/hscf/) | Hierarchical Swarm Control Framework examples |
-| [interactive_groupchat_examples/](multi_agent/interactive_groupchat_examples/) | Interactive group chat implementations |
 | [llm_council_examples/](multi_agent/llm_council_examples/) | LLM Council collaboration patterns |
 | [majority_voting/](multi_agent/majority_voting/) | Majority voting and consensus examples |
 | [mar/](multi_agent/mar/) | Multi-agent rearrangement examples |
@@ -436,8 +435,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Forest Swarm](multi_agent/forest_swarm_examples/) | Forest and tree-based swarms |
 | [Hierarchical Swarm](multi_agent/hiearchical_swarm/hierarchical_swarm_example.py) | Hierarchical agent structures |
 | [Heavy Swarm](multi_agent/heavy_swarm_examples/) | Heavy swarm for complex tasks |
-| [Group Chat](multi_agent/groupchat/interactive_groupchat_example.py) | Multi-agent conversations |
-| [Interactive Group Chat](multi_agent/interactive_groupchat_examples/) | Interactive group chat implementations |
+| [Group Chat](multi_agent/groupchat/) | Multi-agent conversations and interactive group chat implementations |
 | [Graph Workflow](multi_agent/graphworkflow_examples/graph_workflow_example.py) | Graph-based workflows |
 | [LLM Council](multi_agent/llm_council_examples/) | LLM Council collaboration |
 | [Majority Voting](multi_agent/majority_voting/) | Majority voting and consensus |

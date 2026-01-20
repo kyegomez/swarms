@@ -1,8 +1,5 @@
 from swarms import Agent
-from swarms.structs.interactive_groupchat import (
-    InteractiveGroupChat,
-    round_robin_speaker,
-)
+from swarms.structs.groupchat import GroupChat, round_robin_speaker
 
 
 def create_collaborative_agents():
@@ -57,7 +54,7 @@ def example_comprehensive_analysis():
     agents = create_collaborative_agents()
 
     # Create group chat with round robin speaker function
-    group_chat = InteractiveGroupChat(
+    group_chat = GroupChat(
         name="Strategic Analysis Team",
         description="A collaborative team for comprehensive business analysis",
         agents=agents,
@@ -100,7 +97,7 @@ def example_problem_solving():
 
     agents = create_collaborative_agents()
 
-    group_chat = InteractiveGroupChat(
+    group_chat = GroupChat(
         name="Problem Solving Team",
         description="A team that collaborates to solve complex business problems",
         agents=agents,
@@ -137,7 +134,7 @@ def example_agent_delegation():
 
     agents = create_collaborative_agents()
 
-    group_chat = InteractiveGroupChat(
+    group_chat = GroupChat(
         name="Delegation Team",
         description="A team that demonstrates effective delegation and collaboration",
         agents=agents,
@@ -176,7 +173,7 @@ def example_synthesis_and_integration():
 
     agents = create_collaborative_agents()
 
-    group_chat = InteractiveGroupChat(
+    group_chat = GroupChat(
         name="Synthesis Team",
         description="A team that excels at integrating multiple perspectives",
         agents=agents,
@@ -213,7 +210,7 @@ def example_synthesis_and_integration():
 
 def main():
     """Run all enhanced collaboration examples."""
-    print("Enhanced Collaborative InteractiveGroupChat Examples")
+    print("Enhanced Collaborative GroupChat Examples")
     print("=" * 80)
     print("This demonstrates improved agent collaboration with:")
     print("- Acknowledgment of other agents' contributions")

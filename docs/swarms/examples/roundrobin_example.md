@@ -1,4 +1,4 @@
-# RoundRobinSwarm: Practical Tutorial
+# RoundRobinSwarm: Complete Guide
 
 A comprehensive guide to using the RoundRobinSwarm architecture for collaborative multi-agent discussions with randomized turn order.
 
@@ -32,7 +32,57 @@ The **RoundRobinSwarm** implements an AutoGen-style communication pattern where 
 ## Installation
 
 ```bash
-pip install -U swarms
+pip install swarms
+```
+
+---
+
+## Quick Start
+
+### Step 1: Create Agents and Swarm
+
+```python
+from swarms import Agent, RoundRobinSwarm
+
+# Create specialized agents
+researcher = Agent(
+    agent_name="Researcher",
+    system_prompt="You are a research specialist. Gather and present factual information.",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+)
+
+analyst = Agent(
+    agent_name="Analyst",
+    system_prompt="You are an analyst. Interpret data and identify patterns.",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+)
+
+writer = Agent(
+    agent_name="Writer",
+    system_prompt="You synthesize information into clear, actionable insights.",
+    model_name="gpt-4o-mini",
+    max_loops=1,
+)
+
+# Create the swarm
+swarm = RoundRobinSwarm(
+    agents=[researcher, analyst, writer],
+    max_loops=2,  # 2 rounds of discussion
+    verbose=True
+)
+```
+
+### Step 2: Run the Swarm
+
+```python
+# Execute the task
+result = swarm.run(
+    task="Analyze the impact of remote work on productivity and team collaboration"
+)
+
+print(result)
 ```
 
 ---

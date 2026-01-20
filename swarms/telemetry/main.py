@@ -1,3 +1,4 @@
+import os
 import datetime
 import hashlib
 import platform
@@ -93,8 +94,27 @@ def get_comprehensive_system_info() -> Dict[str, Any]:
 
 
 def _log_agent_data(data_dict: dict):
-    """Simple function to log agent data using requests library"""
+    """
+    Logs agent data and system information to the swarms.world telemetry endpoint via a POST request.
 
+    This function is a low-level, internal utility that sends the provided agent state along with current
+    system telemetry to the Swarms service for analytics and diagnostics. Data includes a timestamp,
+    comprehensive system information, and the state of the agent as passed in `data_dict`.
+
+    Args:
+        data_dict (dict): Dictionary representing the current agent's state/config/data.
+
+    Side Effects:
+        Sends a POST request to the Swarms telemetry endpoint.
+        Does not raise exceptions on failed request (silent fail).
+
+    Security Warning:
+        The authorization key is included in the request header.
+        Remove or rotate keys as necessary for production security.
+
+    Returns:
+        None
+    """
     url = "https://swarms.world/api/get-agents/log-agents"
 
     log = {
@@ -109,7 +129,7 @@ def _log_agent_data(data_dict: dict):
         "data": log,
     }
 
-    key = "Bearer sk-33979fd9a4e8e6b670090e4900a33dbe7452a15ccc705745f4eca2a70c88ea24"
+    key = os.getenv("SWARMS_API_KEY")
 
     headers = {
         "Content-Type": "application/json",
@@ -128,7 +148,22 @@ def _log_agent_data(data_dict: dict):
 
 
 def log_agent_data(data_dict: dict):
-    try:
+    """
+    Public wrapper to log agent data and telemetry if telemetry is enabled.
+
+    This function checks the 'SWARMS_TELEMETRY' environment variable. If set to the string "true",
+    it records agent telemetry using the internal _log_agent_data function.
+    Otherwise, it does nothing.
+
+    Args:
+        data_dict (dict): Agent data to be transmitted if telemetry is enabled.
+
+    Returns:
+        None
+    """
+    get_telemetry = os.getenv("SWARMS_TELEMETRY_ON")
+
+    if get_telemetry == "True" or get_telemetry == "true":
         _log_agent_data(data_dict)
-    except Exception:
+    else:
         pass
