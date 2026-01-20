@@ -130,31 +130,7 @@ flowchart TD
 
 ## Mathematical Swarm Patterns
 
-### Fibonacci Swarm
-```python
-def fibonacci_swarm(agents: AgentListType, tasks: List[str])
-```
-
-**Information Flow:**
-```mermaid
-flowchart TD
-    subgraph Fibonacci Pattern
-    L1[Level 1: 1 Agent] --> L2[Level 2: 1 Agent]
-    L2 --> L3[Level 3: 2 Agents]
-    L3 --> L4[Level 4: 3 Agents]
-    L4 --> L5[Level 5: 5 Agents]
-    end
-    Task[Initial Task] --> L1
-    L5 --> Results[Processed Results]
-```
-
-**Best Used When:**
-
-- You need natural scaling patterns
-
-- Tasks have increasing complexity
-
-- You want organic growth in processing capacity
+### Pyramid Swarm
 
 ### Pyramid Swarm
 ```python
@@ -195,33 +171,6 @@ flowchart TD
 - You want organized task delegation
 
 ### Grid Swarm
-```python
-def grid_swarm(agents: AgentListType, tasks: List[str])
-```
-
-**Information Flow:**
-```mermaid
-flowchart TD
-    subgraph Grid Layout
-    A1((1)) <--> A2((2)) <--> A3((3))
-    A4((4)) <--> A5((5)) <--> A6((6))
-    A7((7)) <--> A8((8)) <--> A9((9))
-    A1 <--> A4 <--> A7
-    A2 <--> A5 <--> A8
-    A3 <--> A6 <--> A9
-    end
-    Tasks[Task Queue] --> A1
-    Tasks --> A5
-    Tasks --> A9
-```
-
-**Best Used When:**
-
-- Tasks have spatial relationships
-
-- You need neighbor-based processing
-
-- You want structured parallel processing
 
 ## Communication Patterns
 
@@ -305,13 +254,10 @@ flowchart TD
    - Star Swarm
 
 4. **Dynamic Workloads**
-   - Exponential Swarm
-   - Fibonacci Swarm
+   - Mesh Swarm
 
 5. **Conflict-Free Processing**
-   - Prime Swarm
-   - Harmonic Swarm
-
+   - Broadcast
 
 ```python
 import asyncio
@@ -321,14 +267,8 @@ from swarms.structs.agent import Agent
 from swarms.structs.swarming_architectures import (
     broadcast,
     circular_swarm,
-    exponential_swarm,
-    fibonacci_swarm,
     grid_swarm,
     mesh_swarm,
-    prime_swarm,
-    sigmoid_swarm,
-    sinusoidal_swarm,
-    staircase_swarm,
     star_swarm,
 )
 
@@ -476,56 +416,6 @@ def run_finance_mesh_swarm():
         print(f"Task: {log['task']}")
         print(f"Response: {log['response']}")
 
-def run_mathematical_finance_swarms():
-    """Complex financial analysis using mathematical swarms"""
-    print_separator()
-    print("FINANCE - MARKET PATTERN ANALYSIS")
-    
-    agents = create_finance_agents()
-    tasks = [
-        "Analyze historical market patterns",
-        "Predict market trends using technical analysis",
-        "Identify potential arbitrage opportunities"
-    ]
-    
-    print("\nTasks:")
-    for i, task in enumerate(tasks, 1):
-        print(f"{i}. {task}")
-    
-    print("\nFibonacci Swarm Results:")
-    result = fibonacci_swarm(agents, tasks.copy())
-    print(result)
-    
-    print("\nPrime Swarm Results:")
-    result = prime_swarm(agents, tasks.copy())
-    print(result)
-    
-    print("\nExponential Swarm Results:")
-    result = exponential_swarm(agents, tasks.copy())
-    print(result)
-
-def run_healthcare_pattern_swarms():
-    """Patient monitoring using pattern swarms"""
-    print_separator()
-    print("HEALTHCARE - PATIENT MONITORING PATTERNS")
-    
-    agents = create_healthcare_agents()
-    task = "Monitor and analyze patient vital signs: BP, heart rate, temperature, O2 saturation"
-    
-    print(f"\nTask: {task}")
-    
-    print("\nStaircase Pattern Analysis:")
-    result = staircase_swarm(agents, task)
-    print(result)
-    
-    print("\nSigmoid Pattern Analysis:")
-    result = sigmoid_swarm(agents, task)
-    print(result)
-    
-    print("\nSinusoidal Pattern Analysis:")
-    result = sinusoidal_swarm(agents, task)
-    print(result)
-
 async def run_communication_examples():
     """Communication patterns for emergency scenarios"""
     print_separator()
@@ -564,12 +454,9 @@ async def run_all_examples():
     # Finance examples
     run_finance_circular_swarm()
     run_finance_mesh_swarm()
-    run_mathematical_finance_swarms()
-    
     # Healthcare examples
     run_healthcare_grid_swarm()
     run_healthcare_star_swarm()
-    run_healthcare_pattern_swarms()
     
     # Communication examples
     await run_communication_examples()

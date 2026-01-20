@@ -97,6 +97,11 @@ bash 01_setup_check.sh
   swarms book-call
   ```
 
+- **[research_agent_example.sh](examples/cli/research_agent_example.sh)** - Research agent example
+  ```bash
+  swarms research-agent --task "Research task"
+  ```
+
 ### Run All Examples
 
 - **[run_all_examples.sh](examples/cli/run_all_examples.sh)** - Run multiple examples in sequence
@@ -187,6 +192,7 @@ All scripts are located in `examples/cli/`:
 - `examples/cli/12_help.sh`
 - `examples/cli/13_auto_upgrade.sh`
 - `examples/cli/14_book_call.sh`
+- `examples/cli/research_agent_example.sh`
 - `examples/cli/run_all_examples.sh`
 
 ## Related Documentation

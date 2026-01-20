@@ -5,14 +5,8 @@ from swarms.structs.agent import Agent
 from swarms.structs.swarming_architectures import (
     broadcast,
     circular_swarm,
-    exponential_swarm,
-    fibonacci_swarm,
     grid_swarm,
     mesh_swarm,
-    prime_swarm,
-    sigmoid_swarm,
-    sinusoidal_swarm,
-    staircase_swarm,
     star_swarm,
 )
 
@@ -167,58 +161,6 @@ def run_finance_mesh_swarm():
         print(f"Response: {log['response']}")
 
 
-def run_mathematical_finance_swarms():
-    """Complex financial analysis using mathematical swarms"""
-    print_separator()
-    print("FINANCE - MARKET PATTERN ANALYSIS")
-
-    agents = create_finance_agents()
-    tasks = [
-        "Analyze historical market patterns",
-        "Predict market trends using technical analysis",
-        "Identify potential arbitrage opportunities",
-    ]
-
-    print("\nTasks:")
-    for i, task in enumerate(tasks, 1):
-        print(f"{i}. {task}")
-
-    print("\nFibonacci Swarm Results:")
-    result = fibonacci_swarm(agents, tasks.copy())
-    print(result)
-
-    print("\nPrime Swarm Results:")
-    result = prime_swarm(agents, tasks.copy())
-    print(result)
-
-    print("\nExponential Swarm Results:")
-    result = exponential_swarm(agents, tasks.copy())
-    print(result)
-
-
-def run_healthcare_pattern_swarms():
-    """Patient monitoring using pattern swarms"""
-    print_separator()
-    print("HEALTHCARE - PATIENT MONITORING PATTERNS")
-
-    agents = create_healthcare_agents()
-    task = "Monitor and analyze patient vital signs: BP, heart rate, temperature, O2 saturation"
-
-    print(f"\nTask: {task}")
-
-    print("\nStaircase Pattern Analysis:")
-    result = staircase_swarm(agents, task)
-    print(result)
-
-    print("\nSigmoid Pattern Analysis:")
-    result = sigmoid_swarm(agents, task)
-    print(result)
-
-    print("\nSinusoidal Pattern Analysis:")
-    result = sinusoidal_swarm(agents, task)
-    print(result)
-
-
 async def run_communication_examples():
     """Communication patterns for emergency scenarios"""
     print_separator()
@@ -262,12 +204,10 @@ async def run_all_examples():
     # Finance examples
     run_finance_circular_swarm()
     run_finance_mesh_swarm()
-    run_mathematical_finance_swarms()
 
     # Healthcare examples
     run_healthcare_grid_swarm()
     run_healthcare_star_swarm()
-    run_healthcare_pattern_swarms()
 
     # Communication examples
     await run_communication_examples()

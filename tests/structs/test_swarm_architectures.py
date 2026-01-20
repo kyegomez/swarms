@@ -4,15 +4,10 @@ from swarms.structs.agent import Agent
 from swarms.structs.swarming_architectures import (
     broadcast,
     circular_swarm,
-    exponential_swarm,
     grid_swarm,
-    harmonic_swarm,
     mesh_swarm,
     one_to_one,
     pyramid_swarm,
-    sigmoid_swarm,
-    sinusoidal_swarm,
-    staircase_swarm,
     star_swarm,
 )
 
@@ -118,87 +113,6 @@ def test_pyramid_swarm():
     for log in result:
         assert "role" in log
         assert "content" in log
-
-
-def test_exponential_swarm():
-    """Test exponential swarm mathematical pattern"""
-    agents = create_test_agents(8)
-    tasks = [
-        "Calculate in Exponential Swarm",
-        "Process in Exponential Swarm",
-        "Analyze in Exponential Swarm",
-    ]
-
-    result = exponential_swarm(agents, tasks.copy())
-
-    assert isinstance(result, list)
-    assert len(result) > 0
-
-
-def test_harmonic_swarm():
-    """Test harmonic swarm mathematical pattern"""
-    agents = create_test_agents(8)
-    tasks = [
-        "Calculate in Harmonic Swarm",
-        "Process in Harmonic Swarm",
-        "Analyze in Harmonic Swarm",
-    ]
-
-    result = harmonic_swarm(agents, tasks.copy())
-
-    assert isinstance(result, list)
-    assert len(result) > 0
-
-
-def test_staircase_swarm():
-    """Test staircase swarm pattern"""
-    agents = create_test_agents(10)
-    tasks = [
-        "Process step 1",
-        "Process step 2",
-        "Process step 3",
-        "Process step 4",
-        "Process step 5",
-    ]
-
-    result = staircase_swarm(agents, tasks)
-
-    assert isinstance(result, list)
-    assert len(result) > 0
-
-
-def test_sigmoid_swarm():
-    """Test sigmoid swarm pattern"""
-    agents = create_test_agents(10)
-    tasks = [
-        "Sigmoid task 1",
-        "Sigmoid task 2",
-        "Sigmoid task 3",
-        "Sigmoid task 4",
-        "Sigmoid task 5",
-    ]
-
-    result = sigmoid_swarm(agents, tasks)
-
-    assert isinstance(result, list)
-    assert len(result) > 0
-
-
-def test_sinusoidal_swarm():
-    """Test sinusoidal swarm pattern"""
-    agents = create_test_agents(10)
-    tasks = [
-        "Wave task 1",
-        "Wave task 2",
-        "Wave task 3",
-        "Wave task 4",
-        "Wave task 5",
-    ]
-
-    result = sinusoidal_swarm(agents, tasks)
-
-    assert isinstance(result, list)
-    assert len(result) > 0
 
 
 def test_one_to_one():

@@ -26,7 +26,7 @@ import json
 import os
 import time
 import traceback
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -840,7 +840,9 @@ class HierarchicalSwarm:
         try:
             # Set default workspace directory if not set
             if not os.getenv("WORKSPACE_DIR"):
-                default_workspace = os.path.join(os.getcwd(), "agent_workspace")
+                default_workspace = os.path.join(
+                    os.getcwd(), "agent_workspace"
+                )
                 os.environ["WORKSPACE_DIR"] = default_workspace
                 # Clear the cache so get_workspace_dir() picks up the new value
                 get_workspace_dir.cache_clear()
@@ -848,7 +850,7 @@ class HierarchicalSwarm:
                     logger.info(
                         f"WORKSPACE_DIR not set, using default: {default_workspace}"
                     )
-            
+
             class_name = self.__class__.__name__
             swarm_name = self.name or "hierarchical-swarm"
             self.swarm_workspace_dir = get_swarm_workspace_dir(
@@ -881,7 +883,9 @@ class HierarchicalSwarm:
             # Get conversation history
             if hasattr(self, "conversation") and self.conversation:
                 if hasattr(self.conversation, "conversation_history"):
-                    conversation_data = self.conversation.conversation_history
+                    conversation_data = (
+                        self.conversation.conversation_history
+                    )
                 elif hasattr(self.conversation, "to_dict"):
                     conversation_data = self.conversation.to_dict()
                 else:
@@ -889,11 +893,14 @@ class HierarchicalSwarm:
 
                 # Create conversation history file path
                 conversation_path = os.path.join(
-                    self.swarm_workspace_dir, "conversation_history.json"
+                    self.swarm_workspace_dir,
+                    "conversation_history.json",
                 )
 
                 # Save conversation history as JSON
-                with open(conversation_path, "w", encoding="utf-8") as f:
+                with open(
+                    conversation_path, "w", encoding="utf-8"
+                ) as f:
                     json.dump(
                         conversation_data,
                         f,
@@ -1731,5 +1738,3 @@ class HierarchicalSwarm:
             logger.error(
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
-
-   

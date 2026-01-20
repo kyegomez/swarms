@@ -2,6 +2,10 @@
 
 This directory contains comprehensive examples demonstrating various multi-agent patterns and workflows in Swarms.
 
+## Agent GRPO (Group Reinforcement Policy Optimization)
+- [agent_grpo_math_example.py](agent_grpo_examples/agent_grpo_math_example.py) - Agent GRPO for math problems
+- [agent_grpo_physics_example.py](agent_grpo_examples/agent_grpo_physics_example.py) - Agent GRPO for physics problems
+
 ## Agent Rearrangement
 - [rearrange_test.py](agent_rearrange_examples/rearrange_test.py) - Test agent rearrangement functionality
 

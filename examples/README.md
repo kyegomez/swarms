@@ -44,6 +44,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [swarmarrange/](multi_agent/swarmarrange/) | Swarm arrangement examples |
 | [swarms_api_examples/](multi_agent/swarms_api_examples/) | Swarms API integration examples |
 | [utils/](multi_agent/utils/) | Multi-agent utility functions |
+| [agent_grpo_examples/](multi_agent/agent_grpo_examples/) | Agent GRPO (Group Reinforcement Policy Optimization) examples for math and physics problems |
 
 ### Single Agent Systems
 
@@ -54,7 +55,10 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [simple_agent.py](single_agent/simple_agent.py) | Basic single agent example |
 | [auto_agent.py](single_agent/auto_agent.py) | Auto agent implementation |
 | [agent_mcp.py](single_agent/agent_mcp.py) | MCP integration example |
+| [agent_skill_examples/](single_agent/agent_skill_examples/) | Agent skill examples including dynamic skills loader, custom skills, and pre-built skills (code review, data visualization, financial analysis) |
 | [demos/](single_agent/demos/) | Single agent demonstration examples including insurance and legal agents |
+| [full_autonomy/](single_agent/full_autonomy/) | Autonomous agent examples with marketplace integration and full autonomy capabilities |
+| [handoffs/](single_agent/handoffs/) | Agent handoff examples including autonomous agents with handoffs |
 | [external_agents/](single_agent/external_agents/) | External agent integrations including OpenAI Assistant wrapper |
 | [llms/](single_agent/llms/) | LLM integration examples for Azure, Claude, DeepSeek, Mistral, OpenAI, O3, and Qwen |
 | [azure_agent_api_verison.py](single_agent/llms/azure_agent_api_verison.py) | Azure agent API version example |
@@ -77,6 +81,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [reasoning_duo_batched.py](single_agent/llms/openai_examples/reasoning_duo_batched.py) | Reasoning duo batched example |
 | [test_async_litellm.py](single_agent/llms/openai_examples/test_async_litellm.py) | Async LiteLLM test |
 | [onboard/](single_agent/onboard/) | Agent onboarding examples and configurations |
+| [marketplace/](single_agent/marketplace/) | Marketplace prompt integration examples including quant trader agent |
 | [rag/](single_agent/rag/) | Retrieval Augmented Generation (RAG) implementations with vector database integrations |
 | [full_agent_rag_example.py](single_agent/rag/full_agent_rag_example.py) | Full agent RAG example |
 | [pinecone_example.py](single_agent/rag/pinecone_example.py) | Pinecone vector database example |
@@ -97,6 +102,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [reasoning_duo_test.py](single_agent/reasoning_agent_examples/reasoning_duo_test.py) | Reasoning duo test |
 | [reasoning_duo.py](single_agent/reasoning_agent_examples/reasoning_duo.py) | Reasoning duo implementation |
 | [tools/](single_agent/tools/) | Tool integration examples including Exa search, LiteLLM, multi-tool usage, Omni modal, Solana, structured outputs, and browser agents |
+| [agent_with_exa.py](single_agent/tools/agent_with_exa.py) | Agent with Exa search integration |
 | [exa_search_agent.py](single_agent/tools/exa_search_agent.py) | Exa search agent example |
 | [example_async_vs_multithread.py](single_agent/tools/example_async_vs_multithread.py) | Async vs multithread example |
 | [litellm_tool_example.py](single_agent/tools/litellm_tool_example.py) | LiteLLM tool example |
@@ -296,18 +302,22 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [reasoning_duo_example.py](reasoning_agents/reasoning_agent_router_examples/reasoning_duo_example.py) | Reasoning duo example |
 | [reflexion_agent_example.py](reasoning_agents/reasoning_agent_router_examples/reflexion_agent_example.py) | Reflexion agent example |
 | [self_consistency_example.py](reasoning_agents/reasoning_agent_router_examples/self_consistency_example.py) | Self-consistency example |
-| [voice_agents/](voice_agents/) | Voice and speech-enabled agent examples including agent speech, agent with speech, and debate with speech capabilities |
+| [voice_agents/](voice_agents/) | Voice and speech-enabled agent examples including agent speech, agent with speech, debate with speech, Google Calendar integration, and hierarchical speech swarm capabilities |
 | [agent_speech.py](voice_agents/agent_speech.py) | Agent with speech capabilities |
 | [agent_with_speech.py](voice_agents/agent_with_speech.py) | Speech-enabled agent implementation |
 | [debate_with_speech.py](voice_agents/debate_with_speech.py) | Multi-agent debate with speech capabilities |
+| [google_calendar_agent.py](voice_agents/google_calendar_agent.py) | Google Calendar integration with voice agent |
+| [hiearchical_speech_swarm.py](voice_agents/hiearchical_speech_swarm.py) | Hierarchical speech swarm implementation |
 
 ### Marketplace
 
 | Example | Description |
 |---------|-------------|
 | [marketplace/](marketplace/) | Swarms marketplace prompt integration examples for using pre-built prompts from the marketplace |
-| [marketplace_prompt_example.py](marketplace/marketplace_prompt_example.py) | Example of using marketplace prompts with agents |
 | [zia_agent.py](marketplace/zia_agent.py) | Zia agent implementation using marketplace prompts |
+| [single_agent/marketplace/](single_agent/marketplace/) | Single agent marketplace examples including marketplace prompt integration and quant trader agent |
+| [marketplace_prompt_example.py](single_agent/marketplace/marketplace_prompt_example.py) | Example of using marketplace prompts with agents |
+| [quant_trader_agent.py](single_agent/marketplace/quant_trader_agent.py) | Quantitative trader agent using marketplace prompts |
 
 ### Guides & Tutorials
 
@@ -319,6 +329,8 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [840_update/](guides/840_update/) | Update examples from version 8.4.0 including agent rearrange, auto swarm builder, and fallback examples |
 | [850_workshop/](guides/850_workshop/) | Workshop examples from version 8.5.0 including AOP, MOA, peer review, and concurrent examples |
 | [880_update_changelog_examples/](guides/880_update_changelog_examples/) | Changelog examples showcasing new features including marketplace integration, multi-agent structures, workflow orchestration, voice agents, evaluation & debate, routing, and autosaving |
+| [changelog_890/](guides/changelog_890/) | Changelog examples from January 2026 release including dynamic skills loader, autonomous agent loop, agent handoffs, API key validation, max loops parameter, multi-tool agent tutorial, hierarchical voice agent, and agent rearrange patterns |
+| [mem0/](guides/mem0/) | Mem0 integration examples for memory management with Swarms |
 | [demos/](guides/demos/) | Various demonstration examples including apps, crypto, finance, insurance, legal, medical, real estate, science, and synthetic data |
 | [fairy_swarm/](guides/fairy_swarm/) | Fairy swarm examples and implementations |
 | [generation_length_blog/](guides/generation_length_blog/) | Long-form content generation examples |
@@ -413,6 +425,10 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | Want reasoning agents? | Check out [reasoning_agents/](reasoning_agents/) for reasoning agent examples |
 | Interested in marketplace prompts? | Explore [marketplace/](marketplace/) for marketplace prompt integration examples |
 | Want voice/speech capabilities? | Check out [voice_agents/](voice_agents/) for speech-enabled agent examples |
+| Interested in agent skills? | Explore [single_agent/agent_skill_examples/](single_agent/agent_skill_examples/) for dynamic skills |
+| Want autonomous agents? | Check out [single_agent/full_autonomy/](single_agent/full_autonomy/) for full autonomy examples |
+| Need agent handoffs? | See [single_agent/handoffs/](single_agent/handoffs/) for handoff patterns |
+| Looking for latest features? | Visit [guides/changelog_890/](guides/changelog_890/) for January 2026 release examples |
 
 ## Key Examples by Category
 
@@ -424,6 +440,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Tree Swarm](multi_agent/tree_swarm_new_updates.py) | Tree swarm with latest updates |
 | [Agent Rearrange](multi_agent/agent_rearrange_examples/) | Agent rearrangement patterns |
 | [Agent Router](multi_agent/agent_router_examples/) | Agent routing implementations |
+| [Agent GRPO](multi_agent/agent_grpo_examples/) | Agent GRPO examples for math and physics problems |
 | [Auto Swarm Builder](multi_agent/asb/) | Auto Swarm Builder (ASB) examples |
 | [Batched Grid Workflow](multi_agent/batched_grid_workflow/) | Batched grid workflow patterns |
 | [Board of Directors](multi_agent/board_of_directors/) | Board of directors pattern |
@@ -453,6 +470,10 @@ This directory contains comprehensive examples demonstrating various capabilitie
 |---------|-------------|
 | [Simple Agent](single_agent/simple_agent.py) | Basic agent setup |
 | [Auto Agent](single_agent/auto_agent.py) | Auto agent implementation |
+| [Agent Skills](single_agent/agent_skill_examples/) | Dynamic skills loader and custom skill examples |
+| [Autonomous Agents](single_agent/full_autonomy/) | Full autonomy examples with marketplace integration |
+| [Agent Handoffs](single_agent/handoffs/) | Agent handoff patterns and examples |
+| [Marketplace Integration](single_agent/marketplace/) | Marketplace prompt integration examples |
 | [Reasoning Agents](single_agent/reasoning_agent_examples/) | Advanced reasoning patterns including consistency, GPK, iterative, MALT, and reasoning duo |
 | [Vision Agents](single_agent/vision/multimodal_example.py) | Vision and multimodal capabilities |
 | [RAG Agents](single_agent/rag/) | Retrieval augmented generation |
@@ -500,7 +521,8 @@ This directory contains comprehensive examples demonstrating various capabilitie
 
 | Example | Description |
 |---------|-------------|
-| [Marketplace Prompt](marketplace/marketplace_prompt_example.py) | Using marketplace prompts with agents |
+| [Marketplace Prompt](single_agent/marketplace/marketplace_prompt_example.py) | Using marketplace prompts with agents |
+| [Quant Trader Agent](single_agent/marketplace/quant_trader_agent.py) | Quantitative trader agent with marketplace prompts |
 | [Zia Agent](marketplace/zia_agent.py) | Zia agent with marketplace prompt integration |
 
 ### CLI Examples
@@ -521,6 +543,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Help](cli/12_help.sh) | Help and documentation |
 | [Auto Upgrade](cli/13_auto_upgrade.sh) | Automatic upgrade process |
 | [Book Call](cli/14_book_call.sh) | Book a call functionality |
+| [Research Agent](cli/research_agent_example.sh) | Research agent example |
 | [Run All Examples](cli/run_all_examples.sh) | Run all CLI examples |
 
 ## Documentation

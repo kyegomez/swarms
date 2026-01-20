@@ -2,6 +2,15 @@
 
 This directory contains examples demonstrating single agent patterns, configurations, and use cases in Swarms.
 
+## Agent Skills
+- [agent_with_skills.py](agent_skill_examples/agent_with_skills.py) - Agent with skills integration
+- [agent_with_multiple_skills.py](agent_skill_examples/agent_with_multiple_skills.py) - Agent with multiple skills
+- [agent_with_dynamic_skills.py](agent_skill_examples/agent_with_dynamic_skills.py) - Agent with dynamic skills loader
+- [agent_with_custom_skill.py](agent_skill_examples/agent_with_custom_skill.py) - Agent with custom skill
+- [code-review/](agent_skill_examples/code-review/) - Code review skill example
+- [data-visualization/](agent_skill_examples/data-visualization/) - Data visualization skill example
+- [financial-analysis/](agent_skill_examples/financial-analysis/) - Financial analysis skill example
+
 ## Demos
 - [insurance_agent.py](demos/insurance_agent.py) - Insurance processing agent
 - [persistent_legal_agent.py](demos/persistent_legal_agent.py) - Legal document processing agent
@@ -37,6 +46,18 @@ This directory contains examples demonstrating single agent patterns, configurat
 ### Qwen
 - [qwen_3_base.py](llms/qwen_3_base.py) - Qwen 3 base model
 
+## Full Autonomy
+- [autonomous_agent.py](full_autonomy/autonomous_agent.py) - Autonomous agent implementation
+- [marketplace_and_auto_agent.py](full_autonomy/marketplace_and_auto_agent.py) - Marketplace integration with autonomous agent
+
+## Handoffs
+- [handoff_example.py](handoffs/handoff_example.py) - Basic agent handoff example
+- [autonomous_agent_with_handoffs_example.py](handoffs/autonomous_agent_with_handoffs_example.py) - Autonomous agent with handoffs
+
+## Marketplace
+- [marketplace_prompt_example.py](marketplace/marketplace_prompt_example.py) - Marketplace prompt integration example
+- [quant_trader_agent.py](marketplace/quant_trader_agent.py) - Quantitative trader agent using marketplace prompts
+
 ## Onboarding
 - [agents.yaml](onboard/agents.yaml) - Agent configuration file
 - [onboard-basic.py](onboard/onboard-basic.py) - Basic onboarding example
@@ -64,6 +85,7 @@ This directory contains examples demonstrating single agent patterns, configurat
 - [reasoning_duo.py](reasoning_agent_examples/reasoning_duo.py) - Reasoning duo implementation
 
 ## Tools Integration
+- [agent_with_exa.py](tools/agent_with_exa.py) - Agent with Exa search integration
 - [exa_search_agent.py](tools/exa_search_agent.py) - Exa search integration
 - [example_async_vs_multithread.py](tools/example_async_vs_multithread.py) - Async vs multithreading comparison
 - [litellm_tool_example.py](tools/litellm_tool_example.py) - LiteLLM tool integration

@@ -24199,12 +24199,6 @@ flowchart TD
 
 ## Mathematical Swarm Patterns
 
-### Fibonacci Swarm
-```python
-def fibonacci_swarm(agents: AgentListType, tasks: List[str])
-```
-
-**Information Flow:**
 ```mermaid
 flowchart TD
     subgraph Fibonacci Pattern
@@ -24390,14 +24384,8 @@ from swarms.structs.agent import Agent
 from swarms.structs.swarming_architectures import (
     broadcast,
     circular_swarm,
-    exponential_swarm,
-    fibonacci_swarm,
     grid_swarm,
     mesh_swarm,
-    prime_swarm,
-    sigmoid_swarm,
-    sinusoidal_swarm,
-    staircase_swarm,
     star_swarm,
 )
 
@@ -24561,18 +24549,6 @@ def run_mathematical_finance_swarms():
     for i, task in enumerate(tasks, 1):
         print(f"{i}. {task}")
     
-    print("\nFibonacci Swarm Results:")
-    result = fibonacci_swarm(agents, tasks.copy())
-    print(result)
-    
-    print("\nPrime Swarm Results:")
-    result = prime_swarm(agents, tasks.copy())
-    print(result)
-    
-    print("\nExponential Swarm Results:")
-    result = exponential_swarm(agents, tasks.copy())
-    print(result)
-
 def run_healthcare_pattern_swarms():
     """Patient monitoring using pattern swarms"""
     print_separator()
@@ -24583,18 +24559,6 @@ def run_healthcare_pattern_swarms():
     
     print(f"\nTask: {task}")
     
-    print("\nStaircase Pattern Analysis:")
-    result = staircase_swarm(agents, task)
-    print(result)
-    
-    print("\nSigmoid Pattern Analysis:")
-    result = sigmoid_swarm(agents, task)
-    print(result)
-    
-    print("\nSinusoidal Pattern Analysis:")
-    result = sinusoidal_swarm(agents, task)
-    print(result)
-
 async def run_communication_examples():
     """Communication patterns for emergency scenarios"""
     print_separator()
