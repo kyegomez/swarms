@@ -307,7 +307,7 @@ skills/
 
 ## Examples
 
-See the [Agent Skills Examples](/swarms/examples/agent_skills_overview/) section for:
+See the [Agent Skills Examples](/docs/swarms/examples/agent_skills_overview/) section for:
 - Basic usage tutorial
 - Creating custom skills
 - Using multiple skills
