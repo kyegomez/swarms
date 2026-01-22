@@ -394,6 +394,7 @@ nav:
       - LLM Providers:
         - Language Models:
           - Overview: "swarms/examples/model_providers.md"
+          - LiteLLM: "swarms/examples/litellm.md"
           - OpenAI: "swarms/examples/openai_example.md"
           - Anthropic: "swarms/examples/claude.md"
           - Groq: "swarms/examples/groq.md"
