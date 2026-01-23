@@ -125,37 +125,29 @@ def gemini_output_img_handler(response: any):
 class LiteLLM:
     """
     A comprehensive wrapper for LiteLLM that provides a unified interface for interacting
-    with 100+ Large Language Model providers.
+    with various Large Language Models (LLMs).
 
-    This class supports multiple model providers including OpenAI, Anthropic, Google, Azure,
-    Ollama, Cohere, DeepSeek, Groq, and many others through the LiteLLM library.
+    This class supports multiple model providers including OpenAI, Anthropic, Google,
+    and many others through the LiteLLM library. It provides features such as:
 
-    Features:
-        - Text generation with customizable parameters
-        - Vision capabilities (image understanding) - supports file paths, URLs, base64
-        - Audio processing
-        - Tool/function calling
-        - Reasoning model support (o1, o3, Claude with thinking)
-        - Streaming responses
-        - Batch processing
-        - Automatic error handling and retries
-        - Provider-agnostic interface
+    - Text generation with customizable parameters
+    - Vision capabilities (image understanding)
+    - Audio processing
+    - Tool/function calling
+    - Reasoning model support
+    - Streaming responses
+    - Batch processing
+    - Automatic error handling and retries
 
     The class intelligently handles different model requirements, automatically converting
     images to appropriate formats, managing message history, and providing detailed
     error messages for troubleshooting.
 
     Attributes:
-        model_name (str): The name of the model to use. Supports any LiteLLM provider format:
-            - OpenAI: "gpt-4o", "gpt-4o-mini"
-            - Anthropic: "claude-3-5-sonnet-20241022"
-            - Google: "gemini/gemini-pro"
-            - Azure: "azure/gpt-4"
-            - Ollama: "ollama/llama2"
-            - And 100+ more providers
+        model_name (str): The name of the model to use.
         system_prompt (str): The system prompt for the conversation.
         stream (bool): Whether to stream responses.
-        temperature (float): Sampling temperature for generation (0.0-2.0).
+        temperature (float): Sampling temperature for generation.
         max_tokens (int): Maximum number of tokens to generate.
         messages (list): Conversation message history.
         modalities (list): Supported input modalities.
@@ -163,41 +155,22 @@ class LiteLLM:
     Example:
         Basic usage:
         ```python
-        from swarms.utils.litellm_wrapper import LiteLLM
-        
-        llm = LiteLLM(model_name="gpt-4o", temperature=0.7)
+        llm = LiteLLM(model_name="gpt-4", temperature=0.7)
         response = llm.run("What is the capital of France?")
         ```
 
         With vision:
         ```python
-        llm = LiteLLM(model_name="gpt-4o")
+        llm = LiteLLM(model_name="gpt-4-vision-preview")
         response = llm.run("Describe this image", img="path/to/image.jpg")
         ```
 
         With tools:
         ```python
         tools = [{"type": "function", "function": {...}}]
-        llm = LiteLLM(model_name="gpt-4o", tools_list_dictionary=tools)
+        llm = LiteLLM(model_name="gpt-4", tools_list_dictionary=tools)
         response = llm.run("Use the weather tool to get today's weather")
         ```
-
-        With streaming:
-        ```python
-        llm = LiteLLM(model_name="gpt-4o", stream=True)
-        for chunk in llm.run("Tell me a story"):
-            print(chunk, end="", flush=True)
-        ```
-
-        With reasoning model:
-        ```python
-        llm = LiteLLM(model_name="openai/o1-preview", reasoning_enabled=True)
-        response = llm.run("Solve this complex math problem...")
-        ```
-
-    See Also:
-        - LiteLLM Documentation: https://docs.litellm.ai/
-        - Swarms LiteLLM Guide: docs/swarms/examples/litellm.md
     """
 
     def __init__(
