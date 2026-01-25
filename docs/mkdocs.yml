@@ -267,6 +267,9 @@ nav:
       - Agent Judge: "swarms/agents/agent_judge.md"
       - Reasoning Agent Router: "swarms/agents/reasoning_agent_router.md"
     
+    - CR-CA Agent:
+      - CR-CA Agent: "swarms/agents/cr_ca_agent.md"
+    
     - Multi-Agent Architectures:
       - Overview: "swarms/concept/swarm_architectures.md"
       - Benefits: "swarms/concept/why.md"
@@ -303,8 +306,8 @@ nav:
         - Routers:
           - SwarmRouter: "swarms/structs/swarm_router.md"
           - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
-          - AgentRouter: "swarms/structs/agent_router.md"
           - ModelRouter: "swarms/structs/model_router.md"
+          - AgentRouter: "swarms/structs/agent_router.md"
 
 
         - Rearrangers:
@@ -492,12 +495,12 @@ nav:
       - Overview: "examples/apps_examples_overview.md"
       - Web Scraper Agents: "developer_guides/web_scraper.md"
       - Smart Database: "examples/smart_database.md"
-      
+
     - AOP:
       - Overview: "examples/aop_examples_overview.md"
       - Medical AOP Example: "examples/aop_medical.md"
 
-    - X402:
+      - X402:
       - x402 Quickstart Example: "examples/x402_payment_integration.md"
       - X402 Discovery Query Agent: "examples/x402_discovery_query.md"
       - X402 Tools Agent: "swarms/examples/x402_tools_agent.md"
