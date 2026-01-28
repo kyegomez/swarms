@@ -175,16 +175,28 @@ workflow = ConcurrentWorkflow(
 )
 ```
 
-#### Conversation History Management
+## Autosave Feature
 
-Automatic conversation tracking and persistence:
+Autosave is enabled by default (`autosave=True`). Conversation history is automatically saved to `{workspace_dir}/swarms/ConcurrentWorkflow/{workflow-name}-{timestamp}/conversation_history.json`.
+
+To set a custom workspace directory name, use the `WORKSPACE_DIR` environment variable:
 
 ```python
+import os
+from swarms import Agent, ConcurrentWorkflow
+
+# Set custom workspace directory where conversation history will be saved
+# If not set, defaults to 'agent_workspace' in the current directory
+os.environ["WORKSPACE_DIR"] = "my_project"
+
+# Create workflow (autosave enabled by default)
 workflow = ConcurrentWorkflow(
-    agents=agents,
-    auto_save=True,                    # Auto-save conversation history
-    metadata_output_path="results.json"  # Custom output file path
+    name="analysis-workflow",
+    agents=[analyst1, analyst2, analyst3],
 )
+
+# Run workflow - conversation automatically saved
+result = workflow.run("Analyze market trends")
 ```
 
 #### Multimodal Support
