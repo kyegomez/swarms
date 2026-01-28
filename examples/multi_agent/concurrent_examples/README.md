@@ -4,6 +4,7 @@ This directory contains examples demonstrating concurrent execution patterns for
 
 ## Examples
 
+- [concurrent_workflow_autosave_example.py](concurrent_workflow_autosave_example.py) - **Autosave feature example** - Shows how to automatically save conversation history
 - [asi.py](asi.py) - ASI (Artificial Super Intelligence) example
 - [concurrent_example_dashboard.py](concurrent_example_dashboard.py) - Dashboard for concurrent workflows
 - [concurrent_example.py](concurrent_example.py) - Basic concurrent execution

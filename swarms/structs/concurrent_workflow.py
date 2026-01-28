@@ -1,7 +1,10 @@
 import concurrent.futures
+import json
+import os
 import time
 from typing import Callable, List, Optional, Union
 
+from loguru import logger as loguru_logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.swarm_id import swarm_id
@@ -11,6 +14,8 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.swarm_autosave import get_swarm_workspace_dir
+from swarms.utils.workspace_utils import get_workspace_dir
 
 logger = initialize_logger(log_folder="concurrent_workflow")
 
@@ -76,6 +81,8 @@ class ConcurrentWorkflow:
         max_loops: int = 1,
         auto_generate_prompts: bool = False,
         show_dashboard: bool = False,
+        autosave: bool = True,
+        verbose: bool = False,
     ):
         self.id = id if id is not None else swarm_id()
         self.name = name
@@ -86,6 +93,9 @@ class ConcurrentWorkflow:
         self.auto_generate_prompts = auto_generate_prompts
         self.output_type = output_type
         self.show_dashboard = show_dashboard
+        self.autosave = autosave
+        self.verbose = verbose
+        self.swarm_workspace_dir = None
         self.metadata_output_path = (
             f"concurrent_workflow_name_{name}_id_{self.id}.json"
         )
@@ -106,6 +116,10 @@ class ConcurrentWorkflow:
 
         if self.show_dashboard is True:
             self.agents = self.fix_agents()
+
+        # Setup autosave workspace if enabled
+        if self.autosave:
+            self._setup_autosave()
 
     def fix_agents(self):
         """
@@ -554,7 +568,27 @@ class ConcurrentWorkflow:
                 result = self._run(
                     task, img, imgs, streaming_callback
                 )
+
+            # Save conversation history after successful execution
+            if self.autosave and self.swarm_workspace_dir:
+                try:
+                    self._save_conversation_history()
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to save conversation history: {e}"
+                    )
+
             return result
+        except Exception as e:
+            # Save conversation history on error
+            if self.autosave and self.swarm_workspace_dir:
+                try:
+                    self._save_conversation_history()
+                except Exception as save_error:
+                    logger.warning(
+                        f"Failed to save conversation history on error: {save_error}"
+                    )
+            raise
         finally:
             # Always cleanup resources
             self.cleanup()
@@ -599,3 +633,84 @@ class ConcurrentWorkflow:
                 )
             )
         return results
+
+    def _setup_autosave(self):
+        """
+        Setup workspace directory for saving conversation history.
+
+        Creates the workspace directory structure if autosave is enabled.
+        Only conversation history will be saved to this directory.
+        """
+        try:
+            # Set default workspace directory if not set
+            if not os.getenv("WORKSPACE_DIR"):
+                default_workspace = os.path.join(os.getcwd(), "agent_workspace")
+                os.environ["WORKSPACE_DIR"] = default_workspace
+                # Clear the cache so get_workspace_dir() picks up the new value
+                get_workspace_dir.cache_clear()
+                if self.verbose:
+                    loguru_logger.info(
+                        f"WORKSPACE_DIR not set, using default: {default_workspace}"
+                    )
+
+            class_name = self.__class__.__name__
+            swarm_name = self.name or "concurrent-workflow"
+            self.swarm_workspace_dir = get_swarm_workspace_dir(
+                class_name, swarm_name, use_timestamp=True
+            )
+
+            if self.swarm_workspace_dir:
+                if self.verbose:
+                    loguru_logger.info(
+                        f"Autosave enabled. Conversation history will be saved to: {self.swarm_workspace_dir}"
+                    )
+        except Exception as e:
+            loguru_logger.warning(
+                f"Failed to setup autosave for ConcurrentWorkflow: {e}"
+            )
+            # Don't raise - autosave failures shouldn't break initialization
+            self.swarm_workspace_dir = None
+
+    def _save_conversation_history(self):
+        """
+        Save conversation history as a separate JSON file to the workspace directory.
+
+        Saves the conversation history to:
+        workspace_dir/swarms/ConcurrentWorkflow/{workflow-name}-{id}/conversation_history.json
+        """
+        if not self.swarm_workspace_dir:
+            return
+
+        try:
+            # Get conversation history
+            conversation_data = []
+            if hasattr(self, "conversation") and self.conversation:
+                if hasattr(self.conversation, "conversation_history"):
+                    conversation_data = self.conversation.conversation_history
+                elif hasattr(self.conversation, "to_dict"):
+                    conversation_data = self.conversation.to_dict()
+                else:
+                    conversation_data = []
+
+                # Create conversation history file path
+                conversation_path = os.path.join(
+                    self.swarm_workspace_dir, "conversation_history.json"
+                )
+
+                # Save conversation history as JSON
+                with open(conversation_path, "w", encoding="utf-8") as f:
+                    json.dump(
+                        conversation_data,
+                        f,
+                        indent=2,
+                        default=str,
+                    )
+
+                if self.verbose:
+                    loguru_logger.debug(
+                        f"Saved conversation history to {conversation_path}"
+                    )
+        except Exception as e:
+            loguru_logger.warning(
+                f"Failed to save conversation history: {e}"
+            )
