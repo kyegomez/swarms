@@ -66,6 +66,8 @@ Initializes a new HierarchicalSwarm instance.
 | `multi_agent_prompt_improvements` | `bool` | `False` | No | Enable enhanced multi-agent collaboration prompts |
 | `interactive` | `bool` | `False` | No | Enable interactive mode with Hierarchical Swarms dashboard visualization |
 | `planning_enabled` | `bool` | `True` | No | Enable planning phase before task distribution |
+| `autosave` | `bool` | `True` | No | Whether to enable autosaving of conversation history |
+| `verbose` | `bool` | `False` | No | Whether to enable verbose logging |
 
 #### Returns
 
@@ -481,6 +483,31 @@ The dashboard automatically:
 | **Detailed View** | Full output history for each agent in each loop |
 | **Real-time Updates** | Dashboard refreshes automatically as operations progress |
 
+## Autosave Feature
+
+Autosave is enabled by default (`autosave=True`). Conversation history is automatically saved to `{workspace_dir}/swarms/HierarchicalSwarm/{swarm-name}-{timestamp}/conversation_history.json` after all loops complete.
+
+To set a custom workspace directory name, use the `WORKSPACE_DIR` environment variable:
+
+```python
+import os
+from swarms import Agent, HierarchicalSwarm
+
+# Set custom workspace directory where conversation history will be saved
+# If not set, defaults to 'agent_workspace' in the current directory
+os.environ["WORKSPACE_DIR"] = "my_project"
+
+# Create swarm (autosave enabled by default)
+swarm = HierarchicalSwarm(
+    name="analysis-swarm",
+    agents=[research_agent, financial_agent],
+    max_loops=2,
+)
+
+# Run swarm - conversation automatically saved after all loops
+result = swarm.run("Analyze Tesla (TSLA) stock")
+```
+
 ## Planning Feature
 
 The `planning_enabled` parameter controls whether the director performs an initial planning phase before creating task orders. When enabled, the director:
@@ -596,6 +623,7 @@ def live_paragraph_callback(agent_name: str, chunk: str, is_final: bool):
 | **Planning Strategy**        | Enable `planning_enabled` for complex tasks, disable for simple or performance-critical tasks   |
 | **Interactive Dashboard**    | Use `interactive=True` during development for real-time monitoring and debugging                 |
 | **Context Preservation**     | Leverage the built-in conversation history for continuity                                       |
+| **Autosave Configuration**   | Keep `autosave=True` (default) to preserve conversation history for debugging and analysis     |
 | **Error Handling**           | Implement proper error handling for production use                                              |
 | **Streaming Callbacks**      | Use streaming callbacks for real-time monitoring and user feedback                              |
 | **Callback Performance**     | Keep streaming callbacks lightweight to avoid blocking the main execution thread                |
