@@ -1,7 +1,9 @@
+import json
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Callable, List, Optional, Union
 
+from loguru import logger as loguru_logger
 from swarms.prompts.multi_agent_collab_prompt import (
     MULTI_AGENT_COLLAB_PROMPT,
 )
@@ -9,6 +11,8 @@ from swarms.structs.agent import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.utils.swarm_autosave import get_swarm_workspace_dir
+from swarms.utils.workspace_utils import get_workspace_dir
 
 logger = initialize_logger(log_folder="sequential_workflow")
 
@@ -49,6 +53,8 @@ class SequentialWorkflow:
         shared_memory_system: callable = None,
         multi_agent_collab_prompt: bool = False,
         team_awareness: bool = False,
+        autosave: bool = True,
+        verbose: bool = False,
         *args,
         **kwargs,
     ):
@@ -64,6 +70,8 @@ class SequentialWorkflow:
             output_type (OutputType, optional): Output format for the workflow. Defaults to "dict".
             shared_memory_system (callable, optional): Callable for shared memory management. Defaults to None.
             multi_agent_collab_prompt (bool, optional): If True, appends a collaborative prompt to each agent.
+            autosave (bool, optional): Whether to enable autosaving of conversation history. Defaults to False.
+            verbose (bool, optional): Whether to enable verbose logging. Defaults to False.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -79,6 +87,9 @@ class SequentialWorkflow:
         self.shared_memory_system = shared_memory_system
         self.multi_agent_collab_prompt = multi_agent_collab_prompt
         self.team_awareness = team_awareness
+        self.autosave = autosave
+        self.verbose = verbose
+        self.swarm_workspace_dir = None
 
         self.reliability_check()
         self.flow = self.sequential_flow()
@@ -92,6 +103,10 @@ class SequentialWorkflow:
             output_type=self.output_type,
             team_awareness=self.team_awareness,
         )
+
+        # Setup autosave workspace if enabled
+        if self.autosave:
+            self._setup_autosave()
 
     def reliability_check(self):
         """
@@ -185,12 +200,32 @@ class SequentialWorkflow:
         """
         try:
             # prompt = f"{MULTI_AGENT_COLLAB_PROMPT}\n\n{task}"
-            return self.agent_rearrange.run(
+            result = self.agent_rearrange.run(
                 task=task,
                 img=img,
             )
 
+            # Save conversation history after successful execution
+            if self.autosave and self.swarm_workspace_dir:
+                try:
+                    self._save_conversation_history()
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to save conversation history: {e}"
+                    )
+
+            return result
+
         except Exception as e:
+            # Save conversation history on error
+            if self.autosave and self.swarm_workspace_dir:
+                try:
+                    self._save_conversation_history()
+                except Exception as save_error:
+                    logger.warning(
+                        f"Failed to save conversation history on error: {save_error}"
+                    )
+
             logger.error(
                 f"An error occurred while executing the task: {e}"
             )
@@ -302,3 +337,85 @@ class SequentialWorkflow:
                 f"An error occurred while executing the batch of tasks concurrently: {e}"
             )
             raise
+
+    def _setup_autosave(self):
+        """
+        Setup workspace directory for saving conversation history.
+
+        Creates the workspace directory structure if autosave is enabled.
+        Only conversation history will be saved to this directory.
+        """
+        try:
+            # Set default workspace directory if not set
+            if not os.getenv("WORKSPACE_DIR"):
+                default_workspace = os.path.join(os.getcwd(), "agent_workspace")
+                os.environ["WORKSPACE_DIR"] = default_workspace
+                # Clear the cache so get_workspace_dir() picks up the new value
+                get_workspace_dir.cache_clear()
+                if self.verbose:
+                    loguru_logger.info(
+                        f"WORKSPACE_DIR not set, using default: {default_workspace}"
+                    )
+
+            class_name = self.__class__.__name__
+            swarm_name = self.name or "sequential-workflow"
+            self.swarm_workspace_dir = get_swarm_workspace_dir(
+                class_name, swarm_name, use_timestamp=True
+            )
+
+            if self.swarm_workspace_dir:
+                if self.verbose:
+                    loguru_logger.info(
+                        f"Autosave enabled. Conversation history will be saved to: {self.swarm_workspace_dir}"
+                    )
+        except Exception as e:
+            loguru_logger.warning(
+                f"Failed to setup autosave for SequentialWorkflow: {e}"
+            )
+            # Don't raise - autosave failures shouldn't break initialization
+            self.swarm_workspace_dir = None
+
+    def _save_conversation_history(self):
+        """
+        Save conversation history as a separate JSON file to the workspace directory.
+
+        Saves the conversation history to:
+        workspace_dir/swarms/SequentialWorkflow/{workflow-name}-{id}/conversation_history.json
+        """
+        if not self.swarm_workspace_dir:
+            return
+
+        try:
+            # Get conversation history from agent_rearrange
+            conversation_data = []
+            if hasattr(self, "agent_rearrange") and self.agent_rearrange:
+                if hasattr(self.agent_rearrange, "conversation") and self.agent_rearrange.conversation:
+                    if hasattr(self.agent_rearrange.conversation, "conversation_history"):
+                        conversation_data = self.agent_rearrange.conversation.conversation_history
+                    elif hasattr(self.agent_rearrange.conversation, "to_dict"):
+                        conversation_data = self.agent_rearrange.conversation.to_dict()
+                    else:
+                        conversation_data = []
+
+            # Create conversation history file path
+            conversation_path = os.path.join(
+                self.swarm_workspace_dir, "conversation_history.json"
+            )
+
+            # Save conversation history as JSON
+            with open(conversation_path, "w", encoding="utf-8") as f:
+                json.dump(
+                    conversation_data,
+                    f,
+                    indent=2,
+                    default=str,
+                )
+
+            if self.verbose:
+                loguru_logger.debug(
+                    f"Saved conversation history to {conversation_path}"
+                )
+        except Exception as e:
+            loguru_logger.warning(
+                f"Failed to save conversation history: {e}"
+            )
