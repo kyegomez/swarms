@@ -11,6 +11,7 @@ from swarms.agents.reasoning_agents import (
     agent_types,
 )
 from swarms.agents.reasoning_duo import ReasoningDuo
+from swarms.agents.claude_agent import ClaudeCodeAssistant
 
 __all__ = [
     "create_agents_from_yaml",
@@ -22,4 +23,5 @@ __all__ = [
     "ReflexionAgent",
     "GKPAgent",
     "AgentJudge",
+    "ClaudeCodeAssistant",
 ]
