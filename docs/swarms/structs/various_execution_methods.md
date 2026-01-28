@@ -1,22 +1,22 @@
 # Multi-Agent Execution API Reference
 
-This comprehensive documentation covers all functions in the `multi_agent_exec.py` module for running multiple agents using various execution strategies. The module provides synchronous and asynchronous execution methods, optimized performance with uvloop, and utility functions for information retrieval.
+This comprehensive documentation covers all functions in the `multi_agent_exec.py` module for running multiple agents using various execution strategies. The module provides synchronous and asynchronous execution methods, and uses stdlib `asyncio` event-loop policies by default (optional `uvloop`/`winloop` can be installed separately), plus utility functions for information retrieval.
 
 ## Function Overview
 
-| Function | Signature | Category | Description |
-|----------|-----------|----------|-------------|
-| `run_single_agent` | `run_single_agent(agent, task, *args, **kwargs) -> Any` | Single Agent | Runs a single agent synchronously |
-| `run_agent_async` | `run_agent_async(agent, task) -> Any` | Single Agent | Runs a single agent asynchronously using asyncio |
-| `run_agents_concurrently_async` | `run_agents_concurrently_async(agents, task) -> List[Any]` | Concurrent Execution | Runs multiple agents concurrently using asyncio |
-| `run_agents_concurrently` | `run_agents_concurrently(agents, task, img=None, max_workers=None, return_agent_output_dict=False) -> Union[List[Any], Dict[str, Any]]` | Concurrent Execution | Optimized concurrent agent runner with image support and flexible output formats |
-| `run_agents_concurrently_multiprocess` | `run_agents_concurrently_multiprocess(agents, task, batch_size=None) -> List[Any]` | Concurrent Execution | Manages agents concurrently in batches with optimized performance |
-| `batched_grid_agent_execution` | `batched_grid_agent_execution(agents, tasks, max_workers=None) -> List[Any]` | Batched & Grid | Runs multiple agents with different tasks concurrently |
-| `run_agents_with_different_tasks` | `run_agents_with_different_tasks(agent_task_pairs, batch_size=10, max_workers=None) -> List[Any]` | Batched & Grid | Runs agents with different tasks concurrently in batches |
-| `run_agents_concurrently_uvloop` | `run_agents_concurrently_uvloop(agents, task, max_workers=None) -> List[Any]` | Platform Optimized | Runs agents concurrently using uvloop (Unix) or winloop (Windows) for optimized performance |
-| `run_agents_with_tasks_uvloop` | `run_agents_with_tasks_uvloop(agents, tasks, max_workers=None) -> List[Any]` | Platform Optimized | Runs agents with different tasks using platform-specific optimizations |
-| `get_swarms_info` | `get_swarms_info(swarms) -> str` | Utility | Fetches and formats information about available swarms |
-| `get_agents_info` | `get_agents_info(agents, team_name=None) -> str` | Utility | Fetches and formats information about available agents |
+| Function                               | Signature                                                                                                                               | Category             | Description                                                                                                            |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `run_single_agent`                     | `run_single_agent(agent, task, *args, **kwargs) -> Any`                                                                                 | Single Agent         | Runs a single agent synchronously                                                                                      |
+| `run_agent_async`                      | `run_agent_async(agent, task) -> Any`                                                                                                   | Single Agent         | Runs a single agent asynchronously using asyncio                                                                       |
+| `run_agents_concurrently_async`        | `run_agents_concurrently_async(agents, task) -> List[Any]`                                                                              | Concurrent Execution | Runs multiple agents concurrently using asyncio                                                                        |
+| `run_agents_concurrently`              | `run_agents_concurrently(agents, task, img=None, max_workers=None, return_agent_output_dict=False) -> Union[List[Any], Dict[str, Any]]` | Concurrent Execution | Optimized concurrent agent runner with image support and flexible output formats                                       |
+| `run_agents_concurrently_multiprocess` | `run_agents_concurrently_multiprocess(agents, task, batch_size=None) -> List[Any]`                                                      | Concurrent Execution | Manages agents concurrently in batches with optimized performance                                                      |
+| `batched_grid_agent_execution`         | `batched_grid_agent_execution(agents, tasks, max_workers=None) -> List[Any]`                                                            | Batched & Grid       | Runs multiple agents with different tasks concurrently                                                                 |
+| `run_agents_with_different_tasks`      | `run_agents_with_different_tasks(agent_task_pairs, batch_size=10, max_workers=None) -> List[Any]`                                       | Batched & Grid       | Runs agents with different tasks concurrently in batches                                                               |
+| `run_agents_concurrently_uvloop`       | `run_agents_concurrently_uvloop(agents, task, max_workers=None) -> List[Any]`                                                           | Platform Optimized   | Runs agents concurrently using stdlib `asyncio` policies by default (optional `uvloop`/`winloop` for users who opt-in) |
+| `run_agents_with_tasks_uvloop`         | `run_agents_with_tasks_uvloop(agents, tasks, max_workers=None) -> List[Any]`                                                            | Platform Optimized   | Runs agents with different tasks using platform-specific optimizations                                                 |
+| `get_swarms_info`                      | `get_swarms_info(swarms) -> str`                                                                                                        | Utility              | Fetches and formats information about available swarms                                                                 |
+| `get_agents_info`                      | `get_agents_info(agents, team_name=None) -> str`                                                                                        | Utility              | Fetches and formats information about available agents                                                                 |
 
 ## Single Agent Functions
 
@@ -25,6 +25,7 @@ This comprehensive documentation covers all functions in the `multi_agent_exec.p
 Runs a single agent synchronously.
 
 #### Signature
+
 ```python
 def run_single_agent(
     agent: AgentType,
@@ -36,14 +37,15 @@ def run_single_agent(
 
 #### Parameters
 
-| Parameter | Type      | Required | Description |
-|-----------|-----------|----------|-------------|
-| `agent`   | `AgentType` | Yes      | Agent instance to run |
-| `task`    | `str`       | Yes      | Task string to execute |
-| `*args`   | `Any`       | No       | Additional positional arguments |
-| `**kwargs`| `Any`       | No       | Additional keyword arguments |
+| Parameter  | Type        | Required | Description                     |
+| ---------- | ----------- | -------- | ------------------------------- |
+| `agent`    | `AgentType` | Yes      | Agent instance to run           |
+| `task`     | `str`       | Yes      | Task string to execute          |
+| `*args`    | `Any`       | No       | Additional positional arguments |
+| `**kwargs` | `Any`       | No       | Additional keyword arguments    |
 
 #### Returns
+
 - `Any`: Agent execution result
 
 #### Example
@@ -68,15 +70,16 @@ print(result)
 Runs a single agent asynchronously using asyncio.
 
 #### Signature
+
 ```python
 async def run_agent_async(agent: AgentType, task: str) -> Any
 ```
 
 #### Parameters
 
-| Parameter | Type        | Required | Description |
-|-----------|-------------|----------|-------------|
-| `agent`   | `AgentType` | Yes      | Agent instance to run |
+| Parameter | Type        | Required | Description            |
+| --------- | ----------- | -------- | ---------------------- |
+| `agent`   | `AgentType` | Yes      | Agent instance to run  |
 | `task`    | `str`       | Yes      | Task string to execute |
 
 #### Returns
@@ -121,10 +124,10 @@ async def run_agents_concurrently_async(
 
 #### Parameters
 
-| Parameter | Type              | Required | Description |
-|-----------|-------------------|----------|-------------|
+| Parameter | Type              | Required | Description                                 |
+| --------- | ----------------- | -------- | ------------------------------------------- |
 | `agents`  | `List[AgentType]` | Yes      | List of Agent instances to run concurrently |
-| `task`    | `str`             | Yes      | Task string to execute by all agents |
+| `task`    | `str`             | Yes      | Task string to execute by all agents        |
 
 #### Returns
 
@@ -162,6 +165,7 @@ asyncio.run(main())
 Optimized concurrent agent runner using ThreadPoolExecutor with image support and flexible output formats.
 
 #### Signature
+
 ```python
 def run_agents_concurrently(
     agents: List[AgentType],
@@ -174,21 +178,22 @@ def run_agents_concurrently(
 
 #### Parameters
 
-| Parameter                  | Type              | Required | Default | Description |
-|----------------------------|-------------------|----------|---------|-------------|
-| `agents`                   | `List[AgentType]` | Yes      | -       | List of Agent instances to run concurrently |
-| `task`                     | `str`             | Yes      | -       | Task string to execute |
-| `img`                      | `Optional[str]`   | No       | None    | Optional image data to pass to agent run() if supported |
-| `max_workers`              | `Optional[int]`   | No       | 95% of CPU cores | Maximum number of threads in the executor |
-| `return_agent_output_dict` | `bool`            | No       | False   | If True, returns a dict mapping agent names to outputs |
+| Parameter                  | Type              | Required | Default          | Description                                             |
+| -------------------------- | ----------------- | -------- | ---------------- | ------------------------------------------------------- |
+| `agents`                   | `List[AgentType]` | Yes      | -                | List of Agent instances to run concurrently             |
+| `task`                     | `str`             | Yes      | -                | Task string to execute                                  |
+| `img`                      | `Optional[str]`   | No       | None             | Optional image data to pass to agent run() if supported |
+| `max_workers`              | `Optional[int]`   | No       | 95% of CPU cores | Maximum number of threads in the executor               |
+| `return_agent_output_dict` | `bool`            | No       | False            | If True, returns a dict mapping agent names to outputs  |
 
 #### Returns
 
-- `Union[List[Any], Dict[str, Any]]`: 
+- `Union[List[Any], Dict[str, Any]]`:
   - If `return_agent_output_dict=False`: List of outputs from each agent in completion order (exceptions included if agents fail)
   - If `return_agent_output_dict=True`: Dictionary mapping agent names to outputs, preserving agent input order
 
 #### Example
+
 ```python
 from swarms.structs.agent import Agent
 from swarms.structs.multi_agent_exec import run_agents_concurrently
@@ -250,17 +255,18 @@ def run_agents_concurrently_multiprocess(
 
 #### Parameters
 
-| Parameter    | Type          | Required | Default      | Description |
-|--------------|---------------|----------|--------------|-------------|
-| `agents`     | `List[Agent]` | Yes      | -            | List of Agent instances to run concurrently |
-| `task`       | `str`         | Yes      | -            | Task string to execute by all agents |
-| `batch_size` | `int`         | No       | CPU count    | Number of agents to run in parallel in each batch |
+| Parameter    | Type          | Required | Default   | Description                                       |
+| ------------ | ------------- | -------- | --------- | ------------------------------------------------- |
+| `agents`     | `List[Agent]` | Yes      | -         | List of Agent instances to run concurrently       |
+| `task`       | `str`         | Yes      | -         | Task string to execute by all agents              |
+| `batch_size` | `int`         | No       | CPU count | Number of agents to run in parallel in each batch |
 
 #### Returns
 
 - `List[Any]`: List of outputs from each agent
 
 #### Example
+
 ```python
 import os
 from swarms.structs.agent import Agent
@@ -290,6 +296,7 @@ print(f"Completed {len(results)} agent executions")
 Runs multiple agents with different tasks concurrently using batched grid execution.
 
 #### Signature
+
 ```python
 def batched_grid_agent_execution(
     agents: List["AgentType"],
@@ -300,19 +307,22 @@ def batched_grid_agent_execution(
 
 #### Parameters
 
-| Parameter    | Type                | Required | Default | Description |
-|--------------|---------------------|----------|---------|-------------|
-| `agents`     | `List[AgentType]`   | Yes      | -       | List of agent instances |
-| `tasks`      | `List[str]`         | Yes      | -       | List of tasks, one for each agent |
-| `max_workers`| `int`               | No       | 90% of CPU cores | Maximum number of threads to use |
+| Parameter     | Type              | Required | Default          | Description                       |
+| ------------- | ----------------- | -------- | ---------------- | --------------------------------- |
+| `agents`      | `List[AgentType]` | Yes      | -                | List of agent instances           |
+| `tasks`       | `List[str]`       | Yes      | -                | List of tasks, one for each agent |
+| `max_workers` | `int`             | No       | 90% of CPU cores | Maximum number of threads to use  |
 
 #### Returns
+
 - `List[Any]`: List of results from each agent
 
 #### Raises
+
 - `ValueError`: If number of agents doesn't match number of tasks
 
 #### Example
+
 ```python
 from swarms.structs.agent import Agent
 from swarms.structs.multi_agent_exec import batched_grid_agent_execution
@@ -356,6 +366,7 @@ for i, result in enumerate(results):
 Runs multiple agents with different tasks concurrently, processing them in batches.
 
 #### Signature
+
 ```python
 def run_agents_with_different_tasks(
     agent_task_pairs: List[tuple["AgentType", str]],
@@ -366,16 +377,18 @@ def run_agents_with_different_tasks(
 
 #### Parameters
 
-| Parameter          | Type                              | Required | Default | Description |
-|--------------------|-----------------------------------|----------|---------|-------------|
-| `agent_task_pairs` | `List[tuple[AgentType, str]]`     | Yes      | -       | List of (agent, task) tuples |
-| `batch_size`       | `int`                             | No       | 10      | Number of agents to run in parallel in each batch |
-| `max_workers`      | `int`                             | No       | None    | Maximum number of threads |
+| Parameter          | Type                          | Required | Default | Description                                       |
+| ------------------ | ----------------------------- | -------- | ------- | ------------------------------------------------- |
+| `agent_task_pairs` | `List[tuple[AgentType, str]]` | Yes      | -       | List of (agent, task) tuples                      |
+| `batch_size`       | `int`                         | No       | 10      | Number of agents to run in parallel in each batch |
+| `max_workers`      | `int`                         | No       | None    | Maximum number of threads                         |
 
 #### Returns
+
 - `List[Any]`: List of outputs from each agent, in the same order as input pairs
 
 #### Example
+
 ```python
 from swarms.structs.agent import Agent
 from swarms.structs.multi_agent_exec import run_agents_with_different_tasks
@@ -422,12 +435,14 @@ for i, result in enumerate(results):
 
 Runs multiple agents concurrently using platform-specific optimized event loops for enhanced performance.
 
-This function automatically selects the best available event loop implementation for your platform:
-- **Unix/Linux/macOS**: Uses `uvloop` for significantly improved async performance
-- **Windows**: Uses `winloop` for optimized Windows performance
-- **Fallback**: Gracefully falls back to standard asyncio if optimized loops are unavailable
+This function uses stdlib `asyncio` event-loop policies by default and will continue to run without optional third-party loops:
+
+- **Unix/Linux/macOS**: Uses stdlib `asyncio` policies by default (you may opt-in to `uvloop` for potential gains)
+- **Windows**: Uses stdlib `asyncio` policies by default (you may opt-in to `winloop` on supported systems)
+- **Fallback**: Continues with the existing stdlib `asyncio` policy if optional loops are not installed
 
 #### Signature
+
 ```python
 def run_agents_concurrently_uvloop(
     agents: List[AgentType],
@@ -438,28 +453,31 @@ def run_agents_concurrently_uvloop(
 
 #### Parameters
 
-| Parameter    | Type                | Required | Default | Description |
-|--------------|---------------------|----------|---------|-------------|
-| `agents`     | `List[AgentType]`   | Yes      | -       | List of Agent instances to run concurrently |
-| `task`       | `str`               | Yes      | -       | Task string to execute by all agents |
-| `max_workers`| `Optional[int]`     | No       | 95% of CPU cores | Maximum number of threads in the executor |
+| Parameter     | Type              | Required | Default          | Description                                 |
+| ------------- | ----------------- | -------- | ---------------- | ------------------------------------------- |
+| `agents`      | `List[AgentType]` | Yes      | -                | List of Agent instances to run concurrently |
+| `task`        | `str`             | Yes      | -                | Task string to execute by all agents        |
+| `max_workers` | `Optional[int]`   | No       | 95% of CPU cores | Maximum number of threads in the executor   |
 
 #### Returns
+
 - `List[Any]`: List of outputs from each agent. If an agent fails, the exception is included in the results.
 
 #### Raises
-- `ImportError`: If neither uvloop nor winloop is available (falls back to standard asyncio)
+
+- `ImportError`: Optional third-party event loops are not required — the function will continue with stdlib `asyncio` if they are not installed
 - `RuntimeError`: If event loop policy cannot be set (falls back to standard asyncio)
 
 #### Example
+
 ```python
 from swarms.structs.agent import Agent
 from swarms.structs.multi_agent_exec import run_agents_concurrently_uvloop
 
-# Note: Platform-specific optimizations are automatically selected
-# - Unix/Linux/macOS: Install uvloop with 'pip install uvloop'
-# - Windows: Install winloop with 'pip install winloop'
-# - Falls back to standard asyncio if neither is available
+# Note: Platform-specific optimizations are available as an opt-in.
+# - Optional: Unix/Linux/macOS: `pip install uvloop` to opt-in to uvloop
+# - Optional: Windows: `pip install winloop` to opt-in to winloop
+# - The function will use stdlib `asyncio` policies by default
 
 agents = [
     Agent(
@@ -481,12 +499,14 @@ print(f"Processed {len(results)} agents with platform-optimized event loop")
 
 Runs multiple agents with different tasks concurrently using platform-specific optimized event loops.
 
-This function automatically selects the best available event loop implementation for your platform:
-- **Unix/Linux/macOS**: Uses `uvloop` for significantly improved async performance
-- **Windows**: Uses `winloop` for optimized Windows performance
-- **Fallback**: Gracefully falls back to standard asyncio if optimized loops are unavailable
+This function uses stdlib `asyncio` event-loop policies by default and will continue to run without optional third-party loops:
+
+- **Unix/Linux/macOS**: Uses stdlib `asyncio` policies by default (you may opt-in to `uvloop` for potential gains)
+- **Windows**: Uses stdlib `asyncio` policies by default (you may opt-in to `winloop` on supported systems)
+- **Fallback**: Continues with the existing stdlib `asyncio` policy if optional loops are not installed
 
 #### Signature
+
 ```python
 def run_agents_with_tasks_uvloop(
     agents: List[AgentType],
@@ -497,21 +517,24 @@ def run_agents_with_tasks_uvloop(
 
 #### Parameters
 
-| Parameter    | Type                | Required | Default | Description |
-|--------------|---------------------|----------|---------|-------------|
-| `agents`     | `List[AgentType]`   | Yes      | -       | List of Agent instances to run |
-| `tasks`      | `List[str]`         | Yes      | -       | List of task strings (must match number of agents) |
-| `max_workers`| `Optional[int]`     | No       | 95% of CPU cores | Maximum number of threads |
+| Parameter     | Type              | Required | Default          | Description                                        |
+| ------------- | ----------------- | -------- | ---------------- | -------------------------------------------------- |
+| `agents`      | `List[AgentType]` | Yes      | -                | List of Agent instances to run                     |
+| `tasks`       | `List[str]`       | Yes      | -                | List of task strings (must match number of agents) |
+| `max_workers` | `Optional[int]`   | No       | 95% of CPU cores | Maximum number of threads                          |
 
 #### Returns
+
 - `List[Any]`: List of outputs from each agent in the same order as input agents. If an agent fails, the exception is included in the results.
 
 #### Raises
+
 - `ValueError`: If number of agents doesn't match number of tasks
 - `ImportError`: If neither uvloop nor winloop is available (falls back to standard asyncio)
 - `RuntimeError`: If event loop policy cannot be set (falls back to standard asyncio)
 
 #### Example
+
 ```python
 from swarms.structs.agent import Agent
 from swarms.structs.multi_agent_exec import run_agents_with_tasks_uvloop
@@ -558,21 +581,23 @@ for i, result in enumerate(results):
 Fetches and formats information about all available swarms in the system.
 
 #### Signature
+
 ```python
 def get_swarms_info(swarms: List[Callable]) -> str
 ```
 
 #### Parameters
 
-| Parameter | Type              | Required | Description |
-|-----------|-------------------|----------|-------------|
-| `swarms`  | `List[Callable]`  | Yes      | List of swarm objects to get information about |
+| Parameter | Type             | Required | Description                                    |
+| --------- | ---------------- | -------- | ---------------------------------------------- |
+| `swarms`  | `List[Callable]` | Yes      | List of swarm objects to get information about |
 
 #### Returns
 
 - `str`: Formatted string containing names and descriptions of all swarms
 
 #### Example
+
 ```python
 from swarms.structs.multi_agent_exec import get_swarms_info
 
@@ -598,6 +623,7 @@ print(info)
 Fetches and formats information about all available agents in the system.
 
 #### Signature
+
 ```python
 def get_agents_info(
     agents: List[Union[Agent, Callable]],
@@ -607,10 +633,10 @@ def get_agents_info(
 
 #### Parameters
 
-| Parameter   | Type                              | Required | Default | Description |
-|-------------|-----------------------------------|----------|---------|-------------|
-| `agents`    | `List[Union[Agent, Callable]]`    | Yes      | -       | List of agent objects to get information about |
-| `team_name` | `str`                             | No       | None    | Optional team name to display |
+| Parameter   | Type                           | Required | Default | Description                                    |
+| ----------- | ------------------------------ | -------- | ------- | ---------------------------------------------- |
+| `agents`    | `List[Union[Agent, Callable]]` | Yes      | -       | List of agent objects to get information about |
+| `team_name` | `str`                          | No       | None    | Optional team name to display                  |
 
 #### Returns
 
@@ -790,14 +816,14 @@ agents = [
         max_loops=1
     ),
     Agent(
-        agent_name="High-Perf-Analyst-2", 
+        agent_name="High-Perf-Analyst-2",
         system_prompt="You are a high-performance data analyst",
         model_name="gpt-4o-mini",
         max_loops=1
     ),
     Agent(
         agent_name="High-Perf-Analyst-3",
-        system_prompt="You are a high-performance data analyst", 
+        system_prompt="You are a high-performance data analyst",
         model_name="gpt-4o-mini",
         max_loops=1
     )
@@ -818,7 +844,7 @@ for i, result in enumerate(results):
 print("\n=== Platform-Optimized Different Tasks ===")
 tasks = [
     "Analyze Q1 financial performance",
-    "Evaluate market volatility patterns", 
+    "Evaluate market volatility patterns",
     "Assess competitive landscape changes"
 ]
 
@@ -883,13 +909,13 @@ except Exception as e:
 
 ## Performance Considerations
 
-| Technique              | Best Use Case / Description                                                        |
-|------------------------|------------------------------------------------------------------------------------|
-| **ThreadPoolExecutor** | Best for CPU-bound tasks with moderate I/O, supports image processing and flexible output formats |
+| Technique                         | Best Use Case / Description                                                                          |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **ThreadPoolExecutor**            | Best for CPU-bound tasks with moderate I/O, supports image processing and flexible output formats    |
 | **Platform-Specific Event Loops** | **uvloop** (Unix/Linux/macOS) and **winloop** (Windows) for significantly improved async performance |
-| **Batch Processing**   | Prevents system overload with large numbers of agents, maintains order with grid execution |
-| **Resource Monitoring**| Adjust worker counts based on system capabilities (defaults to 95% of CPU cores) |
-| **Async/Await**        | Use async functions for better concurrency control and platform optimizations |
-| **Image Support**      | Pass image data to agents that support multimodal processing for enhanced capabilities |
-| **Dictionary Output**  | Use `return_agent_output_dict=True` for structured results with agent name mapping |
-| **Error Handling**     | All functions include comprehensive exception handling with graceful fallbacks |
+| **Batch Processing**              | Prevents system overload with large numbers of agents, maintains order with grid execution           |
+| **Resource Monitoring**           | Adjust worker counts based on system capabilities (defaults to 95% of CPU cores)                     |
+| **Async/Await**                   | Use async functions for better concurrency control and platform optimizations                        |
+| **Image Support**                 | Pass image data to agents that support multimodal processing for enhanced capabilities               |
+| **Dictionary Output**             | Use `return_agent_output_dict=True` for structured results with agent name mapping                   |
+| **Error Handling**                | All functions include comprehensive exception handling with graceful fallbacks                       |
