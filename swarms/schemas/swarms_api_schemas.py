@@ -13,9 +13,7 @@ SwarmType = Literal[
     "HiearchicalSwarm",
     "auto",
     "MajorityVoting",
-    "MALT",
     "CouncilAsAJudge",
-    "InteractiveGroupChat",
 ]
 
 

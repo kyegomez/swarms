@@ -93,7 +93,6 @@ This index organizes **100+ production-ready examples** from our [Swarms Example
 | Category | Example | Description |
 |----------|---------|-------------|
 | Agent Judge | [Agent Judge Example](https://github.com/kyegomez/swarms/blob/master/examples/single_agent/reasoning_agent_examples/agent_judge_example.py) | Agent-based decision making and evaluation system |
-| MALT | [MALT Example](https://github.com/kyegomez/swarms/blob/master/examples/single_agent/reasoning_agent_examples/malt_example.py) | Multi-agent logical reasoning framework |
 | Reasoning Duo | [Reasoning Duo Example](https://github.com/kyegomez/swarms/blob/master/examples/single_agent/reasoning_agent_examples/reasoning_duo_example.py) | Collaborative reasoning between two specialized agents |
 
 ### Vision and Multimodal

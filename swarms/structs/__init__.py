@@ -40,7 +40,6 @@ from swarms.structs.ma_blocks import (
 from swarms.structs.majority_voting import (
     MajorityVoting,
 )
-from swarms.structs.malt import MALT
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.model_router import ModelRouter
 from swarms.structs.multi_agent_exec import (
@@ -135,7 +134,6 @@ __all__ = [
     "random_dynamic_speaker",
     "MultiAgentRouter",
     "ModelRouter",
-    "MALT",
     "HybridHierarchicalClusterSwarm",
     "get_agents_info",
     "get_swarms_info",

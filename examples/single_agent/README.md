@@ -77,7 +77,6 @@ This directory contains examples demonstrating single agent patterns, configurat
 - [consistency_example.py](reasoning_agent_examples/consistency_example.py) - Consistency example
 - [gpk_agent.py](reasoning_agent_examples/gpk_agent.py) - GPK reasoning agent
 - [iterative_agent.py](reasoning_agent_examples/iterative_agent.py) - Iterative reasoning agent
-- [malt_example.py](reasoning_agent_examples/malt_example.py) - MALT reasoning example
 - [reasoning_agent_router_now.py](reasoning_agent_examples/reasoning_agent_router_now.py) - Current reasoning router
 - [reasoning_agent_router.py](reasoning_agent_examples/reasoning_agent_router.py) - Reasoning agent router
 - [reasoning_duo_example.py](reasoning_agent_examples/reasoning_duo_example.py) - Two-agent reasoning

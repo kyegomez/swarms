@@ -195,7 +195,6 @@ def main():
         "GroupChat",
         "MultiAgentRouter",
         "HeavySwarm",
-        "MALT",
     ]
 
     # Run creation benchmark

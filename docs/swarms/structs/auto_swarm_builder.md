@@ -278,9 +278,7 @@ The AutoSwarmBuilder supports various multi-agent architecture patterns:
 | **AutoSwarmBuilder**     | Self-organizing and self-optimizing teams                 |
 | **HiearchicalSwarm**     | Layered decision-making with management tiers             |
 | **MajorityVoting**       | Democratic decision-making with voting                    |
-| **MALT**                 | Multi-agent learning and training                         |
 | **CouncilAsAJudge**      | Deliberative decision-making with expert panels           |
-| **InteractiveGroupChat** | Dynamic group interactions                                |
 | **HeavySwarm**           | High-capacity processing with multiple agents             |
 
 ## Boss System Prompt

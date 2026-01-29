@@ -88,14 +88,13 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [qdrant_agent.py](single_agent/rag/qdrant_agent.py) | Qdrant agent example |
 | [qdrant_rag_example.py](single_agent/rag/qdrant_rag_example.py) | Qdrant RAG example |
 | [simple_example.py](single_agent/rag/simple_example.py) | Simple RAG example |
-| [reasoning_agent_examples/](single_agent/reasoning_agent_examples/) | Reasoning agent patterns including consistency, GPK, iterative, MALT, and reasoning duo |
+| [reasoning_agent_examples/](single_agent/reasoning_agent_examples/) | Reasoning agent patterns including consistency, GPK, iterative, and reasoning duo |
 | [agent_judge_evaluation_criteria_example.py](single_agent/reasoning_agent_examples/agent_judge_evaluation_criteria_example.py) | Agent judge evaluation criteria example |
 | [agent_judge_example.py](single_agent/reasoning_agent_examples/agent_judge_example.py) | Agent judge example |
 | [consistency_agent.py](single_agent/reasoning_agent_examples/consistency_agent.py) | Consistency agent |
 | [consistency_example.py](single_agent/reasoning_agent_examples/consistency_example.py) | Consistency example |
 | [gpk_agent.py](single_agent/reasoning_agent_examples/gpk_agent.py) | GPK agent |
 | [iterative_agent.py](single_agent/reasoning_agent_examples/iterative_agent.py) | Iterative agent |
-| [malt_example.py](single_agent/reasoning_agent_examples/malt_example.py) | MALT example |
 | [reasoning_agent_router_now.py](single_agent/reasoning_agent_examples/reasoning_agent_router_now.py) | Reasoning agent router (current) |
 | [reasoning_agent_router.py](single_agent/reasoning_agent_examples/reasoning_agent_router.py) | Reasoning agent router |
 | [reasoning_duo_example.py](single_agent/reasoning_agent_examples/reasoning_duo_example.py) | Reasoning duo example |
@@ -474,7 +473,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Autonomous Agents](single_agent/full_autonomy/) | Full autonomy examples with marketplace integration |
 | [Agent Handoffs](single_agent/handoffs/) | Agent handoff patterns and examples |
 | [Marketplace Integration](single_agent/marketplace/) | Marketplace prompt integration examples |
-| [Reasoning Agents](single_agent/reasoning_agent_examples/) | Advanced reasoning patterns including consistency, GPK, iterative, MALT, and reasoning duo |
+| [Reasoning Agents](single_agent/reasoning_agent_examples/) | Advanced reasoning patterns including consistency, GPK, iterative, and reasoning duo |
 | [Vision Agents](single_agent/vision/multimodal_example.py) | Vision and multimodal capabilities |
 | [RAG Agents](single_agent/rag/) | Retrieval augmented generation |
 | [External Agents](single_agent/external_agents/) | External agent integrations |
