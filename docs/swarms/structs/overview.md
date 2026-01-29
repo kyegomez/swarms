@@ -22,7 +22,6 @@ This page provides a comprehensive overview of all available multi-agent archite
     | AgentRouter | Embedding-based routing | Routes tasks to agents using semantic similarity on embeddings | [Docs](agent_router.md) |
     | MatrixSwarm | Parallel processing | Matrix-based organization for parallel task execution | [Docs](matrix_swarm.md) |
     | ModelRouter | Model selection | Routes tasks to appropriate AI models | [Docs](model_router.md) |
-    | MALT | Multi-agent learning | Enables agents to learn from each other | [Docs](malt.md) |
     | Deep Research Swarm | Research automation | Conducts comprehensive research across multiple domains | [Docs](deep_research_swarm.md) |
     | Swarm Matcher | Agent matching | Matches tasks with appropriate agent combinations | [Docs](swarm_matcher.md) |
 
@@ -60,9 +59,6 @@ When selecting a multi-agent architecture, consider the following factors:
 
 !!! tip "Resource Optimization"
     If you need to optimize agent usage, consider SwarmRouter or TaskQueueSwarm.
-
-!!! tip "Learning Requirements"
-    If agents need to learn from each other, MALT is the appropriate choice.
 
 !!! tip "Dynamic Adaptation"
     For tasks requiring dynamic adaptation, consider SwarmRearrange or Auto Swarm Builder.

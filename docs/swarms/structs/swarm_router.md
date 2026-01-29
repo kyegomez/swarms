@@ -120,7 +120,6 @@ The `SwarmRouter` supports many various multi-agent architectures for various ap
 | `AutoSwarmBuilder` | Automatically builds swarm structure |
 | `HiearchicalSwarm` | Hierarchical organization of agents |
 | `MajorityVoting` | Uses majority voting for decision making |
-| `MALT` | Multi-Agent Language Tasks |
 | `CouncilAsAJudge` | Council-based judgment system |
 | `HeavySwarm` | Heavy swarm architecture with question and worker agents |
 | `BatchedGridWorkflow` | Batched grid workflow for parallel task processing |

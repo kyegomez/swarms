@@ -89,9 +89,7 @@ Choose the most appropriate architecture based on task requirements:
 - **AutoSwarmBuilder**: Self-organizing and self-optimizing agent teams
 - **HiearchicalSwarm**: Layered decision-making with management and execution tiers
 - **MajorityVoting**: Democratic decision-making with voting mechanisms
-- **MALT**: Multi-agent learning and training with knowledge sharing
 - **CouncilAsAJudge**: Deliberative decision-making with expert panels
-- **InteractiveGroupChat**: Dynamic group interactions with real-time collaboration
 - **HeavySwarm**: High-capacity processing with multiple specialized agents
 
 ### Output Requirements:

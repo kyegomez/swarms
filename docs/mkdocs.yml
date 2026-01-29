@@ -77,8 +77,6 @@ extra:
         url: "https://docs.swarms.world/en/latest/swarms/structs/swarm_router/"
 
     "Advanced Concepts":
-      - title: "MALT (Multi-Agent Learning Task)"
-        url: "https://github.com/kyegomez/swarms/blob/master/examples/single_agent/reasoning_agent_examples/malt_example.py"
       - title: "MAI-DxO (Medical AI Diagnosis)"
         url: "https://github.com/The-Swarm-Corporation/Open-MAI-Dx-Orchestrator"
       - title: "AI-CoScientist Research Framework"
@@ -283,7 +281,6 @@ nav:
         - SelfMoASeq: "swarms/structs/self_moa_seq.md"
         - SpreadSheetSwarm: "swarms/structs/spreadsheet_swarm.md"
         - ForestSwarm: "swarms/structs/forest_swarm.md"
-        - MALT: "swarms/structs/malt.md"
         - Multi-Agent Execution Utilities: "swarms/structs/various_execution_methods.md"
         - Council of Judges: "swarms/structs/council_of_judges.md"
         - LLM Council: "swarms/structs/llm_council.md"
@@ -429,7 +426,6 @@ nav:
         - DebateWithJudge Quickstart: "examples/debate_quickstart.md"
         - Mixture of Agents: "swarms/examples/moa_example.md"
         - SelfMoASeq: "swarms/examples/self_moa_seq_example.md"
-        - MALT: "swarms/examples/malt_example.md"
 
       - Workflow Patterns:
         - Sequential Workflow: "swarms/examples/sequential_example.md"

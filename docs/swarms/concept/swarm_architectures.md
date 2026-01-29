@@ -36,7 +36,6 @@ Multi-agent architectures leverage these communication patterns to ensure that a
 | Router                            | Routes and chooses the architecture based on the task requirements and available agents.                                                                               | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)                       | Dynamic task routing, adaptive architecture selection, optimized agent allocation                 |
 | Heavy                             | High-performance architecture for handling intensive computational tasks with multiple agents.                                                                         | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/heavy_swarm/)                       | Large-scale data processing, intensive computational workflows                                    |
 | Council as Judge                  | Multiple agents act as a council to evaluate and judge outputs or decisions.                                                                                           | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/council_of_judges/)                     | Quality assessment, decision validation, peer review processes                                    |
-| MALT                              | Specialized architecture for complex language processing tasks across multiple agents.                                                                                | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/malt/)                              | Natural language processing, translation, content generation                                      |
 | Majority Voting                   | Agents vote on decisions with the majority determining the final outcome.                                                                                              | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/majorityvoting/)                   | Democratic decision-making, consensus building, error reduction                                   |
 | Round Robin                       | Tasks are distributed cyclically among agents in a rotating order.                                                                                                     | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/round_robin_swarm/)                       | Load balancing, fair task distribution, resource optimization                                     |
 | Auto-Builder                      | Automatically constructs and configures multi-agent systems based on requirements.                                                                                    | [Learn More](https://docs.swarms.world/en/latest/swarms/structs/auto_swarm_builder/)                | Dynamic system creation, adaptive architectures, rapid prototyping                               |
@@ -726,44 +725,6 @@ graph TD
     I --> J{More Loops?}
     J -->|Yes| C
     J -->|No| K[Final Output]
-```
-
----
-
-### MALT Architecture
-
-**Overview:**
-Specialized architecture for complex language processing tasks that require coordination between multiple language-focused agents.
-
-**Use Cases:**
-
-- Natural language processing pipelines
-
-- Translation and localization
-
-- Content generation and editing
-
-
-**[Learn More](https://docs.swarms.world/en/latest/swarms/structs/malt/)**
-
-```mermaid
-graph TD
-    A[Language Task] --> B[Task Analyzer]
-    B --> C[Language Router]
-    
-    C --> D[Grammar Agent]
-    C --> E[Semantics Agent]
-    C --> F[Style Agent]
-    C --> G[Context Agent]
-    
-    D --> H[Language Processor]
-    E --> H
-    F --> H
-    G --> H
-    
-    H --> I[Quality Controller]
-    I --> J[Output Formatter]
-    J --> K[Final Language Output]
 ```
 
 ---
