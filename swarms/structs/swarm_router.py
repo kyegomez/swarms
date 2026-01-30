@@ -30,7 +30,6 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 from swarms.structs.llm_council import LLMCouncil
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.majority_voting import MajorityVoting
-from swarms.structs.malt import MALT
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.multi_agent_router import MultiAgentRouter
 from swarms.structs.round_robin import RoundRobinSwarm
@@ -56,7 +55,6 @@ SwarmType = Literal[
     "HierarchicalSwarm",
     "auto",
     "MajorityVoting",
-    "MALT",
     "CouncilAsAJudge",
     "HeavySwarm",
     "BatchedGridWorkflow",
@@ -463,7 +461,6 @@ class SwarmRouter:
         return {
             "HeavySwarm": self._create_heavy_swarm,
             "AgentRearrange": self._create_agent_rearrange,
-            "MALT": self._create_malt,
             "CouncilAsAJudge": self._create_council_as_judge,
             "HierarchicalSwarm": self._create_hierarchical_swarm,
             "MixtureOfAgents": self._create_mixture_of_agents,
@@ -534,16 +531,6 @@ class SwarmRouter:
             description=self.description,
             agents=self.agents,
             max_loops=self.max_loops,
-        )
-
-    def _create_malt(self, *args, **kwargs):
-        """Factory function for MALT."""
-        return MALT(
-            name=self.name,
-            description=self.description,
-            max_loops=self.max_loops,
-            return_dict=True,
-            preset_agents=True,
         )
 
     def _create_council_as_judge(self, *args, **kwargs):

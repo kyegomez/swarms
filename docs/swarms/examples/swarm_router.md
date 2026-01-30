@@ -165,7 +165,6 @@ result = router.run("Analyze the investment opportunity")
 | `"AutoSwarmBuilder"` | Automatically build swarm configuration |
 | `"HiearchicalSwarm"` | Hierarchical agent organization |
 | `"MajorityVoting"` | Use majority voting for decisions |
-| `"MALT"` | Multi-Agent Learning and Training |
 | `"CouncilAsAJudge"` | Council-based evaluation system |
 | `"HeavySwarm"` | Heavy swarm for complex tasks |
 | `"BatchedGridWorkflow"` | Batched grid workflow for parallel task processing |
