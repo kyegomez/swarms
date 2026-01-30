@@ -171,7 +171,4 @@ print(result)
 - Swarm implementation files (examples): `swarms/structs/sequential_workflow.py`, `swarms/structs/concurrent_workflow.py`, `swarms/structs/swarm_router.py`
 
 ## Examples script
-See `examples/output_formats_architectures_example.py` for a compact example demonstrating `Agent` output types and small Sequential/Concurrent usage patterns.
-
----
-If you'd like, I can also add a short runnable demo that spins up minimal mock agents so the `examples/` script can be executed in CI or locally without real LLM keys. Want that?
+See `examples/output_formats_architectures_example.py` for a compact example demonstrating `Agent` output types and small Sequential/Concurrent usage patterns
