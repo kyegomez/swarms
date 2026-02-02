@@ -367,6 +367,7 @@ nav:
       - Heavy Swarm CLI: "swarms/cli/cli_heavy_swarm_guide.md"
       - CLI Multi-Agent Commands: "examples/cli_multi_agent_quickstart.md"
       - CLI Examples: "swarms/cli/cli_examples.md"
+      - Chat Command Usage: "examples/chat_command_usage.md"
 
     - Agent Examples:
       - Overview: "examples/basic_examples_overview.md"
@@ -374,13 +375,15 @@ nav:
       - Agent Skills: "swarms/examples/agent_skills_overview.md"
       - Autonomous Agent: "swarms/examples/autonomous_agent_tutorial.md"
       - Agent Handoff: "swarms/examples/agent_handoff_tutorial.md"
+      - Sub-Agent Delegation: "swarms/examples/sub_agent_tutorial.md"
       - Autosave: "swarms/examples/autosave_tutorial.md"
       - Tool Usage:
         - Agents with Vision and Tool Usage: "swarms/examples/vision_tools.md"
-        - Agents with Callable Tools: "swarms/examples/agent_with_tools.md"
-        - Agent with Structured Outputs: "swarms/examples/agent_structured_outputs.md"
+        - Callable Tools: "swarms/examples/agent_with_tools.md"
+        - Structured Outputs: "swarms/examples/agent_structured_outputs.md"
         - Pydantic Structured Outputs Tutorial: "swarms/examples/pydantic_structured_outputs_tutorial.md"
         - Message Transforms for Context Management: "swarms/structs/transforms.md"
+        - Selecting PreConfigured Tools: "examples/autonomous_looper_tools.md"
       - Vision:
         - Agents with Vision: "swarms/examples/vision_processing.md"
         - Agent with Multiple Images: "swarms/examples/multiple_images.md"

@@ -66,7 +66,9 @@ from swarms.structs.autonomous_loop_utils import (
     MAX_PLANNING_ATTEMPTS,
     MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
+    assign_task_tool,
     create_file_tool,
+    create_sub_agent_tool,
     delete_file_tool,
     get_autonomous_planning_tools,
     get_execution_prompt,
@@ -272,6 +274,12 @@ class Agent:
             Each subdirectory should contain a SKILL.md file with YAML frontmatter (name, description)
             and markdown instructions. Skills are auto-loaded into system prompt for context-aware activation.
             Example: skills_dir="./skills" loads from ./skills/*/SKILL.md
+        selected_tools (Union[str, List[str]]): Tools to enable for the autonomous looper when max_loops="auto".
+            Available tools: "create_plan", "think", "subtask_done", "complete_task", "respond_to_user",
+            "create_file", "update_file", "read_file", "list_directory", "delete_file", "create_sub_agent",
+            "assign_task".
+            Defaults to "all" (all tools enabled). Pass a list of tool names to restrict tools, or "all"
+            for unrestricted access. Use this to control which tools the agent can use during autonomous execution.
 
     Methods:
         run: Run the agent
@@ -438,6 +446,7 @@ class Agent:
         use_cases: Optional[List[Dict[str, Any]]] = None,
         marketplace_prompt_id: Optional[str] = None,
         skills_dir: Optional[str] = None,
+        selected_tools: Optional[Union[str, List[str]]] = "all",
         *args,
         **kwargs,
     ):
@@ -445,6 +454,7 @@ class Agent:
         self.id = id
         self.skills_dir = skills_dir
         self.skills_metadata = []
+        self.selected_tools = selected_tools
         self.llm = llm
         self.max_loops = max_loops
         self.stopping_condition = stopping_condition
@@ -2200,6 +2210,27 @@ class Agent:
 
             # Add planning tools to tools_list_dictionary
             planning_tools = get_autonomous_planning_tools()
+
+            # Filter planning tools if selected_tools is not "all"
+            if (
+                self.selected_tools != "all"
+                and self.selected_tools is not None
+            ):
+                logger.info(
+                    f"Filtering autonomous looper tools to: {self.selected_tools}"
+                )
+                filtered_tools = []
+                for tool in planning_tools:
+                    tool_name = tool.get("function", {}).get(
+                        "name", ""
+                    )
+                    if tool_name in self.selected_tools:
+                        filtered_tools.append(tool)
+                planning_tools = filtered_tools
+                logger.info(
+                    f"Filtered to {len(planning_tools)} tools: {[t.get('function', {}).get('name', '') for t in planning_tools]}"
+                )
+
             if self.tools_list_dictionary is None:
                 self.tools_list_dictionary = []
 
@@ -2243,7 +2274,7 @@ class Agent:
                 self.llm = self.llm_handling()
 
             # Register planning tool handlers
-            planning_tool_handlers = {
+            all_planning_tool_handlers = {
                 "create_plan": self._create_plan_tool,
                 "think": self._think_tool,
                 "subtask_done": self._subtask_done_tool,
@@ -2266,7 +2297,26 @@ class Agent:
                 "delete_file": lambda **kwargs: delete_file_tool(
                     self, **kwargs
                 ),
+                "create_sub_agent": lambda **kwargs: create_sub_agent_tool(
+                    self, **kwargs
+                ),
+                "assign_task": lambda **kwargs: assign_task_tool(
+                    self, **kwargs
+                ),
             }
+
+            # Filter tool handlers if selected_tools is not "all"
+            if (
+                self.selected_tools != "all"
+                and self.selected_tools is not None
+            ):
+                planning_tool_handlers = {
+                    k: v
+                    for k, v in all_planning_tool_handlers.items()
+                    if k in self.selected_tools
+                }
+            else:
+                planning_tool_handlers = all_planning_tool_handlers
 
             # Add handoff tool handler if handoffs are configured
             if exists(self.handoffs):

@@ -143,6 +143,7 @@ The `Agent` class establishes a conversational loop with a language model, allow
 | `mode` | `Literal["interactive", "fast", "standard"]` | Execution mode: "interactive" for real-time interaction, "fast" for optimized performance, "standard" for default behavior. |
 | `publish_to_marketplace` | `bool` | Boolean indicating whether to publish the agent's prompt to the Swarms marketplace. |
 | `marketplace_prompt_id` | `Optional[str]` | Unique UUID identifier of a prompt from the Swarms marketplace. When provided, the agent will automatically fetch and load the prompt as the system prompt. |
+| `selected_tools` | `Optional[Union[str, List[str]]]` | Controls which tools are available in autonomous mode (`max_loops="auto"`). Use `"all"` for all tools or provide a list of specific tool names. Available tools: `"create_plan"`, `"think"`, `"subtask_done"`, `"complete_task"`, `"respond_to_user"`, `"create_file"`, `"update_file"`, `"read_file"`, `"list_directory"`, `"delete_file"`, `"create_sub_agent"`, `"assign_task"`. |
 
 ## `Agent` Methods
 
@@ -847,6 +848,8 @@ When `max_loops="auto"` and `interactive=False`, the agent has access to special
 | `read_file` | Read the contents of a file | `file_path` (str) |
 | `list_directory` | List files and directories in a specified path | `directory_path` (str, optional) |
 | `delete_file` | Delete a file (with safety checks) | `file_path` (str) |
+| `create_sub_agent` | Create specialized sub-agents for task delegation | `agents` (array): list of agent specs with `agent_name` (str), `agent_description` (str), `system_prompt` (str, optional) |
+| `assign_task` | Assign tasks to sub-agents for asynchronous execution | `assignments` (array): list with `agent_id` (str), `task` (str), `task_id` (str, optional); `wait_for_completion` (bool, optional) |
 
 **File Operations and Workspace Directory:**
 
@@ -885,6 +888,137 @@ response = agent.run(task)
 # - Use create_file, update_file, read_file tools as needed
 # - Communicate with respond_to_user tool
 ```
+
+#### Sub-Agent Delegation in Autonomous Mode
+
+The autonomous agent can create and manage sub-agents for task delegation and parallel execution. This enables the main agent to break down complex tasks and distribute work across specialized sub-agents.
+
+**How Sub-Agent Delegation Works:**
+
+1. **Creating Sub-Agents**: The main agent uses `create_sub_agent` tool to create specialized agents with specific roles
+2. **Task Assignment**: Tasks are assigned to sub-agents using `assign_task` tool
+3. **Parallel Execution**: Sub-agents execute tasks concurrently using asyncio
+4. **Result Aggregation**: The main agent collects and synthesizes results from all sub-agents
+
+**Sub-Agent Tools:**
+
+| Tool | Purpose | Key Features |
+|------|---------|--------------|
+| `create_sub_agent` | Create specialized sub-agents | - Each sub-agent gets unique ID<br>- Cached for reuse<br>- Inherits parent's LLM config<br>- Optional custom system prompt |
+| `assign_task` | Delegate tasks to sub-agents | - Asynchronous execution<br>- Multiple task assignments<br>- Wait or fire-and-forget modes<br>- Detailed result reporting |
+
+**Example: Autonomous Agent with Sub-Agent Delegation**
+
+```python
+from swarms.structs.agent import Agent
+
+# Initialize autonomous agent that will use sub-agents
+coordinator = Agent(
+    agent_name="Research-Coordinator",
+    agent_description="Coordinates complex research by delegating to specialized sub-agents",
+    model_name="gpt-4.1",
+    max_loops="auto",
+    selected_tools="all",  # Enable all autonomous tools including sub-agent tools
+)
+
+# Complex task requiring parallel research
+task = """
+Conduct comprehensive research on three emerging technology trends:
+1. Artificial Intelligence in Healthcare
+2. Quantum Computing Advances
+3. Renewable Energy Innovations
+
+For each topic:
+- Create a specialized sub-agent expert in that domain
+- Assign research tasks to each sub-agent to work in parallel
+- Compile all findings into a comprehensive report
+
+Use the create_sub_agent and assign_task tools to distribute the work efficiently.
+"""
+
+# Run the coordinator - it will automatically:
+# 1. Create 3 specialized sub-agents (one for each research area)
+# 2. Assign tasks to them using assign_task
+# 3. Wait for all sub-agents to complete their work
+# 4. Aggregate and synthesize the results
+result = coordinator.run(task)
+print(result)
+```
+
+**What Happens During Execution:**
+
+```python
+# The agent internally calls these tools:
+
+# Step 1: Create specialized sub-agents
+create_sub_agent({
+    "agents": [
+        {
+            "agent_name": "AI-Healthcare-Expert",
+            "agent_description": "Expert in AI applications in healthcare and medical technology",
+            "system_prompt": "You are a research expert specializing in AI healthcare applications..."
+        },
+        {
+            "agent_name": "Quantum-Computing-Expert",
+            "agent_description": "Expert in quantum computing research and development",
+            "system_prompt": "You are a quantum computing research specialist..."
+        },
+        {
+            "agent_name": "Renewable-Energy-Expert",
+            "agent_description": "Expert in renewable energy technologies and innovations"
+        }
+    ]
+})
+# Returns: "Successfully created 3 sub-agent(s): AI-Healthcare-Expert (ID: sub-agent-a1b2c3d4), ..."
+
+# Step 2: Assign tasks to sub-agents
+assign_task({
+    "assignments": [
+        {
+            "agent_id": "sub-agent-a1b2c3d4",
+            "task": "Research the latest AI applications in healthcare, focusing on diagnostics and patient care",
+            "task_id": "healthcare-research"
+        },
+        {
+            "agent_id": "sub-agent-e5f6g7h8",
+            "task": "Analyze recent breakthroughs in quantum computing and their practical applications",
+            "task_id": "quantum-research"
+        },
+        {
+            "agent_id": "sub-agent-i9j0k1l2",
+            "task": "Investigate the latest innovations in renewable energy technologies",
+            "task_id": "energy-research"
+        }
+    ],
+    "wait_for_completion": true
+})
+# Returns: Detailed results from all three sub-agents
+```
+
+**Sub-Agent Tool Parameters:**
+
+**`create_sub_agent` Parameters:**
+- `agents` (array, required): List of sub-agent specifications
+  - `agent_name` (string, required): Name of the sub-agent
+  - `agent_description` (string, required): Description of the sub-agent's role and capabilities
+  - `system_prompt` (string, optional): Custom system prompt for the sub-agent
+
+**`assign_task` Parameters:**
+- `assignments` (array, required): List of task assignments
+  - `agent_id` (string, required): ID of the sub-agent (returned from `create_sub_agent`)
+  - `task` (string, required): Task description for the sub-agent
+  - `task_id` (string, optional): Unique identifier for tracking this task
+- `wait_for_completion` (boolean, optional): Whether to wait for all tasks to complete (default: true)
+
+**Benefits of Sub-Agent Delegation:**
+
+| Benefit | Description |
+|---------|-------------|
+| **Parallel Processing** | Multiple tasks execute simultaneously for faster completion |
+| **Specialization** | Each sub-agent can focus on a specific domain or capability |
+| **Scalability** | Complex tasks can be broken into manageable pieces |
+| **Reusability** | Sub-agents are cached and can handle multiple assignments |
+| **Fault Tolerance** | One sub-agent failure doesn't stop others from completing |
 
 ### Loop Examples
 

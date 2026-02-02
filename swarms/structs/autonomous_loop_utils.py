@@ -8,11 +8,25 @@ The autonomous loop follows this structure:
 1. Planning phase: Create a plan using create_plan tool
 2. Execution phase: For each subtask, loop thinking -> tool actions -> observation
 3. Summary phase: Generate comprehensive summary when all subtasks are complete
+
+Available Tools:
+- create_plan: Create a detailed plan with subtasks
+- think: Analyze and decide next actions
+- subtask_done: Mark a subtask as complete
+- complete_task: Mark the main task as complete
+- respond_to_user: Send messages to the user
+- create_file: Create new files
+- update_file: Update existing files
+- read_file: Read file contents
+- list_directory: List directory contents
+- delete_file: Delete files
+- create_sub_agent: Create specialized sub-agents for delegation
+- assign_task: Assign tasks to sub-agents asynchronously
 """
 
+import asyncio
 import os
 from typing import Any, Dict, List
-
 from loguru import logger
 
 
@@ -378,6 +392,83 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
                 },
             },
         },
+        {
+            "type": "function",
+            "function": {
+                "name": "create_sub_agent",
+                "description": "Create one or more sub-agents that can work on specialized tasks. Sub-agents are cached and can be reused across different task assignments.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "agents": {
+                            "type": "array",
+                            "description": "List of sub-agents to create",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "agent_name": {
+                                        "type": "string",
+                                        "description": "Name of the sub-agent",
+                                    },
+                                    "agent_description": {
+                                        "type": "string",
+                                        "description": "Description of the sub-agent's role and capabilities",
+                                    },
+                                    "system_prompt": {
+                                        "type": "string",
+                                        "description": "Custom system prompt for the sub-agent (optional). If not provided, a default prompt based on the agent description will be used.",
+                                    },
+                                },
+                                "required": [
+                                    "agent_name",
+                                    "agent_description",
+                                ],
+                            },
+                        },
+                    },
+                    "required": ["agents"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "assign_task",
+                "description": "Assign a task to one or more sub-agents. Tasks are executed asynchronously and results are returned to the main agent.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "assignments": {
+                            "type": "array",
+                            "description": "List of task assignments for sub-agents",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "agent_id": {
+                                        "type": "string",
+                                        "description": "ID of the sub-agent to assign the task to",
+                                    },
+                                    "task": {
+                                        "type": "string",
+                                        "description": "The task description for the sub-agent",
+                                    },
+                                    "task_id": {
+                                        "type": "string",
+                                        "description": "Unique identifier for this task assignment (optional)",
+                                    },
+                                },
+                                "required": ["agent_id", "task"],
+                            },
+                        },
+                        "wait_for_completion": {
+                            "type": "boolean",
+                            "description": "Whether to wait for all tasks to complete before returning (default: true)",
+                        },
+                    },
+                    "required": ["assignments"],
+                },
+            },
+        },
     ]
 
 
@@ -711,9 +802,225 @@ def delete_file_tool(agent: Any, file_path: str, **kwargs) -> str:
         return error_msg
 
 
+def create_sub_agent_tool(
+    agent: Any, agents: List[Dict[str, str]], **kwargs
+) -> str:
+    """
+    Create one or more sub-agents that can work on specialized tasks.
+    Sub-agents are cached in the main agent's sub_agents dictionary.
+
+    Args:
+        agent: The main agent instance
+        agents: List of agent specifications with agent_name, agent_description, and optional system_prompt
+        **kwargs: Additional arguments
+
+    Returns:
+        str: Success message with created agent IDs or error message
+    """
+    try:
+        # Initialize sub_agents dict if it doesn't exist
+        if not hasattr(agent, "sub_agents"):
+            agent.sub_agents = {}
+
+        created_agents = []
+
+        for agent_spec in agents:
+            agent_name = agent_spec.get("agent_name")
+            agent_description = agent_spec.get("agent_description")
+            system_prompt = agent_spec.get("system_prompt")
+
+            if not agent_name or not agent_description:
+                return "Error: Each agent must have agent_name and agent_description"
+
+            # Generate unique ID for the sub-agent
+            import uuid
+
+            agent_id = f"sub-agent-{uuid.uuid4().hex[:8]}"
+
+            # Import Agent class to create sub-agent
+            from swarms.structs.agent import Agent
+
+            # Create sub-agent with the same LLM as parent
+            sub_agent = Agent(
+                id=agent_id,
+                agent_name=agent_name,
+                agent_description=agent_description,
+                system_prompt=system_prompt,  # Use custom system prompt if provided
+                model_name=agent.model_name,
+                max_loops=1,
+                print_on=False,  # Reduce noise from sub-agents
+            )
+
+            # Cache the sub-agent
+            agent.sub_agents[agent_id] = {
+                "agent": sub_agent,
+                "name": agent_name,
+                "description": agent_description,
+                "system_prompt": system_prompt,
+                "created_at": str(
+                    __import__("datetime").datetime.now()
+                ),
+            }
+
+            created_agents.append(f"{agent_name} (ID: {agent_id})")
+
+            if agent.verbose:
+                logger.info(
+                    f"Created sub-agent: {agent_name} with ID {agent_id}"
+                )
+
+        # Add to memory
+        result_msg = (
+            f"Successfully created {len(created_agents)} sub-agent(s): "
+            + ", ".join(created_agents)
+        )
+        agent.short_memory.add(
+            role="Sub-Agent Management",
+            content=result_msg,
+        )
+
+        return result_msg
+
+    except Exception as e:
+        error_msg = f"Error creating sub-agents: {str(e)}"
+        logger.error(error_msg)
+        agent.short_memory.add(
+            role="Sub-Agent Management",
+            content=f"Error: {error_msg}",
+        )
+        return error_msg
+
+
+def assign_task_tool(
+    agent: Any,
+    assignments: List[Dict[str, str]],
+    wait_for_completion: bool = True,
+    **kwargs,
+) -> str:
+    """
+    Assign tasks to one or more sub-agents. Tasks are executed asynchronously.
+
+    Args:
+        agent: The main agent instance
+        assignments: List of task assignments with agent_id and task
+        wait_for_completion: Whether to wait for all tasks to complete
+        **kwargs: Additional arguments
+
+    Returns:
+        str: Results from all sub-agents or error message
+    """
+    try:
+        # Check if sub_agents exist
+        if not hasattr(agent, "sub_agents") or not agent.sub_agents:
+            return "Error: No sub-agents have been created. Use create_sub_agent first."
+
+        # Validate all agent IDs exist
+        for assignment in assignments:
+            agent_id = assignment.get("agent_id")
+            if agent_id not in agent.sub_agents:
+                return f"Error: Sub-agent with ID '{agent_id}' not found. Available agents: {list(agent.sub_agents.keys())}"
+
+        # Prepare tasks for async execution
+        async def run_agent_task(
+            sub_agent_data: Dict, task: str, task_id: str
+        ):
+            """Run a single agent task asynchronously."""
+            try:
+                sub_agent = sub_agent_data["agent"]
+                result = await asyncio.to_thread(sub_agent.run, task)
+                return {
+                    "agent_id": sub_agent.id,
+                    "agent_name": sub_agent_data["name"],
+                    "task_id": task_id,
+                    "status": "success",
+                    "result": result,
+                }
+            except Exception as e:
+                return {
+                    "agent_id": sub_agent.id,
+                    "agent_name": sub_agent_data["name"],
+                    "task_id": task_id,
+                    "status": "error",
+                    "error": str(e),
+                }
+
+        async def run_all_tasks():
+            """Run all tasks concurrently."""
+            tasks = []
+            for idx, assignment in enumerate(assignments):
+                agent_id = assignment.get("agent_id")
+                task = assignment.get("task")
+                task_id = assignment.get("task_id", f"task-{idx + 1}")
+
+                sub_agent_data = agent.sub_agents[agent_id]
+                tasks.append(
+                    run_agent_task(sub_agent_data, task, task_id)
+                )
+
+            return await asyncio.gather(*tasks)
+
+        # Execute tasks
+        if wait_for_completion:
+            # Run in event loop
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+            results = loop.run_until_complete(run_all_tasks())
+
+            # Format results
+            result_lines = [
+                f"Completed {len(results)} task assignment(s):\n"
+            ]
+            for result in results:
+                if result["status"] == "success":
+                    result_lines.append(
+                        f"\n[{result['agent_name']}] Task {result['task_id']}:"
+                    )
+                    result_lines.append(
+                        f"Result: {result['result']}\n"
+                    )
+                else:
+                    result_lines.append(
+                        f"\n[{result['agent_name']}] Task {result['task_id']} FAILED:"
+                    )
+                    result_lines.append(f"Error: {result['error']}\n")
+
+            result_msg = "\n".join(result_lines)
+
+            # Add to memory
+            agent.short_memory.add(
+                role="Sub-Agent Execution",
+                content=result_msg,
+            )
+
+            if agent.verbose:
+                logger.info(
+                    f"Completed {len(results)} sub-agent task(s)"
+                )
+
+            return result_msg
+        else:
+            # Fire and forget
+            asyncio.create_task(run_all_tasks())
+            return f"Dispatched {len(assignments)} task(s) to sub-agents (async mode)"
+
+    except Exception as e:
+        error_msg = f"Error assigning tasks to sub-agents: {str(e)}"
+        logger.error(error_msg)
+        agent.short_memory.add(
+            role="Sub-Agent Execution",
+            content=f"Error: {error_msg}",
+        )
+        return error_msg
+
+
 # ============================================================================
 # CONSTANTS
 # ============================================================================
+
 
 # Maximum iterations to prevent infinite loops
 MAX_PLANNING_ATTEMPTS = 5

@@ -18,7 +18,6 @@ error handling, progress feedback, and user-friendly output formatting.
 
 import argparse
 import os
-import webbrowser
 from typing import Any, Dict, List, Optional, Union
 
 from dotenv import load_dotenv
@@ -761,8 +760,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         "load-markdown",
         "agent",
         "chat",
-        "auto-upgrade",
-        "book-call",
+        "upgrade",
         "autoswarm",
         "setup-check",
         "llm-council",
@@ -1357,14 +1355,14 @@ def handle_chat(args: argparse.Namespace) -> Optional[Agent]:
 
     Initializes and runs an interactive chat agent with optimized defaults
     for conversation. The agent is configured for interactive use with
-    autonomous loops enabled.
+    autonomous loops enabled (max_loops="auto").
 
     Args:
         args: Parsed command line arguments containing:
             - name: Optional agent name (default: "Swarms Agent")
             - description: Optional agent description
             - system_prompt: Optional custom system prompt
-            - interactive: Enable interactive mode (default: True)
+            - task: Optional initial task to start the conversation
 
     Returns:
         Optional[Agent]: The initialized chat agent instance, or None if
@@ -1377,66 +1375,42 @@ def handle_chat(args: argparse.Namespace) -> Optional[Agent]:
     Note:
         The chat agent is optimized for conversation with dynamic context
         window and temperature enabled, and uses autonomous loops for
-        continuous interaction.
+        continuous interaction. If no initial task is provided, the agent
+        will prompt for input interactively.
     """
     try:
         console.print(
             "[yellow]💬 Initializing chat agent...[/yellow]"
         )
 
-        # Create progress display
-        progress = Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
+        # Get parameters with defaults - handle None values
+        name = getattr(args, "name", None) or "Swarms Agent"
+        description = (
+            getattr(args, "description", None)
+            or "A Swarms agent that can chat with the user."
+        )
+        system_prompt = getattr(args, "system_prompt", None)
+        task = getattr(args, "task", None)
+
+        console.print(
+            f"[cyan]✓ Starting chat with agent: {name}[/cyan]"
         )
 
-        with progress:
-            # Add initial task
-            init_task = progress.add_task(
-                "Initializing chat agent...", total=None
-            )
-
-            # Get parameters with defaults
-            name = getattr(args, "name", "Swarms Agent")
-            description = getattr(
-                args,
-                "description",
-                "A Swarms agent that can chat with the user.",
-            )
-            system_prompt = getattr(args, "system_prompt", None)
-            interactive = getattr(args, "interactive", True)
-
-            # Update progress
-            progress.update(
-                init_task,
-                description="Creating chat agent...",
-            )
-
-            # Create and run the chat agent
-            result = auto_chat_agent(
-                name=name,
-                description=description,
-                system_prompt=system_prompt,
-                interactive=interactive,
-            )
-
-            # Update progress on completion
-            progress.update(
-                init_task,
-                description="Chat agent ready!",
-                completed=True,
-            )
+        # Create and run the chat agent (no progress spinner to avoid blocking input)
+        result = auto_chat_agent(
+            name=name,
+            description=description,
+            system_prompt=system_prompt,
+            task=task,
+        )
 
         if result:
             console.print(
-                "\n[bold green]✓ Chat agent initialized successfully![/bold green]"
+                "\n[bold green]✓ Chat session completed![/bold green]"
             )
             return result
         else:
-            console.print(
-                "[yellow]⚠ Chat agent initialized but returned no result.[/yellow]"
-            )
+            console.print("[yellow]⚠ Chat session ended.[/yellow]")
             return None
 
     except Exception as e:
@@ -1479,8 +1453,8 @@ def route_command(args: argparse.Namespace) -> None:
         "load-markdown": handle_load_markdown,
         "agent": handle_agent,
         "chat": handle_chat,
-        "book-call": lambda args: webbrowser.open(
-            "https://cal.com/swarms/swarms-strategy-session"
+        "upgrade": lambda args: os.system(
+            "pip install --upgrade swarms"
         ),
         "autoswarm": handle_autoswarm,
         "setup-check": lambda args: run_setup_check(

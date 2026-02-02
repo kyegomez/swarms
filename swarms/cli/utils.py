@@ -441,8 +441,7 @@ def create_command_table() -> Table:
             "chat",
             "Start an interactive chat agent with optimized defaults",
         ),
-        ("auto-upgrade", "Update Swarms to the latest version"),
-        ("book-call", "Schedule a strategy session with our team"),
+        ("upgrade", "Update Swarms to the latest version"),
         ("autoswarm", "Generate and execute an autonomous swarm"),
         (
             "setup-check",
@@ -559,22 +558,15 @@ def create_detailed_command_table() -> Table:
         {
             "cmd": "chat",
             "category": "Chat",
-            "desc": "Start an interactive chat agent with optimized defaults for conversation",
-            "usage": "swarms chat [--name 'Chat Agent'] [--system-prompt 'You are helpful']",
-            "args": "--name, --description, --system-prompt, --interactive",
+            "desc": "Start an interactive chat agent with optimized defaults for conversation (max_loops='auto')",
+            "usage": "swarms chat [--task 'Hello'] [--name 'Chat Agent'] [--system-prompt 'You are helpful']",
+            "args": "--task (optional), --name, --description, --system-prompt",
         },
         {
-            "cmd": "auto-upgrade",
+            "cmd": "upgrade",
             "category": "Maintenance",
             "desc": "Update Swarms to latest version",
-            "usage": "swarms auto-upgrade",
-            "args": "None",
-        },
-        {
-            "cmd": "book-call",
-            "category": "Support",
-            "desc": "Schedule a strategy session",
-            "usage": "swarms book-call",
+            "usage": "swarms upgrade",
             "args": "None",
         },
         {
@@ -755,14 +747,7 @@ def show_features():
             "feature": "Package Upgrade",
             "category": "Maintenance",
             "desc": "Update Swarms to the latest version",
-            "command": "swarms auto-upgrade",
-            "params": "None",
-        },
-        {
-            "feature": "Support Booking",
-            "category": "Support",
-            "desc": "Schedule a strategy session with the Swarms team",
-            "command": "swarms book-call",
+            "command": "swarms upgrade",
             "params": "None",
         },
         {
@@ -866,25 +851,22 @@ def create_commands_parameters_table() -> Table:
     table.add_column(
         "Command",
         style=f"bold {COLORS['accent']}",
-        width=18,
-        no_wrap=True,
+        min_width=15,
+        no_wrap=False,
     )
     table.add_column(
         "Required Parameters",
         style="bold red",
-        width=35,
         no_wrap=False,
     )
     table.add_column(
         "Optional Parameters",
         style="dim yellow",
-        width=50,
         no_wrap=False,
     )
     table.add_column(
         "Description",
         style="white",
-        width=40,
         no_wrap=False,
     )
 
@@ -934,8 +916,8 @@ def create_commands_parameters_table() -> Table:
         {
             "cmd": "chat",
             "required": "None",
-            "optional": "--name, --description, --system-prompt, --interactive (default: True)",
-            "desc": "Start an interactive chat agent with optimized defaults",
+            "optional": "--task, --name, --description, --system-prompt",
+            "desc": "Start an interactive chat agent with optimized defaults (max_loops='auto')",
         },
         {
             "cmd": "autoswarm",
@@ -968,13 +950,7 @@ def create_commands_parameters_table() -> Table:
             "desc": "Display all available features",
         },
         {
-            "cmd": "book-call",
-            "required": "None",
-            "optional": "None",
-            "desc": "Schedule a strategy session",
-        },
-        {
-            "cmd": "auto-upgrade",
+            "cmd": "upgrade",
             "required": "None",
             "optional": "None",
             "desc": "Update Swarms to latest version",
@@ -1004,7 +980,7 @@ def show_help():
         "[bold cyan]Quick Start Commands:[/bold cyan]\n"
         "• [yellow]swarms onboarding[/yellow] - Environment setup check\n"
         "• [yellow]swarms setup-check[/yellow] - Check your environment\n"
-        "• [yellow]swarms chat[/yellow] - Start interactive chat agent\n"
+        "• [yellow]swarms chat[/yellow] or [yellow]swarms chat --task 'Hello'[/yellow] - Start interactive chat agent\n"
         "• [yellow]swarms agent --name 'MyAgent' [--task 'Hello World'][/yellow] - Create agent (task optional, interactive by default)\n"
         "• [yellow]swarms autoswarm --task 'analyze data' --model gpt-4[/yellow] - Auto-generate swarm\n"
         "• [yellow]swarms llm-council --task 'Your question'[/yellow] - Run LLM Council\n"
