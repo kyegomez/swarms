@@ -579,7 +579,7 @@ class ConcurrentWorkflow:
                     )
 
             return result
-        except Exception as e:
+        except Exception:
             # Save conversation history on error
             if self.autosave and self.swarm_workspace_dir:
                 try:
@@ -644,7 +644,9 @@ class ConcurrentWorkflow:
         try:
             # Set default workspace directory if not set
             if not os.getenv("WORKSPACE_DIR"):
-                default_workspace = os.path.join(os.getcwd(), "agent_workspace")
+                default_workspace = os.path.join(
+                    os.getcwd(), "agent_workspace"
+                )
                 os.environ["WORKSPACE_DIR"] = default_workspace
                 # Clear the cache so get_workspace_dir() picks up the new value
                 get_workspace_dir.cache_clear()
@@ -686,7 +688,9 @@ class ConcurrentWorkflow:
             conversation_data = []
             if hasattr(self, "conversation") and self.conversation:
                 if hasattr(self.conversation, "conversation_history"):
-                    conversation_data = self.conversation.conversation_history
+                    conversation_data = (
+                        self.conversation.conversation_history
+                    )
                 elif hasattr(self.conversation, "to_dict"):
                     conversation_data = self.conversation.to_dict()
                 else:
@@ -694,11 +698,14 @@ class ConcurrentWorkflow:
 
                 # Create conversation history file path
                 conversation_path = os.path.join(
-                    self.swarm_workspace_dir, "conversation_history.json"
+                    self.swarm_workspace_dir,
+                    "conversation_history.json",
                 )
 
                 # Save conversation history as JSON
-                with open(conversation_path, "w", encoding="utf-8") as f:
+                with open(
+                    conversation_path, "w", encoding="utf-8"
+                ) as f:
                     json.dump(
                         conversation_data,
                         f,

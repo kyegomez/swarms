@@ -1,15 +1,19 @@
 # Sub-Agent Delegation Tutorial
 
-This tutorial teaches you how to use sub-agent delegation to create autonomous agents that can break down complex tasks and distribute work across specialized sub-agents running in parallel.
+This tutorial explains how to use sub-agent delegation with the autonomous agent. When `max_loops="auto"`, the main agent can create specialized sub-agents, assign tasks to them, and aggregate results. Sub-agents run concurrently via `asyncio` and are cached on the main agent for reuse.
 
 ## What are Sub-Agents?
 
-Sub-agents are specialized agent instances created dynamically by a main "coordinator" agent to handle specific subtasks. They enable:
+Sub-agents are agent instances created at runtime by the coordinator via the `create_sub_agent` tool. They are stored in the main agent's `sub_agents` dictionary and can be used repeatedly via `assign_task`. They provide:
 
-- **Parallel Task Execution**: Multiple sub-agents work simultaneously
-- **Domain Specialization**: Each sub-agent can focus on a specific area
-- **Dynamic Scaling**: Create as many sub-agents as needed for the task
-- **Reusability**: Sub-agents are cached and can handle multiple assignments
+- **Parallel execution**: Multiple sub-agents run at once using `asyncio.to_thread` and `asyncio.gather`
+
+- **Specialization**: Each sub-agent has its own `agent_name`, `agent_description`, and optional `system_prompt`
+
+- **Caching**: Sub-agents are keyed by ID (e.g. `sub-agent-{uuid}`) and reused across 
+assignments
+
+- **Same LLM**: Sub-agents use the parent's `model_name` and run with `max_loops=1`, `print_on=False`
 
 ## Prerequisites
 
@@ -34,10 +38,13 @@ The coordinator (main agent) is responsible for:
 
 ### Sub-Agents
 
-Sub-agents are created with:
-- **Name**: Descriptive identifier
-- **Description**: Role and capabilities
-- **System Prompt** (optional): Custom instructions
+Each sub-agent is created with:
+
+| Parameter          | Required? | Description                                                                                   |
+|--------------------|-----------|-----------------------------------------------------------------------------------------------|
+| `agent_name`       | Yes       | Descriptive identifier for the sub-agent                                                      |
+| `agent_description`| Yes       | Role and capabilities of the sub-agent                                                        |
+| `system_prompt`    | No        | Custom instructions for the sub-agent (if omitted, defaults to the agent description prompt)  |
 
 ## Quick Start Example
 
@@ -100,7 +107,7 @@ create_sub_agent({
 })
 ```
 
-**Result:** Each sub-agent is created, cached, and assigned a unique ID (e.g., `sub-agent-a1b2c3d4`)
+**Result:** Each sub-agent is created, cached in `agent.sub_agents`, and assigned a unique ID of the form `sub-agent-{uuid.uuid4().hex[:8]}` (e.g. `sub-agent-a1b2c3d4`). The handler returns a success message listing created agents and their IDs.
 
 ### Step 2: Agent Assigns Tasks
 
@@ -130,7 +137,7 @@ assign_task({
 })
 ```
 
-**Result:** All three sub-agents execute their tasks in parallel using `asyncio`
+**Result:** All sub-agents run concurrently via `asyncio.to_thread(sub_agent.run, task)` and `asyncio.gather`. When `wait_for_completion` is true (default), the tool returns formatted results; when false, it dispatches tasks and returns immediately (fire-and-forget).
 
 ### Step 3: Results Aggregation
 
@@ -151,46 +158,48 @@ Result: Renewable energy advances...
 
 ## Tool Parameters Reference
 
+The tools are defined in `swarms.structs.autonomous_loop_utils` and wired in the agent's autonomous planning tool handlers.
+
 ### create_sub_agent
 
-Creates one or more sub-agents for delegation.
+Creates one or more sub-agents and caches them on the main agent's `sub_agents` dictionary.
 
-**Parameters:**
+**Top-level parameters:**
 
-```python
-{
-    "agents": [  # Array of sub-agent specifications
-        {
-            "agent_name": str,           # Required: Name of the sub-agent
-            "agent_description": str,    # Required: Role and capabilities
-            "system_prompt": str         # Optional: Custom instructions
-        }
-    ]
-}
-```
+| Parameter | Type   | Required | Description |
+|-----------|--------|----------|-------------|
+| agents    | array  | Yes      | List of sub-agent specifications. Each item is an object with the fields below. |
 
-**Returns:** Success message with created agent IDs
+**Fields for each item in `agents`:**
+
+| Field               | Type   | Required | Description |
+|---------------------|--------|----------|-------------|
+| agent_name          | string | Yes      | Name of the sub-agent. |
+| agent_description   | string | Yes      | Role and capabilities of the sub-agent. |
+| system_prompt       | string | No       | Custom system prompt. If omitted, a default based on the agent description is used. |
+
+**Handler behavior (`create_sub_agent_tool`):** For each spec, a new `Agent` is created with `id=sub-agent-{uuid.uuid4().hex[:8]}`, `agent_name`, `agent_description`, `system_prompt`, the parent's `model_name`, `max_loops=1`, and `print_on=False`. The sub-agent is stored in `agent.sub_agents[agent_id]` with keys `agent`, `name`, `description`, `system_prompt`, `created_at`. Returns a success message listing created agents and their IDs.
 
 ### assign_task
 
-Assigns tasks to sub-agents for execution.
+Assigns tasks to one or more sub-agents. Tasks are run asynchronously via `asyncio.to_thread(sub_agent.run, task)` and gathered with `asyncio.gather`.
 
-**Parameters:**
+**Top-level parameters:**
 
-```python
-{
-    "assignments": [  # Array of task assignments
-        {
-            "agent_id": str,      # Required: Sub-agent ID from create_sub_agent
-            "task": str,          # Required: Task description
-            "task_id": str        # Optional: Identifier for tracking
-        }
-    ],
-    "wait_for_completion": bool  # Optional: Wait for results (default: true)
-}
-```
+| Parameter           | Type    | Required | Description |
+|---------------------|---------|----------|-------------|
+| assignments         | array   | Yes      | List of task assignments. Each item is an object with the fields below. |
+| wait_for_completion | boolean | No       | If true (default), wait for all tasks and return formatted results. If false, dispatch tasks and return immediately. |
 
-**Returns:** Results from all sub-agent executions
+**Fields for each item in `assignments`:**
+
+| Field     | Type   | Required | Description |
+|-----------|--------|----------|-------------|
+| agent_id  | string | Yes      | ID of the sub-agent (from `create_sub_agent` output). |
+| task      | string | Yes      | Task description for the sub-agent. |
+| task_id   | string | No       | Identifier for this assignment; defaults to `task-{idx + 1}`. |
+
+**Handler behavior (`assign_task_tool`):** Validates that `agent.sub_agents` exists and that each `agent_id` is in it. Runs each assignment concurrently. On success, each result has `status: "success"` and `result`; on error, `status: "error"` and `error`. When `wait_for_completion` is true, returns a formatted string of all results; otherwise returns a dispatch confirmation.
 
 ## Advanced Example
 
@@ -295,158 +304,35 @@ Create sub-agents for each role and compile a comprehensive plan.
 """
 ```
 
-## Best Practices
-
-### 1. Clear Sub-Agent Descriptions
-
-Provide detailed descriptions for better specialization:
-
-```python
-{
-    "agent_name": "Financial-Analyst",
-    "agent_description": "Expert financial analyst specializing in equity research, valuation models, and market trend analysis. Focuses on quantitative metrics and data-driven insights."
-}
-```
-
-### 2. Use Custom System Prompts
-
-Guide sub-agent behavior with specific instructions:
-
-```python
-{
-    "agent_name": "Code-Reviewer",
-    "agent_description": "Expert code reviewer focusing on best practices",
-    "system_prompt": "You are a senior code reviewer. Focus on: code quality, security vulnerabilities, performance optimization, and maintainability. Provide actionable feedback with examples."
-}
-```
-
-### 3. Task Clarity
-
-Be specific in task assignments:
-
-```python
-{
-    "agent_id": "sub-agent-123",
-    "task": "Analyze the Q4 2025 financial performance of tech companies, focusing on revenue growth, profit margins, and R&D spending. Provide comparison with previous quarters.",
-    "task_id": "q4-tech-analysis"
-}
-```
-
-### 4. Enable Logging
-
-Use `verbose=True` to monitor sub-agent activity:
-
-```python
-coordinator = Agent(
-    agent_name="Coordinator",
-    model_name="gpt-4o",
-    max_loops="auto",
-    verbose=True,  # See sub-agent creation and task assignment
-)
-```
-
 ## Troubleshooting
 
-### Issue: Sub-agents not created
+### Sub-agents not created
 
-**Solution:** Ensure `selected_tools="all"` or include both tools explicitly:
+Ensure `selected_tools="all"` or include `"create_sub_agent"` and `"assign_task"` in the selected tools list. If the agent returns "Error: Each agent must have agent_name and agent_description", every entry in the `agents` array must have both `agent_name` and `agent_description`.
 
-```python
-coordinator = Agent(
-    agent_name="Coordinator",
-    model_name="gpt-4o",
-    max_loops="auto",
-    selected_tools=["create_sub_agent", "assign_task", "complete_task", ...]
-)
-```
+### No sub-agents have been created
 
-### Issue: Tasks not executing in parallel
+If `assign_task` returns "Error: No sub-agents have been created. Use create_sub_agent first.", call `create_sub_agent` before `assign_task`. The main agent must create and cache sub-agents before assigning work.
 
-**Solution:** Verify `wait_for_completion=True` (default) for synchronous results. Sub-agents always run concurrently using asyncio.
+### Sub-agent not found
 
-### Issue: Sub-agent not found error
+If you see "Error: Sub-agent with ID '...' not found. Available agents: [...]", the `agent_id` in the assignment does not match any key in `agent.sub_agents`. Use the exact IDs returned from `create_sub_agent` (e.g. `sub-agent-a1b2c3d4`).
 
-**Solution:** Ensure you're using the correct agent ID returned from `create_sub_agent`. The coordinator handles this automatically.
+### Tasks not waiting for completion
+
+When `wait_for_completion` is true (default), the tool waits for all sub-agent runs and returns formatted results. When false, it dispatches tasks and returns "Dispatched N task(s) to sub-agents (async mode)" without waiting.
 
 ## Performance Considerations
 
 ### Optimal Number of Sub-Agents
 
-- **3-5 sub-agents**: Ideal for most tasks
-- **5-10 sub-agents**: Good for complex multi-domain projects
-- **10+ sub-agents**: May increase coordination overhead
+| Number of Sub-Agents | Recommended Use                                |
+|----------------------|------------------------------------------------|
+| 3-5                  | Ideal for most tasks                           |
+| 5-10                 | Good for complex multi-domain projects         |
+| 10+                  | May increase coordination overhead             |
 
-### Resource Usage
-
-Each sub-agent:
-- Runs with `max_loops=1` by default
-- Uses same LLM as parent agent
-- Has independent memory and state
-- Executes concurrently (not sequentially)
 
 ## Summary
 
-Sub-agent delegation enables:
-
-✅ **Parallel Execution** - Multiple tasks run simultaneously  
-✅ **Specialization** - Domain-specific agents for better results  
-✅ **Scalability** - Handle complex tasks by distributing work  
-✅ **Automation** - Coordinator manages everything automatically  
-✅ **Efficiency** - Faster completion through concurrent processing
-
-## Next Steps
-
-- Explore [Agent Handoffs Tutorial](./agent_handoff_tutorial.md) for cross-agent communication
-- Learn about [Autonomous Agent Tools](../autonomous_looper_tools.md)
-- See [Multi-Agent Architectures](../../swarms/concept/swarm_architectures.md) for more patterns
-
-## Complete Working Example
-
-```python
-from swarms.structs.agent import Agent
-import os
-
-# Set your API key
-os.environ["OPENAI_API_KEY"] = "your-api-key"
-
-# Create coordinator agent
-coordinator = Agent(
-    agent_name="Research-Team-Coordinator",
-    model_name="gpt-4o",
-    max_loops="auto",
-    interactive=False,
-    verbose=True,
-    selected_tools="all",
-)
-
-# Define comprehensive research task
-task = """
-Conduct a comprehensive technology market analysis:
-
-1. Create three specialized sub-agents:
-   - AI/ML Market Analyst
-   - Cloud Computing Analyst  
-   - Cybersecurity Analyst
-
-2. Assign each sub-agent to research:
-   - Current market size and growth rate
-   - Key players and market leaders
-   - Emerging trends and innovations
-   - Future outlook for next 3 years
-
-3. Compile all findings into a unified market analysis report
-   with cross-domain insights and investment recommendations.
-"""
-
-# Execute the task
-print("Starting research coordination...")
-result = coordinator.run(task)
-
-# Display results
-print("\n" + "="*80)
-print("FINAL REPORT")
-print("="*80)
-print(result)
-```
-
-Run this example to see sub-agent delegation in action!
+Sub-agent delegation allows an autonomous agent to divide complex tasks among specialized sub-agents, improving efficiency and scalability. When enabled, the main agent can dynamically create sub-agents with defined roles and assign them tasks to work on in parallel. Sub-agents are managed and reused by the coordinator, and their results are gathered and synthesized for the overall task outcome. This approach is ideal for scenarios requiring concurrent execution, expertise in multiple domains, or efficient handling of multi-step problems.

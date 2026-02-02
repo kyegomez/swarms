@@ -14,7 +14,7 @@ from swarms import Agent, ConcurrentWorkflow
 
 def main():
     """Example: Using ConcurrentWorkflow with autosave enabled."""
-    
+
     # Create worker agents
     writer = Agent(
         agent_name="Writer",
@@ -23,7 +23,7 @@ def main():
         max_loops=1,
         verbose=False,
     )
-    
+
     editor = Agent(
         agent_name="Editor",
         agent_description="Content editor",
@@ -31,7 +31,7 @@ def main():
         max_loops=1,
         verbose=False,
     )
-    
+
     # Create workflow with autosave enabled
     # No need to set WORKSPACE_DIR - it defaults to 'agent_workspace' automatically!
     workflow = ConcurrentWorkflow(
@@ -40,16 +40,20 @@ def main():
         agents=[writer, editor],
         autosave=True,  # Enable autosave - conversation will be saved automatically
     )
-    
+
     print(f"Workspace directory: {workflow.swarm_workspace_dir}")
-    
+
     # Run a task
-    result = workflow.run("Write a short paragraph about artificial intelligence.")
-    
+    result = workflow.run(
+        "Write a short paragraph about artificial intelligence."
+    )
+
     # Conversation history is automatically saved to:
     # {workspace_dir}/swarms/ConcurrentWorkflow/content-workflow-{timestamp}/conversation_history.json
-    print(f"\n✅ Task completed! Conversation saved to:")
-    print(f"   {workflow.swarm_workspace_dir}/conversation_history.json")
+    print("\n✅ Task completed! Conversation saved to:")
+    print(
+        f"   {workflow.swarm_workspace_dir}/conversation_history.json"
+    )
 
 
 if __name__ == "__main__":

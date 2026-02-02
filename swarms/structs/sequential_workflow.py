@@ -348,7 +348,9 @@ class SequentialWorkflow:
         try:
             # Set default workspace directory if not set
             if not os.getenv("WORKSPACE_DIR"):
-                default_workspace = os.path.join(os.getcwd(), "agent_workspace")
+                default_workspace = os.path.join(
+                    os.getcwd(), "agent_workspace"
+                )
                 os.environ["WORKSPACE_DIR"] = default_workspace
                 # Clear the cache so get_workspace_dir() picks up the new value
                 get_workspace_dir.cache_clear()
@@ -388,12 +390,27 @@ class SequentialWorkflow:
         try:
             # Get conversation history from agent_rearrange
             conversation_data = []
-            if hasattr(self, "agent_rearrange") and self.agent_rearrange:
-                if hasattr(self.agent_rearrange, "conversation") and self.agent_rearrange.conversation:
-                    if hasattr(self.agent_rearrange.conversation, "conversation_history"):
-                        conversation_data = self.agent_rearrange.conversation.conversation_history
-                    elif hasattr(self.agent_rearrange.conversation, "to_dict"):
-                        conversation_data = self.agent_rearrange.conversation.to_dict()
+            if (
+                hasattr(self, "agent_rearrange")
+                and self.agent_rearrange
+            ):
+                if (
+                    hasattr(self.agent_rearrange, "conversation")
+                    and self.agent_rearrange.conversation
+                ):
+                    if hasattr(
+                        self.agent_rearrange.conversation,
+                        "conversation_history",
+                    ):
+                        conversation_data = (
+                            self.agent_rearrange.conversation.conversation_history
+                        )
+                    elif hasattr(
+                        self.agent_rearrange.conversation, "to_dict"
+                    ):
+                        conversation_data = (
+                            self.agent_rearrange.conversation.to_dict()
+                        )
                     else:
                         conversation_data = []
 
