@@ -328,6 +328,7 @@ nav:
       - Overview: "swarms_tools/overview.md"
       - BaseTool Reference: "swarms/tools/base_tool.md"
       - MCP Client Utils: "swarms/tools/mcp_client_call.md"
+      - Run Bash Tool Tutorial: "examples/autonomous_looper_run_bash_tutorial.md"
 
       - Vertical Tools:
         - Finance: "swarms_tools/finance.md"

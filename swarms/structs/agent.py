@@ -77,6 +77,7 @@ from swarms.structs.autonomous_loop_utils import (
     list_directory_tool,
     read_file_tool,
     respond_to_user_tool,
+    run_bash_tool,
     update_file_tool,
 )
 from swarms.structs.conversation import Conversation
@@ -276,8 +277,8 @@ class Agent:
             Example: skills_dir="./skills" loads from ./skills/*/SKILL.md
         selected_tools (Union[str, List[str]]): Tools to enable for the autonomous looper when max_loops="auto".
             Available tools: "create_plan", "think", "subtask_done", "complete_task", "respond_to_user",
-            "create_file", "update_file", "read_file", "list_directory", "delete_file", "create_sub_agent",
-            "assign_task".
+            "create_file", "update_file", "read_file", "list_directory", "delete_file", "run_bash",
+            "create_sub_agent", "assign_task".
             Defaults to "all" (all tools enabled). Pass a list of tool names to restrict tools, or "all"
             for unrestricted access. Use this to control which tools the agent can use during autonomous execution.
 
@@ -2295,6 +2296,9 @@ class Agent:
                     self, **kwargs
                 ),
                 "delete_file": lambda **kwargs: delete_file_tool(
+                    self, **kwargs
+                ),
+                "run_bash": lambda **kwargs: run_bash_tool(
                     self, **kwargs
                 ),
                 "create_sub_agent": lambda **kwargs: create_sub_agent_tool(

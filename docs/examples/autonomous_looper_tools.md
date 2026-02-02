@@ -25,6 +25,9 @@ The `selected_tools` parameter gives you fine-grained control over which tools t
 | `read_file` | Read the contents of a file |
 | `list_directory` | List files and directories in a path |
 | `delete_file` | Delete a file (use with caution) |
+| `run_bash` | Execute bash/shell commands on the terminal (returns stdout/stderr) |
+| `create_sub_agent` | Create specialized sub-agents for delegation |
+| `assign_task` | Assign tasks to sub-agents for asynchronous execution |
 
 ## Usage
 
@@ -75,6 +78,30 @@ agent = Agent(
         "update_file",
         "read_file",
         "list_directory",
+    ],
+)
+```
+
+### File Operations + Terminal (run_bash)
+
+Enable file operations and terminal command execution:
+
+```python
+agent = Agent(
+    agent_name="File-and-Terminal-Agent",
+    model_name="anthropic/claude-sonnet-4-5",
+    max_loops="auto",
+    selected_tools=[
+        "create_plan",
+        "think",
+        "subtask_done",
+        "complete_task",
+        "respond_to_user",
+        "create_file",
+        "update_file",
+        "read_file",
+        "list_directory",
+        "run_bash",
     ],
 )
 ```
@@ -153,6 +180,28 @@ analysis_agent = Agent(
 )
 ```
 
+### Terminal / DevOps Agent (With run_bash)
+For agents that need to run shell commands (e.g. scripts, CLI tools, git):
+
+```python
+terminal_agent = Agent(
+    agent_name="Terminal-Agent",
+    max_loops="auto",
+    selected_tools=[
+        "create_plan",
+        "think",
+        "subtask_done",
+        "complete_task",
+        "respond_to_user",
+        "read_file",
+        "list_directory",
+        "run_bash",
+    ],
+)
+```
+
+See [Run Bash Tool Tutorial](autonomous_looper_run_bash_tutorial.md) for a step-by-step guide.
+
 ## Best Practices
 
 1. **Start Restrictive**: Begin with a minimal set of tools and add more as needed
@@ -169,6 +218,7 @@ analysis_agent = Agent(
 
 ## See Also
 
+- [Run Bash Tool Tutorial](autonomous_looper_run_bash_tutorial.md) – Using `run_bash` to execute terminal commands
 - [Autonomous Loop Documentation](./autonomous_loop.md)
 - [Agent Configuration Guide](./agent_configuration.md)
 - [Tool System Overview](./tools.md)

@@ -15,6 +15,7 @@ Available tools:
 - read_file: Read file contents
 - list_directory: List directory contents
 - delete_file: Delete files
+- run_bash: Execute bash/shell commands on the terminal
 """
 
 from swarms import Agent
@@ -47,10 +48,10 @@ agent_planning_only = Agent(
     ],
 )
 
-# Example 3: Agent with file operations but no planning
+# Example 3: Agent with file operations and terminal (bash) access
 agent_file_ops = Agent(
     agent_name="File-Operations-Agent",
-    agent_description="Agent with file operations capabilities",
+    agent_description="Agent with file operations and terminal execution capabilities",
     model_name="anthropic/claude-sonnet-4-5",
     dynamic_temperature_enabled=True,
     max_loops="auto",
@@ -65,6 +66,7 @@ agent_file_ops = Agent(
         "update_file",
         "read_file",
         "list_directory",
+        "run_bash",
     ],
 )
 

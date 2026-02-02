@@ -20,12 +20,14 @@ Available Tools:
 - read_file: Read file contents
 - list_directory: List directory contents
 - delete_file: Delete files
+- run_bash: Execute bash/shell commands on the terminal
 - create_sub_agent: Create specialized sub-agents for delegation
 - assign_task: Assign tasks to sub-agents asynchronously
 """
 
 import asyncio
 import os
+import subprocess
 from typing import Any, Dict, List
 from loguru import logger
 
@@ -389,6 +391,27 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
                         },
                     },
                     "required": ["file_path"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "run_bash",
+                "description": "Execute a bash/shell command on the terminal. Use this to run system commands, scripts, or any shell operations. Returns stdout and stderr.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "command": {
+                            "type": "string",
+                            "description": "The bash/shell command to execute (e.g. 'ls -la', 'python script.py')",
+                        },
+                        "timeout_seconds": {
+                            "type": "integer",
+                            "description": "Maximum seconds to wait for the command (default: 60). Use to avoid hanging on long-running commands.",
+                        },
+                    },
+                    "required": ["command"],
                 },
             },
         },
@@ -797,6 +820,79 @@ def delete_file_tool(agent: Any, file_path: str, **kwargs) -> str:
         logger.error(error_msg)
         agent.short_memory.add(
             role="File Operations",
+            content=f"Error: {error_msg}",
+        )
+        return error_msg
+
+
+def run_bash_tool(
+    agent: Any, command: str, timeout_seconds: int = 60, **kwargs
+) -> str:
+    """
+    Execute a bash/shell command on the terminal.
+
+    Args:
+        agent: The agent instance
+        command: The bash/shell command to execute
+        timeout_seconds: Maximum seconds to wait (default: 60)
+        **kwargs: Additional arguments
+
+    Returns:
+        str: Command stdout and stderr, or error message
+    """
+    try:
+        # Run in process cwd (where the user started the script) so commands like
+        # ls -la and python script.py see the project directory, not the agent workspace.
+        result = subprocess.run(
+            command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+            cwd=None,  # use process current working directory
+            encoding="utf-8",
+            errors="replace",
+        )
+
+        stdout = result.stdout or ""
+        stderr = result.stderr or ""
+
+        output_parts = []
+        if stdout:
+            output_parts.append(f"stdout:\n{stdout}")
+        if stderr:
+            output_parts.append(f"stderr:\n{stderr}")
+        if not output_parts:
+            output_parts.append("(no output)")
+
+        result_msg = (
+            f"Command exited with code {result.returncode}\n"
+            + "\n".join(output_parts)
+        )
+
+        # Add to memory
+        agent.short_memory.add(
+            role="Terminal",
+            content=f"Executed: {command[:100]}{'...' if len(command) > 100 else ''} -> exit {result.returncode}",
+        )
+
+        if agent.verbose:
+            logger.info(f"Executed bash command: {command[:80]}...")
+
+        return result_msg.strip()
+    except subprocess.TimeoutExpired:
+        error_msg = f"Error: Command timed out after {timeout_seconds} seconds"
+        logger.error(error_msg)
+        agent.short_memory.add(
+            role="Terminal",
+            content=f"Timeout: {command[:80]}...",
+        )
+        return error_msg
+    except Exception as e:
+        error_msg = f"Error executing command: {str(e)}"
+        logger.error(error_msg)
+        agent.short_memory.add(
+            role="Terminal",
             content=f"Error: {error_msg}",
         )
         return error_msg

@@ -143,7 +143,7 @@ The `Agent` class establishes a conversational loop with a language model, allow
 | `mode` | `Literal["interactive", "fast", "standard"]` | Execution mode: "interactive" for real-time interaction, "fast" for optimized performance, "standard" for default behavior. |
 | `publish_to_marketplace` | `bool` | Boolean indicating whether to publish the agent's prompt to the Swarms marketplace. |
 | `marketplace_prompt_id` | `Optional[str]` | Unique UUID identifier of a prompt from the Swarms marketplace. When provided, the agent will automatically fetch and load the prompt as the system prompt. |
-| `selected_tools` | `Optional[Union[str, List[str]]]` | Controls which tools are available in autonomous mode (`max_loops="auto"`). Use `"all"` for all tools or provide a list of specific tool names. Available tools: `"create_plan"`, `"think"`, `"subtask_done"`, `"complete_task"`, `"respond_to_user"`, `"create_file"`, `"update_file"`, `"read_file"`, `"list_directory"`, `"delete_file"`, `"create_sub_agent"`, `"assign_task"`. |
+| `selected_tools` | `Optional[Union[str, List[str]]]` | Controls which tools are available in autonomous mode (`max_loops="auto"`). Use `"all"` for all tools or provide a list of specific tool names. Available tools: `"create_plan"`, `"think"`, `"subtask_done"`, `"complete_task"`, `"respond_to_user"`, `"create_file"`, `"update_file"`, `"read_file"`, `"list_directory"`, `"delete_file"`, `"run_bash"`, `"create_sub_agent"`, `"assign_task"`. |
 
 ## `Agent` Methods
 
@@ -848,6 +848,7 @@ When `max_loops="auto"` and `interactive=False`, the agent has access to special
 | `read_file` | Read the contents of a file | `file_path` (str) |
 | `list_directory` | List files and directories in a specified path | `directory_path` (str, optional) |
 | `delete_file` | Delete a file (with safety checks) | `file_path` (str) |
+| `run_bash` | Execute a bash/shell command on the terminal (returns stdout/stderr) | `command` (str), `timeout_seconds` (int, optional, default 60) |
 | `create_sub_agent` | Create specialized sub-agents for task delegation | `agents` (array): list of agent specs with `agent_name` (str), `agent_description` (str), `system_prompt` (str, optional) |
 | `assign_task` | Assign tasks to sub-agents for asynchronous execution | `assignments` (array): list with `agent_id` (str), `task` (str), `task_id` (str, optional); `wait_for_completion` (bool, optional) |
 
