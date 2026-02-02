@@ -386,6 +386,7 @@ nav:
         - Selecting PreConfigured Tools: "examples/autonomous_looper_tools.md"
       - Vision:
         - Agents with Vision: "swarms/examples/vision_processing.md"
+        - Base64 Image Handling: "swarms/examples/base64_image.md"
         - Agent with Multiple Images: "swarms/examples/multiple_images.md"
       - Utils:
         - Agent with Streaming: "examples/agent_stream.md"
