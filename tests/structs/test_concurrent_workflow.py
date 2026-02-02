@@ -1,6 +1,9 @@
+import os
+import pytest
+
 from swarms import Agent
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
-import pytest
+from swarms.utils.workspace_utils import get_workspace_dir
 
 
 def test_concurrent_workflow_basic_execution():
@@ -397,6 +400,94 @@ def test_concurrent_workflow_team_collaboration():
         assert (
             "content" in r
         )  # Agent output is stored in 'content' field
+
+
+def test_concurrent_workflow_autosave_creates_workspace_dir(
+    monkeypatch, tmp_path
+):
+    """Test that ConcurrentWorkflow with autosave=True creates a workspace directory."""
+    get_workspace_dir.cache_clear()
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+
+    agent1 = Agent(
+        agent_name="Autosave-Concurrent-1",
+        agent_description="Agent for autosave test",
+        model_name="gpt-4o-mini",
+        max_loops=1,
+        verbose=False,
+        print_on=False,
+    )
+    agent2 = Agent(
+        agent_name="Autosave-Concurrent-2",
+        agent_description="Agent for autosave test",
+        model_name="gpt-4o-mini",
+        max_loops=1,
+        verbose=False,
+        print_on=False,
+    )
+
+    workflow = ConcurrentWorkflow(
+        name="Autosave-Concurrent-Workflow",
+        agents=[agent1, agent2],
+        max_loops=1,
+        autosave=True,
+        verbose=False,
+    )
+
+    assert workflow.autosave is True
+    assert workflow.swarm_workspace_dir is not None
+    assert os.path.isdir(workflow.swarm_workspace_dir)
+    assert "ConcurrentWorkflow" in workflow.swarm_workspace_dir
+    assert (
+        "Autosave-Concurrent-Workflow" in workflow.swarm_workspace_dir
+    )
+
+    get_workspace_dir.cache_clear()
+
+
+def test_concurrent_workflow_autosave_saves_conversation_after_run(
+    monkeypatch, tmp_path
+):
+    """Test that ConcurrentWorkflow saves conversation_history.json after run when autosave=True."""
+    get_workspace_dir.cache_clear()
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+
+    agent1 = Agent(
+        agent_name="Autosave-Run-Concurrent-1",
+        agent_description="Agent for autosave run test",
+        model_name="gpt-4o-mini",
+        max_loops=1,
+        verbose=False,
+        print_on=False,
+    )
+    agent2 = Agent(
+        agent_name="Autosave-Run-Concurrent-2",
+        agent_description="Agent for autosave run test",
+        model_name="gpt-4o-mini",
+        max_loops=1,
+        verbose=False,
+        print_on=False,
+    )
+
+    workflow = ConcurrentWorkflow(
+        name="Autosave-Run-Concurrent-Workflow",
+        agents=[agent1, agent2],
+        max_loops=1,
+        autosave=True,
+        verbose=False,
+    )
+
+    result = workflow.run("Say hello in one short sentence.")
+    assert result is not None
+
+    conversation_path = os.path.join(
+        workflow.swarm_workspace_dir, "conversation_history.json"
+    )
+    assert os.path.isfile(
+        conversation_path
+    ), f"Expected conversation_history.json at {conversation_path}"
+
+    get_workspace_dir.cache_clear()
 
 
 if __name__ == "__main__":
