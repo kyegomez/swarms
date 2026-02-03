@@ -377,6 +377,7 @@ nav:
       - Autonomous Agent: "swarms/examples/autonomous_agent_tutorial.md"
       - Agent Handoff: "swarms/examples/agent_handoff_tutorial.md"
       - Sub-Agent Delegation: "swarms/examples/sub_agent_tutorial.md"
+      - External Task Delegation (Pinchwork): "examples/pinchwork_external_tasks.md"
       - Autosave: "swarms/examples/autosave_tutorial.md"
       - Tool Usage:
         - Agents with Vision and Tool Usage: "swarms/examples/vision_tools.md"
