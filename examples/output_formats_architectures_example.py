@@ -43,7 +43,7 @@ def sequential_workflow_example() -> None:
     agent_a = Agent(llm="gpt-4o-mini", output_type="dict-final")
     agent_b = Agent(llm="gpt-4o-mini", output_type="final")
 
-    seq = SequentialWorkflow([agent_a, agent_b])
+    seq = SequentialWorkflow(agents=[agent_a, agent_b])
     out = seq.run("Create a short marketing blurb for a new smartwatch.")
     print("Sequential workflow output:", out)
 
@@ -52,7 +52,7 @@ def concurrent_workflow_example() -> None:
     from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 
     workers = [Agent(llm="gpt-4o-mini", output_type="dict") for _ in range(3)]
-    cw = ConcurrentWorkflow(workers)
+    cw = ConcurrentWorkflow(agents=workers)
     result = cw.run("Analyze customer feedback and return top 3 themes.")
     print("Concurrent workflow result:", result)
 
