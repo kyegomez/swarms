@@ -70,7 +70,7 @@ class ConcurrentWorkflow:
         id: str = None,
         name: str = "ConcurrentWorkflow",
         description: str = "Execution of multiple agents concurrently",
-        agents: List[Union[Agent, Callable]] = None,
+        agents: List[Agent] = None,
         auto_save: bool = True,
         output_type: str = "dict-all-except-first",
         max_loops: int = 1,
