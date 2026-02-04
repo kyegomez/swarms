@@ -56,10 +56,10 @@ class SequentialWorkflow:
         Initialize a SequentialWorkflow instance.
 
         Args:
+            agents (List[Union[Agent, Callable]], optional): List of agents or callables to execute in sequence.
             id (str, optional): Unique identifier for the workflow. Defaults to "sequential_workflow".
             name (str, optional): Name of the workflow. Defaults to "SequentialWorkflow".
             description (str, optional): Description of the workflow. Defaults to a standard description.
-            agents (List[Union[Agent, Callable]], optional): List of agents or callables to execute in sequence.
             max_loops (int, optional): Maximum number of times to execute the workflow. Defaults to 1.
             output_type (OutputType, optional): Output format for the workflow. Defaults to "dict".
             shared_memory_system (callable, optional): Callable for shared memory management. Defaults to None.
