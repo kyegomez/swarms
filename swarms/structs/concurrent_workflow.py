@@ -67,10 +67,10 @@ class ConcurrentWorkflow:
 
     def __init__(
         self,
+        agents: List[Agent] = None,
         id: str = None,
         name: str = "ConcurrentWorkflow",
         description: str = "Execution of multiple agents concurrently",
-        agents: List[Agent] = None,
         auto_save: bool = True,
         output_type: str = "dict-all-except-first",
         max_loops: int = 1,

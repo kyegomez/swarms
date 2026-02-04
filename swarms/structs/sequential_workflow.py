@@ -40,10 +40,10 @@ class SequentialWorkflow:
 
     def __init__(
         self,
+        agents: List[Union[Agent, Callable]] = None,
         id: str = "sequential_workflow",
         name: str = "SequentialWorkflow",
         description: str = "Sequential Workflow, where agents are executed in a sequence.",
-        agents: List[Union[Agent, Callable]] = None,
         max_loops: int = 1,
         output_type: OutputType = "dict",
         shared_memory_system: callable = None,
