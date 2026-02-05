@@ -19,22 +19,22 @@ graph TD
 
 ## Attributes
 
-| Attribute        | Type          | Description                                      |
-|------------------|---------------|--------------------------------------------------|
-| `id`             | `str`         | Unique identifier for the workflow instance. Defaults to `"sequential_workflow"`. |
-| `name`           | `str`         | Human-readable name for the workflow. Defaults to `"SequentialWorkflow"`. |
-| `description`    | `str`         | Description of the workflow's purpose. |
-| `agents`         | `List[Union[Agent, Callable]]` | The list of agents or callables in the workflow. |
-| `max_loops`      | `int`         | Maximum number of times to execute the workflow. Defaults to `1`. |
-| `output_type`    | `OutputType`  | Format of the output from the workflow. Defaults to `"dict"`. |
-| `shared_memory_system` | `callable` | Optional callable for managing shared memory between agents. |
-| `multi_agent_collab_prompt` | `bool` | If True, appends a collaborative prompt to each agent's system prompt. |
-| `team_awareness` | `bool`        | Enables sequential awareness features (passed to internal `AgentRearrange`). Defaults to `False`. |
-| `autosave` | `bool` | Whether to enable autosaving of conversation history. Defaults to `True`. |
-| `verbose` | `bool` | Whether to enable verbose logging. Defaults to `False`. |
-| `flow`           | `str`         | A string representing the order of agents (e.g., "Agent1 -> Agent2 -> Agent3"). |
-| `agent_rearrange`| `AgentRearrange` | Internal helper for managing agent execution. |
-| `swarm_workspace_dir` | `str` | The workspace directory where conversation history is saved (set automatically when autosave is enabled). |
+| Attribute                   | Type                           | Description                                                                                               |
+| --------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `id`                        | `str`                          | Unique identifier for the workflow instance. Defaults to `"sequential_workflow"`.                         |
+| `name`                      | `str`                          | Human-readable name for the workflow. Defaults to `"SequentialWorkflow"`.                                 |
+| `description`               | `str`                          | Description of the workflow's purpose.                                                                    |
+| `agents`                    | `List[Union[Agent, Callable]]` | The list of agents or callables in the workflow.                                                          |
+| `max_loops`                 | `int`                          | Maximum number of times to execute the workflow. Defaults to `1`.                                         |
+| `output_type`               | `OutputType`                   | Format of the output from the workflow. Defaults to `"dict"`.                                             |
+| `shared_memory_system`      | `callable`                     | Optional callable for managing shared memory between agents.                                              |
+| `multi_agent_collab_prompt` | `bool`                         | If True, appends a collaborative prompt to each agent's system prompt.                                    |
+| `team_awareness`            | `bool`                         | Enables sequential awareness features (passed to internal `AgentRearrange`). Defaults to `False`.         |
+| `autosave`                  | `bool`                         | Whether to enable autosaving of conversation history. Defaults to `True`.                                 |
+| `verbose`                   | `bool`                         | Whether to enable verbose logging. Defaults to `False`.                                                   |
+| `flow`                      | `str`                          | A string representing the order of agents (e.g., "Agent1 -> Agent2 -> Agent3").                           |
+| `agent_rearrange`           | `AgentRearrange`               | Internal helper for managing agent execution.                                                             |
+| `swarm_workspace_dir`       | `str`                          | The workspace directory where conversation history is saved (set automatically when autosave is enabled). |
 
 ## Methods
 
@@ -293,47 +293,143 @@ print(result)
 
 ### Agent Parameters
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `agent_name` | Human-readable name for the agent | Required |
-| `system_prompt` | Detailed role description and expertise | Required |
-| `model_name` | LLM model to use | "gpt-4o-mini" |
-| `max_loops` | Maximum number of processing loops | 1 |
+| Parameter       | Description                             | Default       |
+| --------------- | --------------------------------------- | ------------- |
+| `agent_name`    | Human-readable name for the agent       | Required      |
+| `system_prompt` | Detailed role description and expertise | Required      |
+| `model_name`    | LLM model to use                        | "gpt-4o-mini" |
+| `max_loops`     | Maximum number of processing loops      | 1             |
 
 ### Workflow Parameters
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `agents` | List of agents to execute in sequence | Required |
-| `name` | Name of the workflow | "SequentialWorkflow" |
-| `description` | Description of workflow purpose | Standard description |
-| `max_loops` | Number of times to execute workflow | 1 |
-| `team_awareness` | Enable sequential awareness features | False |
-| `autosave` | Enable automatic saving of conversation history | True |
-| `verbose` | Enable verbose logging | False |
+| Parameter        | Description                                     | Default              |
+| ---------------- | ----------------------------------------------- | -------------------- |
+| `agents`         | List of agents to execute in sequence           | Required             |
+| `name`           | Name of the workflow                            | "SequentialWorkflow" |
+| `description`    | Description of workflow purpose                 | Standard description |
+| `max_loops`      | Number of times to execute workflow             | 1                    |
+| `team_awareness` | Enable sequential awareness features            | False                |
+| `autosave`       | Enable automatic saving of conversation history | True                 |
+| `verbose`        | Enable verbose logging                          | False                |
 
 ## Autosave Feature
 
-Autosave is enabled by default (`autosave=True`). Conversation history is automatically saved to `{workspace_dir}/swarms/SequentialWorkflow/{workflow-name}-{timestamp}/conversation_history.json`.
+### Overview
 
-To set a custom workspace directory name, use the `WORKSPACE_DIR` environment variable:
+The autosave feature automatically saves conversation history to disk after each workflow execution. This is useful for:
+
+- **Debugging**: Review complete conversation history to troubleshoot issues
+- **Audit Trails**: Maintain records of agent interactions for compliance
+- **Analysis**: Analyze agent performance and conversation patterns
+- **Recovery**: Restore workflow state from saved conversations
+
+### Configuration
+
+Autosave is **enabled by default** (`autosave=True`). When enabled, conversation history is saved to:
+
+```
+{workspace_dir}/swarms/SequentialWorkflow/{workflow-name}-{timestamp}/conversation_history.json
+```
+
+#### Parameters
+
+| Parameter             | Type   | Default        | Description                                               |
+| --------------------- | ------ | -------------- | --------------------------------------------------------- |
+| `autosave`            | `bool` | `True`         | Enable/disable automatic saving of conversation history   |
+| `verbose`             | `bool` | `False`        | Enable detailed logging of autosave operations            |
+| `swarm_workspace_dir` | `str`  | Auto-generated | Directory where conversation history is saved (read-only) |
+
+### Setting Custom Workspace Directory
+
+Use the `WORKSPACE_DIR` environment variable to customize the base workspace directory:
 
 ```python
 import os
 from swarms import Agent, SequentialWorkflow
 
-# Set custom workspace directory where conversation history will be saved
+# Set custom workspace directory
 # If not set, defaults to 'agent_workspace' in the current directory
-os.environ["WORKSPACE_DIR"] = "my_project"
+os.environ["WORKSPACE_DIR"] = "/path/to/my_project"
 
-# Create workflow (autosave enabled by default)
+# Create workflow with autosave and verbose logging
 workflow = SequentialWorkflow(
     name="content-workflow",
     agents=[writer, editor],
+    autosave=True,
+    verbose=True,  # Enable detailed logging
 )
 
 # Run workflow - conversation automatically saved
 result = workflow.run("Write a blog post about AI")
+
+# Access the workspace directory path
+print(f"Conversation saved to: {workflow.swarm_workspace_dir}")
+```
+
+### Disabling Autosave
+
+For temporary workflows or when disk space is limited, you can disable autosave:
+
+```python
+from swarms import Agent, SequentialWorkflow
+
+# Create workflow without autosave
+workflow = SequentialWorkflow(
+    name="temp-workflow",
+    agents=[agent1, agent2],
+    autosave=False,  # Disable autosave
+)
+
+# Run workflow - no files saved to disk
+result = workflow.run("Process this task")
+```
+
+### Accessing Saved Conversations
+
+The saved conversation history is a JSON file containing the complete conversation thread:
+
+```python
+import json
+from swarms import Agent, SequentialWorkflow
+
+# Create and run workflow
+workflow = SequentialWorkflow(
+    name="my-workflow",
+    agents=[researcher, writer],
+    autosave=True,
+)
+
+result = workflow.run("Research quantum computing")
+
+# Read saved conversation history
+conversation_file = f"{workflow.swarm_workspace_dir}/conversation_history.json"
+with open(conversation_file, 'r') as f:
+    conversation_data = json.load(f)
+
+# Analyze conversation
+for entry in conversation_data:
+    print(f"Role: {entry['role']}, Content: {entry['content'][:100]}...")
+```
+
+### Verbose Logging
+
+Enable verbose mode to see detailed autosave operations:
+
+```python
+from swarms import Agent, SequentialWorkflow
+
+workflow = SequentialWorkflow(
+    name="debug-workflow",
+    agents=[agent1, agent2],
+    autosave=True,
+    verbose=True,  # See detailed logs
+)
+
+# Logs will show:
+# - Workspace directory creation
+# - Conversation save operations
+# - File paths
+result = workflow.run("Debug this task")
 ```
 
 ## Best Practices
