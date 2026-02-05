@@ -26,11 +26,11 @@ agent = Agent(
         "list_directory",
         "run_bash",
     ],
-    top_p=None,
 )
 
 if __name__ == "__main__":
-    result = agent.run(
-        task="Use the terminal to list the current directory, and see what files are in it."
-    )
-    print(result)
+    # result = agent.run(
+    #     task="Use the terminal to list the current directory, and see what files are in it."
+    # )
+    # print(result)
+    print(agent.get_all_selected_tools())

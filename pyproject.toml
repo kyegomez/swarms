@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "8.9.1"
+version = "9.0.0"
 description = "Swarms - TGSC"
 license = "MIT"
 authors = ["Kye Gomez <kye@swarms.world>"]
@@ -99,7 +99,6 @@ pytest = ">=8.1.1,<10.0.0"
 black = "*"
 ruff = "*"
 pytest = "*"
-# pre-commit = "*"
 
 [tool.ruff]
 line-length = 70

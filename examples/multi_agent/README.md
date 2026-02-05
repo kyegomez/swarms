@@ -41,14 +41,19 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [concurrent_example.py](concurrent_examples/concurrent_example.py) - Basic concurrent execution
 - [concurrent_mix.py](concurrent_examples/concurrent_mix.py) - Mixed concurrent patterns
 - [concurrent_swarm_example.py](concurrent_examples/concurrent_swarm_example.py) - Concurrent swarm execution
+- [concurrent_workflow_autosave_example.py](concurrent_examples/concurrent_workflow_autosave_example.py) - Concurrent workflow with autosave
+- [example_concurrent.py](concurrent_examples/example_concurrent.py) - Concurrent execution example
 - [streaming_concurrent_workflow.py](concurrent_examples/streaming_concurrent_workflow.py) - Streaming with concurrency
 - [streaming_callback/](concurrent_examples/streaming_callback/) - Streaming callback examples
 - [uvloop/](concurrent_examples/uvloop/) - UVLoop integration examples
 
-## Council of Judges
+## Council
 - [council_judge_evaluation.py](council/council_judge_evaluation.py) - Judge evaluation system
 - [council_judge_example.py](council/council_judge_example.py) - Basic council example
 - [council_of_judges_eval.py](council/council_of_judges_eval.py) - Evaluation framework
+
+## Council of Judges
+- [council_judge_example.py](council_of_judges/council_judge_example.py) - Basic council of judges
 - [council_judge_complex_example.py](council_of_judges/council_judge_complex_example.py) - Complex council setup
 - [council_judge_custom_example.py](council_of_judges/council_judge_custom_example.py) - Custom council configuration
 
@@ -122,8 +127,7 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [moa_examples/](moa_examples/) - Multi-objective agent examples
 
 ## Spreadsheet Examples
-- [new_spreadsheet_new_examples/](new_spreadsheet_new_examples/) - Latest spreadsheet integrations
-- [new_spreadsheet_swarm_examples/](new_spreadsheet_swarm_examples/) - Spreadsheet swarm examples
+- [spreadsheet_examples/](spreadsheet_examples/) - Spreadsheet-based agent examples and swarm usage
 
 ## Orchestration
 - [orchestration_examples/](orchestration_examples/) - Workflow orchestration patterns

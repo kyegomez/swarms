@@ -70,6 +70,7 @@ from swarms.structs.autonomous_loop_utils import (
     create_file_tool,
     create_sub_agent_tool,
     delete_file_tool,
+    get_autonomous_loop_tool_names,
     get_autonomous_planning_tools,
     get_execution_prompt,
     get_planning_prompt,
@@ -2126,6 +2127,15 @@ class Agent:
             call_content,
             title=f"Agent: {self.agent_name} Handoff Tool Call",
         )
+
+    def get_all_selected_tools(self) -> List[str]:
+        """
+        Return a list of all autonomous loop tool names.
+
+        Returns:
+            List of tool name strings (e.g. ["create_plan", "think", "subtask_done", ...])
+        """
+        return get_autonomous_loop_tool_names()
 
     def _run_autonomous_loop(
         self,

@@ -33,6 +33,18 @@ from loguru import logger
 
 
 # ============================================================================
+# CONSTANTS
+# ============================================================================
+
+
+# Maximum iterations to prevent infinite loops
+MAX_PLANNING_ATTEMPTS = 5
+MAX_SUBTASK_ITERATIONS = 100
+MAX_SUBTASK_LOOPS = 20
+MAX_CONSECUTIVE_THINKS = 2
+
+
+# ============================================================================
 # PROMPTS
 # ============================================================================
 
@@ -492,6 +504,20 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
                 },
             },
         },
+    ]
+
+
+def get_autonomous_loop_tool_names() -> List[str]:
+    """
+    Return a list of all autonomous loop tool names.
+
+    Returns:
+        List of tool name strings (e.g. ["create_plan", "think", "subtask_done", ...])
+    """
+    return [
+        t["function"]["name"]
+        for t in get_autonomous_planning_tools()
+        if t.get("type") == "function" and "function" in t
     ]
 
 
@@ -1111,15 +1137,3 @@ def assign_task_tool(
             content=f"Error: {error_msg}",
         )
         return error_msg
-
-
-# ============================================================================
-# CONSTANTS
-# ============================================================================
-
-
-# Maximum iterations to prevent infinite loops
-MAX_PLANNING_ATTEMPTS = 5
-MAX_SUBTASK_ITERATIONS = 100
-MAX_SUBTASK_LOOPS = 20
-MAX_CONSECUTIVE_THINKS = 2

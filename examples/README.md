@@ -185,22 +185,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [test_stagehand_integration.py](tools/stagehand/tests/test_stagehand_integration.py) | Stagehand integration test |
 | [test_stagehand_simple.py](tools/stagehand/tests/test_stagehand_simple.py) | Simple Stagehand test |
 
-### Model Integrations
-
-| Example | Description |
-|---------|-------------|
-| [models/](models/) | Various model integrations including Cerebras, GPT-5, GPT-OSS, Llama 4, Lumo, O3, Ollama, and vLLM implementations with concurrent processing examples and provider-specific configurations |
-| [README.md](models/README.md) | Model integration documentation |
-| [simple_example_ollama.py](models/simple_example_ollama.py) | Ollama integration example |
-| [cerebas_example.py](models/cerebas_example.py) | Cerebras model example |
-| [lumo_example.py](models/lumo_example.py) | Lumo model example |
-| [example_o3.py](models/example_o3.py) | O3 model example |
-| [gpt_5/](models/gpt_5/) | GPT-5 model examples |
-| [gpt_oss_examples/](models/gpt_oss_examples/) | GPT-OSS examples |
-| [llama4_examples/](models/llama4_examples/) | Llama 4 examples |
-| [main_providers/](models/main_providers/) | Main provider configurations |
-| [vllm/](models/vllm/) | vLLM integration examples |
-
 ### API & Protocols
 
 #### Swarms API
@@ -301,12 +285,14 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [reasoning_duo_example.py](reasoning_agents/reasoning_agent_router_examples/reasoning_duo_example.py) | Reasoning duo example |
 | [reflexion_agent_example.py](reasoning_agents/reasoning_agent_router_examples/reflexion_agent_example.py) | Reflexion agent example |
 | [self_consistency_example.py](reasoning_agents/reasoning_agent_router_examples/self_consistency_example.py) | Self-consistency example |
-| [voice_agents/](voice_agents/) | Voice and speech-enabled agent examples including agent speech, agent with speech, debate with speech, Google Calendar integration, and hierarchical speech swarm capabilities |
+| [voice_agents/](voice_agents/) | Voice and speech-enabled agent examples including agent speech, agent with speech, debate with speech, Google Calendar integration, hierarchical speech swarm, and autonomous agent with speech |
+| [README.md](voice_agents/README.md) | Voice agents documentation |
 | [agent_speech.py](voice_agents/agent_speech.py) | Agent with speech capabilities |
 | [agent_with_speech.py](voice_agents/agent_with_speech.py) | Speech-enabled agent implementation |
 | [debate_with_speech.py](voice_agents/debate_with_speech.py) | Multi-agent debate with speech capabilities |
 | [google_calendar_agent.py](voice_agents/google_calendar_agent.py) | Google Calendar integration with voice agent |
 | [hiearchical_speech_swarm.py](voice_agents/hiearchical_speech_swarm.py) | Hierarchical speech swarm implementation |
+| [run_auto_agent_with_speech.py](voice_agents/run_auto_agent_with_speech.py) | Autonomous agent with terminal access and streaming TTS |
 
 ### Marketplace
 
@@ -508,13 +494,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Mistral](single_agent/llms/mistral_example.py) | Mistral models |
 | [O3](single_agent/llms/o3_agent.py) | O3 model integration |
 | [Qwen](single_agent/llms/qwen_3_base.py) | Qwen model integration |
-| [Ollama](models/simple_example_ollama.py) | Local Ollama models |
-| [Cerebras](models/cerebas_example.py) | Cerebras model integration |
-| [Lumo](models/lumo_example.py) | Lumo model integration |
-| [GPT-5](models/gpt_5/) | GPT-5 model examples |
-| [GPT-OSS](models/gpt_oss_examples/) | GPT-OSS examples |
-| [Llama 4](models/llama4_examples/) | Llama 4 examples |
-| [vLLM](models/vllm/) | vLLM integration examples |
+| [Ollama](https://docs.swarms.world) | Local Ollama and other providers via LiteLLM—see docs and [single_agent/llms/](single_agent/llms/) |
 
 ### Marketplace Examples
 

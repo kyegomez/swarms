@@ -33,7 +33,7 @@ This directory contains examples demonstrating single agent patterns, configurat
 ### DeepSeek
 - [deepseek_r1.py](llms/deepseek_examples/deepseek_r1.py) - DeepSeek R1 model
 - [fast_r1_groq.py](llms/deepseek_examples/fast_r1_groq.py) - Fast R1 with Groq
-- [grok_deepseek_agent.py](llms/deepseek_examples/grok_deepseek_agent.py) - Grok DeepSeek integration
+- [groq_deepseek_agent.py](llms/deepseek_examples/groq_deepseek_agent.py) - Groq DeepSeek integration
 
 ### Mistral
 - [mistral_example.py](llms/mistral_example.py) - Mistral model integration
@@ -42,6 +42,9 @@ This directory contains examples demonstrating single agent patterns, configurat
 - [4o_mini_demo.py](llms/openai_examples/4o_mini_demo.py) - GPT-4o Mini demonstration
 - [reasoning_duo_batched.py](llms/openai_examples/reasoning_duo_batched.py) - Batched reasoning with OpenAI
 - [test_async_litellm.py](llms/openai_examples/test_async_litellm.py) - Async LiteLLM testing
+
+### O3
+- [o3_agent.py](llms/o3_agent.py) - O3 model integration
 
 ### Qwen
 - [qwen_3_base.py](llms/qwen_3_base.py) - Qwen 3 base model
@@ -117,7 +120,14 @@ This directory contains examples demonstrating single agent patterns, configurat
 - [handoffs_example.py](utils/handoffs_example.py) - Agent handoff examples
 - [list_agent_output_types.py](utils/list_agent_output_types.py) - Output type listing
 - [markdown_agent.py](utils/markdown_agent.py) - Markdown processing agent
+- [medical_agent_add_to_marketplace.py](utils/medical_agent_add_to_marketplace.py) - Add medical agent to marketplace
 - [xml_output_example.py](utils/xml_output_example.py) - XML output example
+
+### Autosaving
+- [autosave_basic_example.py](utils/autosaving_examples/autosave_basic_example.py) - Basic autosave
+- [autosave_config_access_example.py](utils/autosaving_examples/autosave_config_access_example.py) - Config access
+- [autosave_directory_structure_example.py](utils/autosaving_examples/autosave_directory_structure_example.py) - Directory structure
+- [autosave_recovery_example.py](utils/autosaving_examples/autosave_recovery_example.py) - Recovery example
 
 ### Transform Prompts
 - [transforms_agent_example.py](utils/transform_prompts/transforms_agent_example.py) - Prompt transformation agent
