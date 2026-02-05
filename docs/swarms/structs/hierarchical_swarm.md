@@ -13,7 +13,6 @@ graph TD
     F -->|No| G[Output]
 ```
 
-
 The Hierarchical Swarm follows a clear workflow pattern:
 
 1. **Task Reception**: User provides a task to the swarm
@@ -22,22 +21,21 @@ The Hierarchical Swarm follows a clear workflow pattern:
 4. **Feedback Loop**: Director evaluates results and issues new orders if needed (up to `max_loops`)
 5. **Context Preservation**: All conversation history and context is maintained throughout the process
 
-
 ## Key Features
 
-| Feature                      | Description                                                                                   |
-|------------------------------|-----------------------------------------------------------------------------------------------|
-| **Hierarchical Coordination**| Director agent orchestrates all operations                                                    |
-| **Specialized Agents**       | Each agent has specific expertise and responsibilities                                       |
-| **Iterative Refinement**     | Multiple feedback loops for improved results                                                 |
-| **Context Preservation**     | Full conversation history maintained                                                         |
-| **Flexible Output Formats**  | Support for various output types (dict, str, list)                                           |
-| **Comprehensive Logging**    | Detailed logging for debugging and monitoring                                                |
-| **Live Streaming**           | Real-time streaming callbacks for monitoring agent outputs                                   |
-| **Token-by-Token Updates**   | Watch text formation in real-time as agents generate responses                               |
-| **Hierarchy Visualization**  | Visual tree representation of swarm structure with `display_hierarchy()`                     |
-| **Interactive Dashboard**    | Real-time Hierarchical Swarms dashboard for monitoring swarm operations                |
-| **Advanced Planning**        | Optional planning phase before task distribution for better coordination                     |
+| Feature                       | Description                                                              |
+| ----------------------------- | ------------------------------------------------------------------------ |
+| **Hierarchical Coordination** | Director agent orchestrates all operations                               |
+| **Specialized Agents**        | Each agent has specific expertise and responsibilities                   |
+| **Iterative Refinement**      | Multiple feedback loops for improved results                             |
+| **Context Preservation**      | Full conversation history maintained                                     |
+| **Flexible Output Formats**   | Support for various output types (dict, str, list)                       |
+| **Comprehensive Logging**     | Detailed logging for debugging and monitoring                            |
+| **Live Streaming**            | Real-time streaming callbacks for monitoring agent outputs               |
+| **Token-by-Token Updates**    | Watch text formation in real-time as agents generate responses           |
+| **Hierarchy Visualization**   | Visual tree representation of swarm structure with `display_hierarchy()` |
+| **Interactive Dashboard**     | Real-time Hierarchical Swarms dashboard for monitoring swarm operations  |
+| **Advanced Planning**         | Optional planning phase before task distribution for better coordination |
 
 ## Constructor
 
@@ -47,38 +45,38 @@ Initializes a new HierarchicalSwarm instance.
 
 #### Important Parameters
 
-| Parameter | Type | Default | Required | Description |
-|-----------|------|---------|----------|-------------|
-| `agents` | `AgentListType` | `None` | **Yes** | List of worker agents in the swarm. Must not be empty |
-| `name` | `str` | `"HierarchicalAgentSwarm"` | No | The name identifier for this swarm instance |
-| `description` | `str` | `"Distributed task swarm"` | No | A description of the swarm's purpose and capabilities |
-| `director` | `Optional[Union[Agent, Callable, Any]]` | `None` | No | The director agent that orchestrates tasks. If None, a default director will be created |
-| `max_loops` | `int` | `1` | No | Maximum number of feedback loops between director and agents (must be > 0) |
-| `output_type` | `OutputType` | `"dict-all-except-first"` | No | Format for output (dict, str, list) |
-| `director_model_name` | `str` | `"gpt-4o-mini"` | No | Model name for the main director agent |
-| `director_name` | `str` | `"Director"` | No | Name identifier for the director agent |
-| `director_temperature` | `float` | `0.7` | No | Temperature setting for the director agent (controls randomness) |
-| `director_top_p` | `float` | `0.9` | No | Top-p (nucleus) sampling parameter for the director agent |
-| `director_system_prompt` | `str` | `HIEARCHICAL_SWARM_SYSTEM_PROMPT` | No | System prompt for the director agent |
-| `director_feedback_on` | `bool` | `True` | No | Whether director feedback is enabled |
-| `feedback_director_model_name` | `str` | `"gpt-4o-mini"` | No | Model name for the feedback director agent |
-| `add_collaboration_prompt` | `bool` | `True` | No | Whether to add collaboration prompts to worker agents |
-| `multi_agent_prompt_improvements` | `bool` | `False` | No | Enable enhanced multi-agent collaboration prompts |
-| `interactive` | `bool` | `False` | No | Enable interactive mode with Hierarchical Swarms dashboard visualization |
-| `planning_enabled` | `bool` | `True` | No | Enable planning phase before task distribution |
-| `autosave` | `bool` | `True` | No | Whether to enable autosaving of conversation history |
-| `verbose` | `bool` | `False` | No | Whether to enable verbose logging |
+| Parameter                         | Type                                    | Default                           | Required | Description                                                                             |
+| --------------------------------- | --------------------------------------- | --------------------------------- | -------- | --------------------------------------------------------------------------------------- |
+| `agents`                          | `AgentListType`                         | `None`                            | **Yes**  | List of worker agents in the swarm. Must not be empty                                   |
+| `name`                            | `str`                                   | `"HierarchicalAgentSwarm"`        | No       | The name identifier for this swarm instance                                             |
+| `description`                     | `str`                                   | `"Distributed task swarm"`        | No       | A description of the swarm's purpose and capabilities                                   |
+| `director`                        | `Optional[Union[Agent, Callable, Any]]` | `None`                            | No       | The director agent that orchestrates tasks. If None, a default director will be created |
+| `max_loops`                       | `int`                                   | `1`                               | No       | Maximum number of feedback loops between director and agents (must be > 0)              |
+| `output_type`                     | `OutputType`                            | `"dict-all-except-first"`         | No       | Format for output (dict, str, list)                                                     |
+| `director_model_name`             | `str`                                   | `"gpt-4o-mini"`                   | No       | Model name for the main director agent                                                  |
+| `director_name`                   | `str`                                   | `"Director"`                      | No       | Name identifier for the director agent                                                  |
+| `director_temperature`            | `float`                                 | `0.7`                             | No       | Temperature setting for the director agent (controls randomness)                        |
+| `director_top_p`                  | `float`                                 | `0.9`                             | No       | Top-p (nucleus) sampling parameter for the director agent                               |
+| `director_system_prompt`          | `str`                                   | `HIEARCHICAL_SWARM_SYSTEM_PROMPT` | No       | System prompt for the director agent                                                    |
+| `director_feedback_on`            | `bool`                                  | `True`                            | No       | Whether director feedback is enabled                                                    |
+| `feedback_director_model_name`    | `str`                                   | `"gpt-4o-mini"`                   | No       | Model name for the feedback director agent                                              |
+| `add_collaboration_prompt`        | `bool`                                  | `True`                            | No       | Whether to add collaboration prompts to worker agents                                   |
+| `multi_agent_prompt_improvements` | `bool`                                  | `False`                           | No       | Enable enhanced multi-agent collaboration prompts                                       |
+| `interactive`                     | `bool`                                  | `False`                           | No       | Enable interactive mode with Hierarchical Swarms dashboard visualization                |
+| `planning_enabled`                | `bool`                                  | `True`                            | No       | Enable planning phase before task distribution                                          |
+| `autosave`                        | `bool`                                  | `True`                            | No       | Whether to enable autosaving of conversation history                                    |
+| `verbose`                         | `bool`                                  | `False`                           | No       | Whether to enable verbose logging                                                       |
 
 #### Returns
 
-| Type | Description |
-|------|-------------|
+| Type                | Description                      |
+| ------------------- | -------------------------------- |
 | `HierarchicalSwarm` | A new HierarchicalSwarm instance |
 
 #### Raises
 
-| Exception | Condition |
-|-----------|-----------|
+| Exception    | Condition                                         |
+| ------------ | ------------------------------------------------- |
 | `ValueError` | If no agents are provided or max_loops is invalid |
 
 ## Core Methods
@@ -89,8 +87,8 @@ Displays a visual tree representation of the hierarchical swarm structure, showi
 
 #### Returns
 
-| Type | Description |
-|------|-------------|
+| Type   | Description                                       |
+| ------ | ------------------------------------------------- |
 | `None` | Prints the hierarchy visualization to the console |
 
 #### Example
@@ -141,6 +139,7 @@ swarm.display_hierarchy()
 ```
 
 The output will show a visual tree structure like:
+
 ```
 ┌─ HierarchicalSwarm Hierarchy: Swarms Corporation Operations ─┐
 │                                                               │
@@ -157,24 +156,24 @@ Executes the hierarchical swarm for a specified number of feedback loops, proces
 
 #### Important Parameters
 
-| Parameter | Type | Default | Required | Description |
-|-----------|------|---------|----------|-------------|
-| `task` | `Optional[str]` | `None` | **Yes*** | The initial task to be processed by the swarm. If None and interactive mode is enabled, will prompt for input |
-| `img` | `Optional[str]` | `None` | No | Optional image input for the agents |
-| `streaming_callback` | `Optional[Callable[[str, str, bool], None]]` | `None` | No | Callback function for real-time streaming of agent outputs. Parameters are (agent_name, chunk, is_final) where is_final indicates completion |
+| Parameter            | Type                                         | Default | Required  | Description                                                                                                                                  |
+| -------------------- | -------------------------------------------- | ------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `task`               | `Optional[str]`                              | `None`  | **Yes\*** | The initial task to be processed by the swarm. If None and interactive mode is enabled, will prompt for input                                |
+| `img`                | `Optional[str]`                              | `None`  | No        | Optional image input for the agents                                                                                                          |
+| `streaming_callback` | `Optional[Callable[[str, str, bool], None]]` | `None`  | No        | Callback function for real-time streaming of agent outputs. Parameters are (agent_name, chunk, is_final) where is_final indicates completion |
 
-*Required if `interactive=False`
+\*Required if `interactive=False`
 
 #### Returns
 
-| Type | Description |
-|------|-------------|
+| Type  | Description                                                                                          |
+| ----- | ---------------------------------------------------------------------------------------------------- |
 | `Any` | The formatted conversation history as output, formatted according to the `output_type` configuration |
 
 #### Raises
 
-| Exception | Condition |
-|-----------|-----------|
+| Exception   | Condition                |
+| ----------- | ------------------------ |
 | `Exception` | If swarm execution fails |
 
 #### Example
@@ -272,22 +271,22 @@ Execute the hierarchical swarm for multiple tasks in sequence. Processes a list 
 
 #### Important Parameters
 
-| Parameter | Type | Default | Required | Description |
-|-----------|------|---------|----------|-------------|
-| `tasks` | `List[str]` | - | **Yes** | List of tasks to be processed by the swarm |
-| `img` | `Optional[str]` | `None` | No | Optional image input for the tasks |
-| `streaming_callback` | `Optional[Callable[[str, str, bool], None]]` | `None` | No | Callback function for streaming agent outputs. Parameters are (agent_name, chunk, is_final) where is_final indicates completion |
+| Parameter            | Type                                         | Default | Required | Description                                                                                                                     |
+| -------------------- | -------------------------------------------- | ------- | -------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `tasks`              | `List[str]`                                  | -       | **Yes**  | List of tasks to be processed by the swarm                                                                                      |
+| `img`                | `Optional[str]`                              | `None`  | No       | Optional image input for the tasks                                                                                              |
+| `streaming_callback` | `Optional[Callable[[str, str, bool], None]]` | `None`  | No       | Callback function for streaming agent outputs. Parameters are (agent_name, chunk, is_final) where is_final indicates completion |
 
 #### Returns
 
-| Type | Description |
-|------|-------------|
+| Type        | Description                             |
+| ----------- | --------------------------------------- |
 | `List[Any]` | List of results for each processed task |
 
 #### Raises
 
-| Exception | Condition |
-|-----------|-----------|
+| Exception   | Condition                  |
+| ----------- | -------------------------- |
 | `Exception` | If batched execution fails |
 
 #### Example (batched_run method)
@@ -467,6 +466,7 @@ result = swarm.run("Conduct a research analysis on water stocks and ETFs")
 ```
 
 The dashboard automatically:
+
 - Starts when `run()` is called
 - Updates in real-time as agents execute tasks
 - Displays full conversation history across loops
@@ -475,13 +475,13 @@ The dashboard automatically:
 
 ### Dashboard Features
 
-| Feature | Description |
-|---------|-------------|
-| **Operations Status** | Shows swarm name, description, director info, loop progress, and runtime |
-| **Director Operations** | Displays the director's plan and current task orders |
+| Feature                     | Description                                                                  |
+| --------------------------- | ---------------------------------------------------------------------------- |
+| **Operations Status**       | Shows swarm name, description, director info, loop progress, and runtime     |
+| **Director Operations**     | Displays the director's plan and current task orders                         |
 | **Agent Monitoring Matrix** | Table view showing all agents, their status, tasks, and outputs across loops |
-| **Detailed View** | Full output history for each agent in each loop |
-| **Real-time Updates** | Dashboard refreshes automatically as operations progress |
+| **Detailed View**           | Full output history for each agent in each loop                              |
+| **Real-time Updates**       | Dashboard refreshes automatically as operations progress                     |
 
 ## Autosave Feature
 
@@ -498,17 +498,18 @@ The autosave feature automatically saves conversation history to disk after work
 ### Configuration
 
 Autosave is **enabled by default** (`autosave=True`). When enabled, conversation history is saved to:
+
 ```
 {workspace_dir}/swarms/HierarchicalSwarm/{swarm-name}-{timestamp}/conversation_history.json
 ```
 
 #### Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `autosave` | `bool` | `True` | Enable/disable automatic saving of conversation history |
-| `verbose` | `bool` | `False` | Enable detailed logging of autosave operations |
-| `swarm_workspace_dir` | `str` | Auto-generated | Directory where conversation history is saved (read-only) |
+| Parameter             | Type   | Default        | Description                                               |
+| --------------------- | ------ | -------------- | --------------------------------------------------------- |
+| `autosave`            | `bool` | `True`         | Enable/disable automatic saving of conversation history   |
+| `verbose`             | `bool` | `False`        | Enable detailed logging of autosave operations            |
+| `swarm_workspace_dir` | `str`  | Auto-generated | Directory where conversation history is saved (read-only) |
 
 ### Setting Custom Workspace Directory
 
@@ -584,7 +585,7 @@ result = swarm.run("Research and analyze AI market trends")
 conversation_file = f"{swarm.swarm_workspace_dir}/conversation_history.json"
 with open(conversation_file, 'r') as f:
     conversation_data = json.load(f)
-    
+
 # Analyze director operations and agent responses
 for entry in conversation_data:
     if 'role' in entry:
@@ -676,12 +677,12 @@ swarm = HierarchicalSwarm(
 
 The `HierarchicalSwarm` supports various output formats through the `output_type` parameter:
 
-| Output Type | Description | Use Case |
-|-------------|-------------|----------|
+| Output Type               | Description                                                                   | Use Case                                  |
+| ------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------- |
 | `"dict-all-except-first"` | Returns all conversation history as a dictionary, excluding the first message | Default format for comprehensive analysis |
-| `"dict"` | Returns conversation history as a dictionary | When you need structured data |
-| `"str"` | Returns conversation history as a string | For simple text output |
-| `"list"` | Returns conversation history as a list | For sequential processing |
+| `"dict"`                  | Returns conversation history as a dictionary                                  | When you need structured data             |
+| `"str"`                   | Returns conversation history as a string                                      | For simple text output                    |
+| `"list"`                  | Returns conversation history as a list                                        | For sequential processing                 |
 
 ## Streaming Callbacks
 
@@ -704,11 +705,11 @@ def streaming_callback(agent_name: str, chunk: str, is_final: bool) -> None:
 
 ### Streaming Callback Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `agent_name` | `str` | The name of the agent currently generating output |
-| `chunk` | `str` | The text chunk generated by the agent |
-| `is_final` | `bool` | Indicates if this is the final chunk (agent completed) |
+| Parameter    | Type   | Description                                            |
+| ------------ | ------ | ------------------------------------------------------ |
+| `agent_name` | `str`  | The name of the agent currently generating output      |
+| `chunk`      | `str`  | The text chunk generated by the agent                  |
+| `is_final`   | `bool` | Indicates if this is the final chunk (agent completed) |
 
 ### Live Paragraph Formation
 
@@ -740,23 +741,22 @@ def live_paragraph_callback(agent_name: str, chunk: str, is_final: bool):
         print(f"\n✅ {agent_name} completed!")
 ```
 
-
 ## Best Practices
 
-| Best Practice                | Description                                                                                      |
-|------------------------------|--------------------------------------------------------------------------------------------------|
-| **Agent Specialization**     | Create agents with specific, well-defined expertise areas                                        |
-| **Clear Task Descriptions**  | Provide detailed, actionable task descriptions                                                  |
-| **Appropriate Loop Count**   | Set `max_loops` based on task complexity (1-3 for most tasks)                                   |
-| **Director Configuration**   | Adjust `director_temperature` (0.7-0.9) and `director_top_p` (0.9-0.95) for desired creativity |
-| **Planning Strategy**        | Enable `planning_enabled` for complex tasks, disable for simple or performance-critical tasks   |
-| **Interactive Dashboard**    | Use `interactive=True` during development for real-time monitoring and debugging                 |
-| **Context Preservation**     | Leverage the built-in conversation history for continuity                                       |
-| **Autosave Configuration**   | Keep `autosave=True` (default) to preserve conversation history for debugging and analysis     |
-| **Error Handling**           | Implement proper error handling for production use                                              |
-| **Streaming Callbacks**      | Use streaming callbacks for real-time monitoring and user feedback                              |
-| **Callback Performance**     | Keep streaming callbacks lightweight to avoid blocking the main execution thread                |
-| **Model Selection**          | Choose appropriate models for director (coordination) vs agents (specialization)              |
+| Best Practice               | Description                                                                                    |
+| --------------------------- | ---------------------------------------------------------------------------------------------- |
+| **Agent Specialization**    | Create agents with specific, well-defined expertise areas                                      |
+| **Clear Task Descriptions** | Provide detailed, actionable task descriptions                                                 |
+| **Appropriate Loop Count**  | Set `max_loops` based on task complexity (1-3 for most tasks)                                  |
+| **Director Configuration**  | Adjust `director_temperature` (0.7-0.9) and `director_top_p` (0.9-0.95) for desired creativity |
+| **Planning Strategy**       | Enable `planning_enabled` for complex tasks, disable for simple or performance-critical tasks  |
+| **Interactive Dashboard**   | Use `interactive=True` during development for real-time monitoring and debugging               |
+| **Context Preservation**    | Leverage the built-in conversation history for continuity                                      |
+| **Autosave Configuration**  | Keep `autosave=True` (default) to preserve conversation history for debugging and analysis     |
+| **Error Handling**          | Implement proper error handling for production use                                             |
+| **Streaming Callbacks**     | Use streaming callbacks for real-time monitoring and user feedback                             |
+| **Callback Performance**    | Keep streaming callbacks lightweight to avoid blocking the main execution thread               |
+| **Model Selection**         | Choose appropriate models for director (coordination) vs agents (specialization)               |
 
 ## Error Handling
 
@@ -769,12 +769,12 @@ The `HierarchicalSwarm` includes comprehensive error handling with detailed logg
 
 ## Performance Considerations
 
-| Consideration              | Description                                                                                           |
-|---------------------------|-------------------------------------------------------------------------------------------------------|
-| **Loop Optimization**      | Balance between thoroughness and performance with `max_loops`                                         |
-| **Agent Count**            | More agents increase coordination overhead                                                            |
-| **Model Selection**        | Choose appropriate models for your use case and budget                                                |
-| **Planning Overhead**      | Disable `planning_enabled` if you need faster execution                                               |
-| **Dashboard Impact**       | The interactive dashboard adds minimal overhead but provides valuable insights                        |
-| **Director Temperature**   | Lower values (0.5-0.7) for consistent results, higher (0.8-1.0) for creativity                       |
-| **Top-P Sampling**         | Use `director_top_p=None` to disable and rely only on temperature                                     |
+| Consideration            | Description                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| **Loop Optimization**    | Balance between thoroughness and performance with `max_loops`                  |
+| **Agent Count**          | More agents increase coordination overhead                                     |
+| **Model Selection**      | Choose appropriate models for your use case and budget                         |
+| **Planning Overhead**    | Disable `planning_enabled` if you need faster execution                        |
+| **Dashboard Impact**     | The interactive dashboard adds minimal overhead but provides valuable insights |
+| **Director Temperature** | Lower values (0.5-0.7) for consistent results, higher (0.8-1.0) for creativity |
+| **Top-P Sampling**       | Use `director_top_p=None` to disable and rely only on temperature              |
