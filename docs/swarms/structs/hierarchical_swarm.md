@@ -485,27 +485,156 @@ The dashboard automatically:
 
 ## Autosave Feature
 
-Autosave is enabled by default (`autosave=True`). Conversation history is automatically saved to `{workspace_dir}/swarms/HierarchicalSwarm/{swarm-name}-{timestamp}/conversation_history.json` after all loops complete.
+### Overview
 
-To set a custom workspace directory name, use the `WORKSPACE_DIR` environment variable:
+The autosave feature automatically saves conversation history to disk after workflow execution completes. This is essential for:
+
+- **Debugging**: Review complete conversation history including director orders and agent responses
+- **Audit Trails**: Maintain records of hierarchical agent interactions for compliance
+- **Performance Analysis**: Analyze director planning and agent execution patterns
+- **Recovery**: Restore swarm state from saved conversations
+- **Iterative Improvement**: Review multi-loop feedback cycles for optimization
+
+### Configuration
+
+Autosave is **enabled by default** (`autosave=True`). When enabled, conversation history is saved to:
+```
+{workspace_dir}/swarms/HierarchicalSwarm/{swarm-name}-{timestamp}/conversation_history.json
+```
+
+#### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `autosave` | `bool` | `True` | Enable/disable automatic saving of conversation history |
+| `verbose` | `bool` | `False` | Enable detailed logging of autosave operations |
+| `swarm_workspace_dir` | `str` | Auto-generated | Directory where conversation history is saved (read-only) |
+
+### Setting Custom Workspace Directory
+
+Use the `WORKSPACE_DIR` environment variable to customize the base workspace directory:
 
 ```python
 import os
 from swarms import Agent, HierarchicalSwarm
 
-# Set custom workspace directory where conversation history will be saved
+# Set custom workspace directory
 # If not set, defaults to 'agent_workspace' in the current directory
-os.environ["WORKSPACE_DIR"] = "my_project"
+os.environ["WORKSPACE_DIR"] = "/path/to/my_project"
 
-# Create swarm (autosave enabled by default)
+# Create swarm with autosave and verbose logging
 swarm = HierarchicalSwarm(
     name="analysis-swarm",
     agents=[research_agent, financial_agent],
     max_loops=2,
+    autosave=True,   # Enabled by default
+    verbose=True,    # Enable detailed logging
 )
 
 # Run swarm - conversation automatically saved after all loops
 result = swarm.run("Analyze Tesla (TSLA) stock")
+
+# Access the workspace directory path
+print(f"Conversation saved to: {swarm.swarm_workspace_dir}")
+```
+
+### Disabling Autosave
+
+For temporary swarms or when disk space is limited, you can disable autosave:
+
+```python
+from swarms import Agent, HierarchicalSwarm
+
+# Create swarm without autosave
+swarm = HierarchicalSwarm(
+    name="temp-swarm",
+    agents=[agent1, agent2],
+    max_loops=1,
+    autosave=False,  # Disable autosave
+)
+
+# Run swarm - no files saved to disk
+result = swarm.run("Process this task")
+```
+
+### Accessing Saved Conversations
+
+The saved conversation history is a JSON file containing the complete conversation thread, including:
+
+- Director's planning and task distribution
+- Agent responses and outputs
+- Feedback loops across all iterations
+- Full context preservation
+
+```python
+import json
+from swarms import Agent, HierarchicalSwarm
+
+# Create and run swarm
+swarm = HierarchicalSwarm(
+    name="my-swarm",
+    agents=[researcher, analyst, writer],
+    max_loops=2,
+    autosave=True,
+)
+
+result = swarm.run("Research and analyze AI market trends")
+
+# Read saved conversation history
+conversation_file = f"{swarm.swarm_workspace_dir}/conversation_history.json"
+with open(conversation_file, 'r') as f:
+    conversation_data = json.load(f)
+    
+# Analyze director operations and agent responses
+for entry in conversation_data:
+    if 'role' in entry:
+        print(f"Role: {entry['role']}")
+        print(f"Content: {entry['content'][:100]}...")
+        print("-" * 80)
+```
+
+### Verbose Logging
+
+Enable verbose mode to see detailed autosave operations and swarm execution:
+
+```python
+from swarms import Agent, HierarchicalSwarm
+
+swarm = HierarchicalSwarm(
+    name="debug-swarm",
+    agents=[agent1, agent2],
+    max_loops=2,
+    autosave=True,
+    verbose=True,  # See detailed logs
+)
+
+# Logs will show:
+# - Workspace directory creation
+# - Director planning operations
+# - Conversation save operations
+# - File paths and timestamps
+result = swarm.run("Debug this complex task")
+```
+
+### Autosave with Interactive Dashboard
+
+When using the interactive dashboard, autosave works seamlessly:
+
+```python
+from swarms import Agent, HierarchicalSwarm
+
+swarm = HierarchicalSwarm(
+    name="monitored-swarm",
+    agents=[agent1, agent2, agent3],
+    max_loops=3,
+    autosave=True,     # Save conversation history
+    verbose=True,      # Detailed logging
+    interactive=True,  # Enable dashboard
+)
+
+# Dashboard shows real-time operations
+# Conversation history saved automatically after completion
+result = swarm.run("Complex multi-agent task")
 ```
 
 ## Planning Feature

@@ -314,26 +314,121 @@ print(result)
 
 ## Autosave Feature
 
-Autosave is enabled by default (`autosave=True`). Conversation history is automatically saved to `{workspace_dir}/swarms/SequentialWorkflow/{workflow-name}-{timestamp}/conversation_history.json`.
+### Overview
 
-To set a custom workspace directory name, use the `WORKSPACE_DIR` environment variable:
+The autosave feature automatically saves conversation history to disk after each workflow execution. This is useful for:
+
+- **Debugging**: Review complete conversation history to troubleshoot issues
+- **Audit Trails**: Maintain records of agent interactions for compliance
+- **Analysis**: Analyze agent performance and conversation patterns
+- **Recovery**: Restore workflow state from saved conversations
+
+### Configuration
+
+Autosave is **enabled by default** (`autosave=True`). When enabled, conversation history is saved to:
+```
+{workspace_dir}/swarms/SequentialWorkflow/{workflow-name}-{timestamp}/conversation_history.json
+```
+
+#### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `autosave` | `bool` | `True` | Enable/disable automatic saving of conversation history |
+| `verbose` | `bool` | `False` | Enable detailed logging of autosave operations |
+| `swarm_workspace_dir` | `str` | Auto-generated | Directory where conversation history is saved (read-only) |
+
+### Setting Custom Workspace Directory
+
+Use the `WORKSPACE_DIR` environment variable to customize the base workspace directory:
 
 ```python
 import os
 from swarms import Agent, SequentialWorkflow
 
-# Set custom workspace directory where conversation history will be saved
+# Set custom workspace directory
 # If not set, defaults to 'agent_workspace' in the current directory
-os.environ["WORKSPACE_DIR"] = "my_project"
+os.environ["WORKSPACE_DIR"] = "/path/to/my_project"
 
-# Create workflow (autosave enabled by default)
+# Create workflow with autosave and verbose logging
 workflow = SequentialWorkflow(
     name="content-workflow",
     agents=[writer, editor],
+    autosave=True,
+    verbose=True,  # Enable detailed logging
 )
 
 # Run workflow - conversation automatically saved
 result = workflow.run("Write a blog post about AI")
+
+# Access the workspace directory path
+print(f"Conversation saved to: {workflow.swarm_workspace_dir}")
+```
+
+### Disabling Autosave
+
+For temporary workflows or when disk space is limited, you can disable autosave:
+
+```python
+from swarms import Agent, SequentialWorkflow
+
+# Create workflow without autosave
+workflow = SequentialWorkflow(
+    name="temp-workflow",
+    agents=[agent1, agent2],
+    autosave=False,  # Disable autosave
+)
+
+# Run workflow - no files saved to disk
+result = workflow.run("Process this task")
+```
+
+### Accessing Saved Conversations
+
+The saved conversation history is a JSON file containing the complete conversation thread:
+
+```python
+import json
+from swarms import Agent, SequentialWorkflow
+
+# Create and run workflow
+workflow = SequentialWorkflow(
+    name="my-workflow",
+    agents=[researcher, writer],
+    autosave=True,
+)
+
+result = workflow.run("Research quantum computing")
+
+# Read saved conversation history
+conversation_file = f"{workflow.swarm_workspace_dir}/conversation_history.json"
+with open(conversation_file, 'r') as f:
+    conversation_data = json.load(f)
+    
+# Analyze conversation
+for entry in conversation_data:
+    print(f"Role: {entry['role']}, Content: {entry['content'][:100]}...")
+```
+
+### Verbose Logging
+
+Enable verbose mode to see detailed autosave operations:
+
+```python
+from swarms import Agent, SequentialWorkflow
+
+workflow = SequentialWorkflow(
+    name="debug-workflow",
+    agents=[agent1, agent2],
+    autosave=True,
+    verbose=True,  # See detailed logs
+)
+
+# Logs will show:
+# - Workspace directory creation
+# - Conversation save operations
+# - File paths
+result = workflow.run("Debug this task")
 ```
 
 ## Best Practices
