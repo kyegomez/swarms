@@ -404,41 +404,26 @@ def run_agents_concurrently_uvloop(
         ...     else:
         ...         print(f"Agent {i+1} result: {result}")
     """
-    # Platform-specific event loop policy setup
-    if sys.platform in ("win32", "cygwin"):
-        # Windows: Try to use winloop
-        try:
-            import winloop
-
-            asyncio.set_event_loop_policy(winloop.EventLoopPolicy())
+    # Platform-specific event loop policy setup (use stdlib asyncio policies)
+    try:
+        if sys.platform in ("win32", "cygwin"):
+            asyncio.set_event_loop_policy(
+                asyncio.WindowsProactorEventLoopPolicy()
+            )
             logger.info(
-                "Using winloop for enhanced Windows performance"
+                "Using stdlib WindowsProactorEventLoopPolicy for Windows"
             )
-        except ImportError:
-            logger.warning(
-                "winloop not available, falling back to standard asyncio. "
-                "Install winloop with: pip install winloop"
+        else:
+            asyncio.set_event_loop_policy(
+                asyncio.DefaultEventLoopPolicy()
             )
-        except RuntimeError as e:
-            logger.warning(
-                f"Could not set winloop policy: {e}. Using default asyncio."
+            logger.info(
+                "Using stdlib DefaultEventLoopPolicy for Unix-like systems"
             )
-    else:
-        # Linux/macOS: Try to use uvloop
-        try:
-            import uvloop
-
-            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-            logger.info("Using uvloop for enhanced Unix performance")
-        except ImportError:
-            logger.warning(
-                "uvloop not available, falling back to standard asyncio. "
-                "Install uvloop with: pip install uvloop"
-            )
-        except RuntimeError as e:
-            logger.warning(
-                f"Could not set uvloop policy: {e}. Using default asyncio."
-            )
+    except RuntimeError as e:
+        logger.warning(
+            f"Could not set asyncio policy: {e}. Continuing with existing policy."
+        )
 
     if max_workers is None:
         # Use 95% of available CPU cores for optimal performance
@@ -446,7 +431,7 @@ def run_agents_concurrently_uvloop(
         max_workers = int(num_cores * 0.95) if num_cores else 1
 
     logger.info(
-        f"Running {len(agents)} agents concurrently with uvloop (max_workers: {max_workers})"
+        f"Running {len(agents)} agents concurrently with stdlib asyncio (max_workers: {max_workers})"
     )
 
     async def run_agents_async():

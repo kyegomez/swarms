@@ -76,8 +76,10 @@ httpx = "*"
 mcp = "*"
 aiohttp = "*"
 schedule = "*"
-uvloop = {version = "*", markers = "sys_platform == 'linux' or sys_platform == 'darwin'"}
-winloop = {version = "*", markers = "sys_platform == 'win32'"}
+# uvloop and winloop are optional third-party event loops and are no longer
+# required by default. The library now uses stdlib asyncio policies by default.
+# If you want to opt-in to uvloop/winloop, install them manually in your
+# environment: `pip install uvloop` or `pip install winloop` on supported OSes.
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"
