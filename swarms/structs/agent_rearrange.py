@@ -45,7 +45,7 @@ class AgentRearrange:
         id (str): Unique identifier for the agent rearrange system
         name (str): Human-readable name for the system
         description (str): Description of the system's purpose
-        agents (Dict[str, Agent]): Dictionary mapping agent names to Agent objects
+        agents (List[Agent]): List of Agent objects
         flow (str): Flow pattern defining agent execution order
         max_loops (int): Maximum number of execution loops
         verbose (bool): Whether to enable verbose logging
@@ -88,7 +88,7 @@ class AgentRearrange:
         id: str = swarm_id(),
         name: str = "AgentRearrange",
         description: str = "A swarm of agents for rearranging tasks.",
-        agents: List[Union[Agent, Callable]] = None,
+        agents: List[Agent] = None,
         flow: str = None,
         max_loops: int = 1,
         verbose: bool = True,
@@ -114,8 +114,8 @@ class AgentRearrange:
                 Defaults to "AgentRearrange".
             description (str): Description of the system's purpose.
                 Defaults to "A swarm of agents for rearranging tasks.".
-            agents (List[Union[Agent, Callable]], optional): List of agents to include
-                in the system. Can be Agent objects or callable functions.
+            agents (List[Agent], optional): List of agents to include
+                in the system.
                 Defaults to None.
             flow (str, optional): Flow pattern defining agent execution order.
                 Uses '->' for sequential and ',' for concurrent execution.
