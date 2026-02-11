@@ -1947,6 +1947,18 @@ class Agent:
                 self.save()
                 self._autosave_config_step(loop_count=loop_count)
 
+            # Generate autonomous loop summary with streaming support when max_loops="auto"
+            if (
+                self.max_loops == "auto"
+                and (self.streaming_on or self.stream or streaming_callback is not None)
+            ):
+                self._generate_autonomous_loop_summary(
+                    task=task,
+                    streaming_callback=streaming_callback,
+                    *args,
+                    **kwargs,
+                )
+
             # Output formatting based on output_type
             return history_output_formatter(
                 self.short_memory, type=self.output_type
@@ -3165,6 +3177,75 @@ Subtask Breakdown:
         return self.short_memory.add(
             role=self.agent_name, content=message
         )
+
+    def _generate_autonomous_loop_summary(
+        self,
+        task: Optional[str] = None,
+        streaming_callback: Optional[Callable[[str], None]] = None,
+        *args,
+        **kwargs,
+    ) -> None:
+        """
+        Generate a comprehensive summary of the autonomous loop execution.
+
+        This method is called after the autonomous loop completes (when max_loops="auto").
+        It synthesizes all the execution phases (planning, execution) into a coherent,
+        comprehensive summary while supporting real-time streaming.
+
+        Args:
+            task (Optional[str]): The original task that was executed
+            streaming_callback (Optional[Callable[[str], None]]): Callback function to stream summary tokens in real-time
+            *args: Additional positional arguments for extensibility
+            **kwargs: Additional keyword arguments for extensibility
+
+        Returns:
+            None: The summary is added to short-term memory and streamed to the callback
+        """
+        try:
+            # Get the conversation history up to this point
+            history = self.short_memory.get_str()
+
+            # Create a comprehensive summary prompt
+            summary_prompt = f"""Based on the complete execution history below, generate a comprehensive final summary of the task completion:
+
+## EXECUTION HISTORY:
+{history}
+
+## SUMMARY GENERATION INSTRUCTIONS:
+1. **Task Completion Status**: Clearly state whether the task was successfully completed
+2. **Key Accomplishments**: List the major achievements and milestones reached
+3. **Process Summary**: Briefly describe the phases executed (planning, execution, etc.)
+4. **Results**: Provide concrete results and outputs from the execution
+5. **Insights**: Share key insights, learnings, or important findings
+6. **Final Recommendations**: If applicable, provide recommendations for next steps or improvements
+
+Please generate a clear, well-structured summary that captures the essence of the entire autonomous loop execution."""
+
+            # Call LLM with streaming support for the summary
+            summary = self.call_llm(
+                task=summary_prompt,
+                current_loop=0,
+                streaming_callback=streaming_callback,
+                *args,
+                **kwargs,
+            )
+
+            # Add the summary to short-term memory
+            self.short_memory.add(
+                role=self.agent_name,
+                content=f"## FINAL AUTONOMOUS LOOP SUMMARY ##\n{summary}",
+            )
+
+            if self.verbose:
+                logger.info(
+                    f"Autonomous loop summary generated for agent '{self.agent_name}'"
+                )
+
+        except Exception as error:
+            logger.error(
+                f"Failed to generate autonomous loop summary for agent '{self.agent_name}': {error}"
+            )
+            # Don't raise - summary generation failure shouldn't break the execution
 
     def plan(self, task: str, *args, **kwargs) -> None:
         """
