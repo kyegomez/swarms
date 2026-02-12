@@ -162,5 +162,6 @@ Your API will be available at:
 1. Experiment with different pricing models
 2. Add multiple agents with specialized capabilities
 3. Implement analytics to track usage and revenue
-4. Deploy to production (see [Deployment Solutions](../deployment_solutions/overview.md))
-5. Integrate with your existing payment processing
+4. Add per-agent spending limits and circuit breakers (see [X402 Spending Limits](x402_spending_limits.md))
+5. Deploy to production (see [Deployment Solutions](../deployment_solutions/overview.md))
+6. Integrate with your existing payment processing

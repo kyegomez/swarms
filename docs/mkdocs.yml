@@ -501,6 +501,7 @@ nav:
     - X402:
       - x402 Quickstart Example: "examples/x402_payment_integration.md"
       - X402 Discovery Query Agent: "examples/x402_discovery_query.md"
+      - X402 Spending Limits: "examples/x402_spending_limits.md"
       - X402 Tools Agent: "swarms/examples/x402_tools_agent.md"
 
     - Marketplace:

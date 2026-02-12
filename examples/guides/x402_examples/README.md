@@ -95,6 +95,12 @@ For mainnet:
    )
    ```
 
+## Spending Limits Example
+
+For per-agent budgets, approval thresholds, and circuit breakers, see:
+
+- `agent_integration/x402_agent_buying.py`
+
 ## Learn More
 
 - [X402 Documentation](https://docs.cdp.coinbase.com/x402)
