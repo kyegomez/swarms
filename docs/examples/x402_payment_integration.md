@@ -4,12 +4,12 @@ X402 is a protocol that enables seamless cryptocurrency payments for API endpoin
 
 With X402, you can:
 
-| Feature                                             | Description                                  |
-|-----------------------------------------------------|----------------------------------------------|
-| Charge per API request                              | Monetize your agents on a per-call basis     |
-| Accept cryptocurrency payments                      | e.g., Base, Base Sepolia, and more           |
-| Payment gate protection for agent endpoints         | Secure endpoints with pay-to-access gates    |
-| Create pay-per-use AI services                      | Offer AI agents as on-demand paid services   |
+| Feature                                     | Description                                |
+| ------------------------------------------- | ------------------------------------------ |
+| Charge per API request                      | Monetize your agents on a per-call basis   |
+| Accept cryptocurrency payments              | e.g., Base, Base Sepolia, and more         |
+| Payment gate protection for agent endpoints | Secure endpoints with pay-to-access gates  |
+| Create pay-per-use AI services              | Offer AI agents as on-demand paid services |
 
 ## Prerequisites
 
@@ -133,7 +133,6 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
 
-
 ## Running Your Service
 
 Start the server:
@@ -155,7 +154,6 @@ Your API will be available at:
 - Research endpoint: `http://localhost:8000/research`
 
 - API docs: `http://localhost:8000/docs`
-
 
 ## Next Steps
 
