@@ -496,6 +496,14 @@ nav:
           - X402 Spending Limits: "examples/x402_spending_limits.md"
           - X402 Tools Agent: "swarms/examples/x402_tools_agent.md"
 
+      - Framework Internals:
+          - Payments Policy Engine: "swarms/payments/index.md"
+          - Telemetry: "swarms/telemetry/index.md"
+          - Sims: "swarms/sims/index.md"
+          - Artifacts: "swarms/artifacts/index.md"
+          - Prompts: "swarms/prompts/index.md"
+          - Schemas: "swarms/schemas/index.md"
+
       - Marketplace:
           - Overview: "examples/marketplace_examples_overview.md"
           - Loading Prompts from Marketplace: "swarms/examples/marketplace_prompt_loading.md"
@@ -529,6 +537,7 @@ nav:
           - Adding Tests: "swarms/framework/test.md"
           - Adding Documentation: "contributors/docs.md"
           - New Tools & Plugins: "contributors/tools.md"
+          - Undocumented Features Backlog: "contributors/undocumented_features_backlog.md"
 
       - Architecture & Design:
           - Understanding Swarms Architecture: "swarms/concept/framework_architecture.md"
