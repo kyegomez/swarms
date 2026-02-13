@@ -506,7 +506,7 @@ class SwarmRouter:
             pro_agent=self.agents[0],
             con_agent=self.agents[1],
             judge_agent=self.agents[2],
-            max_rounds=self.max_loops,
+            max_loops=self.max_loops,
             output_type=self.output_type,
             verbose=self.verbose,
         )
