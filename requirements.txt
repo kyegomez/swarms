@@ -26,5 +26,7 @@ aiohttp
 mcp
 numpy
 schedule
-uvloop; sys_platform == 'linux' or sys_platform == 'darwin' # linux or macos only
-winloop; sys_platform == 'win32' # windows only
+# uvloop and winloop are optional. The package now uses stdlib asyncio
+# event loop policies by default. To opt-in, install manually:
+# pip install uvloop  # linux/macOS
+# pip install winloop  # Windows
