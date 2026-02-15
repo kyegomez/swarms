@@ -33,7 +33,7 @@ class ConcurrentWorkflow:
         id (str): Unique identifier for the workflow instance
         name (str): Human-readable name for the workflow
         description (str): Description of the workflow's purpose
-        agents (List[Union[Agent, Callable]]): List of agents to execute concurrently
+        agents (List[Agent]): List of agents to execute concurrently
         auto_save (bool): Whether to automatically save workflow metadata
         output_type (str): Format for output formatting (e.g., "dict-all-except-first")
         max_loops (int): Maximum number of execution loops (currently unused)
@@ -72,10 +72,10 @@ class ConcurrentWorkflow:
 
     def __init__(
         self,
+        agents: List[Agent] = None,
         id: str = None,
         name: str = "ConcurrentWorkflow",
         description: str = "Execution of multiple agents concurrently",
-        agents: List[Union[Agent, Callable]] = None,
         auto_save: bool = True,
         output_type: str = "dict-all-except-first",
         max_loops: int = 1,
@@ -129,7 +129,7 @@ class ConcurrentWorkflow:
         console output conflicts with the dashboard display.
 
         Returns:
-            List[Union[Agent, Callable]]: The configured list of agents.
+            List[Agent]: The configured list of agents.
         """
         if self.show_dashboard is True:
             for agent in self.agents:

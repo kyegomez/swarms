@@ -30,7 +30,7 @@ class SequentialWorkflow:
         id (str): Unique identifier for the workflow instance.
         name (str): Human-readable name for the workflow.
         description (str): Description of the workflow's purpose.
-        agents (List[Union[Agent, Callable]]): List of agents or callables to execute in sequence.
+        agents (List[Agent]): List of agents to execute in sequence.
         max_loops (int): Maximum number of times to execute the workflow.
         output_type (OutputType): Format of the output from the workflow.
         shared_memory_system (callable): Optional callable for managing shared memory between agents.
@@ -44,10 +44,10 @@ class SequentialWorkflow:
 
     def __init__(
         self,
+        agents: List[Agent] = None,
         id: str = "sequential_workflow",
         name: str = "SequentialWorkflow",
         description: str = "Sequential Workflow, where agents are executed in a sequence.",
-        agents: List[Union[Agent, Callable]] = None,
         max_loops: int = 1,
         output_type: OutputType = "dict",
         shared_memory_system: callable = None,
@@ -62,10 +62,10 @@ class SequentialWorkflow:
         Initialize a SequentialWorkflow instance.
 
         Args:
+            agents (List[Agent], optional): List of agents to execute in sequence.
             id (str, optional): Unique identifier for the workflow. Defaults to "sequential_workflow".
             name (str, optional): Name of the workflow. Defaults to "SequentialWorkflow".
             description (str, optional): Description of the workflow. Defaults to a standard description.
-            agents (List[Union[Agent, Callable]], optional): List of agents or callables to execute in sequence.
             max_loops (int, optional): Maximum number of times to execute the workflow. Defaults to 1.
             output_type (OutputType, optional): Output format for the workflow. Defaults to "dict".
             shared_memory_system (callable, optional): Callable for shared memory management. Defaults to None.
