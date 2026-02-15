@@ -1,30 +1,38 @@
 # Batch Agent Execution
 
-    `batch_agent_execution` reference documentation.
-
-    **Module Path**: `swarms.structs.batch_agent_execution`
+    Reference documentation for `swarms.structs.batch_agent_execution`.
 
     ## Overview
 
-    Concurrent helper to run one task per agent with thread pooling and aggregated outputs.
+    This module provides production utilities for `batch agent execution` in Swarms.
+
+    ## Module Path
+
+    ```python
+    from swarms.structs.batch_agent_execution import ...
+    ```
 
     ## Public API
 
-    - **`BatchAgentExecutionError`**: No public methods documented in this module.
-- **`batch_agent_execution()`**
+    - `batch_agent_execution(agents, tasks, imgs, max_workers)` and `BatchAgentExecutionError`
 
-    ## Quickstart
+    ## Quick Start
 
     ```python
-    from swarms.structs.batch_agent_execution import BatchAgentExecutionError, batch_agent_execution
+    from swarms import Agent
+from swarms.structs.batch_agent_execution import batch_agent_execution
+
+agents = [Agent(agent_name="A1", model_name="gpt-4.1"), Agent(agent_name="A2", model_name="gpt-4.1")]
+tasks = ["Summarize topic A", "Summarize topic B"]
+imgs = [None, None]
+print(batch_agent_execution(agents=agents, tasks=tasks, imgs=imgs, max_workers=2))
     ```
 
     ## Tutorial
 
-    A runnable tutorial is available at [`swarms/examples/batch_agent_execution_example.md`](../examples/batch_agent_execution_example.md).
+    See the runnable tutorial: [`swarms/examples/batch_agent_execution_example.md`](../examples/batch_agent_execution_example.md)
 
-    ## Notes
+    ## Operational Notes
 
-    - Keep task payloads small for first runs.
-    - Prefer deterministic prompts when comparing outputs across agents.
-    - Validate provider credentials (for LLM-backed examples) before production use.
+    - Validate credentials and model access before running LLM-backed examples.
+    - Start with small inputs/tasks, then scale once behavior is verified.

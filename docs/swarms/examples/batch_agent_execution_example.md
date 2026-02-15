@@ -1,12 +1,11 @@
 # Batch Agent Execution Tutorial
 
-    End-to-end usage for `batch_agent_execution`.
+    End-to-end tutorial for `swarms.structs.batch_agent_execution`.
 
     ## Prerequisites
 
     - Python 3.10+
     - `pip install -U swarms`
-    - Provider credentials configured when using hosted LLMs
 
     ## Example
 
@@ -14,25 +13,17 @@
     from swarms import Agent
 from swarms.structs.batch_agent_execution import batch_agent_execution
 
-agents = [
-    Agent(agent_name="Researcher", system_prompt="Research", model_name="gpt-4.1", max_loops=1),
-    Agent(agent_name="Reviewer", system_prompt="Review", model_name="gpt-4.1", max_loops=1),
-]
-
-tasks = [
-    "Summarize this week in AI.",
-    "Critique the summary for blind spots.",
-]
-
-results = batch_agent_execution(agents=agents, tasks=tasks, imgs=[None, None])
-print(results)
+agents = [Agent(agent_name="A1", model_name="gpt-4.1"), Agent(agent_name="A2", model_name="gpt-4.1")]
+tasks = ["Summarize topic A", "Summarize topic B"]
+imgs = [None, None]
+print(batch_agent_execution(agents=agents, tasks=tasks, imgs=imgs, max_workers=2))
     ```
 
     ## What this demonstrates
 
-    - Basic construction/import pattern for `batch_agent_execution`
-    - Minimal execution path you can adapt in production
-    - Safe starting defaults for iteration
+    - Correct import and initialization flow for `batch_agent_execution`
+    - Minimal execution path suitable for first integration tests
+    - A baseline pattern to adapt for production use
 
     ## Related
 
