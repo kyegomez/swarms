@@ -1,34 +1,26 @@
 # Stopping Conditions Tutorial
 
-    End-to-end usage for `stopping_conditions`.
+    End-to-end tutorial for `swarms.structs.stopping_conditions`.
 
     ## Prerequisites
 
     - Python 3.10+
     - `pip install -U swarms`
-    - Provider credentials configured when using hosted LLMs
 
     ## Example
 
     ```python
     from swarms.structs.stopping_conditions import check_stopping_conditions
 
-samples = [
-    "analysis complete",
-    "execution finished",
-    "error: timeout",
-    "continue processing",
-]
-
-for text in samples:
-    print(text, "->", check_stopping_conditions(text))
+print(check_stopping_conditions("task finished successfully"))
+print(check_stopping_conditions("continue running"))
     ```
 
     ## What this demonstrates
 
-    - Basic construction/import pattern for `stopping_conditions`
-    - Minimal execution path you can adapt in production
-    - Safe starting defaults for iteration
+    - Correct import and initialization flow for `stopping_conditions`
+    - Minimal execution path suitable for first integration tests
+    - A baseline pattern to adapt for production use
 
     ## Related
 

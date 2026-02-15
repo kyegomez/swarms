@@ -1,39 +1,35 @@
 # Stopping Conditions
 
-    `stopping_conditions` reference documentation.
-
-    **Module Path**: `swarms.structs.stopping_conditions`
+    Reference documentation for `swarms.structs.stopping_conditions`.
 
     ## Overview
 
-    Keyword-based stopping-condition predicates and a unified evaluator for workflow termination checks.
+    This module provides production utilities for `stopping conditions` in Swarms.
+
+    ## Module Path
+
+    ```python
+    from swarms.structs.stopping_conditions import ...
+    ```
 
     ## Public API
 
-    - **`check_done()`**
-- **`check_finished()`**
-- **`check_complete()`**
-- **`check_success()`**
-- **`check_failure()`**
-- **`check_error()`**
-- **`check_stopped()`**
-- **`check_cancelled()`**
-- **`check_exit()`**
-- **`check_end()`**
-- **`check_stopping_conditions()`**
+    - `check_stopping_conditions(input)` plus predicate helpers like `check_done`, `check_finished`
 
-    ## Quickstart
+    ## Quick Start
 
     ```python
-    from swarms.structs.stopping_conditions import check_done, check_finished, check_complete
+    from swarms.structs.stopping_conditions import check_stopping_conditions
+
+print(check_stopping_conditions("task finished successfully"))
+print(check_stopping_conditions("continue running"))
     ```
 
     ## Tutorial
 
-    A runnable tutorial is available at [`swarms/examples/stopping_conditions_example.md`](../examples/stopping_conditions_example.md).
+    See the runnable tutorial: [`swarms/examples/stopping_conditions_example.md`](../examples/stopping_conditions_example.md)
 
-    ## Notes
+    ## Operational Notes
 
-    - Keep task payloads small for first runs.
-    - Prefer deterministic prompts when comparing outputs across agents.
-    - Validate provider credentials (for LLM-backed examples) before production use.
+    - Validate credentials and model access before running LLM-backed examples.
+    - Start with small inputs/tasks, then scale once behavior is verified.
