@@ -634,7 +634,6 @@ class SwarmRouter:
             agents=self.agents,
             max_loops=self.max_loops,
             verbose=self.verbose,
-            return_json_on=self.return_json,
             *args,
             **kwargs,
         )
