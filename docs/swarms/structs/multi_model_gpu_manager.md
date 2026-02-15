@@ -1,38 +1,36 @@
-# Multi Model Gpu Manager
+# Multi Model GPU Manager
 
-    `multi_model_gpu_manager` reference documentation.
-
-    **Module Path**: `swarms.structs.multi_model_gpu_manager`
+    Reference documentation for `swarms.structs.multi_model_gpu_manager`.
 
     ## Overview
 
-    Production utility for allocating and running many ML models across available GPUs with memory-aware placement.
+    This module provides production utilities for `multi model gpu manager` in Swarms.
+
+    ## Module Path
+
+    ```python
+    from swarms.structs.multi_model_gpu_manager import ...
+    ```
 
     ## Public API
 
-    - **`ModelType`**: No public methods documented in this module.
-- **`GPUAllocationStrategy`**: No public methods documented in this module.
-- **`ModelMetadata`**: No public methods documented in this module.
-- **`GPUMetadata`**: No public methods documented in this module.
-- **`ModelMemoryCalculator`**: `get_pytorch_model_size()`, `get_huggingface_model_size()`
-- **`GPUManager`**: `update_gpu_memory_info()`
-- **`ModelGrid`**: `add_model()`, `remove_model()`, `allocate_all_models()`, `load_model()`, `unload_model()`, `load_all_models()`, `unload_all_models()`, `run()`
-- **`ModelWithCustomRunMethod`**: `run()`
-- **`PyTorchModelWrapper`**: `run()`
-- **`HuggingFaceModelWrapper`**: `run()`
+    - `ModelGrid`: `add_model`, `allocate_all_models`, `load_all_models`, `run`, `get_gpu_status`
 
-    ## Quickstart
+    ## Quick Start
 
     ```python
-    from swarms.structs.multi_model_gpu_manager import ModelType, GPUAllocationStrategy, ModelMetadata
+    from swarms.structs.multi_model_gpu_manager import ModelGrid, GPUAllocationStrategy
+
+grid = ModelGrid(allocation_strategy=GPUAllocationStrategy.MEMORY_OPTIMIZED, use_multiprocessing=False)
+print(grid.get_gpu_status())
     ```
 
     ## Tutorial
 
-    A runnable tutorial is available at [`swarms/examples/multi_model_gpu_manager_example.md`](../examples/multi_model_gpu_manager_example.md).
+    See the runnable tutorial: [`swarms/examples/multi_model_gpu_manager_example.md`](../examples/multi_model_gpu_manager_example.md)
 
-    ## Notes
+    ## Operational Notes
 
-    - Keep task payloads small for first runs.
-    - Prefer deterministic prompts when comparing outputs across agents.
-    - Validate provider credentials (for LLM-backed examples) before production use.
+    - Validate credentials and model access before running LLM-backed examples.
+    - Start with small inputs/tasks, then scale once behavior is verified.
+- This module expects CUDA/PyTorch runtime for full GPU orchestration. Start with status calls before loading models.

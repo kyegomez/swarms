@@ -317,6 +317,7 @@ nav:
           - GraphWorkflow: "swarms/structs/graph_workflow.md"
           - BatchedGridWorkflow: "swarms/structs/batched_grid_workflow.md"
 
+        - ModelGrid: "swarms/structs/multi_model_gpu_manager.md"
         - Communication Structure: "swarms/structs/conversation.md"
         - Multi Model Gpu Manager: "swarms/structs/multi_model_gpu_manager.md"
 
@@ -455,6 +456,7 @@ nav:
 
       - Utilities:
         - Unique Swarms: "swarms/examples/unique_swarms.md"
+        - ModelGrid: "swarms/examples/multi_model_gpu_manager_example.md"
         - Multi Model Gpu Manager: "swarms/examples/multi_model_gpu_manager_example.md"
         - Agents as Tools: "swarms/examples/agents_as_tools.md"
         - Aggregate Responses: "swarms/examples/aggregate.md"
