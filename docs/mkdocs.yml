@@ -318,6 +318,7 @@ nav:
           - BatchedGridWorkflow: "swarms/structs/batched_grid_workflow.md"
 
         - Communication Structure: "swarms/structs/conversation.md"
+        - Omni Agent Types: "swarms/structs/omni_agent_types.md"
 
     - Utilities:
       - CLI Reference: "swarms/cli/cli_reference.md"
@@ -454,6 +455,7 @@ nav:
 
       - Utilities:
         - Unique Swarms: "swarms/examples/unique_swarms.md"
+        - Omni Agent Types: "swarms/examples/omni_agent_types_example.md"
         - Agents as Tools: "swarms/examples/agents_as_tools.md"
         - Aggregate Responses: "swarms/examples/aggregate.md"
         - SpreadSheetSwarm: "swarms/examples/spreadsheet_swarm_example.md"
