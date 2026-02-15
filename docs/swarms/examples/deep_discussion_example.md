@@ -1,12 +1,11 @@
 # Deep Discussion Tutorial
 
-    End-to-end usage for `deep_discussion`.
+    End-to-end tutorial for `swarms.structs.deep_discussion`.
 
     ## Prerequisites
 
     - Python 3.10+
     - `pip install -U swarms`
-    - Provider credentials configured when using hosted LLMs
 
     ## Example
 
@@ -14,22 +13,16 @@
     from swarms import Agent
 from swarms.structs.deep_discussion import one_on_one_debate
 
-pro = Agent(agent_name="Pro", system_prompt="Argue in favor.", model_name="gpt-4.1", max_loops=1)
-con = Agent(agent_name="Con", system_prompt="Argue against.", model_name="gpt-4.1", max_loops=1)
-
-history = one_on_one_debate(
-    max_loops=3,
-    task="Should startups prioritize growth over profitability?",
-    agents=[pro, con],
-)
-print(history)
+a1 = Agent(agent_name="Architect", model_name="gpt-4.1")
+a2 = Agent(agent_name="Reviewer", model_name="gpt-4.1")
+print(one_on_one_debate(max_loops=2, task="Choose a queue system", agents=[a1, a2]))
     ```
 
     ## What this demonstrates
 
-    - Basic construction/import pattern for `deep_discussion`
-    - Minimal execution path you can adapt in production
-    - Safe starting defaults for iteration
+    - Correct import and initialization flow for `deep_discussion`
+    - Minimal execution path suitable for first integration tests
+    - A baseline pattern to adapt for production use
 
     ## Related
 

@@ -1,29 +1,37 @@
 # Deep Discussion
 
-`deep_discussion` reference documentation.
+    Reference documentation for `swarms.structs.deep_discussion`.
 
-**Module Path**: `swarms.structs.deep_discussion`
+    ## Overview
 
-## Overview
+    This module provides production utilities for `deep discussion` in Swarms.
 
-Two-agent turn-based debate primitive with conversation history formatting.
+    ## Module Path
 
-## Public API
+    ```python
+    from swarms.structs.deep_discussion import ...
+    ```
 
-- **`one_on_one_debate()`**
+    ## Public API
 
-## Quickstart
+    - `one_on_one_debate(max_loops, task, agents, img, output_type)`
 
-```python
+    ## Quick Start
+
+    ```python
+    from swarms import Agent
 from swarms.structs.deep_discussion import one_on_one_debate
-```
 
-## Tutorial
+a1 = Agent(agent_name="Architect", model_name="gpt-4.1")
+a2 = Agent(agent_name="Reviewer", model_name="gpt-4.1")
+print(one_on_one_debate(max_loops=2, task="Choose a queue system", agents=[a1, a2]))
+    ```
 
-A runnable tutorial is available at [`swarms/examples/deep_discussion_example.md`](../examples/deep_discussion_example.md).
+    ## Tutorial
 
-## Notes
+    See the runnable tutorial: [`swarms/examples/deep_discussion_example.md`](../examples/deep_discussion_example.md)
 
-- Keep task payloads small for first runs.
-- Prefer deterministic prompts when comparing outputs across agents.
-- Validate provider credentials (for LLM-backed examples) before production use.
+    ## Operational Notes
+
+    - Validate credentials and model access before running LLM-backed examples.
+    - Start with small inputs/tasks, then scale once behavior is verified.
