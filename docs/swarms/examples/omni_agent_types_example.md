@@ -1,35 +1,31 @@
 # Omni Agent Types Tutorial
 
-    End-to-end usage for `omni_agent_types`.
+    End-to-end tutorial for `swarms.structs.omni_agent_types`.
 
     ## Prerequisites
 
     - Python 3.10+
     - `pip install -U swarms`
-    - Provider credentials configured when using hosted LLMs
 
     ## Example
 
     ```python
     from typing import Callable
+from swarms import Agent
 from swarms.structs.omni_agent_types import AgentType, AgentListType
 
-def run_any(agent: AgentType, task: str):
-    if hasattr(agent, "run"):
-        return agent.run(task)
-    if isinstance(agent, Callable):
-        return agent(task)
-    return str(agent)
+def fallback(task: str) -> str:
+    return f"fallback: {task}"
 
-def batch_run(agents: AgentListType, task: str):
-    return [run_any(agent, task) for agent in agents]
+agent: AgentType = Agent(agent_name="A", model_name="gpt-4.1")
+agents: AgentListType = [agent, fallback]
     ```
 
     ## What this demonstrates
 
-    - Basic construction/import pattern for `omni_agent_types`
-    - Minimal execution path you can adapt in production
-    - Safe starting defaults for iteration
+    - Correct import and initialization flow for `omni_agent_types`
+    - Minimal execution path suitable for first integration tests
+    - A baseline pattern to adapt for production use
 
     ## Related
 

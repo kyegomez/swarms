@@ -1,29 +1,40 @@
 # Omni Agent Types
 
-`omni_agent_types` reference documentation.
+    Reference documentation for `swarms.structs.omni_agent_types`.
 
-**Module Path**: `swarms.structs.omni_agent_types`
+    ## Overview
 
-## Overview
+    This module provides production utilities for `omni agent types` in Swarms.
 
-Shared type aliases (`AgentType`, `AgentListType`) used by multi-agent APIs.
+    ## Module Path
 
-## Public API
+    ```python
+    from swarms.structs.omni_agent_types import ...
+    ```
 
-- Type aliases and constants only.
+    ## Public API
 
-## Quickstart
+    - `AgentType` and `AgentListType` aliases for shared type-safe APIs
 
-```python
-from swarms.structs.omni_agent_types import # type aliases only
-```
+    ## Quick Start
 
-## Tutorial
+    ```python
+    from typing import Callable
+from swarms import Agent
+from swarms.structs.omni_agent_types import AgentType, AgentListType
 
-A runnable tutorial is available at [`swarms/examples/omni_agent_types_example.md`](../examples/omni_agent_types_example.md).
+def fallback(task: str) -> str:
+    return f"fallback: {task}"
 
-## Notes
+agent: AgentType = Agent(agent_name="A", model_name="gpt-4.1")
+agents: AgentListType = [agent, fallback]
+    ```
 
-- Keep task payloads small for first runs.
-- Prefer deterministic prompts when comparing outputs across agents.
-- Validate provider credentials (for LLM-backed examples) before production use.
+    ## Tutorial
+
+    See the runnable tutorial: [`swarms/examples/omni_agent_types_example.md`](../examples/omni_agent_types_example.md)
+
+    ## Operational Notes
+
+    - Validate credentials and model access before running LLM-backed examples.
+    - Start with small inputs/tasks, then scale once behavior is verified.
