@@ -317,6 +317,7 @@ nav:
           - GraphWorkflow: "swarms/structs/graph_workflow.md"
           - BatchedGridWorkflow: "swarms/structs/batched_grid_workflow.md"
 
+        - BaseStructure: "swarms/structs/base_structure.md"
         - Communication Structure: "swarms/structs/conversation.md"
         - Base Structure: "swarms/structs/base_structure.md"
 
@@ -455,6 +456,7 @@ nav:
 
       - Utilities:
         - Unique Swarms: "swarms/examples/unique_swarms.md"
+        - BaseStructure: "swarms/examples/base_structure_example.md"
         - Base Structure: "swarms/examples/base_structure_example.md"
         - Agents as Tools: "swarms/examples/agents_as_tools.md"
         - Aggregate Responses: "swarms/examples/aggregate.md"

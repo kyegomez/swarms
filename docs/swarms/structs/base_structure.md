@@ -1,29 +1,36 @@
-# Base Structure
+# BaseStructure
 
-`base_structure` reference documentation.
+    Reference documentation for `swarms.structs.base_structure`.
 
-**Module Path**: `swarms.structs.base_structure`
+    ## Overview
 
-## Overview
+    This module provides production utilities for `base structure` in Swarms.
 
-Base utility class that standardizes metadata, artifacts, errors, async helpers, and batching helpers for swarm structures.
+    ## Module Path
 
-## Public API
+    ```python
+    from swarms.structs.base_structure import ...
+    ```
 
-- **`BaseStructure`**: `run()`, `save_to_file()`, `load_from_file()`, `save_metadata()`, `load_metadata()`, `log_error()`, `save_artifact()`, `load_artifact()`
+    ## Public API
 
-## Quickstart
+    - `BaseStructure`: `save_to_file`, `load_from_file`, `save_metadata`, `log_event`, async/thread helpers
 
-```python
-from swarms.structs.base_structure import BaseStructure
-```
+    ## Quick Start
 
-## Tutorial
+    ```python
+    from swarms.structs.base_structure import BaseStructure
 
-A runnable tutorial is available at [`swarms/examples/base_structure_example.md`](../examples/base_structure_example.md).
+base = BaseStructure(name="demo", save_metadata_on=False)
+base.save_to_file({"status": "ok"}, "./demo.json")
+print(base.load_from_file("./demo.json"))
+    ```
 
-## Notes
+    ## Tutorial
 
-- Keep task payloads small for first runs.
-- Prefer deterministic prompts when comparing outputs across agents.
-- Validate provider credentials (for LLM-backed examples) before production use.
+    See the runnable tutorial: [`swarms/examples/base_structure_example.md`](../examples/base_structure_example.md)
+
+    ## Operational Notes
+
+    - Validate credentials and model access before running LLM-backed examples.
+    - Start with small inputs/tasks, then scale once behavior is verified.
