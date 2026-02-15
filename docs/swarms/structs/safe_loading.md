@@ -1,30 +1,43 @@
 # Safe Loading
 
-    `safe_loading` reference documentation.
-
-    **Module Path**: `swarms.structs.safe_loading`
+    Reference documentation for `swarms.structs.safe_loading`.
 
     ## Overview
 
-    Safe state serialization/loading utilities that preserve object instances and only persist safe values.
+    This module provides production utilities for `safe loading` in Swarms.
+
+    ## Module Path
+
+    ```python
+    from swarms.structs.safe_loading import ...
+    ```
 
     ## Public API
 
-    - **`SafeLoaderUtils`**: `is_class_instance()`, `is_safe_type()`, `get_class_attributes()`, `create_state_dict()`, `preserve_instances()`
-- **`SafeStateManager`**: `save_state()`, `load_state()`
+    - `SafeLoaderUtils` and `SafeStateManager.save_state/load_state`
 
-    ## Quickstart
+    ## Quick Start
 
     ```python
-    from swarms.structs.safe_loading import SafeLoaderUtils, SafeStateManager
+    from swarms.structs.safe_loading import SafeStateManager
+
+class Config:
+    def __init__(self):
+        self.name = "demo"
+        self.version = 1
+
+cfg = Config()
+SafeStateManager.save_state(cfg, "./state/config.json")
+cfg.version = 2
+SafeStateManager.load_state(cfg, "./state/config.json")
+print(cfg.version)
     ```
 
     ## Tutorial
 
-    A runnable tutorial is available at [`swarms/examples/safe_loading_example.md`](../examples/safe_loading_example.md).
+    See the runnable tutorial: [`swarms/examples/safe_loading_example.md`](../examples/safe_loading_example.md)
 
-    ## Notes
+    ## Operational Notes
 
-    - Keep task payloads small for first runs.
-    - Prefer deterministic prompts when comparing outputs across agents.
-    - Validate provider credentials (for LLM-backed examples) before production use.
+    - Validate credentials and model access before running LLM-backed examples.
+    - Start with small inputs/tasks, then scale once behavior is verified.

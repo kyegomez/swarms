@@ -1,37 +1,34 @@
 # Safe Loading Tutorial
 
-    End-to-end usage for `safe_loading`.
+    End-to-end tutorial for `swarms.structs.safe_loading`.
 
     ## Prerequisites
 
     - Python 3.10+
     - `pip install -U swarms`
-    - Provider credentials configured when using hosted LLMs
 
     ## Example
 
     ```python
     from swarms.structs.safe_loading import SafeStateManager
 
-class WorkflowState:
+class Config:
     def __init__(self):
-        self.name = "pipeline-a"
-        self.retries = 2
-        self.tags = ["etl", "daily"]
+        self.name = "demo"
+        self.version = 1
 
-state = WorkflowState()
-SafeStateManager.save_state(state, "./state/workflow_state.json")
-
-state.retries = 0
-SafeStateManager.load_state(state, "./state/workflow_state.json")
-print(state.retries)  # 2
+cfg = Config()
+SafeStateManager.save_state(cfg, "./state/config.json")
+cfg.version = 2
+SafeStateManager.load_state(cfg, "./state/config.json")
+print(cfg.version)
     ```
 
     ## What this demonstrates
 
-    - Basic construction/import pattern for `safe_loading`
-    - Minimal execution path you can adapt in production
-    - Safe starting defaults for iteration
+    - Correct import and initialization flow for `safe_loading`
+    - Minimal execution path suitable for first integration tests
+    - A baseline pattern to adapt for production use
 
     ## Related
 

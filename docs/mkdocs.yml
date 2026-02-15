@@ -317,6 +317,7 @@ nav:
           - GraphWorkflow: "swarms/structs/graph_workflow.md"
           - BatchedGridWorkflow: "swarms/structs/batched_grid_workflow.md"
 
+        - SafeStateManager: "swarms/structs/safe_loading.md"
         - Communication Structure: "swarms/structs/conversation.md"
         - Safe Loading: "swarms/structs/safe_loading.md"
 
@@ -455,6 +456,7 @@ nav:
 
       - Utilities:
         - Unique Swarms: "swarms/examples/unique_swarms.md"
+        - SafeStateManager: "swarms/examples/safe_loading_example.md"
         - Safe Loading: "swarms/examples/safe_loading_example.md"
         - Agents as Tools: "swarms/examples/agents_as_tools.md"
         - Aggregate Responses: "swarms/examples/aggregate.md"
