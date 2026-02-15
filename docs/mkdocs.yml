@@ -317,7 +317,9 @@ nav:
           - GraphWorkflow: "swarms/structs/graph_workflow.md"
           - BatchedGridWorkflow: "swarms/structs/batched_grid_workflow.md"
 
+        - CSVAgentLoader: "swarms/structs/csv_to_agent.md"
         - Communication Structure: "swarms/structs/conversation.md"
+        - Csv To Agent: "swarms/structs/csv_to_agent.md"
 
     - Utilities:
       - CLI Reference: "swarms/cli/cli_reference.md"
@@ -454,6 +456,8 @@ nav:
 
       - Utilities:
         - Unique Swarms: "swarms/examples/unique_swarms.md"
+        - CSVAgentLoader: "swarms/examples/csv_to_agent_example.md"
+        - Csv To Agent: "swarms/examples/csv_to_agent_example.md"
         - Agents as Tools: "swarms/examples/agents_as_tools.md"
         - Aggregate Responses: "swarms/examples/aggregate.md"
         - SpreadSheetSwarm: "swarms/examples/spreadsheet_swarm_example.md"
