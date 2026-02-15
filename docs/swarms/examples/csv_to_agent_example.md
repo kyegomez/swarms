@@ -1,12 +1,11 @@
-# Csv To Agent Tutorial
+# CSV to Agent Tutorial
 
-    End-to-end usage for `csv_to_agent`.
+    End-to-end tutorial for `swarms.structs.csv_to_agent`.
 
     ## Prerequisites
 
     - Python 3.10+
     - `pip install -U swarms`
-    - Provider credentials configured when using hosted LLMs
 
     ## Example
 
@@ -14,26 +13,16 @@
     from swarms.structs.csv_to_agent import CSVAgentLoader
 
 loader = CSVAgentLoader(file_path="./agents.yaml", max_workers=4)
-
-# Create config file from dicts (or AgentSpec objects)
-loader.create_agent_file([
-    {
-        "agent_name": "Analyst",
-        "system_prompt": "Analyze financial statements.",
-        "model_name": "gpt-4.1",
-        "max_loops": 1,
-    }
-])
-
+# loader.create_agent_file([...])
 agents = loader.load_agents()
-print([a.agent_name for a in agents])
+print(f"Loaded {len(agents)} agents")
     ```
 
     ## What this demonstrates
 
-    - Basic construction/import pattern for `csv_to_agent`
-    - Minimal execution path you can adapt in production
-    - Safe starting defaults for iteration
+    - Correct import and initialization flow for `csv_to_agent`
+    - Minimal execution path suitable for first integration tests
+    - A baseline pattern to adapt for production use
 
     ## Related
 

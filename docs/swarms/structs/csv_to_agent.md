@@ -1,34 +1,38 @@
-# Csv To Agent
+# CSV to Agent
 
-    `csv_to_agent` reference documentation.
-
-    **Module Path**: `swarms.structs.csv_to_agent`
+    Reference documentation for `swarms.structs.csv_to_agent`.
 
     ## Overview
 
-    Typed loader/validator for creating agents from CSV, JSON, or YAML configuration files.
+    This module provides production utilities for `csv to agent` in Swarms.
+
+    ## Module Path
+
+    ```python
+    from swarms.structs.csv_to_agent import ...
+    ```
 
     ## Public API
 
-    - **`ModelName`**: `get_model_names()`, `is_valid_model()`
-- **`FileType`**: No public methods documented in this module.
-- **`AgentConfigDict`**: No public methods documented in this module.
-- **`AgentValidationError`**: No public methods documented in this module.
-- **`AgentValidator`**: `validate_config()`
-- **`CSVAgentLoader`**: `file_type()`, `create_agent_file()`, `load_agents()`
+    - `CSVAgentLoader`: `create_agent_file`, `load_agents`; `AgentValidator.validate_config`
 
-    ## Quickstart
+    ## Quick Start
 
     ```python
-    from swarms.structs.csv_to_agent import ModelName, FileType, AgentConfigDict
+    from swarms.structs.csv_to_agent import CSVAgentLoader
+
+loader = CSVAgentLoader(file_path="./agents.yaml", max_workers=4)
+# loader.create_agent_file([...])
+agents = loader.load_agents()
+print(f"Loaded {len(agents)} agents")
     ```
 
     ## Tutorial
 
-    A runnable tutorial is available at [`swarms/examples/csv_to_agent_example.md`](../examples/csv_to_agent_example.md).
+    See the runnable tutorial: [`swarms/examples/csv_to_agent_example.md`](../examples/csv_to_agent_example.md)
 
-    ## Notes
+    ## Operational Notes
 
-    - Keep task payloads small for first runs.
-    - Prefer deterministic prompts when comparing outputs across agents.
-    - Validate provider credentials (for LLM-backed examples) before production use.
+    - Validate credentials and model access before running LLM-backed examples.
+    - Start with small inputs/tasks, then scale once behavior is verified.
+- Validation checks model names against `litellm.model_list`; keep model names provider-compatible.
