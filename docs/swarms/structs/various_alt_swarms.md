@@ -1,46 +1,37 @@
 # Various Alt Swarms
 
-    `various_alt_swarms` reference documentation.
-
-    **Module Path**: `swarms.structs.various_alt_swarms`
+    Reference documentation for `swarms.structs.various_alt_swarms`.
 
     ## Overview
 
-    Collection of alternative swarm/communication patterns (circular, star, mesh, pyramid, broadcast, one-to-one, etc.).
+    This module provides production utilities for `various alt swarms` in Swarms.
+
+    ## Module Path
+
+    ```python
+    from swarms.structs.various_alt_swarms import ...
+    ```
 
     ## Public API
 
-    - **`BaseSwarm`**: `run()`
-- **`CircularSwarm`**: `run()`
-- **`StarSwarm`**: `run()`
-- **`MeshSwarm`**: `run()`
-- **`PyramidSwarm`**: `run()`
-- **`FibonacciSwarm`**: `run()`
-- **`PrimeSwarm`**: `run()`
-- **`PowerSwarm`**: `run()`
-- **`LogSwarm`**: `run()`
-- **`ExponentialSwarm`**: `run()`
-- **`GeometricSwarm`**: `run()`
-- **`HarmonicSwarm`**: `run()`
-- **`StaircaseSwarm`**: `run()`
-- **`SigmoidSwarm`**: `run()`
-- **`SinusoidalSwarm`**: `run()`
-- **`OneToOne`**: `run()`
-- **`Broadcast`**: `run()`
-- **`OneToThree`**: `run()`
+    - Swarm classes: `CircularSwarm`, `StarSwarm`, `MeshSwarm`, `PyramidSwarm`, and communication patterns
 
-    ## Quickstart
+    ## Quick Start
 
     ```python
-    from swarms.structs.various_alt_swarms import BaseSwarm, CircularSwarm, StarSwarm
+    from swarms import Agent
+from swarms.structs.various_alt_swarms import CircularSwarm
+
+agents = [Agent(agent_name="A1", model_name="gpt-4.1"), Agent(agent_name="A2", model_name="gpt-4.1")]
+swarm = CircularSwarm(agents=agents, output_type="list")
+print(swarm.run(["Task 1", "Task 2"]))
     ```
 
     ## Tutorial
 
-    A runnable tutorial is available at [`swarms/examples/various_alt_swarms_example.md`](../examples/various_alt_swarms_example.md).
+    See the runnable tutorial: [`swarms/examples/various_alt_swarms_example.md`](../examples/various_alt_swarms_example.md)
 
-    ## Notes
+    ## Operational Notes
 
-    - Keep task payloads small for first runs.
-    - Prefer deterministic prompts when comparing outputs across agents.
-    - Validate provider credentials (for LLM-backed examples) before production use.
+    - Validate credentials and model access before running LLM-backed examples.
+    - Start with small inputs/tasks, then scale once behavior is verified.
