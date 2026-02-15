@@ -1,12 +1,11 @@
 # Collaborative Utils Tutorial
 
-    End-to-end usage for `collaborative_utils`.
+    End-to-end tutorial for `swarms.structs.collaborative_utils`.
 
     ## Prerequisites
 
     - Python 3.10+
     - `pip install -U swarms`
-    - Provider credentials configured when using hosted LLMs
 
     ## Example
 
@@ -14,24 +13,16 @@
     from swarms import Agent
 from swarms.structs.collaborative_utils import talk_to_agent
 
-alice = Agent(agent_name="Alice", system_prompt="You are analytical.", model_name="gpt-4.1", max_loops=1)
-bob = Agent(agent_name="Bob", system_prompt="You are critical.", model_name="gpt-4.1", max_loops=1)
-
-conversation = talk_to_agent(
-    current_agent=alice,
-    agents=[alice, bob],
-    task="Evaluate this launch plan.",
-    agent_name="Bob",
-    max_loops=2,
-)
-print(conversation)
+alice = Agent(agent_name="alice", model_name="gpt-4.1")
+bob = Agent(agent_name="bob", model_name="gpt-4.1")
+print(talk_to_agent(current_agent=alice, agents=[alice, bob], task="Debate caching strategy", agent_name="bob", max_loops=2))
     ```
 
     ## What this demonstrates
 
-    - Basic construction/import pattern for `collaborative_utils`
-    - Minimal execution path you can adapt in production
-    - Safe starting defaults for iteration
+    - Correct import and initialization flow for `collaborative_utils`
+    - Minimal execution path suitable for first integration tests
+    - A baseline pattern to adapt for production use
 
     ## Related
 

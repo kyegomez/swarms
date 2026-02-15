@@ -1,29 +1,37 @@
 # Collaborative Utils
 
-`collaborative_utils` reference documentation.
+    Reference documentation for `swarms.structs.collaborative_utils`.
 
-**Module Path**: `swarms.structs.collaborative_utils`
+    ## Overview
 
-## Overview
+    This module provides production utilities for `collaborative utils` in Swarms.
 
-Targeted inter-agent collaboration helper that routes one agent to a named peer using one-on-one debate.
+    ## Module Path
 
-## Public API
+    ```python
+    from swarms.structs.collaborative_utils import ...
+    ```
 
-- **`talk_to_agent()`**
+    ## Public API
 
-## Quickstart
+    - `talk_to_agent(current_agent, agents, task, agent_name, max_loops, output_type)`
 
-```python
+    ## Quick Start
+
+    ```python
+    from swarms import Agent
 from swarms.structs.collaborative_utils import talk_to_agent
-```
 
-## Tutorial
+alice = Agent(agent_name="alice", model_name="gpt-4.1")
+bob = Agent(agent_name="bob", model_name="gpt-4.1")
+print(talk_to_agent(current_agent=alice, agents=[alice, bob], task="Debate caching strategy", agent_name="bob", max_loops=2))
+    ```
 
-A runnable tutorial is available at [`swarms/examples/collaborative_utils_example.md`](../examples/collaborative_utils_example.md).
+    ## Tutorial
 
-## Notes
+    See the runnable tutorial: [`swarms/examples/collaborative_utils_example.md`](../examples/collaborative_utils_example.md)
 
-- Keep task payloads small for first runs.
-- Prefer deterministic prompts when comparing outputs across agents.
-- Validate provider credentials (for LLM-backed examples) before production use.
+    ## Operational Notes
+
+    - Validate credentials and model access before running LLM-backed examples.
+    - Start with small inputs/tasks, then scale once behavior is verified.
