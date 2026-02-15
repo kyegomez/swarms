@@ -317,6 +317,7 @@ nav:
           - GraphWorkflow: "swarms/structs/graph_workflow.md"
           - BatchedGridWorkflow: "swarms/structs/batched_grid_workflow.md"
 
+        - ImageAgentBatchProcessor: "swarms/structs/image_batch_processor.md"
         - Communication Structure: "swarms/structs/conversation.md"
         - Image Batch Processor: "swarms/structs/image_batch_processor.md"
 
@@ -455,6 +456,7 @@ nav:
 
       - Utilities:
         - Unique Swarms: "swarms/examples/unique_swarms.md"
+        - ImageAgentBatchProcessor: "swarms/examples/image_batch_processor_example.md"
         - Image Batch Processor: "swarms/examples/image_batch_processor_example.md"
         - Agents as Tools: "swarms/examples/agents_as_tools.md"
         - Aggregate Responses: "swarms/examples/aggregate.md"

@@ -1,31 +1,38 @@
 # Image Batch Processor
 
-    `image_batch_processor` reference documentation.
-
-    **Module Path**: `swarms.structs.image_batch_processor`
+    Reference documentation for `swarms.structs.image_batch_processor`.
 
     ## Overview
 
-    Parallel image-processing orchestrator for running one or many agents across image files and tasks.
+    This module provides production utilities for `image batch processor` in Swarms.
+
+    ## Module Path
+
+    ```python
+    from swarms.structs.image_batch_processor import ...
+    ```
 
     ## Public API
 
-    - **`ImageProcessingError`**: No public methods documented in this module.
-- **`InvalidAgentError`**: No public methods documented in this module.
-- **`ImageAgentBatchProcessor`**: `run()`
+    - `ImageAgentBatchProcessor.run(image_paths, tasks)` and callable shortcut via `__call__`
 
-    ## Quickstart
+    ## Quick Start
 
     ```python
-    from swarms.structs.image_batch_processor import ImageProcessingError, InvalidAgentError, ImageAgentBatchProcessor
+    from swarms import Agent
+from swarms.structs.image_batch_processor import ImageAgentBatchProcessor
+
+vision_agent = Agent(agent_name="Vision", model_name="gpt-4.1")
+processor = ImageAgentBatchProcessor(agents=[vision_agent], max_workers=2)
+print(processor.run(image_paths=["./sample.jpg"], tasks=["Describe the image"]))
     ```
 
     ## Tutorial
 
-    A runnable tutorial is available at [`swarms/examples/image_batch_processor_example.md`](../examples/image_batch_processor_example.md).
+    See the runnable tutorial: [`swarms/examples/image_batch_processor_example.md`](../examples/image_batch_processor_example.md)
 
-    ## Notes
+    ## Operational Notes
 
-    - Keep task payloads small for first runs.
-    - Prefer deterministic prompts when comparing outputs across agents.
-    - Validate provider credentials (for LLM-backed examples) before production use.
+    - Validate credentials and model access before running LLM-backed examples.
+    - Start with small inputs/tasks, then scale once behavior is verified.
+- All image paths must exist and use supported suffixes (`.jpg`, `.jpeg`, `.png`) unless overridden.
