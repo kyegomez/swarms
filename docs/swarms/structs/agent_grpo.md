@@ -1,29 +1,37 @@
-# Agent Grpo
+# Agent Grpo (Detailed)
 
-`agent_grpo` reference documentation.
+    Reference documentation for `swarms.structs.agent_grpo`.
 
-**Module Path**: `swarms.structs.agent_grpo`
+    ## Overview
 
-## Overview
+    This module provides production utilities for `agent grpo` in Swarms.
 
-Group-relative policy optimization utility for sampling, grading, and advantage computation across multiple agent outputs.
+    ## Module Path
 
-## Public API
+    ```python
+    from swarms.structs.agent_grpo import ...
+    ```
 
-- **`AgenticGRPO`**: `sample()`, `rate_answers_to_correct_answer()`, `rate_answer_to_correct_answer()`, `compute_group_baseline()`, `compute_advantages()`, `get_correct_responses()`, `run()`, `get_all()`
+    ## Public API
 
-## Quickstart
+    - `AgenticGRPO`: `sample`, `compute_group_baseline`, `compute_advantages`, `run`, `get_all`
 
-```python
+    ## Quick Start
+
+    ```python
+    from swarms import Agent
 from swarms.structs.agent_grpo import AgenticGRPO
-```
 
-## Tutorial
+solver = Agent(agent_name="Math-Solver", model_name="gpt-4.1", max_loops=1)
+grpo = AgenticGRPO(name="math-grpo", description="Sample + score", agent=solver, n=4, correct_answers=["42"])
+print(grpo.run(task="What is 40 + 2?"))
+    ```
 
-A runnable tutorial is available at [`swarms/examples/agent_grpo_example.md`](../examples/agent_grpo_example.md).
+    ## Tutorial
 
-## Notes
+    See the runnable tutorial: [`swarms/examples/agent_grpo_example.md`](../examples/agent_grpo_example.md)
 
-- Keep task payloads small for first runs.
-- Prefer deterministic prompts when comparing outputs across agents.
-- Validate provider credentials (for LLM-backed examples) before production use.
+    ## Operational Notes
+
+    - Validate credentials and model access before running LLM-backed examples.
+    - Start with small inputs/tasks, then scale once behavior is verified.

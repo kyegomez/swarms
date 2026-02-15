@@ -1,12 +1,11 @@
 # Agent Grpo Tutorial
 
-    End-to-end usage for `agent_grpo`.
+    End-to-end tutorial for `swarms.structs.agent_grpo`.
 
     ## Prerequisites
 
     - Python 3.10+
     - `pip install -U swarms`
-    - Provider credentials configured when using hosted LLMs
 
     ## Example
 
@@ -14,31 +13,16 @@
     from swarms import Agent
 from swarms.structs.agent_grpo import AgenticGRPO
 
-solver = Agent(
-    agent_name="Math-Solver",
-    system_prompt="Solve math problems with concise reasoning.",
-    model_name="gpt-4.1",
-    max_loops=1,
-)
-
-grpo = AgenticGRPO(
-    name="math-grpo",
-    description="Sample and score candidate completions",
-    agent=solver,
-    n=4,
-    correct_answers=["42"],
-)
-
-correct = grpo.run(task="What is 40 + 2?")
-print(correct)
-print("baseline:", grpo.get_group_baseline())
+solver = Agent(agent_name="Math-Solver", model_name="gpt-4.1", max_loops=1)
+grpo = AgenticGRPO(name="math-grpo", description="Sample + score", agent=solver, n=4, correct_answers=["42"])
+print(grpo.run(task="What is 40 + 2?"))
     ```
 
     ## What this demonstrates
 
-    - Basic construction/import pattern for `agent_grpo`
-    - Minimal execution path you can adapt in production
-    - Safe starting defaults for iteration
+    - Correct import and initialization flow for `agent_grpo`
+    - Minimal execution path suitable for first integration tests
+    - A baseline pattern to adapt for production use
 
     ## Related
 
