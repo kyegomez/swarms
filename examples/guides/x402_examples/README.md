@@ -44,11 +44,13 @@ The server will start at `http://localhost:8000`
 ### 5. Test the Integration
 
 #### Free Health Check Endpoint
+
 ```bash
 curl http://localhost:8000/
 ```
 
 #### Paid Research Endpoint (requires payment)
+
 ```bash
 curl http://localhost:8000/research?query="What are the latest breakthroughs in quantum computing?"
 ```
@@ -59,7 +61,7 @@ This will return a 402 Payment Required response with payment instructions.
 
 1. **Agent Creation**: The code creates a Swarms agent with the `exa_search` tool for conducting research
 2. **Payment Middleware**: x402's `require_payment` middleware protects the `/research` endpoint
-3. **Payment Flow**: 
+3. **Payment Flow**:
    - Client requests the endpoint
    - Server responds with 402 Payment Required + payment instructions
    - Client makes payment (handled by x402 client SDK)
@@ -69,21 +71,24 @@ This will return a 402 Payment Required response with payment instructions.
 ## Going to Production (Mainnet)
 
 For testnet (current setup):
+
 - Network: `base-sepolia`
 - Uses free facilitator: `https://x402.org/facilitator`
 - Test USDC only
 
 For mainnet:
+
 1. Get CDP API credentials from [cdp.coinbase.com](https://cdp.coinbase.com)
 2. Update the code:
+
    ```python
    from cdp.x402 import create_facilitator_config
-   
+
    facilitator_config = create_facilitator_config(
        api_key_id=os.getenv("CDP_API_KEY_ID"),
        api_key_secret=os.getenv("CDP_API_KEY_SECRET"),
    )
-   
+
    # Change network to "base" and add facilitator_config
    require_payment(
        path="/research",
@@ -94,6 +99,12 @@ For mainnet:
        ...
    )
    ```
+
+## Spending Limits Example
+
+For per-agent budgets, approval thresholds, and circuit breakers, see:
+
+- `agent_integration/x402_agent_buying.py`
 
 ## Learn More
 
