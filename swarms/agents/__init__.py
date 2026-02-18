@@ -6,7 +6,7 @@ from swarms.agents.create_agents_from_yaml import (
 from swarms.agents.flexion_agent import ReflexionAgent
 from swarms.agents.gkp_agent import GKPAgent
 from swarms.agents.i_agent import IterativeReflectiveExpansion
-from swarms.agents.reasoning_agents import (
+from swarms.agents.reasoning_agent_router import (
     ReasoningAgentRouter,
     agent_types,
 )

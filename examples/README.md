@@ -58,6 +58,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [agent_skill_examples/](single_agent/agent_skill_examples/) | Agent skill examples including dynamic skills loader, custom skills, and pre-built skills (code review, data visualization, financial analysis) |
 | [demos/](single_agent/demos/) | Single agent demonstration examples including insurance and legal agents |
 | [full_autonomy/](single_agent/full_autonomy/) | Autonomous agent examples with marketplace integration and full autonomy capabilities |
+| [example_autonomous_looper_run_bash.py](single_agent/full_autonomy/example_autonomous_looper_run_bash.py) | Autonomous agent with `run_bash` tool for terminal access |
 | [handoffs/](single_agent/handoffs/) | Agent handoff examples including autonomous agents with handoffs |
 | [external_agents/](single_agent/external_agents/) | External agent integrations including OpenAI Assistant wrapper |
 | [llms/](single_agent/llms/) | LLM integration examples for Azure, Claude, DeepSeek, Mistral, OpenAI, O3, and Qwen |
@@ -329,15 +330,17 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [web_scraper_agents/](guides/web_scraper_agents/) | Web scraper agent examples |
 | [workshops/](guides/workshops/) | Workshop examples |
 | [x402_examples/](guides/x402_examples/) | X402 protocol examples |
+| [deployment/](guides/deployment/) | Deployment strategies: cron jobs and FastAPI examples |
+| [v9_examples/](guides/v9_examples/) | V9 autonomous looper examples (autonomous_looper, tools, sub-agents) |
 
 ### Deployment
 
 | Example | Description |
 |---------|-------------|
-| [deployment/](deployment/) | Deployment strategies and patterns including cron job implementations and FastAPI deployment examples |
-| [README.md](deployment/README.md) | Deployment documentation |
-| [fastapi/](deployment/fastapi/) | FastAPI deployment examples |
-| [cron_job_examples/](deployment/cron_job_examples/) | Cron job examples |
+| [guides/deployment/](guides/deployment/) | Deployment strategies and patterns including cron job implementations and FastAPI deployment examples |
+| [README.md](guides/deployment/README.md) | Deployment documentation |
+| [fastapi/](guides/deployment/fastapi/) | FastAPI deployment examples |
+| [cron_job_examples/](guides/deployment/cron_job_examples/) | Cron job examples |
 
 ### Utilities
 

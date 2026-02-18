@@ -7,7 +7,7 @@ This section covers various deployment strategies for Swarms agents and multi-ag
 | Deployment Type         | Use Case            | Complexity | Scalability | Cost      | Best For                        | Documentation Link                                                          | Status     |
 |------------------------|---------------------|------------|-------------|-----------|----------------------------------|-----------------------------------------------------------------------------|------------|
 | **FastAPI + Uvicorn**  | REST API endpoints  | Low        | Medium      | Low       | Quick prototypes, internal tools | [FastAPI Agent API Guide](fastapi_agent_api.md)                             | Available  |
-| **Cron Jobs**          | Scheduled tasks     | Low        | Low         | Very Low  | Batch processing, periodic tasks | [Cron Job Examples](../../examples/deployment_solutions/cron_job_examples/) | Available  |
+| **Cron Jobs**          | Scheduled tasks     | Low        | Low         | Very Low  | Batch processing, periodic tasks | [Cron Job Examples](../../examples/guides/deployment/cron_job_examples/) | Available  |
 
 
 ## Quick Start Guide
@@ -20,7 +20,7 @@ This section covers various deployment strategies for Swarms agents and multi-ag
 
 - **Documentation**: [FastAPI Agent API](fastapi_agent_api.md)
 
-- **Example Code**: [FastAPI Example](../../examples/deployment_solutions/fastapi_agent_api_example.py)
+- **Example Code**: [FastAPI Example](../../examples/guides/deployment/fastapi/fastapi_agent_api_example.py)
 
 
 ### 2. Cron Jobs (Recommended for scheduled tasks)
@@ -29,7 +29,7 @@ This section covers various deployment strategies for Swarms agents and multi-ag
 
 - **Setup time**: 2-5 minutes
 
-- **Examples**: [Cron Job Examples](../../examples/deployment_solutions/cron_job_examples/)
+- **Examples**: [Cron Job Examples](../../examples/guides/deployment/cron_job_examples/)
 
 
 

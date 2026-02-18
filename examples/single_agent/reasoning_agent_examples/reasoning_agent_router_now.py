@@ -1,4 +1,4 @@
-from swarms.agents.reasoning_agents import ReasoningAgentRouter
+from swarms.agents.reasoning_agent_router import ReasoningAgentRouter
 
 router = ReasoningAgentRouter(
     agent_name="qft_reasoning_agent",

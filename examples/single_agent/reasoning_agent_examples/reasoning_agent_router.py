@@ -1,4 +1,4 @@
-from swarms.agents.reasoning_agents import ReasoningAgentRouter
+from swarms.agents.reasoning_agent_router import ReasoningAgentRouter
 
 # Initialize the reasoning agent router with self-consistency
 reasoning_agent_router = ReasoningAgentRouter(

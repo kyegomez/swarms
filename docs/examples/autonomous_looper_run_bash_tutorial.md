@@ -59,7 +59,7 @@ Commands run in the agent’s workspace directory when available. Stdout and std
 A full runnable example is in the repo:
 
 ```
-v9_examples/example_autonomous_looper_run_bash.py
+examples/single_agent/full_autonomy/example_autonomous_looper_run_bash.py
 ```
 
 ## See also

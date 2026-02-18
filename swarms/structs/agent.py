@@ -568,12 +568,12 @@ class Agent:
         )
 
         if self.max_loops == "auto":
-            self.system_prompt = None
 
-            self.system_prompt = AUTONOMOUS_AGENT_SYSTEM_PROMPT
-
+            self.system_prompt += (
+                "\n\n" + AUTONOMOUS_AGENT_SYSTEM_PROMPT
+            )
         else:
-            self.system_prompt = AGENT_SYSTEM_PROMPT_3
+            pass
 
         # Initialize autonomous loop tracking structures
         self.autonomous_subtasks = []  # List of subtasks from plan
@@ -678,28 +678,29 @@ class Agent:
             self.verbose = False
 
         if self.publish_to_marketplace is True:
-            # Join tags and capabilities into a single string
-            tags_and_capabilities = ", ".join(
-                self.tags + self.capabilities
-                if self.tags and self.capabilities
-                else None
+            self.handle_publish_to_marketplace()
+
+    def handle_publish_to_marketplace(self):
+        # Join tags and capabilities into a single string
+        tags_and_capabilities = ", ".join(
+            self.tags + self.capabilities
+            if self.tags and self.capabilities
+            else None
+        )
+
+        if self.use_cases is None:
+            raise AgentInitializationError(
+                "Use cases are required when publishing to the marketplace. The schema is a list of dictionaries with 'title' and 'description' keys."
             )
 
-            if self.use_cases is None:
-                raise AgentInitializationError(
-                    "Use cases are required when publishing to the marketplace. The schema is a list of dictionaries with 'title' and 'description' keys."
-                )
-
-            add_prompt_to_marketplace(
-                name=self.agent_name,
-                prompt=self.short_memory.get_str(),
-                description=self.agent_description,
-                tags=tags_and_capabilities,
-                category="research",
-                use_cases=(
-                    self.use_cases if self.use_cases else None
-                ),
-            )
+        add_prompt_to_marketplace(
+            name=self.agent_name,
+            prompt=self.short_memory.get_str(),
+            description=self.agent_description,
+            tags=tags_and_capabilities,
+            category="research",
+            use_cases=(self.use_cases if self.use_cases else None),
+        )
 
     def handle_skills(self, task: Optional[str] = None):
         """
@@ -1058,9 +1059,10 @@ class Agent:
 
     def short_memory_init(self):
         # Compactly assemble initial prompt as a string with available fields
-        prompt = ""
+        prompt = self.system_prompt
 
         if self.safety_prompt_on is True:
+            prompt += "\n\n"
             prompt += SAFETY_PROMPT
 
         # Initialize the short term memory

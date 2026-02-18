@@ -102,3 +102,14 @@ This directory contains comprehensive guides and tutorials for using Swarms effe
 - [batched_scraper_agent.py](web_scraper_agents/batched_scraper_agent.py) - Batch web scraping agent
 - [web_scraper_agent.py](web_scraper_agents/web_scraper_agent.py) - Basic web scraping agent
 - [README.md](web_scraper_agents/README.md) - Web scraper agents documentation
+
+## Deployment
+- [deployment/](deployment/) - Deployment strategies and patterns
+- [README.md](deployment/README.md) - Deployment documentation
+- [fastapi/](deployment/fastapi/) - FastAPI deployment examples
+- [cron_job_examples/](deployment/cron_job_examples/) - Cron job examples
+
+## V9 Examples (Autonomous Looper)
+- [autonomous_looper.py](v9_examples/autonomous_looper.py) - Autonomous looper implementation
+- [example_autonomous_looper_tools.py](v9_examples/example_autonomous_looper_tools.py) - Configuring selected tools
+- [example_sub_agents.py](v9_examples/example_sub_agents.py) - Sub-agent creation and delegation

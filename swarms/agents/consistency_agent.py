@@ -99,7 +99,7 @@ def aggregation_agent(
 
     agent = Agent(
         agent_name="Aggregation-Agent",
-        description="An agent that aggregates a list of responses into a single final answer.",
+        agent_description="An agent that aggregates a list of responses into a single final answer.",
         model_name=model_name,
         system_prompt=prompt,
         max_loops=1,
