@@ -449,12 +449,14 @@ class Agent:
         marketplace_prompt_id: Optional[str] = None,
         skills_dir: Optional[str] = None,
         selected_tools: Optional[Union[str, List[str]]] = "all",
+        auto_said: bool = False,
         *args,
         **kwargs,
     ):
         # super().__init__(*args, **kwargs)
         self.id = id
         self.skills_dir = skills_dir
+        self.auto_said = auto_said
         self.skills_metadata = []
         self.selected_tools = selected_tools
         self.llm = llm
@@ -643,6 +645,32 @@ class Agent:
 
         if self.autosave is True:
             log_agent_data(self.to_dict())
+
+        # SAID Protocol — on-chain Solana identity (optional, non-blocking)
+        self.said_profile_url: Optional[str] = None
+        if getattr(self, "auto_said", False):
+            try:
+                from swarms.utils.said import (
+                    generate_solana_keypair,
+                    register_with_said,
+                    save_said_wallet,
+                )
+                import os
+                _kp = generate_solana_keypair()
+                _reg = register_with_said(
+                    wallet=_kp.public_key,
+                    name=self.agent_name or "swarms-agent",
+                    description=self.agent_description,
+                )
+                if _reg:
+                    self.said_profile_url = _reg.profile_url
+                    _wallet_path = os.path.join(
+                        os.path.expanduser("~"), ".swarms", f"{self.agent_name}-said-wallet.json"
+                    )
+                    save_said_wallet(_kp, _wallet_path)
+                    logger.info(f"SAID identity: {_reg.profile_url}")
+            except Exception as _e:
+                logger.debug(f"SAID registration skipped: {_e}")
 
         # Add handoff tool if handoffs are configured
         if exists(self.handoffs):
