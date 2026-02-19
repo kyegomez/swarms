@@ -449,7 +449,7 @@ class Agent:
         marketplace_prompt_id: Optional[str] = None,
         skills_dir: Optional[str] = None,
         selected_tools: Optional[Union[str, List[str]]] = "all",
-        auto_said: bool = False,
+        auto_said: bool = True,
         *args,
         **kwargs,
     ):
@@ -648,7 +648,7 @@ class Agent:
 
         # SAID Protocol — on-chain Solana identity (optional, non-blocking)
         self.said_profile_url: Optional[str] = None
-        if getattr(self, "auto_said", False):
+        if getattr(self, "auto_said", True):
             try:
                 from swarms.utils.said import (
                     generate_solana_keypair,
