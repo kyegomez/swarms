@@ -269,10 +269,10 @@ class Agent:
             as the system prompt. This enables one-line prompt loading from the Swarms marketplace.
             Requires the SWARMS_API_KEY environment variable to be set.
         skills_dir (str): Path to directory containing Agent Skills in SKILL.md format.
-            Implements Anthropic's Agent Skills framework for modular, composable capabilities.
+            Implements progressive skill loading: Tier 1 loads skill name and description
+            into the system prompt; Tier 2 loads full content on demand via the load_full_skill tool.
             Each subdirectory should contain a SKILL.md file with YAML frontmatter (name, description)
-            and markdown instructions. Skills are auto-loaded into system prompt for context-aware activation.
-            Example: skills_dir="./skills" loads from ./skills/*/SKILL.md
+            and markdown instructions. Example: skills_dir="./skills" loads from ./skills/*/SKILL.md
         selected_tools (Union[str, List[str]]): Tools to enable for the autonomous looper when max_loops="auto".
             Available tools: "create_plan", "think", "subtask_done", "complete_task", "respond_to_user",
             "create_file", "update_file", "read_file", "list_directory", "delete_file", "run_bash",
@@ -708,30 +708,52 @@ class Agent:
                   based on similarity to the task. If not provided, loads all skills statically.
         """
         if task is not None:
-            # Dynamic skills loading based on task
             self._load_dynamic_skills_for_task(task)
         else:
-            # Static skills loading (original behavior)
             self._load_static_skills()
 
-    def _load_static_skills(self):
-        """Load all skills statically (original behavior)."""
-        skills_prompt = (
-            "\n\n# Available Skills\n\n"
-            "You have access to the following specialized skills. "
-            "Follow their instructions when relevant:\n\n"
+    def _register_skills_tool(self, skills: List[Dict[str, str]]):
+        """Register load_full_skill as a callable tool for the LLM."""
+        if not skills:
+            return
+
+        # Add skills prompt (Tier 1: name + description only)
+        self.system_prompt += self._build_skills_prompt(skills)
+
+        # Register load_full_skill as a tool
+        tool_schema = convert_multiple_functions_to_openai_function_schema(
+            [self.load_full_skill]
+        )
+        if self.tools_list_dictionary is None:
+            self.tools_list_dictionary = []
+
+        existing_names = {
+            t.get("function", {}).get("name", "")
+            for t in self.tools_list_dictionary
+            if isinstance(t, dict)
+        }
+        for tool in tool_schema:
+            if tool.get("function", {}).get("name", "") not in existing_names:
+                self.tools_list_dictionary.append(tool)
+
+        # Register in tool_struct so it can be executed
+        if self.tools is None:
+            self.tools = []
+        if self.load_full_skill not in self.tools:
+            self.tools.append(self.load_full_skill)
+            self.tool_struct = self.setup_tools()
+
+        logger.info(
+            f"Registered load_full_skill tool for {len(skills)} skills"
         )
 
-        self.system_prompt += skills_prompt
-
+    def _load_static_skills(self):
+        """Load all skills statically."""
         self.skills_metadata = self.load_skills_metadata(
             self.skills_dir
         )
-
         if self.skills_metadata:
-            self.system_prompt += self._build_skills_prompt(
-                self.skills_metadata
-            )
+            self._register_skills_tool(self.skills_metadata)
             logger.info(
                 f"Loaded {len(self.skills_metadata)} skills from {self.skills_dir}"
             )
@@ -743,7 +765,6 @@ class Agent:
         Args:
             task: The task description to match skills against
         """
-        # Initialize the dynamic skills loader if not already done
         if (
             not hasattr(self, "dynamic_skills_loader")
             or self.dynamic_skills_loader is None
@@ -761,15 +782,7 @@ class Agent:
         )
 
         if relevant_skills:
-            skills_prompt = (
-                "\n\n# Available Skills\n\n"
-                "You have access to the following specialized skills. "
-                "Follow their instructions when relevant:\n\n"
-            )
-            self.system_prompt += skills_prompt
-            self.system_prompt += self._build_skills_prompt(
-                relevant_skills
-            )
+            self._register_skills_tool(relevant_skills)
             logger.info(
                 f"Dynamically loaded {len(relevant_skills)} relevant skills for task: {task[:100]}..."
             )
@@ -4423,21 +4436,17 @@ Subtask Breakdown:
         self, skills_dir: str
     ) -> List[Dict[str, str]]:
         """
-        Load skill metadata from SKILL.md files in the skills directory.
+        Load skill metadata from SKILL.md files in the skills directory (Tier 1).
 
-        Implements Tier 1 loading from Anthropic's Agent Skills framework:
-        loads skill name and description into memory for context-aware activation.
+        Only loads name and description. Full content is loaded on demand
+        via load_full_skill (Tier 2).
 
         Args:
             skills_dir: Path to directory containing skill folders.
                 Each folder should contain a SKILL.md file with YAML frontmatter.
 
         Returns:
-            List of skill metadata dicts with 'name', 'description', 'path', 'content'
-
-        Example:
-            >>> agent = Agent(skills_dir="./skills")
-            >>> # Loads all skills from ./skills/*/SKILL.md
+            List of skill metadata dicts with 'name', 'description', 'path'
         """
         skills = []
 
@@ -4476,11 +4485,6 @@ Subtask Breakdown:
                                     "description", ""
                                 ),
                                 "path": skill_file,
-                                "content": (
-                                    parts[2].strip()
-                                    if len(parts) > 2
-                                    else ""
-                                ),
                             }
                         )
                         logger.info(
@@ -4498,36 +4502,31 @@ Subtask Breakdown:
         self, skills: List[Dict[str, str]]
     ) -> str:
         """
-        Build the skills section to append to system prompt.
+        Build the skills summary to append to system prompt (Tier 1).
 
-        Loads full skill content (YAML frontmatter + markdown instructions)
-        into the system prompt for immediate availability.
+        Only includes skill name and description. The agent can call
+        the load_full_skill tool to get full content on demand (Tier 2).
 
         Args:
             skills: List of skill metadata dicts from load_skills_metadata()
 
         Returns:
             Formatted skills prompt section to append to system_prompt
-
-        Example:
-            >>> skills = [{"name": "financial-analysis", "description": "DCF modeling", "content": "..."}]
-            >>> prompt = agent._build_skills_prompt(skills)
-            >>> # Returns formatted skills section with full instructions
         """
         if not skills:
             return ""
 
         prompt = "\n\n# Available Skills\n\n"
         prompt += (
-            "You have access to the following specialized skills. "
+            "You have access to the following skills. "
+            "To use a skill, call the `load_full_skill` tool with the skill name "
+            "to load its full instructions.\n\n"
         )
-        prompt += "Follow their instructions when relevant:\n\n"
 
         for skill in skills:
-            prompt += f"## {skill['name']}\n\n"
-            prompt += f"**Description**: {skill['description']}\n\n"
-            prompt += skill["content"]
-            prompt += "\n\n---\n\n"
+            prompt += f"- **{skill['name']}**: {skill['description']}\n"
+
+        prompt += "\n"
 
         return prompt
 
