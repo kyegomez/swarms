@@ -45,12 +45,10 @@ from swarms.cli.utils import (
     SwarmCLIError,
     check_login,
     console,
-    create_commands_parameters_table,
     get_api_key,
     run_setup_check,
     show_ascii_art,
     show_error,
-    show_features,
     show_help,
 )
 
@@ -79,7 +77,7 @@ def run_autoswarm(task: str, model: str) -> None:
     """
     try:
         console.print(
-            "[yellow]Initializing autoswarm configuration...[/yellow]"
+            "[white]Initializing autoswarm configuration...[/white]"
         )
 
         # Validate inputs
@@ -91,13 +89,13 @@ def run_autoswarm(task: str, model: str) -> None:
 
         # Attempt to generate swarm configuration
         console.print(
-            f"[yellow]Generating swarm for task: {task}[/yellow]"
+            f"[white]Generating swarm for task: {task}[/white]"
         )
         result = generate_swarm_config(task=task, model=model)
 
         if result:
             console.print(
-                "[green]✓ Swarm configuration generated successfully![/green]"
+                "[white]✓ Swarm configuration generated successfully![/white]"
             )
         else:
             raise SwarmCLIError(
@@ -155,7 +153,7 @@ def load_markdown_agents(
     """
     try:
         console.print(
-            f"[yellow]Loading agents from markdown: {file_path}[/yellow]"
+            f"[white]Loading agents from markdown: {file_path}[/white]"
         )
 
         # Create progress display
@@ -203,7 +201,7 @@ def load_markdown_agents(
         # Display results
         if agents:
             console.print(
-                f"\n[bold green]✓ Successfully loaded {len(agents)} agents![/bold green]"
+                f"\n[bold white]✓ Successfully loaded {len(agents)} agents![/bold white]"
             )
 
             # Create a table to display loaded agents
@@ -233,7 +231,7 @@ def load_markdown_agents(
             return agents
         else:
             console.print(
-                "[yellow]⚠ No agents were loaded from the markdown files.[/yellow]"
+                "[white]⚠ No agents were loaded from the markdown files.[/white]"
             )
             return []
 
@@ -304,9 +302,7 @@ def run_heavy_swarm(
             displayed with formatted messages and troubleshooting tips.
     """
     try:
-        console.print(
-            "[yellow]🚀 Initializing HeavySwarm...[/yellow]"
-        )
+        console.print("[white]🚀 Initializing HeavySwarm...[/white]")
 
         # Create progress display
         progress = Progress(
@@ -353,14 +349,14 @@ def run_heavy_swarm(
         # Display results
         if result:
             console.print(
-                "\n[bold green]✓ HeavySwarm completed successfully![/bold green]"
+                "\n[bold white]✓ HeavySwarm completed successfully![/bold white]"
             )
 
             # Display result in a panel
             result_panel = Panel(
                 str(result),
                 title="HeavySwarm Final Response",
-                border_style="green",
+                border_style="red",
                 padding=(1, 2),
             )
             console.print(result_panel)
@@ -368,7 +364,7 @@ def run_heavy_swarm(
             return result
         else:
             console.print(
-                "[yellow]⚠ HeavySwarm completed but returned no results.[/yellow]"
+                "[white]⚠ HeavySwarm completed but returned no results.[/white]"
             )
             return None
 
@@ -405,9 +401,7 @@ def run_llm_council(task: str, verbose: bool = True) -> Optional[Any]:
             displayed with formatted messages and troubleshooting tips.
     """
     try:
-        console.print(
-            "[yellow]🏛️  Initializing LLM Council...[/yellow]"
-        )
+        console.print("[white]🏛️  Initializing LLM Council...[/white]")
 
         # Create progress display
         progress = Progress(
@@ -448,14 +442,14 @@ def run_llm_council(task: str, verbose: bool = True) -> Optional[Any]:
         # Display results
         if result:
             console.print(
-                "\n[bold green]✓ LLM Council completed successfully![/bold green]"
+                "\n[bold white]✓ LLM Council completed successfully![/bold white]"
             )
 
             # Display result in a panel
             result_panel = Panel(
                 str(result),
                 title="LLM Council Final Response",
-                border_style="green",
+                border_style="red",
                 padding=(1, 2),
             )
             console.print(result_panel)
@@ -463,7 +457,7 @@ def run_llm_council(task: str, verbose: bool = True) -> Optional[Any]:
             return result
         else:
             console.print(
-                "[yellow]⚠ LLM Council completed but returned no results.[/yellow]"
+                "[white]⚠ LLM Council completed but returned no results.[/white]"
             )
             return None
 
@@ -527,9 +521,7 @@ def create_swarm_agent(
         table upon successful creation.
     """
     try:
-        console.print(
-            f"[yellow]Creating custom agent: {name}[/yellow]"
-        )
+        console.print(f"[white]Creating custom agent: {name}[/white]")
 
         # Create progress display
         progress = Progress(
@@ -591,7 +583,7 @@ def create_swarm_agent(
                 # Display results
                 if result:
                     console.print(
-                        f"\n[bold green]✓ Agent '{name}' completed the task successfully![/bold green]"
+                        f"\n[bold white]✓ Agent '{name}' completed the task successfully![/bold white]"
                     )
 
                     # Display agent info
@@ -601,7 +593,7 @@ def create_swarm_agent(
                         f"[bold]Task:[/bold] {task}\n"
                         f"[bold]Result:[/bold]\n{result}",
                         title="Agent Execution Results",
-                        border_style="green",
+                        border_style="red",
                         padding=(1, 2),
                     )
                     console.print(agent_info)
@@ -609,7 +601,7 @@ def create_swarm_agent(
                     return result
                 else:
                     console.print(
-                        f"[yellow]⚠ Agent '{name}' completed but returned no results.[/yellow]"
+                        f"[white]⚠ Agent '{name}' completed but returned no results.[/white]"
                     )
                     return None
             else:
@@ -620,10 +612,10 @@ def create_swarm_agent(
                     completed=True,
                 )
                 console.print(
-                    f"\n[bold green]✓ Agent '{name}' created successfully![/bold green]"
+                    f"\n[bold white]✓ Agent '{name}' created successfully![/bold white]"
                 )
                 console.print(
-                    "[yellow]ℹ️  No task provided. Agent is ready for interactive use.[/yellow]"
+                    "[white]ℹ️  No task provided. Agent is ready for interactive use.[/white]"
                 )
 
                 # Display agent info
@@ -633,7 +625,7 @@ def create_swarm_agent(
                     f"[bold]Interactive Mode:[/bold] Enabled\n"
                     f"[bold]Status:[/bold] Ready for use",
                     title="Agent Created",
-                    border_style="green",
+                    border_style="red",
                     padding=(1, 2),
                 )
                 console.print(agent_info)
@@ -690,7 +682,7 @@ class CustomHelpAction(argparse.Action):
         """
         Execute the custom help action.
 
-        Displays a formatted usage message and commands/parameters table
+        Displays a plain-text usage message and command reference
         instead of the default argparse help output.
 
         Args:
@@ -699,24 +691,176 @@ class CustomHelpAction(argparse.Action):
             values: The option values (unused for help action).
             option_string: The option string that triggered this action.
         """
-        # Show simplified usage
         prog_name: str = (
             parser.prog
             if hasattr(parser, "prog") and parser.prog
             else "swarms"
         )
-        console.print("\n[bold cyan]Usage:[/bold cyan]")
-        console.print(f"  {prog_name} COMMAND [OPTIONS]\n")
-
-        # Show the commands/parameters table prominently
-        console.print(create_commands_parameters_table())
-
-        # Show a note about detailed options
-        console.print(
-            "\n[dim]💡 Tip: For detailed information about all available options, "
-            "use a specific command or see the full documentation at "
-            "https://docs.swarms.world[/dim]\n"
+        print(f"usage: {prog_name} COMMAND [OPTIONS]")
+        print()
+        print("Swarms Cloud CLI - Multi-Agent Framework")
+        print()
+        print("Commands:")
+        commands = [
+            ("onboarding", "Run environment setup check"),
+            ("help", "Display this help message"),
+            (
+                "get-api-key",
+                "Open browser to retrieve API keys from the platform",
+            ),
+            (
+                "check-login",
+                "Verify authentication status and initialize cache",
+            ),
+            (
+                "run-agents",
+                "Execute agents from a YAML configuration file",
+            ),
+            (
+                "load-markdown",
+                "Load agents from markdown files with YAML frontmatter",
+            ),
+            ("agent", "Create and run a custom agent"),
+            ("chat", "Start an interactive chat agent"),
+            ("upgrade", "Update Swarms to the latest version"),
+            ("autoswarm", "Generate and execute an autonomous swarm"),
+            (
+                "setup-check",
+                "Run a comprehensive environment setup check",
+            ),
+            (
+                "llm-council",
+                "Run LLM Council with multiple collaborating agents",
+            ),
+            (
+                "heavy-swarm",
+                "Run HeavySwarm with specialized agents for complex tasks",
+            ),
+        ]
+        for cmd, desc in commands:
+            print(f"  {cmd:<20}  {desc}")
+        print()
+        print("Options:")
+        options = [
+            ("-h, --help", "Show this help message and exit"),
+            (
+                "--yaml-file FILE",
+                "YAML configuration file path (default: agents.yaml)",
+            ),
+            (
+                "--markdown-path PATH",
+                "Path to markdown file or directory",
+            ),
+            ("--task TASK", "Task for the agent to execute"),
+            ("--name NAME", "Name of the custom agent"),
+            ("--description DESC", "Description of the custom agent"),
+            (
+                "--system-prompt PROMPT",
+                "System prompt for the custom agent",
+            ),
+            (
+                "--model-name MODEL",
+                "Model name for agent (default: gpt-4)",
+            ),
+            ("--model MODEL", "Model name for autoswarm command"),
+            (
+                "--temperature FLOAT",
+                "Temperature setting for the agent (0.0-2.0)",
+            ),
+            (
+                "--max-loops N",
+                "Maximum number of loops (integer or 'auto')",
+            ),
+            (
+                "--loops-per-agent N",
+                "Loops per agent for heavy-swarm (default: 1)",
+            ),
+            (
+                "--question-agent-model-name MODEL",
+                "Model for question generation agent (default: gpt-4o-mini)",
+            ),
+            (
+                "--worker-model-name MODEL",
+                "Model for worker agents (default: gpt-4o-mini)",
+            ),
+            ("--context-length N", "Context length for the agent"),
+            ("--retry-attempts N", "Number of retry attempts"),
+            (
+                "--output-type TYPE",
+                "Output type (e.g., 'str', 'json')",
+            ),
+            (
+                "--saved-state-path PATH",
+                "Path for saving agent state",
+            ),
+            ("--user-name NAME", "Username for the agent"),
+            ("--mcp-url URL", "MCP URL for the agent"),
+            (
+                "--marketplace-prompt-id ID",
+                "Fetch system prompt from Swarms marketplace",
+            ),
+            ("--verbose", "Enable verbose output"),
+            ("--interactive", "Enable interactive mode (default)"),
+            ("--no-interactive", "Disable interactive mode"),
+            ("--streaming-on", "Enable streaming mode"),
+            (
+                "--concurrent",
+                "Enable concurrent processing for markdown files",
+            ),
+            (
+                "--random-loops-per-agent",
+                "Enable random number of loops per agent",
+            ),
+            (
+                "--auto-generate-prompt",
+                "Enable auto-generation of prompts",
+            ),
+            (
+                "--dynamic-temperature-enabled",
+                "Enable dynamic temperature adjustment",
+            ),
+            (
+                "--dynamic-context-window",
+                "Enable dynamic context window",
+            ),
+            (
+                "--return-step-meta",
+                "Return step metadata from the agent",
+            ),
+            ("--dashboard", "Enable agent dashboard"),
+            ("--autosave", "Enable autosave for the agent"),
+        ]
+        for flag, desc in options:
+            if len(flag) <= 28:
+                print(f"  {flag:<30}  {desc}")
+            else:
+                print(f"  {flag}")
+                print(f"  {'':30}  {desc}")
+        print()
+        print("Examples:")
+        print(f"  {prog_name} chat")
+        print(f"  {prog_name} chat --model-name claude-sonnet-4-5")
+        print(f"  {prog_name} chat --model-name claude-opus-4-6")
+        print(f"  {prog_name} chat --model-name gpt-4o")
+        print(
+            f"  {prog_name} chat --model-name gemini/gemini-2.0-flash"
         )
+        print(
+            f"  {prog_name} agent --name 'MyAgent' --task 'Summarize this'"
+        )
+        print(
+            f"  {prog_name} autoswarm --task 'analyze data' --model gpt-4"
+        )
+        print(f"  {prog_name} heavy-swarm --task 'complex analysis'")
+        print(f"  {prog_name} llm-council --task 'What is AGI?'")
+        print(f"  {prog_name} setup-check --verbose")
+        print()
+        print("Documentation:  https://docs.swarms.world")
+        print(
+            "Support:        https://github.com/kyegomez/swarms/issues"
+        )
+        print("Community:      https://discord.gg/EamjgSaEQf")
+        print()
         parser.exit()
 
 
@@ -765,7 +909,6 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         "setup-check",
         "llm-council",
         "heavy-swarm",
-        "features",
     ]
     parser.add_argument(
         "command",
@@ -809,8 +952,8 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--model-name",
         type=str,
-        default="gpt-4",
-        help="Model name for the custom agent (default: gpt-4)",
+        default=None,
+        help="Model name to use (e.g. claude-sonnet-4-5, gpt-4o, claude-opus-4-6). Defaults to claude-sonnet-4-5 for chat, gpt-4 for agent.",
     )
     parser.add_argument(
         "--task",
@@ -963,7 +1106,7 @@ def handle_onboarding(args: argparse.Namespace) -> None:
         functionality for backward compatibility.
     """
     console.print(
-        "[yellow]Note: 'swarms onboarding' now runs the same checks as 'swarms setup-check'[/yellow]"
+        "[white]Note: 'swarms onboarding' now runs the same checks as 'swarms setup-check'[/white]"
     )
     run_setup_check(verbose=args.verbose)
 
@@ -993,7 +1136,7 @@ def handle_run_agents(args: argparse.Namespace) -> None:
     """
     try:
         console.print(
-            f"[yellow]Loading agents from {args.yaml_file}...[/yellow]"
+            f"[white]Loading agents from {args.yaml_file}...[/white]"
         )
 
         if not os.path.exists(args.yaml_file):
@@ -1041,25 +1184,25 @@ def handle_run_agents(args: argparse.Namespace) -> None:
         if result:
             # Format and display the results
             if isinstance(result, str):
-                console.print("\n[bold green]Results:[/bold green]")
+                console.print("\n[bold white]Results:[/bold white]")
                 console.print(
                     Panel(
                         result,
                         title="Agent Output",
-                        border_style="green",
+                        border_style="red",
                     )
                 )
             elif isinstance(result, dict):
-                console.print("\n[bold green]Results:[/bold green]")
+                console.print("\n[bold white]Results:[/bold white]")
                 for key, value in result.items():
-                    console.print(f"[cyan]{key}:[/cyan] {value}")
+                    console.print(f"[white]{key}:[/white] {value}")
             else:
                 console.print(
-                    "[green]✓ Agents completed their tasks successfully![/green]"
+                    "[white]✓ Agents completed their tasks successfully![/white]"
                 )
         else:
             console.print(
-                "[yellow]⚠ Agents completed but returned no results.[/yellow]"
+                "[white]⚠ Agents completed but returned no results.[/white]"
             )
 
     except FileNotFoundError as e:
@@ -1132,7 +1275,7 @@ def handle_load_markdown(args: argparse.Namespace) -> None:
 
     if agents:
         console.print(
-            f"\n[bold green]Ready to use {len(agents)} agents![/bold green]\n"
+            f"\n[bold white]Ready to use {len(agents)} agents![/bold white]\n"
             "[dim]You can now use these agents in your code or run them interactively.[/dim]"
         )
 
@@ -1251,7 +1394,7 @@ def handle_agent(args: argparse.Namespace) -> None:
 
     if result:
         console.print(
-            f"\n[bold green]Agent '{args.name}' executed successfully![/bold green]"
+            f"\n[bold white]Agent '{args.name}' executed successfully![/bold white]"
         )
 
 
@@ -1379,10 +1522,6 @@ def handle_chat(args: argparse.Namespace) -> Optional[Agent]:
         will prompt for input interactively.
     """
     try:
-        console.print(
-            "[yellow]💬 Initializing chat agent...[/yellow]"
-        )
-
         # Get parameters with defaults - handle None values
         name = getattr(args, "name", None) or "Swarms Agent"
         description = (
@@ -1390,10 +1529,17 @@ def handle_chat(args: argparse.Namespace) -> Optional[Agent]:
             or "A Swarms agent that can chat with the user."
         )
         system_prompt = getattr(args, "system_prompt", None)
+        model_name = (
+            getattr(args, "model_name", None) or "claude-sonnet-4-5"
+        )
         task = getattr(args, "task", None)
 
         console.print(
-            f"[cyan]✓ Starting chat with agent: {name}[/cyan]"
+            f"\n[bold white]{name}[/bold white]  [dim white]({model_name})[/dim white]"
+        )
+        console.print(
+            "[dim white]  Switch model: [/dim white][white]swarms chat --model-name claude-sonnet-4-5[/white]"
+            "[dim white]  ·  other options: claude-opus-4-6, gpt-4o, gemini/gemini-2.0-flash[/dim white]\n"
         )
 
         # Create and run the chat agent (no progress spinner to avoid blocking input)
@@ -1401,26 +1547,28 @@ def handle_chat(args: argparse.Namespace) -> Optional[Agent]:
             name=name,
             description=description,
             system_prompt=system_prompt,
+            model_name=model_name,
             task=task,
         )
 
         if result:
             console.print(
-                "\n[bold green]✓ Chat session completed![/bold green]"
+                "\n[bold white]✓ Chat session completed![/bold white]"
             )
             return result
         else:
-            console.print("[yellow]⚠ Chat session ended.[/yellow]")
+            console.print("[white]⚠ Chat session ended.[/white]")
             return None
 
     except Exception as e:
-        show_error(
-            "Chat Agent Error",
-            f"Failed to initialize chat agent: {str(e)}\n\n"
-            "Please check:\n"
+        console.print(
+            f"\n[bold red]Chat Agent Error:[/bold red] {str(e)}"
+        )
+        console.print(
+            "[white]Please check:\n"
             "1. Your API keys are set correctly\n"
             "2. You have network connectivity\n"
-            "3. All parameters are properly formatted",
+            "3. All parameters are properly formatted[/white]"
         )
         return None
 
@@ -1446,7 +1594,6 @@ def route_command(args: argparse.Namespace) -> None:
     command_handlers: Dict[str, Any] = {
         "onboarding": handle_onboarding,
         "help": lambda args: show_help(),
-        "features": lambda args: show_features(),
         "get-api-key": lambda args: get_api_key(),
         "check-login": lambda args: check_login(),
         "run-agents": handle_run_agents,
@@ -1512,7 +1659,7 @@ def main() -> None:
             console.print(
                 f"\n[{COLORS['error']}]Oops! An unexpected error occurred while running your command:[/{COLORS['error']}]\n"
                 f"[bold]{str(e)}[/bold]\n\n"
-                "[bold yellow]Troubleshooting tips:[/bold yellow]\n"
+                "[bold white]Troubleshooting tips:[/bold white]\n"
                 "- Double-check your arguments and the command structure\n"
                 "- Try 'swarms help' for command details and examples\n"
                 "- If the issue persists, please report it at https://github.com/OpenAgentsInc/swarms/issues\n\n"

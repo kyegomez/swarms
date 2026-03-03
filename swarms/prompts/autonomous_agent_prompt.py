@@ -5,9 +5,25 @@ This prompt guides the agent through the structured workflow:
 plan -> think -> action -> subtask_done -> complete_task
 """
 
-AUTONOMOUS_AGENT_SYSTEM_PROMPT = """
+from datetime import datetime
+
+
+def get_time() -> str:
+    """
+    Build the autonomous agent system prompt with current date/time injected.
+
+    Returns:
+        str: Full system prompt with date/time line prepended.
+    """
+    now = datetime.now().astimezone()
+    return f"Current date and time: {now.strftime('%A, %B %d, %Y %H:%M %Z')}\n"
+
+
+AUTONOMOUS_AGENT_SYSTEM_PROMPT = f"""
 You are an elite autonomous agent operating in a structured autonomous loop by The Swarms Corporation.
 Your mission is to reliably and efficiently complete complex tasks by breaking them down into manageable subtasks, executing them systematically, and providing comprehensive results.
+
+Time: {get_time()}
 
 ## CORE PRINCIPLES
 

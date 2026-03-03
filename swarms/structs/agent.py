@@ -40,7 +40,7 @@ from swarms.agents.ape_agent import auto_generate_prompt
 from swarms.artifacts.main_artifact import Artifact
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
 from swarms.prompts.autonomous_agent_prompt import (
-    AUTONOMOUS_AGENT_SYSTEM_PROMPT,
+    get_autonomous_agent_prompt,
 )
 from swarms.prompts.handoffs_prompt import get_handoffs_prompt
 from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
@@ -126,9 +126,6 @@ from swarms.utils.swarms_marketplace_utils import (
     add_prompt_to_marketplace,
 )
 from swarms.utils.workspace_utils import get_workspace_dir
-from swarms.utils.check_all_model_max_tokens import (
-    get_single_model_max_tokens,
-)
 from swarms.structs.dynamic_skills_loader import DynamicSkillsLoader
 
 
@@ -416,7 +413,7 @@ class Agent:
         artifacts_on: bool = False,
         artifacts_output_path: str = None,
         artifacts_file_extension: str = None,
-        model_name: str = None,
+        model_name: str = "gpt-4.1",
         llm_args: dict = None,
         load_state_path: str = None,
         role: agent_roles = "worker",
@@ -476,7 +473,7 @@ class Agent:
         self.sop = sop
         self.sop_list = sop_list
         self.tools = tools
-        self.system_prompt = system_prompt
+        self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
         self.agent_description = agent_description
         # self.saved_state_path = f"{self.agent_name}_{generate_api_key(prefix='agent-')}_state.json"
@@ -560,17 +557,17 @@ class Agent:
         self.publish_to_marketplace = publish_to_marketplace
         self.marketplace_prompt_id = marketplace_prompt_id
 
-        # Yes, this works: it sets context_length based on the model_name, defaulting to 16000 if not set.
-        self.context_length = (
-            get_single_model_max_tokens(model_name)
-            if model_name
-            else 16000
-        )
+        # self.context_length = (
+        #     get_single_model_max_tokens(model_name)
+        #     if model_name
+        #     else 16000
+        # )
+        self.context_length = 16000
 
         if self.max_loops == "auto":
 
             self.system_prompt += (
-                "\n\n" + AUTONOMOUS_AGENT_SYSTEM_PROMPT
+                "\n\n" + get_autonomous_agent_prompt()
             )
         else:
             pass
@@ -1921,7 +1918,10 @@ class Agent:
                 if self.interactive:
 
                     # logger.info("Interactive mode enabled.")
-                    user_input = input("You: ")
+                    formatter.console.print()
+                    user_input = formatter.console.input(
+                        "[bold cyan]You[/bold cyan] [bold green]❯[/bold green] "
+                    )
 
                     # User-defined exit command
                     if (
@@ -2970,13 +2970,7 @@ class Agent:
                     title="Autonomous Loop: Summary Phase",
                 )
 
-            if self.output_type == "final":
-                return self._generate_final_summary()
-            else:
-                return history_output_formatter(
-                    conversation=self.short_memory,
-                    type=self.output_type,
-                )
+            return self._generate_final_summary()
 
         except Exception as error:
             self._handle_run_error(error)
@@ -4648,7 +4642,10 @@ Subtask Breakdown:
                 "Interactive mode enabled. Please enter your initial task:",
                 loop_count=0,
             )
-            task = input("You: ").strip()
+            formatter.console.print()
+            task = formatter.console.input(
+                "[bold cyan]You[/bold cyan] [bold green]❯[/bold green] "
+            ).strip()
 
             if not task:
                 raise ValueError(

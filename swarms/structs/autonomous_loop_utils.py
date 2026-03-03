@@ -851,6 +851,51 @@ def delete_file_tool(agent: Any, file_path: str, **kwargs) -> str:
         return error_msg
 
 
+_BASH_BLOCKLIST = [
+    # Recursive/forced deletion
+    ("rm", "-rf"),
+    ("rm", "-fr"),
+    ("rm", "-r"),
+    # Pipe command output into a shell interpreter
+    ("| sh",),
+    ("| bash",),
+    ("| zsh",),
+    ("| python",),
+    ("| python3",),
+    ("| perl",),
+    ("| ruby",),
+    # Raw disk writes
+    ("dd", "if="),
+    ("mkfs",),
+    ("> /dev/sd",),
+    ("> /dev/nvme",),
+    # Fork bomb pattern
+    (":(){",),
+    # System shutdown / reboot
+    ("shutdown",),
+    ("reboot",),
+    ("halt",),
+    ("poweroff",),
+    # Privilege escalation helpers writing to sensitive paths
+    ("chmod 777 /",),
+    ("chown", "/etc"),
+    ("chown", "/bin"),
+]
+
+_BASH_MAX_LENGTH = 512
+
+
+def _check_bash_command(command: str) -> str | None:
+    """Return a rejection reason if *command* matches a dangerous pattern, else None."""
+    if len(command) > _BASH_MAX_LENGTH:
+        return f"Command exceeds maximum allowed length of {_BASH_MAX_LENGTH} characters."
+    cmd_lower = command.lower()
+    for pattern in _BASH_BLOCKLIST:
+        if all(token in cmd_lower for token in pattern):
+            return f"Command blocked: matches dangerous pattern {pattern!r}."
+    return None
+
+
 def run_bash_tool(
     agent: Any, command: str, timeout_seconds: int = 60, **kwargs
 ) -> str:
@@ -866,6 +911,19 @@ def run_bash_tool(
     Returns:
         str: Command stdout and stderr, or error message
     """
+    # --- Security: reject commands that match known-dangerous patterns --------
+    rejection = _check_bash_command(command)
+    if rejection:
+        logger.warning(
+            f"run_bash_tool blocked command: {command!r} — {rejection}"
+        )
+        agent.short_memory.add(
+            role="Terminal",
+            content=f"Blocked (security): {command[:100]}{'...' if len(command) > 100 else ''}",
+        )
+        return f"Error: {rejection}"
+    # -------------------------------------------------------------------------
+
     try:
         # Run in process cwd (where the user started the script) so commands like
         # ls -la and python script.py see the project directory, not the agent workspace.
