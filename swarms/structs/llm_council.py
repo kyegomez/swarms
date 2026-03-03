@@ -395,7 +395,9 @@ class LLMCouncil:
         """
         query = task or query
         if query is None:
-            raise ValueError("Either 'task' or 'query' must be provided")
+            raise ValueError(
+                "Either 'task' or 'query' must be provided"
+            )
         if self.verbose:
             print(f"\n{'='*80}")
             print("🏛️  LLM COUNCIL SESSION")

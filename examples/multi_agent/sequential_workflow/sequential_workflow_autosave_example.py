@@ -45,7 +45,7 @@ def main():
     print(f"Workspace directory: {workflow.swarm_workspace_dir}")
 
     # Run a task
-    result = workflow.run(
+    workflow.run(
         "Write a short paragraph about artificial intelligence."
     )
 

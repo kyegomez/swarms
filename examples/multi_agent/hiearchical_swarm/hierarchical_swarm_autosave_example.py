@@ -44,7 +44,7 @@ def main():
     print(f"Workspace directory: {swarm.swarm_workspace_dir}")
 
     # Run a task
-    result = swarm.run(
+    swarm.run(
         "Write a short paragraph about artificial intelligence."
     )
 
