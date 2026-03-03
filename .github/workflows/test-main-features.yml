@@ -69,7 +69,7 @@ jobs:
         poetry run python tests/test_main_features.py
 
     - name: Upload test results
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: test-results
