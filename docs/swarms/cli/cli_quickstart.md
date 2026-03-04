@@ -68,10 +68,10 @@ Expected output:
 
 Try these commands to verify everything works:
 
-### View All Features
+### Start an Interactive Chat
 
 ```bash
-swarms features
+swarms chat
 ```
 
 ### Create a Simple Agent
@@ -98,7 +98,7 @@ swarms llm-council --task "What are the best practices for code review?"
 | Command | Description |
 |---------|-------------|
 | `swarms --help` | Show all available commands |
-| `swarms features` | Display all CLI features |
+| `swarms chat` | Start an interactive chat agent |
 | `swarms setup-check` | Verify environment setup |
 | `swarms onboarding` | Interactive setup wizard |
 | `swarms agent` | Create and run a custom agent |

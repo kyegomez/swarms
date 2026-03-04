@@ -18,34 +18,10 @@ This document provides comprehensive examples of how to use the Swarms CLI for v
 #### Check CLI Installation
 
 ```bash
-swarms help
+swarms --help
 ```
 
-**Expected Output:**
-```
-  _________                                     
- /   _____/_  _  _______ _______  _____   ______
- \_____  \\ \/ \/ /\__  \\_  __ \/     \ /  ___/
- /        \\     /  / __ \|  | \/  Y Y  \\___ \ 
-/_______  / \/\_/  (____  /__|  |__|_|  /____  >
-        \/              \/            \/     \/                                
-
-Available Commands
-┌─────────────────┬─────────────────────────────────────────────────────────────┐
-│ Command         │ Description                                                 │
-├─────────────────┼─────────────────────────────────────────────────────────────┤
-│ onboarding      │ Start the interactive onboarding process                   │
-│ help            │ Display this help message                                  │
-│ get-api-key     │ Retrieve your API key from the platform                   │
-│ check-login     │ Verify login status and initialize cache                   │
-│ run-agents      │ Execute agents from your YAML configuration                │
-│ load-markdown   │ Load agents from markdown files with YAML frontmatter     │
-│ agent           │ Create and run a custom agent with specified parameters   │
-│ auto-upgrade    │ Update Swarms to the latest version                       │
-│ book-call       │ Schedule a strategy session with our team                 │
-│ autoswarm       │ Generate and execute an autonomous swarm                  │
-└─────────────────┴─────────────────────────────────────────────────────────────┘
-```
+This displays a plain-text reference of all available commands, options, and usage examples.
 
 #### Start Onboarding Process
 ```bash
@@ -465,9 +441,9 @@ jobs:
       - name: Install dependencies
         run: |
           pip install swarms
-             - name: Run Swarms Agents
-         run: |
-           swarms run-agents --yaml-file ci_agents.yaml
+      - name: Run Swarms Agents
+        run: |
+          swarms run-agents --yaml-file ci_agents.yaml
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 ```
