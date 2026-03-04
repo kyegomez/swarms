@@ -49,7 +49,6 @@ from swarms.cli.utils import (
     run_setup_check,
     show_ascii_art,
     show_error,
-    show_help,
 )
 
 load_dotenv()
@@ -703,7 +702,6 @@ class CustomHelpAction(argparse.Action):
         print("Commands:")
         commands = [
             ("onboarding", "Run environment setup check"),
-            ("help", "Display this help message"),
             (
                 "get-api-key",
                 "Open browser to retrieve API keys from the platform",
@@ -897,7 +895,6 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     )
     command_choices = [
         "onboarding",
-        "help",
         "get-api-key",
         "check-login",
         "run-agents",
@@ -1593,7 +1590,6 @@ def route_command(args: argparse.Namespace) -> None:
     """
     command_handlers: Dict[str, Any] = {
         "onboarding": handle_onboarding,
-        "help": lambda args: show_help(),
         "get-api-key": lambda args: get_api_key(),
         "check-login": lambda args: check_login(),
         "run-agents": handle_run_agents,
