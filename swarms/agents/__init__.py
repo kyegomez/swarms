@@ -3,6 +3,7 @@ from swarms.agents.consistency_agent import SelfConsistencyAgent
 from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
 )
+from swarms.agents.cr_ca_agent import CRCAAgent
 from swarms.agents.flexion_agent import ReflexionAgent
 from swarms.agents.gkp_agent import GKPAgent
 from swarms.agents.i_agent import IterativeReflectiveExpansion
@@ -22,4 +23,5 @@ __all__ = [
     "ReflexionAgent",
     "GKPAgent",
     "AgentJudge",
+    "CRCAAgent",
 ]
