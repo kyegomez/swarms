@@ -22,10 +22,12 @@ Todo
 
 """
 
+import asyncio
 import json
 import os
 import time
 import traceback
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, List, Optional, Union
 
 from loguru import logger
@@ -37,6 +39,9 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+from swarms.prompts.agent_judge_prompt import (
+    HIERARCHICAL_SWARM_JUDGE_PROMPT,
+)
 from swarms.prompts.hiearchical_system_prompt import (
     DIRECTOR_PLANNING_PROMPT,
     HIEARCHICAL_SWARM_SYSTEM_PROMPT,
@@ -630,6 +635,19 @@ class SwarmSpec(BaseModel):
     )
 
 
+class AgentScore(BaseModel):
+    agent_name: str
+    score: int = Field(..., ge=0, le=10)
+    reasoning: str
+    suggestions: str
+
+
+class JudgeReport(BaseModel):
+    overall_quality: int = Field(..., ge=0, le=10)
+    scores: List[AgentScore]
+    summary: str
+
+
 class HierarchicalSwarm:
     """
     A hierarchical swarm orchestrator that coordinates multiple agents through a director.
@@ -678,6 +696,9 @@ class HierarchicalSwarm:
         planning_enabled: bool = True,
         autosave: bool = True,
         verbose: bool = False,
+        parallel_execution: bool = False,
+        agent_as_judge: bool = False,
+        judge_agent_model_name: str = "gpt-4o-mini",
         *args,
         **kwargs,
     ):
@@ -729,6 +750,9 @@ class HierarchicalSwarm:
         self.planning_enabled = planning_enabled
         self.autosave = autosave
         self.verbose = verbose
+        self.parallel_execution = parallel_execution
+        self.agent_as_judge = agent_as_judge
+        self.judge_agent_model_name = judge_agent_model_name
         self.swarm_workspace_dir = None
 
         # Setup autosave workspace if enabled
@@ -1160,7 +1184,9 @@ class HierarchicalSwarm:
                 orders, streaming_callback=streaming_callback
             )
 
-            if self.director_feedback_on is True:
+            if self.agent_as_judge:
+                feedback = self.run_judge_agent(outputs)
+            elif self.director_feedback_on is True:
                 feedback = self.feedback_director(outputs)
             else:
                 feedback = outputs
@@ -1378,6 +1404,49 @@ class HierarchicalSwarm:
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
 
+    def run_judge_agent(self, outputs: list) -> str:
+        """
+        Create a one-shot judge agent that scores each worker agent's output.
+
+        Args:
+            outputs (list): List of agent outputs to evaluate.
+
+        Returns:
+            str: The structured JudgeReport as a string, also added to conversation.
+        """
+        try:
+            logger.info(
+                "Running judge agent to score worker outputs..."
+            )
+            schema = BaseTool().base_model_to_dict(JudgeReport)
+
+            judge = Agent(
+                agent_name="JudgeAgent",
+                agent_description="Evaluates and scores the quality of worker agent outputs",
+                system_prompt=HIERARCHICAL_SWARM_JUDGE_PROMPT,
+                model_name=self.judge_agent_model_name,
+                max_loops=1,
+                base_model=JudgeReport,
+                tools_list_dictionary=[schema],
+                output_type="final",
+            )
+
+            task = (
+                f"Conversation history:\n{self.conversation.get_str()}\n\n"
+                f"Agent outputs to evaluate:\n{outputs}"
+            )
+
+            result = judge.run(task=task)
+            self.conversation.add(role="JudgeAgent", content=result)
+            logger.info(f"Judge agent completed scoring:\n{result}")
+            return result
+
+        except Exception as e:
+            logger.error(
+                f"[ERROR] run_judge_agent failed: {str(e)}\n[TRACE] {traceback.format_exc()}"
+            )
+            return str(outputs)
+
     def call_single_agent(
         self,
         agent_name: str,
@@ -1385,6 +1454,7 @@ class HierarchicalSwarm:
         streaming_callback: Optional[
             Callable[[str, str, bool], None]
         ] = None,
+        _add_to_conversation: bool = True,
         *args,
         **kwargs,
     ):
@@ -1475,7 +1545,8 @@ class HierarchicalSwarm:
                     *args,
                     **kwargs,
                 )
-            self.conversation.add(role=agent_name, content=output)
+            if _add_to_conversation:
+                self.conversation.add(role=agent_name, content=output)
 
             return output
 
@@ -1636,38 +1707,86 @@ class HierarchicalSwarm:
             Exception: If order execution fails.
         """
         try:
-            outputs = []
-            for i, order in enumerate(orders):
-                # Update dashboard for agent execution
-                if self.interactive and self.dashboard:
-                    self.dashboard.update_agent_status(
+            if self.parallel_execution:
+                max_workers = max(1, int(os.cpu_count() * 0.75))
+                futures_map = {}
+                results = [None] * len(orders)
+
+                with ThreadPoolExecutor(
+                    max_workers=max_workers
+                ) as executor:
+                    for i, order in enumerate(orders):
+                        if self.interactive and self.dashboard:
+                            self.dashboard.update_agent_status(
+                                order.agent_name,
+                                "RUNNING",
+                                order.task,
+                                "Processing...",
+                            )
+                        future = executor.submit(
+                            self.call_single_agent,
+                            order.agent_name,
+                            order.task,
+                            streaming_callback,
+                            False,  # _add_to_conversation=False
+                        )
+                        futures_map[future] = (i, order)
+
+                    for future in as_completed(futures_map):
+                        idx, order = futures_map[future]
+                        output = future.result()
+                        results[idx] = output
+
+                        if self.interactive and self.dashboard:
+                            self.dashboard.update_agent_status(
+                                order.agent_name,
+                                "COMPLETED",
+                                order.task,
+                                str(output),
+                            )
+
+                # Write outputs to conversation in submission order
+                for i, order in enumerate(orders):
+                    if results[i] is not None:
+                        self.conversation.add(
+                            role=order.agent_name, content=results[i]
+                        )
+
+                return results
+
+            else:
+                outputs = []
+                for i, order in enumerate(orders):
+                    # Update dashboard for agent execution
+                    if self.interactive and self.dashboard:
+                        self.dashboard.update_agent_status(
+                            order.agent_name,
+                            "RUNNING",
+                            order.task,
+                            "Processing...",
+                        )
+
+                    output = self.call_single_agent(
                         order.agent_name,
-                        "RUNNING",
                         order.task,
-                        "Processing...",
+                        streaming_callback=streaming_callback,
                     )
 
-                output = self.call_single_agent(
-                    order.agent_name,
-                    order.task,
-                    streaming_callback=streaming_callback,
-                )
+                    # Update dashboard with completed status
+                    if self.interactive and self.dashboard:
+                        # Always show full output without truncation
+                        output_display = str(output)
 
-                # Update dashboard with completed status
-                if self.interactive and self.dashboard:
-                    # Always show full output without truncation
-                    output_display = str(output)
+                        self.dashboard.update_agent_status(
+                            order.agent_name,
+                            "COMPLETED",
+                            order.task,
+                            output_display,
+                        )
 
-                    self.dashboard.update_agent_status(
-                        order.agent_name,
-                        "COMPLETED",
-                        order.task,
-                        output_display,
-                    )
+                    outputs.append(output)
 
-                outputs.append(output)
-
-            return outputs
+                return outputs
 
         except Exception as e:
             error_msg = (
@@ -1738,3 +1857,36 @@ class HierarchicalSwarm:
             logger.error(
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
+
+    async def arun(
+        self,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """
+        Async entry point that wraps the synchronous run() in asyncio.to_thread().
+
+        Args:
+            task (str, optional): The task to be processed by the swarm.
+            img (str, optional): Optional image input for the agents.
+            streaming_callback (Callable[[str, str, bool], None], optional):
+                Callback for streaming agent outputs.
+            *args: Additional positional arguments passed to run().
+            **kwargs: Additional keyword arguments passed to run().
+
+        Returns:
+            Any: The same result as run().
+        """
+        return await asyncio.to_thread(
+            self.run,
+            task=task,
+            img=img,
+            streaming_callback=streaming_callback,
+            *args,
+            **kwargs,
+        )
