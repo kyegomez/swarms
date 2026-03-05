@@ -6,9 +6,11 @@ The Swarms CLI is a comprehensive command-line interface for managing and execut
 
 - [Installation](#installation)
 - [Basic Usage](#basic-usage)
+- [CLI Header and Startup](#cli-header-and-startup)
 - [Commands Reference](#commands-reference)
 - [Global Arguments](#global-arguments)
 - [Command-Specific Arguments](#command-specific-arguments)
+  - [chat Command](#chat-command)
   - [run-agents Command](#run-agents-command)
   - [load-markdown Command](#load-markdown-command)
   - [agent Command](#agent-command)
@@ -16,7 +18,6 @@ The Swarms CLI is a comprehensive command-line interface for managing and execut
   - [setup-check Command](#setup-check-command)
   - [llm-council Command](#llm-council-command)
   - [heavy-swarm Command](#heavy-swarm-command)
-  - [features Command](#features-command)
 - [Error Handling](#error-handling)
 - [Examples](#examples)
 - [Configuration](#configuration)
@@ -43,22 +44,32 @@ pip install swarms
 swarms <command> [options]
 ```
 
+Use `swarms --help` to display a plain-text reference of all commands, options, and examples.
+
+## CLI Header and Startup
+
+When you launch any Swarms CLI command, a compact header is displayed with:
+
+- **Active provider detection**: Automatically detects which API keys are configured (OpenAI, Anthropic, Groq, Google, Cohere, Mistral, Together AI) and displays the active provider
+- **Version info**: Shows the current Swarms version and working directory
+- **Rotating startup tips**: A randomly selected tip is shown on each launch, covering commands, agent parameters, swarm usage, and general best practices
+
+The CLI uses a simplified red and white color scheme.
+
 ## Commands Reference
 
 ### Core Commands
 
 | Command | Description | Required Arguments |
 |---------|-------------|-------------------|
-| `onboarding` | Start interactive onboarding process | None |
-| `help` | Display help message | None |
-| `features` | Display all available features and actions in a comprehensive table | None |
+| `onboarding` | Run interactive environment setup check | None |
 | `get-api-key` | Open API key portal in browser | None |
 | `check-login` | Verify login status and initialize cache | None |
 | `run-agents` | Execute agents from YAML configuration | `--yaml-file` |
 | `load-markdown` | Load agents from markdown files | `--markdown-path` |
-| `agent` | Create and run custom agent | `--name`, `--description`, `--system-prompt`, `--task` |
-| `auto-upgrade` | Update Swarms to latest version | None |
-| `book-call` | Schedule strategy session | None |
+| `agent` | Create and run custom agent | `--name`, `--description`, `--system-prompt` |
+| `chat` | Start an interactive chat agent | None |
+| `upgrade` | Update Swarms to latest version | None |
 | `autoswarm` | Generate and execute autonomous swarm | `--task`, `--model` |
 | `setup-check` | Run comprehensive environment setup check | None |
 | `llm-council` | Run LLM Council with multiple agents collaborating on a task | `--task` |
@@ -71,16 +82,53 @@ All commands support these global options:
 | Argument | Type | Default | Description |
 |----------|------|---------|-------------|
 | `--verbose` | `bool` | `False` | Enable verbose output |
-| `--help`, `-h` | `bool` | `False` | Show help message |
+| `--help`, `-h` | `bool` | `False` | Show plain-text help message with all commands, options, and examples |
 
 ## Command-Specific Arguments
+
+### `chat` Command
+
+Start an interactive chat agent with a persistent conversation loop. The chat agent uses autonomous loops (`max_loops="auto"`) and supports dynamic context windows and temperature.
+
+```bash
+swarms chat [options]
+```
+
+#### Optional Arguments
+
+| Argument | Type | Default | Description |
+|----------|------|---------|-------------|
+| `--model-name` | `str` | `"claude-sonnet-4-5"` | Model to use for the chat agent |
+| `--name` | `str` | `"Swarms Agent"` | Name of the chat agent |
+| `--description` | `str` | `"A Swarms agent..."` | Description of the chat agent |
+| `--system-prompt` | `str` | `None` | Custom system prompt for the agent |
+| `--task` | `str` | `None` | Initial task to start the conversation with |
+
+**Exit commands**: Type `exit`, `quit`, `bye`, or `q` to end the chat session.
+
+**Examples:**
+```bash
+# Start a chat with default model (claude-sonnet-4-5)
+swarms chat
+
+# Use a specific model
+swarms chat --model-name claude-opus-4-6
+swarms chat --model-name gpt-4o
+swarms chat --model-name gemini/gemini-2.0-flash
+
+# Start with an initial task
+swarms chat --task "Help me write a Python script"
+
+# Custom agent name and system prompt
+swarms chat --name "Code Assistant" --system-prompt "You are an expert Python developer"
+```
 
 ### `run-agents` Command
 
 Execute agents from YAML configuration files.
 
 ```bash
-python -m swarms.cli.main run-agents [options]
+swarms run-agents [options]
 ```
 
 | Argument | Type | Default | Required | Description |
@@ -97,7 +145,7 @@ swarms run-agents --yaml-file my_agents.yaml
 Load agents from markdown files with YAML frontmatter.
 
 ```bash
-python -m swarms.cli.main load-markdown [options]
+swarms load-markdown [options]
 ```
 
 | Argument | Type | Default | Required | Description |
@@ -115,7 +163,7 @@ swarms load-markdown --markdown-path ./agents/ --concurrent
 Create and run a custom agent with specified parameters.
 
 ```bash
-python -m swarms.cli.main agent [options]
+swarms agent [options]
 ```
 
 #### Required Arguments
@@ -124,16 +172,17 @@ python -m swarms.cli.main agent [options]
 |----------|------|-------------|
 | `--name` | `str` | Name of the custom agent |
 | `--description` | `str` | Description of the custom agent |
-| `--system-prompt` | `str` | System prompt for the custom agent |
-| `--task` | `str` | Task for the custom agent to execute |
+| `--system-prompt` | `str` | System prompt for the custom agent (not required if `--marketplace-prompt-id` is provided) |
 
 #### Optional Arguments
 
 | Argument | Type | Default | Description |
 |----------|------|---------|-------------|
-| `--model-name` | `str` | `"gpt-4"` | Model name for the custom agent |
+| `--task` | `str` | `None` | Task for the agent to execute (if not provided, agent starts in interactive mode) |
+| `--model-name` | `str` | `None` | Model name for the custom agent |
 | `--temperature` | `float` | `None` | Temperature setting (0.0-2.0) |
-| `--max-loops` | `int` | `None` | Maximum number of loops for the agent |
+| `--max-loops` | `str` | `None` | Maximum number of loops (integer or `"auto"` for autonomous loops) |
+| `--interactive` / `--no-interactive` | `bool` | `True` | Enable/disable interactive mode |
 | `--auto-generate-prompt` | `bool` | `False` | Enable auto-generation of prompts |
 | `--dynamic-temperature-enabled` | `bool` | `False` | Enable dynamic temperature adjustment |
 | `--dynamic-context-window` | `bool` | `False` | Enable dynamic context window |
@@ -148,6 +197,7 @@ python -m swarms.cli.main agent [options]
 | `--saved-state-path` | `str` | `None` | Path for saving agent state |
 | `--user-name` | `str` | `None` | Username for the agent |
 | `--mcp-url` | `str` | `None` | MCP URL for the agent |
+| `--marketplace-prompt-id` | `str` | `None` | Prompt ID from Swarms marketplace (replaces --system-prompt) |
 
 **Example:**
 ```bash
@@ -156,7 +206,6 @@ swarms agent \
   --description "Advanced trading agent for market analysis" \
   --system-prompt "You are an expert trader..." \
   --task "Analyze market trends for AAPL" \
-  --model-name "gpt-4" \
   --temperature 0.1 \
   --max-loops 5
 ```
@@ -208,36 +257,12 @@ swarms setup-check
 swarms setup-check --verbose
 ```
 
-**Expected Output:**
-```
-🔍 Running Swarms Environment Setup Check
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Environment Check Results                                                  │
-├─────────┬─────────────────────────┬─────────────────────────────────────────┤
-│ Status  │ Check                   │ Details                                │
-├─────────┼─────────────────────────┼─────────────────────────────────────────┤
-│ ✓       │ Python Version          │ Python 3.11.5                          │
-│ ✓       │ Swarms Version          │ Current version: 8.1.1                 │
-│ ✓       │ API Keys                │ API keys found: OPENAI_API_KEY         │
-│ ✓       │ Dependencies            │ All required dependencies available     │
-│ ✓       │ Environment File        │ .env file exists with 1 API key(s)     │
-│ ✓       │ Workspace Directory     │ WORKSPACE_DIR is set to: /path/to/ws   │
-└─────────┴─────────────────────────┴─────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Setup Check Complete                                                       │
-├─────────────────────────────────────────────────────────────────────────────┤
-│ 🎉 All checks passed! Your environment is ready for Swarms.               │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
 ### `llm-council` Command
 
 Run the LLM Council with multiple specialized agents that collaborate, evaluate, and synthesize responses.
 
 The LLM Council follows a structured workflow:
-1. **Independent Responses**: Each council member (GPT-5.1, Gemini 3 Pro, Claude Sonnet 4.5, Grok-4) independently responds to the query
+1. **Independent Responses**: Each council member independently responds to the query
 2. **Peer Review**: All members review and rank each other's anonymized responses
 3. **Synthesis**: A Chairman agent synthesizes all responses and rankings into a final comprehensive answer
 
@@ -255,7 +280,7 @@ swarms llm-council [options]
 
 | Argument | Type | Default | Description |
 |----------|------|---------|-------------|
-| `--verbose` | `bool` | `True` | Enable verbose output showing progress and intermediate results |
+| `--verbose` | `bool` | `False` | Enable verbose output showing progress and intermediate results |
 
 **Example:**
 ```bash
@@ -269,10 +294,9 @@ swarms llm-council --task "What is the best approach to solve this problem?" --v
 **How It Works:**
 
 The LLM Council creates a collaborative environment where:
-- **Default Council Members**: GPT-5.1 (analytical), Gemini 3 Pro (concise), Claude Sonnet 4.5 (balanced), Grok-4 (creative)
 - **Anonymized Evaluation**: Responses are anonymized before evaluation to ensure honest ranking
 - **Cross-Model Evaluation**: Each model evaluates all responses, often selecting other models' responses as superior
-- **Final Synthesis**: The Chairman (GPT-5.1 by default) synthesizes the best elements from all responses
+- **Final Synthesis**: The Chairman synthesizes the best elements from all responses
 
 **Use Cases:**
 - Complex problem-solving requiring multiple perspectives
@@ -318,7 +342,7 @@ swarms heavy-swarm --task "Analyze the current market trends for renewable energ
 
 # With custom configuration
 swarms heavy-swarm \
-  --task "Research the best investment strategies for 2024" \
+  --task "Research the best investment strategies" \
   --loops-per-agent 3 \
   --question-agent-model-name "gpt-4" \
   --worker-model-name "gpt-4" \
@@ -341,39 +365,6 @@ HeavySwarm includes specialized agents for different aspects of analysis:
 - Comprehensive report generation
 - Multi-faceted problem solving
 
-### `features` Command
-
-Display all available CLI features and actions in a comprehensive, formatted table.
-
-This command provides a quick reference to all available features, their categories, descriptions, command syntax, and key parameters.
-
-```bash
-swarms features
-```
-
-**No arguments required.**
-
-**Example:**
-```bash
-swarms features
-```
-
-**Output Includes:**
-- **Main Features Table**: Complete list of all features with:
-  - Feature name
-  - Category (Setup, Auth, Execution, Creation, etc.)
-  - Description
-  - Command syntax
-  - Key parameters
-- **Category Summary**: Overview of features grouped by category with counts
-- **Usage Tips**: Quick tips for using the CLI effectively
-
-**Use Cases:**
-- Quick reference when exploring CLI capabilities
-- Discovering available features
-- Understanding command syntax and parameters
-- Learning about feature categories
-
 ## Error Handling
 
 The CLI provides comprehensive error handling with formatted error messages:
@@ -393,15 +384,25 @@ The CLI provides comprehensive error handling with formatted error messages:
 Errors are displayed in formatted panels with:
 
 - **Error Title**: Clear error identification
-
 - **Error Message**: Detailed error description
-
 - **Help Text**: Suggested resolution steps
-
-- **Color Coding**: Red borders for errors, yellow for warnings
+- **Color Coding**: Red borders for errors, white for warnings
 
 
 ## Examples
+
+### Interactive Chat
+
+```bash
+# Start a chat session
+swarms chat
+
+# Chat with a specific model
+swarms chat --model-name gpt-4o
+
+# Chat with a custom system prompt
+swarms chat --name "Math Tutor" --system-prompt "You are an expert math tutor"
+```
 
 ### Basic Agent Creation
 
@@ -412,7 +413,6 @@ swarms agent \
   --description "AI code review assistant" \
   --system-prompt "You are an expert code reviewer..." \
   --task "Review this Python code for best practices" \
-  --model-name "gpt-4" \
   --temperature 0.1
 ```
 
@@ -456,18 +456,11 @@ swarms llm-council \
 ```bash
 # Run HeavySwarm for comprehensive task analysis
 swarms heavy-swarm \
-  --task "Analyze the impact of AI on the job market in 2024" \
+  --task "Analyze the impact of AI on the job market" \
   --loops-per-agent 2 \
   --question-agent-model-name "gpt-4" \
   --worker-model-name "gpt-4" \
   --verbose
-```
-
-### Viewing All Features
-
-```bash
-# Display all available features
-swarms features
 ```
 
 ## Configuration
@@ -479,17 +472,13 @@ For `run-agents` command, use this YAML structure:
 ```yaml
 agents:
   - name: "Research Agent"
-
     description: "Research and analysis specialist"
-    model_name: "gpt-4"
     system_prompt: "You are a research specialist..."
     temperature: 0.1
     max_loops: 3
-    
-  - name: "Analysis Agent"
 
+  - name: "Analysis Agent"
     description: "Data analysis expert"
-    model_name: "gpt-4"
     system_prompt: "You are a data analyst..."
     temperature: 0.2
     max_loops: 5
@@ -503,7 +492,6 @@ For `load-markdown` command, use YAML frontmatter:
 ---
 name: Research Agent
 description: AI research specialist
-model_name: gpt-4
 temperature: 0.1
 max_loops: 3
 ---
@@ -513,15 +501,16 @@ You are an expert research agent specializing in...
 
 ## Advanced Features
 
+### Dynamic Date/Time Injection
+
+Agent system prompts automatically include the current date and time at runtime, ensuring agents always have accurate temporal context for their tasks.
+
 ### Progress Indicators
 
 The CLI provides rich progress indicators for long-running operations:
 
 - **Spinner Animations**: Visual feedback during execution
-
-
 - **Progress Bars**: For operations with known completion states
-
 - **Status Updates**: Real-time operation status
 
 
@@ -530,42 +519,26 @@ The CLI provides rich progress indicators for long-running operations:
 Multiple markdown files can be processed concurrently:
 
 - **Parallel Execution**: Improves performance for large directories
-
 - **Resource Management**: Automatic thread management
-
 - **Error Isolation**: Individual file failures don't affect others
 
 
-### Auto-upgrade System
+### Upgrade
 
 ```bash
-swarms auto-upgrade
+swarms upgrade
 ```
 
-Automatically updates Swarms to the latest version with:
-
-- Version checking
-
-- Dependency resolution
-
-- Safe update process
+Updates Swarms to the latest version via pip.
 
 
-### Interactive Onboarding
+### Onboarding
 
 ```bash
 swarms onboarding
 ```
 
-Guided setup process including:
-
-- API key configuration
-
-- Environment setup
-
-- Basic agent creation
-
-- Usage examples
+Runs the environment setup check to verify your installation and configuration (equivalent to `swarms setup-check`).
 
 ### Multi-Agent Collaboration
 
@@ -580,7 +553,7 @@ swarms llm-council --task "Your question here"
 ```
 
 **Features:**
-- Multiple model perspectives (GPT-5.1, Gemini, Claude, Grok)
+- Multiple model perspectives
 - Anonymous peer review and ranking
 - Synthesized final responses
 - Cross-model evaluation
@@ -600,21 +573,6 @@ swarms heavy-swarm --task "Your complex task here"
 - Iterative refinement with multiple loops
 - Specialized agent roles (Research, Analysis, Writing, Question)
 
-### Feature Discovery
-
-Quickly discover all available features:
-
-```bash
-swarms features
-```
-
-Displays comprehensive tables showing:
-- All available commands
-- Feature categories
-- Command syntax
-- Key parameters
-- Usage examples
-
 
 ## Troubleshooting
 
@@ -633,9 +591,7 @@ Displays comprehensive tables showing:
 
 3. **Model Not Available**
    - Verify model name spelling
-
    - Check API key permissions
-
    - Ensure sufficient quota
 
 
@@ -656,7 +612,6 @@ The CLI can be integrated into CI/CD pipelines:
 ```yaml
 # GitHub Actions example
 - name: Run Swarms Agents
-
   run: |
     swarms run-agents --yaml-file ci_agents.yaml
 ```
@@ -685,12 +640,29 @@ swarms run-agents --yaml-file agents2.yaml
 
 ## Security
 
+### API Key Management
+
 | Security Aspect         | Recommendation                                         |
 |------------------------|--------------------------------------------------------|
-| API Key Management     | Store keys in environment variables                    |
+| API Key Management     | Store keys in environment variables or `.env` files    |
 | File Permissions       | Restrict access to configuration files                 |
 | Input Validation       | CLI validates all inputs before execution              |
 | Error Sanitization     | Sensitive information is not exposed in errors         |
+
+### Bash Command Security Guardrails
+
+When agents run in autonomous mode (`--max-loops auto`), bash command execution is protected by security guardrails that block dangerous shell patterns:
+
+| Category | Blocked Patterns |
+|----------|-----------------|
+| **Recursive/forced deletion** | `rm -rf`, `rm -fr`, `rm -r` |
+| **Pipe-to-shell exploits** | `\| sh`, `\| bash`, `\| zsh`, `\| python`, `\| python3`, `\| perl`, `\| ruby` |
+| **Raw disk writes** | `dd if=`, `mkfs`, `> /dev/sd*`, `> /dev/nvme*` |
+| **Fork bombs** | `:(){ ` pattern |
+| **System shutdown** | `shutdown`, `reboot`, `halt`, `poweroff` |
+| **Privilege escalation** | `chmod 777 /`, `chown /etc`, `chown /bin` |
+
+Additionally, a **512-character command length limit** is enforced. Commands that exceed this limit or match a blocked pattern are rejected with an error message, and the agent is informed of the rejection reason.
 
 ## Command Quick Reference
 
@@ -701,18 +673,26 @@ swarms run-agents --yaml-file agents2.yaml
 swarms setup-check --verbose
 swarms onboarding
 
-# View all features
-swarms features
-
 # Get help
-swarms help
+swarms --help
+```
+
+### Chat Commands
+
+```bash
+# Interactive chat (default model: claude-sonnet-4-5)
+swarms chat
+
+# Chat with specific model
+swarms chat --model-name gpt-4o
+swarms chat --model-name claude-opus-4-6
 ```
 
 ### Agent Commands
 
 ```bash
 # Create custom agent
-swarms agent --name "Agent" --task "Task" --system-prompt "Prompt"
+swarms agent --name "Agent" --description "My agent" --task "Task" --system-prompt "Prompt"
 
 # Run agents from YAML
 swarms run-agents --yaml-file agents.yaml
