@@ -8,12 +8,14 @@
 
 ### Key Capabilities
 
-- **🏢 Production-Ready**: Enterprise-grade infrastructure with high reliability, comprehensive logging, and robust error handling
-- **🤖 Multi-Agent Orchestration**: Support for hierarchical swarms, parallel processing, sequential workflows, and dynamic agent rearrangement
-- **🔄 Flexible Integration**: Multi-model support, custom agent creation, extensive tool library, and multiple memory systems
-- **📈 Scalable Architecture**: Concurrent processing, resource management, load balancing, and horizontal scaling capabilities
-- **🛠️ Developer-Friendly**: Simple API, extensive documentation, active community, and CLI tools for rapid development
-- **🔐 Enterprise Security**: Built-in error handling, rate limiting, monitoring integration, and audit logging
+| **Capability**           | **Description**                                                                                                    |
+|-------------------------|--------------------------------------------------------------------------------------------------------------------|
+| **Production-Ready**    | Enterprise-grade infrastructure with high reliability, comprehensive logging, and robust error handling              |
+| **Multi-Agent Orchestration** | Support for hierarchical swarms, parallel processing, sequential workflows, and dynamic agent rearrangement   |
+| **Flexible Integration**| Multi-model support, custom agent creation, extensive tool library, and multiple memory systems                    |
+| **Scalable Architecture** | Concurrent processing, resource management, load balancing, and horizontal scaling capabilities                   |
+| **Developer-Friendly**  | Simple API, extensive documentation, active community, and CLI tools for rapid development                          |
+| **Enterprise Security** | Built-in error handling, rate limiting, monitoring integration, and audit logging                                   |
 
 ### Why Choose Swarms?
 
@@ -25,13 +27,9 @@ Whether you're building financial analysis systems, healthcare diagnostics, manu
 
 ```bash
 pip3 install swarms
-```
 
-## Update Swarms
-
-
-```bash
-pip3 install -U swarms
+# Install swarms with UV
+# uv pip install swarms
 ```
 
 ### **Get Started Building Production-Grade Multi-Agent Applications**
@@ -77,15 +75,14 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 
 | Platform | Link | Description |
 |----------|------|-------------|
-| 📚 Documentation | [docs.swarms.world](https://docs.swarms.world) | Official documentation and guides |
-| 📝 Blog | [Medium](https://medium.com/@kyeg) | Latest updates and technical articles |
-| 💬 Discord | [Join Discord](https://discord.gg/EamjgSaEQf) | Live chat and community support |
-| 🐦 Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
-| 👥 LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
-| 📺 YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
-| 🎫 Events | [Sign up here](https://lu.ma/swarms_calendar) | Join our community events |
+| Documentation | [docs.swarms.world](https://docs.swarms.world) | Official documentation and guides |
+| Blog | [Medium](https://medium.com/@kyeg) | Latest updates and technical articles |
+| Discord | [Join Discord](https://discord.gg/EamjgSaEQf) | Live chat and community support |
+| Twitter | [@kyegomez](https://twitter.com/kyegomez) | Latest news and announcements |
+| LinkedIn | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) | Professional network and updates |
+| YouTube | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) | Tutorials and demos |
+| Events | [Sign up here](https://lu.ma/swarms_calendar) | Join our community events |
 
 ## Get Support
 
 Want to get in touch with the Swarms team? Open an issue on [GitHub](https://github.com/kyegomez/swarms/issues/new) or reach out to us via [email](mailto:kye@swarms.world). We're here to help!
-
