@@ -236,7 +236,6 @@ nav:
       - Autosave Tutorial: "swarms/examples/autosave_tutorial.md"
       - Tools and MCP: "swarms/tools/tools_examples.md"
       - Multi-Agent Helpers: "swarms/structs/agent_multi_agent_communication.md"
-      - Loading Prompts from Marketplace: "swarms/examples/marketplace_prompt_loading.md"
       - Agent Skills: "swarms/agents/agent_skills.md"
 
       - Capabilities:
@@ -481,7 +480,7 @@ nav:
       - Browser Use: "examples/browser_use.md"
       - Yahoo Finance: "swarms/examples/yahoo_finance.md"
       - Firecrawl: "developer_guides/firecrawl.md"
-      
+    
       - MCP: 
         - Multi-MCP Agent Integration: "swarms/examples/multi_mcp_agent.md"
 
@@ -503,26 +502,6 @@ nav:
       - X402 Discovery Query Agent: "examples/x402_discovery_query.md"
       - X402 Tools Agent: "swarms/examples/x402_tools_agent.md"
 
-    - Marketplace:
-      - Overview: "examples/marketplace_examples_overview.md"
-      - Loading Prompts from Marketplace: "swarms/examples/marketplace_prompt_loading.md"
-      - Publishing Agents to Marketplace: "examples/marketplace_publishing_quickstart.md"
-
-
-  - Swarms Cloud API:
-    - Overview: "swarms_cloud/migration.md"
-
-
-  - Swarms Marketplace:
-    - Overview: "swarms_platform/index.md"
-    - Marketplace:
-      - Share and Discover Agents, Prompts, and Tools: "swarms_platform/share_and_discover.md"
-      - Monetize Your Prompts, Agents, and Tools: "swarms_platform/monetize.md"
-    - Platform:
-      - Customize Your Sidebar: "swarms_platform/apps_page.md"
-      - Playground: "swarms_platform/playground_page.md"
-      - API Key Management: "swarms_platform/apikeys.md"
-      - Account Management: "swarms_platform/account_management.md"
 
   - Swarms Rust:
     - Overview: "swarms_rs/overview.md"

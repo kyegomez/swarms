@@ -1,4 +1,4 @@
-from swarms.structs.agent import Agent
+from swarms import Agent
 
 # Initialize the agent
 agent = Agent(
@@ -7,7 +7,7 @@ agent = Agent(
     system_prompt="You are a helpful assistant that can answer questions and help with tasks and your name is Quantitative-Trading-Agent",
     model_name="gpt-4.1",
     dynamic_temperature_enabled=True,
-    max_loops="auto",
+    max_loops=2,
     dynamic_context_window=True,
     interactive=True,
     top_p=None,
