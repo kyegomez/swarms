@@ -17,7 +17,10 @@ MODEL = "gpt-4.1-nano"
 AGENTS_CREATED = []
 
 
-def make_agent(name, prompt="You are a helpful assistant. Be very brief, one sentence max."):
+def make_agent(
+    name,
+    prompt="You are a helpful assistant. Be very brief, one sentence max.",
+):
     a = Agent(
         agent_name=name,
         system_prompt=prompt,
@@ -48,17 +51,27 @@ def test_1_async_execution():
 
     # Spawn 3 subagents
     start = time.time()
-    tid1 = parent.spawn_async(child1, "What is 2+2? Reply with just the number.")
-    tid2 = parent.spawn_async(child2, "What is 3+3? Reply with just the number.")
-    tid3 = parent.spawn_async(child3, "What is 4+4? Reply with just the number.")
+    tid1 = parent.spawn_async(
+        child1, "What is 2+2? Reply with just the number."
+    )
+    tid2 = parent.spawn_async(
+        child2, "What is 3+3? Reply with just the number."
+    )
+    tid3 = parent.spawn_async(
+        child3, "What is 4+4? Reply with just the number."
+    )
     spawn_time = time.time() - start
 
-    print(f"  spawn_async() returned in {spawn_time:.4f}s (should be near-instant)")
-    assert spawn_time < 1.0, f"spawn took {spawn_time}s — should be near-instant"
+    print(
+        f"  spawn_async() returned in {spawn_time:.4f}s (should be near-instant)"
+    )
+    assert (
+        spawn_time < 1.0
+    ), f"spawn took {spawn_time}s — should be near-instant"
 
     # Parent is free — prove it by checking thread
     print(f"  Parent thread: {threading.current_thread().name}")
-    print(f"  Parent is FREE to do other work right now")
+    print("  Parent is FREE to do other work right now")
 
     # Now wait for results
     results = parent.gather_results(strategy="wait_all")
@@ -85,7 +98,9 @@ def test_2_background_task_registry():
     parent = make_agent("registry-parent")
     worker = make_agent("registry-worker")
 
-    task_id = parent.spawn_async(worker, "Say hello in French. One word only.")
+    task_id = parent.spawn_async(
+        worker, "Say hello in French. One word only."
+    )
     print(f"  Task ID: {task_id}")
 
     # Check the registry tracks it
@@ -128,11 +143,23 @@ def test_3_recursive_subagent_trees():
     child = make_agent("tree-child")
 
     # Level 0 (grandparent)
-    gp_id = reg.spawn(grandparent, "What continent is France in? One word.", depth=0)
+    gp_id = reg.spawn(
+        grandparent, "What continent is France in? One word.", depth=0
+    )
     # Level 1 (parent, spawned by grandparent)
-    p_id = reg.spawn(parent, "What continent is Japan in? One word.", parent_id=gp_id, depth=1)
+    p_id = reg.spawn(
+        parent,
+        "What continent is Japan in? One word.",
+        parent_id=gp_id,
+        depth=1,
+    )
     # Level 2 (child, spawned by parent)
-    c_id = reg.spawn(child, "What continent is Brazil in? One word.", parent_id=p_id, depth=2)
+    c_id = reg.spawn(
+        child,
+        "What continent is Brazil in? One word.",
+        parent_id=p_id,
+        depth=2,
+    )
 
     results = reg.gather()
     print(f"  Depth 0 (grandparent): {reg.get_task(gp_id).result}")
@@ -191,12 +218,16 @@ def test_4_result_aggregation():
     slow = make_agent("slow-agent", prompt=slow_prompt)
 
     reg.spawn(fast, "Say 'done'. One word only.")
-    reg.spawn(slow, "List all primes under 500 with explanations for each.")
+    reg.spawn(
+        slow, "List all primes under 500 with explanations for each."
+    )
 
     start = time.time()
     results = reg.gather(strategy="wait_first")
     elapsed = time.time() - start
-    print(f"  wait_first returned in {elapsed:.2f}s with {len(results)} result(s)")
+    print(
+        f"  wait_first returned in {elapsed:.2f}s with {len(results)} result(s)"
+    )
     print(f"  First result: {results[0][:80]}...")
     assert len(results) >= 1
     reg.shutdown()
@@ -222,27 +253,37 @@ def test_5_error_handling():
 
     class FailingAgent:
         agent_name = "failing-agent"
+
         def run(self, task):
             raise RuntimeError("Agent crashed: network timeout")
 
     class FlakyAgent:
         """Fails twice, then delegates to real agent on 3rd attempt."""
+
         agent_name = "flaky-agent"
+
         def __init__(self):
             self.attempts = 0
             self._real = make_agent("flaky-inner")
+
         def run(self, task):
             self.attempts += 1
             if self.attempts <= 2:
-                raise ConnectionError(f"Network error (attempt {self.attempts})")
+                raise ConnectionError(
+                    f"Network error (attempt {self.attempts})"
+                )
             return self._real.run(task)
 
     good_agent = make_agent("good-agent")
 
     # --- fail_fast=False: bad agent fails, good agent still succeeds ---
     reg = SubagentRegistry()
-    bad_id = reg.spawn(FailingAgent(), "This will fail", fail_fast=False)
-    good_id = reg.spawn(good_agent, "Say 'success'. One word.", fail_fast=False)
+    bad_id = reg.spawn(
+        FailingAgent(), "This will fail", fail_fast=False
+    )
+    good_id = reg.spawn(
+        good_agent, "Say 'success'. One word.", fail_fast=False
+    )
 
     reg.gather()
 
@@ -250,7 +291,9 @@ def test_5_error_handling():
     good_task = reg.get_task(good_id)
 
     print(f"  Bad agent status: {bad_task.status}")
-    print(f"  Bad agent error: {type(bad_task.error).__name__}: {bad_task.error}")
+    print(
+        f"  Bad agent error: {type(bad_task.error).__name__}: {bad_task.error}"
+    )
     print(f"  Good agent status: {good_task.status}")
     print(f"  Good agent result: {good_task.result}")
 
@@ -263,8 +306,11 @@ def test_5_error_handling():
     reg2 = SubagentRegistry()
     flaky = FlakyAgent()
     retry_id = reg2.spawn(
-        flaky, "Say 'recovered'. One word.",
-        max_retries=3, retry_on=[ConnectionError], fail_fast=False
+        flaky,
+        "Say 'recovered'. One word.",
+        max_retries=3,
+        retry_on=[ConnectionError],
+        fail_fast=False,
     )
     reg2.gather()
     retry_task = reg2.get_task(retry_id)
@@ -281,7 +327,9 @@ def test_5_error_handling():
     reg3 = SubagentRegistry()
     reg3.spawn(FailingAgent(), "crash", fail_fast=True)
     results = reg3.gather()
-    print(f"  fail_fast=True gather result: {type(results[0]).__name__}")
+    print(
+        f"  fail_fast=True gather result: {type(results[0]).__name__}"
+    )
     assert isinstance(results[0], RuntimeError)
 
     reg.shutdown()
@@ -304,7 +352,9 @@ def test_6_observability():
     import io
 
     captured = io.StringIO()
-    handler_id = logger.add(captured, format="{message}", level="INFO")
+    handler_id = logger.add(
+        captured, format="{message}", level="INFO"
+    )
 
     reg = SubagentRegistry()
     agent = make_agent("observable-agent")
@@ -339,7 +389,9 @@ def test_6_observability():
     # Verify lifecycle events
     assert "Spawned task" in logs, "Missing spawn log"
     assert "completed" in logs, "Missing completion log"
-    assert "failed" in logs or "error" in logs.lower(), "Missing failure log"
+    assert (
+        "failed" in logs or "error" in logs.lower()
+    ), "Missing failure log"
     assert "Shut down" in logs, "Missing shutdown log"
     print("  PASSED")
 
@@ -368,9 +420,12 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"  FAILED: {e}")
             import traceback
+
             traceback.print_exc()
             failed += 1
 
     print("\n" + "=" * 60)
-    print(f"RESULTS: {passed} passed, {failed} failed out of {len(tests)}")
+    print(
+        f"RESULTS: {passed} passed, {failed} failed out of {len(tests)}"
+    )
     print("=" * 60)

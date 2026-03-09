@@ -1,7 +1,6 @@
 """Tests for async subagent execution."""
 
 import time
-import threading
 from concurrent.futures import Future
 from unittest.mock import MagicMock
 
@@ -17,7 +16,9 @@ from swarms.structs.async_subagent import (
 # ── Helpers ─────────────────────────────────────────────────
 
 
-def make_mock_agent(result="done", delay=0, name="mock-agent", error=None):
+def make_mock_agent(
+    result="done", delay=0, name="mock-agent", error=None
+):
     """Create a mock agent with a .run() method."""
     agent = MagicMock()
     agent.agent_name = name
@@ -68,7 +69,10 @@ class TestSubagentRegistry:
 
     def test_gather_wait_all(self):
         reg = SubagentRegistry()
-        agents = [make_mock_agent(result=f"r{i}", delay=0.05) for i in range(3)]
+        agents = [
+            make_mock_agent(result=f"r{i}", delay=0.05)
+            for i in range(3)
+        ]
         for a in agents:
             reg.spawn(a, "task")
         results = reg.gather(strategy="wait_all")
@@ -156,7 +160,11 @@ class TestSubagentRegistry:
         agent = make_mock_agent(error=ValueError("always fails"))
         reg = SubagentRegistry()
         task_id = reg.spawn(
-            agent, "doomed", max_retries=2, retry_on=[ValueError], fail_fast=False
+            agent,
+            "doomed",
+            max_retries=2,
+            retry_on=[ValueError],
+            fail_fast=False,
         )
         reg.gather()
         st = reg.get_task(task_id)
@@ -196,8 +204,13 @@ class TestSubagentRegistry:
 
     def test_concurrent_spawns(self):
         reg = SubagentRegistry()
-        agents = [make_mock_agent(result=f"r{i}", delay=0.02) for i in range(10)]
-        task_ids = [reg.spawn(a, f"task-{i}") for i, a in enumerate(agents)]
+        agents = [
+            make_mock_agent(result=f"r{i}", delay=0.02)
+            for i in range(10)
+        ]
+        task_ids = [
+            reg.spawn(a, f"task-{i}") for i, a in enumerate(agents)
+        ]
         assert len(task_ids) == 10
         results = reg.gather()
         assert len(results) == 10
@@ -255,20 +268,37 @@ class TestAgentAsyncMethods:
                 registry = self._get_registry()
                 return registry._executor.submit(self.run, task)
 
-            def spawn_async(self, agent, task, max_retries=0, retry_on=None, fail_fast=True):
+            def spawn_async(
+                self,
+                agent,
+                task,
+                max_retries=0,
+                retry_on=None,
+                fail_fast=True,
+            ):
                 registry = self._get_registry()
                 return registry.spawn(
-                    agent=agent, task=task, parent_id=self.id,
-                    depth=0, max_retries=max_retries,
-                    retry_on=retry_on, fail_fast=fail_fast,
+                    agent=agent,
+                    task=task,
+                    parent_id=self.id,
+                    depth=0,
+                    max_retries=max_retries,
+                    retry_on=retry_on,
+                    fail_fast=fail_fast,
                 )
 
             def run_in_background(self, task):
                 registry = self._get_registry()
-                return registry.spawn(agent=self, task=task, parent_id=None, depth=0)
+                return registry.spawn(
+                    agent=self, task=task, parent_id=None, depth=0
+                )
 
-            def gather_results(self, strategy="wait_all", timeout=None):
-                return self._get_registry().gather(strategy=strategy, timeout=timeout)
+            def gather_results(
+                self, strategy="wait_all", timeout=None
+            ):
+                return self._get_registry().gather(
+                    strategy=strategy, timeout=timeout
+                )
 
             def get_subagent_results(self):
                 return self._get_registry().get_results()
@@ -294,7 +324,9 @@ class TestAgentAsyncMethods:
         assert "child-result" in results
 
     def test_run_in_background(self):
-        agent = self._make_agent_stub(run_result="bg-result", delay=0.05)
+        agent = self._make_agent_stub(
+            run_result="bg-result", delay=0.05
+        )
         task_id = agent.run_in_background("background task")
         assert task_id.startswith("task-")
         results = agent.gather_results()
@@ -398,7 +430,9 @@ class TestRecursiveSubagents:
         child = make_mock_agent()
 
         parent_task_id = reg.spawn(parent, "parent task")
-        child_task_id = reg.spawn(child, "child task", parent_id=parent_task_id, depth=1)
+        child_task_id = reg.spawn(
+            child, "child task", parent_id=parent_task_id, depth=1
+        )
 
         child_task = reg.get_task(child_task_id)
         assert child_task.parent_id == parent_task_id
@@ -436,7 +470,11 @@ class TestErrorPropagation:
 
         reg = SubagentRegistry()
         task_id = reg.spawn(
-            agent, "test", max_retries=3, retry_on=[ValueError], fail_fast=False
+            agent,
+            "test",
+            max_retries=3,
+            retry_on=[ValueError],
+            fail_fast=False,
         )
         reg.gather()
         st = reg.get_task(task_id)

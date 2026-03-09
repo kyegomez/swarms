@@ -15,7 +15,7 @@ from concurrent.futures import (
 )
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 
 from loguru import logger
 
@@ -61,9 +61,7 @@ class SubagentRegistry:
     ):
         self.max_depth = max_depth
         self._tasks: Dict[str, SubagentTask] = {}
-        self._executor = ThreadPoolExecutor(
-            max_workers=max_workers
-        )
+        self._executor = ThreadPoolExecutor(max_workers=max_workers)
         self._lock = threading.Lock()
 
     def spawn(
@@ -114,9 +112,7 @@ class SubagentRegistry:
 
         return task_id
 
-    def _execute_task(
-        self, st: SubagentTask, fail_fast: bool
-    ) -> Any:
+    def _execute_task(self, st: SubagentTask, fail_fast: bool) -> Any:
         """Run the agent with retry logic."""
         agent_name = getattr(st.agent, "agent_name", str(st.agent))
         last_error = None
@@ -141,14 +137,11 @@ class SubagentRegistry:
 
             except Exception as e:
                 last_error = e
-                should_retry = (
-                    attempt < st.max_retries
-                    and (
-                        not st.retry_on
-                        or any(
-                            isinstance(e, exc_type)
-                            for exc_type in st.retry_on
-                        )
+                should_retry = attempt < st.max_retries and (
+                    not st.retry_on
+                    or any(
+                        isinstance(e, exc_type)
+                        for exc_type in st.retry_on
                     )
                 )
                 if should_retry:
@@ -226,7 +219,11 @@ class SubagentRegistry:
 
         if not pending_futures:
             return [
-                st.error if st.status == TaskStatus.FAILED else st.result
+                (
+                    st.error
+                    if st.status == TaskStatus.FAILED
+                    else st.result
+                )
                 for st in already_done
             ]
 
