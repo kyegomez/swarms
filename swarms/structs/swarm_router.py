@@ -32,6 +32,7 @@ from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.majority_voting import MajorityVoting
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.multi_agent_router import MultiAgentRouter
+from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.utils.generate_keys import generate_api_key
@@ -61,6 +62,7 @@ SwarmType = Literal[
     "LLMCouncil",
     "DebateWithJudge",
     "RoundRobin",
+    "PlannerWorkerSwarm",
 ]
 
 
@@ -473,6 +475,7 @@ class SwarmRouter:
             "LLMCouncil": self._create_llm_council,
             "DebateWithJudge": self._create_debate_with_judge,
             "RoundRobin": self._create_round_robin_swarm,
+            "PlannerWorkerSwarm": self._create_planner_worker_swarm,
         }
 
     def _create_heavy_swarm(self, *args, **kwargs):
@@ -634,6 +637,19 @@ class SwarmRouter:
             description=self.description,
             agents=self.agents,
             max_loops=self.max_loops,
+            verbose=self.verbose,
+            *args,
+            **kwargs,
+        )
+
+    def _create_planner_worker_swarm(self, *args, **kwargs):
+        """Factory function for PlannerWorkerSwarm."""
+        return PlannerWorkerSwarm(
+            name=self.name,
+            description=self.description,
+            agents=self.agents,
+            max_loops=self.max_loops,
+            output_type=self.output_type,
             verbose=self.verbose,
             *args,
             **kwargs,
