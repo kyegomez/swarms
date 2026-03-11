@@ -9,7 +9,7 @@ def auto_chat_agent(
     name: str = "Swarms Agent",
     description: str = "A Swarms agent that can chat with the user.",
     system_prompt: Optional[str] = None,
-    model_name: str = "anthropic/claude-sonnet-4-5",
+    model_name: str = "gpt-4.1",
     task: Optional[str] = None,
 ) -> Agent:
     """
@@ -18,6 +18,8 @@ def auto_chat_agent(
     Runs the autonomous loop on each task, then prompts for the next task
     when done. Continues until the user types an exit command.
     """
+    temperature = 1.0
+
     agent = Agent(
         agent_name=name,
         agent_description=description,
@@ -26,6 +28,7 @@ def auto_chat_agent(
         dynamic_context_window=True,
         dynamic_temperature_enabled=True,
         max_loops="auto",
+        temperature=temperature,
         top_p=None,
     )
 
