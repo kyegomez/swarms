@@ -29,7 +29,6 @@ def auto_chat_agent(
         dynamic_temperature_enabled=True,
         max_loops="auto",
         temperature=temperature,
-        top_p=None,
     )
 
     current_task = task

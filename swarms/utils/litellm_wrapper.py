@@ -317,8 +317,15 @@ class LiteLLM:
 
         litellm.drop_params = drop_params
 
-        # Add system prompt if present
-        if self.system_prompt is not None:
+        # Add system prompt if present (Anthropic rejects empty system blocks)
+        if isinstance(self.system_prompt, str):
+            self.system_prompt = self.system_prompt.strip()
+            if self.system_prompt:
+                self.messages.append(
+                    {"role": "system", "content": self.system_prompt}
+                )
+        elif self.system_prompt is not None:
+            # Non-string system prompt (rare) - only include if not None
             self.messages.append(
                 {"role": "system", "content": self.system_prompt}
             )
@@ -584,14 +591,58 @@ class LiteLLM:
                 prompt (if set) and the user message with optional image content.
 
         Note:
+            - Some higher-level orchestrators may wrap prompts in a pseudo-format like:
+
+                  "System: ...\\n\\nHuman: ..."
+
+              For Anthropic-compatible backends this can be auto-parsed into separate
+              system/user blocks. However, if the "System:" section is effectively
+              empty (e.g. "System: \\n\\nHuman: Say hi"), Anthropic will reject the
+              request with "system: text content blocks must be non-empty".
+              To avoid this, we normalize such prompts by stripping the empty
+              system section and keeping only the human text.
             - If an image is provided, both task and image are included in a single
               vision message via `vision_processing`.
             - If only a task is provided, a simple text message is added.
             - The method creates a copy of the existing messages to avoid modifying
               the original message history.
         """
-        # Start with a fresh copy of messages to avoid duplication
-        messages = self.messages.copy()
+        # Normalize orchestrator-style "System:/Human:" prompts where the System
+        # section is effectively empty (e.g. "System: \\n\\nHuman: Say hi").
+        # This prevents Anthropic API errors about empty system text blocks.
+        if isinstance(task, str) and "Human:" in task:
+            stripped = task.lstrip()
+            if stripped.startswith("System:"):
+                try:
+                    system_part, human_part = stripped.split(
+                        "Human:", 1
+                    )
+                    # Remove the leading "System:" label and surrounding whitespace
+                    system_content = system_part[
+                        len("System:") :
+                    ].strip()
+                    if not system_content:
+                        # No real system content → keep only the human text
+                        task = human_part.strip()
+                except ValueError:
+                    # If splitting fails for any reason, fall back to original task
+                    pass
+
+        # Start with a fresh copy of messages to avoid duplication.
+        # Also drop any empty system blocks to satisfy Anthropic validation.
+        messages = []
+        for m in self.messages:
+            if not isinstance(m, dict):
+                continue
+            if m.get("role") != "system":
+                messages.append(m)
+                continue
+            content = m.get("content")
+            if content is None:
+                continue
+            if isinstance(content, str) and not content.strip():
+                continue
+            messages.append(m)
 
         # Check if model supports vision if image is provided
         if img is not None:

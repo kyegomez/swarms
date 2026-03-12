@@ -25,12 +25,13 @@ Available Tools:
 - assign_task: Assign tasks to sub-agents asynchronously
 """
 
-import asyncio
 import os
 import subprocess
 from typing import Any, Dict, List
 from loguru import logger
+import uuid
 
+from swarms.structs.async_subagent import SubagentRegistry, TaskStatus
 
 # ============================================================================
 # CONSTANTS
@@ -501,6 +502,40 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
                         },
                     },
                     "required": ["assignments"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "check_sub_agent_status",
+                "description": "Check the async task status for a sub-agent by name using the sub-agent registry.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "agent_name": {
+                            "type": "string",
+                            "description": "The name of the sub-agent whose async task status should be inspected.",
+                        },
+                    },
+                    "required": ["agent_name"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "cancel_sub_agent_tasks",
+                "description": "Cancel any pending or running async tasks for a sub-agent by name using the sub-agent registry.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "agent_name": {
+                            "type": "string",
+                            "description": "The name of the sub-agent whose async tasks should be cancelled.",
+                        },
+                    },
+                    "required": ["agent_name"],
                 },
             },
         },
@@ -1012,9 +1047,6 @@ def create_sub_agent_tool(
             if not agent_name or not agent_description:
                 return "Error: Each agent must have agent_name and agent_description"
 
-            # Generate unique ID for the sub-agent
-            import uuid
-
             agent_id = f"sub-agent-{uuid.uuid4().hex[:8]}"
 
             # Import Agent class to create sub-agent
@@ -1028,7 +1060,7 @@ def create_sub_agent_tool(
                 system_prompt=system_prompt,  # Use custom system prompt if provided
                 model_name=agent.model_name,
                 max_loops=1,
-                print_on=False,  # Reduce noise from sub-agents
+                print_on=True,  # Reduce noise from sub-agents
             )
 
             # Cache the sub-agent
@@ -1090,6 +1122,11 @@ def assign_task_tool(
         str: Results from all sub-agents or error message
     """
     try:
+        # Use the SubagentRegistry managed for this agent, so task execution,
+        # tracking, retries, cancellation, and result gathering are consistent
+        # across the codebase.
+        registry = _find_registry(agent)
+
         # Check if sub_agents exist
         if not hasattr(agent, "sub_agents") or not agent.sub_agents:
             return "Error: No sub-agents have been created. Use create_sub_agent first."
@@ -1100,73 +1137,70 @@ def assign_task_tool(
             if agent_id not in agent.sub_agents:
                 return f"Error: Sub-agent with ID '{agent_id}' not found. Available agents: {list(agent.sub_agents.keys())}"
 
-        # Prepare tasks for async execution
-        async def run_agent_task(
-            sub_agent_data: Dict, task: str, task_id: str
-        ):
-            """Run a single agent task asynchronously."""
-            try:
-                sub_agent = sub_agent_data["agent"]
-                result = await asyncio.to_thread(sub_agent.run, task)
-                return {
-                    "agent_id": sub_agent.id,
-                    "agent_name": sub_agent_data["name"],
-                    "task_id": task_id,
-                    "status": "success",
-                    "result": result,
-                }
-            except Exception as e:
-                return {
-                    "agent_id": sub_agent.id,
-                    "agent_name": sub_agent_data["name"],
-                    "task_id": task_id,
-                    "status": "error",
-                    "error": str(e),
-                }
-
-        async def run_all_tasks():
-            """Run all tasks concurrently."""
-            tasks = []
+        # Dispatch via registry (preferred)
+        task_mappings: List[Dict[str, str]] = []
+        spawned_task_ids: List[str] = []
+        if registry is not None:
             for idx, assignment in enumerate(assignments):
                 agent_id = assignment.get("agent_id")
                 task = assignment.get("task")
-                task_id = assignment.get("task_id", f"task-{idx + 1}")
-
-                sub_agent_data = agent.sub_agents[agent_id]
-                tasks.append(
-                    run_agent_task(sub_agent_data, task, task_id)
+                user_task_id = assignment.get(
+                    "task_id", f"task-{idx + 1}"
                 )
 
-            return await asyncio.gather(*tasks)
+                sub_agent_data = agent.sub_agents[agent_id]
+                sub_agent = sub_agent_data["agent"]
+                spawned_task_id = registry.spawn(
+                    agent=sub_agent,
+                    task=task,
+                    parent_id=getattr(agent, "id", None),
+                    depth=0,
+                    max_retries=0,
+                    retry_on=None,
+                    fail_fast=False,
+                )
+                spawned_task_ids.append(spawned_task_id)
+                task_mappings.append(
+                    {
+                        "spawned_task_id": spawned_task_id,
+                        "user_task_id": user_task_id,
+                        "agent_id": getattr(
+                            sub_agent, "id", agent_id
+                        ),
+                        "agent_name": sub_agent_data.get(
+                            "name", "Unknown"
+                        ),
+                    }
+                )
 
         # Execute tasks
         if wait_for_completion:
-            # Run in event loop
-            try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
+            # Wait for tasks to complete using registry
+            # (order is not guaranteed; we map by spawned_task_id for reporting)
+            registry.gather(strategy="wait_all", timeout=None)
 
-            results = loop.run_until_complete(run_all_tasks())
-
-            # Format results
+            # Format results based on registry state
+            results_by_spawned_id = registry.get_results()
             result_lines = [
-                f"Completed {len(results)} task assignment(s):\n"
+                f"Completed {len(task_mappings)} task assignment(s):\n"
             ]
-            for result in results:
-                if result["status"] == "success":
+
+            for mapping in task_mappings:
+                spawned_task_id = mapping["spawned_task_id"]
+                agent_name = mapping["agent_name"]
+                user_task_id = mapping["user_task_id"]
+
+                value = results_by_spawned_id.get(spawned_task_id)
+                if isinstance(value, Exception):
                     result_lines.append(
-                        f"\n[{result['agent_name']}] Task {result['task_id']}:"
+                        f"\n[{agent_name}] Task {user_task_id} FAILED:"
                     )
-                    result_lines.append(
-                        f"Result: {result['result']}\n"
-                    )
+                    result_lines.append(f"Error: {str(value)}\n")
                 else:
                     result_lines.append(
-                        f"\n[{result['agent_name']}] Task {result['task_id']} FAILED:"
+                        f"\n[{agent_name}] Task {user_task_id}:"
                     )
-                    result_lines.append(f"Error: {result['error']}\n")
+                    result_lines.append(f"Result: {value}\n")
 
             result_msg = "\n".join(result_lines)
 
@@ -1178,14 +1212,22 @@ def assign_task_tool(
 
             if agent.verbose:
                 logger.info(
-                    f"Completed {len(results)} sub-agent task(s)"
+                    f"Completed {len(task_mappings)} sub-agent task(s)"
                 )
 
             return result_msg
         else:
-            # Fire and forget
-            asyncio.create_task(run_all_tasks())
-            return f"Dispatched {len(assignments)} task(s) to sub-agents (async mode)"
+            # Fire and forget: tasks are already running in the registry executor.
+            # Return the spawned IDs so callers can poll/cancel later.
+            lines = [
+                f"Dispatched {len(task_mappings)} task(s) to sub-agents (registry async mode).",
+                "Spawned task IDs:",
+            ]
+            for mapping in task_mappings:
+                lines.append(
+                    f"- [{mapping['agent_name']}] {mapping['user_task_id']} -> {mapping['spawned_task_id']}"
+                )
+            return "\n".join(lines)
 
     except Exception as e:
         error_msg = f"Error assigning tasks to sub-agents: {str(e)}"
@@ -1195,3 +1237,174 @@ def assign_task_tool(
             content=f"Error: {error_msg}",
         )
         return error_msg
+
+
+def _find_registry(agent: Any) -> SubagentRegistry:
+    """
+    Helper to access or lazily create the sub-agent registry for an agent.
+    The registry instance is stored on the agent as `_subagent_registry`.
+    """
+    existing = getattr(agent, "_subagent_registry", None)
+    if isinstance(existing, SubagentRegistry):
+        return existing
+
+    max_depth = getattr(agent, "max_subagent_depth", 3)
+    registry = SubagentRegistry(max_depth=max_depth)
+    setattr(agent, "_subagent_registry", registry)
+    return registry
+
+
+def _resolve_sub_agents_by_name(agent: Any, agent_name: str):
+    """
+    Helper to find sub-agent entries matching a given name.
+    Returns a list of (sub_agent_id, sub_agent_data) tuples.
+    """
+    if not hasattr(agent, "sub_agents") or not agent.sub_agents:
+        return []
+
+    matches = []
+    for sub_id, data in agent.sub_agents.items():
+        name = data.get("name") or getattr(
+            data.get("agent", None), "agent_name", None
+        )
+        if name == agent_name:
+            matches.append((sub_id, data))
+    return matches
+
+
+def check_sub_agent_status_tool(
+    agent: Any, agent_name: str, **kwargs
+) -> str:
+    """
+    Inspect async task status for a sub-agent identified by name.
+    Uses the agent's SubagentRegistry to report per-task status.
+    """
+    registry = _find_registry(agent)
+    matches = _resolve_sub_agents_by_name(agent, agent_name)
+    if not matches:
+        return (
+            f"Error: No sub-agents found with name '{agent_name}'. "
+            "Use create_sub_agent first."
+        )
+
+    # Collect tasks whose agent matches any of the resolved sub-agent objects
+    sub_agent_objects = {
+        data["agent"] for _, data in matches if "agent" in data
+    }
+    tasks_by_agent = {}
+    for task_id, st in registry.tasks.items():
+        task_agent = getattr(st, "agent", None)
+        if (
+            task_agent in sub_agent_objects
+            or getattr(task_agent, "agent_name", None) == agent_name
+        ):
+            tasks_by_agent.setdefault(task_agent, []).append(
+                (task_id, st)
+            )
+
+    if not tasks_by_agent:
+        return f"No async tasks found in registry for sub-agent '{agent_name}'."
+
+    lines: List[str] = [
+        f"Async status for sub-agent '{agent_name}':",
+    ]
+
+    for task_agent, task_entries in tasks_by_agent.items():
+        display_name = getattr(
+            task_agent, "agent_name", repr(task_agent)
+        )
+        lines.append(f"\nSub-agent: {display_name}")
+        for task_id, st in task_entries:
+            duration = (
+                st.completed_at - st.created_at
+                if st.completed_at is not None
+                else None
+            )
+            duration_str = (
+                f"{duration:.2f}s"
+                if duration is not None
+                else "in-progress"
+            )
+            lines.append(
+                f"- Task ID: {task_id} | "
+                f"status={st.status.value} | "
+                f"depth={st.depth} | "
+                f"retries={st.retries}/{st.max_retries} | "
+                f"duration={duration_str}"
+            )
+
+    result_msg = "\n".join(lines)
+    agent.short_memory.add(
+        role="Sub-Agent Execution",
+        content=result_msg,
+    )
+    if getattr(agent, "verbose", False):
+        logger.info(result_msg)
+    return result_msg
+
+
+def cancel_sub_agent_tasks_tool(
+    agent: Any, agent_name: str, **kwargs
+) -> str:
+    """
+    Cancel any pending or running async tasks for a sub-agent identified by name.
+    Uses the agent's SubagentRegistry cancel() method.
+    """
+    registry = _find_registry(agent)
+    if registry is None:
+        return (
+            "Error: Sub-agent registry is not available on this agent "
+            "instance. Async tasks cannot be cancelled."
+        )
+
+    matches = _resolve_sub_agents_by_name(agent, agent_name)
+    if not matches:
+        return (
+            f"Error: No sub-agents found with name '{agent_name}'. "
+            "Use create_sub_agent first."
+        )
+
+    sub_agent_objects = {
+        data["agent"] for _, data in matches if "agent" in data
+    }
+
+    cancelled = 0
+    not_cancellable = 0
+
+    for task_id, st in registry.tasks.items():
+        task_agent = getattr(st, "agent", None)
+        if (
+            task_agent in sub_agent_objects
+            or getattr(task_agent, "agent_name", None) == agent_name
+        ):
+            if st.status in (
+                TaskStatus.COMPLETED,
+                TaskStatus.FAILED,
+                TaskStatus.CANCELLED,
+            ):
+                not_cancellable += 1
+                continue
+            if registry.cancel(task_id):
+                cancelled += 1
+            else:
+                not_cancellable += 1
+
+    if cancelled == 0 and not_cancellable == 0:
+        msg = (
+            f"No async tasks are currently registered for sub-agent "
+            f"'{agent_name}'."
+        )
+    else:
+        msg = (
+            f"Cancelled {cancelled} async task(s) and skipped "
+            f"{not_cancellable} already finished or non-cancellable "
+            f"task(s) for sub-agent '{agent_name}'."
+        )
+
+    agent.short_memory.add(
+        role="Sub-Agent Execution",
+        content=msg,
+    )
+    if getattr(agent, "verbose", False):
+        logger.info(msg)
+    return msg

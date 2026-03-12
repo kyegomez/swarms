@@ -2,8 +2,6 @@ import csv
 import json
 import os
 
-from swarms.utils.pdf_to_text import pdf_to_text
-
 
 def csv_to_text(file: str) -> str:
     """
@@ -122,8 +120,6 @@ def data_to_text(file: str) -> str:
             return json_to_text(file)
         elif ext == ".txt":
             return txt_to_text(file)
-        elif ext == ".pdf":
-            return pdf_to_text(file)
         elif ext == ".md":
             return md_to_text(file)
         else:

@@ -3,7 +3,6 @@ from typing import List, Dict, Any, Optional
 
 from mem0 import MemoryClient
 from swarms import Agent
-from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.data_to_text import csv_to_text
 from dotenv import load_dotenv
 
@@ -43,6 +42,32 @@ def chunk_text(
         start = end - overlap
 
     return chunks
+
+
+def pdf_to_text(pdf_path: str) -> str:
+    """
+    Extract text from a PDF file for this example script.
+
+    Args:
+        pdf_path (str): Path to the PDF file.
+
+    Returns:
+        str: Extracted text from all PDF pages.
+    """
+    try:
+        import pypdf
+    except ImportError as exc:
+        raise ImportError(
+            "pypdf is required for PDF support in this example. "
+            "Install it with `pip install pypdf`."
+        ) from exc
+
+    with open(pdf_path, "rb") as file:
+        reader = pypdf.PdfReader(file)
+        pages = []
+        for page in reader.pages:
+            pages.append(page.extract_text() or "")
+    return "\n".join(pages)
 
 
 def read_pdf(pdf_path: str) -> str:

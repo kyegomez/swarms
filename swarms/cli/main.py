@@ -837,7 +837,7 @@ class CustomHelpAction(argparse.Action):
         print()
         print("Examples:")
         print(f"  {prog_name} chat")
-        print(f"  {prog_name} chat --model-name claude-sonnet-4-5")
+        print(f"  {prog_name} chat --model-name gpt-5.4")
         print(f"  {prog_name} chat --model-name claude-opus-4-6")
         print(f"  {prog_name} chat --model-name gpt-4o")
         print(
@@ -950,7 +950,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         "--model-name",
         type=str,
         default=None,
-        help="Model name to use (e.g. claude-sonnet-4-5, gpt-4o, claude-opus-4-6). Defaults to claude-sonnet-4-5 for chat, gpt-4 for agent.",
+        help="Model name to use (e.g. gpt-5.4, gpt-4o, claude-opus-4-6). Defaults to gpt-5.4 for chat, gpt-4 for agent.",
     )
     parser.add_argument(
         "--task",
@@ -1526,16 +1526,14 @@ def handle_chat(args: argparse.Namespace) -> Optional[Agent]:
             or "A Swarms agent that can chat with the user."
         )
         system_prompt = getattr(args, "system_prompt", None)
-        model_name = (
-            getattr(args, "model_name", None) or "claude-sonnet-4-5"
-        )
+        model_name = getattr(args, "model_name", None) or "gpt-5.1"
         task = getattr(args, "task", None)
 
         console.print(
             f"\n[bold white]{name}[/bold white]  [dim white]({model_name})[/dim white]"
         )
         console.print(
-            "[dim white]  Switch model: [/dim white][white]swarms chat --model-name claude-sonnet-4-5[/white]"
+            "[dim white]  Switch model: [/dim white][white]swarms chat --model-name gpt-5.4[/white]"
             "[dim white]  ·  other options: claude-opus-4-6, gpt-4o, gemini/gemini-2.0-flash[/dim white]\n"
         )
 

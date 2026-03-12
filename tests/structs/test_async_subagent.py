@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from dotenv import load_dotenv
+from loguru import logger
 
 from swarms.structs.agent import Agent
 from swarms.structs.async_subagent import (
@@ -14,33 +15,21 @@ from swarms.structs.async_subagent import (
     SubagentTask,
     TaskStatus,
 )
+from swarms.structs.autonomous_loop_utils import (
+    create_sub_agent_tool,
+    assign_task_tool,
+    check_sub_agent_status_tool,
+    cancel_sub_agent_tasks_tool,
+)
 
 
 load_dotenv()
 
-MODEL = "gpt-4.1-nano"
+MODEL = "gpt-5.4"
 AGENTS_CREATED = []
 
 
 # ── Helpers ─────────────────────────────────────────────────
-
-
-def make_mock_agent(
-    result="done", delay=0, name="mock-agent", error=None
-):
-    """Create a mock agent with a .run() method."""
-    agent = MagicMock()
-    agent.agent_name = name
-
-    def run(task):
-        if delay:
-            time.sleep(delay)
-        if error:
-            raise error
-        return result
-
-    agent.run = MagicMock(side_effect=run)
-    return agent
 
 
 def make_agent(
@@ -57,6 +46,9 @@ def make_agent(
         verbose=False,
     )
     AGENTS_CREATED.append(a)
+    logger.info(
+        f"[test_async_subagent] Created Agent(name={name}, model={MODEL})"
+    )
     return a
 
 
@@ -66,14 +58,14 @@ def make_agent(
 class TestSubagentRegistry:
     def test_spawn_returns_task_id(self):
         reg = SubagentRegistry()
-        agent = make_mock_agent()
+        agent = make_agent("mock-agent-1")
         task_id = reg.spawn(agent, "do something")
         assert task_id.startswith("task-")
         reg.shutdown()
 
     def test_task_status_transitions(self):
         reg = SubagentRegistry()
-        agent = make_mock_agent(delay=0.05)
+        agent = make_agent("mock-agent-2")
         task_id = reg.spawn(agent, "test")
 
         # Should be running or completed quickly
@@ -95,10 +87,7 @@ class TestSubagentRegistry:
 
     def test_gather_wait_all(self):
         reg = SubagentRegistry()
-        agents = [
-            make_mock_agent(result=f"r{i}", delay=0.05)
-            for i in range(3)
-        ]
+        agents = [make_agent(f"agent-{i}") for i in range(3)]
         for a in agents:
             reg.spawn(a, "task")
         results = reg.gather(strategy="wait_all")
@@ -108,8 +97,8 @@ class TestSubagentRegistry:
 
     def test_gather_wait_first(self):
         reg = SubagentRegistry()
-        fast = make_mock_agent(result="fast", delay=0.01)
-        slow = make_mock_agent(result="slow", delay=2.0)
+        fast = make_agent("fast-agent-mock")
+        slow = make_agent("slow-agent-mock")
         reg.spawn(fast, "task")
         reg.spawn(slow, "task")
         results = reg.gather(strategy="wait_first")
@@ -119,7 +108,7 @@ class TestSubagentRegistry:
 
     def test_gather_with_timeout(self):
         reg = SubagentRegistry()
-        agent = make_mock_agent(delay=5.0)
+        agent = make_agent("timeout-agent")
         reg.spawn(agent, "slow task")
         results = reg.gather(strategy="wait_all", timeout=0.1)
         # With timeout, we may get empty results since task is still running
@@ -128,8 +117,8 @@ class TestSubagentRegistry:
 
     def test_get_results(self):
         reg = SubagentRegistry()
-        a1 = make_mock_agent(result="hello")
-        a2 = make_mock_agent(result="world")
+        a1 = make_agent("hello-agent")
+        a2 = make_agent("world-agent")
         reg.spawn(a1, "t1")
         reg.spawn(a2, "t2")
         reg.gather()
@@ -140,7 +129,7 @@ class TestSubagentRegistry:
 
     def test_cancel_task(self):
         reg = SubagentRegistry()
-        agent = make_mock_agent(delay=10.0)
+        agent = make_agent("cancel-agent")
         task_id = reg.spawn(agent, "long task")
         # Cancel may or may not succeed depending on timing
         cancelled = reg.cancel(task_id)
@@ -149,7 +138,7 @@ class TestSubagentRegistry:
 
     def test_depth_limit_enforced(self):
         reg = SubagentRegistry(max_depth=2)
-        agent = make_mock_agent()
+        agent = make_agent("depth-agent")
         # depth=2 should work
         reg.spawn(agent, "ok", depth=2)
         # depth=3 should fail
@@ -183,7 +172,9 @@ class TestSubagentRegistry:
         reg.shutdown()
 
     def test_retry_exhausted_fails(self):
-        agent = make_mock_agent(error=ValueError("always fails"))
+        agent = MagicMock()
+        agent.agent_name = "always-fails-agent"
+        agent.run = MagicMock(side_effect=ValueError("always fails"))
         reg = SubagentRegistry()
         task_id = reg.spawn(
             agent,
@@ -199,7 +190,9 @@ class TestSubagentRegistry:
         reg.shutdown()
 
     def test_fail_fast_false_does_not_raise(self):
-        agent = make_mock_agent(error=RuntimeError("boom"))
+        agent = MagicMock()
+        agent.agent_name = "boom-agent-false"
+        agent.run = MagicMock(side_effect=RuntimeError("boom"))
         reg = SubagentRegistry()
         task_id = reg.spawn(agent, "task", fail_fast=False)
         reg.gather()
@@ -210,7 +203,9 @@ class TestSubagentRegistry:
         reg.shutdown()
 
     def test_fail_fast_true_raises_in_result(self):
-        agent = make_mock_agent(error=RuntimeError("boom"))
+        agent = MagicMock()
+        agent.agent_name = "boom-agent-true"
+        agent.run = MagicMock(side_effect=RuntimeError("boom"))
         reg = SubagentRegistry()
         reg.spawn(agent, "task", fail_fast=True)
         results = reg.gather()
@@ -221,7 +216,7 @@ class TestSubagentRegistry:
 
     def test_tasks_property(self):
         reg = SubagentRegistry()
-        agent = make_mock_agent()
+        agent = make_agent("tasks-prop-agent")
         task_id = reg.spawn(agent, "test")
         tasks = reg.tasks
         assert task_id in tasks
@@ -230,10 +225,7 @@ class TestSubagentRegistry:
 
     def test_concurrent_spawns(self):
         reg = SubagentRegistry()
-        agents = [
-            make_mock_agent(result=f"r{i}", delay=0.02)
-            for i in range(10)
-        ]
+        agents = [make_agent(f"concurrent-{i}") for i in range(10)]
         task_ids = [
             reg.spawn(a, f"task-{i}") for i, a in enumerate(agents)
         ]
@@ -248,7 +240,7 @@ class TestSubagentRegistry:
 
         with caplog.at_level(logging.INFO):
             reg = SubagentRegistry()
-            agent = make_mock_agent()
+            agent = make_agent("log-agent")
             reg.spawn(agent, "log test")
             reg.gather()
             reg.shutdown()
@@ -343,7 +335,7 @@ class TestAgentAsyncMethods:
 
     def test_spawn_async_runs_subagent(self):
         parent = self._make_agent_stub()
-        child = make_mock_agent(result="child-result")
+        child = make_agent("child-result-agent")
         task_id = parent.spawn_async(child, "do work")
         assert task_id.startswith("task-")
         results = parent.gather_results()
@@ -361,15 +353,15 @@ class TestAgentAsyncMethods:
     def test_gather_results_wait_all(self):
         parent = self._make_agent_stub()
         for i in range(3):
-            child = make_mock_agent(result=f"result-{i}", delay=0.02)
+            child = make_agent(f"result-{i}-agent")
             parent.spawn_async(child, f"task-{i}")
         results = parent.gather_results(strategy="wait_all")
         assert len(results) == 3
 
     def test_gather_results_wait_first(self):
         parent = self._make_agent_stub()
-        fast = make_mock_agent(result="fast", delay=0.01)
-        slow = make_mock_agent(result="slow", delay=2.0)
+        fast = make_agent("fast-agent-stub")
+        slow = make_agent("slow-agent-stub")
         parent.spawn_async(fast, "fast task")
         parent.spawn_async(slow, "slow task")
         results = parent.gather_results(strategy="wait_first")
@@ -378,7 +370,7 @@ class TestAgentAsyncMethods:
 
     def test_get_subagent_results(self):
         parent = self._make_agent_stub()
-        child = make_mock_agent(result="output")
+        child = make_agent("output-agent")
         parent.spawn_async(child, "task")
         parent.gather_results()
         results = parent.get_subagent_results()
@@ -387,7 +379,7 @@ class TestAgentAsyncMethods:
 
     def test_cancel_subagent(self):
         parent = self._make_agent_stub()
-        child = make_mock_agent(delay=10.0)
+        child = make_agent("cancel-child-agent")
         task_id = parent.spawn_async(child, "long task")
         result = parent.cancel_subagent(task_id)
         assert isinstance(result, bool)
@@ -395,7 +387,7 @@ class TestAgentAsyncMethods:
     def test_parent_not_blocked(self):
         """Verify parent can continue while subagents run."""
         parent = self._make_agent_stub()
-        child = make_mock_agent(result="child-done", delay=0.2)
+        child = make_agent("child-done-agent")
 
         start = time.time()
         parent.spawn_async(child, "slow task")
@@ -413,6 +405,325 @@ class TestAgentAsyncMethods:
         assert "child-done" in results
 
 
+# ── Autonomous Loop Sub-Agent Tools Tests ─────────────────────
+
+
+class TestAutonomousLoopSubAgentTools:
+    """Tests for check_sub_agent_status_tool and cancel_sub_agent_tasks_tool."""
+
+    class _ShortMemoryStub:
+        def __init__(self):
+            self._entries = []
+
+        def add(self, role, content):
+            self._entries.append({"role": role, "content": content})
+
+    class _AgentWithRegistryStub:
+        def __init__(
+            self, sub_agent_name="worker", run_result="ok", delay=0
+        ):
+            from swarms.structs.async_subagent import SubagentRegistry
+
+            self.id = "parent-001"
+            self.agent_name = "parent"
+            self.verbose = False
+            self.short_memory = (
+                TestAutonomousLoopSubAgentTools._ShortMemoryStub()
+            )
+            self._subagent_registry = SubagentRegistry(max_depth=3)
+
+            # Create a real sub-agent used in registry tasks
+            child = make_agent(sub_agent_name)
+
+            # Simulate cached sub_agents structure used by autonomous loop tools
+            self.sub_agents = {
+                "child-1": {
+                    "agent": child,
+                    "name": sub_agent_name,
+                    "description": "Test worker",
+                    "system_prompt": None,
+                    "created_at": "now",
+                }
+            }
+
+    def test_check_status_no_matching_sub_agent(self):
+        parent = self._AgentWithRegistryStub(
+            sub_agent_name="other-name"
+        )
+        msg = check_sub_agent_status_tool(parent, agent_name="worker")
+        assert "No sub-agents found" in msg
+
+    def test_check_status_reports_tasks_for_named_sub_agent(self):
+        parent = self._AgentWithRegistryStub(
+            sub_agent_name="worker", run_result="done"
+        )
+        registry = parent._subagent_registry
+
+        # Spawn a task for the cached child agent
+        child_agent = parent.sub_agents["child-1"]["agent"]
+        task_id = registry.spawn(
+            agent=child_agent, task="do work", parent_id=parent.id
+        )
+        assert task_id.startswith("task-")
+
+        # Wait for completion so status is deterministic
+        registry.gather(strategy="wait_all")
+
+        msg = check_sub_agent_status_tool(parent, agent_name="worker")
+        assert "Async status for sub-agent 'worker':" in msg
+        assert task_id in msg
+        assert "status=completed" in msg
+
+    def test_check_status_no_tasks_for_named_sub_agent(self):
+        """check_sub_agent_status_tool should report when there are no tasks for that name."""
+        parent = self._AgentWithRegistryStub(
+            sub_agent_name="worker", run_result="done"
+        )
+        # Do not spawn any tasks into the registry
+        msg = check_sub_agent_status_tool(parent, agent_name="worker")
+        assert (
+            "No async tasks found in registry for sub-agent 'worker'."
+            in msg
+        )
+
+    def test_cancel_tasks_by_name(self):
+        parent = self._AgentWithRegistryStub(
+            sub_agent_name="worker", delay=5.0
+        )
+        registry = parent._subagent_registry
+
+        # Spawn a long-running task so that cancellation has a chance to succeed
+        child_agent = parent.sub_agents["child-1"]["agent"]
+        task_id = registry.spawn(
+            agent=child_agent, task="long task", parent_id=parent.id
+        )
+        assert task_id.startswith("task-")
+
+        msg = cancel_sub_agent_tasks_tool(parent, agent_name="worker")
+        # We don't assert exact counts because cancellation is timing dependent,
+        # but we do ensure the message references the sub-agent name.
+        assert "sub-agent 'worker'" in msg
+
+        # After cancellation attempt, the task should be either cancelled or completed/failed.
+        st = registry.get_task(task_id)
+        assert st.status in {
+            TaskStatus.CANCELLED,
+            TaskStatus.COMPLETED,
+            TaskStatus.FAILED,
+        }
+
+    def test_cancel_tasks_no_matching_sub_agent(self):
+        """cancel_sub_agent_tasks_tool should error when no sub-agent matches the name."""
+        parent = self._AgentWithRegistryStub(
+            sub_agent_name="other-name", delay=0
+        )
+        msg = cancel_sub_agent_tasks_tool(parent, agent_name="worker")
+        assert "No sub-agents found with name 'worker'" in msg
+
+
+class TestAutonomousLoopCreateAndAssignTools:
+    """Tests for create_sub_agent_tool and assign_task_tool."""
+
+    class _ShortMemoryStub:
+        def __init__(self):
+            self.entries = []
+
+        def add(self, role, content):
+            self.entries.append({"role": role, "content": content})
+
+    def test_create_sub_agent_initializes_and_caches(self):
+        """create_sub_agent_tool should initialize sub_agents and create Agent instances."""
+
+        class ParentAgentStub:
+            def __init__(self):
+                self.model_name = MODEL
+                self.verbose = False
+                self.short_memory = (
+                    TestAutonomousLoopCreateAndAssignTools._ShortMemoryStub()
+                )
+
+        parent = ParentAgentStub()
+
+        msg = create_sub_agent_tool(
+            parent,
+            agents=[
+                {
+                    "agent_name": "worker-1",
+                    "agent_description": "Does work",
+                }
+            ],
+        )
+
+        assert "Successfully created 1 sub-agent" in msg
+        assert hasattr(parent, "sub_agents")
+        assert len(parent.sub_agents) == 1
+        sub_entry = next(iter(parent.sub_agents.values()))
+        # Ensure cached structure contains an Agent-like object and metadata
+        assert "agent" in sub_entry
+        assert sub_entry["name"] == "worker-1"
+        assert sub_entry["description"] == "Does work"
+
+    def test_create_sub_agent_missing_required_fields(self):
+        """create_sub_agent_tool returns error if required fields are missing."""
+
+        class ParentAgentStub:
+            def __init__(self):
+                self.model_name = MODEL
+                self.verbose = False
+                self.short_memory = (
+                    TestAutonomousLoopCreateAndAssignTools._ShortMemoryStub()
+                )
+
+        parent = ParentAgentStub()
+
+        msg = create_sub_agent_tool(
+            parent,
+            agents=[
+                {
+                    "agent_name": "worker-1",
+                    # Missing agent_description
+                }
+            ],
+        )
+
+        assert (
+            "Each agent must have agent_name and agent_description"
+            in msg
+        )
+
+    def test_assign_task_errors_without_sub_agents(self):
+        """assign_task_tool returns helpful error when no sub_agents created."""
+
+        class ParentAgentStub:
+            def __init__(self):
+                self.id = "parent-assign-1"
+                self.verbose = False
+                self.short_memory = (
+                    TestAutonomousLoopCreateAndAssignTools._ShortMemoryStub()
+                )
+                # Intentionally omit sub_agents
+
+        parent = ParentAgentStub()
+        msg = assign_task_tool(
+            parent,
+            assignments=[
+                {"agent_id": "missing", "task": "do something"},
+            ],
+        )
+        assert "No sub-agents have been created" in msg
+
+    def test_assign_task_happy_path_wait_for_completion(self):
+        """assign_task_tool should spawn tasks via registry and report completion."""
+
+        class ParentAgentStub:
+            def __init__(self):
+                self.id = "parent-assign-2"
+                self.verbose = False
+                self.short_memory = (
+                    TestAutonomousLoopCreateAndAssignTools._ShortMemoryStub()
+                )
+                # Ensure we exercise _find_registry's max_subagent_depth behavior
+                self.max_subagent_depth = 5
+                worker = make_agent("worker-1")
+                self.sub_agents = {
+                    "sub-1": {
+                        "agent": worker,
+                        "name": "worker-1",
+                        "description": "Test worker",
+                        "system_prompt": None,
+                        "created_at": "now",
+                    }
+                }
+
+        parent = ParentAgentStub()
+        msg = assign_task_tool(
+            parent,
+            assignments=[
+                {"agent_id": "sub-1", "task": "do something"},
+            ],
+            wait_for_completion=True,
+        )
+
+        # Should mention completion of one assignment and include worker name
+        assert "Completed 1 task assignment" in msg
+        assert "[worker-1] Task task-1" in msg
+        # Registry should be created with the parent's configured depth
+        assert hasattr(parent, "_subagent_registry")
+        assert parent._subagent_registry.max_depth == 5
+
+    def test_assign_task_invalid_agent_id_with_existing_sub_agents(
+        self,
+    ):
+        """assign_task_tool should error if a referenced agent_id is not in sub_agents."""
+
+        class ParentAgentStub:
+            def __init__(self):
+                self.id = "parent-assign-3"
+                self.verbose = False
+                self.short_memory = (
+                    TestAutonomousLoopCreateAndAssignTools._ShortMemoryStub()
+                )
+                worker = make_agent("worker-1")
+                self.sub_agents = {
+                    "sub-1": {
+                        "agent": worker,
+                        "name": "worker-1",
+                        "description": "Test worker",
+                        "system_prompt": None,
+                        "created_at": "now",
+                    }
+                }
+
+        parent = ParentAgentStub()
+        msg = assign_task_tool(
+            parent,
+            assignments=[
+                {
+                    "agent_id": "does-not-exist",
+                    "task": "do something",
+                },
+            ],
+        )
+        assert "Sub-agent with ID 'does-not-exist' not found" in msg
+
+    def test_assign_task_fire_and_forget_mode(self):
+        """assign_task_tool with wait_for_completion=False should return dispatched summary."""
+
+        class ParentAgentStub:
+            def __init__(self):
+                self.id = "parent-assign-4"
+                self.verbose = False
+                self.short_memory = (
+                    TestAutonomousLoopCreateAndAssignTools._ShortMemoryStub()
+                )
+                worker = make_agent("worker-1-async")
+                self.sub_agents = {
+                    "sub-1": {
+                        "agent": worker,
+                        "name": "worker-1",
+                        "description": "Async worker",
+                        "system_prompt": None,
+                        "created_at": "now",
+                    }
+                }
+
+        parent = ParentAgentStub()
+        msg = assign_task_tool(
+            parent,
+            assignments=[
+                {"agent_id": "sub-1", "task": "background job"},
+            ],
+            wait_for_completion=False,
+        )
+
+        assert (
+            "Dispatched 1 task(s) to sub-agents (registry async mode)."
+            in msg
+        )
+        # Should list a mapping line with worker name and task id alias
+        assert "- [worker-1] task-1 -> task-" in msg
+
+
 # ── Recursive Subagent Tree Tests ───────────────────────────
 
 
@@ -420,9 +731,9 @@ class TestRecursiveSubagents:
     def test_subagent_spawns_child(self):
         """Subagent can spawn its own child (depth tracking)."""
         reg = SubagentRegistry(max_depth=3)
-        grandparent = make_mock_agent(result="gp")
-        parent = make_mock_agent(result="parent")
-        child = make_mock_agent(result="child")
+        grandparent = make_agent("gp-agent")
+        parent = make_agent("parent-agent")
+        child = make_agent("child-agent")
 
         gp_id = reg.spawn(grandparent, "task", depth=0)
         p_id = reg.spawn(parent, "task", parent_id=gp_id, depth=1)
@@ -441,7 +752,7 @@ class TestRecursiveSubagents:
     def test_depth_limit_prevents_runaway(self):
         """Cannot exceed max_subagent_depth."""
         reg = SubagentRegistry(max_depth=1)
-        agent = make_mock_agent()
+        agent = make_agent("depth-limit-agent")
 
         reg.spawn(agent, "ok", depth=0)
         reg.spawn(agent, "ok", depth=1)
@@ -452,8 +763,8 @@ class TestRecursiveSubagents:
     def test_parent_child_relationship(self):
         """Parent ID is tracked correctly."""
         reg = SubagentRegistry()
-        parent = make_mock_agent()
-        child = make_mock_agent()
+        parent = make_agent("parent-rel-agent")
+        child = make_agent("child-rel-agent")
 
         parent_task_id = reg.spawn(parent, "parent task")
         child_task_id = reg.spawn(
@@ -471,7 +782,9 @@ class TestRecursiveSubagents:
 class TestErrorPropagation:
     def test_failed_task_error_in_results(self):
         reg = SubagentRegistry()
-        agent = make_mock_agent(error=ValueError("bad input"))
+        agent = MagicMock()
+        agent.agent_name = "bad-input-agent"
+        agent.run = MagicMock(side_effect=ValueError("bad input"))
         task_id = reg.spawn(agent, "fail", fail_fast=False)
         reg.gather()
         results = reg.get_results()
@@ -511,8 +824,10 @@ class TestErrorPropagation:
 
     def test_mixed_success_and_failure(self):
         reg = SubagentRegistry()
-        good = make_mock_agent(result="ok")
-        bad = make_mock_agent(error=RuntimeError("fail"))
+        good = make_agent("good-mixed-agent")
+        bad = MagicMock()
+        bad.agent_name = "bad-mixed-agent"
+        bad.run = MagicMock(side_effect=RuntimeError("fail"))
 
         reg.spawn(good, "good task")
         reg.spawn(bad, "bad task", fail_fast=False)
@@ -537,38 +852,50 @@ def test_1_async_execution():
     print("\n" + "=" * 60)
     print("TEST 1: Async Subagent Execution")
     print("=" * 60)
+    logger.info(
+        "[test_async_subagent] Starting TEST 1: Async Subagent Execution"
+    )
 
     parent = make_agent("parent")
     child1 = make_agent("child-1")
     child2 = make_agent("child-2")
     child3 = make_agent("child-3")
 
+    # Use SubagentRegistry directly to model async subagent execution
+    reg = SubagentRegistry()
+
     # Spawn 3 subagents
     start = time.time()
-    parent.spawn_async(
-        child1, "What is 2+2? Reply with just the number."
+    reg.spawn(
+        child1,
+        "What is 2+2? Reply with just the number.",
+        parent_id=parent.id,
     )
-    parent.spawn_async(
-        child2, "What is 3+3? Reply with just the number."
+    reg.spawn(
+        child2,
+        "What is 3+3? Reply with just the number.",
+        parent_id=parent.id,
     )
-    parent.spawn_async(
-        child3, "What is 4+4? Reply with just the number."
+    reg.spawn(
+        child3,
+        "What is 4+4? Reply with just the number.",
+        parent_id=parent.id,
     )
     spawn_time = time.time() - start
 
     print(
-        f"  spawn_async() returned in {spawn_time:.4f}s (should be near-instant)"
+        f"  registry.spawn() calls returned in {spawn_time:.4f}s (should be near-instant)"
     )
     assert (
         spawn_time < 1.0
-    ), f"spawn took {spawn_time}s — should be near-instant"
+    ), f"spawning took {spawn_time}s — should be near-instant"
 
-    # Parent is free — prove it by checking thread
+    # Parent is free — prove it by checking thread (no blocking call above)
     print(f"  Parent thread: {threading.current_thread().name}")
     print("  Parent is FREE to do other work right now")
 
-    # Now wait for results
-    results = parent.gather_results(strategy="wait_all")
+    # Now wait for results via registry
+    results = reg.gather(strategy="wait_all")
     total = time.time() - start
     print(f"  All 3 subagents finished in {total:.2f}s")
     print(f"  Results: {results}")
@@ -576,6 +903,7 @@ def test_1_async_execution():
     assert len(results) == 3
     for r in results:
         assert isinstance(r, str) and len(r) > 0
+    reg.shutdown()
     print("  PASSED")
 
 
@@ -588,37 +916,45 @@ def test_2_background_task_registry():
     print("\n" + "=" * 60)
     print("TEST 2: Background Task Registry")
     print("=" * 60)
+    logger.info(
+        "[test_async_subagent] Starting TEST 2: Background Task Registry"
+    )
 
     parent = make_agent("registry-parent")
     worker = make_agent("registry-worker")
 
-    task_id = parent.spawn_async(
-        worker, "Say hello in French. One word only."
+    # Use SubagentRegistry directly instead of Agent.spawn_async
+    reg = SubagentRegistry()
+    task_id = reg.spawn(
+        worker,
+        "Say hello in French. One word only.",
+        parent_id=parent.id,
+        depth=0,
     )
     print(f"  Task ID: {task_id}")
 
     # Check the registry tracks it
-    registry = parent._get_registry()
-    task = registry.get_task(task_id)
+    task = reg.get_task(task_id)
     print(f"  Status right after spawn: {task.status}")
     assert task.status in (TaskStatus.RUNNING, TaskStatus.COMPLETED)
     assert task.agent is worker
     assert task.parent_id == parent.id
 
     # Wait for completion
-    parent.gather_results()
-    task = registry.get_task(task_id)
+    reg.gather()
+    task = reg.get_task(task_id)
     print(f"  Status after gather: {task.status}")
     print(f"  Result: {task.result}")
     print(f"  Duration: {task.completed_at - task.created_at:.2f}s")
     assert task.status == TaskStatus.COMPLETED
     assert isinstance(task.result, str)
 
-    # get_subagent_results returns dict
-    results = parent.get_subagent_results()
-    print(f"  get_subagent_results(): {results}")
+    # get_results returns dict of task_id -> result/exception
+    results = reg.get_results()
+    print(f"  get_results(): {results}")
     assert task_id in results
     print("  PASSED")
+    reg.shutdown()
 
 
 def test_3_recursive_subagent_trees():
@@ -630,6 +966,9 @@ def test_3_recursive_subagent_trees():
     print("\n" + "=" * 60)
     print("TEST 3: Recursive Subagent Trees")
     print("=" * 60)
+    logger.info(
+        "[test_async_subagent] Starting TEST 3: Recursive Subagent Trees"
+    )
 
     reg = SubagentRegistry(max_depth=2)
     grandparent = make_agent("grandparent")
@@ -688,14 +1027,25 @@ def test_4_result_aggregation():
     print("\n" + "=" * 60)
     print("TEST 4: Result Aggregation")
     print("=" * 60)
+    logger.info(
+        "[test_async_subagent] Starting TEST 4: Result Aggregation"
+    )
 
     # --- wait_all ---
     parent = make_agent("agg-parent")
     a1 = make_agent("agg-1")
     a2 = make_agent("agg-2")
+    logger.info(
+        "[test_async_subagent] wait_all using parent=%s, children=%s",
+        parent.agent_name,
+        [a1.agent_name, a2.agent_name],
+    )
 
-    parent.spawn_async(a1, "Name one color. One word.")
-    parent.spawn_async(a2, "Name one animal. One word.")
+    # Use the parent's registry helper methods to exercise real Agent + LLM flow
+    task_id_1 = parent.spawn_async(a1, "Name one color. One word.")
+    task_id_2 = parent.spawn_async(a2, "Name one animal. One word.")
+    print(f"  spawned tasks: {task_id_1}, {task_id_2}")
+
     results = parent.gather_results(strategy="wait_all")
     print(f"  wait_all results: {results}")
     assert len(results) == 2
@@ -706,14 +1056,21 @@ def test_4_result_aggregation():
     reg = SubagentRegistry()
     fast = make_agent("fast-agent")
     slow_prompt = (
-        "You are a helpful assistant. List every prime number under 500. "
+        "You are a helpful assistant. List every prime number under 200. "
         "Take your time and be thorough."
     )
     slow = make_agent("slow-agent", prompt=slow_prompt)
 
+    logger.info(
+        "[test_async_subagent] wait_first using fast-agent=%s, slow-agent=%s",
+        fast.agent_name,
+        slow.agent_name,
+    )
+
     reg.spawn(fast, "Say 'done'. One word only.")
     reg.spawn(
-        slow, "List all primes under 500 with explanations for each."
+        slow,
+        "List all primes under 200 with brief explanations for each.",
     )
 
     start = time.time()
@@ -722,6 +1079,7 @@ def test_4_result_aggregation():
     print(
         f"  wait_first returned in {elapsed:.2f}s with {len(results)} result(s)"
     )
+    # First result should be from the fast agent
     print(f"  First result: {results[0][:80]}...")
     assert len(results) >= 1
     reg.shutdown()
@@ -741,6 +1099,9 @@ def test_5_error_handling():
     print("\n" + "=" * 60)
     print("TEST 5: Error Handling & Fault Tolerance")
     print("=" * 60)
+    logger.info(
+        "[test_async_subagent] Starting TEST 5: Error Handling & Fault Tolerance"
+    )
 
     # Use a wrapper that truly raises, simulating an unrecoverable crash
 
@@ -852,21 +1213,20 @@ def test_6_observability():
     reg = SubagentRegistry()
     agent = make_agent("observable-agent")
 
-    # Spawn
+    # Spawn a successful task
     reg.spawn(agent, "Say 'observed'. One word.")
     reg.gather()
 
-    # Also test failure logging
-    bad = Agent(
-        agent_name="fail-observable",
-        system_prompt="test",
-        model_name="gpt-4.1-nano",
-        max_loops=1,
-        print_on=False,
-        verbose=False,
-    )
-    AGENTS_CREATED.append(bad)
-    reg.spawn(bad, "fail", fail_fast=False)
+    # Also test failure logging with a deterministic failing agent
+    class FailingAgent:
+        agent_name = "fail-observable"
+
+        def run(self, task):
+            raise RuntimeError(
+                "forced failure for observability test"
+            )
+
+    reg.spawn(FailingAgent(), "fail", fail_fast=False)
     reg.gather()
 
     reg.shutdown()

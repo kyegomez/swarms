@@ -33,7 +33,6 @@ from swarms.utils.litellm_wrapper import (
 )
 from swarms.utils.output_types import HistoryOutputType
 from swarms.utils.parse_code import extract_code_from_markdown
-from swarms.utils.pdf_to_text import pdf_to_text
 
 __all__ = [
     "csv_to_text",
@@ -46,7 +45,6 @@ __all__ = [
     "create_file_in_folder",
     "zip_folders",
     "extract_code_from_markdown",
-    "pdf_to_text",
     "count_tokens",
     "HistoryOutputType",
     "history_output_formatter",
