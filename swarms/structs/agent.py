@@ -67,6 +67,7 @@ from swarms.structs.autonomous_loop_utils import (
     MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
     assign_task_tool,
+    cancel_task_tool,
     create_file_tool,
     create_sub_agent_tool,
     delete_file_tool,
@@ -75,6 +76,7 @@ from swarms.structs.autonomous_loop_utils import (
     get_execution_prompt,
     get_planning_prompt,
     get_summary_prompt,
+    get_task_status_tool,
     list_directory_tool,
     read_file_tool,
     respond_to_user_tool,
@@ -587,9 +589,10 @@ class Agent:
             2  # Maximum consecutive think calls
         )
 
-        # Async subagent support
+        # Subagent support
         self.max_subagent_depth = max_subagent_depth
-        self._subagent_registry = None
+        self._task_registry = None
+        self._subagent_depth = 0
 
         # Load prompt from marketplace if marketplace_prompt_id is provided
         if self.marketplace_prompt_id:
@@ -2324,6 +2327,12 @@ class Agent:
                 "assign_task": lambda **kwargs: assign_task_tool(
                     self, **kwargs
                 ),
+                "get_task_status": lambda **kwargs: get_task_status_tool(
+                    self, **kwargs
+                ),
+                "cancel_task": lambda **kwargs: cancel_task_tool(
+                    self, **kwargs
+                ),
             }
 
             # Filter tool handlers if selected_tools is not "all"
@@ -3118,83 +3127,6 @@ Subtask Breakdown:
             await self._handle_run_error(
                 error
             )  # Ensure this is also async if needed
-
-    # ── Async Subagent Methods ──────────────────────────────
-
-    def _get_registry(self):
-        """Lazy-init and return the SubagentRegistry."""
-        if self._subagent_registry is None:
-            from swarms.structs.async_subagent import (
-                SubagentRegistry,
-            )
-
-            self._subagent_registry = SubagentRegistry(
-                max_depth=self.max_subagent_depth
-            )
-        return self._subagent_registry
-
-    def run_async(self, task: str):
-        """
-        Run this agent's task in the background, returning a Future.
-        """
-        registry = self._get_registry()
-        return registry._executor.submit(self.run, task)
-
-    def spawn_async(
-        self,
-        agent,
-        task: str,
-        max_retries: int = 0,
-        retry_on=None,
-        fail_fast: bool = True,
-    ) -> str:
-        """
-        Spawn a subagent to run a task in the background.
-
-        Returns task_id for tracking via get_subagent_results() / gather_results().
-        """
-        registry = self._get_registry()
-        return registry.spawn(
-            agent=agent,
-            task=task,
-            parent_id=self.id,
-            depth=0,
-            max_retries=max_retries,
-            retry_on=retry_on,
-            fail_fast=fail_fast,
-        )
-
-    def run_in_background(self, task: str) -> str:
-        """
-        Convenience: spawn self as a background task, return task_id.
-        """
-        registry = self._get_registry()
-        return registry.spawn(
-            agent=self,
-            task=task,
-            parent_id=None,
-            depth=0,
-        )
-
-    def gather_results(
-        self,
-        strategy: str = "wait_all",
-        timeout: float = None,
-    ):
-        """Wait for spawned subagents and return their results."""
-        return self._get_registry().gather(
-            strategy=strategy, timeout=timeout
-        )
-
-    def get_subagent_results(self):
-        """Collect results from all completed subagent tasks."""
-        return self._get_registry().get_results()
-
-    def cancel_subagent(self, task_id: str) -> bool:
-        """Cancel a spawned subagent task."""
-        return self._get_registry().cancel(task_id)
-
-    # ── End Async Subagent Methods ──────────────────────────
 
     def __call__(
         self,

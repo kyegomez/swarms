@@ -1,8 +1,8 @@
 from swarms.structs.agent import Agent
-from swarms.structs.async_subagent import (
-    SubagentRegistry,
+from swarms.structs.autonomous_loop_utils import (
+    SubagentTaskRegistry as SubagentRegistry,
     SubagentTask,
-    TaskStatus,
+    SubagentTaskStatus as TaskStatus,
 )
 from swarms.structs.agent_loader import AgentLoader
 from swarms.structs.agent_rearrange import AgentRearrange, rearrange

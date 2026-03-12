@@ -23,12 +23,26 @@ Available Tools:
 - run_bash: Execute bash/shell commands on the terminal
 - create_sub_agent: Create specialized sub-agents for delegation
 - assign_task: Assign tasks to sub-agents asynchronously
+- get_task_status: Check status of background subagent tasks
+- cancel_task: Cancel a running subagent task
 """
 
-import asyncio
 import os
 import subprocess
-from typing import Any, Dict, List
+import threading
+import time
+import uuid
+from concurrent.futures import (
+    Future,
+    ThreadPoolExecutor,
+    wait,
+    ALL_COMPLETED,
+    FIRST_COMPLETED,
+)
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict, List, Optional, Type
+
 from loguru import logger
 
 
@@ -42,6 +56,271 @@ MAX_PLANNING_ATTEMPTS = 5
 MAX_SUBTASK_ITERATIONS = 100
 MAX_SUBTASK_LOOPS = 20
 MAX_CONSECUTIVE_THINKS = 2
+
+
+# ============================================================================
+# SUBAGENT TASK TRACKING
+# ============================================================================
+
+
+class SubagentTaskStatus(str, Enum):
+    """Status of a subagent task."""
+
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+@dataclass
+class SubagentTask:
+    """Tracks a single subagent task execution."""
+
+    id: str
+    agent_ref: Any
+    agent_id: str
+    agent_name: str
+    task_str: str
+    status: SubagentTaskStatus = SubagentTaskStatus.PENDING
+    result: Any = None
+    error: Optional[Exception] = None
+    future: Optional[Future] = None
+    parent_id: Optional[str] = None
+    depth: int = 0
+    retries: int = 0
+    max_retries: int = 0
+    retry_on: Optional[List[Type[Exception]]] = None
+    created_at: float = field(default_factory=time.time)
+    completed_at: Optional[float] = None
+
+
+class SubagentTaskRegistry:
+    """
+    Manages subagent tasks with ThreadPoolExecutor, status tracking,
+    retry logic, depth-limited recursion, and result aggregation.
+    """
+
+    def __init__(
+        self,
+        max_depth: int = 3,
+        max_workers: Optional[int] = None,
+    ):
+        self.max_depth = max_depth
+        self._tasks: Dict[str, SubagentTask] = {}
+        self._executor = ThreadPoolExecutor(
+            max_workers=max_workers
+        )
+        self._lock = threading.Lock()
+
+    def spawn(
+        self,
+        agent: Any,
+        agent_id: str,
+        task: str,
+        parent_id: Optional[str] = None,
+        depth: int = 0,
+        max_retries: int = 0,
+        retry_on: Optional[List[Type[Exception]]] = None,
+        fail_fast: bool = True,
+    ) -> str:
+        """
+        Spawn an agent task in the background. Returns task_id.
+        Raises ValueError if depth > max_depth.
+        """
+        if depth > self.max_depth:
+            raise ValueError(
+                f"Subagent depth {depth} exceeds max_depth {self.max_depth}"
+            )
+
+        task_id = f"task-{uuid.uuid4().hex[:8]}"
+        agent_name = getattr(agent, "agent_name", str(agent))
+        st = SubagentTask(
+            id=task_id,
+            agent_ref=agent,
+            agent_id=agent_id,
+            agent_name=agent_name,
+            task_str=task,
+            parent_id=parent_id,
+            depth=depth,
+            max_retries=max_retries,
+            retry_on=retry_on or [],
+        )
+
+        with self._lock:
+            self._tasks[task_id] = st
+
+        logger.info(
+            f"[SubagentTaskRegistry] Spawned {task_id} | agent={agent_name} | depth={depth}"
+        )
+
+        st.status = SubagentTaskStatus.RUNNING
+        future = self._executor.submit(
+            self._execute_task, st, fail_fast
+        )
+        st.future = future
+        return task_id
+
+    def _execute_task(
+        self, st: SubagentTask, fail_fast: bool
+    ) -> Any:
+        """Run the agent with retry logic."""
+        agent_name = st.agent_name
+        last_error = None
+
+        for attempt in range(st.max_retries + 1):
+            try:
+                if attempt > 0:
+                    logger.info(
+                        f"[SubagentTaskRegistry] Retry {attempt}/{st.max_retries} for {st.id}"
+                    )
+                    st.retries = attempt
+
+                result = st.agent_ref.run(st.task_str)
+                st.result = result
+                st.status = SubagentTaskStatus.COMPLETED
+                st.completed_at = time.time()
+                logger.info(
+                    f"[SubagentTaskRegistry] {st.id} completed | agent={agent_name} | "
+                    f"duration={st.completed_at - st.created_at:.2f}s"
+                )
+                return result
+
+            except Exception as e:
+                last_error = e
+                should_retry = attempt < st.max_retries and (
+                    not st.retry_on
+                    or any(
+                        isinstance(e, exc_type)
+                        for exc_type in st.retry_on
+                    )
+                )
+                if should_retry:
+                    continue
+
+                st.error = e
+                st.status = SubagentTaskStatus.FAILED
+                st.completed_at = time.time()
+                logger.error(
+                    f"[SubagentTaskRegistry] {st.id} failed | agent={agent_name} | error={e}"
+                )
+                if fail_fast:
+                    raise
+                return None
+
+        st.error = last_error
+        st.status = SubagentTaskStatus.FAILED
+        st.completed_at = time.time()
+        if fail_fast:
+            raise last_error
+        return None
+
+    def get_task(self, task_id: str) -> SubagentTask:
+        """Get a task by ID."""
+        if task_id not in self._tasks:
+            raise KeyError(f"Task {task_id} not found")
+        return self._tasks[task_id]
+
+    def get_results(self) -> Dict[str, Any]:
+        """Collect results from all completed/failed tasks."""
+        results = {}
+        for task_id, st in self._tasks.items():
+            if st.status == SubagentTaskStatus.COMPLETED:
+                results[task_id] = st.result
+            elif st.status == SubagentTaskStatus.FAILED:
+                results[task_id] = st.error
+        return results
+
+    def cancel(self, task_id: str) -> bool:
+        """Cancel a task if it hasn't completed yet."""
+        st = self.get_task(task_id)
+        if st.future and st.future.cancel():
+            st.status = SubagentTaskStatus.CANCELLED
+            st.completed_at = time.time()
+            logger.info(
+                f"[SubagentTaskRegistry] {task_id} cancelled"
+            )
+            return True
+        return False
+
+    def gather(
+        self,
+        strategy: str = "wait_all",
+        timeout: Optional[float] = None,
+    ) -> List[Any]:
+        """
+        Wait for tasks and return results.
+
+        Args:
+            strategy: "wait_all" or "wait_first"
+            timeout: Max seconds to wait
+        """
+        already_done = []
+        pending_futures = {}
+        for st in self._tasks.values():
+            if st.status in (
+                SubagentTaskStatus.COMPLETED,
+                SubagentTaskStatus.FAILED,
+            ):
+                already_done.append(st)
+            elif st.future is not None:
+                pending_futures[st.future] = st
+
+        if not pending_futures:
+            return [
+                st.error
+                if st.status == SubagentTaskStatus.FAILED
+                else st.result
+                for st in already_done
+            ]
+
+        return_when = (
+            FIRST_COMPLETED
+            if strategy == "wait_first"
+            else ALL_COMPLETED
+        )
+        done, _ = wait(
+            pending_futures.keys(),
+            timeout=timeout,
+            return_when=return_when,
+        )
+
+        results = [
+            st.error
+            if st.status == SubagentTaskStatus.FAILED
+            else st.result
+            for st in already_done
+        ]
+        for future in done:
+            try:
+                result = future.result(timeout=0)
+                results.append(result)
+            except Exception as e:
+                results.append(e)
+
+        return results
+
+    def shutdown(self):
+        """Shut down the executor."""
+        self._executor.shutdown(wait=False)
+        logger.info("[SubagentTaskRegistry] Shut down")
+
+    @property
+    def tasks(self) -> Dict[str, SubagentTask]:
+        return dict(self._tasks)
+
+
+def _get_task_registry(agent: Any) -> SubagentTaskRegistry:
+    """Lazy-init and return the task registry stored on agent."""
+    if (
+        not hasattr(agent, "_task_registry")
+        or agent._task_registry is None
+    ):
+        max_depth = getattr(agent, "max_subagent_depth", 3)
+        agent._task_registry = SubagentTaskRegistry(
+            max_depth=max_depth
+        )
+    return agent._task_registry
 
 
 # ============================================================================
@@ -469,7 +748,7 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "assign_task",
-                "description": "Assign a task to one or more sub-agents. Tasks are executed asynchronously and results are returned to the main agent.",
+                "description": "Assign tasks to one or more sub-agents. Tasks run concurrently in background threads. Supports retry, timeout, and different completion strategies.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -497,10 +776,64 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
                         },
                         "wait_for_completion": {
                             "type": "boolean",
-                            "description": "Whether to wait for all tasks to complete before returning (default: true)",
+                            "description": "Whether to wait for tasks to complete before returning results (default: true). If false, tasks run in background and you can check status later with get_task_status.",
+                        },
+                        "strategy": {
+                            "type": "string",
+                            "enum": [
+                                "wait_all",
+                                "wait_first",
+                            ],
+                            "description": "Completion strategy: 'wait_all' waits for all tasks (default), 'wait_first' returns as soon as any task completes.",
+                        },
+                        "timeout": {
+                            "type": "number",
+                            "description": "Maximum seconds to wait for task completion. If exceeded, returns whatever results are available.",
+                        },
+                        "max_retries": {
+                            "type": "integer",
+                            "description": "Maximum number of retry attempts per task on failure (default: 0, no retries).",
+                        },
+                        "fail_fast": {
+                            "type": "boolean",
+                            "description": "If true (default), failed tasks raise errors. If false, failed tasks return None and other tasks continue.",
                         },
                     },
                     "required": ["assignments"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_task_status",
+                "description": "Check the status of background subagent tasks. Use this after dispatching tasks with wait_for_completion=false.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "task_ids": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Specific task IDs to check (optional, defaults to all tasks).",
+                        },
+                    },
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "cancel_task",
+                "description": "Cancel a running background subagent task.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "task_id": {
+                            "type": "string",
+                            "description": "ID of the task to cancel.",
+                        },
+                    },
+                    "required": ["task_id"],
                 },
             },
         },
@@ -988,6 +1321,7 @@ def create_sub_agent_tool(
     """
     Create one or more sub-agents that can work on specialized tasks.
     Sub-agents are cached in the main agent's sub_agents dictionary.
+    Enforces depth limits to prevent runaway recursion.
 
     Args:
         agent: The main agent instance
@@ -1002,6 +1336,15 @@ def create_sub_agent_tool(
         if not hasattr(agent, "sub_agents"):
             agent.sub_agents = {}
 
+        # Depth tracking
+        parent_depth = getattr(agent, "_subagent_depth", 0)
+        max_depth = getattr(agent, "max_subagent_depth", 3)
+        if parent_depth >= max_depth:
+            return (
+                f"Error: Maximum subagent depth ({max_depth}) reached. "
+                f"Cannot create deeper sub-agents."
+            )
+
         created_agents = []
 
         for agent_spec in agents:
@@ -1012,12 +1355,16 @@ def create_sub_agent_tool(
             if not agent_name or not agent_description:
                 return "Error: Each agent must have agent_name and agent_description"
 
-            # Generate unique ID for the sub-agent
-            import uuid
+            # Default system_prompt when not provided or empty
+            if not system_prompt:
+                system_prompt = (
+                    f"You are {agent_name}, a specialized assistant. "
+                    f"{agent_description}"
+                )
 
             agent_id = f"sub-agent-{uuid.uuid4().hex[:8]}"
 
-            # Import Agent class to create sub-agent
+            # Import Agent class to create sub-agent (deferred to avoid circular import)
             from swarms.structs.agent import Agent
 
             # Create sub-agent with the same LLM as parent
@@ -1025,11 +1372,15 @@ def create_sub_agent_tool(
                 id=agent_id,
                 agent_name=agent_name,
                 agent_description=agent_description,
-                system_prompt=system_prompt,  # Use custom system prompt if provided
+                system_prompt=system_prompt,
                 model_name=agent.model_name,
                 max_loops=1,
-                print_on=False,  # Reduce noise from sub-agents
+                max_subagent_depth=max_depth,
+                print_on=False,
             )
+
+            # Propagate depth tracking
+            sub_agent._subagent_depth = parent_depth + 1
 
             # Cache the sub-agent
             agent.sub_agents[agent_id] = {
@@ -1037,17 +1388,21 @@ def create_sub_agent_tool(
                 "name": agent_name,
                 "description": agent_description,
                 "system_prompt": system_prompt,
+                "depth": parent_depth + 1,
+                "parent_agent_id": getattr(agent, "id", None),
                 "created_at": str(
                     __import__("datetime").datetime.now()
                 ),
             }
 
-            created_agents.append(f"{agent_name} (ID: {agent_id})")
+            created_agents.append(
+                f"{agent_name} (ID: {agent_id})"
+            )
 
-            if agent.verbose:
-                logger.info(
-                    f"Created sub-agent: {agent_name} with ID {agent_id}"
-                )
+            logger.info(
+                f"[SubagentTaskRegistry] Created sub-agent: {agent_name} "
+                f"(ID: {agent_id}, depth: {parent_depth + 1})"
+            )
 
         # Add to memory
         result_msg = (
@@ -1075,15 +1430,24 @@ def assign_task_tool(
     agent: Any,
     assignments: List[Dict[str, str]],
     wait_for_completion: bool = True,
+    strategy: str = "wait_all",
+    timeout: Optional[float] = None,
+    max_retries: int = 0,
+    fail_fast: bool = True,
     **kwargs,
 ) -> str:
     """
-    Assign tasks to one or more sub-agents. Tasks are executed asynchronously.
+    Assign tasks to one or more sub-agents. Tasks run concurrently
+    via ThreadPoolExecutor with retry logic, timeout, and aggregation strategies.
 
     Args:
         agent: The main agent instance
         assignments: List of task assignments with agent_id and task
-        wait_for_completion: Whether to wait for all tasks to complete
+        wait_for_completion: Whether to wait for tasks to complete
+        strategy: "wait_all" (default) or "wait_first"
+        timeout: Max seconds to wait for completion
+        max_retries: Max retry attempts per task on failure (default: 0)
+        fail_fast: If True, failed tasks raise errors. If False, failures are captured.
         **kwargs: Additional arguments
 
     Returns:
@@ -1098,94 +1462,95 @@ def assign_task_tool(
         for assignment in assignments:
             agent_id = assignment.get("agent_id")
             if agent_id not in agent.sub_agents:
-                return f"Error: Sub-agent with ID '{agent_id}' not found. Available agents: {list(agent.sub_agents.keys())}"
-
-        # Prepare tasks for async execution
-        async def run_agent_task(
-            sub_agent_data: Dict, task: str, task_id: str
-        ):
-            """Run a single agent task asynchronously."""
-            try:
-                sub_agent = sub_agent_data["agent"]
-                result = await asyncio.to_thread(sub_agent.run, task)
-                return {
-                    "agent_id": sub_agent.id,
-                    "agent_name": sub_agent_data["name"],
-                    "task_id": task_id,
-                    "status": "success",
-                    "result": result,
-                }
-            except Exception as e:
-                return {
-                    "agent_id": sub_agent.id,
-                    "agent_name": sub_agent_data["name"],
-                    "task_id": task_id,
-                    "status": "error",
-                    "error": str(e),
-                }
-
-        async def run_all_tasks():
-            """Run all tasks concurrently."""
-            tasks = []
-            for idx, assignment in enumerate(assignments):
-                agent_id = assignment.get("agent_id")
-                task = assignment.get("task")
-                task_id = assignment.get("task_id", f"task-{idx + 1}")
-
-                sub_agent_data = agent.sub_agents[agent_id]
-                tasks.append(
-                    run_agent_task(sub_agent_data, task, task_id)
+                return (
+                    f"Error: Sub-agent with ID '{agent_id}' not found. "
+                    f"Available agents: {list(agent.sub_agents.keys())}"
                 )
 
-            return await asyncio.gather(*tasks)
+        registry = _get_task_registry(agent)
+        task_ids = []
 
-        # Execute tasks
-        if wait_for_completion:
-            # Run in event loop
-            try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-
-            results = loop.run_until_complete(run_all_tasks())
-
-            # Format results
-            result_lines = [
-                f"Completed {len(results)} task assignment(s):\n"
-            ]
-            for result in results:
-                if result["status"] == "success":
-                    result_lines.append(
-                        f"\n[{result['agent_name']}] Task {result['task_id']}:"
-                    )
-                    result_lines.append(
-                        f"Result: {result['result']}\n"
-                    )
-                else:
-                    result_lines.append(
-                        f"\n[{result['agent_name']}] Task {result['task_id']} FAILED:"
-                    )
-                    result_lines.append(f"Error: {result['error']}\n")
-
-            result_msg = "\n".join(result_lines)
-
-            # Add to memory
-            agent.short_memory.add(
-                role="Sub-Agent Execution",
-                content=result_msg,
+        for idx, assignment in enumerate(assignments):
+            agent_id = assignment.get("agent_id")
+            task_str = assignment.get("task")
+            task_id_hint = assignment.get(
+                "task_id", f"task-{idx + 1}"
             )
 
-            if agent.verbose:
-                logger.info(
-                    f"Completed {len(results)} sub-agent task(s)"
+            sub_agent_data = agent.sub_agents[agent_id]
+            sub_agent = sub_agent_data["agent"]
+            depth = sub_agent_data.get("depth", 0)
+
+            spawned_id = registry.spawn(
+                agent=sub_agent,
+                agent_id=agent_id,
+                task=task_str,
+                parent_id=getattr(agent, "id", None),
+                depth=depth,
+                max_retries=max_retries,
+                fail_fast=fail_fast,
+            )
+            task_ids.append(
+                (spawned_id, sub_agent_data["name"], task_id_hint)
+            )
+
+        if not wait_for_completion:
+            # Non-blocking: return task IDs for later retrieval
+            id_list = ", ".join(
+                f"{name} ({tid})" for tid, name, _ in task_ids
+            )
+            msg = f"Dispatched {len(task_ids)} task(s) in background: {id_list}. Use get_task_status to check progress."
+            agent.short_memory.add(
+                role="Sub-Agent Execution", content=msg
+            )
+            return msg
+
+        # Blocking: wait for results
+        registry.gather(strategy=strategy, timeout=timeout)
+
+        # Format results
+        result_lines = [
+            f"Completed {len(task_ids)} task assignment(s):\n"
+        ]
+        for tid, name, hint in task_ids:
+            task_obj = registry.get_task(tid)
+            if task_obj.status == SubagentTaskStatus.COMPLETED:
+                result_lines.append(
+                    f"\n[{name}] Task {hint} (ID: {tid}):"
+                )
+                result_lines.append(f"Status: completed")
+                result_lines.append(
+                    f"Result: {task_obj.result}\n"
+                )
+            elif task_obj.status == SubagentTaskStatus.FAILED:
+                result_lines.append(
+                    f"\n[{name}] Task {hint} (ID: {tid}) FAILED:"
+                )
+                result_lines.append(f"Error: {task_obj.error}")
+                result_lines.append(
+                    f"Retries: {task_obj.retries}/{task_obj.max_retries}\n"
+                )
+            else:
+                result_lines.append(
+                    f"\n[{name}] Task {hint} (ID: {tid}):"
+                )
+                result_lines.append(
+                    f"Status: {task_obj.status.value}\n"
                 )
 
-            return result_msg
-        else:
-            # Fire and forget
-            asyncio.create_task(run_all_tasks())
-            return f"Dispatched {len(assignments)} task(s) to sub-agents (async mode)"
+        result_msg = "\n".join(result_lines)
+
+        agent.short_memory.add(
+            role="Sub-Agent Execution",
+            content=result_msg,
+        )
+
+        if agent.verbose:
+            logger.info(
+                f"Completed {len(task_ids)} sub-agent task(s)"
+            )
+
+        return result_msg
 
     except Exception as e:
         error_msg = f"Error assigning tasks to sub-agents: {str(e)}"
@@ -1195,3 +1560,56 @@ def assign_task_tool(
             content=f"Error: {error_msg}",
         )
         return error_msg
+
+
+def get_task_status_tool(
+    agent: Any,
+    task_ids: Optional[List[str]] = None,
+    **kwargs,
+) -> str:
+    """Get status of running/completed subagent tasks."""
+    try:
+        registry = _get_task_registry(agent)
+        if not registry.tasks:
+            return "No subagent tasks have been submitted yet."
+
+        tasks_to_check = {}
+        if task_ids:
+            for tid in task_ids:
+                try:
+                    tasks_to_check[tid] = registry.get_task(tid)
+                except KeyError:
+                    pass
+        else:
+            tasks_to_check = registry.tasks
+
+        lines = [
+            f"Subagent task status ({len(tasks_to_check)} tasks):"
+        ]
+        for tid, task in tasks_to_check.items():
+            duration = ""
+            if task.completed_at:
+                duration = (
+                    f" ({task.completed_at - task.created_at:.2f}s)"
+                )
+            lines.append(
+                f"  [{task.agent_name}] {tid}: {task.status.value}{duration}"
+            )
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error getting task status: {e}"
+
+
+def cancel_task_tool(
+    agent: Any, task_id: str, **kwargs
+) -> str:
+    """Cancel a running subagent task."""
+    try:
+        registry = _get_task_registry(agent)
+        if registry.cancel(task_id):
+            return f"Task {task_id} cancelled successfully."
+        return f"Task {task_id} could not be cancelled (may have already completed)."
+    except KeyError:
+        return f"Task {task_id} not found."
+    except Exception as e:
+        return f"Error cancelling task: {e}"
