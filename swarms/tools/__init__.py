@@ -30,6 +30,12 @@ from swarms.tools.pydantic_to_json import (
     base_model_to_openai_function,
     multi_base_model_to_openai_function,
 )
+from swarms.tools.telnyx_tools import (
+    telnyx_send_sms,
+    telnyx_make_call,
+    telnyx_hangup_call,
+    telnyx_lookup_number,
+)
 from swarms.tools.tool_registry import ToolStorage, tool_registry
 from swarms.tools.tool_utils import (
     scrape_tool_func_docs,
@@ -65,4 +71,8 @@ __all__ = [
     "_create_server_tool_mapping",
     "_create_server_tool_mapping_async",
     "_execute_tool_on_server",
+    "telnyx_send_sms",
+    "telnyx_make_call",
+    "telnyx_hangup_call",
+    "telnyx_lookup_number",
 ]
