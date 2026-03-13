@@ -73,11 +73,6 @@ class DynamicSkillsLoader:
                                     "description", ""
                                 ),
                                 "path": skill_file,
-                                "content": (
-                                    parts[2].strip()
-                                    if len(parts) > 2
-                                    else ""
-                                ),
                             }
                         )
             except Exception as e:
@@ -223,7 +218,7 @@ class DynamicSkillsLoader:
         self, skill_name: str
     ) -> Optional[str]:
         """
-        Load the full content of a specific skill.
+        Load the full content of a specific skill from disk.
 
         Args:
             skill_name: Name of the skill to load
@@ -233,7 +228,20 @@ class DynamicSkillsLoader:
         """
         for skill in self.skills_metadata:
             if skill["name"] == skill_name:
-                return skill["content"]
+                try:
+                    with open(
+                        skill["path"], "r", encoding="utf-8"
+                    ) as f:
+                        content = f.read()
+                    if content.startswith("---"):
+                        parts = content.split("---", 2)
+                        if len(parts) >= 3:
+                            return parts[2].strip()
+                except Exception as e:
+                    print(
+                        f"Error loading skill {skill_name}: {e}"
+                    )
+                return None
         return None
 
     def get_similarity_scores(
