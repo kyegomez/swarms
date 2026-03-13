@@ -308,6 +308,7 @@ nav:
         - AgentRearrange: "swarms/structs/agent_rearrange.md"
         - GroupChat: "swarms/structs/group_chat.md"
         - BatchedGridWorkflow: "swarms/structs/batched_grid_workflow.md"
+        - SkillOrchestra: "swarms/structs/skill_orchestra.md"
         - Communication Structure: "swarms/structs/conversation.md"
 
     - Utilities:
@@ -414,6 +415,7 @@ nav:
         - ModelRouter: "swarms/examples/model_router_example.md"
         - AgentRearrange: "swarms/examples/agent_rearrange_example.md"
         - SwarmRearrange: "swarms/examples/swarm_rearrange_example.md"
+        - SkillOrchestra: "swarms/examples/skill_orchestra_example.md"
 
       - Voting & Consensus:
         - MajorityVoting: "swarms/examples/majority_voting_example.md"
