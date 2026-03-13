@@ -413,59 +413,74 @@ result = orchestra.run("Review our trading desk procedures for MiFID II complian
 
 ## Architecture
 
+### Pipeline Flow
+
+```mermaid
+flowchart TD
+    A["Incoming Task"] --> B["1. Skill Inference (LLM)"]
+    B --> C["2. Agent Scoring (Math)"]
+    C --> D["3. Select Top-K Agents"]
+    D --> E["4. Execute Agents"]
+    E --> F{Learning Enabled?}
+    F -- Yes --> G["5. Evaluate & Learn (LLM + EMA)"]
+    G --> H{More Loops?}
+    H -- Yes --> B
+    H -- No --> I["Return Output"]
+    F -- No --> I
+
+    subgraph Skill Handbook
+        S1["Skills: python_coding, api_design, technical_writing, ..."]
+        S2["Agent Profiles: competence + cost per skill"]
+    end
+
+    B -. reads .-> S1
+    C -. reads .-> S2
+    G -. updates .-> S2
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      SkillOrchestra                         │
-│                                                             │
-│  ┌───────────────┐    ┌──────────────────────────────────┐  │
-│  │   Incoming     │    │         Skill Handbook            │  │
-│  │   Task         │    │                                  │  │
-│  │               │    │  Skills: [python_coding,          │  │
-│  │  "Write a     │    │          api_design,              │  │
-│  │   Python      │    │          technical_writing, ...]  │  │
-│  │   function"   │    │                                  │  │
-│  └──────┬────────┘    │  Agent Profiles:                  │  │
-│         │             │    CodeExpert:                    │  │
-│         ▼             │      python_coding: 0.95         │  │
-│  ┌──────────────┐     │      api_design: 0.90            │  │
-│  │ 1. Skill      │    │    TechWriter:                    │  │
-│  │    Inference   │    │      technical_writing: 0.95     │  │
-│  │    (LLM)      │    │    Researcher:                    │  │
-│  │               │    │      data_analysis: 0.90          │  │
-│  │  Required:    │    └──────────────────────────────────┘  │
-│  │  - python_    │                                         │
-│  │    coding     │                                         │
-│  │    (0.9)      │                                         │
-│  │  - api_design │                                         │
-│  │    (0.5)      │                                         │
-│  └──────┬────────┘                                         │
-│         │                                                   │
-│         ▼                                                   │
-│  ┌──────────────┐                                           │
-│  │ 2. Agent      │                                          │
-│  │    Scoring     │     score = Σ(w_c × comp + w_$ × cost) │
-│  │    (Math)      │              / total_importance         │
-│  └──────┬────────┘                                         │
-│         │                                                   │
-│         ▼                                                   │
-│  ┌──────────────┐                                           │
-│  │ 3. Select     │     Top-k agents by score               │
-│  │    Top-K      │                                          │
-│  └──────┬────────┘                                         │
-│         │                                                   │
-│         ▼                                                   │
-│  ┌──────────────┐                                           │
-│  │ 4. Execute    │     Single: direct | Multi: concurrent  │
-│  │    Agents     │                                          │
-│  └──────┬────────┘                                         │
-│         │                                                   │
-│         ▼                                                   │
-│  ┌──────────────┐                                           │
-│  │ 5. Learn      │     EMA update of competence profiles   │
-│  │    (Optional) │     (LLM evaluates output quality)      │
-│  └──────────────┘                                          │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+
+### Scoring & Selection
+
+```mermaid
+flowchart LR
+    subgraph Task Skills
+        TS1["python_coding (importance: 0.9)"]
+        TS2["api_design (importance: 0.5)"]
+    end
+
+    subgraph Agent Profiles
+        AP1["CodeExpert\npython: 0.95, api: 0.90"]
+        AP2["TechWriter\npython: 0.30, api: 0.50"]
+        AP3["Researcher\npython: 0.60, api: 0.30"]
+    end
+
+    Task Skills --> SCORE["Scoring Formula\nscore = sum(w_c * competence * importance\n+ w_cost * norm_cost * importance)\n/ total_importance"]
+    Agent Profiles --> SCORE
+
+    SCORE --> R1["CodeExpert: 0.68"]
+    SCORE --> R2["TechWriter: 0.31"]
+    SCORE --> R3["Researcher: 0.42"]
+
+    R1 --> SEL["Select Top-K"]
+    R2 --> SEL
+    R3 --> SEL
+    SEL --> WIN["CodeExpert selected"]
+```
+
+### Execution Modes
+
+```mermaid
+flowchart TD
+    SEL["Selected Agents"] --> CHECK{top_k_agents}
+    CHECK -- "k = 1" --> SINGLE["Direct Execution\nagent.run(task)"]
+    CHECK -- "k > 1" --> MULTI["Concurrent Execution\nThreadPoolExecutor"]
+    MULTI --> A1["Agent 1"]
+    MULTI --> A2["Agent 2"]
+    MULTI --> A3["Agent N"]
+    A1 --> COLLECT["Collect Results"]
+    A2 --> COLLECT
+    A3 --> COLLECT
+    SINGLE --> OUTPUT["Output"]
+    COLLECT --> OUTPUT
 ```
 
 ## Best Practices
