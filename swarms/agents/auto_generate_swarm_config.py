@@ -1,6 +1,5 @@
 import re
 
-from dotenv import load_dotenv
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from swarms import Agent
@@ -9,8 +8,6 @@ from swarms.agents.create_agents_from_yaml import (
 )
 from swarms.utils.formatter import formatter
 from swarms.utils.litellm_wrapper import LiteLLM
-
-load_dotenv()
 
 
 def prepare_yaml_for_parsing(raw_yaml: str) -> str:

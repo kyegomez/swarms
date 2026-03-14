@@ -12,7 +12,7 @@ agent = Agent(
 )
 
 out = agent.run(
-    "Create 2 simple sub agents that just say hello and nothing else"
+    "Create 2 sub agents that are conducting research on the top energy and datacenter etfs to invest in and then create a report on the best ones to invest in"
 )
 
 print(out)

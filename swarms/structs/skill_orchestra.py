@@ -118,9 +118,7 @@ class InferredSkill(BaseModel):
         le=1.0,
         description="How important this skill is for the task (0-1)",
     )
-    reasoning: str = Field(
-        description="Why this skill is needed"
-    )
+    reasoning: str = Field(description="Why this skill is needed")
 
 
 class TaskSkillInference(BaseModel):
@@ -137,15 +135,11 @@ class TaskSkillInference(BaseModel):
 class AgentSelectionResult(BaseModel):
     """Result of agent selection scoring."""
 
-    agent_name: str = Field(
-        description="Name of the selected agent"
-    )
+    agent_name: str = Field(description="Name of the selected agent")
     score: float = Field(
         description="Composite competence-cost score"
     )
-    reasoning: str = Field(
-        description="Why this agent was selected"
-    )
+    reasoning: str = Field(description="Why this agent was selected")
     assigned_task: Optional[str] = Field(
         None,
         description="Optionally rephrased task for this agent",
@@ -379,7 +373,9 @@ class SkillOrchestra:
 
     def _auto_generate_handbook(self) -> SkillHandbook:
         """Use LLM to generate initial skill handbook from agent descriptions."""
-        logger.info("Auto-generating skill handbook from agent descriptions")
+        logger.info(
+            "Auto-generating skill handbook from agent descriptions"
+        )
 
         agent_descriptions = self._get_agent_descriptions()
         prompt = SKILL_HANDBOOK_GENERATION_PROMPT.format(
@@ -449,9 +445,7 @@ class SkillOrchestra:
             lines.append(f"- {skill.name}{cat}: {skill.description}")
         return "\n".join(lines)
 
-    def _infer_task_skills(
-        self, task: str
-    ) -> TaskSkillInference:
+    def _infer_task_skills(self, task: str) -> TaskSkillInference:
         """Use LLM to infer which skills a task requires."""
         skill_list = self._build_skill_list_str()
 
@@ -492,9 +486,7 @@ class SkillOrchestra:
     ) -> List[AgentSelectionResult]:
         """Score agents based on skill match with competence-cost weighting."""
         required_skills = skill_inference.required_skills
-        total_importance = sum(
-            s.importance for s in required_skills
-        )
+        total_importance = sum(s.importance for s in required_skills)
 
         if total_importance == 0:
             # No skills inferred — return all agents with equal score
@@ -542,9 +534,7 @@ class SkillOrchestra:
                     )
 
                     # Cost component (lower cost = higher score)
-                    min_c, max_c = cost_ranges[
-                        req_skill.skill_name
-                    ]
+                    min_c, max_c = cost_ranges[req_skill.skill_name]
                     if max_c > min_c:
                         normalized_cost = 1.0 - (
                             (sp.cost - min_c) / (max_c - min_c)
@@ -563,9 +553,7 @@ class SkillOrchestra:
 
             final_score = score / total_importance
 
-            reasoning = (
-                f"Matched {len(matched_skills)}/{len(required_skills)} skills"
-            )
+            reasoning = f"Matched {len(matched_skills)}/{len(required_skills)} skills"
             if matched_skills:
                 reasoning += f": {', '.join(matched_skills)}"
 
@@ -722,9 +710,7 @@ class SkillOrchestra:
                     f"Failed to evaluate agent '{agent_name}': {e}"
                 )
 
-    def _update_profiles(
-        self, feedback: ExecutionFeedback
-    ) -> None:
+    def _update_profiles(self, feedback: ExecutionFeedback) -> None:
         """Update agent skill profiles using exponential moving average."""
         for ap in self.skill_handbook.agent_profiles:
             if ap.agent_name != feedback.agent_name:
@@ -738,9 +724,10 @@ class SkillOrchestra:
                 sp = skill_map.get(skill_name)
                 if sp is not None:
                     # EMA update
-                    sp.competence = sp.competence * (
-                        1 - self.learning_rate
-                    ) + feedback.quality_score * self.learning_rate
+                    sp.competence = (
+                        sp.competence * (1 - self.learning_rate)
+                        + feedback.quality_score * self.learning_rate
+                    )
                     sp.execution_count += 1
                     if feedback.success:
                         sp.success_count += 1
@@ -772,7 +759,10 @@ class SkillOrchestra:
             )
             with open(conv_path, "w") as f:
                 json.dump(
-                    self.conversation.to_dict(), f, indent=2, default=str
+                    self.conversation.to_dict(),
+                    f,
+                    indent=2,
+                    default=str,
                 )
 
             # Save skill handbook
@@ -780,9 +770,7 @@ class SkillOrchestra:
                 self.swarm_workspace_dir, "skill_handbook.json"
             )
             with open(handbook_path, "w") as f:
-                f.write(
-                    self.skill_handbook.model_dump_json(indent=2)
-                )
+                f.write(self.skill_handbook.model_dump_json(indent=2))
 
         except Exception as e:
             logger.warning(
@@ -817,11 +805,16 @@ class SkillOrchestra:
         """
         try:
             self.conversation.add(role="User", content=task)
+            results = []
 
             for loop_idx in range(self.max_loops):
-                current_task = task if loop_idx == 0 else (
-                    f"Previous results:\n{json.dumps(results, default=str)}\n\n"
-                    f"Original task: {task}\n\nRefine and improve the response."
+                current_task = (
+                    task
+                    if loop_idx == 0
+                    else (
+                        f"Previous results:\n{json.dumps(results, default=str)}\n\n"
+                        f"Original task: {task}\n\nRefine and improve the response."
+                    )
                 )
 
                 # Step 1: Infer required skills
@@ -851,9 +844,7 @@ class SkillOrchestra:
                 )
 
                 # Step 2: Score agents
-                scored_agents = self._score_agents(
-                    skill_inference
-                )
+                scored_agents = self._score_agents(skill_inference)
 
                 # Step 3: Select top-k
                 selected = self._select_agents(scored_agents)
@@ -900,9 +891,7 @@ class SkillOrchestra:
             )
             raise
 
-    def __call__(
-        self, task: str, *args, **kwargs
-    ) -> Any:
+    def __call__(self, task: str, *args, **kwargs) -> Any:
         """Callable interface — delegates to run()."""
         return self.run(task, *args, **kwargs)
 
@@ -910,9 +899,7 @@ class SkillOrchestra:
         """Run multiple tasks sequentially."""
         return [self.run(task) for task in tasks]
 
-    def concurrent_batch_run(
-        self, tasks: List[str]
-    ) -> List[Any]:
+    def concurrent_batch_run(self, tasks: List[str]) -> List[Any]:
         """Run multiple tasks concurrently."""
         results = []
         with ThreadPoolExecutor(
@@ -934,9 +921,7 @@ class SkillOrchestra:
         """Return the current skill handbook as a dictionary."""
         return self.skill_handbook.model_dump()
 
-    def update_handbook(
-        self, handbook: SkillHandbook
-    ) -> None:
+    def update_handbook(self, handbook: SkillHandbook) -> None:
         """Replace the skill handbook."""
         self.skill_handbook = handbook
         logger.info(

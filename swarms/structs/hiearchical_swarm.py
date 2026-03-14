@@ -1165,6 +1165,11 @@ class HierarchicalSwarm:
             # Parse the orders
             plan, orders = self.parse_orders(output)
 
+            formatter.print_director_task_distribution(
+                director_name=self.director_name,
+                orders=orders,
+            )
+
             # Update dashboard with plan and orders information
             if self.interactive and self.dashboard:
                 self.dashboard.update_director_plan(plan)

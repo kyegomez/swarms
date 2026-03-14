@@ -881,6 +881,59 @@ class Formatter:
 
         self.console.print(panel)
 
+    def print_director_task_distribution(
+        self,
+        director_name: str,
+        orders: List[Any],
+        title: str = "Director Task Distribution",
+    ) -> None:
+        """
+        Display the director's task assignments in a rich panel.
+
+        Args:
+            director_name (str): Name of the director assigning the tasks.
+            orders (List[Any]): Order objects or dictionaries containing
+                ``agent_name`` and ``task`` fields.
+            title (str): Panel title.
+        """
+        tree = Tree(
+            f"[bold red]🎯 {director_name}[/bold red]",
+            guide_style="bold red",
+        )
+
+        if not orders:
+            tree.add("[dim]No tasks distributed[/dim]")
+        else:
+            for order in orders:
+                if isinstance(order, dict):
+                    agent_name = order.get(
+                        "agent_name", "Unknown Agent"
+                    )
+                    task = order.get("task", "No task provided")
+                else:
+                    agent_name = getattr(
+                        order, "agent_name", "Unknown Agent"
+                    )
+                    task = getattr(order, "task", "No task provided")
+
+                task_preview = str(task).replace("\n", " ").strip()
+                if len(task_preview) > 160:
+                    task_preview = f"{task_preview[:160].rstrip()}..."
+
+                tree.add(
+                    f"[bold cyan]{agent_name}[/bold cyan] [dim]- {task_preview}[/dim]"
+                )
+
+        panel = Panel(
+            tree,
+            title=f"[bold white]{title}[/bold white]",
+            border_style="red",
+            padding=(0, 1),
+            expand=False,
+        )
+
+        self.console.print(panel)
+
 
 # Global formatter instance with markdown output enabled by default
 formatter = Formatter(md=False)

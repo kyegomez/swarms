@@ -20,26 +20,18 @@ import argparse
 import os
 from typing import Any, Dict, List, Optional, Union
 
-from dotenv import load_dotenv
 from litellm import traceback
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
+from swarms.agents.auto_chat_agent import auto_chat_agent
 from swarms.agents.auto_generate_swarm_config import (
     generate_swarm_config,
 )
 from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
 )
-from swarms.agents.auto_chat_agent import auto_chat_agent
-
-from swarms.structs.agent import Agent
-from swarms.structs.agent_loader import AgentLoader
-from swarms.structs.llm_council import LLMCouncil
-from swarms.structs.heavy_swarm import HeavySwarm
-from swarms.utils.formatter import formatter
-
 from swarms.cli.utils import (
     COLORS,
     SwarmCLIError,
@@ -50,8 +42,15 @@ from swarms.cli.utils import (
     show_ascii_art,
     show_error,
 )
+from swarms.env import load_swarms_env
+from swarms.structs.agent import Agent
+from swarms.structs.agent_loader import AgentLoader
+from swarms.structs.heavy_swarm import HeavySwarm
+from swarms.structs.llm_council import LLMCouncil
+from swarms.utils.formatter import formatter
 
-load_dotenv()
+load_swarms_env()
+
 
 
 def run_autoswarm(task: str, model: str) -> None:

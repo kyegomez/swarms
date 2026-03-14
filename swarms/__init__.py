@@ -1,6 +1,6 @@
-from dotenv import load_dotenv
+from swarms.env import load_swarms_env
 
-load_dotenv()
+load_swarms_env()
 
 from swarms.telemetry.bootup import bootup  # noqa: E402, F403
 
