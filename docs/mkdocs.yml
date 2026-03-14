@@ -515,3 +515,6 @@ nav:
     - Architecture & Design:
       - Understanding Swarms Architecture: "swarms/concept/framework_architecture.md"
       - Development Philosophy & Principles: "swarms/concept/philosophy.md"
+
+    - Changelog:
+      - v10: "changelogs/v10.md"
