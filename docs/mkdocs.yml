@@ -232,6 +232,7 @@ nav:
       - Quickstart: "swarms/agents/index.md"
       - Reference: "swarms/structs/agent.md"
       - Fully Autonomous Agent Tutorial: "swarms/examples/autonomous_agent_tutorial.md"
+      - Sub-Agent Delegation: "swarms/examples/sub_agent_tutorial.md"
       - Agent Handoffs Tutorial: "swarms/examples/agent_handoff_tutorial.md"
       - Autosave Tutorial: "swarms/examples/autosave_tutorial.md"
       - Tools and MCP: "swarms/tools/tools_examples.md"
@@ -315,6 +316,7 @@ nav:
       - CLI Reference: "swarms/cli/cli_reference.md"
       - Agent Loader: "swarms/utils/agent_loader.md"
       - AgentRegistry: "swarms/structs/agent_registry.md"
+      - SubagentRegistry: "swarms/structs/async_subagent.md"
 
     - Tools:
       - Overview: "swarms_tools/overview.md"
