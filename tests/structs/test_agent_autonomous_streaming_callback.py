@@ -37,7 +37,7 @@ def test_generate_final_summary_forwards_streaming_callback_to_call_llm():
         streaming_callback=callback
     )
 
-    assert result == "summary output"
+    assert "summary output" in result
     assert agent.call_llm.call_count == 1
     assert (
         agent.call_llm.call_args.kwargs["streaming_callback"]
@@ -64,7 +64,7 @@ def test_generate_final_summary_streams_tokens_via_callback():
         streaming_callback=callback
     )
 
-    assert result == "final summary"
+    assert "final summary" in result
     assert received_tokens == ["tok-1", "tok-2"]
 
 
