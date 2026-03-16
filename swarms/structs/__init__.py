@@ -61,6 +61,11 @@ from swarms.structs.multi_agent_exec import (
     run_single_agent,
 )
 from swarms.structs.multi_agent_router import MultiAgentRouter
+from swarms.structs.planner_worker_swarm import (
+    PlannerWorkerSwarm,
+    TaskQueue,
+    WorkerPool,
+)
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.self_moa_seq import SelfMoASeq
 from swarms.structs.sequential_workflow import SequentialWorkflow
@@ -176,4 +181,7 @@ __all__ = [
     "SubagentRegistry",
     "SubagentTask",
     "TaskStatus",
+    "PlannerWorkerSwarm",
+    "TaskQueue",
+    "WorkerPool",
 ]
