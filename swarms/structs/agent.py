@@ -2738,8 +2738,8 @@ class Agent:
                                             == "complete_task"
                                         ):
                                             # Task is complete, exit all loops
-                                            return (
-                                                self._generate_final_summary()
+                                            return self._generate_final_summary(
+                                                streaming_callback=streaming_callback
                                             )
                                     else:
                                         # Collect regular tool calls for batch visualization and execution
@@ -2983,14 +2983,24 @@ class Agent:
                     title="Autonomous Loop: Summary Phase",
                 )
 
-            return self._generate_final_summary()
+            return self._generate_final_summary(
+                streaming_callback=streaming_callback
+            )
 
         except Exception as error:
             self._handle_run_error(error)
 
-    def _generate_final_summary(self) -> str:
+    def _generate_final_summary(
+        self,
+        streaming_callback: Optional[Callable[[str], None]] = None,
+    ) -> str:
         """
         Generate a comprehensive final summary of the autonomous task execution.
+
+        Args:
+            streaming_callback (Optional[Callable[[str], None]]): Optional callback
+                function to receive streaming tokens in real-time while generating
+                the final summary.
 
         Returns:
             str: Comprehensive summary
@@ -3005,6 +3015,7 @@ class Agent:
             response = self.call_llm(
                 task=task_prompt,
                 current_loop=0,
+                streaming_callback=streaming_callback,
             )
 
             response = self.parse_llm_output(response)
