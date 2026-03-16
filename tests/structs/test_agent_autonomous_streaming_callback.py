@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 from swarms.structs.agent import Agent
 
 
-
 def _make_agent() -> Agent:
     """Create an offline-friendly agent for autonomous-loop unit tests."""
     agent = Agent(
@@ -25,15 +24,18 @@ def _make_agent() -> Agent:
     return agent
 
 
-
 def test_generate_final_summary_forwards_streaming_callback_to_call_llm():
     agent = _make_agent()
-    callback = lambda _token: None
+
+    def callback(_token):
+        return None
 
     agent.call_llm = MagicMock(return_value="summary output")
     agent.parse_llm_output = MagicMock(side_effect=lambda x: x)
 
-    result = agent._generate_final_summary(streaming_callback=callback)
+    result = agent._generate_final_summary(
+        streaming_callback=callback
+    )
 
     assert result == "summary output"
     assert agent.call_llm.call_count == 1
@@ -41,7 +43,6 @@ def test_generate_final_summary_forwards_streaming_callback_to_call_llm():
         agent.call_llm.call_args.kwargs["streaming_callback"]
         is callback
     )
-
 
 
 def test_generate_final_summary_streams_tokens_via_callback():
@@ -59,15 +60,19 @@ def test_generate_final_summary_streams_tokens_via_callback():
     agent.call_llm = fake_call_llm
     agent.parse_llm_output = MagicMock(side_effect=lambda x: x)
 
-    result = agent._generate_final_summary(streaming_callback=callback)
+    result = agent._generate_final_summary(
+        streaming_callback=callback
+    )
 
     assert result == "final summary"
     assert received_tokens == ["tok-1", "tok-2"]
 
 
-
 def test_autonomous_loop_passes_callback_to_summary_in_both_paths():
-    callback = lambda _token: None
+
+    def callback(_token):
+        return None
+
     planning_tool_call = [
         {
             "function": {

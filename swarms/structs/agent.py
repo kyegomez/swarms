@@ -2738,10 +2738,8 @@ class Agent:
                                             == "complete_task"
                                         ):
                                             # Task is complete, exit all loops
-                                            return (
-                                                self._generate_final_summary(
-                                                    streaming_callback=streaming_callback
-                                                )
+                                            return self._generate_final_summary(
+                                                streaming_callback=streaming_callback
                                             )
                                     else:
                                         # Collect regular tool calls for batch visualization and execution
