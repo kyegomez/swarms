@@ -69,6 +69,7 @@ Connect your agents to various language model providers:
 | **Llama4** | Meta's Llama 4 models | [View Example](../swarms/examples/llama4.md) |
 | **Custom Base URL** | Connect to any OpenAI-compatible API | [View Example](../swarms/examples/custom_base_url_example.md) |
 | **vLLM Custom Wrapper** | High-performance local inference with vLLM | [View Example](../swarms/examples/vllm_custom_wrapper.md) |
+| **Hugging Face Custom LLM** | Use any Hugging Face model as a custom base LLM | [View Example](./huggingface_custom_llm.md) |
 
 ---
 
