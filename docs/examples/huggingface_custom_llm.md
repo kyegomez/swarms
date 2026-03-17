@@ -1,22 +1,15 @@
-# Integrate Hugging Face with a Custom Base LLM in Agent
+# Hugging Face Custom Base LLM in Agent
 
-This example shows how to wrap a Hugging Face model as a custom LLM and pass it to the `Agent` class.
-
-## Installation
+Wrap a Hugging Face model as a custom LLM and pass it to the `Agent` class.
 
 ```bash
 pip install swarms transformers torch
 ```
 
-## The `run` Method Contract
-
-The `Agent` class expects a custom LLM object with a `run(task: str) -> str` method (and optionally a `__call__` method). The method receives the task string and must return the model's response as a string.
-
-## Full Example
+The `Agent` class expects a custom LLM with a `run(task: str) -> str` method.
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
-
 from swarms import Agent
 
 
@@ -29,15 +22,9 @@ class HuggingFaceLLM:
         self.max_tokens = max_tokens
 
     def run(self, task: str) -> str:
-        inputs = self.tokenizer(task, return_tensors="pt").to(
-            self.model.device
-        )
-        outputs = self.model.generate(
-            **inputs, max_new_tokens=self.max_tokens
-        )
-        return self.tokenizer.decode(
-            outputs[0], skip_special_tokens=True
-        )
+        inputs = self.tokenizer(task, return_tensors="pt").to(self.model.device)
+        outputs = self.model.generate(**inputs, max_new_tokens=self.max_tokens)
+        return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
     def __call__(self, task: str) -> str:
         return self.run(task)
@@ -49,16 +36,9 @@ agent = Agent(
     agent_name="HuggingFace-Agent",
     llm=llm,
     max_loops=1,
-    agent_description="An agent powered by a local Hugging Face model",
 )
 
 agent.run("Explain quantum computing in simple terms.")
 ```
-
-## How It Works
-
-1. `HuggingFaceLLM.__init__` loads the tokenizer and model from the Hugging Face Hub.
-2. `run(task)` tokenizes the input, generates output tokens, and decodes them back to a string.
-3. The `llm` instance is passed to `Agent(llm=...)`. The agent calls `llm.run(task)` (or `llm(task)`) when processing each step.
 
 Any Hugging Face causal language model can be used by changing `model_name`.
