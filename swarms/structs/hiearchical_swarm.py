@@ -696,7 +696,7 @@ class HierarchicalSwarm:
         planning_enabled: bool = True,
         autosave: bool = True,
         verbose: bool = False,
-        parallel_execution: bool = False,
+        parallel_execution: bool = True,
         agent_as_judge: bool = False,
         judge_agent_model_name: str = "gpt-4o-mini",
         *args,
@@ -721,6 +721,9 @@ class HierarchicalSwarm:
             director_feedback_on (bool): Whether director feedback is enabled.
             autosave (bool): Whether to enable autosaving of conversation history.
             verbose (bool): Whether to enable verbose logging.
+            parallel_execution (bool): Whether to execute agent orders in parallel.
+                Defaults to True since director orders target independent agents
+                with I/O-bound LLM calls, yielding significant latency reduction.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -762,6 +765,13 @@ class HierarchicalSwarm:
         self.initialize_swarm()
 
     def initialize_swarm(self):
+        # Build O(1) agent lookup map (consistent with AgentRearrange)
+        self.agent_map = {
+            agent.agent_name: agent
+            for agent in self.agents
+            if hasattr(agent, "agent_name")
+        }
+
         if self.interactive:
             self.agents_no_print()
 
@@ -1487,24 +1497,12 @@ class HierarchicalSwarm:
             Exception: If agent execution fails.
         """
         try:
-            # Find agent by name
-            agent = None
-            for a in self.agents:
-                if (
-                    hasattr(a, "agent_name")
-                    and a.agent_name == agent_name
-                ):
-                    agent = a
-                    break
+            # O(1) agent lookup via pre-built dict (consistent with AgentRearrange)
+            agent = self.agent_map.get(agent_name)
 
             if agent is None:
-                available_agents = [
-                    a.agent_name
-                    for a in self.agents
-                    if hasattr(a, "agent_name")
-                ]
                 raise ValueError(
-                    f"Agent '{agent_name}' not found in swarm. Available agents: {available_agents}"
+                    f"Agent '{agent_name}' not found in swarm. Available agents: {list(self.agent_map.keys())}"
                 )
 
             # Update dashboard for agent execution
