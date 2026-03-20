@@ -93,6 +93,26 @@ model_recommendations = {
         ],
         "provider": "mistral",
     },
+    "minimax/MiniMax-M2.7": {
+        "description": "MiniMax's latest model with 204K context window and strong multilingual capabilities",
+        "best_for": [
+            "Long context understanding",
+            "Multilingual tasks",
+            "Complex reasoning",
+            "Code generation",
+        ],
+        "provider": "minimax",
+    },
+    "minimax/MiniMax-M2.5-highspeed": {
+        "description": "MiniMax's high-speed model optimized for fast inference with 204K context",
+        "best_for": [
+            "Real-time applications",
+            "High throughput",
+            "Cost-effective processing",
+            "Chat applications",
+        ],
+        "provider": "minimax",
+    },
 }
 
 providers = {
@@ -103,6 +123,7 @@ providers = {
     "azure": "Cloud platform for various model deployments",
     "deepseek": "Provider of specialized reasoning models",
     "mistral": "Provider of open source and commercial language models",
+    "minimax": "Provider of MiniMax models with 204K context and multilingual support",
 }
 
 
@@ -138,6 +159,8 @@ Available Models and Their Strengths:
 - Claude-3-Sonnet: Well-balanced for creative writing and nuanced responses
 - Gemini Pro: Strong at multimodal tasks and code generation
 - Mistral Large: Versatile open source model good for general tasks
+- MiniMax M2.7: Strong multilingual model with 204K context window
+- MiniMax M2.5-highspeed: Fast inference with 204K context for real-time applications
 
 Provider Considerations:
 - OpenAI: Industry standard with consistent performance
@@ -145,6 +168,7 @@ Provider Considerations:
 - Google: Strong technical capabilities and multimodal support
 - Groq: Optimized for high-speed inference
 - Mistral: Balance of open source and commercial offerings
+- MiniMax: Long context window (204K) with strong multilingual and reasoning capabilities
 
 Data:
 {data}

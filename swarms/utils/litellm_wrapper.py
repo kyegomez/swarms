@@ -19,6 +19,7 @@ for various input modalities and output formats.
 
 import asyncio
 import base64
+import os
 import socket
 import traceback
 from pathlib import Path
@@ -316,6 +317,21 @@ class LiteLLM:
         )
 
         litellm.drop_params = drop_params
+
+        # Auto-configure MiniMax provider: when model_name starts with
+        # "minimax/", route through the MiniMax OpenAI-compatible API.
+        # LiteLLM requires the "openai/" prefix for custom base_url
+        # endpoints, so we replace "minimax/" with "openai/".
+        if self.model_name.lower().startswith("minimax/"):
+            actual_model = self.model_name.split("/", 1)[1]
+            self.model_name = f"openai/{actual_model}"
+            if self.base_url is None:
+                self.base_url = "https://api.minimax.io/v1"
+            if self.api_key is None:
+                self.api_key = os.getenv("MINIMAX_API_KEY")
+            # MiniMax temperature range is [0, 1.0]
+            if self.temperature is not None and self.temperature > 1.0:
+                self.temperature = 1.0
 
         # Add system prompt if present (Anthropic rejects empty system blocks)
         if isinstance(self.system_prompt, str):
@@ -1262,6 +1278,9 @@ class LiteLLM:
 
             if self.base_url is not None:
                 completion_params["base_url"] = self.base_url
+
+            if self.api_key is not None:
+                completion_params["api_key"] = self.api_key
 
             if self.response_format is not None:
                 completion_params["response_format"] = (

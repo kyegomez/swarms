@@ -16,6 +16,7 @@ Swarms supports a vast array of model providers, giving you the flexibility to c
 | **XAI** | xAI's Grok models offering unique capabilities for research, analysis, and creative tasks with advanced reasoning abilities. | [XAI Integration](xai.md) |
 | **Llama4** | Meta's latest open-source language models including Llama-4-Maverick and Llama-4-Scout variants with expert routing capabilities. | [Llama4 Integration](llama4.md) |
 | **Azure OpenAI** | Enterprise-grade OpenAI models through Microsoft's cloud infrastructure with enhanced security, compliance, and enterprise features. | [Azure Integration](azure.md) |
+| **MiniMax** | Powerful language models with 204K context window and strong multilingual capabilities. Models include MiniMax-M2.7 and MiniMax-M2.5-highspeed. | [MiniMax Integration](minimax.md) |
 
 ## Quick Start
 
@@ -58,10 +59,17 @@ response = agent.run("Your query here")
 
 - **OpenRouter**: Access to cost-effective models
 
+### For Long Context Tasks
+
+- **MiniMax M2.7**: 204K context with strong multilingual capabilities
+
+- **MiniMax M2.5-highspeed**: Fast inference with 204K context
+
 ### For Real-Time Applications
 
 - **Groq**: Ultra-fast inference
 
+- **MiniMax M2.5-highspeed**: Fast inference with large context window
 
 ### For Specialized Tasks
 
@@ -101,6 +109,9 @@ XAI_API_KEY=your_xai_key
 AZURE_API_KEY=your_azure_openai_api_key
 AZURE_API_BASE=https://your-resource-name.openai.azure.com/
 AZURE_API_VERSION=2024-02-15-preview
+
+# MiniMax
+MINIMAX_API_KEY=your_minimax_api_key
 ```
 
 !!! note "No API Key Required"

@@ -63,6 +63,8 @@ def _detect_active_provider() -> str:
         detected.append("Mistral")
     if os.getenv("TOGETHER_API_KEY"):
         detected.append("Together AI")
+    if os.getenv("MINIMAX_API_KEY"):
+        detected.append("MiniMax")
 
     if not detected:
         return (
@@ -341,6 +343,7 @@ def check_api_keys() -> Tuple[bool, str, str]:
         "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY"),
         "GOOGLE_API_KEY": os.getenv("GOOGLE_API_KEY"),
         "COHERE_API_KEY": os.getenv("COHERE_API_KEY"),
+        "MINIMAX_API_KEY": os.getenv("MINIMAX_API_KEY"),
     }
 
     # At least one key must be present and non-empty
