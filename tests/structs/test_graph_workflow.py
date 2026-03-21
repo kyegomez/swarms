@@ -548,5 +548,133 @@ def test_graph_workflow_backend_fallback():
         )
 
 
+# ---------------------------------------------------------------------------
+# validate() tests
+# ---------------------------------------------------------------------------
+
+
+def test_validate_empty_graph():
+    """validate() on an empty graph should report an error."""
+    wf = GraphWorkflow(auto_compile=False)
+    result = wf.validate()
+    assert not result["is_valid"]
+    assert any("no nodes" in e.lower() for e in result["errors"])
+
+
+def test_validate_disconnected_nodes():
+    """validate() should warn about isolated (disconnected) nodes."""
+    agent_a = create_test_agent("AgentA")
+    agent_b = create_test_agent("AgentB")
+
+    wf = GraphWorkflow(auto_compile=False)
+    wf.add_node(agent_a)
+    wf.add_node(agent_b)
+    # No edges — both nodes are isolated
+
+    result = wf.validate()
+    assert any("isolated" in w.lower() for w in result["warnings"])
+
+
+def test_validate_missing_entry_points():
+    """validate() should warn when no entry points are defined."""
+    agent_a = create_test_agent("AgentA")
+
+    wf = GraphWorkflow(auto_compile=False)
+    wf.add_node(agent_a)
+
+    # Entry points not set explicitly
+    result = wf.validate()
+    assert any(
+        "entry" in w.lower() for w in result["warnings"]
+    )
+
+
+def test_validate_unreachable_nodes():
+    """validate() should detect nodes unreachable from entry points."""
+    agent_a = create_test_agent("AgentA")
+    agent_b = create_test_agent("AgentB")
+    agent_c = create_test_agent("AgentC")
+
+    wf = GraphWorkflow(auto_compile=False)
+    wf.add_node(agent_a)
+    wf.add_node(agent_b)
+    wf.add_node(agent_c)
+    wf.add_edge("AgentA", "AgentB")
+    # AgentC is unreachable from AgentA
+    wf.set_entry_points(["AgentA"])
+
+    result = wf.validate()
+    assert any("unreachable" in w.lower() for w in result["warnings"])
+
+
+def test_validate_auto_fix():
+    """validate(auto_fix=True) should repair simple issues."""
+    agent_a = create_test_agent("AgentA")
+    agent_b = create_test_agent("AgentB")
+
+    wf = GraphWorkflow(auto_compile=False)
+    wf.add_node(agent_a)
+    wf.add_node(agent_b)
+    wf.add_edge("AgentA", "AgentB")
+
+    # No entry/end points set
+    result = wf.validate(auto_fix=True)
+    assert len(result["fixed"]) > 0
+    assert len(wf.entry_points) > 0
+
+
+def test_validate_raise_on_error():
+    """validate(raise_on_error=True) should raise ValueError on failure."""
+    wf = GraphWorkflow(auto_compile=False)
+    # Empty graph — guaranteed to fail validation
+    with pytest.raises(ValueError, match="validation failed"):
+        wf.validate(raise_on_error=True)
+
+
+def test_validate_raise_on_error_false_returns_dict():
+    """validate(raise_on_error=False) should return dict even on failure."""
+    wf = GraphWorkflow(auto_compile=False)
+    result = wf.validate(raise_on_error=False)
+    assert isinstance(result, dict)
+    assert not result["is_valid"]
+
+
+def test_validate_valid_graph():
+    """validate() should pass for a well-formed linear graph."""
+    agent_a = create_test_agent("AgentA")
+    agent_b = create_test_agent("AgentB")
+    agent_c = create_test_agent("AgentC")
+
+    wf = GraphWorkflow(auto_compile=False)
+    wf.add_node(agent_a)
+    wf.add_node(agent_b)
+    wf.add_node(agent_c)
+    wf.add_edge("AgentA", "AgentB")
+    wf.add_edge("AgentB", "AgentC")
+    wf.set_entry_points(["AgentA"])
+    wf.set_end_points(["AgentC"])
+
+    result = wf.validate()
+    assert result["is_valid"]
+    assert len(result["errors"]) == 0
+
+
+def test_compile_calls_validate():
+    """compile() should invoke validate() and log issues."""
+    agent_a = create_test_agent("AgentA")
+    agent_b = create_test_agent("AgentB")
+    agent_c = create_test_agent("AgentC")  # will be disconnected
+
+    wf = GraphWorkflow(auto_compile=False)
+    wf.add_node(agent_a)
+    wf.add_node(agent_b)
+    wf.add_node(agent_c)
+    wf.add_edge("AgentA", "AgentB")
+
+    # compile() should not raise — it auto-fixes where possible
+    wf.compile()
+    assert wf._compiled
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
