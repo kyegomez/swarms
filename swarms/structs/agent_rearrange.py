@@ -574,7 +574,8 @@ class AgentRearrange:
             *args,
             **kwargs,
         )
-        current_task = any_to_str(current_task)
+        if not isinstance(current_task, str):
+            current_task = any_to_str(current_task)
 
         self.conversation.add(agent.agent_name, current_task)
 
