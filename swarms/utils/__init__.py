@@ -33,6 +33,16 @@ from swarms.utils.litellm_wrapper import (
 )
 from swarms.utils.output_types import HistoryOutputType
 from swarms.utils.parse_code import extract_code_from_markdown
+from swarms.utils.x402_spending_limits import (
+    AgentBudget,
+    AuditLog,
+    CircuitBreaker,
+    PaymentPolicyEngine,
+    SpendDecision,
+    SpendRecord,
+    SpendTracker,
+    SpendingRule,
+)
 
 __all__ = [
     "csv_to_text",
@@ -56,4 +66,12 @@ __all__ = [
     "LiteLLM",
     "NetworkConnectionError",
     "LiteLLMException",
+    "AgentBudget",
+    "AuditLog",
+    "CircuitBreaker",
+    "PaymentPolicyEngine",
+    "SpendDecision",
+    "SpendRecord",
+    "SpendTracker",
+    "SpendingRule",
 ]
