@@ -26,7 +26,7 @@ mkdocs-autolinks-plugin
 jinja2~=3.1
 markdown~=3.10
 mkdocs-material-extensions~=1.3
-pygments~=2.19
+pygments~=2.20
 pymdown-extensions~=10.21
 
 # Requirements for plugins
