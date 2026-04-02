@@ -885,6 +885,11 @@ class GraphWorkflow:
         Pre-compute expensive operations for faster execution.
         Call this after building the graph structure.
         Results are cached to avoid recompilation in multi-loop scenarios.
+
+        Automatically runs ``validate(auto_fix=True)`` before computing
+        topological layers so that structural problems (disconnected nodes,
+        missing entry points, unreachable nodes, cycles) are surfaced at
+        build time rather than mid-execution.
         """
         # Skip compilation if already compiled and graph structure hasn't changed
         if self._compiled:
@@ -909,6 +914,19 @@ class GraphWorkflow:
                 if self.verbose:
                     logger.debug("Auto-setting end points")
                 self.auto_set_end_points()
+
+            # Run structural validation before computing topological layers.
+            # auto_fix=True lets the validator repair minor issues (e.g.
+            # promoting unreachable nodes to entry points) while still
+            # surfacing warnings in the logs.
+            if self.nodes:
+                validation = self.validate(auto_fix=True)
+                if not validation["is_valid"]:
+                    issues = validation["errors"] + validation["warnings"]
+                    logger.error(
+                        "GraphWorkflow validation failed during compile:\n"
+                        + "\n".join(f"  - {i}" for i in issues)
+                    )
 
             if self.verbose:
                 logger.debug(f"Entry points: {self.entry_points}")
@@ -2832,16 +2850,47 @@ class GraphWorkflow:
             )
             raise e
 
-    def validate(self, auto_fix: bool = False) -> Dict[str, Any]:
+    def validate(
+        self,
+        auto_fix: bool = False,
+        raise_on_error: bool = False,
+    ) -> Dict[str, Any]:
         """
-        Validate the workflow structure, checking for potential issues such as isolated nodes,
-        cyclic dependencies, etc.
+        Validate the workflow structure, checking for potential issues such as
+        isolated nodes, missing entry/end points, unreachable nodes, dead-end
+        nodes, cyclic dependencies, and invalid agent instances.
+
+        This method performs all structural checks without executing any agents,
+        making it safe to call at build time. It is automatically invoked by
+        ``compile()`` so that misconfigured graphs are caught before execution.
 
         Args:
-            auto_fix (bool): Whether to automatically fix some simple issues (like auto-setting entry/exit points)
+            auto_fix (bool): Whether to automatically fix simple issues
+                (e.g. auto-setting entry/exit points, promoting unreachable
+                nodes to entry points).  Defaults to ``False``.
+            raise_on_error (bool): If ``True``, raise a ``ValueError`` when
+                the validation result contains errors or serious warnings.
+                The exception message includes all discovered issues.
+                Defaults to ``False``.
 
         Returns:
-            Dict[str, Any]: Dictionary containing validation results, including validity, warnings and errors
+            Dict[str, Any]: Dictionary containing validation results with keys:
+                - ``is_valid`` (bool): Overall validity of the workflow.
+                - ``warnings`` (List[str]): Non-fatal issues found.
+                - ``errors`` (List[str]): Fatal issues that prevent execution.
+                - ``fixed`` (List[str]): Issues that were auto-fixed
+                  (only when *auto_fix* is ``True``).
+                - ``cycles`` (List[List[str]], optional): Detected cycles,
+                  present only when cycles are found.
+
+        Raises:
+            ValueError: If *raise_on_error* is ``True`` and validation fails.
+
+        Example:
+            >>> wf = GraphWorkflow(nodes=..., edges=...)
+            >>> result = wf.validate(raise_on_error=False)
+            >>> if not result["is_valid"]:
+            ...     print("Issues:", result["errors"] + result["warnings"])
         """
         if self.verbose:
             logger.debug(
@@ -3000,11 +3049,26 @@ class GraphWorkflow:
                         f"Auto-fixed {len(result['fixed'])} issues: {', '.join(result['fixed'])}"
                     )
 
+            # Raise on validation failure when requested
+            if raise_on_error and not result["is_valid"]:
+                all_issues = result["errors"] + result["warnings"]
+                raise ValueError(
+                    "GraphWorkflow validation failed:\n"
+                    + "\n".join(f"  - {issue}" for issue in all_issues)
+                )
+
             return result
+        except ValueError:
+            # Re-raise ValueError from raise_on_error so it is not swallowed
+            raise
         except Exception as e:
             result["is_valid"] = False
             result["errors"].append(str(e))
             logger.exception(f"Error during workflow validation: {e}")
+            if raise_on_error:
+                raise ValueError(
+                    f"GraphWorkflow validation failed:\n  - {e}"
+                ) from e
             return result
 
     def export_summary(self) -> Dict[str, Any]:
