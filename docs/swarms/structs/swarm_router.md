@@ -118,7 +118,7 @@ The `SwarmRouter` supports many various multi-agent architectures for various ap
 | `GroupChat` | Facilitates communication among agents in a group chat format |
 | `MultiAgentRouter` | Routes tasks between multiple agents |
 | `AutoSwarmBuilder` | Automatically builds swarm structure |
-| `HiearchicalSwarm` | Hierarchical organization of agents |
+| `HierarchicalSwarm` | Hierarchical organization of agents |
 | `MajorityVoting` | Uses majority voting for decision making |
 | `CouncilAsAJudge` | Council-based judgment system |
 | `HeavySwarm` | Heavy swarm architecture with question and worker agents |
@@ -359,7 +359,7 @@ hierarchical_router = SwarmRouter(
     description="Hierarchical organization of agents with a director",
     max_loops=3,
     agents=[director, analyst1, analyst2, researcher],
-    swarm_type="HiearchicalSwarm",
+    swarm_type="HierarchicalSwarm",
     return_all_history=True
 )
 

@@ -163,7 +163,7 @@ result = router.run("Analyze the investment opportunity")
 | `"GroupChat"` | Enable group chat between agents |
 | `"MultiAgentRouter"` | Route tasks to appropriate agents |
 | `"AutoSwarmBuilder"` | Automatically build swarm configuration |
-| `"HiearchicalSwarm"` | Hierarchical agent organization |
+| `"HierarchicalSwarm"` | Hierarchical agent organization |
 | `"MajorityVoting"` | Use majority voting for decisions |
 | `"CouncilAsAJudge"` | Council-based evaluation system |
 | `"HeavySwarm"` | Heavy swarm for complex tasks |

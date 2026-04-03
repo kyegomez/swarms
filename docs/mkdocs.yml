@@ -458,7 +458,7 @@ nav:
     - Applications:
       - Overview: "examples/applications_overview.md"
       - Swarms of Browser Agents: "swarms/examples/swarms_of_browser_agents.md"
-      - Hiearchical Marketing Team: "examples/marketing_team.md"
+      - Hierarchical Marketing Team: "examples/marketing_team.md"
       - Gold ETF Research with HeavySwarm: "examples/gold_etf_research.md"
       - Hiring Swarm: "examples/hiring_swarm.md"
       - Advanced Research: "examples/av.md"

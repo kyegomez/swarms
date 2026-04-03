@@ -6,7 +6,7 @@ This page provides simple, practical examples of how to use the `HierarchicalSwa
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized financial analysis agents
 market_research_agent = Agent(
@@ -54,7 +54,7 @@ print(result)
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized development agents
 frontend_developer_agent = Agent(
@@ -102,7 +102,7 @@ print(result)
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create analysis agents
 market_agent = Agent(
@@ -136,7 +136,7 @@ print("Director Feedback:", feedback)
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create analysis agents
 market_agent = Agent(
@@ -176,7 +176,7 @@ for i, result in enumerate(results):
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized research agents
 research_manager = Agent(
@@ -221,7 +221,7 @@ You can visualize the hierarchical structure of your swarm before executing task
 
 ```python
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Create specialized agents
 research_agent = Agent(
