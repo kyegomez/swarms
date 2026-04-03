@@ -3,7 +3,6 @@ from swarms.structs.hybrid_hiearchical_peer_swarm import (
     HybridHierarchicalClusterSwarm,
 )
 
-
 # Core Legal Agent Definitions with short, simple prompts
 litigation_agent = Agent(
     agent_name="Litigator",

@@ -268,9 +268,7 @@ class SwarmRouter:
         self.heavy_swarm_swarm_show_output = (
             heavy_swarm_swarm_show_output
         )
-        self.heavy_swarm_use_grok_agents = (
-            heavy_swarm_use_grok_agents
-        )
+        self.heavy_swarm_use_grok_agents = heavy_swarm_use_grok_agents
         self.chairman_model = chairman_model
         self.autosave = autosave
         self.autosave_use_timestamp = autosave_use_timestamp

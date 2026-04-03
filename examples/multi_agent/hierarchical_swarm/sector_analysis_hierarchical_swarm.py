@@ -1,6 +1,5 @@
 from swarms import Agent, HierarchicalSwarm
 
-
 # Initialize agents for a $50B portfolio analysis
 agents = [
     Agent(
