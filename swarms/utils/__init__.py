@@ -33,6 +33,11 @@ from swarms.utils.litellm_wrapper import (
 )
 from swarms.utils.output_types import HistoryOutputType
 from swarms.utils.parse_code import extract_code_from_markdown
+from swarms.utils.world_model import (
+    AgentWorldModel,
+    LinearLatentDynamics,
+    SwarmWorldModel,
+)
 
 __all__ = [
     "csv_to_text",
@@ -56,4 +61,7 @@ __all__ = [
     "LiteLLM",
     "NetworkConnectionError",
     "LiteLLMException",
+    "AgentWorldModel",
+    "LinearLatentDynamics",
+    "SwarmWorldModel",
 ]
