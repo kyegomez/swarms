@@ -128,6 +128,7 @@ from swarms.utils.output_types import OutputType
 from swarms.utils.swarms_marketplace_utils import (
     add_prompt_to_marketplace,
 )
+import swarms.utils.world_model as _wm
 from swarms.utils.workspace_utils import get_workspace_dir
 
 
@@ -281,6 +282,17 @@ class Agent:
             "create_sub_agent", "assign_task".
             Defaults to "all" (all tools enabled). Pass a list of tool names to restrict tools, or "all"
             for unrestricted access. Use this to control which tools the agent can use during autonomous execution.
+        wm (bool): When True, maintains an epistemic graph (NetworkX) updated after each reasoning loop via a
+            LiteLLM JSON extract. Edge labels are automatically normalized to conservative (Pearl-style) relations
+            so chat text is not stored as proven causation. Extracted nodes may be tagged semantic vs episodic;
+            each merge records the internal loop index and a fresh ``wm_episode`` id per :meth:`run` for tracing.
+            Not an RL/physics world model.
+        wm_extract_model (Optional[str]): Model name for the extract call; defaults to the agent's current model.
+        wm_max_chars (int): Max characters of task and assistant text sent to the extract model (privacy and cost).
+        on_wm_update (Optional[Callable]): Optional callback ``(world_model, digest, *, loop_count, task_excerpt)``.
+            Use for meta-orchestration; does not mutate prompts.
+        swarm_wm (Optional[_wm.SwarmWorldModel]): Optional shared graph; same delta is merged here when set so multiple
+            agents can contribute to one graph. Pass one instance explicitly to each agent that should share it.
 
     Methods:
         run: Run the agent
@@ -449,6 +461,11 @@ class Agent:
         skills_dir: Optional[str] = None,
         selected_tools: Optional[Union[str, List[str]]] = "all",
         max_subagent_depth: int = 3,
+        wm: bool = False,
+        wm_extract_model: Optional[str] = None,
+        wm_max_chars: int = 8000,
+        on_wm_update: Optional[Callable[..., None]] = None,
+        swarm_wm: Optional[_wm.SwarmWorldModel] = None,
         *args,
         **kwargs,
     ):
@@ -479,6 +496,14 @@ class Agent:
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
         self.agent_description = agent_description
+        self.wm = wm
+        self.wm_extract_model = wm_extract_model
+        self.wm_max_chars = wm_max_chars
+        self.on_wm_update = on_wm_update
+        self.swarm_wm = swarm_wm
+        self.world_model_graph: Optional[_wm.AgentWorldModel] = (
+            _wm.AgentWorldModel(agent_name) if wm else None
+        )
         # self.saved_state_path = f"{self.agent_name}_{generate_api_key(prefix='agent-')}_state.json"
         self.saved_state_path = (
             f"{generate_api_key(prefix='agent-')}_state.json"
@@ -683,6 +708,109 @@ class Agent:
 
         if self.publish_to_marketplace is True:
             self.handle_publish_to_marketplace()
+
+    def _assistant_text_for_wm(self, response: Any) -> str:
+        """Serialize assistant output for world-model extract (bounded length)."""
+        if response is None:
+            return ""
+        if isinstance(response, str):
+            return _wm.truncate_text(response, self.wm_max_chars)
+        try:
+            return _wm.truncate_text(
+                json.dumps(response, default=str),
+                self.wm_max_chars,
+            )
+        except Exception:
+            return _wm.truncate_text(str(response), self.wm_max_chars)
+
+    def _first_user_message_excerpt_for_wm(self) -> str:
+        """First user-role message in short memory, truncated (for autonomous summary phase)."""
+        try:
+            for m in self.short_memory.messages:
+                if not isinstance(m, dict):
+                    continue
+                if m.get("role") != self.user_name:
+                    continue
+                c = m.get("content", "")
+                if isinstance(c, str) and c.strip():
+                    return _wm.truncate_text(c, self.wm_max_chars)
+        except Exception:
+            pass
+        return ""
+
+    def _update_world_model_if_enabled(
+        self,
+        task_excerpt: str,
+        assistant_reply: Any,
+        loop_count: Optional[int],
+    ) -> None:
+        """
+        Run LiteLLM extract and merge into per-agent and optional swarm graphs.
+        Never raises; logs warnings on failure.
+        """
+        if not self.wm or self.world_model_graph is None:
+            return
+        try:
+            t = _wm.truncate_text(
+                task_excerpt if isinstance(task_excerpt, str) else str(task_excerpt),
+                self.wm_max_chars,
+            )
+            r = self._assistant_text_for_wm(assistant_reply)
+            if not r.strip():
+                return
+            model = self.wm_extract_model or self.get_current_model()
+            lkw: Dict[str, Any] = {}
+            if self.llm_api_key:
+                lkw["api_key"] = self.llm_api_key
+            if self.llm_base_url:
+                lkw["base_url"] = self.llm_base_url
+            delta = _wm.extract_graph_delta(
+                task=t,
+                assistant_reply=r,
+                model=model,
+                **lkw,
+            )
+            tag = self.agent_name or "agent"
+            episode = getattr(self, "_wm_episode_id", None)
+            subtasks = getattr(self, "autonomous_subtasks", None)
+            st_list = subtasks if isinstance(subtasks, list) else []
+            st_delta = _wm.graph_delta_from_autonomous_subtasks(
+                agent_name=tag,
+                subtasks=st_list,
+                plan_task_label=t,
+                episode_id=str(episode) if episode is not None else None,
+            )
+            delta = _wm.merge_graph_deltas(delta, st_delta)
+            delta = _wm.sanitize_pearl_epistemics(delta)
+            self.world_model_graph.apply_delta(
+                delta,
+                source_tag=tag,
+                wm_loop=loop_count,
+                wm_episode=episode,
+            )
+            if self.swarm_wm is not None:
+                self.swarm_wm.apply_delta(
+                    delta,
+                    source_tag=tag,
+                    wm_loop=loop_count,
+                    wm_episode=episode,
+                )
+            digest = self.world_model_graph.digest_for_hook()
+            if self.verbose:
+                logger.debug("world_model digest: {}", digest)
+            if self.on_wm_update is not None:
+                self.on_wm_update(
+                    self.world_model_graph,
+                    digest,
+                    loop_count=loop_count,
+                    task_excerpt=t,
+                )
+        except Exception as e:
+            logger.warning(
+                "world_model update failed for agent '{}': {}",
+                self.agent_name,
+                e,
+            )
 
     def handle_publish_to_marketplace(self):
         # Join tags and capabilities into a single string
@@ -1868,6 +1996,14 @@ class Agent:
                                 loop_count=loop_count
                             )
 
+                        self._update_world_model_if_enabled(
+                            task_excerpt=task
+                            if isinstance(task, str)
+                            else str(task),
+                            assistant_reply=response,
+                            loop_count=loop_count,
+                        )
+
                     except (
                         BadRequestError,
                         InternalServerError,
@@ -3046,6 +3182,11 @@ class Agent:
                                 title="Task Completion Summary",
                             )
 
+                        self._update_world_model_if_enabled(
+                            task_excerpt=self._first_user_message_excerpt_for_wm(),
+                            assistant_reply=str(result),
+                            loop_count=None,
+                        )
                         return result
 
             # If complete_task wasn't called, generate summary manually
@@ -3079,6 +3220,11 @@ Subtask Breakdown:
                     title="Task Execution Summary",
                 )
 
+            self._update_world_model_if_enabled(
+                task_excerpt=self._first_user_message_excerpt_for_wm(),
+                assistant_reply=comprehensive_summary,
+                loop_count=None,
+            )
             return history_output_formatter(
                 self.short_memory, type=self.output_type
             )
@@ -4681,6 +4827,8 @@ Subtask Breakdown:
             # else: both are None, streaming_callback stays None
 
         try:
+            if self.wm and self.world_model_graph is not None:
+                self._wm_episode_id = uuid.uuid4().hex[:16]
             if self.max_loops == "auto":
                 # Use autonomous loop structure: plan -> execute subtasks -> summary
                 output = self._run_autonomous_loop(
