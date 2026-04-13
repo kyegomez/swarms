@@ -1,7 +1,7 @@
 asyncio>=3.4.3,<5.0
 toml
 loguru
-pydantic==2.12.5
+pydantic==2.13.0
 tenacity
 rich
 psutil
