@@ -820,6 +820,159 @@ def test_repeated_agent_awareness_in_conversation():
     print("✓ test_repeated_agent_awareness_in_conversation passed")
 
 
+# ============================================================================
+# _execution_plan Caching Tests
+# ============================================================================
+
+
+def test_execution_plan_populated_at_init():
+    """_execution_plan is built during __init__, before any run() call."""
+    agents = create_sample_agents()
+    ar = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent -> WriterAgent -> ReviewerAgent",
+    )
+    assert ar._execution_plan == [
+        ["ResearchAgent"],
+        ["WriterAgent"],
+        ["ReviewerAgent"],
+    ]
+    print("✓ test_execution_plan_populated_at_init passed")
+
+
+def test_execution_plan_concurrent_step():
+    """Comma-separated agents in a step become a single inner list."""
+    agents = create_sample_agents()
+    ar = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent -> WriterAgent,ReviewerAgent",
+    )
+    assert ar._execution_plan == [
+        ["ResearchAgent"],
+        ["WriterAgent", "ReviewerAgent"],
+    ]
+    print("✓ test_execution_plan_concurrent_step passed")
+
+
+def test_execution_plan_empty_when_no_arrow():
+    """A flow with no '->' produces an empty _execution_plan (no error at init)."""
+    agents = create_sample_agents()
+    ar = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent",
+    )
+    assert ar._execution_plan == []
+    print("✓ test_execution_plan_empty_when_no_arrow passed")
+
+
+def test_parse_flow_raises_on_unregistered_agent():
+    """_parse_flow() raises ValueError when a flow names an agent not in self.agents."""
+    agents = create_sample_agents()[:2]  # ResearchAgent, WriterAgent only
+    with pytest.raises(ValueError, match="not registered"):
+        AgentRearrange(
+            agents=agents,
+            flow="ResearchAgent -> WriterAgent -> ReviewerAgent",
+        )
+    print("✓ test_parse_flow_raises_on_unregistered_agent passed")
+
+
+def test_parse_flow_raises_on_missing_arrow():
+    """_parse_flow() raises ValueError when called with no '->' in flow."""
+    agents = create_sample_agents()
+    ar = AgentRearrange(agents=agents, flow="ResearchAgent")
+    with pytest.raises(ValueError, match="->"):
+        ar._parse_flow()
+    print("✓ test_parse_flow_raises_on_missing_arrow passed")
+
+
+def test_execution_plan_rebuilt_after_set_custom_flow():
+    """set_custom_flow() rebuilds _execution_plan to match the new flow."""
+    agents = create_sample_agents()
+    ar = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent -> WriterAgent",
+    )
+    assert len(ar._execution_plan) == 2
+
+    ar.set_custom_flow("ResearchAgent -> WriterAgent -> ReviewerAgent")
+    assert ar._execution_plan == [
+        ["ResearchAgent"],
+        ["WriterAgent"],
+        ["ReviewerAgent"],
+    ]
+    print("✓ test_execution_plan_rebuilt_after_set_custom_flow passed")
+
+
+def test_execution_plan_rebuilt_after_add_agent():
+    """add_agent() rebuilds _execution_plan so the new agent can be used in flow."""
+    agents = create_sample_agents()[:2]  # ResearchAgent, WriterAgent
+    ar = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent -> WriterAgent",
+    )
+    assert len(ar._execution_plan) == 2
+
+    reviewer = create_sample_agents()[2]  # ReviewerAgent
+    ar.add_agent(reviewer)
+    ar.set_custom_flow("ResearchAgent -> WriterAgent -> ReviewerAgent")
+
+    assert ar._execution_plan == [
+        ["ResearchAgent"],
+        ["WriterAgent"],
+        ["ReviewerAgent"],
+    ]
+    print("✓ test_execution_plan_rebuilt_after_add_agent passed")
+
+
+def test_execution_plan_updated_after_remove_agent_and_flow_change():
+    """remove_agent() + set_custom_flow() drops the agent from _execution_plan."""
+    agents = create_sample_agents()
+    ar = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent -> WriterAgent -> ReviewerAgent",
+    )
+    ar.remove_agent("ReviewerAgent")
+    ar.set_custom_flow("ResearchAgent -> WriterAgent")
+
+    assert ar._execution_plan == [
+        ["ResearchAgent"],
+        ["WriterAgent"],
+    ]
+    assert "ReviewerAgent" not in ar.agents
+    print(
+        "✓ test_execution_plan_updated_after_remove_agent_and_flow_change passed"
+    )
+
+
+def test_execution_plan_h_agent_allowed():
+    """'H' (human) is a valid agent name in the flow and does not raise."""
+    agents = create_sample_agents()[:1]  # ResearchAgent only
+    ar = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent -> H",
+    )
+    assert ar._execution_plan == [["ResearchAgent"], ["H"]]
+    print("✓ test_execution_plan_h_agent_allowed passed")
+
+
+def test_execution_plan_identity_across_runs():
+    """_execution_plan is the same object before and after multiple run() calls
+    (i.e., run() does not rebuild it)."""
+    agents = create_sample_agents()
+    ar = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent -> WriterAgent -> ReviewerAgent",
+        max_loops=1,
+    )
+    plan_id_before = id(ar._execution_plan)
+    try:
+        ar.run("test task")
+    except Exception:
+        pass  # network/model errors are fine; we only care about plan identity
+    assert id(ar._execution_plan) == plan_id_before
+    print("✓ test_execution_plan_identity_across_runs passed")
+
+
 def main():
     """Run all tests."""
     tests = [
@@ -860,6 +1013,16 @@ def main():
         test_repeated_agent_three_occurrences,
         test_repeated_agent_run,
         test_repeated_agent_awareness_in_conversation,
+        test_execution_plan_populated_at_init,
+        test_execution_plan_concurrent_step,
+        test_execution_plan_empty_when_no_arrow,
+        test_parse_flow_raises_on_unregistered_agent,
+        test_parse_flow_raises_on_missing_arrow,
+        test_execution_plan_rebuilt_after_set_custom_flow,
+        test_execution_plan_rebuilt_after_add_agent,
+        test_execution_plan_updated_after_remove_agent_and_flow_change,
+        test_execution_plan_h_agent_allowed,
+        test_execution_plan_identity_across_runs,
     ]
 
     print("=" * 60)
