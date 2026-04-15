@@ -139,6 +139,7 @@ def test_remove_agent():
         verbose=True,
     )
 
+    agent_rearrange.set_custom_flow("ResearchAgent -> WriterAgent")
     agent_rearrange.remove_agent("ReviewerAgent")
     assert "ReviewerAgent" not in agent_rearrange.agents
     assert len(agent_rearrange.agents) == 2
@@ -931,8 +932,8 @@ def test_execution_plan_updated_after_remove_agent_and_flow_change():
         agents=agents,
         flow="ResearchAgent -> WriterAgent -> ReviewerAgent",
     )
-    ar.remove_agent("ReviewerAgent")
     ar.set_custom_flow("ResearchAgent -> WriterAgent")
+    ar.remove_agent("ReviewerAgent")
 
     assert ar._execution_plan == [
         ["ResearchAgent"],
@@ -944,16 +945,18 @@ def test_execution_plan_updated_after_remove_agent_and_flow_change():
     )
 
 
-def test_execution_plan_h_agent_allowed():
-    """'H' (human) is a valid agent name in the flow and does not raise."""
-    agents = create_sample_agents()[:1]  # ResearchAgent only
+def test_parse_flow_requires_all_agents_registered():
+    """_parse_flow() raises ValueError if any agent name is not registered."""
+    agents = create_sample_agents()[:2]  # Only ResearchAgent, WriterAgent
     ar = AgentRearrange(
         agents=agents,
-        flow="ResearchAgent -> H",
+        flow="ResearchAgent -> WriterAgent",
+        max_loops=1,
     )
-    assert ar._execution_plan == [["ResearchAgent"], ["H"]]
-    print("✓ test_execution_plan_h_agent_allowed passed")
-
+    # Trying to set a flow with an unregistered agent should raise
+    with pytest.raises(ValueError, match="not registered"):
+        ar.set_custom_flow("ResearchAgent -> WriterAgent -> ReviewerAgent")
+    print("✓ test_parse_flow_requires_all_agents_registered passed")
 
 def test_execution_plan_identity_across_runs():
     """_execution_plan is the same object before and after multiple run() calls
@@ -1021,7 +1024,7 @@ def main():
         test_execution_plan_rebuilt_after_set_custom_flow,
         test_execution_plan_rebuilt_after_add_agent,
         test_execution_plan_updated_after_remove_agent_and_flow_change,
-        test_execution_plan_h_agent_allowed,
+        test_parse_flow_requires_all_agents_registered,
         test_execution_plan_identity_across_runs,
     ]
 

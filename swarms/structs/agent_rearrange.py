@@ -366,10 +366,7 @@ class AgentRearrange:
         for step in self.flow.split("->"):
             agent_names = [name.strip() for name in step.split(",")]
             for agent_name in agent_names:
-                if (
-                    agent_name not in self.agents
-                    and agent_name != "H"
-                ):
+                if agent_name not in self.agents:
                     raise ValueError(
                         f"Agent '{agent_name}' is not registered."
                     )
