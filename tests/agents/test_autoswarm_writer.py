@@ -353,6 +353,47 @@ class TestGeneratedFileCreatesRealSwarmRouter:
         ):
             _generate_file(config=config)
 
+    def test_swarm_max_loops_accepts_quoted_integer_strings(self):
+        config = {
+            "agents": [
+                {
+                    "agent_name": "Solo",
+                    "system_prompt": "I work alone.",
+                },
+            ],
+            "swarm_architecture": {
+                "name": "Quoted-Pipeline",
+                "swarm_type": "SequentialWorkflow",
+                "max_loops": "2",
+            },
+        }
+
+        _, source = _generate_file(config=config)
+        ns = _exec_generated_code(source)
+
+        assert ns["swarm"].max_loops == 2
+
+    def test_swarm_max_loops_rejects_boolean_values(self):
+        config = {
+            "agents": [
+                {
+                    "agent_name": "Solo",
+                    "system_prompt": "I work alone.",
+                },
+            ],
+            "swarm_architecture": {
+                "name": "Bool-Pipeline",
+                "swarm_type": "SequentialWorkflow",
+                "max_loops": False,
+            },
+        }
+
+        with pytest.raises(
+            ValueError,
+            match="swarm_architecture.max_loops must be an integer-compatible value",
+        ):
+            _generate_file(config=config)
+
     def test_swarm_has_all_agents(self):
         from swarms.structs.agent import Agent
 

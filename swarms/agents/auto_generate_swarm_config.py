@@ -343,7 +343,7 @@ def write_autoswarm_file(
             router_lines.append(
                 f"    swarm_type={_format_value(swarm_arch['swarm_type'])},"
             )
-        if swarm_arch.get("max_loops"):
+        if "max_loops" in swarm_arch:
             max_loops = swarm_arch["max_loops"]
             if not isinstance(max_loops, bool):
                 try:
