@@ -560,12 +560,18 @@ def test_graph_workflow_checkpoint_writes_and_resumes(tmp_path):
     assert results["CP-Beta"] == "output-CP-Beta"
     assert results["CP-Gamma"] == "output-CP-Gamma"
 
-    task_key = hashlib.sha256(TASK.encode("utf-8")).hexdigest()[:16]
+    checkpoint_prefix = wf._checkpoint_prefix(TASK, 0)
     cp_files = list(tmp_path.glob("checkpoints/*.json"))
     assert len(cp_files) == 3
-    assert any(f"{task_key}_layer_0" in f.name for f in cp_files)
-    assert any(f"{task_key}_layer_1" in f.name for f in cp_files)
-    assert any(f"{task_key}_layer_2" in f.name for f in cp_files)
+    assert any(
+        f"{checkpoint_prefix}_layer_0" in f.name for f in cp_files
+    )
+    assert any(
+        f"{checkpoint_prefix}_layer_1" in f.name for f in cp_files
+    )
+    assert any(
+        f"{checkpoint_prefix}_layer_2" in f.name for f in cp_files
+    )
 
     # Reset call counts, then run again — all layers should be skipped
     a1.run.reset_mock()
@@ -604,8 +610,12 @@ def test_graph_workflow_checkpoint_partial_resume(tmp_path):
     wf.run(TASK)
 
     # Delete the last layer's checkpoint to simulate a crash after layer 2
-    task_key = hashlib.sha256(TASK.encode("utf-8")).hexdigest()[:16]
-    (tmp_path / "checkpoints" / f"{task_key}_layer_2.json").unlink()
+    checkpoint_prefix = wf._checkpoint_prefix(TASK, 0)
+    (
+        tmp_path
+        / "checkpoints"
+        / f"{checkpoint_prefix}_layer_2.json"
+    ).unlink()
 
     a1.run.reset_mock()
     a2.run.reset_mock()
@@ -652,10 +662,8 @@ def test_graph_workflow_clear_checkpoints(tmp_path):
     remaining = list(tmp_path.glob("checkpoints/*.json"))
     assert len(remaining) == 2  # only TASK_B files remain
 
-    task_b_key = hashlib.sha256(TASK_B.encode("utf-8")).hexdigest()[
-        :16
-    ]
-    assert all(task_b_key in f.name for f in remaining)
+    task_b_prefix = wf._checkpoint_prefix(TASK_B, 0)
+    assert all(task_b_prefix in f.name for f in remaining)
 
 
 def test_graph_workflow_clear_checkpoints_no_dir():
@@ -701,6 +709,28 @@ def test_graph_workflow_checkpoint_conversation_replay(tmp_path):
     ]
     assert "CV-Alpha" in history_roles
     assert "CV-Beta" in history_roles
+
+
+def test_graph_workflow_checkpoint_prefix_varies_by_workflow():
+    """Checkpoint prefixes should not collide across distinct workflows."""
+
+    wf_a = GraphWorkflow(name="Graph-A")
+    wf_b = GraphWorkflow(name="Graph-B")
+
+    assert (
+        wf_a._checkpoint_prefix("shared task", 0)
+        != wf_b._checkpoint_prefix("shared task", 0)
+    )
+
+
+def test_graph_workflow_checkpoint_prefix_varies_by_loop():
+    """Loop-specific checkpoint prefixes avoid stale replay across loops."""
+
+    wf = GraphWorkflow(name="Loop-Test")
+
+    assert wf._checkpoint_prefix("shared task", 0) != wf._checkpoint_prefix(
+        "shared task", 1
+    )
 
 
 def test_graph_workflow_to_spec_round_trip():
