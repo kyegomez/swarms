@@ -733,6 +733,26 @@ def test_graph_workflow_checkpoint_prefix_varies_by_loop():
     )
 
 
+def test_graph_workflow_checkpoint_prefix_is_stable_for_same_topology():
+    """Identical workflows should keep the same checkpoint namespace."""
+
+    a1 = create_test_agent("Stable-Alpha", "First agent")
+    b1 = create_test_agent("Stable-Beta", "Second agent")
+    wf1 = GraphWorkflow(name="Stable-Workflow")
+    wf1.add_nodes([a1, b1])
+    wf1.add_edge("Stable-Alpha", "Stable-Beta")
+
+    a2 = create_test_agent("Stable-Alpha", "First agent")
+    b2 = create_test_agent("Stable-Beta", "Second agent")
+    wf2 = GraphWorkflow(name="Stable-Workflow")
+    wf2.add_nodes([a2, b2])
+    wf2.add_edge("Stable-Alpha", "Stable-Beta")
+
+    assert wf1._checkpoint_prefix(
+        "shared task", 0
+    ) == wf2._checkpoint_prefix("shared task", 0)
+
+
 def test_graph_workflow_to_spec_round_trip():
     """to_spec / from_topology_spec round-trip preserves topology and metadata."""
     a = create_test_agent("Alpha", "First agent")
