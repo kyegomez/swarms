@@ -259,14 +259,14 @@ class SequentialWorkflow:
             if score >= self.drift_threshold:
                 logger.info(f"Drift check passed: score={score:.2f}")
                 break
-            logger.warning(
-                f"Drift detected: score={score:.2f} below threshold={self.drift_threshold}, rerunning pipeline"
-            )
             if rerun_count >= self.drift_max_reruns:
                 logger.warning(
                     "Drift detection rerun cap reached; returning latest pipeline result"
                 )
                 break
+            logger.warning(
+                f"Drift detected: score={score:.2f} below threshold={self.drift_threshold}, rerunning pipeline"
+            )
             rerun_count += 1
             result = self.agent_rearrange.run(**run_kwargs)
         return result

@@ -588,3 +588,22 @@ def test_workflow_run_drift_stops_at_rerun_cap():
 
     assert result == "output-3"
     assert pipeline_call_count == 3
+
+
+def test_workflow_run_drift_zero_reruns_does_not_reinvoke_pipeline():
+    """A zero rerun cap should return the first pipeline result unchanged."""
+    wf = _make_workflow(
+        drift_detection=True,
+        drift_threshold=0.75,
+        drift_max_reruns=0,
+    )
+
+    with patch.object(
+        wf.agent_rearrange, "run", return_value="first-output"
+    ) as pipeline_run, patch.object(
+        wf.drift_agent, "run", return_value=_tool_call_response(0.1)
+    ):
+        result = wf.run("task")
+
+    assert result == "first-output"
+    assert pipeline_run.call_count == 1
