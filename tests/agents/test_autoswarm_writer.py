@@ -8,6 +8,7 @@ real Agent and SwarmRouter objects are created with the correct parameters.
 import ast
 import os
 import tempfile
+import pytest
 
 from dotenv import load_dotenv
 
@@ -330,6 +331,27 @@ class TestGeneratedFileCreatesRealSwarmRouter:
         ns = _exec_generated_code(source)
 
         assert ns["swarm"].max_loops == 1
+
+    def test_swarm_max_loops_rejects_non_integer_expressions(self):
+        config = {
+            "agents": [
+                {
+                    "agent_name": "Solo",
+                    "system_prompt": "I work alone.",
+                },
+            ],
+            "swarm_architecture": {
+                "name": "Unsafe-Pipeline",
+                "swarm_type": "SequentialWorkflow",
+                "max_loops": "__import__('os').system('echo unsafe')",
+            },
+        }
+
+        with pytest.raises(
+            ValueError,
+            match="swarm_architecture.max_loops must be an integer-compatible value",
+        ):
+            _generate_file(config=config)
 
     def test_swarm_has_all_agents(self):
         from swarms.structs.agent import Agent
