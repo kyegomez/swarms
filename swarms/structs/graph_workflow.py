@@ -1,10 +1,12 @@
 import asyncio
 import concurrent.futures
+import hashlib
 import json
 import os
 import time
 import traceback
 import uuid
+from pathlib import Path
 from enum import Enum
 from typing import (
     Any,
@@ -738,6 +740,7 @@ class GraphWorkflow:
         auto_compile: bool = True,
         verbose: bool = False,
         backend: str = "networkx",
+        checkpoint_dir: Optional[str] = None,
     ):
         self.id = id
         self.verbose = verbose
@@ -774,6 +777,9 @@ class GraphWorkflow:
         self.name = name
         self.description = description
         self.auto_compile = auto_compile
+
+        # Checkpoint configuration
+        self.checkpoint_dir = checkpoint_dir
 
         # Private optimization attributes
         self._compiled = False
@@ -1782,6 +1788,13 @@ class GraphWorkflow:
                 execution_results = {}
                 prev_outputs = {}
 
+                # Derive a deterministic key for this task so checkpoints
+                # survive process restarts (Python's hash() is salted and
+                # is NOT stable across runs).
+                task_key = hashlib.sha256(
+                    task.encode("utf-8")
+                ).hexdigest()[:16]
+
                 # Seed entry-point nodes with end-point outputs from the
                 # previous loop so agents can refine iteratively.
                 if prior_loop_end_outputs:
@@ -1791,6 +1804,54 @@ class GraphWorkflow:
                     self._sorted_layers
                 ):
                     layer_start_time = time.time()
+
+                    # ----------------------------------------------------------
+                    # Checkpoint resume: if this layer already has a saved result
+                    # for the current task, load it and skip re-execution.
+                    # ----------------------------------------------------------
+                    if self.checkpoint_dir:
+                        checkpoint_path = (
+                            Path(self.checkpoint_dir)
+                            / f"{task_key}_layer_{layer_idx}.json"
+                        )
+                        if checkpoint_path.exists():
+                            try:
+                                saved = json.loads(
+                                    checkpoint_path.read_text(
+                                        encoding="utf-8"
+                                    )
+                                )
+                                prev_outputs.update(saved)
+                                execution_results.update(saved)
+                                # Replay into conversation so workflow state
+                                # is identical to a non-checkpoint run.
+                                for node_id, output in saved.items():
+                                    agent_name = (
+                                        getattr(
+                                            self.nodes[node_id].agent,
+                                            "agent_name",
+                                            node_id,
+                                        )
+                                        if node_id in self.nodes
+                                        else node_id
+                                    )
+                                    try:
+                                        self.conversation.add(
+                                            role=agent_name,
+                                            content=output,
+                                        )
+                                    except Exception:
+                                        pass
+                                logger.info(
+                                    f"Checkpoint found - skipping layer {layer_idx + 1} "
+                                    f"({len(saved)} agents restored from {checkpoint_path})"
+                                )
+                                continue
+                            except Exception as cp_err:
+                                logger.warning(
+                                    f"Failed to load checkpoint {checkpoint_path}, "
+                                    f"re-executing layer: {cp_err}"
+                                )
 
                     if self.verbose:
                         logger.info(
@@ -1802,7 +1863,11 @@ class GraphWorkflow:
                     for node_id in layer:
                         try:
                             prompt = self._build_prompt(
-                                node_id, task, prev_outputs, layer_idx, loop
+                                node_id,
+                                task,
+                                prev_outputs,
+                                layer_idx,
+                                loop,
                             )
                             layer_data.append(
                                 (
@@ -1921,6 +1986,40 @@ class GraphWorkflow:
                         time.time() - layer_start_time
                     )
 
+                    # ----------------------------------------------------------
+                    # Checkpoint save: persist this layer's outputs so a crash
+                    # on a later layer doesn't force re-running this one.
+                    # ----------------------------------------------------------
+                    if self.checkpoint_dir:
+                        try:
+                            cp_dir = Path(self.checkpoint_dir)
+                            cp_dir.mkdir(parents=True, exist_ok=True)
+                            checkpoint_path = (
+                                cp_dir
+                                / f"{task_key}_layer_{layer_idx}.json"
+                            )
+                            layer_outputs = {
+                                nid: prev_outputs[nid]
+                                for nid in layer
+                                if nid in prev_outputs
+                            }
+                            checkpoint_path.write_text(
+                                json.dumps(
+                                    layer_outputs,
+                                    indent=2,
+                                    default=str,
+                                ),
+                                encoding="utf-8",
+                            )
+                            if self.verbose:
+                                logger.info(
+                                    f"Checkpoint saved for layer {layer_idx + 1} → {checkpoint_path}"
+                                )
+                        except Exception as cp_err:
+                            logger.warning(
+                                f"Failed to save checkpoint for layer {layer_idx + 1}: {cp_err}"
+                            )
+
                     if self.verbose:
                         logger.success(
                             f"Layer {layer_idx + 1} completed in {layer_execution_time:.3f}s"
@@ -1944,9 +2043,9 @@ class GraphWorkflow:
                 # Accumulate per-loop results (keyed to avoid overwriting)
                 if self.max_loops > 1:
                     for node_id, output in execution_results.items():
-                        all_loop_results[
-                            f"{node_id}_loop_{loop}"
-                        ] = output
+                        all_loop_results[f"{node_id}_loop_{loop}"] = (
+                            output
+                        )
 
             # Build final return value
             total_execution_time = time.time() - run_start_time
@@ -2360,6 +2459,236 @@ class GraphWorkflow:
                 f"Error in GraphWorkflow.visualize_simple: {e}"
             )
             raise e
+
+    def clear_checkpoints(self, task: str) -> int:
+        """
+        Delete all checkpoint files written for a specific task.
+
+        Call this after a workflow run completes successfully to reclaim disk
+        space and prevent stale checkpoints from being picked up on future runs
+        with the same task string.
+
+        Args:
+            task (str): The task string whose checkpoints should be removed.
+                Must match the string passed to :meth:`run` exactly.
+
+        Returns:
+            int: Number of checkpoint files deleted.
+
+        Raises:
+            ValueError: If ``checkpoint_dir`` was not set on this workflow.
+
+        Example::
+
+            workflow.run("Analyse quarterly earnings")
+            workflow.clear_checkpoints("Analyse quarterly earnings")
+        """
+        if not self.checkpoint_dir:
+            raise ValueError(
+                "checkpoint_dir is not set on this GraphWorkflow instance."
+            )
+        cp_dir = Path(self.checkpoint_dir)
+        if not cp_dir.exists():
+            return 0
+        task_key = hashlib.sha256(task.encode("utf-8")).hexdigest()[
+            :16
+        ]
+        prefix = f"{task_key}_layer_"
+        deleted = 0
+        for cp_file in cp_dir.glob(f"{prefix}*.json"):
+            try:
+                cp_file.unlink()
+                deleted += 1
+            except Exception as e:
+                logger.warning(
+                    f"Failed to delete checkpoint file {cp_file}: {e}"
+                )
+        if self.verbose:
+            logger.info(
+                f"Cleared {deleted} checkpoint file(s) for task key {task_key}"
+            )
+        return deleted
+
+    def to_spec(self) -> Dict[str, Any]:
+        """
+        Serialize the workflow topology to a lightweight plain-dict spec.
+
+        Unlike ``to_json()``, this method does **not** attempt to serialize the
+        Agent objects themselves — it only records each agent's ``agent_name``
+        so that the spec can be version-controlled, diffed, and shared without
+        requiring agent implementation details.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing:
+                - ``name``, ``description``, ``max_loops`` — workflow metadata.
+                - ``nodes`` — list of ``{"id": ..., "agent_name": ..., "metadata": ...}`` dicts.
+                - ``edges`` — list of ``{"source": ..., "target": ..., "metadata": ...}`` dicts.
+                - ``entry_points`` — list of entry-point node IDs.
+                - ``end_points`` — list of end-point node IDs.
+
+        Example::
+
+            spec = workflow.to_spec()
+            # version-control or share `spec`
+            reconstructed = GraphWorkflow.from_topology_spec(spec, agent_registry)
+        """
+        return {
+            "name": self.name,
+            "description": self.description,
+            "max_loops": self.max_loops,
+            # Sorted for deterministic output — two equivalent workflows
+            # built in different insertion orders produce identical specs.
+            "nodes": [
+                {
+                    "id": node_id,
+                    "agent_name": getattr(
+                        node.agent, "agent_name", node_id
+                    ),
+                    "metadata": node.metadata,
+                }
+                for node_id, node in sorted(self.nodes.items())
+            ],
+            "edges": [
+                {
+                    "source": e.source,
+                    "target": e.target,
+                    "metadata": e.metadata,
+                }
+                for e in sorted(
+                    self.edges, key=lambda e: (e.source, e.target)
+                )
+            ],
+            "entry_points": sorted(self.entry_points),
+            "end_points": sorted(self.end_points),
+        }
+
+    def save_spec(self, path: str) -> None:
+        """
+        Save the workflow topology spec produced by :meth:`to_spec` to a JSON file.
+
+        This is the recommended way to persist a workflow definition for
+        version control, sharing, or later reconstruction via
+        :meth:`from_topology_spec`.
+
+        Args:
+            path (str): Filesystem path to write the JSON file to.
+
+        Example::
+
+            workflow.save_spec("my_workflow.json")
+        """
+        dir_name = os.path.dirname(path)
+        if dir_name:
+            os.makedirs(dir_name, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self.to_spec(), f, indent=2, default=str)
+        if self.verbose:
+            logger.info(f"Workflow spec saved to {path}")
+
+    @classmethod
+    def from_topology_spec(
+        cls,
+        spec: Dict[str, Any],
+        agent_registry: Dict[str, "Agent"],
+        **kwargs: Any,
+    ) -> "GraphWorkflow":
+        """
+        Reconstruct a :class:`GraphWorkflow` from a topology spec and an agent registry.
+
+        This is the counterpart to :meth:`to_spec` / :meth:`save_spec`.  The
+        spec describes *which* agents exist and how they are connected; the
+        registry supplies the live ``Agent`` objects that implement each node.
+
+        Args:
+            spec (Dict[str, Any]): A topology spec as returned by :meth:`to_spec`
+                or loaded from a file written by :meth:`save_spec`.
+            agent_registry (Dict[str, Agent]): Mapping from ``agent_name`` to
+                the corresponding ``Agent`` instance.  Every agent referenced in
+                ``spec["nodes"]`` must appear in the registry.
+            **kwargs: Additional keyword arguments forwarded to the
+                :class:`GraphWorkflow` constructor (e.g. ``verbose``, ``backend``).
+
+        Returns:
+            GraphWorkflow: A fully initialised workflow with the topology
+            described by *spec* and agents resolved from *agent_registry*.
+
+        Raises:
+            ValueError: If *spec* is missing required keys, any node/edge dict
+                is malformed, or an ``agent_name`` is absent from
+                *agent_registry*.
+
+        Example::
+
+            with open("my_workflow.json") as f:
+                spec = json.load(f)
+
+            registry = {"Researcher": researcher_agent, "Writer": writer_agent}
+            workflow = GraphWorkflow.from_topology_spec(spec, registry)
+            workflow.run("Write a report on AI trends")
+        """
+        if not isinstance(spec, dict):
+            raise ValueError(
+                f"spec must be a dict, got {type(spec).__name__}"
+            )
+        if "nodes" not in spec:
+            raise ValueError("spec is missing required key 'nodes'")
+
+        # Validate per-node required keys
+        for i, n in enumerate(spec.get("nodes", [])):
+            for key in ("id", "agent_name"):
+                if key not in n:
+                    raise ValueError(
+                        f"Node at index {i} is missing required key '{key}'"
+                    )
+
+        # Validate per-edge required keys
+        for i, e in enumerate(spec.get("edges", [])):
+            for key in ("source", "target"):
+                if key not in e:
+                    raise ValueError(
+                        f"Edge at index {i} is missing required key '{key}'"
+                    )
+
+        # Check all referenced agents exist in the registry
+        missing = [
+            n["agent_name"]
+            for n in spec["nodes"]
+            if n["agent_name"] not in agent_registry
+        ]
+        if missing:
+            raise ValueError(
+                f"The following agent names are referenced in the spec but not "
+                f"found in agent_registry: {missing}"
+            )
+
+        nodes = {
+            n["id"]: Node(
+                id=n["id"],
+                agent=agent_registry[n["agent_name"]],
+                metadata=n.get("metadata") or {},
+            )
+            for n in spec["nodes"]
+        }
+
+        edges = [
+            Edge(
+                source=e["source"],
+                target=e["target"],
+                metadata=e.get("metadata") or {},
+            )
+            for e in spec.get("edges", [])
+        ]
+
+        return cls(
+            name=spec.get("name", "Loaded-Workflow"),
+            description=spec.get("description", ""),
+            max_loops=spec.get("max_loops", 1),
+            nodes=nodes,
+            edges=edges,
+            entry_points=spec.get("entry_points") or [],
+            end_points=spec.get("end_points") or [],
+            **kwargs,
+        )
 
     def to_json(
         self,

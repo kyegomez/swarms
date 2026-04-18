@@ -75,7 +75,13 @@ def get_audio_base64(audio_source: str) -> str:
         FileNotFoundError: If the local audio file does not exist.
     """
     if audio_source.startswith(("http://", "https://")):
-        response = requests.get(audio_source)
+        from swarms.utils.image_file_b64 import _is_safe_url
+
+        if not _is_safe_url(audio_source):
+            raise ValueError(
+                f"Blocked URL '{audio_source}': only external HTTP/HTTPS URLs are permitted."
+            )
+        response = requests.get(audio_source, timeout=30)
         response.raise_for_status()
         audio_data = response.content
     else:
@@ -815,9 +821,10 @@ class LiteLLM:
                     mime_type = mime_type_mapping.get(
                         extension, "image/jpeg"
                     )
-                except Exception:
-                    # If we can't determine, use default
-                    pass
+                except Exception as e:
+                    logger.debug(
+                        f"Could not determine MIME type for '{extension}': {e}"
+                    )
 
             vision_message["image_url"]["format"] = mime_type
 
@@ -890,7 +897,10 @@ class LiteLLM:
         # Use LiteLLM's supports_vision to check if model supports vision and direct URLs
         try:
             return supports_vision(model=self.model_name)
-        except Exception:
+        except Exception as e:
+            logger.debug(
+                f"Could not determine vision support for '{self.model_name}': {e}"
+            )
             return False
 
     def vision_processing(

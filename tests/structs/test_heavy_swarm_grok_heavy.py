@@ -31,9 +31,21 @@ from swarms.prompts.heavy_swarm_prompts import (
 MODEL = "gpt-4.1-mini"
 
 HEAVY_WORKER_KEYS = [
-    "harper", "benjamin", "lucas", "olivia", "james",
-    "charlotte", "henry", "mia", "william", "sebastian",
-    "jack", "owen", "luna", "elizabeth", "noah",
+    "harper",
+    "benjamin",
+    "lucas",
+    "olivia",
+    "james",
+    "charlotte",
+    "henry",
+    "mia",
+    "william",
+    "sebastian",
+    "jack",
+    "owen",
+    "luna",
+    "elizabeth",
+    "noah",
 ]
 
 
@@ -119,7 +131,13 @@ class TestGrokHeavyAgentCreation:
             assert heavy_swarm.agents[key].model_name == MODEL
 
     def test_no_standard_keys_present(self, heavy_swarm):
-        for key in ["research", "analysis", "alternatives", "verification", "synthesis"]:
+        for key in [
+            "research",
+            "analysis",
+            "alternatives",
+            "verification",
+            "synthesis",
+        ]:
             assert key not in heavy_swarm.agents
 
 
@@ -135,45 +153,60 @@ class TestGrokHeavySchema:
         assert func["name"] == "generate_grok_heavy_questions"
 
     def test_has_16_required_fields(self):
-        required = grok_heavy_schema[0]["function"]["parameters"]["required"]
+        required = grok_heavy_schema[0]["function"]["parameters"][
+            "required"
+        ]
         assert len(required) == 16  # thinking + 15 questions
 
     def test_thinking_is_required(self):
-        required = grok_heavy_schema[0]["function"]["parameters"]["required"]
+        required = grok_heavy_schema[0]["function"]["parameters"][
+            "required"
+        ]
         assert "thinking" in required
 
     def test_all_worker_questions_required(self):
-        required = grok_heavy_schema[0]["function"]["parameters"]["required"]
+        required = grok_heavy_schema[0]["function"]["parameters"][
+            "required"
+        ]
         for key in HEAVY_WORKER_KEYS:
-            assert f"{key}_question" in required, f"Missing: {key}_question"
+            assert (
+                f"{key}_question" in required
+            ), f"Missing: {key}_question"
 
     def test_all_properties_have_descriptions(self):
-        props = grok_heavy_schema[0]["function"]["parameters"]["properties"]
+        props = grok_heavy_schema[0]["function"]["parameters"][
+            "properties"
+        ]
         for field_name, field_def in props.items():
-            assert "description" in field_def, f"Missing description for {field_name}"
+            assert (
+                "description" in field_def
+            ), f"Missing description for {field_name}"
 
 
 class TestGrokHeavyPrompts:
     """Verify all prompt constants are non-empty strings."""
 
-    @pytest.mark.parametrize("prompt", [
-        GROK_HEAVY_CAPTAIN_PROMPT,
-        HARPER_HEAVY_PROMPT,
-        BENJAMIN_HEAVY_PROMPT,
-        LUCAS_HEAVY_PROMPT,
-        OLIVIA_PROMPT,
-        JAMES_PROMPT,
-        CHARLOTTE_PROMPT,
-        HENRY_PROMPT,
-        MIA_PROMPT,
-        WILLIAM_PROMPT,
-        SEBASTIAN_PROMPT,
-        JACK_PROMPT,
-        OWEN_PROMPT,
-        LUNA_PROMPT,
-        ELIZABETH_PROMPT,
-        NOAH_PROMPT,
-    ])
+    @pytest.mark.parametrize(
+        "prompt",
+        [
+            GROK_HEAVY_CAPTAIN_PROMPT,
+            HARPER_HEAVY_PROMPT,
+            BENJAMIN_HEAVY_PROMPT,
+            LUCAS_HEAVY_PROMPT,
+            OLIVIA_PROMPT,
+            JAMES_PROMPT,
+            CHARLOTTE_PROMPT,
+            HENRY_PROMPT,
+            MIA_PROMPT,
+            WILLIAM_PROMPT,
+            SEBASTIAN_PROMPT,
+            JACK_PROMPT,
+            OWEN_PROMPT,
+            LUNA_PROMPT,
+            ELIZABETH_PROMPT,
+            NOAH_PROMPT,
+        ],
+    )
     def test_prompt_is_nonempty_string(self, prompt):
         assert isinstance(prompt, str)
         assert len(prompt.strip()) > 100

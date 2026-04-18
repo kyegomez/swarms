@@ -323,9 +323,17 @@ def create_agents_from_yaml(
                     "has a valid swarm_architecture section with required fields."
                 )
 
-        if return_type not in ReturnTypes:
+        valid_return_types = (
+            "auto",
+            "swarm",
+            "agents",
+            "both",
+            "tasks",
+            "run_swarm",
+        )
+        if return_type not in valid_return_types:
             raise ValueError(
-                f"Invalid return_type. Must be one of: {ReturnTypes}"
+                f"Invalid return_type. Must be one of: {valid_return_types}"
             )
 
         logger.info(f"Processing with return type: {return_type}")

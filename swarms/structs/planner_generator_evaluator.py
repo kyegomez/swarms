@@ -346,7 +346,9 @@ class PlannerGeneratorEvaluator:
             content: The content to append.
         """
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        entry = f"\n\n---\n### [{section}] ({timestamp})\n\n{content}\n"
+        entry = (
+            f"\n\n---\n### [{section}] ({timestamp})\n\n{content}\n"
+        )
 
         with open(self.shared_state_path, "a") as f:
             f.write(entry)
@@ -423,9 +425,7 @@ class PlannerGeneratorEvaluator:
             return min(count, self.max_steps)
 
         # Fallback: count numbered items
-        numbered_matches = re.findall(
-            r"(?:^|\n)\s*(\d+)\.\s+", plan
-        )
+        numbered_matches = re.findall(r"(?:^|\n)\s*(\d+)\.\s+", plan)
         if numbered_matches:
             count = max(int(n) for n in numbered_matches)
             return min(count, self.max_steps)
@@ -513,7 +513,10 @@ class PlannerGeneratorEvaluator:
         )
 
         # Build the StepContract object
-        approved = "approved" in contract_review.lower() and "amendments required" not in contract_review.lower()
+        approved = (
+            "approved" in contract_review.lower()
+            and "amendments required" not in contract_review.lower()
+        )
 
         contract = StepContract(
             step_number=step_number,
@@ -524,10 +527,10 @@ class PlannerGeneratorEvaluator:
         )
 
         if self.verbose:
-            status = "approved" if approved else "amendments requested"
-            logger.info(
-                f"Step {step_number} contract {status}"
+            status = (
+                "approved" if approved else "amendments requested"
             )
+            logger.info(f"Step {step_number} contract {status}")
 
         return contract
 
@@ -561,10 +564,13 @@ class PlannerGeneratorEvaluator:
                 f"Evaluator feedback:\n{feedback}"
             )
 
-        generator_task = GENERATOR_EXECUTE_STEP_PROMPT.format(
-            step_number=step_number,
-            feedback_context=feedback_context,
-        ) + f"\n\n--- SHARED STATE ---\n{shared_state}\n--- END SHARED STATE ---"
+        generator_task = (
+            GENERATOR_EXECUTE_STEP_PROMPT.format(
+                step_number=step_number,
+                feedback_context=feedback_context,
+            )
+            + f"\n\n--- SHARED STATE ---\n{shared_state}\n--- END SHARED STATE ---"
+        )
 
         output = self.generator_agent.run(task=generator_task)
 
@@ -600,13 +606,14 @@ class PlannerGeneratorEvaluator:
         """
         shared_state = self._read_shared_state()
 
-        evaluator_task = EVALUATOR_EVALUATE_STEP_PROMPT.format(
-            step_number=step_number
-        ) + f"\n\n--- SHARED STATE ---\n{shared_state}\n--- END SHARED STATE ---"
-
-        raw_evaluation = self.evaluator_agent.run(
-            task=evaluator_task
+        evaluator_task = (
+            EVALUATOR_EVALUATE_STEP_PROMPT.format(
+                step_number=step_number
+            )
+            + f"\n\n--- SHARED STATE ---\n{shared_state}\n--- END SHARED STATE ---"
         )
+
+        raw_evaluation = self.evaluator_agent.run(task=evaluator_task)
         self._append_to_shared_state(
             f"STEP {step_number} EVALUATION", raw_evaluation
         )
@@ -811,7 +818,9 @@ class PlannerGeneratorEvaluator:
             self._initialize_shared_state(task)
 
             if self.verbose:
-                logger.info(f"Starting PGE harness for: {task[:100]}...")
+                logger.info(
+                    f"Starting PGE harness for: {task[:100]}..."
+                )
 
             # === Phase 1: Planning ===
             plan = self._run_planner(task)
@@ -861,7 +870,7 @@ class PlannerGeneratorEvaluator:
                     )
 
                     # Generator executes the step
-                    output = self._execute_step(
+                    self._execute_step(
                         step_number,
                         feedback,
                         retry_count,
@@ -893,10 +902,7 @@ class PlannerGeneratorEvaluator:
                         total_retries += 1
                         step_log["retries"] = retry_count
 
-                        if (
-                            retry_count
-                            > self.max_retries_per_step
-                        ):
+                        if retry_count > self.max_retries_per_step:
                             logger.warning(
                                 f"Step {step_number} failed after "
                                 f"{self.max_retries_per_step} retries, advancing"

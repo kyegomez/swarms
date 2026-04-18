@@ -53,7 +53,6 @@ from swarms.prompts.heavy_swarm_prompts import (
     ELIZABETH_PROMPT,
     NOAH_PROMPT,
     schema,
-    grok_schema,
     grok_heavy_schema,
 )
 
@@ -546,17 +545,17 @@ class HeavySwarm:
                             agent_count = (
                                 15
                                 if self.use_grok_heavy
-                                else 3
-                                if self.use_grok_agents
-                                else 4
+                                else 3 if self.use_grok_agents else 4
                             )
                             agent_label = (
                                 "Grok Heavy agents"
                                 if self.use_grok_heavy
-                                else "Grok agents (Harper, "
-                                "Benjamin, Lucas)"
-                                if self.use_grok_agents
-                                else "agents"
+                                else (
+                                    "Grok agents (Harper, "
+                                    "Benjamin, Lucas)"
+                                    if self.use_grok_agents
+                                    else "agents"
+                                )
                             )
                             self.console.print(
                                 Panel(
@@ -586,7 +585,10 @@ class HeavySwarm:
                         if self.show_dashboard:
                             synth_name = (
                                 "Grok"
-                                if (self.use_grok_heavy or self.use_grok_agents)
+                                if (
+                                    self.use_grok_heavy
+                                    or self.use_grok_agents
+                                )
                                 else "Agent 5"
                             )
                             with Progress(
@@ -958,21 +960,96 @@ class HeavySwarm:
         Grok (captain/coordinator) + 15 domain specialists.
         """
         WORKER_CONFIGS = [
-            ("harper", "Harper", HARPER_HEAVY_PROMPT, "Creative Writing and Storytelling specialist"),
-            ("benjamin", "Benjamin", BENJAMIN_HEAVY_PROMPT, "Data, Finance and Economics specialist"),
-            ("lucas", "Lucas", LUCAS_HEAVY_PROMPT, "Coding, Programming and Technical Builds specialist"),
-            ("olivia", "Olivia", OLIVIA_PROMPT, "Literature, Arts and Culture specialist"),
-            ("james", "James", JAMES_PROMPT, "History, Politics and Philosophy specialist"),
-            ("charlotte", "Charlotte", CHARLOTTE_PROMPT, "Math, Statistics and Logic specialist"),
-            ("henry", "Henry", HENRY_PROMPT, "Engineering, Robotics and Innovation specialist"),
-            ("mia", "Mia", MIA_PROMPT, "Biology, Health and Medicine specialist"),
-            ("william", "William", WILLIAM_PROMPT, "Business Strategy and Entrepreneurship specialist"),
-            ("sebastian", "Sebastian", SEBASTIAN_PROMPT, "Physics, Astronomy and Hard Sciences specialist"),
-            ("jack", "Jack", JACK_PROMPT, "Psychology and Human Behavior specialist"),
-            ("owen", "Owen", OWEN_PROMPT, "Environment, Sustainability and Global Systems specialist"),
-            ("luna", "Luna", LUNA_PROMPT, "Space Exploration and Futurism specialist"),
-            ("elizabeth", "Elizabeth", ELIZABETH_PROMPT, "Ethics, Policy and Critical Thinking specialist"),
-            ("noah", "Noah", NOAH_PROMPT, "Long-Term Innovation and Systems Thinking specialist"),
+            (
+                "harper",
+                "Harper",
+                HARPER_HEAVY_PROMPT,
+                "Creative Writing and Storytelling specialist",
+            ),
+            (
+                "benjamin",
+                "Benjamin",
+                BENJAMIN_HEAVY_PROMPT,
+                "Data, Finance and Economics specialist",
+            ),
+            (
+                "lucas",
+                "Lucas",
+                LUCAS_HEAVY_PROMPT,
+                "Coding, Programming and Technical Builds specialist",
+            ),
+            (
+                "olivia",
+                "Olivia",
+                OLIVIA_PROMPT,
+                "Literature, Arts and Culture specialist",
+            ),
+            (
+                "james",
+                "James",
+                JAMES_PROMPT,
+                "History, Politics and Philosophy specialist",
+            ),
+            (
+                "charlotte",
+                "Charlotte",
+                CHARLOTTE_PROMPT,
+                "Math, Statistics and Logic specialist",
+            ),
+            (
+                "henry",
+                "Henry",
+                HENRY_PROMPT,
+                "Engineering, Robotics and Innovation specialist",
+            ),
+            (
+                "mia",
+                "Mia",
+                MIA_PROMPT,
+                "Biology, Health and Medicine specialist",
+            ),
+            (
+                "william",
+                "William",
+                WILLIAM_PROMPT,
+                "Business Strategy and Entrepreneurship specialist",
+            ),
+            (
+                "sebastian",
+                "Sebastian",
+                SEBASTIAN_PROMPT,
+                "Physics, Astronomy and Hard Sciences specialist",
+            ),
+            (
+                "jack",
+                "Jack",
+                JACK_PROMPT,
+                "Psychology and Human Behavior specialist",
+            ),
+            (
+                "owen",
+                "Owen",
+                OWEN_PROMPT,
+                "Environment, Sustainability and Global Systems specialist",
+            ),
+            (
+                "luna",
+                "Luna",
+                LUNA_PROMPT,
+                "Space Exploration and Futurism specialist",
+            ),
+            (
+                "elizabeth",
+                "Elizabeth",
+                ELIZABETH_PROMPT,
+                "Ethics, Policy and Critical Thinking specialist",
+            ),
+            (
+                "noah",
+                "Noah",
+                NOAH_PROMPT,
+                "Long-Term Innovation and Systems Thinking specialist",
+            ),
         ]
 
         agents = {}
@@ -1111,9 +1188,7 @@ class HeavySwarm:
                 (
                     name,
                     agents[key],
-                    questions.get(
-                        f"{key}_question", ""
-                    ),
+                    questions.get(f"{key}_question", ""),
                 )
                 for name, key in heavy_keys
             ]
@@ -1122,23 +1197,17 @@ class HeavySwarm:
                 (
                     "Harper",
                     agents["harper"],
-                    questions.get(
-                        "harper_question", ""
-                    ),
+                    questions.get("harper_question", ""),
                 ),
                 (
                     "Benjamin",
                     agents["benjamin"],
-                    questions.get(
-                        "benjamin_question", ""
-                    ),
+                    questions.get("benjamin_question", ""),
                 ),
                 (
                     "Lucas",
                     agents["lucas"],
-                    questions.get(
-                        "lucas_question", ""
-                    ),
+                    questions.get("lucas_question", ""),
                 ),
             ]
         else:
@@ -1146,30 +1215,22 @@ class HeavySwarm:
                 (
                     "Research",
                     agents["research"],
-                    questions.get(
-                        "research_question", ""
-                    ),
+                    questions.get("research_question", ""),
                 ),
                 (
                     "Analysis",
                     agents["analysis"],
-                    questions.get(
-                        "analysis_question", ""
-                    ),
+                    questions.get("analysis_question", ""),
                 ),
                 (
                     "Alternatives",
                     agents["alternatives"],
-                    questions.get(
-                        "alternatives_question", ""
-                    ),
+                    questions.get("alternatives_question", ""),
                 ),
                 (
                     "Verification",
                     agents["verification"],
-                    questions.get(
-                        "verification_question", ""
-                    ),
+                    questions.get("verification_question", ""),
                 ),
             ]
 
@@ -1260,21 +1321,96 @@ class HeavySwarm:
         # Agent configurations with professional styling
         if self.use_grok_heavy:
             agent_configs = [
-                ("Harper", "harper", "white", "Crafting narrative and storytelling angles"),
-                ("Benjamin", "benjamin", "white", "Analyzing data, finance and economics"),
-                ("Lucas", "lucas", "white", "Building code and technical solutions"),
-                ("Olivia", "olivia", "white", "Exploring literature, arts and culture"),
-                ("James", "james", "white", "Examining history, politics and philosophy"),
-                ("Charlotte", "charlotte", "white", "Applying math, statistics and logic"),
-                ("Henry", "henry", "white", "Engineering and innovation analysis"),
-                ("Mia", "mia", "white", "Biology, health and medicine perspective"),
-                ("William", "william", "white", "Business strategy and entrepreneurship"),
-                ("Sebastian", "sebastian", "white", "Physics, astronomy and hard sciences"),
-                ("Jack", "jack", "white", "Psychology and human behavior insights"),
-                ("Owen", "owen", "white", "Environment and global systems view"),
-                ("Luna", "luna", "white", "Space exploration and futurism lens"),
-                ("Elizabeth", "elizabeth", "white", "Ethics, policy and critical thinking"),
-                ("Noah", "noah", "white", "Long-term innovation and systems thinking"),
+                (
+                    "Harper",
+                    "harper",
+                    "white",
+                    "Crafting narrative and storytelling angles",
+                ),
+                (
+                    "Benjamin",
+                    "benjamin",
+                    "white",
+                    "Analyzing data, finance and economics",
+                ),
+                (
+                    "Lucas",
+                    "lucas",
+                    "white",
+                    "Building code and technical solutions",
+                ),
+                (
+                    "Olivia",
+                    "olivia",
+                    "white",
+                    "Exploring literature, arts and culture",
+                ),
+                (
+                    "James",
+                    "james",
+                    "white",
+                    "Examining history, politics and philosophy",
+                ),
+                (
+                    "Charlotte",
+                    "charlotte",
+                    "white",
+                    "Applying math, statistics and logic",
+                ),
+                (
+                    "Henry",
+                    "henry",
+                    "white",
+                    "Engineering and innovation analysis",
+                ),
+                (
+                    "Mia",
+                    "mia",
+                    "white",
+                    "Biology, health and medicine perspective",
+                ),
+                (
+                    "William",
+                    "william",
+                    "white",
+                    "Business strategy and entrepreneurship",
+                ),
+                (
+                    "Sebastian",
+                    "sebastian",
+                    "white",
+                    "Physics, astronomy and hard sciences",
+                ),
+                (
+                    "Jack",
+                    "jack",
+                    "white",
+                    "Psychology and human behavior insights",
+                ),
+                (
+                    "Owen",
+                    "owen",
+                    "white",
+                    "Environment and global systems view",
+                ),
+                (
+                    "Luna",
+                    "luna",
+                    "white",
+                    "Space exploration and futurism lens",
+                ),
+                (
+                    "Elizabeth",
+                    "elizabeth",
+                    "white",
+                    "Ethics, policy and critical thinking",
+                ),
+                (
+                    "Noah",
+                    "noah",
+                    "white",
+                    "Long-term innovation and systems thinking",
+                ),
             ]
         elif self.use_grok_agents:
             agent_configs = [
@@ -1282,22 +1418,19 @@ class HeavySwarm:
                     "Harper",
                     "harper",
                     "white",
-                    "Gathering evidence and "
-                    "verifying facts",
+                    "Gathering evidence and " "verifying facts",
                 ),
                 (
                     "Benjamin",
                     "benjamin",
                     "white",
-                    "Applying rigorous logic "
-                    "and verification",
+                    "Applying rigorous logic " "and verification",
                 ),
                 (
                     "Lucas",
                     "lucas",
                     "white",
-                    "Exploring creative angles "
-                    "and blind spots",
+                    "Exploring creative angles " "and blind spots",
                 ),
             ]
         else:
@@ -1306,15 +1439,13 @@ class HeavySwarm:
                     "Agent 1",
                     "research",
                     "white",
-                    "Gathering comprehensive "
-                    "research data",
+                    "Gathering comprehensive " "research data",
                 ),
                 (
                     "Agent 2",
                     "analysis",
                     "white",
-                    "Analyzing patterns and "
-                    "generating insights",
+                    "Analyzing patterns and " "generating insights",
                 ),
                 (
                     "Agent 3",
@@ -1327,8 +1458,7 @@ class HeavySwarm:
                     "Agent 4",
                     "verification",
                     "white",
-                    "Validating findings and "
-                    "checking feasibility",
+                    "Validating findings and " "checking feasibility",
                 ),
             ]
 
@@ -1435,9 +1565,7 @@ class HeavySwarm:
                         name,
                         key,
                         agents[key],
-                        questions.get(
-                            f"{key}_question", ""
-                        ),
+                        questions.get(f"{key}_question", ""),
                     )
                     for name, key in heavy_keys
                 ]
@@ -1447,25 +1575,19 @@ class HeavySwarm:
                         "Harper",
                         "harper",
                         agents["harper"],
-                        questions.get(
-                            "harper_question", ""
-                        ),
+                        questions.get("harper_question", ""),
                     ),
                     (
                         "Benjamin",
                         "benjamin",
                         agents["benjamin"],
-                        questions.get(
-                            "benjamin_question", ""
-                        ),
+                        questions.get("benjamin_question", ""),
                     ),
                     (
                         "Lucas",
                         "lucas",
                         agents["lucas"],
-                        questions.get(
-                            "lucas_question", ""
-                        ),
+                        questions.get("lucas_question", ""),
                     ),
                 ]
             else:
@@ -1474,17 +1596,13 @@ class HeavySwarm:
                         "Agent 1",
                         "research",
                         agents["research"],
-                        questions.get(
-                            "research_question", ""
-                        ),
+                        questions.get("research_question", ""),
                     ),
                     (
                         "Agent 2",
                         "analysis",
                         agents["analysis"],
-                        questions.get(
-                            "analysis_question", ""
-                        ),
+                        questions.get("analysis_question", ""),
                     ),
                     (
                         "Agent 3",
@@ -1553,16 +1671,16 @@ class HeavySwarm:
         agent_count = (
             15
             if self.use_grok_heavy
-            else 3
-            if self.use_grok_agents
-            else 4
+            else 3 if self.use_grok_agents else 4
         )
         synth_label = (
             "Grok"
             if self.use_grok_heavy
-            else "Captain Swarm"
-            if self.use_grok_agents
-            else "synthesis"
+            else (
+                "Captain Swarm"
+                if self.use_grok_agents
+                else "synthesis"
+            )
         )
         self.console.print(
             Panel(
@@ -1779,15 +1897,11 @@ class HeavySwarm:
 
         try:
             # Parse the JSON arguments
-            arguments = json.loads(
-                tool_call.function.arguments
-            )
+            arguments = json.loads(tool_call.function.arguments)
 
             result = dict(arguments)
             result["tool_call_id"] = tool_call.id
-            result["function_name"] = (
-                tool_call.function.name
-            )
+            result["function_name"] = tool_call.function.name
             return result
 
         except json.JSONDecodeError as e:
@@ -1932,38 +2046,39 @@ class HeavySwarm:
 
         if self.use_grok_heavy:
             heavy_keys = [
-                "harper", "benjamin", "lucas", "olivia",
-                "james", "charlotte", "henry", "mia",
-                "william", "sebastian", "jack", "owen",
-                "luna", "elizabeth", "noah",
+                "harper",
+                "benjamin",
+                "lucas",
+                "olivia",
+                "james",
+                "charlotte",
+                "henry",
+                "mia",
+                "william",
+                "sebastian",
+                "jack",
+                "owen",
+                "luna",
+                "elizabeth",
+                "noah",
             ]
             return {
-                f"{k}_question": result.get(
-                    f"{k}_question", ""
-                )
+                f"{k}_question": result.get(f"{k}_question", "")
                 for k in heavy_keys
             }
 
         if self.use_grok_agents:
             return {
-                "harper_question": result.get(
-                    "harper_question", ""
-                ),
+                "harper_question": result.get("harper_question", ""),
                 "benjamin_question": result.get(
                     "benjamin_question", ""
                 ),
-                "lucas_question": result.get(
-                    "lucas_question", ""
-                ),
+                "lucas_question": result.get("lucas_question", ""),
             }
 
         return {
-            "research_question": result.get(
-                "research_question", ""
-            ),
-            "analysis_question": result.get(
-                "analysis_question", ""
-            ),
+            "research_question": result.get("research_question", ""),
+            "analysis_question": result.get("analysis_question", ""),
             "alternatives_question": result.get(
                 "alternatives_question", ""
             ),
@@ -2017,32 +2132,36 @@ class HeavySwarm:
 
         if self.use_grok_heavy:
             heavy_keys = [
-                "harper", "benjamin", "lucas", "olivia",
-                "james", "charlotte", "henry", "mia",
-                "william", "sebastian", "jack", "owen",
-                "luna", "elizabeth", "noah",
+                "harper",
+                "benjamin",
+                "lucas",
+                "olivia",
+                "james",
+                "charlotte",
+                "henry",
+                "mia",
+                "william",
+                "sebastian",
+                "jack",
+                "owen",
+                "luna",
+                "elizabeth",
+                "noah",
             ]
             return [
-                questions.get(f"{k}_question", "")
-                for k in heavy_keys
+                questions.get(f"{k}_question", "") for k in heavy_keys
             ]
 
         if self.use_grok_agents:
             return [
                 questions.get("harper_question", ""),
-                questions.get(
-                    "benjamin_question", ""
-                ),
+                questions.get("benjamin_question", ""),
                 questions.get("lucas_question", ""),
             ]
 
         return [
             questions.get("research_question", ""),
             questions.get("analysis_question", ""),
-            questions.get(
-                "alternatives_question", ""
-            ),
-            questions.get(
-                "verification_question", ""
-            ),
+            questions.get("alternatives_question", ""),
+            questions.get("verification_question", ""),
         ]

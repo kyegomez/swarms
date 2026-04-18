@@ -1,9 +1,9 @@
+import csv
 import os
 from typing import List, Dict, Any, Optional
 
 from mem0 import MemoryClient
 from swarms import Agent
-from swarms.utils.data_to_text import csv_to_text
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -114,7 +114,10 @@ def read_csv_file(csv_path: str) -> str:
         raise FileNotFoundError(f"CSV file not found: {csv_path}")
 
     try:
-        text = csv_to_text(csv_path)
+        with open(csv_path, newline="", encoding="utf-8") as f:
+            reader = csv.reader(f)
+            rows = [", ".join(row) for row in reader]
+        text = "\n".join(rows)
         return text
     except Exception as e:
         raise Exception(f"Error reading CSV {csv_path}: {str(e)}")

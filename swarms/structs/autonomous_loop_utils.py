@@ -26,10 +26,12 @@ Available Tools:
 """
 
 import os
+import re as _re
 import subprocess
-from typing import Any, Dict, List
-from loguru import logger
 import uuid
+from typing import Any, Dict, List
+
+from loguru import logger
 
 from swarms.structs.async_subagent import SubagentRegistry, TaskStatus
 
@@ -899,11 +901,15 @@ _BASH_BLOCKLIST = [
     ("| python3",),
     ("| perl",),
     ("| ruby",),
+    ("| node",),
+    ("| php",),
     # Raw disk writes
     ("dd", "if="),
     ("mkfs",),
     ("> /dev/sd",),
     ("> /dev/nvme",),
+    ("> /dev/mem",),
+    ("> /dev/null",),
     # Fork bomb pattern
     (":(){",),
     # System shutdown / reboot
@@ -911,10 +917,41 @@ _BASH_BLOCKLIST = [
     ("reboot",),
     ("halt",),
     ("poweroff",),
-    # Privilege escalation helpers writing to sensitive paths
+    # Privilege escalation
     ("chmod 777 /",),
     ("chown", "/etc"),
     ("chown", "/bin"),
+    ("sudo",),
+    ("su -",),
+    ("pkexec",),
+    # Reading sensitive system files
+    ("/etc/passwd",),
+    ("/etc/shadow",),
+    ("/etc/sudoers",),
+    # Network exfiltration primitives
+    ("curl", "-d"),
+    ("wget", "--post"),
+    ("nc ", "-e"),
+    ("ncat", "-e"),
+    # Environment/credential exposure
+    ("printenv",),
+    ("env |",),
+    ("set |",),
+    # History manipulation
+    ("history -c",),
+    ("unset histfile",),
+]
+
+_BASH_BLOCKLIST_REGEX = [
+    # Command substitution feeding into sensitive commands
+    _re.compile(r"\$\([^)]*\)\s*\|"),
+    # Encoded commands (base64 decode piped to shell)
+    _re.compile(r"base64\s+(-d|--decode).*\|\s*(ba)?sh"),
+    # Writing to /etc or /bin
+    _re.compile(r">\s*/etc/"),
+    _re.compile(r">\s*/bin/"),
+    _re.compile(r">\s*/usr/"),
+    _re.compile(r">\s*/root/"),
 ]
 
 _BASH_MAX_LENGTH = 512
@@ -928,6 +965,9 @@ def _check_bash_command(command: str) -> str | None:
     for pattern in _BASH_BLOCKLIST:
         if all(token in cmd_lower for token in pattern):
             return f"Command blocked: matches dangerous pattern {pattern!r}."
+    for regex in _BASH_BLOCKLIST_REGEX:
+        if regex.search(command):
+            return "Command blocked: matches dangerous regex pattern."
     return None
 
 

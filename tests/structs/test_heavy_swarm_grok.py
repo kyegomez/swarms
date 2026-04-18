@@ -85,20 +85,10 @@ class TestGrokAgentCreation:
             question_agent_model_name=MODEL,
             use_grok_agents=True,
         )
-        assert (
-            swarm.agents["captain"].agent_name
-            == "Captain-Swarm"
-        )
-        assert (
-            swarm.agents["harper"].agent_name == "Harper"
-        )
-        assert (
-            swarm.agents["benjamin"].agent_name
-            == "Benjamin"
-        )
-        assert (
-            swarm.agents["lucas"].agent_name == "Lucas"
-        )
+        assert swarm.agents["captain"].agent_name == "Captain-Swarm"
+        assert swarm.agents["harper"].agent_name == "Harper"
+        assert swarm.agents["benjamin"].agent_name == "Benjamin"
+        assert swarm.agents["lucas"].agent_name == "Lucas"
 
     def test_grok_agent_prompts(self):
         """Grok agents use the correct system prompts."""
@@ -111,18 +101,11 @@ class TestGrokAgentCreation:
             swarm.agents["captain"].system_prompt
             == CAPTAIN_SWARM_PROMPT
         )
+        assert swarm.agents["harper"].system_prompt == HARPER_PROMPT
         assert (
-            swarm.agents["harper"].system_prompt
-            == HARPER_PROMPT
+            swarm.agents["benjamin"].system_prompt == BENJAMIN_PROMPT
         )
-        assert (
-            swarm.agents["benjamin"].system_prompt
-            == BENJAMIN_PROMPT
-        )
-        assert (
-            swarm.agents["lucas"].system_prompt
-            == LUCAS_PROMPT
-        )
+        assert swarm.agents["lucas"].system_prompt == LUCAS_PROMPT
 
     def test_grok_agent_model_names(self):
         """All grok agents use the configured model."""
@@ -132,9 +115,7 @@ class TestGrokAgentCreation:
             use_grok_agents=True,
         )
         for key in ["captain", "harper", "benjamin", "lucas"]:
-            assert (
-                swarm.agents[key].model_name == MODEL
-            )
+            assert swarm.agents[key].model_name == MODEL
 
     def test_grok_agent_tools_passed(self):
         """Worker tools are passed to grok agents."""
@@ -186,9 +167,7 @@ class TestGrokSchema:
         assert func["name"] == "generate_grok_questions"
 
     def test_grok_schema_has_three_questions(self):
-        props = grok_schema[0]["function"]["parameters"][
-            "properties"
-        ]
+        props = grok_schema[0]["function"]["parameters"]["properties"]
         assert "harper_question" in props
         assert "benjamin_question" in props
         assert "lucas_question" in props
@@ -205,9 +184,7 @@ class TestGrokSchema:
 
     def test_grok_schema_no_default_fields(self):
         """Grok schema should not have default agent fields."""
-        props = grok_schema[0]["function"]["parameters"][
-            "properties"
-        ]
+        props = grok_schema[0]["function"]["parameters"]["properties"]
         assert "research_question" not in props
         assert "analysis_question" not in props
 
@@ -377,14 +354,8 @@ class TestGrokFullPipeline:
         assert isinstance(result, list)
         assert len(result) > 0
         # Verify captain synthesis is in the output
-        roles = [
-            entry.get("role", "")
-            for entry in result
-        ]
-        assert any(
-            "Captain" in r or "Synthesis" in r
-            for r in roles
-        )
+        roles = [entry.get("role", "") for entry in result]
+        assert any("Captain" in r or "Synthesis" in r for r in roles)
 
     def test_grok_run_with_dashboard(self):
         """Grok pipeline works with dashboard enabled."""
@@ -398,8 +369,7 @@ class TestGrokFullPipeline:
             output_type="string",
         )
         result = swarm.run(
-            "Compare Python and Rust for systems "
-            "programming"
+            "Compare Python and Rust for systems " "programming"
         )
         assert result is not None
         assert isinstance(result, str)
@@ -416,8 +386,7 @@ class TestGrokFullPipeline:
             output_type="string",
         )
         result = swarm.run(
-            "What is the current state of quantum "
-            "computing?"
+            "What is the current state of quantum " "computing?"
         )
         assert result is not None
         assert isinstance(result, str)

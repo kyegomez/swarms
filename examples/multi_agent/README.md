@@ -2,10 +2,6 @@
 
 This directory contains comprehensive examples demonstrating various multi-agent patterns and workflows in Swarms.
 
-## Agent GRPO (Group Reinforcement Policy Optimization)
-- [agent_grpo_math_example.py](agent_grpo_examples/agent_grpo_math_example.py) - Agent GRPO for math problems
-- [agent_grpo_physics_example.py](agent_grpo_examples/agent_grpo_physics_example.py) - Agent GRPO for physics problems
-
 ## Agent Rearrangement
 - [rearrange_test.py](agent_rearrange_examples/rearrange_test.py) - Test agent rearrangement functionality
 
@@ -24,11 +20,6 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [batched_grid_swarm_router.py](batched_grid_workflow/batched_grid_swarm_router.py) - Router for batched grid swarms
 - [batched_grid_workflow_example.py](batched_grid_workflow/batched_grid_workflow_example.py) - Complete workflow example
 - [README.md](batched_grid_workflow/README.md) - Detailed documentation
-
-## Board of Directors
-- [board_of_directors_example.py](board_of_directors/board_of_directors_example.py) - Full board simulation
-- [minimal_board_example.py](board_of_directors/minimal_board_example.py) - Minimal board setup
-- [simple_board_example.py](board_of_directors/simple_board_example.py) - Simple board example
 
 ## Caching Examples
 - [example_multi_agent_caching.py](caching_examples/example_multi_agent_caching.py) - Multi-agent caching implementation

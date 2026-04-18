@@ -6,12 +6,43 @@ converting them to base64-encoded data URIs suitable for use with LLM APIs.
 """
 
 import base64
+import ipaddress
 import re
 import uuid
 from pathlib import Path
+from urllib.parse import urlparse
 
 import requests
 from loguru import logger
+
+
+def _is_safe_url(url: str) -> bool:
+    """
+    Reject URLs that target private/link-local networks (SSRF prevention).
+    Only http:// and https:// schemes are permitted.
+    """
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return False
+        host = parsed.hostname or ""
+        # Block localhost variants
+        if host in ("localhost", ""):
+            return False
+        try:
+            addr = ipaddress.ip_address(host)
+            if (
+                addr.is_private
+                or addr.is_loopback
+                or addr.is_link_local
+                or addr.is_reserved
+            ):
+                return False
+        except ValueError:
+            pass  # hostname, not a raw IP — allow it
+        return True
+    except Exception:
+        return False
 
 
 def is_base64_encoded(image_source: str) -> bool:
@@ -39,8 +70,8 @@ def is_base64_encoded(image_source: str) -> bool:
             base64_pattern = re.compile(r"^[A-Za-z0-9+/=]+$")
             if base64_pattern.match(image_source):
                 return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Base64 check failed: {e}")
 
     return False
 
@@ -92,7 +123,11 @@ def get_image_base64(image_source: str) -> str:
 
     # Handle URLs
     if image_source.startswith(("http://", "https://")):
-        response = requests.get(image_source)
+        if not _is_safe_url(image_source):
+            raise ValueError(
+                f"Blocked URL '{image_source}': only external HTTP/HTTPS URLs are permitted."
+            )
+        response = requests.get(image_source, timeout=30)
         response.raise_for_status()
         image_data = response.content
     else:

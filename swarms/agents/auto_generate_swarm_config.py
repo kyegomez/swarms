@@ -1,11 +1,11 @@
+import os
 import re
+from typing import Optional
 
+import yaml
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from swarms import Agent
-from swarms.agents.create_agents_from_yaml import (
-    create_agents_from_yaml,
-)
 from swarms.utils.formatter import formatter
 from swarms.utils.litellm_wrapper import LiteLLM
 
@@ -49,16 +49,17 @@ def parse_yaml_from_swarm_markdown(markdown_text: str) -> dict:
     Returns:
         dict: A parsed Python dictionary of the YAML content.
     """
-    # Match the 'Auto-Swarm-Builder' block with YAML inside triple backticks
+    # Match YAML blocks inside triple backticks — use the last match
+    # because the LLM's generated YAML comes after any examples in the prompt
     pattern = r"```yaml\s*\n(.*?)```"
-    match = re.search(pattern, markdown_text, re.DOTALL)
+    matches = re.findall(pattern, markdown_text, re.DOTALL)
 
-    if not match:
+    if not matches:
         raise ValueError(
             "No YAML content found in the 'Auto-Swarm-Builder' block."
         )
 
-    raw_yaml = match.group(1).strip()
+    raw_yaml = matches[-1].strip()
 
     # Preprocess and normalize the YAML content
     normalized_yaml = prepare_yaml_for_parsing(raw_yaml)
@@ -175,6 +176,205 @@ swarm_architecture:
 """
 
 
+def _slugify(text: str) -> str:
+    """Convert text to a filename-safe slug."""
+    slug = re.sub(r"[^\w\s-]", "", text.lower())
+    slug = re.sub(r"[\s_-]+", "_", slug).strip("_")
+    return slug
+
+
+# Agent YAML keys that map directly to Agent() constructor params
+_AGENT_PARAM_MAP = {
+    "agent_name": "agent_name",
+    "system_prompt": "system_prompt",
+    "description": "agent_description",
+    "model_name": "model_name",
+    "max_loops": "max_loops",
+    "temperature": "temperature",
+    "max_tokens": "max_tokens",
+    "autosave": "autosave",
+    "verbose": "verbose",
+    "dynamic_temperature_enabled": "dynamic_temperature_enabled",
+    "context_length": "context_length",
+    "output_type": "output_type",
+    "saved_state_path": "saved_state_path",
+    "user_name": "user_name",
+    "retry_attempts": "retry_attempts",
+    "return_step_meta": "return_step_meta",
+    "dashboard": "dashboard",
+    "auto_generate_prompt": "auto_generate_prompt",
+    "artifacts_on": "artifacts_on",
+    "artifacts_file_extension": "artifacts_file_extension",
+    "artifacts_output_path": "artifacts_output_path",
+}
+
+# Keys to skip when generating agent code (not Agent() constructor params)
+_AGENT_SKIP_KEYS = {"task"}
+
+
+def _format_value(value) -> str:
+    """Format a Python value as a source-code literal."""
+    if isinstance(value, str):
+        # Use triple-quoted string for multi-line or strings with quotes
+        if "\n" in value or ('"' in value and "'" in value):
+            escaped = value.replace("\\", "\\\\").replace(
+                '"""', '\\"\\"\\"'
+            )
+            return f'"""{escaped}"""'
+        return repr(value)
+    if isinstance(value, bool):
+        return "True" if value else "False"
+    return repr(value)
+
+
+def _agent_var_name(agent_name: str) -> str:
+    """Convert an agent name to a valid Python variable name."""
+    var = re.sub(r"[^\w]", "_", agent_name.lower())
+    var = re.sub(r"_+", "_", var).strip("_")
+    if var and var[0].isdigit():
+        var = f"agent_{var}"
+    return var or "agent"
+
+
+def _render_agent_code(agent_dict: dict) -> tuple:
+    """Render a single agent dict as Python source code.
+
+    Returns:
+        (var_name, code_string)
+    """
+    name = agent_dict.get("agent_name", "Agent")
+    var = _agent_var_name(name)
+
+    lines = [f"{var} = Agent("]
+    for yaml_key, param_name in _AGENT_PARAM_MAP.items():
+        if yaml_key in agent_dict:
+            val = _format_value(agent_dict[yaml_key])
+            lines.append(f"    {param_name}={val},")
+
+    # Emit unknown keys as comments
+    known_keys = set(_AGENT_PARAM_MAP.keys()) | _AGENT_SKIP_KEYS
+    for key in agent_dict:
+        if key not in known_keys:
+            lines.append(
+                f"    # Unknown YAML key: {key}={agent_dict[key]!r}"
+            )
+
+    lines.append(")")
+    return var, "\n".join(lines)
+
+
+def write_autoswarm_file(
+    config: dict,
+    task: str,
+    output_path: Optional[str] = None,
+    output_dir: Optional[str] = None,
+) -> str:
+    """Render a parsed swarm config dict as a ready-to-run Python file.
+
+    Args:
+        config: Parsed YAML config dict with 'agents' and optional 'swarm_architecture'.
+        task: The original task string.
+        output_path: Optional file path. Auto-generated from swarm name if not provided.
+        output_dir: Optional directory to create the file in. Used when output_path
+            is not provided. The directory is created if it does not exist.
+
+    Returns:
+        The resolved file path that was written.
+    """
+    agents_list = config.get("agents", [])
+    swarm_arch = config.get("swarm_architecture", {})
+
+    # Determine output path
+    if not output_path:
+        swarm_name = swarm_arch.get("name", "output")
+        filename = f"autoswarm_{_slugify(swarm_name)}.py"
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+            output_path = os.path.join(output_dir, filename)
+        else:
+            output_path = filename
+
+    # Render agent blocks
+    agent_vars = []
+    agent_blocks = []
+    for agent_dict in agents_list:
+        var, code = _render_agent_code(agent_dict)
+        # Deduplicate variable names
+        original_var = var
+        counter = 2
+        while var in agent_vars:
+            var = f"{original_var}_{counter}"
+            code = code.replace(
+                f"{original_var} = Agent(",
+                f"{var} = Agent(",
+                1,
+            )
+            counter += 1
+        agent_vars.append(var)
+        agent_blocks.append(code)
+
+    # Build the file
+    parts = [
+        "from swarms import Agent",
+        "from swarms.structs.swarm_router import SwarmRouter",
+        "",
+        "# Auto-generated by `swarms autoswarm` -- edit freely",
+        "",
+    ]
+
+    # Agent definitions
+    for block in agent_blocks:
+        parts.append(block)
+        parts.append("")
+
+    # SwarmRouter definition
+    if swarm_arch:
+        router_lines = ["swarm = SwarmRouter("]
+        if swarm_arch.get("name"):
+            router_lines.append(
+                f"    name={_format_value(swarm_arch['name'])},"
+            )
+        if swarm_arch.get("description"):
+            router_lines.append(
+                f"    description={_format_value(swarm_arch['description'])},"
+            )
+        router_lines.append(f"    agents=[{', '.join(agent_vars)}],")
+        if swarm_arch.get("swarm_type"):
+            router_lines.append(
+                f"    swarm_type={_format_value(swarm_arch['swarm_type'])},"
+            )
+        if swarm_arch.get("max_loops"):
+            router_lines.append(
+                f"    max_loops={swarm_arch['max_loops']},"
+            )
+        router_lines.append(")")
+        parts.append("\n".join(router_lines))
+    else:
+        # No swarm architecture - just create a basic sequential router
+        parts.append(
+            f"swarm = SwarmRouter(\n"
+            f"    name='autoswarm',\n"
+            f"    agents=[{', '.join(agent_vars)}],\n"
+            f"    swarm_type='SequentialWorkflow',\n"
+            f")"
+        )
+
+    parts.append("")
+
+    # Main block
+    parts.append('if __name__ == "__main__":')
+    parts.append(f"    result = swarm.run({_format_value(task)})")
+    parts.append("    print(result)")
+    parts.append("")
+
+    source = "\n".join(parts)
+
+    with open(output_path, "w") as f:
+        f.write(source)
+
+    return os.path.abspath(output_path)
+
+
 def generate_swarm_config(
     task: str,
     file_name: str = "swarm_config_output.yaml",
@@ -185,8 +385,9 @@ def generate_swarm_config(
     """
     Generates a swarm configuration based on the provided task and model name.
 
-    This function attempts to generate a swarm configuration by running an agent with the specified task and model name.
-    It then parses the output into YAML format and creates agents based on the parsed YAML content.
+    This function uses an LLM agent to produce a YAML config, parses it,
+    creates agents from it, and runs the swarm. It also returns the parsed
+    config dict so callers can use it (e.g. to write a Python file).
 
     Args:
         task (str): The task to be performed by the swarm.
@@ -196,7 +397,7 @@ def generate_swarm_config(
         **kwargs: Additional keyword arguments to be passed to the agent's run method.
 
     Returns:
-        Any: The output of the swarm configuration generation process. This can be a SwarmRouter instance or an error message.
+        dict: The parsed YAML config dict with 'agents' and 'swarm_architecture' keys.
     """
     formatter.print_panel(
         "Auto Generating Swarm...", "Auto Swarm Builder"
@@ -216,7 +417,6 @@ def generate_swarm_config(
                 system_prompt=AUTO_GEN_PROMPT,
                 llm=model,
                 max_loops=1,
-                dynamic_temperature_enabled=True,
                 saved_state_path="swarm_builder.json",
                 user_name="swarms_corp",
                 output_type="str",
@@ -227,18 +427,15 @@ def generate_swarm_config(
             yaml_content = parse_yaml_from_swarm_markdown(raw_output)
             print(yaml_content)
 
-            # Create agents from the YAML file
-            output = create_agents_from_yaml(
-                yaml_string=yaml_content,
-                return_type="run_swarm",
-            )
+            # Parse the YAML to get the config dict
+            config_dict = yaml.safe_load(yaml_content)
 
             formatter.print_panel(
                 "Swarm configuration generated successfully.",
                 "Success",
             )
 
-            return output
+            return config_dict
 
         except Exception as e:
             formatter.print_panel(

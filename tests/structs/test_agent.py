@@ -1010,47 +1010,23 @@ class TestCreateAgentsFromYaml:
         )
 
     @patch(
-        "builtins.open",
-        new_callable=unittest.mock.mock_open,
-        read_data="",
+        "swarms.agents.create_agents_from_yaml.create_agent_with_retry"
     )
-    @patch("yaml.safe_load")
-    def test_invalid_return_type(self, mock_safe_load, mock_open):
+    def test_invalid_return_type(self, mock_create_agent):
         """Test handling invalid return type"""
-        # Mock YAML content parsing
-        mock_safe_load.return_value = {
-            "agents": [
-                {
-                    "agent_name": "Financial-Analysis-Agent",
-                    "model": {
-                        "openai_api_key": "fake-api-key",
-                        "model_name": "gpt-5.4",
-                        "temperature": 0.1,
-                        "max_tokens": 2000,
-                    },
-                    "system_prompt": "financial_agent_sys_prompt",
-                    "max_loops": 1,
-                    "autosave": True,
-                    "dashboard": False,
-                    "verbose": True,
-                    "dynamic_temperature_enabled": True,
-                    "saved_state_path": "finance_agent.json",
-                    "user_name": "swarms_corp",
-                    "retry_attempts": 1,
-                    "context_length": 200000,
-                    "return_step_meta": False,
-                    "output_type": "str",
-                    "task": "How can I establish a ROTH IRA to buy stocks and get a tax break?",
-                }
-            ]
-        }
-
-        # Test if an error is raised for invalid return_type
+        mock_create_agent.return_value = MagicMock()
+        yaml_string = """
+agents:
+  - agent_name: Financial-Analysis-Agent
+    system_prompt: financial_agent_sys_prompt
+    model_name: gpt-4o
+    max_loops: 1
+"""
         with pytest.raises(ValueError) as context:
             create_agents_from_yaml(
-                "fake_yaml_path.yaml", return_type="invalid_type"
+                yaml_string=yaml_string, return_type="invalid_type"
             )
-        assert "Invalid return_type" in str(context.exception)
+        assert "Invalid return_type" in str(context.value)
 
 
 # ============================================================================

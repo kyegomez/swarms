@@ -1,10 +1,13 @@
+import hashlib
+
 import pytest
+
+from swarms.structs.agent import Agent
 from swarms.structs.graph_workflow import (
     GraphWorkflow,
     Node,
     NodeType,
 )
-from swarms.structs.agent import Agent
 
 try:
     import rustworkx as rx
@@ -526,6 +529,329 @@ def test_graph_workflow_rustworkx_agent_objects():
 
     result = workflow.run("Test agent objects in edges")
     assert result is not None
+
+
+def test_graph_workflow_checkpoint_writes_and_resumes(tmp_path):
+    """Checkpoint files are written after each layer and skipped on second run."""
+    from unittest.mock import MagicMock
+
+    def make_agent(name):
+        a = MagicMock()
+        a.agent_name = name
+        a.run = MagicMock(return_value=f"output-{name}")
+        return a
+
+    a1 = make_agent("CP-Alpha")
+    a2 = make_agent("CP-Beta")
+    a3 = make_agent("CP-Gamma")
+
+    cp_dir = str(tmp_path / "checkpoints")
+    wf = GraphWorkflow(name="CP-Test", checkpoint_dir=cp_dir)
+    wf.add_nodes([a1, a2, a3])
+    wf.add_edge("CP-Alpha", "CP-Beta")
+    wf.add_edge("CP-Beta", "CP-Gamma")
+    wf.compile()
+
+    TASK = "checkpoint test task"
+
+    # First run — all three agents execute, three checkpoint files written
+    results = wf.run(TASK)
+    assert results["CP-Alpha"] == "output-CP-Alpha"
+    assert results["CP-Beta"] == "output-CP-Beta"
+    assert results["CP-Gamma"] == "output-CP-Gamma"
+
+    task_key = hashlib.sha256(TASK.encode("utf-8")).hexdigest()[:16]
+    cp_files = list(tmp_path.glob("checkpoints/*.json"))
+    assert len(cp_files) == 3
+    assert any(f"{task_key}_layer_0" in f.name for f in cp_files)
+    assert any(f"{task_key}_layer_1" in f.name for f in cp_files)
+    assert any(f"{task_key}_layer_2" in f.name for f in cp_files)
+
+    # Reset call counts, then run again — all layers should be skipped
+    a1.run.reset_mock()
+    a2.run.reset_mock()
+    a3.run.reset_mock()
+
+    results2 = wf.run(TASK)
+    assert a1.run.call_count == 0
+    assert a2.run.call_count == 0
+    assert a3.run.call_count == 0
+    assert results2["CP-Alpha"] == "output-CP-Alpha"
+
+
+def test_graph_workflow_checkpoint_partial_resume(tmp_path):
+    """When only some checkpoints exist, only the missing layers re-execute."""
+    from unittest.mock import MagicMock
+
+    def make_agent(name):
+        a = MagicMock()
+        a.agent_name = name
+        a.run = MagicMock(return_value=f"output-{name}")
+        return a
+
+    a1 = make_agent("PR-Alpha")
+    a2 = make_agent("PR-Beta")
+    a3 = make_agent("PR-Gamma")
+
+    cp_dir = str(tmp_path / "checkpoints")
+    wf = GraphWorkflow(name="PR-Test", checkpoint_dir=cp_dir)
+    wf.add_nodes([a1, a2, a3])
+    wf.add_edge("PR-Alpha", "PR-Beta")
+    wf.add_edge("PR-Beta", "PR-Gamma")
+    wf.compile()
+
+    TASK = "partial resume task"
+    wf.run(TASK)
+
+    # Delete the last layer's checkpoint to simulate a crash after layer 2
+    task_key = hashlib.sha256(TASK.encode("utf-8")).hexdigest()[:16]
+    (tmp_path / "checkpoints" / f"{task_key}_layer_2.json").unlink()
+
+    a1.run.reset_mock()
+    a2.run.reset_mock()
+    a3.run.reset_mock()
+
+    wf.run(TASK)
+
+    assert a1.run.call_count == 0  # restored from checkpoint
+    assert a2.run.call_count == 0  # restored from checkpoint
+    assert a3.run.call_count == 1  # re-executed
+
+
+def test_graph_workflow_clear_checkpoints(tmp_path):
+    """clear_checkpoints() removes only the target task's files."""
+    from unittest.mock import MagicMock
+
+    def make_agent(name):
+        a = MagicMock()
+        a.agent_name = name
+        a.run = MagicMock(return_value=f"output-{name}")
+        return a
+
+    a1 = make_agent("CL-Alpha")
+    a2 = make_agent("CL-Beta")
+
+    cp_dir = str(tmp_path / "checkpoints")
+    wf = GraphWorkflow(name="CL-Test", checkpoint_dir=cp_dir)
+    wf.add_nodes([a1, a2])
+    wf.add_edge("CL-Alpha", "CL-Beta")
+    wf.compile()
+
+    TASK_A = "task a"
+    TASK_B = "task b"
+
+    wf.run(TASK_A)
+    wf.run(TASK_B)
+
+    all_files_before = list(tmp_path.glob("checkpoints/*.json"))
+    assert len(all_files_before) == 4  # 2 layers x 2 tasks
+
+    deleted = wf.clear_checkpoints(TASK_A)
+    assert deleted == 2
+
+    remaining = list(tmp_path.glob("checkpoints/*.json"))
+    assert len(remaining) == 2  # only TASK_B files remain
+
+    task_b_key = hashlib.sha256(TASK_B.encode("utf-8")).hexdigest()[
+        :16
+    ]
+    assert all(task_b_key in f.name for f in remaining)
+
+
+def test_graph_workflow_clear_checkpoints_no_dir():
+    """clear_checkpoints() raises ValueError when checkpoint_dir is not set."""
+    wf = GraphWorkflow(name="NoCp-Test")
+    with pytest.raises(ValueError, match="checkpoint_dir"):
+        wf.clear_checkpoints("some task")
+
+
+def test_graph_workflow_checkpoint_conversation_replay(tmp_path):
+    """Restored checkpoint outputs are replayed into self.conversation."""
+    from unittest.mock import MagicMock
+
+    def make_agent(name):
+        a = MagicMock()
+        a.agent_name = name
+        a.run = MagicMock(return_value=f"output-{name}")
+        return a
+
+    a1 = make_agent("CV-Alpha")
+    a2 = make_agent("CV-Beta")
+
+    cp_dir = str(tmp_path / "checkpoints")
+    wf = GraphWorkflow(name="CV-Test", checkpoint_dir=cp_dir)
+    wf.add_nodes([a1, a2])
+    wf.add_edge("CV-Alpha", "CV-Beta")
+    wf.compile()
+
+    TASK = "conversation replay task"
+    wf.run(TASK)
+
+    # Second run — both layers restored from checkpoints
+    a1.run.reset_mock()
+    a2.run.reset_mock()
+    wf.conversation = type(wf.conversation)()  # fresh conversation
+    wf.run(TASK)
+
+    assert a1.run.call_count == 0
+    assert a2.run.call_count == 0
+    # Conversation should contain the restored outputs
+    history_roles = [
+        m["role"] for m in wf.conversation.conversation_history
+    ]
+    assert "CV-Alpha" in history_roles
+    assert "CV-Beta" in history_roles
+
+
+def test_graph_workflow_to_spec_round_trip():
+    """to_spec / from_topology_spec round-trip preserves topology and metadata."""
+    a = create_test_agent("Alpha", "First agent")
+    b = create_test_agent("Beta", "Second agent")
+    c = create_test_agent("Gamma", "Third agent")
+
+    wf = GraphWorkflow(
+        name="RoundTrip", description="Test pipeline", max_loops=2
+    )
+    wf.add_nodes([a, b, c])
+    wf.add_edge("Alpha", "Beta", weight=1)
+    wf.add_edge("Beta", "Gamma", weight=2)
+    wf.compile()
+
+    spec = wf.to_spec()
+
+    # Top-level fields
+    assert spec["name"] == "RoundTrip"
+    assert spec["description"] == "Test pipeline"
+    assert spec["max_loops"] == 2
+
+    # Nodes are sorted by id
+    node_ids = [n["id"] for n in spec["nodes"]]
+    assert node_ids == sorted(node_ids)
+    assert set(node_ids) == {"Alpha", "Beta", "Gamma"}
+    for n in spec["nodes"]:
+        assert n["agent_name"] == n["id"]
+
+    # Edges are sorted by (source, target)
+    edge_pairs = [(e["source"], e["target"]) for e in spec["edges"]]
+    assert edge_pairs == sorted(edge_pairs)
+    assert ("Alpha", "Beta") in edge_pairs
+    assert ("Beta", "Gamma") in edge_pairs
+
+    # entry / end points are sorted lists
+    assert spec["entry_points"] == sorted(spec["entry_points"])
+    assert spec["end_points"] == sorted(spec["end_points"])
+
+    # Reconstruct
+    registry = {"Alpha": a, "Beta": b, "Gamma": c}
+    wf2 = GraphWorkflow.from_topology_spec(spec, registry)
+
+    assert set(wf2.nodes.keys()) == {"Alpha", "Beta", "Gamma"}
+    assert len(wf2.edges) == 2
+    assert wf2.name == "RoundTrip"
+    assert wf2.max_loops == 2
+    assert set(wf2.entry_points) == set(wf.entry_points)
+    assert set(wf2.end_points) == set(wf.end_points)
+
+    # Agent objects are resolved correctly
+    assert wf2.nodes["Alpha"].agent is a
+    assert wf2.nodes["Beta"].agent is b
+    assert wf2.nodes["Gamma"].agent is c
+
+
+def test_graph_workflow_to_spec_deterministic_order():
+    """to_spec output is identical regardless of insertion order."""
+    a = create_test_agent("Zebra")
+    b = create_test_agent("Apple")
+    c = create_test_agent("Mango")
+
+    wf1 = GraphWorkflow(name="Order-Test")
+    wf1.add_nodes([a, b, c])
+    wf1.add_edge("Apple", "Mango")
+    wf1.add_edge("Mango", "Zebra")
+    wf1.compile()
+
+    wf2 = GraphWorkflow(name="Order-Test")
+    wf2.add_nodes([c, a, b])  # different insertion order
+    wf2.add_edge("Mango", "Zebra")
+    wf2.add_edge("Apple", "Mango")
+    wf2.compile()
+
+    assert wf1.to_spec()["nodes"] == wf2.to_spec()["nodes"]
+    assert wf1.to_spec()["edges"] == wf2.to_spec()["edges"]
+
+
+def test_graph_workflow_to_spec_node_metadata():
+    """Node metadata is preserved through the spec round-trip."""
+    a = create_test_agent("Alpha")
+    b = create_test_agent("Beta")
+
+    from swarms.structs.graph_workflow import Node
+
+    wf = GraphWorkflow(name="Meta-Test")
+    wf.nodes["Alpha"] = Node(
+        id="Alpha", agent=a, metadata={"role": "lead", "priority": 1}
+    )
+    wf.nodes["Beta"] = Node(
+        id="Beta", agent=b, metadata={"role": "support"}
+    )
+    wf.add_edge("Alpha", "Beta")
+    wf.compile()
+
+    spec = wf.to_spec()
+    alpha_spec = next(n for n in spec["nodes"] if n["id"] == "Alpha")
+    assert alpha_spec["metadata"] == {"role": "lead", "priority": 1}
+
+    registry = {"Alpha": a, "Beta": b}
+    wf2 = GraphWorkflow.from_topology_spec(spec, registry)
+    assert wf2.nodes["Alpha"].metadata == {
+        "role": "lead",
+        "priority": 1,
+    }
+    assert wf2.nodes["Beta"].metadata == {"role": "support"}
+
+
+def test_graph_workflow_from_topology_spec_missing_agent():
+    """from_topology_spec raises ValueError when an agent is absent from the registry."""
+    a = create_test_agent("Alpha")
+    b = create_test_agent("Beta")
+
+    wf = GraphWorkflow(name="Missing-Agent-Test")
+    wf.add_nodes([a, b])
+    wf.add_edge("Alpha", "Beta")
+    wf.compile()
+
+    spec = wf.to_spec()
+
+    # Registry is missing "Beta"
+    with pytest.raises(ValueError, match="Beta"):
+        GraphWorkflow.from_topology_spec(spec, {"Alpha": a})
+
+
+def test_graph_workflow_from_topology_spec_malformed_node():
+    """from_topology_spec raises ValueError when a node dict is missing required keys."""
+    spec = {
+        "nodes": [{"id": "Alpha"}],  # missing "agent_name"
+        "edges": [],
+    }
+    with pytest.raises(ValueError, match="agent_name"):
+        GraphWorkflow.from_topology_spec(spec, {})
+
+
+def test_graph_workflow_from_topology_spec_malformed_edge():
+    """from_topology_spec raises ValueError when an edge dict is missing required keys."""
+    a = create_test_agent("Alpha")
+    spec = {
+        "nodes": [{"id": "Alpha", "agent_name": "Alpha"}],
+        "edges": [{"source": "Alpha"}],  # missing "target"
+    }
+    with pytest.raises(ValueError, match="target"):
+        GraphWorkflow.from_topology_spec(spec, {"Alpha": a})
+
+
+def test_graph_workflow_from_topology_spec_not_a_dict():
+    """from_topology_spec raises ValueError when spec is not a dict."""
+    with pytest.raises(ValueError, match="dict"):
+        GraphWorkflow.from_topology_spec("not-a-dict", {})
 
 
 def test_graph_workflow_backend_fallback():

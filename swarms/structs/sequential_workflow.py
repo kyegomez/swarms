@@ -1,3 +1,4 @@
+import ast
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -15,6 +16,37 @@ from swarms.utils.swarm_autosave import get_swarm_workspace_dir
 from swarms.utils.workspace_utils import get_workspace_dir
 
 logger = initialize_logger(log_folder="sequential_workflow")
+
+DRIFT_DETECTION_PROMPT = """You are a semantic alignment judge. Evaluate how well a pipeline's final output addresses the original task.
+
+Score the alignment on a scale from 0.0 to 1.0:
+- 1.0  fully and precisely addresses the task
+- 0.75 mostly addresses the task with minor gaps
+- 0.5  partially addresses the task
+- 0.25 barely addresses the task
+- 0.0  completely unrelated to the task
+
+Call the score_drift function with your score."""
+
+DRIFT_SCORE_TOOL = [
+    {
+        "type": "function",
+        "function": {
+            "name": "score_drift",
+            "description": "Record the semantic alignment score between the original task and the final output.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "score": {
+                        "type": "number",
+                        "description": "Alignment score between 0.0 and 1.0.",
+                    }
+                },
+                "required": ["score"],
+            },
+        },
+    }
+]
 
 
 class SequentialWorkflow:
@@ -55,6 +87,9 @@ class SequentialWorkflow:
         team_awareness: bool = False,
         autosave: bool = True,
         verbose: bool = False,
+        drift_detection: bool = False,
+        drift_threshold: float = 0.75,
+        drift_model: str = "claude-sonnet-4-5",
         *args,
         **kwargs,
     ):
@@ -72,6 +107,12 @@ class SequentialWorkflow:
             multi_agent_collab_prompt (bool, optional): If True, appends a collaborative prompt to each agent.
             autosave (bool, optional): Whether to enable autosaving of conversation history. Defaults to False.
             verbose (bool, optional): Whether to enable verbose logging. Defaults to False.
+            drift_detection (bool, optional): If True, a judge agent scores the final output's semantic
+                alignment with the original task after the pipeline completes. Defaults to False.
+            drift_threshold (float, optional): Minimum alignment score (0–1) to consider output acceptable.
+                A warning is logged when the score falls below this value. Defaults to 0.75.
+            drift_model (str, optional): Model used by the drift detection judge agent.
+                Defaults to "claude-sonnet-4-5".
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -89,6 +130,20 @@ class SequentialWorkflow:
         self.team_awareness = team_awareness
         self.autosave = autosave
         self.verbose = verbose
+        self.drift_threshold = drift_threshold
+        self.drift_agent = (
+            Agent(
+                agent_name="DriftDetector",
+                system_prompt=DRIFT_DETECTION_PROMPT,
+                model_name=drift_model,
+                max_loops=1,
+                thinking_tokens=1024,
+                temperature=1,
+                tools_list_dictionary=DRIFT_SCORE_TOOL,
+            )
+            if drift_detection
+            else None
+        )
         self.swarm_workspace_dir = None
 
         self.reliability_check()
@@ -173,6 +228,34 @@ class SequentialWorkflow:
 
         return flow
 
+    def _run_drift_detection(
+        self, task: str, result: str, run_kwargs: dict
+    ) -> str:
+        while True:
+            try:
+                raw = self.drift_agent.run(
+                    f"Original task: {task}\n\nFinal output: {result}"
+                )
+                tool_calls = ast.literal_eval(raw)
+                score = float(
+                    json.loads(
+                        tool_calls[0]["function"]["arguments"]
+                    )["score"]
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Drift detection failed ({e}); skipping"
+                )
+                break
+            if score >= self.drift_threshold:
+                logger.info(f"Drift check passed: score={score:.2f}")
+                break
+            logger.warning(
+                f"Drift detected: score={score:.2f} below threshold={self.drift_threshold}, rerunning pipeline"
+            )
+            result = self.agent_rearrange.run(**run_kwargs)
+        return result
+
     def run(
         self,
         task: str,
@@ -184,6 +267,12 @@ class SequentialWorkflow:
         """
         Executes a specified task through the agents in the dynamically constructed flow.
 
+        If drift_detection is configured, a judge agent scores the final output's semantic
+        alignment with the original task after the pipeline completes. If the score falls
+        below drift_threshold, the pipeline reruns and the cycle repeats until the score
+        meets the threshold. If the judge output cannot be parsed, drift checking is skipped
+        and the last result is returned as-is.
+
         Args:
             task (str): The task for the agents to execute.
             img (Optional[str], optional): An optional image input for the agents.
@@ -192,18 +281,23 @@ class SequentialWorkflow:
             **kwargs: Additional keyword arguments.
 
         Returns:
-            str: The final result after processing through all agents.
+            The final result after processing through all agents.
 
         Raises:
-            ValueError: If the task is None or empty.
             Exception: If any error occurs during task execution.
         """
         try:
             # prompt = f"{MULTI_AGENT_COLLAB_PROMPT}\n\n{task}"
-            result = self.agent_rearrange.run(
-                task=task,
-                img=img,
-            )
+            run_kwargs = {"task": task}
+            if img is not None:
+                run_kwargs["img"] = img
+            result = self.agent_rearrange.run(**run_kwargs)
+
+            # Run drift detection if configured
+            if self.drift_agent is not None:
+                result = self._run_drift_detection(
+                    task, result, run_kwargs
+                )
 
             # Save conversation history after successful execution
             if self.autosave and self.swarm_workspace_dir:

@@ -1,3 +1,4 @@
+from swarms.structs.advisor_swarm import AdvisorSwarm
 from swarms.structs.agent import Agent
 from swarms.structs.agent_loader import AgentLoader
 from swarms.structs.agent_rearrange import AgentRearrange, rearrange
@@ -17,12 +18,6 @@ from swarms.structs.conversation import Conversation
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.cron_job import CronJob
 from swarms.structs.debate_with_judge import DebateWithJudge
-from swarms.structs.planner_generator_evaluator import (
-    PlannerGeneratorEvaluator,
-    StepContract,
-    EvaluationReport,
-    HarnessResult,
-)
 from swarms.structs.graph_workflow import (
     Edge,
     GraphWorkflow,
@@ -67,6 +62,12 @@ from swarms.structs.multi_agent_exec import (
     run_single_agent,
 )
 from swarms.structs.multi_agent_router import MultiAgentRouter
+from swarms.structs.planner_generator_evaluator import (
+    EvaluationReport,
+    HarnessResult,
+    PlannerGeneratorEvaluator,
+    StepContract,
+)
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.self_moa_seq import SelfMoASeq
 from swarms.structs.sequential_workflow import SequentialWorkflow
@@ -101,6 +102,7 @@ from swarms.structs.swarming_architectures import (
 )
 
 __all__ = [
+    "AdvisorSwarm",
     "Agent",
     "BaseStructure",
     "BaseSwarm",

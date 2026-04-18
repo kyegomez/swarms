@@ -1,7 +1,5 @@
 asyncio>=3.4.3,<5.0
 toml
-pypdf==5.1.0
-ratelimit==2.2.1
 loguru
 pydantic==2.12.5
 tenacity
@@ -9,22 +7,11 @@ rich
 psutil
 python-dotenv
 PyYAML
-black
-ruff
-types-toml>=0.10.8.1
-types-pytz>=2023.3,<2027.0
-types-chardet>=5.0.4.6
-mypy-protobuf>=3.0.0
-pytest
 networkx
-aiofiles
 httpx
 requests
-litellm
-# vllm>=0.2.0
-aiohttp
+litellm==1.76.1
 mcp
-numpy
 schedule
 uvloop; sys_platform == 'linux' or sys_platform == 'darwin' # linux or macos only
 winloop; sys_platform == 'win32' # windows only

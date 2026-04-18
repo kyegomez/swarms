@@ -1,4 +1,6 @@
+import copy
 import json
+import os
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional, Union
 import asyncio
@@ -327,17 +329,14 @@ class AgentRearrange:
                     )
                 agents_in_flow.append(agent_name)
 
-        # # If the length of the agents does not equal the length of the agents in flow
-        # if len(set(agents_in_flow)) != len(agents_in_flow):
-        #     raise ValueError(
-        #         "Duplicate agent names in the flow are not allowed."
-        #     )
-
         logger.info(f"Flow: {self.flow} is valid.")
         return True
 
     def _get_sequential_awareness(
-        self, agent_name: str, tasks: List[str]
+        self,
+        agent_name: str,
+        tasks: List[str],
+        task_idx: int = None,
     ) -> str:
         """
         Determines the sequential awareness information for an agent in a sequential flow.
@@ -345,17 +344,26 @@ class AgentRearrange:
         Args:
             agent_name (str): The name of the current agent.
             tasks (List[str]): The list of tasks in the flow.
+            task_idx (int, optional): The exact position index of this agent invocation
+                in the flow. When provided, uses this directly instead of searching by name.
+                This is essential for repeated agents (e.g., "writer -> reviewer -> writer")
+                so each occurrence gets correct positional awareness.
 
         Returns:
             str: A string describing the agents ahead and behind in the sequence.
         """
-        # Find the position of the current agent in the flow
-        agent_position = None
-        for i, task in enumerate(tasks):
-            agent_names = [name.strip() for name in task.split(",")]
-            if agent_name in agent_names:
-                agent_position = i
-                break
+        # Use provided position index if available, otherwise search by name
+        if task_idx is not None:
+            agent_position = task_idx
+        else:
+            agent_position = None
+            for i, task in enumerate(tasks):
+                agent_names = [
+                    name.strip() for name in task.split(",")
+                ]
+                if agent_name in agent_names:
+                    agent_position = i
+                    break
 
         if agent_position is None:
             return ""
@@ -526,6 +534,7 @@ class AgentRearrange:
         self,
         agent_name: str,
         tasks: List[str],
+        task_idx: int = None,
         img: str = None,
         *args,
         **kwargs,
@@ -541,6 +550,8 @@ class AgentRearrange:
             agent_name (str): Name of the agent to run sequentially.
             tasks (List[str]): List of all tasks in the flow for awareness context.
                 Used to determine the agent's position and provide awareness info.
+            task_idx (int, optional): The position index of this agent in the flow.
+                Essential for repeated agents so each occurrence gets correct awareness.
             img (str, optional): Image input for agents that support it.
                 Defaults to None.
             *args: Additional positional arguments passed to agent execution.
@@ -560,7 +571,7 @@ class AgentRearrange:
 
         # Add sequential awareness information for the agent
         awareness_info = self._get_sequential_awareness(
-            agent_name, tasks
+            agent_name, tasks, task_idx=task_idx
         )
         if awareness_info:
             self.conversation.add("system", awareness_info)
@@ -676,11 +687,20 @@ class AgentRearrange:
                     result = self._run_sequential_workflow(
                         agent_name=agent_name,
                         tasks=tasks,
+                        task_idx=task_idx,
                         img=img,
                         *args,
                         **kwargs,
                     )
-                    response_dict[agent_name] = result
+
+                    # Use indexed key to preserve all outputs
+                    # from repeated agents (e.g., "Writer_0", "Writer_2")
+                    if agent_name in response_dict:
+                        response_dict[f"{agent_name}_{task_idx}"] = (
+                            result
+                        )
+                    else:
+                        response_dict[agent_name] = result
 
             loop_count += 1
 
@@ -820,6 +840,14 @@ class AgentRearrange:
             Each batch is processed sequentially, but individual tasks within
             a batch may run concurrently depending on the flow configuration.
         """
+        if batch_size <= 0:
+            raise ValueError(
+                f"batch_size must be a positive integer, got {batch_size}"
+            )
+        if img is not None and len(img) != len(tasks):
+            raise ValueError(
+                f"img length ({len(img)}) must match tasks length ({len(tasks)})"
+            )
         results = []
         for i in range(0, len(tasks), batch_size):
             batch_tasks = tasks[i : i + batch_size]
@@ -829,16 +857,26 @@ class AgentRearrange:
                 else [None] * len(batch_tasks)
             )
 
-            # Process batch using concurrent execution
-            batch_results = [
-                self.run(
-                    task=task,
-                    img=img_path,
-                    *args,
-                    **kwargs,
-                )
-                for task, img_path in zip(batch_tasks, batch_imgs)
-            ]
+            # Process batch concurrently. Each task gets a full deepcopy of
+            # self so conversation history and agent state are fully isolated.
+            max_workers = min(len(batch_tasks), os.cpu_count() or 4)
+            futures_ordered = []
+            with ThreadPoolExecutor(
+                max_workers=max_workers
+            ) as executor:
+                for task_item, img_path in zip(
+                    batch_tasks, batch_imgs
+                ):
+                    clone = copy.deepcopy(self)
+                    future = executor.submit(
+                        clone.run,
+                        task_item,
+                        img_path,
+                        *args,
+                        **kwargs,
+                    )
+                    futures_ordered.append(future)
+                batch_results = [f.result() for f in futures_ordered]
             results.extend(batch_results)
 
         return results

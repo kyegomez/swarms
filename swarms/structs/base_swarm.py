@@ -496,8 +496,11 @@ class BaseSwarm(ABC):
             for future in as_completed(future_to_llm):
                 try:
                     responses.append(future.result())
-                except Exception:
-                    pass
+                except Exception as e:
+                    agent = future_to_llm[future]
+                    logger.error(
+                        f"Agent {getattr(agent, 'agent_name', repr(agent))} failed: {e}"
+                    )
         self.last_responses = responses
         self.task_history.append(task)
         return responses
@@ -666,7 +669,7 @@ class BaseSwarm(ABC):
         """
         try:
             with open(filename) as f:
-                self.__dict__ = yaml.load(f)
+                self.__dict__ = yaml.safe_load(f)
         except Exception as e:
             logger.error(e)
 

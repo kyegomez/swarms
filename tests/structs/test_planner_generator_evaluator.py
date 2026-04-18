@@ -1,7 +1,6 @@
 import os
 import tempfile
 
-import pytest
 
 from swarms import Agent
 from swarms.structs.planner_generator_evaluator import (
@@ -129,7 +128,9 @@ def test_pge_shared_state_file(tmp_path):
     assert "Test prompt" in content
     assert "PGE Harness Shared State" in content
 
-    harness._append_to_shared_state("TEST SECTION", "Test content here")
+    harness._append_to_shared_state(
+        "TEST SECTION", "Test content here"
+    )
     content = harness._read_shared_state()
     assert "TEST SECTION" in content
     assert "Test content here" in content
@@ -142,18 +143,25 @@ def test_pge_extract_step_count():
         max_steps=10,
     )
 
-    assert harness._extract_step_count(
-        "Step 1: A\nStep 2: B\nStep 3: C"
-    ) == 3
+    assert (
+        harness._extract_step_count("Step 1: A\nStep 2: B\nStep 3: C")
+        == 3
+    )
 
-    assert harness._extract_step_count(
-        "1. First\n2. Second\n3. Third\n4. Fourth"
-    ) == 4
+    assert (
+        harness._extract_step_count(
+            "1. First\n2. Second\n3. Third\n4. Fourth"
+        )
+        == 4
+    )
 
     harness.max_steps = 2
-    assert harness._extract_step_count(
-        "Step 1: A\nStep 2: B\nStep 3: C\nStep 4: D"
-    ) == 2
+    assert (
+        harness._extract_step_count(
+            "Step 1: A\nStep 2: B\nStep 3: C\nStep 4: D"
+        )
+        == 2
+    )
 
 
 def test_pge_extract_thresholds():
@@ -192,7 +200,9 @@ def test_pge_parse_evaluation_pass():
 
 ### Overall Status: PASS
 """
-    report = harness._parse_evaluation(1, raw, {"accuracy": 7, "clarity": 6})
+    report = harness._parse_evaluation(
+        1, raw, {"accuracy": 7, "clarity": 6}
+    )
     assert report.passed is True
     assert report.criterion_scores["accuracy"] == 8.0
     assert report.criterion_scores["clarity"] == 7.0
@@ -212,7 +222,9 @@ def test_pge_parse_evaluation_fail():
 
 ### Overall Status: FAIL
 """
-    report = harness._parse_evaluation(1, raw, {"accuracy": 7, "clarity": 6})
+    report = harness._parse_evaluation(
+        1, raw, {"accuracy": 7, "clarity": 6}
+    )
     assert report.passed is False
     assert report.criterion_scores["accuracy"] == 5.0
 
@@ -254,7 +266,7 @@ def test_pge_execution():
             max_retries_per_step=1,
             shared_state_path=shared_state_path,
             output_type="final",
-                verbose=True,
+            verbose=True,
         )
 
         result = harness.run(

@@ -41,7 +41,6 @@ Tests for Swarms structural components and workflows:
 - `test_auto_swarms_builder.py` - Automated swarm construction
 - `test_base_workflow.py` - Base workflow functionality
 - `test_base.py` - Base class implementations
-- `test_board_of_directors_swarm.py` - Board of directors swarm pattern
 - `test_concurrent_workflow.py` - Concurrent workflow execution
 - `test_conversation.py` - Conversation management
 - `test_forest_swarm.py` - Forest swarm architecture

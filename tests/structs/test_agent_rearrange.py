@@ -597,6 +597,229 @@ def test_successful_callable_returns_result():
     assert result is not None
 
 
+# ============================================================================
+# Repeated Agent Flow Tests
+# ============================================================================
+
+
+def create_repeated_flow_agents():
+    """Create agents for repeated flow testing."""
+    return [
+        Agent(
+            agent_name="Writer",
+            agent_description="Expert in writing content",
+            system_prompt="You are a writer. Write one concise sentence.",
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            verbose=False,
+        ),
+        Agent(
+            agent_name="Reviewer",
+            agent_description="Expert in reviewing content",
+            system_prompt="You are a reviewer. Give one critique.",
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            verbose=False,
+        ),
+    ]
+
+
+def test_repeated_agent_flow_valid():
+    """Test that flows with repeated agents pass validation."""
+    agents = create_repeated_flow_agents()
+
+    agent_rearrange = AgentRearrange(
+        agents=agents,
+        flow="Writer -> Reviewer -> Writer",
+    )
+
+    assert agent_rearrange.validate_flow() is True
+    print("✓ test_repeated_agent_flow_valid passed")
+
+
+def test_repeated_agent_awareness_position_0():
+    """Test that the first occurrence of a repeated agent gets correct awareness."""
+    agents = create_repeated_flow_agents()
+
+    agent_rearrange = AgentRearrange(
+        agents=agents,
+        flow="Writer -> Reviewer -> Writer",
+    )
+
+    tasks = agent_rearrange.flow.split("->")
+    awareness = agent_rearrange._get_sequential_awareness(
+        "Writer", tasks, task_idx=0
+    )
+
+    # Writer at position 0: no agent ahead, Reviewer behind
+    assert "Agent behind" in awareness
+    assert "Reviewer" in awareness
+    assert "Agent ahead" not in awareness
+    print("✓ test_repeated_agent_awareness_position_0 passed")
+
+
+def test_repeated_agent_awareness_position_2():
+    """Test that the second occurrence of a repeated agent gets correct awareness."""
+    agents = create_repeated_flow_agents()
+
+    agent_rearrange = AgentRearrange(
+        agents=agents,
+        flow="Writer -> Reviewer -> Writer",
+    )
+
+    tasks = agent_rearrange.flow.split("->")
+    awareness = agent_rearrange._get_sequential_awareness(
+        "Writer", tasks, task_idx=2
+    )
+
+    # Writer at position 2: Reviewer ahead, no agent behind
+    assert "Agent ahead" in awareness
+    assert "Reviewer" in awareness
+    assert "Agent behind" not in awareness
+    print("✓ test_repeated_agent_awareness_position_2 passed")
+
+
+def test_repeated_agent_awareness_differs_per_position():
+    """Test that each occurrence of a repeated agent gets different awareness."""
+    agents = create_repeated_flow_agents()
+
+    agent_rearrange = AgentRearrange(
+        agents=agents,
+        flow="Writer -> Reviewer -> Writer",
+    )
+
+    tasks = agent_rearrange.flow.split("->")
+    awareness_0 = agent_rearrange._get_sequential_awareness(
+        "Writer", tasks, task_idx=0
+    )
+    awareness_2 = agent_rearrange._get_sequential_awareness(
+        "Writer", tasks, task_idx=2
+    )
+
+    assert awareness_0 != awareness_2
+    print(
+        "✓ test_repeated_agent_awareness_differs_per_position passed"
+    )
+
+
+def test_repeated_agent_awareness_fallback_without_idx():
+    """Test that awareness still works when task_idx is not provided (backward compat)."""
+    agents = create_repeated_flow_agents()
+
+    agent_rearrange = AgentRearrange(
+        agents=agents,
+        flow="Writer -> Reviewer -> Writer",
+    )
+
+    tasks = agent_rearrange.flow.split("->")
+    # Without task_idx, falls back to finding first occurrence
+    awareness = agent_rearrange._get_sequential_awareness(
+        "Writer", tasks
+    )
+
+    assert awareness is not None
+    assert isinstance(awareness, str)
+    assert "Sequential awareness" in awareness
+    print(
+        "✓ test_repeated_agent_awareness_fallback_without_idx passed"
+    )
+
+
+def test_repeated_agent_three_occurrences():
+    """Test awareness correctness with three occurrences of the same agent."""
+    agents = create_repeated_flow_agents()
+
+    agent_rearrange = AgentRearrange(
+        agents=agents,
+        flow="Writer -> Reviewer -> Writer -> Reviewer -> Writer",
+    )
+
+    tasks = agent_rearrange.flow.split("->")
+
+    # Writer at pos 0: no ahead, Reviewer behind
+    a0 = agent_rearrange._get_sequential_awareness(
+        "Writer", tasks, task_idx=0
+    )
+    assert "Agent behind" in a0
+    assert "Agent ahead" not in a0
+
+    # Writer at pos 2: Reviewer ahead, Reviewer behind
+    a2 = agent_rearrange._get_sequential_awareness(
+        "Writer", tasks, task_idx=2
+    )
+    assert "Agent ahead" in a2
+    assert "Agent behind" in a2
+
+    # Writer at pos 4: Reviewer ahead, no behind
+    a4 = agent_rearrange._get_sequential_awareness(
+        "Writer", tasks, task_idx=4
+    )
+    assert "Agent ahead" in a4
+    assert "Agent behind" not in a4
+
+    print("✓ test_repeated_agent_three_occurrences passed")
+
+
+def test_repeated_agent_run():
+    """Test that a repeated agent flow runs end-to-end."""
+    agents = create_repeated_flow_agents()
+
+    agent_rearrange = AgentRearrange(
+        name="repeated-flow-test",
+        agents=agents,
+        flow="Writer -> Reviewer -> Writer",
+        max_loops=1,
+    )
+
+    result = agent_rearrange.run("Write about the moon.")
+    assert result is not None
+    assert len(str(result)) > 0
+
+    # Verify Writer appears twice in conversation
+    messages = agent_rearrange.conversation.to_dict()
+    writer_msgs = [m for m in messages if m.get("role") == "Writer"]
+    assert (
+        len(writer_msgs) == 2
+    ), f"Expected 2 Writer messages, got {len(writer_msgs)}"
+
+    print("✓ test_repeated_agent_run passed")
+
+
+def test_repeated_agent_awareness_in_conversation():
+    """Test that different awareness messages are injected for each occurrence."""
+    agents = create_repeated_flow_agents()
+
+    agent_rearrange = AgentRearrange(
+        name="awareness-conv-test",
+        agents=agents,
+        flow="Writer -> Reviewer -> Writer",
+        max_loops=1,
+    )
+
+    agent_rearrange.run("Write about rain.")
+
+    messages = agent_rearrange.conversation.to_dict()
+
+    # Find awareness messages that precede Writer messages
+    writer_awareness = []
+    for idx, msg in enumerate(messages):
+        if "Sequential awareness" in str(msg.get("content", "")):
+            if (
+                idx + 1 < len(messages)
+                and messages[idx + 1].get("role") == "Writer"
+            ):
+                writer_awareness.append(msg.get("content", ""))
+
+    assert (
+        len(writer_awareness) == 2
+    ), f"Expected 2 awareness messages before Writer, got {len(writer_awareness)}"
+    assert (
+        writer_awareness[0] != writer_awareness[1]
+    ), "Both Writer invocations got identical awareness"
+
+    print("✓ test_repeated_agent_awareness_in_conversation passed")
+
+
 def main():
     """Run all tests."""
     tests = [
@@ -629,6 +852,14 @@ def main():
         test_error_logged_once,
         test_successful_run_returns_result,
         test_successful_callable_returns_result,
+        test_repeated_agent_flow_valid,
+        test_repeated_agent_awareness_position_0,
+        test_repeated_agent_awareness_position_2,
+        test_repeated_agent_awareness_differs_per_position,
+        test_repeated_agent_awareness_fallback_without_idx,
+        test_repeated_agent_three_occurrences,
+        test_repeated_agent_run,
+        test_repeated_agent_awareness_in_conversation,
     ]
 
     print("=" * 60)

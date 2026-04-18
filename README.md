@@ -614,31 +614,6 @@ This architecture is perfect for financial analysis, strategic planning, researc
 
 ---
 
-### MAKER
-
-`MAKER` implements **maximal agentic decomposition** with **first-to-ahead-by-k voting** and **red-flagging**: you supply `format_prompt`, `parse_response`, and optional `validate_response` / `update_state`, then run for a fixed number of steps (or until a stop condition). Each step spins up a focused one-shot `Agent` (or cycles a pool you provide) until one parsed answer leads all others by `k` votes. This matches the error-correction story in [Solving a Million-Step LLM Task with Zero Errors](https://arxiv.org/abs/2511.09030). [Full documentation](https://docs.swarms.world/en/latest/swarms/structs/maker/)
-
-```python
-from swarms.structs.maker import MAKER
-
-maker = MAKER(
-    model_name="gpt-4.1-mini",
-    system_prompt="You solve tasks in one clear line per step.",
-    k=3,
-)
-
-# Optional: override format_prompt / parse_response / validate_response for your domain.
-results = maker.run(
-    task="List three concise benefits of typed APIs, one per step.",
-    max_steps=3,
-)
-print(results)
-```
-
-For lower latency when `k` is large, use `run_parallel_voting` with the same `task` and `max_steps`.
-
----
-
 ### Social Algorithms
 
 **Social Algorithms** provide a flexible framework for defining custom communication patterns between agents. You can upload any arbitrary social algorithm as a callable that defines the sequence of communication, enabling agents to talk to each other in sophisticated ways. [Learn more about Social Algorithms](https://docs.swarms.world/en/latest/swarms/structs/social_algorithms/)
@@ -821,25 +796,11 @@ Explore comprehensive examples and tutorials to learn how to use Swarms effectiv
 
 ## Contribute to Swarms
 
-Our mission is to accelerate the transition to a fully autonomous world economy by providing enterprise-grade, production-ready infrastructure that enables seamless deployment and orchestration of millions of autonomous agents. We are creating the operating system for the agent economy, and we need your help to achieve this goal.
+Swarms is an open-source, community-driven framework aiming to accelerate a fully autonomous world by providing robust infrastructure for deploying and orchestrating millions of agents. By contributing, you can help advance multi-agent AI, collaborate with passionate peers, shape the agent economy, and enhance your expertise. 
 
-Swarms is built by the community, for the community. We believe that collaborative development is the key to pushing the boundaries of what's possible with multi-agent AI. Your contributions are not only welcome—they are essential to our mission. [Learn more about why you should contribute to Swarms](https://docs.swarms.world/en/latest/contributors/main/)
+Learn more about how you can make a meaningful impact in our [Contributor's Guide](https://docs.swarms.world/en/latest/contributors/main/).
 
-### Why Contribute?
-
-By joining us, you have the opportunity to:
-
-* **Work on the Frontier of Agents:** Shape the future of autonomous agent technology and help build a production-grade, open-source framework.
-
-* **Join a Vibrant Community:** Collaborate with a passionate and growing group of agent developers, researchers, and agent enthusasits.
-
-* **Make a Tangible Impact:** Whether you're fixing a bug, adding a new feature, or improving documentation, your work will be used in real-world applications.
-
-* **Learn and Grow:** Gain hands-on experience with advanced AI concepts and strengthen your software engineering skills.
-
-Discover more about our mission and the benefits of becoming a contributor in our official [**Contributor's Guide**](https://docs.swarms.world/en/latest/contributors/main/).
-
-### How to Get Started
+### How to Contribute
 
 We've made it easy to start contributing. Here's how you can help:
 
@@ -851,7 +812,6 @@ We've made it easy to start contributing. Here's how you can help:
 
 4. **Join the Discussion:** To participate in roadmap discussions and connect with other developers, join our community on [**Discord**](https://discord.gg/EamjgSaEQf).
 
-
 ### Thank You to Our Contributors
 
 Thank you for contributing to swarms. Your work is extremely appreciated and recognized.
@@ -859,6 +819,14 @@ Thank you for contributing to swarms. Your work is extremely appreciated and rec
 <a href="https://github.com/kyegomez/swarms/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=kyegomez/swarms" />
 </a>
+
+
+## Join the Discord
+
+Join thousands of agent builders and AI engineers in the **[Swarms Discord](https://discord.gg/EamjgSaEQf)** for technical support, project showcases, collaboration, and the latest swarms ecosystem updates.
+
+[Join the Swarms Discord →](https://discord.gg/EamjgSaEQf)
+
 
 ### Thank You to Our Community
 
@@ -870,7 +838,7 @@ We're incredibly grateful to everyone who supports Swarms! Your stars, forks, an
 
 -----
 
-## Join the Swarms community
+## Join the Swarms Community!
 
 Join our community of agent engineers and researchers for technical support, cutting-edge updates, and exclusive access to world-class agent engineering insights!
 

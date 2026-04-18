@@ -32,6 +32,9 @@ graph TD
 | `team_awareness` | `bool`        | Enables sequential awareness features (passed to internal `AgentRearrange`). Defaults to `False`. |
 | `autosave` | `bool` | Whether to enable autosaving of conversation history. Defaults to `True`. |
 | `verbose` | `bool` | Whether to enable verbose logging. Defaults to `False`. |
+| `drift_detection` | `bool` | If True, a judge agent scores the final output's semantic alignment with the original task after the pipeline completes. Defaults to `False`. |
+| `drift_threshold` | `float` | Minimum alignment score (0–1) required to accept output. If the score falls below this value the pipeline reruns. Defaults to `0.75`. |
+| `drift_model` | `str` | Model used by the drift-detection judge agent. Defaults to `"claude-sonnet-4-5"`. |
 | `flow`           | `str`         | A string representing the order of agents (e.g., "Agent1 -> Agent2 -> Agent3"). |
 | `agent_rearrange`| `AgentRearrange` | Internal helper for managing agent execution. |
 | `swarm_workspace_dir` | `str` | The workspace directory where conversation history is saved (set automatically when autosave is enabled). |
@@ -54,12 +57,15 @@ The constructor initializes the `SequentialWorkflow` object.
   - `team_awareness` (`bool`, optional): Enables sequential awareness features in the underlying `AgentRearrange`. Defaults to `False`.
   - `autosave` (`bool`, optional): Whether to enable autosaving of conversation history. Defaults to `True`.
   - `verbose` (`bool`, optional): Whether to enable verbose logging. Defaults to `False`.
+  - `drift_detection` (`bool`, optional): If True, enables a judge agent that scores the final output's semantic alignment with the original task. Defaults to `False`.
+  - `drift_threshold` (`float`, optional): Minimum alignment score (0–1) to accept the output. The pipeline reruns until the score meets this threshold. Defaults to `0.75`.
+  - `drift_model` (`str`, optional): Model used by the drift-detection judge agent. Defaults to `"claude-sonnet-4-5"`.
   - `*args`: Variable length argument list.
   - `**kwargs`: Arbitrary keyword arguments.
 
 ### `run(self, task: str, img: Optional[str] = None, imgs: Optional[List[str]] = None, *args, **kwargs) -> str`
 
-Runs the specified task through the agents in the dynamically constructed flow.
+Runs the specified task through the agents in the dynamically constructed flow. If `drift_detection` is enabled, a judge agent scores the final output after all `max_loops` complete. If the score is below `drift_threshold`, the entire pipeline reruns. This cycle repeats until the score meets the threshold or drift detection fails (in which case the last result is returned as-is). There is no built-in retry cap on the drift loop.
 
 - **Parameters:**
   - `task` (`str`): The task for the agents to execute.
@@ -307,10 +313,13 @@ print(result)
 | `agents` | List of agents to execute in sequence | Required |
 | `name` | Name of the workflow | "SequentialWorkflow" |
 | `description` | Description of workflow purpose | Standard description |
-| `max_loops` | Number of times to execute workflow | 1 |
+| `max_loops` | Number of times to execute workflow per run | 1 |
 | `team_awareness` | Enable sequential awareness features | False |
 | `autosave` | Enable automatic saving of conversation history | True |
 | `verbose` | Enable verbose logging | False |
+| `drift_detection` | Enable semantic alignment scoring after each run | False |
+| `drift_threshold` | Minimum score (0–1) to accept output; reruns pipeline if not met | 0.75 |
+| `drift_model` | Model used by the drift-detection judge | "claude-sonnet-4-5" |
 
 ## Autosave Feature
 
@@ -375,6 +384,33 @@ workflow = SequentialWorkflow(
     team_awareness=True,
 )
 ```
+
+### Drift Detection
+
+Enable `drift_detection=True` to have a judge agent score the final output's semantic alignment with the original task after each run. If the score falls below `drift_threshold`, the entire pipeline reruns automatically. The cycle repeats until the threshold is met.
+
+```python
+workflow = SequentialWorkflow(
+    agents=[researcher, writer, editor],
+    drift_detection=True,
+    drift_threshold=0.80,       # require 80% alignment
+    drift_model="claude-sonnet-4-5",
+)
+
+result = workflow.run("Write a technical deep-dive on transformer attention mechanisms")
+```
+
+Alignment is scored on a 0–1 scale by the judge agent:
+
+| Score | Meaning |
+|-------|---------|
+| 1.0 | Fully and precisely addresses the task |
+| 0.75 | Mostly addresses the task with minor gaps |
+| 0.5 | Partially addresses the task |
+| 0.25 | Barely addresses the task |
+| 0.0 | Completely unrelated to the task |
+
+> **Note:** There is no built-in retry cap on the drift loop. If the pipeline consistently scores below the threshold the loop will run indefinitely. Set `drift_threshold` conservatively or add external retry logic if needed.
 
 ### Multi-Agent Collaboration Prompt
 

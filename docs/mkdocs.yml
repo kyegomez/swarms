@@ -282,6 +282,7 @@ nav:
           
 
 
+        - AdvisorSwarm: "swarms/structs/advisor_swarm.md"
         - PlannerGeneratorEvaluator: "swarms/structs/planner_generator_evaluator.md"
         - DebateWithJudge: "swarms/structs/debate_with_judge.md"
         - MajorityVoting: "swarms/structs/majorityvoting.md"
@@ -301,7 +302,6 @@ nav:
         - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
         - Auto Swarm Builder: "swarms/structs/auto_swarm_builder.md"
         - Swarm Matcher: "swarms/structs/swarm_matcher.md"
-        - Board of Directors: "swarms/structs/BoardOfDirectors.md"
         - SwarmRouter: "swarms/structs/swarm_router.md"
         - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
         - AgentRouter: "swarms/structs/agent_router.md"
@@ -368,6 +368,7 @@ nav:
     - Agent Examples:
       - Overview: "examples/basic_examples_overview.md"
       - Basic Agent: "swarms/examples/basic_agent.md"
+      - ReAct Agent Tutorial: "swarms/examples/react_agent_tutorial.md"
       - Agent Skills: "swarms/examples/agent_skills_overview.md"
       - Autonomous Agent: "swarms/examples/autonomous_agent_tutorial.md"
       - Agent Handoff: "swarms/examples/agent_handoff_tutorial.md"

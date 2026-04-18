@@ -100,6 +100,7 @@ def show_ascii_art():
     # ── Pre-header startup tip ───────────────────────────────────────────────
     startup_tips = [
         # Commands
+        "New project? Run [bold]swarms init[/bold] to scaffold .env and workspace",
         "Start chatting instantly with [bold]swarms chat[/bold]",
         "Verify your setup anytime with [bold]swarms setup-check[/bold]",
         "See every command with [bold]swarms --help[/bold]",
@@ -160,6 +161,7 @@ def show_ascii_art():
 
     # ── Rotating command tip ──────────────────────────────────────────────────
     tips = [
+        "[bold white]swarms init[/bold white] — scaffold a new project with .env and workspace",
         "[bold white]swarms chat[/bold white] — interactive autonomous agent",
         "[bold white]swarms agent --name '...' --task '...'[/bold white] — one-shot agent",
         "[bold white]swarms autoswarm --task '...'[/bold white] — auto-generate a swarm",
@@ -561,9 +563,11 @@ def check_login():
     Returns:
         bool: True if login is successful
     """
-    cache_file = "cache.txt"
+    cache_dir = Path.home() / ".cache" / "swarms"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_file = cache_dir / "auth"
 
-    if os.path.exists(cache_file):
+    if cache_file.exists():
         with open(cache_file, "r") as f:
             if f.read() == "logged_in":
                 console.print(
@@ -576,6 +580,7 @@ def check_login():
         time.sleep(1)
         with open(cache_file, "w") as f:
             f.write("logged_in")
+        cache_file.chmod(0o600)
         progress.remove_task(task)
 
     console.print(

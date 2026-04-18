@@ -8,7 +8,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 
 | Example | Description |
 |---------|-------------|
-| [multi_agent/](multi_agent/) | Advanced multi-agent patterns including agent rearrangement, auto swarm builder (ASB), batched workflows, board of directors, caching, concurrent processing, councils, debates, elections, forest swarms, graph workflows, group chats, heavy swarms, hierarchical swarms, LLM council, majority voting, orchestration examples, paper implementations, sequential workflows, social algorithms, simulations, spreadsheet examples, swarm routing, and utilities |
+| [multi_agent/](multi_agent/) | Advanced multi-agent patterns including agent rearrangement, auto swarm builder (ASB), batched workflows, caching, concurrent processing, councils, debates, elections, forest swarms, graph workflows, group chats, heavy swarms, hierarchical swarms, LLM council, majority voting, orchestration examples, paper implementations, sequential workflows, social algorithms, simulations, spreadsheet examples, swarm routing, and utilities |
 | [README.md](multi_agent/README.md) | Complete multi-agent examples documentation |
 | [duo_agent.py](multi_agent/duo_agent.py) | Two-agent collaboration example |
 | [tree_swarm_new_updates.py](multi_agent/tree_swarm_new_updates.py) | Tree swarm implementation with latest updates |
@@ -16,7 +16,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [agent_router_examples/](multi_agent/agent_router_examples/) | Agent routing and routing patterns |
 | [asb/](multi_agent/asb/) | Auto Swarm Builder (ASB) examples and implementations |
 | [batched_grid_workflow/](multi_agent/batched_grid_workflow/) | Batched grid workflow examples |
-| [board_of_directors/](multi_agent/board_of_directors/) | Board of directors pattern examples |
 | [caching_examples/](multi_agent/caching_examples/) | Agent caching examples |
 | [concurrent_examples/](multi_agent/concurrent_examples/) | Concurrent processing and parallel execution examples |
 | [council/](multi_agent/council/) | Council pattern examples with judge evaluation |
@@ -44,7 +43,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [swarmarrange/](multi_agent/swarmarrange/) | Swarm arrangement examples |
 | [swarms_api_examples/](multi_agent/swarms_api_examples/) | Swarms API integration examples |
 | [utils/](multi_agent/utils/) | Multi-agent utility functions |
-| [agent_grpo_examples/](multi_agent/agent_grpo_examples/) | Agent GRPO (Group Reinforcement Policy Optimization) examples for math and physics problems |
 
 ### Single Agent Systems
 
@@ -431,7 +429,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Agent GRPO](multi_agent/agent_grpo_examples/) | Agent GRPO examples for math and physics problems |
 | [Auto Swarm Builder](multi_agent/asb/) | Auto Swarm Builder (ASB) examples |
 | [Batched Grid Workflow](multi_agent/batched_grid_workflow/) | Batched grid workflow patterns |
-| [Board of Directors](multi_agent/board_of_directors/) | Board of directors pattern |
 | [Concurrent Processing](multi_agent/concurrent_examples/) | Concurrent and parallel execution |
 | [Council](multi_agent/council/) | Council pattern with judge evaluation |
 | [Council of Judges](multi_agent/council_of_judges/) | Council of judges implementations |

@@ -26,7 +26,9 @@ if __name__ == "__main__":
 
     print(result)
 
-    print(f"\nSteps completed: {harness.last_result.total_steps_completed}")
+    print(
+        f"\nSteps completed: {harness.last_result.total_steps_completed}"
+    )
     print(f"Total retries: {harness.last_result.total_retries}")
     print(f"Duration: {harness.last_result.total_duration:.1f}s")
     print(f"Shared state file: {harness.last_result.output_path}")

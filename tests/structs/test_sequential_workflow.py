@@ -1,7 +1,10 @@
 import os
+from unittest.mock import patch
+
 import pytest
 
 from swarms import Agent, SequentialWorkflow
+from swarms.structs.sequential_workflow import DRIFT_DETECTION_PROMPT
 from swarms.utils.workspace_utils import get_workspace_dir
 
 
@@ -380,3 +383,177 @@ def test_sequential_workflow_autosave_saves_conversation_after_run(
     ), f"Expected conversation_history.json at {conversation_path}"
 
     get_workspace_dir.cache_clear()
+
+
+# ---------------------------------------------------------------------------
+# Drift detection integration
+# ---------------------------------------------------------------------------
+
+
+def _make_workflow(drift_detection=False, **kwargs):
+    a1 = Agent(agent_name="A1", model_name="gpt-4o", max_loops=1)
+    a2 = Agent(agent_name="A2", model_name="gpt-4o", max_loops=1)
+    return SequentialWorkflow(
+        agents=[a1, a2],
+        max_loops=1,
+        autosave=False,
+        drift_detection=drift_detection,
+        **kwargs,
+    )
+
+
+def test_drift_detection_prompt_exists():
+    assert isinstance(DRIFT_DETECTION_PROMPT, str)
+    assert len(DRIFT_DETECTION_PROMPT) > 0
+
+
+def test_workflow_drift_agent_none_when_disabled():
+    wf = _make_workflow(drift_detection=False)
+    assert wf.drift_agent is None
+
+
+def test_workflow_drift_agent_is_agent_when_enabled():
+    wf = _make_workflow(drift_detection=True)
+    assert isinstance(wf.drift_agent, Agent)
+    assert wf.drift_agent.agent_name == "DriftDetector"
+
+
+def test_workflow_drift_agent_uses_custom_model():
+    wf = _make_workflow(
+        drift_detection=True, drift_model="gpt-4o-mini"
+    )
+    assert wf.drift_agent.model_name == "gpt-4o-mini"
+
+
+def test_workflow_drift_threshold_stored():
+    wf = _make_workflow(drift_detection=True, drift_threshold=0.9)
+    assert wf.drift_threshold == 0.9
+
+
+def test_workflow_run_without_drift_returns_raw():
+    wf = _make_workflow(drift_detection=False)
+    fake_output = "pipeline result"
+    with patch.object(
+        wf.agent_rearrange, "run", return_value=fake_output
+    ):
+        result = wf.run("do something")
+    assert result == fake_output
+
+
+def _tool_call_response(score: float) -> str:
+    """Return a mock drift agent response in the actual tool call format."""
+    import json
+
+    return str(
+        [
+            {
+                "index": 1,
+                "caller": {"type": "direct"},
+                "function": {
+                    "arguments": json.dumps({"score": score}),
+                    "name": "score_drift",
+                },
+                "id": "toolu_mock",
+                "type": "function",
+            }
+        ]
+    )
+
+
+def test_workflow_run_with_drift_above_threshold_no_warning(caplog):
+    wf = _make_workflow(drift_detection=True, drift_threshold=0.75)
+    with patch.object(
+        wf.agent_rearrange, "run", return_value="good output"
+    ), patch.object(
+        wf.drift_agent, "run", return_value=_tool_call_response(0.95)
+    ):
+        result = wf.run("task")
+    assert result == "good output"
+    assert "Drift detected" not in caplog.text
+
+
+def test_workflow_run_with_drift_below_threshold_warns():
+    from unittest.mock import MagicMock
+    import swarms.structs.sequential_workflow as sw_module
+
+    wf = _make_workflow(drift_detection=True, drift_threshold=0.75)
+    # Return low score first (triggers warning + rerun), then passing score to terminate
+    drift_responses = iter(
+        [_tool_call_response(0.3), _tool_call_response(0.9)]
+    )
+    mock_logger = MagicMock()
+    with patch.object(
+        wf.agent_rearrange, "run", return_value="off-topic output"
+    ), patch.object(
+        wf.drift_agent,
+        "run",
+        side_effect=lambda *a, **kw: next(drift_responses),
+    ), patch.object(
+        sw_module, "logger", mock_logger
+    ):
+        result = wf.run("task")
+    assert result == "off-topic output"
+    warning_calls = [
+        str(c) for c in mock_logger.warning.call_args_list
+    ]
+    assert any("Drift detected" in c for c in warning_calls)
+
+
+def test_workflow_run_drift_agent_failure_does_not_raise():
+    wf = _make_workflow(drift_detection=True)
+    with patch.object(
+        wf.agent_rearrange, "run", return_value="output"
+    ), patch.object(
+        wf.drift_agent, "run", side_effect=RuntimeError("LLM error")
+    ):
+        result = wf.run("task")
+    assert result == "output"
+
+
+def test_workflow_run_drift_unparseable_response_does_not_raise():
+    wf = _make_workflow(drift_detection=True)
+    with patch.object(
+        wf.agent_rearrange, "run", return_value="output"
+    ), patch.object(
+        wf.drift_agent, "run", return_value="not-a-tool-call"
+    ):
+        result = wf.run("task")
+    assert result == "output"
+
+
+def test_workflow_run_drift_retries_until_threshold_met():
+    """Pipeline reruns until drift score meets threshold."""
+    wf = _make_workflow(drift_detection=True, drift_threshold=0.75)
+    pipeline_outputs = ["bad output", "bad output", "good output"]
+    drift_scores = [0.3, 0.5, 0.9]
+
+    pipeline_call_count = 0
+
+    def pipeline_side_effect(**kwargs):
+        nonlocal pipeline_call_count
+        result = pipeline_outputs[
+            min(pipeline_call_count, len(pipeline_outputs) - 1)
+        ]
+        pipeline_call_count += 1
+        return result
+
+    drift_call_count = 0
+
+    def drift_side_effect(prompt):
+        nonlocal drift_call_count
+        score = drift_scores[
+            min(drift_call_count, len(drift_scores) - 1)
+        ]
+        drift_call_count += 1
+        return _tool_call_response(score)
+
+    with patch.object(
+        wf.agent_rearrange, "run", side_effect=pipeline_side_effect
+    ), patch.object(
+        wf.drift_agent, "run", side_effect=drift_side_effect
+    ):
+        result = wf.run("task")
+
+    assert result == "good output"
+    assert pipeline_call_count == 3
+    assert drift_call_count == 3

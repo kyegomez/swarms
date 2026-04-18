@@ -7,12 +7,13 @@ agent = Agent(
     system_prompt="You are a helpful assistant that can answer questions and help with tasks and your name is Quantitative-Trading-Agent",
     model_name="gpt-5.4",
     dynamic_temperature_enabled=True,
-    max_loops=2,
+    max_loops=1,
     dynamic_context_window=True,
-    interactive=True,
     top_p=None,
 )
 
-out = agent.run()
+out = agent.run(
+    task="What are the top five best energy stocks across nuclear, solar, gas, and other energy sources?",
+)
 
 print(out)

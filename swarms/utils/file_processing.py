@@ -34,8 +34,8 @@ def zip_workspace(workspace_path: str, output_filename: str):
     Zips the specified workspace directory and returns the path to the zipped file.
     Ensure the output_filename does not have .zip extension as it's added by make_archive.
     """
+    temp_dir = tempfile.mkdtemp()
     try:
-        temp_dir = tempfile.mkdtemp()
         # Remove .zip if present in output_filename to avoid duplication
         base_output_path = os.path.join(
             temp_dir, output_filename.replace(".zip", "")
@@ -46,6 +46,7 @@ def zip_workspace(workspace_path: str, output_filename: str):
         return zip_path  # make_archive already appends .zip
     except Exception as e:
         logger.error(f"Failed to zip workspace: {e}")
+        shutil.rmtree(temp_dir, ignore_errors=True)
         return None
 
 
