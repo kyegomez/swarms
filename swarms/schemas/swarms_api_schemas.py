@@ -11,6 +11,7 @@ SwarmType = Literal[
     "MultiAgentRouter",
     "AutoSwarmBuilder",
     "HierarchicalSwarm",
+    "HiearchicalSwarm",
     "auto",
     "MajorityVoting",
     "CouncilAsAJudge",
