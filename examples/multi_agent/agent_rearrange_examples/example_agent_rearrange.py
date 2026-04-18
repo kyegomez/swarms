@@ -25,6 +25,7 @@ research_agent = Agent(
     ),
     model_name=MODEL,
     temperature=TEMPERATURE,
+    reasoning_effort="low",
     max_loops=1,
 )
 
@@ -36,6 +37,7 @@ analysis_agent = Agent(
     ),
     model_name=MODEL,
     temperature=TEMPERATURE,
+    reasoning_effort="low",
     max_loops=1,
 )
 
@@ -47,6 +49,7 @@ fact_check_agent = Agent(
     ),
     model_name=MODEL,
     temperature=TEMPERATURE,
+    reasoning_effort="low",
     max_loops=1,
 )
 
@@ -58,6 +61,7 @@ writer_agent = Agent(
     ),
     model_name=MODEL,
     temperature=TEMPERATURE,
+    reasoning_effort="low",
     max_loops=1,
 )
 
@@ -69,6 +73,7 @@ editor_agent = Agent(
     ),
     model_name=MODEL,
     temperature=TEMPERATURE,
+    reasoning_effort="low",
     max_loops=1,
 )
 
@@ -129,10 +134,10 @@ print(result3)
 # ---------------------------------------------------------------------------
 # 4. remove_agent() — plan is rebuilt (minus the removed agent)
 # ---------------------------------------------------------------------------
-pipeline.remove_agent("FactCheckAgent")
 pipeline.set_custom_flow(
     "ResearchAgent -> AnalysisAgent -> WriterAgent -> EditorAgent"
 )
+pipeline.remove_agent("FactCheckAgent")
 
 print("\n=== 6. After remove_agent('FactCheckAgent') + updated flow ===")
 for i, step in enumerate(pipeline._execution_plan, 1):
