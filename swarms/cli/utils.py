@@ -22,6 +22,7 @@ from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
 
+from swarms.env import resolve_swarms_env_path
 from swarms.utils.workspace_utils import get_workspace_dir
 
 # Initialize console with custom styling
@@ -252,8 +253,8 @@ def check_env_file() -> Tuple[bool, str, str]:
     Returns:
         Tuple containing (success, status_icon, message)
     """
-    env_path = Path(".env")
-    if env_path.exists():
+    env_path = resolve_swarms_env_path()
+    if env_path is not None:
         try:
             content = env_path.read_text().strip()
             if content:
@@ -266,18 +267,25 @@ def check_env_file() -> Tuple[bool, str, str]:
                 return (
                     True,
                     "✓",
-                    f".env file exists with {len(api_keys)} API key(s)",
+                    f".env file found at {env_path} with {len(api_keys)} API key(s)",
                 )
-            else:
-                return False, "⚠", ".env file exists but is empty"
+            return (
+                False,
+                "⚠",
+                f".env file found at {env_path} but is empty",
+            )
         except Exception as e:
             return (
                 False,
                 "✗",
-                f".env file exists but cannot be read: {str(e)}",
+                f".env file at {env_path} cannot be read: {str(e)}",
             )
-    else:
-        return False, "✗", ".env file not found in current directory"
+    return (
+        False,
+        "✗",
+        ".env file not found in current directory, its parents, "
+        "or your home directory",
+    )
 
 
 def check_swarms_version(verbose: bool = False) -> str:

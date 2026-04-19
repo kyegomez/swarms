@@ -7,6 +7,7 @@ Run with: pytest tests/test_cli.py -v
 """
 
 import argparse
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -655,6 +656,27 @@ class TestMain:
         with patch("sys.argv", ["swarms", "bad-command"]):
             with pytest.raises(SystemExit):
                 main()
+
+    @patch("swarms.cli.main.route_command")
+    @patch("swarms.cli.main.show_ascii_art")
+    def test_main_reloads_env_from_current_working_directory(
+        self, mock_art, mock_route, monkeypatch, tmp_path
+    ):
+        from swarms.cli.main import main
+
+        project_dir = tmp_path / "project"
+        project_dir.mkdir()
+        (project_dir / ".env").write_text(
+            "OPENAI_API_KEY=from-current-cwd\n"
+        )
+
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.chdir(project_dir)
+
+        with patch("sys.argv", ["swarms", "setup-check"]):
+            main()
+
+        assert os.getenv("OPENAI_API_KEY") == "from-current-cwd"
 
     @patch(
         "swarms.cli.main.route_command",
