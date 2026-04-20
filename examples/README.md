@@ -27,7 +27,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [graphworkflow_examples/](multi_agent/graphworkflow_examples/) | Graph workflow and graph-based processing examples |
 | [groupchat/](multi_agent/groupchat/) | Group chat and multi-agent conversation examples |
 | [heavy_swarm_examples/](multi_agent/heavy_swarm_examples/) | Heavy swarm implementations for complex tasks |
-| [hiearchical_swarm/](multi_agent/hiearchical_swarm/) | Hierarchical swarm structures and patterns |
+| [hierarchical_swarm/](multi_agent/hierarchical_swarm/) | Hierarchical swarm structures and patterns |
 | [hscf/](multi_agent/hscf/) | Hierarchical Swarm Control Framework examples |
 | [llm_council_examples/](multi_agent/llm_council_examples/) | LLM Council collaboration patterns |
 | [majority_voting/](multi_agent/majority_voting/) | Majority voting and consensus examples |
@@ -290,7 +290,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [agent_with_speech.py](voice_agents/agent_with_speech.py) | Speech-enabled agent implementation |
 | [debate_with_speech.py](voice_agents/debate_with_speech.py) | Multi-agent debate with speech capabilities |
 | [google_calendar_agent.py](voice_agents/google_calendar_agent.py) | Google Calendar integration with voice agent |
-| [hiearchical_speech_swarm.py](voice_agents/hiearchical_speech_swarm.py) | Hierarchical speech swarm implementation |
+| [hierarchical_speech_swarm.py](voice_agents/hierarchical_speech_swarm.py) | Hierarchical speech swarm implementation |
 | [run_auto_agent_with_speech.py](voice_agents/run_auto_agent_with_speech.py) | Autonomous agent with terminal access and streaming TTS |
 
 ### Marketplace
@@ -309,7 +309,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 |---------|-------------|
 | [guides/](guides/) | Comprehensive guides and tutorials including demos, generation length blog, geo guesser agent, graph workflow guide, hackathon examples, hierarchical marketing team, nano banana Jarvis agent, smart database, web scraper agents, workshops, x402 examples, and workshop examples (840_update, 850_workshop) |
 | [README.md](guides/README.md) | Guides documentation |
-| [hiearchical_marketing_team.py](guides/hiearchical_marketing_team.py) | Hierarchical marketing team example |
+| [hierarchical_marketing_team.py](guides/hierarchical_marketing_team.py) | Hierarchical marketing team example |
 | [840_update/](guides/840_update/) | Update examples from version 8.4.0 including agent rearrange, auto swarm builder, and fallback examples |
 | [850_workshop/](guides/850_workshop/) | Workshop examples from version 8.5.0 including AOP, MOA, peer review, and concurrent examples |
 | [880_update_changelog_examples/](guides/880_update_changelog_examples/) | Changelog examples showcasing new features including marketplace integration, multi-agent structures, workflow orchestration, voice agents, evaluation & debate, routing, and autosaving |
@@ -435,7 +435,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Debates](multi_agent/debate_examples/) | Multi-agent debate examples |
 | [Election Swarm](multi_agent/election_swarm_examples/) | Election and voting swarms |
 | [Forest Swarm](multi_agent/forest_swarm_examples/) | Forest and tree-based swarms |
-| [Hierarchical Swarm](multi_agent/hiearchical_swarm/hierarchical_swarm_example.py) | Hierarchical agent structures |
+| [Hierarchical Swarm](multi_agent/hierarchical_swarm/hierarchical_swarm_example.py) | Hierarchical agent structures |
 | [Heavy Swarm](multi_agent/heavy_swarm_examples/) | Heavy swarm for complex tasks |
 | [Group Chat](multi_agent/groupchat/) | Multi-agent conversations and interactive group chat implementations |
 | [Graph Workflow](multi_agent/graphworkflow_examples/graph_workflow_example.py) | Graph-based workflows |

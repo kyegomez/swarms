@@ -2,7 +2,7 @@
 Debug script for the Hierarchical Swarms Dashboard to test agent output display.
 """
 
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 from swarms.structs.agent import Agent
 
 

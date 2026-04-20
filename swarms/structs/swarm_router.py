@@ -26,7 +26,7 @@ from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.debate_with_judge import DebateWithJudge
 from swarms.structs.groupchat import GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 from swarms.structs.llm_council import LLMCouncil
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.majority_voting import MajorityVoting
@@ -54,6 +54,7 @@ SwarmType = Literal[
     "MultiAgentRouter",
     "AutoSwarmBuilder",
     "HierarchicalSwarm",
+    "HiearchicalSwarm",
     "auto",
     "MajorityVoting",
     "CouncilAsAJudge",
@@ -467,6 +468,7 @@ class SwarmRouter:
             "AgentRearrange": self._create_agent_rearrange,
             "CouncilAsAJudge": self._create_council_as_judge,
             "HierarchicalSwarm": self._create_hierarchical_swarm,
+            "HiearchicalSwarm": self._create_hierarchical_swarm,
             "MixtureOfAgents": self._create_mixture_of_agents,
             "MajorityVoting": self._create_majority_voting,
             "GroupChat": self._create_group_chat,

@@ -68,7 +68,7 @@ Initializes a new HierarchicalSwarm instance.
 | `director_name` | `str` | `"Director"` | No | Name identifier for the director agent |
 | `director_temperature` | `float` | `0.7` | No | Temperature setting for the director agent (controls randomness) |
 | `director_top_p` | `float` | `0.9` | No | Top-p (nucleus) sampling parameter for the director agent |
-| `director_system_prompt` | `str` | `HIEARCHICAL_SWARM_SYSTEM_PROMPT` | No | System prompt for the director agent |
+| `director_system_prompt` | `str` | `HIERARCHICAL_SWARM_SYSTEM_PROMPT` | No | System prompt for the director agent |
 | `director_feedback_on` | `bool` | `True` | No | Whether director freeform feedback is enabled after each cycle |
 | `feedback_director_model_name` | `str` | `"gpt-5.4"` | No | Model name for the feedback director agent |
 | `add_collaboration_prompt` | `bool` | `True` | No | Whether to add collaboration prompts to worker agents |

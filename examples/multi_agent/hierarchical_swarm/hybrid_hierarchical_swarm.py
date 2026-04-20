@@ -1,8 +1,7 @@
 from swarms import Agent, SwarmRouter
-from swarms.structs.hybrid_hiearchical_peer_swarm import (
+from swarms.structs.hybrid_hierarchical_peer_swarm import (
     HybridHierarchicalClusterSwarm,
 )
-
 
 # Core Legal Agent Definitions with short, simple prompts
 litigation_agent = Agent(

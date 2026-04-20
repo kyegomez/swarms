@@ -10,6 +10,7 @@ SwarmType = Literal[
     "GroupChat",
     "MultiAgentRouter",
     "AutoSwarmBuilder",
+    "HierarchicalSwarm",
     "HiearchicalSwarm",
     "auto",
     "MajorityVoting",

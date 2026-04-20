@@ -98,7 +98,7 @@ A comprehensive catalog of performance, reliability, and feature improvement ide
 
 ## HierarchicalSwarm
 
-**File:** `swarms/structs/hiearchical_swarm.py`
+**File:** `swarms/structs/hierarchical_swarm.py`
 
 ### Director Optimization
 
