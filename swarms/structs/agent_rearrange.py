@@ -19,6 +19,20 @@ from swarms.utils.output_types import OutputType
 logger = initialize_logger(log_folder="rearrange")
 
 
+class _CallableAgentWrapper:
+    """Wraps a callable as an agent-like object for AgentRearrange."""
+
+    def __init__(self, callable_obj: Callable, agent_name: str):
+        self._callable = callable_obj
+        self.agent_name = agent_name
+
+    def run(self, task: str, *args, **kwargs):
+        return self._callable(task, *args, **kwargs)
+
+    def __getattr__(self, item: str):
+        return getattr(self._callable, item)
+
+
 class AgentRearrange:
     """
     A sophisticated multi-agent system for task rearrangement and orchestration.
@@ -105,6 +119,9 @@ class AgentRearrange:
         team_awareness: bool = False,
         time_enabled: bool = False,
         message_id_on: bool = False,
+        stream_between_nodes: bool = False,
+        buffering_strategy: Optional[str] = "all",
+        buffer_size: int = 1,
     ):
         """
         Initialize the AgentRearrange system.
@@ -157,7 +174,21 @@ class AgentRearrange:
         self.name = name
         self.description = description
         self.id = id
-        self.agents = {agent.agent_name: agent for agent in agents}
+        self.agents = {}
+        normalized_agents = []
+        for idx, agent in enumerate(agents or []):
+            normalized_agents.append(
+                self._normalize_agent(agent, idx)
+            )
+
+        for agent in normalized_agents:
+            if agent.agent_name in self.agents:
+                base_name = agent.agent_name
+                suffix = 1
+                while f"{base_name}_{suffix}" in self.agents:
+                    suffix += 1
+                agent.agent_name = f"{base_name}_{suffix}"
+            self.agents[agent.agent_name] = agent
         self.flow = flow if flow is not None else ""
         self.verbose = verbose
         self.max_loops = max_loops if max_loops > 0 else 1
@@ -166,8 +197,16 @@ class AgentRearrange:
         self.custom_human_in_the_loop = custom_human_in_the_loop
         self.output_type = output_type
         self.autosave = autosave
+        self.rules = rules
+        self.team_awareness = team_awareness
         self.time_enabled = time_enabled
         self.message_id_on = message_id_on
+        self.stream_between_nodes = stream_between_nodes
+        self.buffering_strategy = buffering_strategy
+        self.buffer_size = buffer_size
+
+        # Store original agents for recreation in batch_run
+        self._original_agents = agents
 
         self.conversation = Conversation(
             name=f"{self.name}-Conversation",
@@ -191,6 +230,30 @@ class AgentRearrange:
             # self.conversation.add("system", agents_info)
 
         self.reliability_check()
+
+    def _normalize_agent(
+        self,
+        agent: Union[Agent, Callable],
+        index: int = 0,
+    ) -> Union[Agent, _CallableAgentWrapper]:
+        """Normalize a provided agent to an Agent-like object."""
+        if isinstance(agent, Agent):
+            return agent
+
+        if hasattr(agent, "agent_name"):
+            return agent
+
+        if callable(agent):
+            agent_name = getattr(agent, "agent_name", None)
+            if not agent_name:
+                agent_name = getattr(agent, "__name__", None) or (
+                    f"callable_agent_{index}"
+                )
+            return _CallableAgentWrapper(agent, agent_name)
+
+        raise TypeError(
+            "Agents must be Agent instances, agent-like objects, or callable objects."
+        )
 
     def reliability_check(self):
         """
@@ -592,6 +655,64 @@ class AgentRearrange:
 
         return current_task
 
+    async def _execute_streaming_pipeline(self, initial_task: str):
+        """Orquesta las colas y los workers asíncronos."""
+        node_names = [n.strip() for n in self.flow.split("->")]
+        queues = [asyncio.Queue() for _ in range(len(node_names) + 1)]
+
+        self.conversation.add("User", initial_task)
+        await queues[0].put(initial_task)
+
+        workers = []
+        for i, name in enumerate(node_names):
+            agent = self.agents.get(name)
+            workers.append(
+                asyncio.create_task(
+                    self._node_worker(agent, queues[i], queues[i+1])
+                )
+            )
+
+        responses = await asyncio.gather(*workers)
+
+        return history_output_formatter(
+            conversation=self.conversation,
+            type=self.output_type,
+        )
+
+    async def _node_worker(self, agent, input_queue, output_queue):
+        """Procesa el flujo de un agente individual con lógica de buffer."""
+        node_input = await input_queue.get()
+        full_response = ""
+        buffer = ""
+        token_count = 0
+        
+        if hasattr(agent, "astream"):
+            async for chunk in agent.astream(node_input):
+                full_response += chunk
+                buffer += chunk
+                token_count += 1
+                
+         
+                if self.buffering_strategy == "tokens" and token_count >= self.buffer_size:
+                    await output_queue.put(buffer)
+                    buffer, token_count = "", 0
+                elif self.buffering_strategy == "line" and "\n" in chunk:
+                    await output_queue.put(buffer)
+                    buffer, token_count = "", 0
+        else:
+           
+            full_response = agent.run(node_input)
+            buffer = full_response
+
+       
+        if buffer and self.buffering_strategy != "all":
+            await output_queue.put(buffer)
+        elif self.buffering_strategy == "all":
+            await output_queue.put(full_response)
+            
+        self.conversation.add(agent.agent_name, full_response)
+        return full_response
+    
     def _run(
         self,
         task: str = None,
@@ -642,6 +763,14 @@ class AgentRearrange:
             return "Invalid flow configuration."
 
         tasks = self.flow.split("->")
+        if self.stream_between_nodes:
+            logger.info("Executing optimized streaming pipeline between nodes")
+            try:
+                # asynchronously execute the streaming pipeline
+                return asyncio.run(self._execute_streaming_pipeline(task))
+            except Exception as e:
+               logger.error(f"Streaming pipeline failed: {e}. Falling back to sequential.")
+
         response_dict = {}
 
         logger.info(
@@ -858,7 +987,7 @@ class AgentRearrange:
                 else [None] * len(batch_tasks)
             )
 
-            # Process batch concurrently. Each task gets a full deepcopy of
+            # Process batch concurrently. Each task gets a fresh instance of
             # self so conversation history and agent state are fully isolated.
             max_workers = min(len(batch_tasks), os.cpu_count() or 4)
             futures_ordered = []
@@ -868,7 +997,30 @@ class AgentRearrange:
                 for task_item, img_path in zip(
                     batch_tasks, batch_imgs
                 ):
-                    clone = copy.deepcopy(self)
+                    # Create fresh instance with same config but isolated conversation
+                    clone = AgentRearrange(
+                        id=swarm_id(),
+                        name=self.name,
+                        description=self.description,
+                        agents=self._original_agents,
+                        flow=self.flow,
+                        max_loops=self.max_loops,
+                        verbose=self.verbose,
+                        memory_system=self.memory_system,
+                        human_in_the_loop=self.human_in_the_loop,
+                        custom_human_in_the_loop=self.custom_human_in_the_loop,
+                        output_type=self.output_type,
+                        autosave=self.autosave,
+                        rules=self.rules,
+                        team_awareness=self.team_awareness,
+                        time_enabled=self.time_enabled,
+                        message_id_on=self.message_id_on,
+                        stream_between_nodes=self.stream_between_nodes,
+                        buffering_strategy=self.buffering_strategy,
+                        buffer_size=self.buffer_size,
+                    )
+                    # Preserve current agents state (e.g., missing agents from deletions)
+                    clone.agents = self.agents.copy()
                     future = executor.submit(
                         clone.run,
                         task_item,
