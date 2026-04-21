@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from swarms import Agent, AgentRearrange
 
@@ -65,6 +67,39 @@ def test_initialization():
     assert agent_rearrange.verbose is True
     print("✓ test_initialization passed")
 
+#asychronous streaming test 
+class MockAsyncAgent:
+    def __init__(self, name):
+        self.agent_name = name
+
+    async def astream(self, task, *args, **kwargs):
+        for chunk in ["Hola", " desde", " el", " stream"]:
+            yield chunk
+            await asyncio.sleep(0.01)
+
+
+def mock_sync_callable(task):
+    return f"Procesado síncronamente: {task}"
+
+
+@pytest.mark.asyncio
+async def test_streaming_logic_and_fallback():
+    agents = [MockAsyncAgent("AgentA"), mock_sync_callable, MockAsyncAgent("AgentC")]
+    flow = "AgentA -> mock_sync_callable -> AgentC"
+
+    swarm = AgentRearrange(
+        agents=agents,
+        flow=flow,
+        stream_between_nodes=True,
+        buffering_strategy="tokens",
+        buffer_size=1,
+    )
+
+    result = await swarm._execute_streaming_pipeline("Tarea inicial")
+
+    assert result is not None
+    assert len(swarm.conversation.get_messages()) > 3
+#===========================================================================
 
 def test_initialization_with_team_awareness():
     """Test AgentRearrange with team_awareness enabled."""
