@@ -656,7 +656,7 @@ class AgentRearrange:
         return current_task
 
     async def _execute_streaming_pipeline(self, initial_task: str):
-        """Orquesta las colas y los workers asíncronos."""
+        """Manages the orchestration of queues and async workers."""
         node_names = [n.strip() for n in self.flow.split("->")]
         queues = [asyncio.Queue() for _ in range(len(node_names) + 1)]
 
@@ -680,7 +680,7 @@ class AgentRearrange:
         )
 
     async def _node_worker(self, agent, input_queue, output_queue):
-        """Procesa el flujo de un agente individual con lógica de buffer."""
+        """Handles individual agent execution flow using a buffering strategy."""
         node_input = await input_queue.get()
         full_response = ""
         buffer = ""
