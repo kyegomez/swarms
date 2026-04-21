@@ -602,31 +602,31 @@ class AgentRearrange:
         *args,
         **kwargs,
     ) -> str:
-        """
-        Executes a single agent sequentially.
 
-        This method handles the sequential execution of a single agent in the flow.
-        It provides sequential awareness information to the agent if team_awareness
-        is enabled, allowing the agent to understand its position in the workflow.
+        """
+        Executes a single agent within the defined flow, supporting both sequential and streaming modes.
+
+        This method handles the execution of an individual agent. If `stream_between_nodes` 
+        is enabled, it orchestrates the asynchronous pipeline and buffering logic. 
+        Otherwise, it performs a standard sequential execution. It also provides 
+        team awareness context if enabled.
 
         Args:
-            agent_name (str): Name of the agent to run sequentially.
+            agent_name (str): Name of the agent to run.
             tasks (List[str]): List of all tasks in the flow for awareness context.
-                Used to determine the agent's position and provide awareness info.
             task_idx (int, optional): The position index of this agent in the flow.
-                Essential for repeated agents so each occurrence gets correct awareness.
-            img (str, optional): Image input for agents that support it.
-                Defaults to None.
-            *args: Additional positional arguments passed to agent execution.
-            **kwargs: Additional keyword arguments passed to agent execution.
+                Crucial for providing correct awareness in repeated agent sequences.
+            img (str, optional): Image input for multimodal agents. Defaults to None.
+            *args: Additional positional arguments passed to the agent's run or astream method.
+            **kwargs: Additional keyword arguments passed to the agent's run or astream method.
 
         Returns:
-            str: The result from the agent's execution, converted to string format.
+            str: The final output from the agent's execution.
 
         Note:
-            If team_awareness is enabled, this method will add sequential awareness
-            information to the conversation before executing the agent, informing
-            the agent about its position in the workflow sequence.
+            When `stream_between_nodes` is True, this method utilizes an internal 
+            asynchronous pipeline with configurable buffering strategies ('all', 'line', 'tokens') 
+            to enable real-time data flow between nodes in the swarm.
         """
         logger.info(f"Running agent sequentially: {agent_name}")
 
