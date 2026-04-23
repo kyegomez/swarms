@@ -1,7 +1,6 @@
 import copy
 import json
 import os
-import re
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import asyncio
@@ -295,7 +294,9 @@ class AgentRearrange:
         for agent in agents:
             self.agents[agent.agent_name] = agent
 
-    def _parse_node(self, token: str) -> Tuple[str, int, Optional[str]]:
+    def _parse_node(
+        self, token: str
+    ) -> Tuple[str, int, Optional[str]]:
         """Parse a flow node token into (agent_name, retry_count, fallback_agent).
 
         Supported annotation syntax:
@@ -319,11 +320,13 @@ class AgentRearrange:
         gt_idx = token.rfind(">")
         q_idx = token.rfind("?")
         fallback_index = max(gt_idx, q_idx)
-        immediate_fallback = fallback_index != -1 and token[fallback_index] == "?"
+        immediate_fallback = (
+            fallback_index != -1 and token[fallback_index] == "?"
+        )
 
         if fallback_index != -1:
             agent_part = token[:fallback_index].strip()
-            fallback_agent = token[fallback_index + 1:].strip()
+            fallback_agent = token[fallback_index + 1 :].strip()
             if not agent_part or not fallback_agent:
                 raise ValueError(f"Cannot parse flow node: {token!r}")
         else:
@@ -332,7 +335,7 @@ class AgentRearrange:
         # Split retry count off the right of agent_part
         retry_index = agent_part.rfind("!")
         if retry_index != -1:
-            retry_suffix = agent_part[retry_index + 1:].strip()
+            retry_suffix = agent_part[retry_index + 1 :].strip()
             if retry_suffix.isdigit():
                 if immediate_fallback:
                     raise ValueError(
@@ -341,7 +344,9 @@ class AgentRearrange:
                     )
                 agent_name = agent_part[:retry_index].strip()
                 if not agent_name:
-                    raise ValueError(f"Cannot parse flow node: {token!r}")
+                    raise ValueError(
+                        f"Cannot parse flow node: {token!r}"
+                    )
                 retry_count = int(retry_suffix)
             else:
                 agent_name = agent_part.strip()
@@ -379,8 +384,13 @@ class AgentRearrange:
 
             # Loop over the node tokens
             for token in tokens:
-                agent_name, _, fallback_agent = self._parse_node(token)
-                if agent_name not in self.agents and agent_name != "H":
+                agent_name, _, fallback_agent = self._parse_node(
+                    token
+                )
+                if (
+                    agent_name not in self.agents
+                    and agent_name != "H"
+                ):
                     raise ValueError(
                         f"Agent '{agent_name}' is not registered."
                     )
@@ -812,9 +822,12 @@ class AgentRearrange:
             raise last_exc
 
         response_dict: Dict[str, str] = {}
-        with ThreadPoolExecutor(max_workers=len(node_specs)) as executor:
+        with ThreadPoolExecutor(
+            max_workers=len(node_specs)
+        ) as executor:
             futures = [
-                executor.submit(_run_node, spec) for spec in node_specs
+                executor.submit(_run_node, spec)
+                for spec in node_specs
             ]
             for future in futures:
                 name, result = future.result()
@@ -886,7 +899,8 @@ class AgentRearrange:
             c_agent_name, c_task = next(iter(custom_tasks.items()))
             position = next(
                 (
-                    i for i, t in enumerate(tasks)
+                    i
+                    for i, t in enumerate(tasks)
                     if any(
                         self._parse_node(tok)[0] == c_agent_name
                         for tok in t.split(",")
@@ -918,8 +932,7 @@ class AgentRearrange:
                 if len(node_specs) > 1:
                     # Concurrent processing — comma detected
                     has_annotations = any(
-                        retry > 0 or fb
-                        for _, retry, fb in node_specs
+                        retry > 0 or fb for _, retry, fb in node_specs
                     )
                     if has_annotations:
                         concurrent_results = (
@@ -933,7 +946,9 @@ class AgentRearrange:
                     else:
                         concurrent_results = (
                             self._run_concurrent_workflow(
-                                agent_names=[s[0] for s in node_specs],
+                                agent_names=[
+                                    s[0] for s in node_specs
+                                ],
                                 img=img,
                                 *args,
                                 **kwargs,
