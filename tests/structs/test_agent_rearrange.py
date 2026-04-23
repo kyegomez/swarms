@@ -877,5 +877,93 @@ def main():
     print("=" * 60)
 
 
+# ============================================================================
+# Per-node Retry & Fallback Annotation Tests
+# ============================================================================
+
+
+def _mock_agent(name: str) -> Agent:
+    return Agent(agent_name=name, model_name="gpt-4o-mini", max_loops=1)
+
+
+def test_parse_node_variants():
+    """_parse_node correctly handles all annotation forms."""
+    agents = create_sample_agents()
+    ar = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent -> WriterAgent",
+    )
+    assert ar._parse_node("ResearchAgent") == ("ResearchAgent", 0, None)
+    assert ar._parse_node("ResearchAgent!3") == ("ResearchAgent", 3, None)
+    assert ar._parse_node("ResearchAgent!3>WriterAgent") == ("ResearchAgent", 3, "WriterAgent")
+    assert ar._parse_node("ResearchAgent>WriterAgent") == ("ResearchAgent", 0, "WriterAgent")
+    assert ar._parse_node("ResearchAgent?WriterAgent") == ("ResearchAgent", 0, "WriterAgent")
+
+
+def test_validate_flow_rejects_unknown_fallback():
+    """validate_flow raises ValueError for an unregistered fallback agent."""
+    agents = create_sample_agents()
+    ar = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent -> WriterAgent",
+    )
+    ar.flow = "ResearchAgent -> WriterAgent!2>Ghost"
+    with pytest.raises(ValueError, match="Ghost"):
+        ar.validate_flow()
+
+
+def test_execute_with_retry_retries_correct_number_of_times():
+    """_execute_with_retry calls agent.run exactly retry_count+1 times on repeated failure."""
+    from unittest.mock import MagicMock, patch
+
+    agents = create_sample_agents()
+    ar = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent -> WriterAgent -> ReviewerAgent",
+    )
+
+    call_count = 0
+
+    def always_fail(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        raise RuntimeError("boom")
+
+    ar.agents["WriterAgent"].run = always_fail
+
+    with pytest.raises(RuntimeError, match="boom"):
+        ar._execute_with_retry(
+            agent_name="WriterAgent",
+            retry_count=2,
+            fallback_agent=None,
+            tasks=["ResearchAgent", "WriterAgent", "ReviewerAgent"],
+            task_idx=1,
+        )
+
+    assert call_count == 3  # 1 initial + 2 retries
+
+
+def test_execute_with_retry_uses_fallback_after_exhaustion():
+    """_execute_with_retry routes to the fallback agent when all retries fail."""
+    agents = create_sample_agents()
+    ar = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent -> WriterAgent -> ReviewerAgent",
+    )
+
+    ar.agents["WriterAgent"].run = lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("fail"))
+    ar.agents["ReviewerAgent"].run = lambda *a, **kw: "fallback result"
+
+    result = ar._execute_with_retry(
+        agent_name="WriterAgent",
+        retry_count=1,
+        fallback_agent="ReviewerAgent",
+        tasks=["ResearchAgent", "WriterAgent", "ReviewerAgent"],
+        task_idx=1,
+    )
+
+    assert result == "fallback result"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
