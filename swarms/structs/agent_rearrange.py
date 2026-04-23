@@ -1,8 +1,9 @@
 import copy
 import json
 import os
+import re
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import asyncio
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -294,6 +295,31 @@ class AgentRearrange:
         for agent in agents:
             self.agents[agent.agent_name] = agent
 
+    def _parse_node(self, token: str) -> Tuple[str, int, Optional[str]]:
+        """Parse a flow node token into (agent_name, retry_count, fallback_agent).
+
+        Supported annotation syntax:
+          B        → agent B, no retries, no fallback
+          B!3      → agent B, retry up to 3 times on failure
+          B!3>D    → agent B, retry 3 times, then fall back to D
+          B>D      → agent B, fall back to D on first failure
+          B?D      → agent B, fall back to D on first failure (alias for >)
+
+        Raises:
+            ValueError: If the token cannot be parsed or is malformed.
+        """
+        token = token.strip()
+        m = re.match(
+            r"^([\w][\w\s\-]*)(?:!(\d+))?(?:[>?]([\w][\w\s\-]*))?$",
+            token,
+        )
+        if not m:
+            raise ValueError(f"Cannot parse flow node: {token!r}")
+        agent_name = m.group(1).strip()
+        retry_count = int(m.group(2)) if m.group(2) else 0
+        fallback_agent = m.group(3).strip() if m.group(3) else None
+        return agent_name, retry_count, fallback_agent
+
     def validate_flow(self):
         """
         Validates the flow pattern.
@@ -316,16 +342,22 @@ class AgentRearrange:
 
         # For the task in tasks
         for task in tasks:
-            agent_names = [name.strip() for name in task.split(",")]
+            tokens = [name.strip() for name in task.split(",")]
 
-            # Loop over the agent names
-            for agent_name in agent_names:
-                if (
-                    agent_name not in self.agents
-                    and agent_name != "H"
-                ):
+            # Loop over the node tokens
+            for token in tokens:
+                agent_name, _, fallback_agent = self._parse_node(token)
+                if agent_name not in self.agents and agent_name != "H":
                     raise ValueError(
                         f"Agent '{agent_name}' is not registered."
+                    )
+                if (
+                    fallback_agent
+                    and fallback_agent not in self.agents
+                    and fallback_agent != "H"
+                ):
+                    raise ValueError(
+                        f"Fallback agent '{fallback_agent}' is not registered."
                     )
                 agents_in_flow.append(agent_name)
 
@@ -359,7 +391,7 @@ class AgentRearrange:
             agent_position = None
             for i, task in enumerate(tasks):
                 agent_names = [
-                    name.strip() for name in task.split(",")
+                    self._parse_node(t)[0] for t in task.split(",")
                 ]
                 if agent_name in agent_names:
                     agent_position = i
@@ -374,7 +406,7 @@ class AgentRearrange:
         if agent_position > 0:
             prev_task = tasks[agent_position - 1]
             prev_agents = [
-                name.strip() for name in prev_task.split(",")
+                self._parse_node(t)[0] for t in prev_task.split(",")
             ]
             if (
                 prev_agents and prev_agents[0] != "H"
@@ -387,7 +419,7 @@ class AgentRearrange:
         if agent_position < len(tasks) - 1:
             next_task = tasks[agent_position + 1]
             next_agents = [
-                name.strip() for name in next_task.split(",")
+                self._parse_node(t)[0] for t in next_task.split(",")
             ]
             if (
                 next_agents and next_agents[0] != "H"
@@ -416,7 +448,9 @@ class AgentRearrange:
         flow_info = []
 
         for i, task in enumerate(tasks):
-            agent_names = [name.strip() for name in task.split(",")]
+            agent_names = [
+                self._parse_node(t)[0] for t in task.split(",")
+            ]
             if (
                 agent_names and agent_names[0] != "H"
             ):  # Skip human agents
@@ -426,7 +460,8 @@ class AgentRearrange:
                 if i > 0:
                     prev_task = tasks[i - 1]
                     prev_agents = [
-                        name.strip() for name in prev_task.split(",")
+                        self._parse_node(t)[0]
+                        for t in prev_task.split(",")
                     ]
                     if prev_agents and prev_agents[0] != "H":
                         position_info += (
@@ -435,7 +470,8 @@ class AgentRearrange:
                 if i < len(tasks) - 1:
                     next_task = tasks[i + 1]
                     next_agents = [
-                        name.strip() for name in next_task.split(",")
+                        self._parse_node(t)[0]
+                        for t in next_task.split(",")
                     ]
                     if next_agents and next_agents[0] != "H":
                         position_info += (
@@ -592,6 +628,163 @@ class AgentRearrange:
 
         return current_task
 
+    def _execute_with_retry(
+        self,
+        agent_name: str,
+        retry_count: int,
+        fallback_agent: Optional[str],
+        tasks: List[str],
+        task_idx: int,
+        img: str = None,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Execute an agent with per-node retry and optional fallback routing.
+
+        Adds sequential awareness once, then attempts the agent up to
+        ``retry_count + 1`` times.  If every attempt fails and a fallback
+        agent was specified, the fallback runs instead.  If no fallback is
+        given the last exception is re-raised.
+
+        Args:
+            agent_name: Name of the primary agent to run.
+            retry_count: Number of *extra* attempts after the first failure.
+                0 means run once (no retries).
+            fallback_agent: Name of an agent to invoke when all retries are
+                exhausted.  ``None`` means raise on final failure.
+            tasks: Full task list from the flow split on ``->``.
+            task_idx: Position of this node in *tasks*.
+            img: Optional image path forwarded to the agent.
+        """
+        logger.info(
+            f"Running agent '{agent_name}' "
+            f"(retries={retry_count}, fallback={fallback_agent})"
+        )
+        agent = self.agents[agent_name]
+
+        awareness_info = self._get_sequential_awareness(
+            agent_name, tasks, task_idx=task_idx
+        )
+        if awareness_info:
+            self.conversation.add("system", awareness_info)
+            logger.info(
+                f"Added sequential awareness for {agent_name}: {awareness_info}"
+            )
+
+        last_exc: Optional[Exception] = None
+        for attempt in range(retry_count + 1):
+            try:
+                result = agent.run(
+                    task=self.conversation.get_str(),
+                    img=img,
+                    *args,
+                    **kwargs,
+                )
+                if not isinstance(result, str):
+                    result = any_to_str(result)
+                self.conversation.add(agent.agent_name, result)
+                return result
+            except Exception as exc:
+                last_exc = exc
+                if attempt < retry_count:
+                    logger.warning(
+                        f"Agent '{agent_name}' attempt "
+                        f"{attempt + 1}/{retry_count + 1} failed: {exc}. "
+                        f"Retrying..."
+                    )
+
+        if fallback_agent is not None:
+            logger.warning(
+                f"Agent '{agent_name}' exhausted {retry_count + 1} "
+                f"attempt(s). Routing to fallback '{fallback_agent}'."
+            )
+            fb = self.agents[fallback_agent]
+            result = fb.run(
+                task=self.conversation.get_str(),
+                img=img,
+                *args,
+                **kwargs,
+            )
+            if not isinstance(result, str):
+                result = any_to_str(result)
+            self.conversation.add(fb.agent_name, result)
+            return result
+
+        raise last_exc
+
+    def _run_concurrent_workflow_with_retry(
+        self,
+        node_specs: List[Tuple[str, int, Optional[str]]],
+        img: str = None,
+        *args,
+        **kwargs,
+    ) -> Dict[str, str]:
+        """Run concurrent nodes where one or more carry retry/fallback annotations.
+
+        Takes a snapshot of the conversation before launching threads so every
+        concurrent agent sees the same context.  Results are folded back into
+        the conversation sequentially after all workers finish.
+
+        Args:
+            node_specs: List of ``(agent_name, retry_count, fallback_agent)``
+                tuples produced by :meth:`_parse_node`.
+            img: Optional image path forwarded to each agent.
+        """
+        logger.info(
+            f"Running agents concurrently with retry: "
+            f"{[s[0] for s in node_specs]}"
+        )
+        task_snapshot = self.conversation.get_str()
+
+        def _run_node(
+            spec: Tuple[str, int, Optional[str]],
+        ) -> Tuple[str, str]:
+            agent_name, retry_count, fallback_agent = spec
+            agent = self.agents[agent_name]
+            last_exc: Optional[Exception] = None
+            for attempt in range(retry_count + 1):
+                try:
+                    result = agent.run(
+                        task=task_snapshot, img=img, *args, **kwargs
+                    )
+                    if not isinstance(result, str):
+                        result = any_to_str(result)
+                    return agent_name, result
+                except Exception as exc:
+                    last_exc = exc
+                    if attempt < retry_count:
+                        logger.warning(
+                            f"Agent '{agent_name}' attempt "
+                            f"{attempt + 1}/{retry_count + 1} failed: "
+                            f"{exc}. Retrying..."
+                        )
+            if fallback_agent is not None:
+                logger.warning(
+                    f"Agent '{agent_name}' exhausted {retry_count + 1} "
+                    f"attempt(s). Routing to fallback '{fallback_agent}'."
+                )
+                fb = self.agents[fallback_agent]
+                result = fb.run(
+                    task=task_snapshot, img=img, *args, **kwargs
+                )
+                if not isinstance(result, str):
+                    result = any_to_str(result)
+                return fallback_agent, result
+            raise last_exc
+
+        response_dict: Dict[str, str] = {}
+        with ThreadPoolExecutor(max_workers=len(node_specs)) as executor:
+            futures = [
+                executor.submit(_run_node, spec) for spec in node_specs
+            ]
+            for future in futures:
+                name, result = future.result()
+                self.conversation.add(name, result)
+                response_dict[name] = result
+                logger.debug(f"Agent {name} output: {result}")
+
+        return response_dict
+
     def _run(
         self,
         task: str = None,
@@ -666,27 +859,46 @@ class AgentRearrange:
             )
 
             for task_idx, task in enumerate(tasks):
-                agent_names = [
-                    name.strip() for name in task.split(",")
+                node_tokens = [t.strip() for t in task.split(",")]
+                node_specs = [
+                    self._parse_node(t) for t in node_tokens
                 ]
 
-                if len(agent_names) > 1:
-                    # Concurrent processing - comma detected
-                    concurrent_results = (
-                        self._run_concurrent_workflow(
-                            agent_names=agent_names,
-                            img=img,
-                            *args,
-                            **kwargs,
-                        )
+                if len(node_specs) > 1:
+                    # Concurrent processing — comma detected
+                    has_annotations = any(
+                        retry > 0 or fb
+                        for _, retry, fb in node_specs
                     )
+                    if has_annotations:
+                        concurrent_results = (
+                            self._run_concurrent_workflow_with_retry(
+                                node_specs=node_specs,
+                                img=img,
+                                *args,
+                                **kwargs,
+                            )
+                        )
+                    else:
+                        concurrent_results = (
+                            self._run_concurrent_workflow(
+                                agent_names=[s[0] for s in node_specs],
+                                img=img,
+                                *args,
+                                **kwargs,
+                            )
+                        )
                     response_dict.update(concurrent_results)
 
                 else:
                     # Sequential processing
-                    agent_name = agent_names[0]
-                    result = self._run_sequential_workflow(
+                    agent_name, retry_count, fallback_agent = (
+                        node_specs[0]
+                    )
+                    result = self._execute_with_retry(
                         agent_name=agent_name,
+                        retry_count=retry_count,
+                        fallback_agent=fallback_agent,
                         tasks=tasks,
                         task_idx=task_idx,
                         img=img,
