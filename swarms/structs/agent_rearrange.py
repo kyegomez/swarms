@@ -303,21 +303,54 @@ class AgentRearrange:
           B!3      → agent B, retry up to 3 times on failure
           B!3>D    → agent B, retry 3 times, then fall back to D
           B>D      → agent B, fall back to D on first failure
-          B?D      → agent B, fall back to D on first failure (alias for >)
+          B?D      → immediate fallback to D on first failure (no retries allowed)
 
         Raises:
-            ValueError: If the token cannot be parsed or is malformed.
+            ValueError: If the token is malformed or combines !N with ?.
         """
         token = token.strip()
-        m = re.match(
-            r"^([\w][\w\s\-]*)(?:!(\d+))?(?:[>?]([\w][\w\s\-]*))?$",
-            token,
-        )
-        if not m:
+        if not token:
             raise ValueError(f"Cannot parse flow node: {token!r}")
-        agent_name = m.group(1).strip()
-        retry_count = int(m.group(2)) if m.group(2) else 0
-        fallback_agent = m.group(3).strip() if m.group(3) else None
+
+        retry_count = 0
+        fallback_agent = None
+
+        # Split fallback off the right using the last > or ?
+        gt_idx = token.rfind(">")
+        q_idx = token.rfind("?")
+        fallback_index = max(gt_idx, q_idx)
+        immediate_fallback = fallback_index != -1 and token[fallback_index] == "?"
+
+        if fallback_index != -1:
+            agent_part = token[:fallback_index].strip()
+            fallback_agent = token[fallback_index + 1:].strip()
+            if not agent_part or not fallback_agent:
+                raise ValueError(f"Cannot parse flow node: {token!r}")
+        else:
+            agent_part = token
+
+        # Split retry count off the right of agent_part
+        retry_index = agent_part.rfind("!")
+        if retry_index != -1:
+            retry_suffix = agent_part[retry_index + 1:].strip()
+            if retry_suffix.isdigit():
+                if immediate_fallback:
+                    raise ValueError(
+                        f"Cannot combine retry count (!N) with immediate "
+                        f"fallback (?): {token!r}. Use > for retry-then-fallback."
+                    )
+                agent_name = agent_part[:retry_index].strip()
+                if not agent_name:
+                    raise ValueError(f"Cannot parse flow node: {token!r}")
+                retry_count = int(retry_suffix)
+            else:
+                agent_name = agent_part.strip()
+        else:
+            agent_name = agent_part.strip()
+
+        if not agent_name:
+            raise ValueError(f"Cannot parse flow node: {token!r}")
+
         return agent_name, retry_count, fallback_agent
 
     def validate_flow(self):
@@ -351,14 +384,15 @@ class AgentRearrange:
                     raise ValueError(
                         f"Agent '{agent_name}' is not registered."
                     )
-                if (
-                    fallback_agent
-                    and fallback_agent not in self.agents
-                    and fallback_agent != "H"
-                ):
-                    raise ValueError(
-                        f"Fallback agent '{fallback_agent}' is not registered."
-                    )
+                if fallback_agent:
+                    if fallback_agent == "H":
+                        raise ValueError(
+                            "'H' cannot be used as a fallback agent."
+                        )
+                    if fallback_agent not in self.agents:
+                        raise ValueError(
+                            f"Fallback agent '{fallback_agent}' is not registered."
+                        )
                 agents_in_flow.append(agent_name)
 
         logger.info(f"Flow: {self.flow} is valid.")
@@ -699,6 +733,11 @@ class AgentRearrange:
                 f"attempt(s). Routing to fallback '{fallback_agent}'."
             )
             fb = self.agents[fallback_agent]
+            fb_awareness = self._get_sequential_awareness(
+                fallback_agent, tasks, task_idx=task_idx
+            )
+            if fb_awareness:
+                self.conversation.add("system", fb_awareness)
             result = fb.run(
                 task=self.conversation.get_str(),
                 img=img,
@@ -845,8 +884,20 @@ class AgentRearrange:
         if custom_tasks is not None:
             logger.info("Processing custom tasks")
             c_agent_name, c_task = next(iter(custom_tasks.items()))
-            position = tasks.index(c_agent_name)
-
+            position = next(
+                (
+                    i for i, t in enumerate(tasks)
+                    if any(
+                        self._parse_node(tok)[0] == c_agent_name
+                        for tok in t.split(",")
+                    )
+                ),
+                None,
+            )
+            if position is None:
+                raise ValueError(
+                    f"Custom task agent '{c_agent_name}' not found in flow."
+                )
             if position > 0:
                 tasks[position - 1] += "->" + c_task
             else:
