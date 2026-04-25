@@ -34,5 +34,3 @@ agent_roles = Literal[
     "auditor",
 ]
 
-
-# print(agent_roles)

@@ -18,7 +18,7 @@ from swarms.structs.conversation import Conversation
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.cron_job import CronJob
 from swarms.structs.debate_with_judge import DebateWithJudge
-from swarms.structs.graph_workflow import (
+from swarms.structs.graph_workflow.main import (
     Edge,
     GraphWorkflow,
     Node,
