@@ -1732,8 +1732,10 @@ class HierarchicalSwarm:
 
                 while pending:
                     next_pending = []
+                    # One thread per pending task so every future starts
+                    # immediately and worker_timeout is truly per-task.
                     executor = ThreadPoolExecutor(
-                        max_workers=max_workers
+                        max_workers=max(max_workers, len(pending))
                     )
                     future_to_meta = {}
 
@@ -1846,56 +1848,63 @@ class HierarchicalSwarm:
                             "Processing...",
                         )
 
-                    output = None
-                    for attempt in range(self.max_retries + 1):
-                        seq_executor = ThreadPoolExecutor(
-                            max_workers=1
-                        )
-                        future = seq_executor.submit(
-                            self.call_single_agent,
+                    if self.worker_timeout is None:
+                        output = self.call_single_agent(
                             order.agent_name,
                             order.task,
                             streaming_callback,
                         )
-                        try:
-                            output = future.result(
-                                timeout=self.worker_timeout
+                    else:
+                        output = None
+                        for attempt in range(self.max_retries + 1):
+                            seq_executor = ThreadPoolExecutor(
+                                max_workers=1
                             )
-                            seq_executor.shutdown(wait=False)
-                            break
-                        except ConcurrentTimeoutError:
-                            seq_executor.shutdown(wait=False)
-                            logger.warning(
-                                f"[TIMEOUT] Worker '{order.agent_name}' exceeded "
-                                f"{self.worker_timeout}s timeout "
-                                f"(attempt {attempt + 1}/{self.max_retries + 1}). "
-                                f"Task: {order.task[:80]}"
+                            future = seq_executor.submit(
+                                self.call_single_agent,
+                                order.agent_name,
+                                order.task,
+                                streaming_callback,
                             )
-                            if attempt < self.max_retries:
-                                if (
-                                    self.interactive
-                                    and self.dashboard
-                                ):
-                                    self.dashboard.update_agent_status(
-                                        order.agent_name,
-                                        "TIMEOUT",
-                                        order.task,
-                                        f"Timed out — retrying (attempt {attempt + 1})",
-                                    )
-                            else:
-                                output = (
-                                    f"[FAILED] Worker '{order.agent_name}' timed out "
-                                    f"after {self.max_retries + 1} attempt(s). "
+                            try:
+                                output = future.result(
+                                    timeout=self.worker_timeout
+                                )
+                                seq_executor.shutdown(wait=False)
+                                break
+                            except ConcurrentTimeoutError:
+                                seq_executor.shutdown(wait=False)
+                                logger.warning(
+                                    f"[TIMEOUT] Worker '{order.agent_name}' exceeded "
+                                    f"{self.worker_timeout}s timeout "
+                                    f"(attempt {attempt + 1}/{self.max_retries + 1}). "
                                     f"Task: {order.task[:80]}"
                                 )
-                                logger.error(output)
-                        except Exception as e:
-                            seq_executor.shutdown(wait=False)
-                            logger.error(
-                                f"[ERROR] Worker '{order.agent_name}' raised: {e}\n"
-                                f"[TRACE] {traceback.format_exc()}"
-                            )
-                            break
+                                if attempt < self.max_retries:
+                                    if (
+                                        self.interactive
+                                        and self.dashboard
+                                    ):
+                                        self.dashboard.update_agent_status(
+                                            order.agent_name,
+                                            "TIMEOUT",
+                                            order.task,
+                                            f"Timed out — retrying (attempt {attempt + 1})",
+                                        )
+                                else:
+                                    output = (
+                                        f"[FAILED] Worker '{order.agent_name}' timed out "
+                                        f"after {self.max_retries + 1} attempt(s). "
+                                        f"Task: {order.task[:80]}"
+                                    )
+                                    logger.error(output)
+                            except Exception as e:
+                                seq_executor.shutdown(wait=False)
+                                logger.error(
+                                    f"[ERROR] Worker '{order.agent_name}' raised: {e}\n"
+                                    f"[TRACE] {traceback.format_exc()}"
+                                )
+                                break
 
                     if self.interactive and self.dashboard:
                         status = (

@@ -1,12 +1,3 @@
-import sys, io
-
-sys.stdout = io.TextIOWrapper(
-    sys.stdout.buffer, encoding="utf-8", errors="replace"
-)
-sys.stderr = io.TextIOWrapper(
-    sys.stderr.buffer, encoding="utf-8", errors="replace"
-)
-
 """
 HierarchicalSwarm — worker timeout & retry demo
 
@@ -16,7 +7,16 @@ Growth-Strategist finishes normally with a real claude-sonnet-4-5 response —
 no hung swarm.
 """
 
+import sys
+import io
 import time
+
+sys.stdout = io.TextIOWrapper(
+    sys.stdout.buffer, encoding="utf-8", errors="replace"
+)
+sys.stderr = io.TextIOWrapper(
+    sys.stderr.buffer, encoding="utf-8", errors="replace"
+)
 
 from swarms import Agent
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
@@ -75,7 +75,7 @@ def _patched_call(
 ):
     if agent_name == "Market-Analyst":
         print(
-            f"  [demo] Market-Analyst hanging (simulating stuck tool)..."
+            "  [demo] Market-Analyst hanging (simulating stuck tool)..."
         )
         time.sleep(3600)
     return _original_call(

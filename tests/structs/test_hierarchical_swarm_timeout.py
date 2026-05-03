@@ -4,13 +4,15 @@ No real LLM calls — all agents are patched.
 """
 
 import time
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from swarms.structs.hiearchical_swarm import (
     HierarchicalSwarm,
     HierarchicalOrder,
 )
+
+_TIMEOUT = 1
+_HANG = 1.5  # just past _TIMEOUT so the stuck thread exits quickly
 
 
 def _make_swarm(**kwargs) -> HierarchicalSwarm:
@@ -97,12 +99,14 @@ def test_no_timeout_sequential():
 
 def test_parallel_timeout_fails():
     swarm = _make_swarm(
-        worker_timeout=1, max_retries=0, parallel_execution=True
+        worker_timeout=_TIMEOUT,
+        max_retries=0,
+        parallel_execution=True,
     )
 
     def _call(name, task, cb=None, add=True):
         if name == "AgentA":
-            time.sleep(60)
+            time.sleep(_HANG)
         return "ok"
 
     swarm.call_single_agent = _call
@@ -116,12 +120,14 @@ def test_parallel_timeout_fails():
 
 def test_sequential_timeout_fails():
     swarm = _make_swarm(
-        worker_timeout=1, max_retries=0, parallel_execution=False
+        worker_timeout=_TIMEOUT,
+        max_retries=0,
+        parallel_execution=False,
     )
 
     def _call(name, task, cb=None, add=True):
         if name == "AgentA":
-            time.sleep(60)
+            time.sleep(_HANG)
         return "ok"
 
     swarm.call_single_agent = _call
@@ -143,11 +149,13 @@ def test_parallel_retry_recovers():
     def _call(name, task, cb=None, add=True):
         attempt["n"] += 1
         if attempt["n"] < 3:
-            time.sleep(60)
+            time.sleep(_HANG)
         return "recovered"
 
     swarm = _make_swarm(
-        worker_timeout=1, max_retries=2, parallel_execution=True
+        worker_timeout=_TIMEOUT,
+        max_retries=2,
+        parallel_execution=True,
     )
     swarm.call_single_agent = _call
     results = swarm.execute_orders(_orders(("AgentA", "flaky")))
@@ -161,11 +169,13 @@ def test_sequential_retry_recovers():
     def _call(name, task, cb=None, add=True):
         attempt["n"] += 1
         if attempt["n"] < 3:
-            time.sleep(60)
+            time.sleep(_HANG)
         return "recovered"
 
     swarm = _make_swarm(
-        worker_timeout=1, max_retries=2, parallel_execution=False
+        worker_timeout=_TIMEOUT,
+        max_retries=2,
+        parallel_execution=False,
     )
     swarm.call_single_agent = _call
     results = swarm.execute_orders(_orders(("AgentA", "flaky")))
@@ -180,10 +190,12 @@ def test_sequential_retry_recovers():
 
 def test_exhausted_retries_message():
     swarm = _make_swarm(
-        worker_timeout=1, max_retries=1, parallel_execution=True
+        worker_timeout=_TIMEOUT,
+        max_retries=1,
+        parallel_execution=True,
     )
     swarm.call_single_agent = (
-        lambda name, task, cb=None, add=True: time.sleep(60)
+        lambda name, task, cb=None, add=True: time.sleep(_HANG)
     )
     results = swarm.execute_orders(_orders(("AgentA", "impossible")))
     assert results[0].startswith("[FAILED]")
@@ -199,12 +211,14 @@ def test_exhausted_retries_message():
 
 def test_healthy_sibling_unaffected():
     swarm = _make_swarm(
-        worker_timeout=1, max_retries=0, parallel_execution=True
+        worker_timeout=_TIMEOUT,
+        max_retries=0,
+        parallel_execution=True,
     )
 
     def _call(name, task, cb=None, add=True):
         if name == "AgentB":
-            time.sleep(60)
+            time.sleep(_HANG)
         return "fast"
 
     swarm.call_single_agent = _call
