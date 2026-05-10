@@ -192,6 +192,10 @@ class AgentRearrange:
 
         self.reliability_check()
 
+        self._execution_plan: List[List[str]] = (
+            self._parse_flow() if "->" in self.flow else []
+        )
+
     def reliability_check(self):
         """
         Validates the configuration parameters to ensure the system can run properly.
@@ -242,6 +246,9 @@ class AgentRearrange:
             >>> rearrange_system.set_custom_flow("researcher -> writer, editor")
         """
         self.flow = flow
+        self._execution_plan = (
+            self._parse_flow() if "->" in flow else []
+        )
         logger.info(f"Custom flow set: {flow}")
 
     def add_agent(self, agent: Agent):
@@ -253,6 +260,8 @@ class AgentRearrange:
         """
         logger.info(f"Adding agent {agent.agent_name} to the swarm.")
         self.agents[agent.agent_name] = agent
+        if "->" in self.flow:
+            self._execution_plan = self._parse_flow()
 
     def track_history(
         self,
@@ -283,6 +292,11 @@ class AgentRearrange:
             agent_name (str): The name of the agent to be removed.
         """
         del self.agents[agent_name]
+        self._execution_plan = [
+            [name for name in step if name != agent_name]
+            for step in self._execution_plan
+            if any(name != agent_name for name in step)
+        ]
 
     def add_agents(self, agents: List[Agent]):
         """
@@ -331,6 +345,35 @@ class AgentRearrange:
 
         logger.info(f"Flow: {self.flow} is valid.")
         return True
+
+    def _parse_flow(self) -> List[List[str]]:
+        """Parse and validate the flow string into a structured execution plan.
+
+        Splits the flow on '->' to get steps, then splits each step on ','
+        to get agent names. Raises ValueError if '->' is missing or if any
+        agent name is not registered.
+
+        Returns:
+            List[List[str]]: Each element is a step; each step is a list of
+                agent names that run at that position (concurrently when >1).
+        """
+        if "->" not in self.flow:
+            raise ValueError(
+                "Flow must include '->' to denote the direction of the task."
+            )
+
+        steps = []
+        for step in self.flow.split("->"):
+            agent_names = [name.strip() for name in step.split(",")]
+            for agent_name in agent_names:
+                if agent_name not in self.agents:
+                    raise ValueError(
+                        f"Agent '{agent_name}' is not registered."
+                    )
+            steps.append(agent_names)
+
+        logger.info(f"Flow: {self.flow} is valid.")
+        return steps
 
     def _get_sequential_awareness(
         self,
@@ -506,6 +549,12 @@ class AgentRearrange:
         """
         logger.info(f"Running agents in parallel: {agent_names}")
 
+        for agent_name in agent_names:
+            if agent_name not in self.agents:
+                raise ValueError(
+                    f"Agent '{agent_name}' is not registered."
+                )
+
         # Get agent objects for concurrent execution
         agents_to_run = [
             self.agents[agent_name] for agent_name in agent_names
@@ -567,6 +616,10 @@ class AgentRearrange:
         """
         logger.info(f"Running agent sequentially: {agent_name}")
 
+        if agent_name not in self.agents:
+            raise ValueError(
+                f"Agent '{agent_name}' is not registered."
+            )
         agent = self.agents[agent_name]
 
         # Add sequential awareness information for the agent
@@ -637,11 +690,15 @@ class AgentRearrange:
         """
         self.conversation.add("User", task)
 
-        if not self.validate_flow():
-            logger.error("Flow validation failed")
-            return "Invalid flow configuration."
+        plan = self._execution_plan
+        if not plan:
+            raise ValueError(
+                "Flow must include '->' to denote the direction of the task."
+            )
 
-        tasks = self.flow.split("->")
+        # Derive tasks as List[str] once — used only by _get_sequential_awareness
+        # and custom_tasks injection; the main loop iterates plan directly.
+        tasks = [",".join(step) for step in plan]
         response_dict = {}
 
         logger.info(
@@ -665,10 +722,7 @@ class AgentRearrange:
                 f"Starting loop {loop_count + 1}/{self.max_loops}"
             )
 
-            for task_idx, task in enumerate(tasks):
-                agent_names = [
-                    name.strip() for name in task.split(",")
-                ]
+            for task_idx, agent_names in enumerate(plan):
 
                 if len(agent_names) > 1:
                     # Concurrent processing - comma detected

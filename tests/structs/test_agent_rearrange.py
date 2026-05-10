@@ -820,6 +820,53 @@ def test_repeated_agent_awareness_in_conversation():
     print("✓ test_repeated_agent_awareness_in_conversation passed")
 
 
+# ============================================================================
+# _execution_plan Caching Tests
+# ============================================================================
+
+
+def test_execution_plan_populated_at_init():
+    """_execution_plan is built during __init__, before any run() call."""
+    agents = create_sample_agents()
+    ar = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent -> WriterAgent -> ReviewerAgent",
+    )
+    assert ar._execution_plan == [
+        ["ResearchAgent"],
+        ["WriterAgent"],
+        ["ReviewerAgent"],
+    ]
+    print("✓ test_execution_plan_populated_at_init passed")
+
+
+def test_execution_plan_rebuilt_after_set_custom_flow():
+    """set_custom_flow() rebuilds _execution_plan to match the new flow."""
+    agents = create_sample_agents()
+    ar = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent -> WriterAgent",
+    )
+    ar.set_custom_flow("ResearchAgent -> WriterAgent -> ReviewerAgent")
+    assert ar._execution_plan == [
+        ["ResearchAgent"],
+        ["WriterAgent"],
+        ["ReviewerAgent"],
+    ]
+    print("✓ test_execution_plan_rebuilt_after_set_custom_flow passed")
+
+
+def test_parse_flow_raises_on_unregistered_agent():
+    """_parse_flow() raises ValueError when a flow names an agent not in self.agents."""
+    agents = create_sample_agents()[:2]  # ResearchAgent, WriterAgent only
+    with pytest.raises(ValueError, match="not registered"):
+        AgentRearrange(
+            agents=agents,
+            flow="ResearchAgent -> WriterAgent -> ReviewerAgent",
+        )
+    print("✓ test_parse_flow_raises_on_unregistered_agent passed")
+
+
 def main():
     """Run all tests."""
     tests = [
@@ -860,6 +907,9 @@ def main():
         test_repeated_agent_three_occurrences,
         test_repeated_agent_run,
         test_repeated_agent_awareness_in_conversation,
+        test_execution_plan_populated_at_init,
+        test_execution_plan_rebuilt_after_set_custom_flow,
+        test_parse_flow_raises_on_unregistered_agent,
     ]
 
     print("=" * 60)
