@@ -316,6 +316,7 @@ nav:
 
     - Utilities:
       - CLI Reference: "swarms/cli/cli_reference.md"
+      - OpenTelemetry Tracing: "swarms/telemetry/opentelemetry.md"
       - Agent Loader: "swarms/utils/agent_loader.md"
       - AgentRegistry: "swarms/structs/agent_registry.md"
       - SubagentRegistry: "swarms/structs/async_subagent.md"

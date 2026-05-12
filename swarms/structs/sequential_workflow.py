@@ -10,6 +10,7 @@ from swarms.prompts.multi_agent_collab_prompt import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
+from swarms.telemetry.otel import trace_function
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 from swarms.utils.swarm_autosave import get_swarm_workspace_dir
@@ -256,6 +257,10 @@ class SequentialWorkflow:
             result = self.agent_rearrange.run(**run_kwargs)
         return result
 
+    @trace_function(
+        "swarms.sequential_workflow.run",
+        component="sequential_workflow",
+    )
     def run(
         self,
         task: str,

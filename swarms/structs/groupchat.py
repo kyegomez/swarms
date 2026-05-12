@@ -9,6 +9,7 @@ from loguru import logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import create_agent_map
+from swarms.telemetry.otel import trace_function
 from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -1266,6 +1267,7 @@ class GroupChat:
         # Get response from the randomly selected agent
         self._get_agent_response(random_agent, img, imgs)
 
+    @trace_function("swarms.groupchat.run", component="groupchat")
     def run(
         self,
         task: str,
