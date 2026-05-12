@@ -1,0 +1,14 @@
+version: 2
+
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.11"
+
+mkdocs:
+  configuration: docs/mkdocs.yml
+  fail_on_warning: false
+
+python:
+  install:
+    - requirements: docs/requirements.txt
