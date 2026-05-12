@@ -17,7 +17,7 @@ def _env_enabled(value: Optional[str]) -> bool:
 
 def is_opentelemetry_enabled() -> bool:
     return _env_enabled(os.getenv("SWARMS_OTEL_ENABLED")) or bool(
-        os.getenv("SWARMS_OTEL_EXPORTER_OTLP_ENDPOINT")
+        _otel_endpoint()
     )
 
 
@@ -26,8 +26,22 @@ def _get_tracer() -> Any:
         return None
 
     return _build_tracer(
-        os.getenv("SWARMS_OTEL_EXPORTER_OTLP_ENDPOINT"),
-        os.getenv("SWARMS_OTEL_SERVICE_NAME", "swarms"),
+        _otel_endpoint(),
+        _otel_service_name(),
+    )
+
+
+def _otel_endpoint() -> Optional[str]:
+    return os.getenv("SWARMS_OTEL_EXPORTER_OTLP_ENDPOINT") or os.getenv(
+        "OTEL_EXPORTER_OTLP_ENDPOINT"
+    )
+
+
+def _otel_service_name() -> str:
+    return (
+        os.getenv("SWARMS_OTEL_SERVICE_NAME")
+        or os.getenv("OTEL_SERVICE_NAME")
+        or "swarms"
     )
 
 

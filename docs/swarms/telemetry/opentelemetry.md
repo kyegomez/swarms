@@ -22,6 +22,10 @@ export SWARMS_OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318/v1/traces
 
 If `SWARMS_OTEL_EXPORTER_OTLP_ENDPOINT` is present, tracing is enabled automatically. When no endpoint is configured, Swarms uses the active OpenTelemetry provider, which lets applications configure their own exporter before importing or running agents.
 
+Swarms also accepts the standard OpenTelemetry environment variables
+`OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_SERVICE_NAME` as fallbacks. The
+`SWARMS_OTEL_*` variables take precedence when both are present.
+
 ## What gets traced
 
 Swarms creates spans around the main `run` entrypoints for:

@@ -12,10 +12,23 @@ def test_opentelemetry_disabled_by_default(monkeypatch):
     monkeypatch.delenv(
         "SWARMS_OTEL_EXPORTER_OTLP_ENDPOINT", raising=False
     )
+    monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
 
     assert is_opentelemetry_enabled() is False
     with opentelemetry_span("test.disabled") as span:
         assert span is None
+
+
+def test_opentelemetry_enabled_by_standard_otel_endpoint(monkeypatch):
+    monkeypatch.delenv("SWARMS_OTEL_ENABLED", raising=False)
+    monkeypatch.delenv(
+        "SWARMS_OTEL_EXPORTER_OTLP_ENDPOINT", raising=False
+    )
+    monkeypatch.setenv(
+        "OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318"
+    )
+
+    assert is_opentelemetry_enabled() is True
 
 
 def test_trace_function_noops_when_otel_missing(monkeypatch):
