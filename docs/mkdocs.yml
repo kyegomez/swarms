@@ -323,6 +323,7 @@ nav:
     - Tools:
       - Overview: "swarms_tools/overview.md"
       - BaseTool Reference: "swarms/tools/base_tool.md"
+      - Firecrawl Web Research Agents: "swarms/examples/firecrawl_web_research_agent.md"
       - MCP Client Utils: "swarms/tools/mcp_client_call.md"
       - Run Bash Tool Tutorial: "examples/autonomous_looper_run_bash_tutorial.md"
 
