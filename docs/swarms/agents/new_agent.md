@@ -21,8 +21,10 @@ By following these guidelines, you can create agents that integrate well with br
 Here is a detailed template for creating a custom agent by inheriting the `Agent` class. This template demonstrates how to structure an agent with extendable and reusable features:
 
 ```python
-from typing import Callable, Any
+from typing import Any, Callable, Optional
+
 from swarms import Agent
+
 
 class MyNewAgent(Agent):
     """
@@ -35,41 +37,61 @@ class MyNewAgent(Agent):
         llm (Callable, optional): A callable representing the language model to use.
     """
 
-    def __init__(self, name: str, system_prompt: str, model_name: str = None, description: str, llm: Callable = None):
+    def __init__(
+        self,
+        name: str,
+        system_prompt: str,
+        description: str,
+        model_name: str = "gpt-4.1",
+        llm: Optional[Callable[..., Any]] = None,
+    ) -> None:
         """
         Initialize the custom agent.
 
         Args:
             name (str): The name of the agent.
             system_prompt (str): The prompt guiding the agent.
-            model_name (str): The name of your model can use litellm [openai/gpt-4o]
             description (str): A description of the agent's purpose.
+            model_name (str): The model name to use with LiteLLM-compatible providers.
             llm (Callable, optional): A callable representing the language model to use.
         """
-        super().__init__(agent_name=name, system_prompt=system_prompt, model_name=model_name)
-        self.agent_name = agent_name
-        self.system_prompt system_prompt
-        self.description = description
-        self.model_name = model_name
+        super().__init__(
+            agent_name=name,
+            agent_description=description,
+            system_prompt=system_prompt,
+            model_name=model_name,
+            llm=llm,
+        )
 
-    def run(self, task: str, img: str, *args: Any, **kwargs: Any) -> Any:
+    def run(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
         """
         Execute the task assigned to the agent.
 
         Args:
             task (str): The task description.
-            img (str): The image input for processing.
+            img (str, optional): Optional image input for multimodal processing.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
         Returns:
             Any: The result of the task execution.
         """
-        # Your custom logic 
-        ...
+        if self.llm is None:
+            raise ValueError("MyNewAgent requires an llm callable or custom run logic.")
+
+        if img is not None:
+            return self.llm(task, img, *args, **kwargs)
+
+        return self.llm(task, *args, **kwargs)
 ```
 
-This design ensures a seamless extension of functionality while maintaining clear and maintainable code.
+This design keeps the custom agent aligned with the base `Agent` initializer. Metadata is passed through `agent_name` and `agent_description`, model selection remains available through `model_name`, and custom model behavior can be supplied through the optional `llm` callable. If you do not provide an `llm`, replace the guard in `run()` with your own task execution logic.
 
 ---
 
@@ -100,18 +122,29 @@ Ensure your agent design can scale to accommodate increased complexity or a larg
 Here is an example of how to use your custom agent effectively:
 
 ```python
+from typing import Any, Optional
+
+
 # Example LLM callable
 class MockLLM:
     """
     A mock language model class for simulating LLM behavior.
 
     Methods:
-        run(task: str, img: str, *args: Any, **kwargs: Any) -> str:
+        run(task: str, img: Optional[str], *args: Any, **kwargs: Any) -> str:
             Processes the task and image input to return a simulated response.
     """
 
-    def run(self, task: str, img: str, *args: Any, **kwargs: Any) -> str:
-        return f"Processed task '{task}' with image '{img}'"
+    def run(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> str:
+        image_context = f" with image '{img}'" if img else ""
+        return f"Processed task '{task}'{image_context}"
+
 
 # Create an instance of MyNewAgent
 agent = MyNewAgent(
@@ -152,9 +185,10 @@ from griptape.tools import (
     PromptSummaryTool,
 )
 
+
 # Create a custom agent class that inherits from SwarmsAgent
 class GriptapeSwarmsAgent(SwarmsAgent):
-    def __init__(self, name: str, system_prompt: str: str, *args, **kwargs):
+    def __init__(self, name: str, system_prompt: str, *args, **kwargs) -> None:
         super().__init__(agent_name=name, system_prompt=system_prompt)
         # Initialize the Griptape agent with its tools
         self.agent = GriptapeAgent(
@@ -179,7 +213,10 @@ class GriptapeSwarmsAgent(SwarmsAgent):
 
 
 # Example usage:
-griptape_swarms_agent = GriptapeSwarmsAgent()
+griptape_swarms_agent = GriptapeSwarmsAgent(
+    name="Griptape-Research-Agent",
+    system_prompt="Load a URL, summarize it, and save the result.",
+)
 output = griptape_swarms_agent.run("https://griptape.ai, griptape.txt")
 print(output)
 ```
@@ -209,4 +246,3 @@ print(output)
 ## Conclusion
 
 By following these guidelines, you can create powerful and flexible agents tailored to specific tasks. Leveraging inheritance from the `Agent` class ensures compatibility and standardization across swarms. Emphasize modularity, thorough testing, and clear documentation to build agents that are robust, scalable, and easy to integrate. Collaborate with the community by submitting your innovative agents to the Swarms repository, contributing to a growing ecosystem of intelligent solutions. With a well-designed agent, you are equipped to tackle diverse challenges efficiently and effectively.
-
