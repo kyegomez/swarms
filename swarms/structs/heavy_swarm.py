@@ -20,6 +20,7 @@ from rich.table import Table
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.telemetry.otel import trace_otel_method
 from swarms.tools.tool_type import tool_type
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
@@ -405,6 +406,7 @@ class HeavySwarm:
                 title="Reliability Check",
             )
 
+    @trace_otel_method("swarms.heavy_swarm.run")
     def run(self, task: str, img: Optional[str] = None) -> str:
         """
         Execute the complete HeavySwarm orchestration flow with multi-loop functionality.

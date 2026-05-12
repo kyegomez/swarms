@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="tree_swarm")
@@ -475,6 +476,7 @@ class ForestSwarm:
             logger.warning(f"No relevant tree found for task: {task}")
         return None
 
+    @trace_otel_method("swarms.forest_swarm.run")
     def run(self, task: str, img: str = None, *args, **kwargs) -> Any:
         """
         Execute the given task by finding the most relevant tree and agent within that tree.

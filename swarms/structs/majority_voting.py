@@ -7,6 +7,7 @@ from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
 from swarms.structs.swarm_id import swarm_id
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -168,6 +169,7 @@ class MajorityVoting:
             title="Majority Voting",
         )
 
+    @trace_otel_method("swarms.majority_voting.run")
     def run(
         self,
         task: str,

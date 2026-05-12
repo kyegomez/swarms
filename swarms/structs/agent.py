@@ -96,6 +96,12 @@ from swarms.structs.transforms import (
     handle_transforms,
 )
 from swarms.telemetry.main import log_agent_data
+from swarms.telemetry.otel import (
+    agent_span_attributes,
+    end_otel_span,
+    set_otel_attributes,
+    start_otel_span,
+)
 from swarms.tools.base_tool import BaseTool
 from swarms.tools.handoffs_tool import handoff_task
 from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
@@ -4796,6 +4802,18 @@ Subtask Breakdown:
                 streaming_callback = self.streaming_callback
             # else: both are None, streaming_callback stays None
 
+        otel_span = start_otel_span(
+            "swarms.agent.run",
+            agent_span_attributes(
+                self,
+                task=task,
+                img=img,
+                imgs=imgs,
+                n=n,
+            ),
+        )
+        otel_error = None
+
         try:
             if self.max_loops == "auto":
                 # Use autonomous loop structure: plan -> execute subtasks -> summary
@@ -4821,6 +4839,10 @@ Subtask Breakdown:
                     **kwargs,
                 )
 
+            set_otel_attributes(
+                otel_span,
+                {"swarms.output.type": type(output).__name__},
+            )
             return output
 
         except (
@@ -4834,17 +4856,30 @@ Subtask Breakdown:
 
             # Try fallback models if available
             if self.is_fallback_available():
-                return self._handle_fallback_execution(
-                    task=task,
-                    img=img,
-                    imgs=imgs,
-                    correct_answer=correct_answer,
-                    streaming_callback=streaming_callback,
-                    original_error=e,
-                    *args,
-                    **kwargs,
-                )
+                try:
+                    output = self._handle_fallback_execution(
+                        task=task,
+                        img=img,
+                        imgs=imgs,
+                        correct_answer=correct_answer,
+                        streaming_callback=streaming_callback,
+                        original_error=e,
+                        *args,
+                        **kwargs,
+                    )
+                    set_otel_attributes(
+                        otel_span,
+                        {
+                            "swarms.agent.fallback.used": True,
+                            "swarms.output.type": type(output).__name__,
+                        },
+                    )
+                    return output
+                except Exception as fallback_error:
+                    otel_error = fallback_error
+                    raise
             else:
+                otel_error = e
                 if self.verbose:
                     # No fallback available
                     logger.error(
@@ -4854,7 +4889,8 @@ Subtask Breakdown:
 
                 self._handle_run_error(e)
 
-        except KeyboardInterrupt:
+        except KeyboardInterrupt as e:
+            otel_error = e
             # Save config on interrupt
             if self.autosave:
                 try:
@@ -4868,6 +4904,8 @@ Subtask Breakdown:
                 "For technical support, refer to this document: https://docs.swarms.world/community/technical-support"
             )
             raise KeyboardInterrupt
+        finally:
+            end_otel_span(otel_span, otel_error)
 
     def run_stream(
         self,

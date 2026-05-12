@@ -73,6 +73,16 @@ httpx = "*"
 requests = "*"
 mcp = "*"
 schedule = "*"
+opentelemetry-api = { version = "*", optional = true }
+opentelemetry-sdk = { version = "*", optional = true }
+opentelemetry-exporter-otlp = { version = "*", optional = true }
+
+[tool.poetry.extras]
+opentelemetry = [
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp",
+]
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"
@@ -116,4 +126,3 @@ exclude = '''
   | docs
 )/
 '''
-

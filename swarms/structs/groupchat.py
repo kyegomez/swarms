@@ -16,6 +16,7 @@ from swarms.utils.history_output_formatter import (
 from swarms.prompts.multi_agent_collab_prompt import (
     MULTI_AGENT_COLLAB_PROMPT_TWO,
 )
+from swarms.telemetry.otel import trace_otel_method
 
 SpeakerFunction = Callable[[List[str], "Agent"], bool]
 
@@ -1266,6 +1267,7 @@ class GroupChat:
         # Get response from the randomly selected agent
         self._get_agent_response(random_agent, img, imgs)
 
+    @trace_otel_method("swarms.groupchat.run")
     def run(
         self,
         task: str,
@@ -1505,6 +1507,7 @@ class GroupChat:
             logger.error(f"Error in chat: {e}")
             raise
 
+    @trace_otel_method("swarms.groupchat.batched_run")
     def batched_run(
         self, tasks: List[str], *args, **kwargs
     ) -> List[str]:
@@ -1528,6 +1531,7 @@ class GroupChat:
             )
         return [self.run(task, *args, **kwargs) for task in tasks]
 
+    @trace_otel_method("swarms.groupchat.concurrent_run")
     def concurrent_run(
         self, tasks: List[str], *args, **kwargs
     ) -> List[str]:

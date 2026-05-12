@@ -5,6 +5,7 @@ import tenacity
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -133,6 +134,7 @@ class RoundRobinSwarm:
             )
             raise
 
+    @trace_otel_method("swarms.round_robin.run")
     def run(
         self, task: str, *args, **kwargs
     ) -> Union[str, dict, list]:

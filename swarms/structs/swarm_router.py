@@ -35,6 +35,7 @@ from swarms.structs.multi_agent_router import MultiAgentRouter
 from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
@@ -823,6 +824,7 @@ class SwarmRouter:
             )
             raise e
 
+    @trace_otel_method("swarms.swarm_router.run")
     def run(
         self,
         task: Optional[str] = None,
@@ -893,6 +895,7 @@ class SwarmRouter:
             task=task, img=img, imgs=imgs, *args, **kwargs
         )
 
+    @trace_otel_method("swarms.swarm_router.batch_run")
     def batch_run(
         self,
         tasks: List[str],
@@ -928,6 +931,7 @@ class SwarmRouter:
                 )
         return results
 
+    @trace_otel_method("swarms.swarm_router.concurrent_run")
     def concurrent_run(
         self,
         task: str,

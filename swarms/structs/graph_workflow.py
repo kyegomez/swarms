@@ -40,6 +40,7 @@ except ImportError:
 
 from swarms.structs.agent import Agent  # noqa: F401
 from swarms.structs.conversation import Conversation
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.get_cpu_cores import get_cpu_cores
 from swarms.utils.loguru_logger import initialize_logger
 
@@ -1712,6 +1713,7 @@ class GraphWorkflow:
             logger.exception(f"Error in GraphWorkflow.arun: {e}")
             raise e
 
+    @trace_otel_method("swarms.graph_workflow.run")
     def run(
         self,
         task: Optional[str] = None,

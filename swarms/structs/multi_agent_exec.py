@@ -7,6 +7,13 @@ from loguru import logger
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
+from swarms.telemetry.otel import (
+    agent_span_attributes,
+    end_otel_span,
+    set_otel_attributes,
+    start_otel_span,
+    task_attributes,
+)
 
 
 def run_single_agent(
@@ -33,7 +40,23 @@ def run_single_agent(
         >>> result = run_single_agent(agent, "Analyze this data")
         >>> print(result)
     """
-    return agent.run(task=task, *args, **kwargs)
+    otel_span = start_otel_span(
+        "swarms.multi_agent.run_single_agent",
+        agent_span_attributes(agent, task=task),
+    )
+    otel_error = None
+    try:
+        output = agent.run(task=task, *args, **kwargs)
+        set_otel_attributes(
+            otel_span,
+            {"swarms.output.type": type(output).__name__},
+        )
+        return output
+    except Exception as e:
+        otel_error = e
+        raise
+    finally:
+        end_otel_span(otel_span, otel_error)
 
 
 async def run_agent_async(agent: AgentType, task: str) -> Any:
@@ -138,10 +161,23 @@ def run_agents_concurrently(
         >>> for name, val in results_dict.items():
         ...     print(f"Result from {name}: {val}")
     """
+    otel_span = start_otel_span(
+        "swarms.multi_agent.run_agents_concurrently",
+        {
+            "swarms.swarm.agent_count": len(agents),
+            "swarms.execution.concurrent": True,
+            **task_attributes(task=task, img=img),
+        },
+    )
+    otel_error = None
     try:
         if max_workers is None:
             num_cores = os.cpu_count()
             max_workers = int(num_cores * 0.95) if num_cores else 1
+
+        set_otel_attributes(
+            otel_span, {"swarms.execution.max_workers": max_workers}
+        )
 
         futures = []
         agent_id_map = {}
@@ -174,6 +210,13 @@ def run_agents_concurrently(
                         or str(agent)
                     )
                     output_dict[name] = result
+                set_otel_attributes(
+                    otel_span,
+                    {
+                        "swarms.output.count": len(output_dict),
+                        "swarms.output.type": "dict",
+                    },
+                )
                 return output_dict
             else:
                 results = []
@@ -185,13 +228,23 @@ def run_agents_concurrently(
                         results.append(result)
                     except Exception as e:
                         results.append(e)
+                set_otel_attributes(
+                    otel_span,
+                    {
+                        "swarms.output.count": len(results),
+                        "swarms.output.type": "list",
+                    },
+                )
                 return results
 
     except Exception as e:
+        otel_error = e
         logger.error(
             f"Error running_agents_concurrently: {e} Traceback: {e.__traceback__}"
         )
         raise e
+    finally:
+        end_otel_span(otel_span, otel_error)
 
 
 def run_agents_concurrently_multiprocess(

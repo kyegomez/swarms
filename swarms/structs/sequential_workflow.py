@@ -10,6 +10,12 @@ from swarms.prompts.multi_agent_collab_prompt import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
+from swarms.telemetry.otel import (
+    end_otel_span,
+    set_otel_attributes,
+    start_otel_span,
+    swarm_span_attributes,
+)
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 from swarms.utils.swarm_autosave import get_swarm_workspace_dir
@@ -286,6 +292,11 @@ class SequentialWorkflow:
         Raises:
             Exception: If any error occurs during task execution.
         """
+        otel_span = start_otel_span(
+            "swarms.swarm.run",
+            swarm_span_attributes(self, task=task, img=img, imgs=imgs),
+        )
+        otel_error = None
         try:
             # prompt = f"{MULTI_AGENT_COLLAB_PROMPT}\n\n{task}"
             run_kwargs = {"task": task}
@@ -308,9 +319,14 @@ class SequentialWorkflow:
                         f"Failed to save conversation history: {e}"
                     )
 
+            set_otel_attributes(
+                otel_span,
+                {"swarms.output.type": type(result).__name__},
+            )
             return result
 
         except Exception as e:
+            otel_error = e
             # Save conversation history on error
             if self.autosave and self.swarm_workspace_dir:
                 try:
@@ -324,6 +340,8 @@ class SequentialWorkflow:
                 f"An error occurred while executing the task: {e}"
             )
             raise e
+        finally:
+            end_otel_span(otel_span, otel_error)
 
     def run_stream(
         self,

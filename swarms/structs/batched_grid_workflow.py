@@ -8,6 +8,7 @@ from swarms.structs.multi_agent_exec import (
 )
 from swarms.structs.omni_agent_types import AgentType
 from swarms.structs.swarm_id import swarm_id
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.output_types import OutputType
 
 
@@ -105,6 +106,7 @@ class BatchedGridWorkflow:
 
         return results
 
+    @trace_otel_method("swarms.batched_grid_workflow.run")
     def run(self, tasks: List[str]):
         """
         Run the batched grid workflow with the given tasks.

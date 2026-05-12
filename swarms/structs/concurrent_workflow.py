@@ -8,6 +8,12 @@ from loguru import logger as loguru_logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.swarm_id import swarm_id
+from swarms.telemetry.otel import (
+    end_otel_span,
+    set_otel_attributes,
+    start_otel_span,
+    swarm_span_attributes,
+)
 from swarms.utils.formatter import formatter
 from swarms.utils.get_cpu_cores import get_cpu_cores
 from swarms.utils.history_output_formatter import (
@@ -559,6 +565,11 @@ class ConcurrentWorkflow:
             >>> workflow = ConcurrentWorkflow(agents=[agent1, agent2])
             >>> result = workflow.run("Analyze this data")
         """
+        otel_span = start_otel_span(
+            "swarms.swarm.run",
+            swarm_span_attributes(self, task=task, img=img, imgs=imgs),
+        )
+        otel_error = None
         try:
             if self.show_dashboard:
                 result = self.run_with_dashboard(
@@ -578,8 +589,13 @@ class ConcurrentWorkflow:
                         f"Failed to save conversation history: {e}"
                     )
 
+            set_otel_attributes(
+                otel_span,
+                {"swarms.output.type": type(result).__name__},
+            )
             return result
-        except Exception:
+        except Exception as e:
+            otel_error = e
             # Save conversation history on error
             if self.autosave and self.swarm_workspace_dir:
                 try:
@@ -592,6 +608,7 @@ class ConcurrentWorkflow:
         finally:
             # Always cleanup resources
             self.cleanup()
+            end_otel_span(otel_span, otel_error)
 
     def batch_run(
         self,
