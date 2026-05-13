@@ -14,6 +14,9 @@ from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 from swarms.utils.swarm_autosave import get_swarm_workspace_dir
 from swarms.utils.workspace_utils import get_workspace_dir
+from swarms.telemetry import (
+    trace_span,
+)
 
 logger = initialize_logger(log_folder="sequential_workflow")
 
@@ -256,6 +259,7 @@ class SequentialWorkflow:
             result = self.agent_rearrange.run(**run_kwargs)
         return result
 
+    @trace_span("SequentialWorkflow.run")
     def run(
         self,
         task: str,

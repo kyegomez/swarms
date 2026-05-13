@@ -95,7 +95,10 @@ from swarms.structs.transforms import (
     TransformConfig,
     handle_transforms,
 )
-from swarms.telemetry.main import log_agent_data
+from swarms.telemetry import (
+    log_agent_data,
+    trace_span,
+)
 from swarms.tools.base_tool import BaseTool
 from swarms.tools.handoffs_tool import handoff_task
 from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
@@ -3072,6 +3075,7 @@ Subtask Breakdown:
                 self.short_memory, type=self.output_type
             )
 
+    @trace_span("Agent.arun")
     async def arun(
         self,
         task: Optional[str] = None,
@@ -4687,6 +4691,7 @@ Subtask Breakdown:
                     )
         return None
 
+    @trace_span("Agent.run")
     def run(
         self,
         task: Optional[Union[str, Any]] = None,

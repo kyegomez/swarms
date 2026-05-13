@@ -16,6 +16,9 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.swarm_autosave import get_swarm_workspace_dir
 from swarms.utils.workspace_utils import get_workspace_dir
+from swarms.telemetry import (
+    trace_span,
+)
 
 logger = initialize_logger(log_folder="concurrent_workflow")
 
@@ -529,6 +532,7 @@ class ConcurrentWorkflow:
         except Exception as e:
             logger.error(f"Cleanup failed: {str(e)}")
 
+    @trace_span("ConcurrentWorkflow.run")
     def run(
         self,
         task: str,

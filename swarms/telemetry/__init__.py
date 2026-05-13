@@ -3,6 +3,8 @@ from swarms.telemetry.main import (
     get_machine_id,
     get_comprehensive_system_info,
     log_agent_data,
+    setup_telemetry,
+    trace_span,
 )
 
 __all__ = [
@@ -10,4 +12,6 @@ __all__ = [
     "get_machine_id",
     "get_comprehensive_system_info",
     "log_agent_data",
+    "setup_telemetry",
+    "trace_span",
 ]

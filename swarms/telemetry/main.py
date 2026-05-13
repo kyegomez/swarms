@@ -1,10 +1,18 @@
-import os
 import datetime
 import hashlib
 import platform
 import socket
 import uuid
-from typing import Any, Dict
+import os
+import functools
+import inspect
+import time
+from typing import (
+    Any,
+    Dict,
+    Callable,
+    Optional,
+)
 
 import psutil
 import requests
@@ -136,11 +144,11 @@ def _log_agent_data(data_dict: dict):
         "Authorization": key,
     }
 
-    response = requests.post(
-        url, json=payload, headers=headers, timeout=10
-    )
-
     try:
+        response = requests.post(
+            url, json=payload, headers=headers, timeout=10
+        )
+
         if response.status_code == 200:
             return
     except Exception:
@@ -167,3 +175,212 @@ def log_agent_data(data_dict: dict):
         _log_agent_data(data_dict)
     else:
         pass
+
+
+# --- OpenTelemetry (OTel) Integration ---
+# Optimized for high-performance and documentation build environment safety.
+
+def setup_telemetry(service_name: str = "swarms"):
+    """
+    Initializes OpenTelemetry tracing and metrics if an endpoint is configured.
+
+    Args:
+        service_name (str): The name of the service for telemetry. Defaults to "swarms".
+
+    Returns:
+        None
+    """
+    otlp_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+    if not otlp_endpoint:
+        return
+
+    try:
+        from opentelemetry import (
+            trace,
+            metrics,
+        )
+        from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+            OTLPSpanExporter,
+        )
+        from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
+            OTLPMetricExporter,
+        )
+        from opentelemetry.sdk.resources import (
+            Resource,
+        )
+        from opentelemetry.sdk.trace import (
+            TracerProvider,
+        )
+        from opentelemetry.sdk.trace.export import (
+            BatchSpanProcessor,
+        )
+        from opentelemetry.sdk.metrics import (
+            MeterProvider,
+        )
+        from opentelemetry.sdk.metrics.export import (
+            PeriodicExportingMetricReader,
+        )
+
+        resource = Resource.create({"service.name": service_name})
+
+        # Tracing initialization
+        if not isinstance(
+            trace.get_tracer_provider(), TracerProvider
+        ):
+            provider = TracerProvider(resource=resource)
+            processor = BatchSpanProcessor(
+                OTLPSpanExporter(endpoint=otlp_endpoint)
+            )
+            provider.add_span_processor(processor)
+            trace.set_tracer_provider(provider)
+
+        # Metrics initialization
+        metric_reader = PeriodicExportingMetricReader(
+            OTLPMetricExporter(endpoint=otlp_endpoint)
+        )
+        meter_provider = MeterProvider(
+            resource=resource, metric_readers=[metric_reader]
+        )
+        metrics.set_meter_provider(meter_provider)
+
+    except Exception:
+        # Fails silently to ensure high availability of the core framework
+        pass
+
+
+def trace_span(name: Optional[str] = None):
+    """
+    Decorator to wrap a function in an OpenTelemetry span and record metrics.
+    Zero-overhead and safe for environments without OpenTelemetry.
+
+    Args:
+        name (Optional[str]): The name of the span. Defaults to the function name.
+
+    Returns:
+        Callable: The decorated function.
+    """
+
+    def decorator(func: Callable):
+        span_name = name or func.__name__
+        is_async = inspect.iscoroutinefunction(func)
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                from opentelemetry import (
+                    trace,
+                    metrics,
+                )
+
+                tracer = trace.get_tracer("swarms")
+                meter = metrics.get_meter("swarms")
+            except ImportError:
+                return func(*args, **kwargs)
+
+            # Extract metadata attributes
+            attributes = {}
+            if args and hasattr(args[0], "__class__"):
+                instance = args[0]
+                attributes["swarms.class"] = (
+                    instance.__class__.__name__
+                )
+                if hasattr(instance, "agent_name"):
+                    attributes["swarms.agent_name"] = str(
+                        instance.agent_name
+                    )
+                if hasattr(instance, "model_name"):
+                    attributes["swarms.model_name"] = str(
+                        instance.model_name
+                    )
+
+            start_time = time.time()
+            try:
+                counter = meter.create_counter("swarms.task.count")
+                counter.add(1, attributes)
+            except Exception:
+                pass
+
+            with tracer.start_as_current_span(
+                span_name, attributes=attributes
+            ) as span:
+                try:
+                    result = func(*args, **kwargs)
+                    span.set_status(trace.StatusCode.OK)
+                    return result
+                except Exception as e:
+                    span.record_exception(e)
+                    span.set_status(
+                        trace.StatusCode.ERROR, str(e)
+                    )
+                    raise
+                finally:
+                    try:
+                        duration = (time.time() - start_time) * 1000
+                        hist = meter.create_histogram(
+                            "swarms.task.duration"
+                        )
+                        hist.record(duration, attributes)
+                    except Exception:
+                        pass
+
+        @functools.wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            try:
+                from opentelemetry import (
+                    trace,
+                    metrics,
+                )
+
+                tracer = trace.get_tracer("swarms")
+                meter = metrics.get_meter("swarms")
+            except ImportError:
+                return await func(*args, **kwargs)
+
+            attributes = {}
+            if args and hasattr(args[0], "__class__"):
+                instance = args[0]
+                attributes["swarms.class"] = (
+                    instance.__class__.__name__
+                )
+                if hasattr(instance, "agent_name"):
+                    attributes["swarms.agent_name"] = str(
+                        instance.agent_name
+                    )
+                if hasattr(instance, "model_name"):
+                    attributes["swarms.model_name"] = str(
+                        instance.model_name
+                    )
+
+            start_time = time.time()
+            try:
+                counter = meter.create_counter("swarms.task.count")
+                counter.add(1, attributes)
+            except Exception:
+                pass
+
+            with tracer.start_as_current_span(
+                span_name, attributes=attributes
+            ) as span:
+                try:
+                    result = await func(*args, **kwargs)
+                    span.set_status(trace.StatusCode.OK)
+                    return result
+                except Exception as e:
+                    span.record_exception(e)
+                    span.set_status(
+                        trace.StatusCode.ERROR, str(e)
+                    )
+                    raise
+                finally:
+                    try:
+                        duration = (time.time() - start_time) * 1000
+                        hist = meter.create_histogram(
+                            "swarms.task.duration"
+                        )
+                        hist.record(duration, attributes)
+                    except Exception:
+                        pass
+
+        return async_wrapper if is_async else wrapper
+
+    return decorator
