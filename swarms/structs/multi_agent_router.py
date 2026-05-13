@@ -8,6 +8,7 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from swarms.structs.conversation import Conversation
+from swarms.telemetry.otel import trace_otel_method
 from swarms.tools.base_tool import BaseTool
 from swarms.utils.formatter import formatter
 from swarms.utils.generate_keys import generate_api_key
@@ -335,6 +336,7 @@ class MultiAgentRouter:
             )
             raise
 
+    @trace_otel_method("swarms.multi_agent_router.run")
     def run(self, task: str):
         """Route a task to the appropriate agent and return the result"""
         return self.route_task(task)
@@ -343,6 +345,7 @@ class MultiAgentRouter:
         """Route a task to the appropriate agent and return the result"""
         return self.route_task(task)
 
+    @trace_otel_method("swarms.multi_agent_router.batch_run")
     def batch_run(self, tasks: List[str] = []):
         """Batch route tasks to the appropriate agents"""
         results = []
@@ -354,6 +357,7 @@ class MultiAgentRouter:
                 logger.error(f"Error routing task: {str(e)}")
         return results
 
+    @trace_otel_method("swarms.multi_agent_router.concurrent_batch_run")
     def concurrent_batch_run(self, tasks: List[str] = []):
         """Concurrently route tasks to the appropriate agents"""
         results = []

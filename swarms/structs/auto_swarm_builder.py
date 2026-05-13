@@ -10,6 +10,7 @@ from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.structs.swarm_router import SwarmRouter, SwarmType
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.litellm_wrapper import LiteLLM
 
 load_dotenv()
@@ -466,6 +467,7 @@ class AutoSwarmBuilder:
             )
             raise
 
+    @trace_otel_method("swarms.auto_swarm_builder.batch_run")
     def batch_run(self, tasks: List[str]):
         """Run the swarm on a list of tasks.
 
@@ -538,6 +540,7 @@ class AutoSwarmBuilder:
         """
         return execution_types
 
+    @trace_otel_method("swarms.auto_swarm_builder.run")
     def run(self, task: str, *args, **kwargs):
         """Run the swarm on a given task.
 

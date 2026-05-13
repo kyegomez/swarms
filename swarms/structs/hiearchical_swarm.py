@@ -51,6 +51,7 @@ from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.omni_agent_types import AgentListType
+from swarms.telemetry.otel import trace_otel_method
 from swarms.tools.base_tool import BaseTool
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
@@ -1210,6 +1211,7 @@ class HierarchicalSwarm:
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
 
+    @trace_otel_method("swarms.hierarchical_swarm.run")
     def run(
         self,
         task: Optional[str] = None,
@@ -1807,6 +1809,7 @@ class HierarchicalSwarm:
             )
             logger.error(error_msg)
 
+    @trace_otel_method("swarms.hierarchical_swarm.batched_run")
     def batched_run(
         self,
         tasks: List[str],

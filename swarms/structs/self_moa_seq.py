@@ -12,6 +12,7 @@ from tenacity import (
 )
 
 from swarms.structs.agent import Agent
+from swarms.telemetry.otel import trace_otel_method
 
 
 def retry_with_instance_config(func):
@@ -273,6 +274,7 @@ class SelfMoASeq:
             logger.error(f"Error during window aggregation: {str(e)}")
             raise
 
+    @trace_otel_method("swarms.self_moa_seq.run")
     @retry_with_instance_config
     def run(
         self,

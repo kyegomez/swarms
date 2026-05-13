@@ -44,6 +44,7 @@ from swarms.prompts.planner_generator_evaluator_prompts import (
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.swarm_id import swarm_id
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -784,6 +785,7 @@ class PlannerGeneratorEvaluator:
             raw_evaluation=raw_evaluation,
         )
 
+    @trace_otel_method("swarms.planner_generator_evaluator.run")
     def run(self, task: str, *args, **kwargs) -> Any:
         """Execute the full PGE harness pipeline.
 
@@ -965,6 +967,9 @@ class PlannerGeneratorEvaluator:
             )
             raise
 
+    @trace_otel_method(
+        "swarms.planner_generator_evaluator.batched_run"
+    )
     def batched_run(self, tasks: List[str]) -> List[Any]:
         """Run the harness on multiple tasks sequentially.
 

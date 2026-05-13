@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from swarms.structs.conversation import Conversation
 from swarms.structs.swarm_id import swarm_id
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.history_output_formatter import (
     HistoryOutputType,
@@ -197,6 +198,7 @@ class SwarmRearrange:
         logger.info("Flow is valid.")
         return True
 
+    @trace_otel_method("swarms.swarm_rearrange.run")
     def run(
         self,
         task: str = None,

@@ -4,6 +4,7 @@ from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import get_swarms_info
 from swarms.structs.swarm_router import SwarmRouter
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -143,6 +144,7 @@ class HybridHierarchicalClusterSwarm:
 
         return response
 
+    @trace_otel_method("swarms.hybrid_hierarchical_cluster_swarm.run")
     def run(self, task: str, *args, **kwargs):
         """
         Runs the routing process for a given task.
@@ -218,6 +220,9 @@ class HybridHierarchicalClusterSwarm:
         else:
             raise ValueError(f"Swarm '{swarm_name}' not found.")
 
+    @trace_otel_method(
+        "swarms.hybrid_hierarchical_cluster_swarm.batched_run"
+    )
     def batched_run(self, tasks: List[str]):
         """
         Runs the routing process for a list of tasks in batches.

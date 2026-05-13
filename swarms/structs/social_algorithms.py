@@ -1,10 +1,11 @@
 import time
 import uuid
-from typing import Any, Callable, Dict, List, Optional
 from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Optional
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 
@@ -422,6 +423,7 @@ class SocialAlgorithms:
         """Clear the communication history."""
         self.communication_history.clear()
 
+    @trace_otel_method("swarms.social_algorithms.run")
     def run(
         self,
         task: str,

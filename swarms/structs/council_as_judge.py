@@ -8,6 +8,7 @@ from loguru import logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -417,6 +418,7 @@ class CouncilAsAJudge:
                 f"Failed to evaluate dimension {dim}: {str(e)}"
             )
 
+    @trace_otel_method("swarms.council_as_judge.run")
     def run(self, task: str) -> None:
         """
         Run the evaluation process using ThreadPoolExecutor.

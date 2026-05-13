@@ -20,6 +20,7 @@ from swarms.structs.multi_agent_exec import (
     run_agents_concurrently,
 )
 from swarms.structs.swarm_id import swarm_id
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.history_output_formatter import (
     HistoryOutputType,
     history_output_formatter,
@@ -382,6 +383,7 @@ class LLMCouncil:
 
         return members
 
+    @trace_otel_method("swarms.llm_council.run")
     def run(self, task: str = None, query: str = None):
         """
         Execute the full LLM Council workflow.
@@ -516,6 +518,7 @@ class LLMCouncil:
             conversation=self.conversation, type=self.output_type
         )
 
+    @trace_otel_method("swarms.llm_council.batched_run")
     def batched_run(self, tasks: List[str]):
         """
         Run the LLM Council workflow for a batch of tasks.

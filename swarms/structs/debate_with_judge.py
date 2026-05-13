@@ -4,6 +4,7 @@ from loguru import logger
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -296,6 +297,7 @@ class DebateWithJudge:
             verbose=self.verbose,
         )
 
+    @trace_otel_method("swarms.debate_with_judge.run")
     def run(self, task: str) -> Union[str, List, dict]:
         """
         Execute the debate with judge refinement process.
@@ -534,6 +536,7 @@ class DebateWithJudge:
         """
         return self.conversation.get_final_message_content()
 
+    @trace_otel_method("swarms.debate_with_judge.batched_run")
     def batched_run(self, tasks: List[str]) -> List[str]:
         """
         Run the debate with judge refinement process for a batch of tasks.

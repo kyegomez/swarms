@@ -9,6 +9,7 @@ from swarms.structs.multi_agent_exec import (
     run_agents_with_different_tasks,
 )
 from swarms.structs.omni_agent_types import AgentType
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.workspace_utils import get_workspace_dir
@@ -182,6 +183,7 @@ class SpreadSheetSwarm:
     def load_from_csv(self):
         self._load_from_csv()
 
+    @trace_otel_method("swarms.spreadsheet_swarm.run_from_config")
     def run_from_config(self):
         """
         Run all agents with their configured tasks concurrently
@@ -271,6 +273,7 @@ class SpreadSheetSwarm:
                 "outputs": self.outputs,
             }
 
+    @trace_otel_method("swarms.spreadsheet_swarm.run")
     def run(self, task: str = None, *args, **kwargs):
         """
         Run the swarm with the specified task.

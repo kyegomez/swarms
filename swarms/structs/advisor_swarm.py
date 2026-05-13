@@ -35,6 +35,7 @@ from swarms.prompts.advisor_swarm_prompts import (
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.swarm_id import swarm_id
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -174,6 +175,7 @@ class AdvisorSwarm:
             verbose=self.verbose,
         )
 
+    @trace_otel_method("swarms.advisor_swarm.run")
     def run(
         self,
         task: Optional[str] = None,
@@ -254,6 +256,7 @@ class AdvisorSwarm:
             type=self.output_type,
         )
 
+    @trace_otel_method("swarms.advisor_swarm.batched_run")
     def batched_run(
         self, tasks: List[str], *args, **kwargs
     ) -> List[Any]:

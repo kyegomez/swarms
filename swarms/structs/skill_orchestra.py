@@ -29,6 +29,7 @@ from pydantic import BaseModel, Field
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import list_all_agents
+from swarms.telemetry.otel import trace_otel_method
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -777,6 +778,7 @@ class SkillOrchestra:
                 f"Failed to save conversation history: {e}"
             )
 
+    @trace_otel_method("swarms.skill_orchestra.run")
     def run(
         self,
         task: str,
@@ -895,10 +897,12 @@ class SkillOrchestra:
         """Callable interface — delegates to run()."""
         return self.run(task, *args, **kwargs)
 
+    @trace_otel_method("swarms.skill_orchestra.batch_run")
     def batch_run(self, tasks: List[str]) -> List[Any]:
         """Run multiple tasks sequentially."""
         return [self.run(task) for task in tasks]
 
+    @trace_otel_method("swarms.skill_orchestra.concurrent_batch_run")
     def concurrent_batch_run(self, tasks: List[str]) -> List[Any]:
         """Run multiple tasks concurrently."""
         results = []
