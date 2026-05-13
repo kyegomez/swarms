@@ -721,8 +721,7 @@ class GraphWorkflow:
         task (str): The task to be executed by the workflow.
         _compiled (bool): Whether the graph has been compiled for optimization.
         _sorted_layers (List[List[str]]): Pre-computed topological layers for faster execution.
-        _max_workers (int): Pre-computed max workers for thread pool.
-        max_parallel_nodes (Optional[int]): Maximum number of nodes to execute concurrently. Defaults to CPU count.
+        _max_workers (int): Maximum nodes executed concurrently. Set from max_parallel_nodes if provided, otherwise int(get_cpu_cores() * 0.95) with a minimum of 1.
         verbose (bool): Whether to enable verbose logging.
     """
 
@@ -789,6 +788,7 @@ class GraphWorkflow:
         # Private optimization attributes
         self._compiled = False
         self._sorted_layers = []
+        self.max_parallel_nodes = max_parallel_nodes
         self._max_workers = (
             max(1, max_parallel_nodes)
             if max_parallel_nodes is not None
