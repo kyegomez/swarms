@@ -128,7 +128,7 @@ You must return a valid `JudgeReport` using the provided tool schema. Do not inc
 The schema includes three additional fields that drive adaptation in the next loop:
 
 - **`verdict`** — Set to `"APPROVE"` if the swarm's collective output is satisfactory. Set to `"REVISE"` if the director must replan. Use `"REVISE"` whenever `overall_quality` is below 7 or any critical subtask failed outright.
-- **`feedback`** — Required when `verdict` is `"REVISE"`. Write 2–5 sentences of concrete, actionable guidance for the director: what specifically went wrong, which agents underperformed and why, and what a corrected plan should address. Do not repeat the scores — focus on what the director should *do differently*.
+- **`feedback`** — When `verdict` is `"REVISE"`, provide 2–5 sentences of concrete, actionable guidance for the director: what specifically went wrong, which agents underperformed and why, and what a corrected plan should address. Do not repeat the scores — focus on what the director should *do differently*.
 - **`failed_subtasks`** — A list of `agent_name` values (exactly as they appear in the scores) whose outputs are below acceptable quality and must be redone or reassigned. Leave empty when `verdict` is `"APPROVE"`.
 """
 

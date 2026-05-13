@@ -1259,18 +1259,32 @@ class HierarchicalSwarm:
                             replan_orders,
                             streaming_callback=streaming_callback,
                         )
-                        # Merge: replace outputs for re-run agents, append new ones
-                        agent_to_output = {
-                            order.agent_name: out
-                            for order, out in zip(orders, outputs)
+                        # Merge: keep original outputs indexed by position,
+                        # replace entries for re-run agents by order index.
+                        # Using a list (not dict) avoids silent overwrites when
+                        # the director issues multiple orders to the same agent.
+                        merged = list(outputs)
+                        replan_map = {
+                            ro.agent_name: ro_out
+                            for ro, ro_out in zip(
+                                replan_orders, replan_outputs
+                            )
                         }
-                        for replan_order, replan_out in zip(
+                        for i, order in enumerate(orders):
+                            if order.agent_name in replan_map:
+                                merged[i] = replan_map[
+                                    order.agent_name
+                                ]
+                        # Append any brand-new agents not in the original orders
+                        original_names = {
+                            o.agent_name for o in orders
+                        }
+                        for ro, ro_out in zip(
                             replan_orders, replan_outputs
                         ):
-                            agent_to_output[
-                                replan_order.agent_name
-                            ] = replan_out
-                        feedback = list(agent_to_output.values())
+                            if ro.agent_name not in original_names:
+                                merged.append(ro_out)
+                        feedback = merged
                     else:
                         feedback = judge_result
                 else:
@@ -1624,7 +1638,7 @@ class HierarchicalSwarm:
                 return action.orders
             except Exception as parse_err:
                 logger.warning(
-                    f"Failed to parse ReplanAction ({parse_err}); falling back to re-running failed subtasks on original agents."
+                    f"Failed to parse ReplanAction ({parse_err}); no replan orders generated — failed subtasks will not be re-executed."
                 )
                 return []
 

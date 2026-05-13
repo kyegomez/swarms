@@ -2,7 +2,6 @@
 Tests for HierarchicalSwarm incremental replan on judge rejection.
 """
 
-import json
 from unittest.mock import MagicMock, patch
 
 from swarms.structs.hiearchical_swarm import (
