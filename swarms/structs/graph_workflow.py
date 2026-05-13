@@ -567,16 +567,18 @@ class RustworkxBackend(GraphBackend):
 
 class NodeType(str, Enum):
     AGENT: Agent = "agent"
+    SUBGRAPH: str = "subgraph"
 
 
 class Node:
     """
-    Represents a node in a graph workflow. Only agent nodes are supported.
+    Represents a node in a graph workflow.  A node can be either an Agent or
+    a nested GraphWorkflow (subgraph).
 
     Attributes:
         id (str): The unique identifier of the node.
-        type (NodeType): The type of the node (always AGENT).
-        agent (Any): The agent associated with the node.
+        type (NodeType): AGENT or SUBGRAPH.
+        agent (Any): The Agent or GraphWorkflow associated with the node.
         metadata (Dict[str, Any], optional): Additional metadata for the node.
     """
 
@@ -593,7 +595,7 @@ class Node:
         Args:
             id (str, optional): The unique identifier of the node.
             type (NodeType, optional): The type of the node. Defaults to NodeType.AGENT.
-            agent (Any, optional): The agent associated with the node.
+            agent (Any, optional): The Agent or GraphWorkflow associated with the node.
             metadata (Dict[str, Any], optional): Additional metadata for the node.
         """
         self.id = id
@@ -602,8 +604,10 @@ class Node:
         self.metadata = metadata or {}
 
         if not self.id:
-            if self.type == NodeType.AGENT and self.agent is not None:
-                self.id = getattr(self.agent, "agent_name", None)
+            if self.agent is not None:
+                self.id = getattr(
+                    self.agent, "agent_name", None
+                ) or getattr(self.agent, "name", None)
             if not self.id:
                 raise ValueError(
                     "Node id could not be auto-assigned. Please provide an id."
@@ -625,6 +629,31 @@ class Node:
             type=NodeType.AGENT,
             agent=agent,
             id=getattr(agent, "agent_name", None),
+            **kwargs,
+        )
+
+    @classmethod
+    def from_subgraph(
+        cls,
+        subgraph: "GraphWorkflow",
+        node_id: str = None,
+        **kwargs: Any,
+    ) -> "Node":
+        """
+        Create a Node from a nested GraphWorkflow.
+
+        Args:
+            subgraph (GraphWorkflow): The inner workflow to embed as a node.
+            node_id (str, optional): Override ID; defaults to subgraph.name.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            Node: A new SUBGRAPH Node instance.
+        """
+        return cls(
+            type=NodeType.SUBGRAPH,
+            agent=subgraph,
+            id=node_id or getattr(subgraph, "name", None),
             **kwargs,
         )
 
@@ -957,21 +986,31 @@ class GraphWorkflow:
             )
             raise e
 
-    def add_node(self, agent: Agent, **kwargs: Any) -> None:
+    def add_node(
+        self,
+        agent: Union[Agent, "GraphWorkflow"],
+        **kwargs: Any,
+    ) -> None:
         """
-        Adds an agent node to the workflow graph.
+        Adds an agent or a nested GraphWorkflow as a node in the workflow graph.
 
         Args:
-            agent (Agent): The agent to add as a node.
+            agent (Union[Agent, GraphWorkflow]): The agent or inner workflow to add.
             **kwargs: Additional keyword arguments for the node.
         """
         if self.verbose:
-            logger.debug(
-                f"Adding node for agent: {getattr(agent, 'agent_name', 'unnamed')}"
+            label = getattr(agent, "agent_name", None) or getattr(
+                agent, "name", "unnamed"
             )
+            logger.debug(f"Adding node: {label}")
 
         try:
-            node = Node.from_agent(agent, **kwargs)
+            if isinstance(agent, GraphWorkflow):
+                node = Node.from_subgraph(agent, **kwargs)
+                if not agent._compiled:
+                    agent.compile()
+            else:
+                node = Node.from_agent(agent, **kwargs)
 
             if node.id in self.nodes:
                 error_msg = f"Node with id {node.id} already exists in GraphWorkflow"
@@ -992,7 +1031,7 @@ class GraphWorkflow:
 
         except Exception as e:
             logger.exception(
-                f"Error in GraphWorkflow.add_node for agent {getattr(agent, 'agent_name', 'unnamed')}: {e}"
+                f"Error in GraphWorkflow.add_node for {getattr(agent, 'agent_name', getattr(agent, 'name', 'unnamed'))}: {e}"
             )
             raise e
 
@@ -1922,26 +1961,46 @@ class GraphWorkflow:
                         # Submit all tasks
                         for node_id, agent, prompt in layer_data:
                             try:
-                                # Build per-agent kwargs, injecting
-                                # streaming_callback if provided.
-                                submit_kwargs = dict(kwargs)
-                                if _streaming_callback is not None:
-                                    _nid = (
-                                        node_id  # capture for closure
+                                node = self.nodes[node_id]
+                                if node.type == NodeType.SUBGRAPH:
+                                    # Subgraphs receive the prompt as their
+                                    # task and run in isolation.  Checkpoint
+                                    # state is stored under a sub-directory
+                                    # keyed by the parent node ID.
+                                    inner: GraphWorkflow = agent
+                                    if (
+                                        self.checkpoint_dir
+                                        and not inner.checkpoint_dir
+                                    ):
+                                        inner.checkpoint_dir = str(
+                                            Path(self.checkpoint_dir)
+                                            / node_id
+                                        )
+                                    future = executor.submit(
+                                        inner.run, prompt
                                     )
-                                    submit_kwargs[
-                                        "streaming_callback"
-                                    ] = lambda token, _nid=_nid: _streaming_callback(
-                                        _nid, token
-                                    )
+                                else:
+                                    # Build per-agent kwargs, injecting
+                                    # streaming_callback if provided.
+                                    submit_kwargs = dict(kwargs)
+                                    if (
+                                        _streaming_callback
+                                        is not None
+                                    ):
+                                        _nid = node_id
+                                        submit_kwargs[
+                                            "streaming_callback"
+                                        ] = lambda token, _nid=_nid: _streaming_callback(
+                                            _nid, token
+                                        )
 
-                                future = executor.submit(
-                                    agent.run,
-                                    prompt,
-                                    img,
-                                    *args,
-                                    **submit_kwargs,
-                                )
+                                    future = executor.submit(
+                                        agent.run,
+                                        prompt,
+                                        img,
+                                        *args,
+                                        **submit_kwargs,
+                                    )
                                 future_to_data[future] = (
                                     node_id,
                                     agent,
@@ -1979,6 +2038,15 @@ class GraphWorkflow:
                                 agent_execution_time = (
                                     time.time() - agent_start_time
                                 )
+
+                                # Subgraph nodes return a dict; flatten to
+                                # a readable string for downstream agents.
+                                if isinstance(output, dict):
+                                    output = "\n\n".join(
+                                        f"[{k}]: {v}"
+                                        for k, v in output.items()
+                                        if v is not None
+                                    )
 
                                 completed_count += 1
 
@@ -2572,6 +2640,23 @@ class GraphWorkflow:
             # version-control or share `spec`
             reconstructed = GraphWorkflow.from_topology_spec(spec, agent_registry)
         """
+
+        def _node_spec(node_id: str, node: "Node") -> Dict[str, Any]:
+            if node.type == NodeType.SUBGRAPH:
+                return {
+                    "id": node_id,
+                    "type": "subgraph",
+                    "spec": node.agent.to_spec(),
+                    "metadata": node.metadata,
+                }
+            return {
+                "id": node_id,
+                "agent_name": getattr(
+                    node.agent, "agent_name", node_id
+                ),
+                "metadata": node.metadata,
+            }
+
         return {
             "name": self.name,
             "description": self.description,
@@ -2579,13 +2664,7 @@ class GraphWorkflow:
             # Sorted for deterministic output — two equivalent workflows
             # built in different insertion orders produce identical specs.
             "nodes": [
-                {
-                    "id": node_id,
-                    "agent_name": getattr(
-                        node.agent, "agent_name", node_id
-                    ),
-                    "metadata": node.metadata,
-                }
+                _node_spec(node_id, node)
                 for node_id, node in sorted(self.nodes.items())
             ],
             "edges": [
@@ -2673,13 +2752,20 @@ class GraphWorkflow:
         if "nodes" not in spec:
             raise ValueError("spec is missing required key 'nodes'")
 
-        # Validate per-node required keys
+        # Validate per-node required keys (subgraph nodes use "spec" not "agent_name")
         for i, n in enumerate(spec.get("nodes", [])):
-            for key in ("id", "agent_name"):
-                if key not in n:
-                    raise ValueError(
-                        f"Node at index {i} is missing required key '{key}'"
-                    )
+            if "id" not in n:
+                raise ValueError(
+                    f"Node at index {i} is missing required key 'id'"
+                )
+            if n.get("type") != "subgraph" and "agent_name" not in n:
+                raise ValueError(
+                    f"Node at index {i} is missing required key 'agent_name'"
+                )
+            if n.get("type") == "subgraph" and "spec" not in n:
+                raise ValueError(
+                    f"Subgraph node at index {i} is missing required key 'spec'"
+                )
 
         # Validate per-edge required keys
         for i, e in enumerate(spec.get("edges", [])):
@@ -2689,11 +2775,12 @@ class GraphWorkflow:
                         f"Edge at index {i} is missing required key '{key}'"
                     )
 
-        # Check all referenced agents exist in the registry
+        # Check all agent nodes exist in the registry (subgraph nodes are self-contained)
         missing = [
             n["agent_name"]
             for n in spec["nodes"]
-            if n["agent_name"] not in agent_registry
+            if n.get("type") != "subgraph"
+            and n["agent_name"] not in agent_registry
         ]
         if missing:
             raise ValueError(
@@ -2701,14 +2788,23 @@ class GraphWorkflow:
                 f"found in agent_registry: {missing}"
             )
 
-        nodes = {
-            n["id"]: Node(
-                id=n["id"],
-                agent=agent_registry[n["agent_name"]],
-                metadata=n.get("metadata") or {},
-            )
-            for n in spec["nodes"]
-        }
+        nodes = {}
+        for n in spec["nodes"]:
+            if n.get("type") == "subgraph":
+                inner_wf = cls.from_topology_spec(
+                    n["spec"], agent_registry, **kwargs
+                )
+                nodes[n["id"]] = Node.from_subgraph(
+                    inner_wf,
+                    node_id=n["id"],
+                    metadata=n.get("metadata") or {},
+                )
+            else:
+                nodes[n["id"]] = Node(
+                    id=n["id"],
+                    agent=agent_registry[n["agent_name"]],
+                    metadata=n.get("metadata") or {},
+                )
 
         edges = [
             Edge(
