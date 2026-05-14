@@ -8,6 +8,7 @@ from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.multi_agent_exec import run_agents_concurrently
+from swarms.telemetry.otel import trace_method
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -194,6 +195,7 @@ class MixtureOfAgents:
             conversation=self.conversation, type=self.output_type
         )
 
+    @trace_method("swarms.mixture_of_agents.run")
     def run(
         self,
         task: str,

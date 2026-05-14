@@ -10,6 +10,7 @@ from swarms.prompts.multi_agent_collab_prompt import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
+from swarms.telemetry.otel import trace_method
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 from swarms.utils.swarm_autosave import get_swarm_workspace_dir
@@ -256,6 +257,7 @@ class SequentialWorkflow:
             result = self.agent_rearrange.run(**run_kwargs)
         return result
 
+    @trace_method("swarms.sequential_workflow.run")
     def run(
         self,
         task: str,
@@ -444,6 +446,7 @@ class SequentialWorkflow:
             )
             raise
 
+    @trace_method("swarms.sequential_workflow.run_async")
     async def run_async(self, task: str) -> str:
         """
         Executes the specified task through the agents in the dynamically constructed flow asynchronously.
