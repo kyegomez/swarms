@@ -33,6 +33,7 @@ plugins:
             show_symbol_type_toc: true
             show_category_heading: true
   - git-committers:
+      enabled: !ENV [MKDOCS_ENABLE_GIT_COMMITTERS, false]
       repository: kyegomez/swarms
       branch: master
       # token: !ENV ["GITHUB_TOKEN"]
