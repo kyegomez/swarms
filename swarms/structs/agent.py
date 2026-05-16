@@ -96,6 +96,11 @@ from swarms.structs.transforms import (
     handle_transforms,
 )
 from swarms.telemetry.main import log_agent_data
+from swarms.telemetry.otel import (
+    trace_context,
+    is_otel_enabled,
+    get_metrics,
+)
 from swarms.tools.base_tool import BaseTool
 from swarms.tools.handoffs_tool import handoff_task
 from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
@@ -4797,31 +4802,73 @@ Subtask Breakdown:
             # else: both are None, streaming_callback stays None
 
         try:
-            if self.max_loops == "auto":
-                # Use autonomous loop structure: plan -> execute subtasks -> summary
-                output = self._run_autonomous_loop(
-                    task=task,
-                    img=img,
-                    streaming_callback=streaming_callback,
-                    *args,
-                    **kwargs,
-                )
-            elif imgs is not None:
-                output = self.run_multiple_images(
-                    task=task, imgs=imgs, *args, **kwargs
-                )
-            elif n > 1:
-                output = [self.run(task=task) for _ in range(n)]
-            else:
-                output = self._run(
-                    task=task,
-                    img=img,
-                    streaming_callback=streaming_callback,
-                    *args,
-                    **kwargs,
+            import time as _time
+
+            _otel_start = _time.perf_counter()
+            _otel_span_attrs = {
+                "agent.name": self.agent_name,
+                "agent.model": getattr(self, "model_name", None),
+                "run.has_image": img is not None or imgs is not None,
+            }
+            if hasattr(self, "id") and self.id:
+                _otel_span_attrs["agent.id"] = str(self.id)
+            if hasattr(self, "max_loops"):
+                _otel_span_attrs["agent.max_loops"] = str(
+                    self.max_loops
                 )
 
-            return output
+            with trace_context(
+                f"agent.run.{self.agent_name}",
+                attributes=_otel_span_attrs,
+            ) as _otel_span:
+                if self.max_loops == "auto":
+                    output = self._run_autonomous_loop(
+                        task=task,
+                        img=img,
+                        streaming_callback=streaming_callback,
+                        *args,
+                        **kwargs,
+                    )
+                elif imgs is not None:
+                    output = self.run_multiple_images(
+                        task=task, imgs=imgs, *args, **kwargs
+                    )
+                elif n > 1:
+                    output = [self.run(task=task) for _ in range(n)]
+                else:
+                    output = self._run(
+                        task=task,
+                        img=img,
+                        streaming_callback=streaming_callback,
+                        *args,
+                        **kwargs,
+                    )
+
+                _otel_duration = (
+                    _time.perf_counter() - _otel_start
+                ) * 1000
+                if _otel_span:
+                    _otel_span.set_attribute(
+                        "run.duration_ms", _otel_duration
+                    )
+                    _otel_span.set_attribute("run.status", "success")
+
+                _otel_metrics = get_metrics()
+                if _otel_metrics.agent_runs:
+                    _otel_metrics.agent_runs.add(
+                        1,
+                        {
+                            "agent.name": self.agent_name,
+                            "status": "success",
+                        },
+                    )
+                if _otel_metrics.agent_duration:
+                    _otel_metrics.agent_duration.record(
+                        _otel_duration,
+                        {"agent.name": self.agent_name},
+                    )
+
+                return output
 
         except (
             AgentRunError,
@@ -4831,8 +4878,24 @@ Subtask Breakdown:
             AuthenticationError,
             Exception,
         ) as e:
+            _otel_metrics = get_metrics()
+            if _otel_metrics.agent_errors:
+                _otel_metrics.agent_errors.add(
+                    1,
+                    {
+                        "agent.name": self.agent_name,
+                        "error.type": type(e).__name__,
+                    },
+                )
+            if _otel_metrics.agent_runs:
+                _otel_metrics.agent_runs.add(
+                    1,
+                    {
+                        "agent.name": self.agent_name,
+                        "status": "error",
+                    },
+                )
 
-            # Try fallback models if available
             if self.is_fallback_available():
                 return self._handle_fallback_execution(
                     task=task,
@@ -4846,7 +4909,6 @@ Subtask Breakdown:
                 )
             else:
                 if self.verbose:
-                    # No fallback available
                     logger.error(
                         f"Agent Name: {self.agent_name} [NO FALLBACK] failed with model '{self.get_current_model()}' "
                         f"and no fallback models are configured. Error: {str(e)[:100]}{'...' if len(str(e)) > 100 else ''}"

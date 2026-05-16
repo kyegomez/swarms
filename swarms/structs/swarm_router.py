@@ -38,6 +38,10 @@ from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.telemetry.otel import (
+    trace_context,
+    get_metrics,
+)
 from swarms.utils.swarm_autosave import (
     autosave_swarm,
     get_swarm_workspace_dir,
@@ -848,15 +852,61 @@ class SwarmRouter:
         Raises:
             Exception: If an error occurs during task execution.
         """
+        import time as _time
+
+        _otel_start = _time.perf_counter()
+        _otel_span_attrs = {
+            "swarm.name": self.name,
+            "swarm.type": self.swarm_type,
+            "swarm.agent_count": len(self.agents) if self.agents else 0,
+        }
+        if hasattr(self, "id") and self.id:
+            _otel_span_attrs["swarm.id"] = str(self.id)
+
         try:
-            return self._run(
-                task=task,
-                img=img,
-                tasks=tasks,
-                *args,
-                **kwargs,
-            )
+            with trace_context(
+                f"swarm.run.{self.swarm_type}",
+                attributes=_otel_span_attrs,
+            ) as _otel_span:
+                result = self._run(
+                    task=task,
+                    img=img,
+                    tasks=tasks,
+                    *args,
+                    **kwargs,
+                )
+
+                _otel_duration = (
+                    _time.perf_counter() - _otel_start
+                ) * 1000
+                if _otel_span:
+                    _otel_span.set_attribute(
+                        "run.duration_ms", _otel_duration
+                    )
+                    _otel_span.set_attribute("run.status", "success")
+
+                _otel_metrics = get_metrics()
+                if _otel_metrics.swarm_runs:
+                    _otel_metrics.swarm_runs.add(
+                        1,
+                        {
+                            "swarm.type": self.swarm_type,
+                            "status": "success",
+                        },
+                    )
+                if _otel_metrics.swarm_duration:
+                    _otel_metrics.swarm_duration.record(
+                        _otel_duration, {"swarm.type": self.swarm_type}
+                    )
+
+                return result
         except SwarmRouterRunError as e:
+            _otel_metrics = get_metrics()
+            if _otel_metrics.swarm_runs:
+                _otel_metrics.swarm_runs.add(
+                    1,
+                    {"swarm.type": self.swarm_type, "status": "error"},
+                )
             logger.error(
                 f"\n[SwarmRouter ERROR] '{self.name}' failed to execute the task on the selected swarm.\n"
                 f"Reason: {str(e)}\n"

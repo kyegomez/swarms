@@ -74,6 +74,23 @@ requests = "*"
 mcp = "*"
 schedule = "*"
 
+[tool.poetry.group.otel]
+optional = true
+
+[tool.poetry.group.otel.dependencies]
+opentelemetry-api = ">=1.20.0"
+opentelemetry-sdk = ">=1.20.0"
+opentelemetry-exporter-otlp-proto-grpc = ">=1.20.0"
+opentelemetry-semantic-conventions = ">=0.41b0"
+
+[tool.poetry.extras]
+otel = [
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp-proto-grpc",
+    "opentelemetry-semantic-conventions",
+]
+
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"
 

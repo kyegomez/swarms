@@ -14,6 +14,7 @@ from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 from swarms.utils.swarm_autosave import get_swarm_workspace_dir
 from swarms.utils.workspace_utils import get_workspace_dir
+from swarms.telemetry.otel import trace_context, get_metrics
 
 logger = initialize_logger(log_folder="sequential_workflow")
 
@@ -286,32 +287,77 @@ class SequentialWorkflow:
         Raises:
             Exception: If any error occurs during task execution.
         """
+        import time as _time
+
+        _otel_start = _time.perf_counter()
+        _otel_span_attrs = {
+            "swarm.name": self.name,
+            "swarm.type": "SequentialWorkflow",
+            "swarm.agent_count": len(self.agents) if self.agents else 0,
+        }
+        if hasattr(self, "id") and self.id:
+            _otel_span_attrs["swarm.id"] = str(self.id)
+
         try:
-            # prompt = f"{MULTI_AGENT_COLLAB_PROMPT}\n\n{task}"
-            run_kwargs = {"task": task}
-            if img is not None:
-                run_kwargs["img"] = img
-            result = self.agent_rearrange.run(**run_kwargs)
+            with trace_context(
+                "swarm.run.SequentialWorkflow",
+                attributes=_otel_span_attrs,
+            ) as _otel_span:
+                run_kwargs = {"task": task}
+                if img is not None:
+                    run_kwargs["img"] = img
+                result = self.agent_rearrange.run(**run_kwargs)
 
-            # Run drift detection if configured
-            if self.drift_agent is not None:
-                result = self._run_drift_detection(
-                    task, result, run_kwargs
-                )
-
-            # Save conversation history after successful execution
-            if self.autosave and self.swarm_workspace_dir:
-                try:
-                    self._save_conversation_history()
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to save conversation history: {e}"
+                if self.drift_agent is not None:
+                    result = self._run_drift_detection(
+                        task, result, run_kwargs
                     )
 
-            return result
+                if self.autosave and self.swarm_workspace_dir:
+                    try:
+                        self._save_conversation_history()
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to save conversation history: {e}"
+                        )
+
+                _otel_duration = (
+                    _time.perf_counter() - _otel_start
+                ) * 1000
+                if _otel_span:
+                    _otel_span.set_attribute(
+                        "run.duration_ms", _otel_duration
+                    )
+                    _otel_span.set_attribute("run.status", "success")
+
+                _otel_metrics = get_metrics()
+                if _otel_metrics.swarm_runs:
+                    _otel_metrics.swarm_runs.add(
+                        1,
+                        {
+                            "swarm.type": "SequentialWorkflow",
+                            "status": "success",
+                        },
+                    )
+                if _otel_metrics.swarm_duration:
+                    _otel_metrics.swarm_duration.record(
+                        _otel_duration,
+                        {"swarm.type": "SequentialWorkflow"},
+                    )
+
+                return result
 
         except Exception as e:
-            # Save conversation history on error
+            _otel_metrics = get_metrics()
+            if _otel_metrics.swarm_runs:
+                _otel_metrics.swarm_runs.add(
+                    1,
+                    {
+                        "swarm.type": "SequentialWorkflow",
+                        "status": "error",
+                    },
+                )
+
             if self.autosave and self.swarm_workspace_dir:
                 try:
                     self._save_conversation_history()

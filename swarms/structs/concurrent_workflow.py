@@ -16,6 +16,7 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.swarm_autosave import get_swarm_workspace_dir
 from swarms.utils.workspace_utils import get_workspace_dir
+from swarms.telemetry.otel import trace_context, get_metrics
 
 logger = initialize_logger(log_folder="concurrent_workflow")
 
@@ -559,28 +560,75 @@ class ConcurrentWorkflow:
             >>> workflow = ConcurrentWorkflow(agents=[agent1, agent2])
             >>> result = workflow.run("Analyze this data")
         """
-        try:
-            if self.show_dashboard:
-                result = self.run_with_dashboard(
-                    task, img, imgs, streaming_callback
-                )
-            else:
-                result = self._run(
-                    task, img, imgs, streaming_callback
-                )
+        import time as _time
 
-            # Save conversation history after successful execution
-            if self.autosave and self.swarm_workspace_dir:
-                try:
-                    self._save_conversation_history()
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to save conversation history: {e}"
+        _otel_start = _time.perf_counter()
+        _otel_span_attrs = {
+            "swarm.name": self.name,
+            "swarm.type": "ConcurrentWorkflow",
+            "swarm.agent_count": len(self.agents) if self.agents else 0,
+        }
+        if hasattr(self, "id") and self.id:
+            _otel_span_attrs["swarm.id"] = str(self.id)
+
+        try:
+            with trace_context(
+                "swarm.run.ConcurrentWorkflow",
+                attributes=_otel_span_attrs,
+            ) as _otel_span:
+                if self.show_dashboard:
+                    result = self.run_with_dashboard(
+                        task, img, imgs, streaming_callback
+                    )
+                else:
+                    result = self._run(
+                        task, img, imgs, streaming_callback
                     )
 
-            return result
+                if self.autosave and self.swarm_workspace_dir:
+                    try:
+                        self._save_conversation_history()
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to save conversation history: {e}"
+                        )
+
+                _otel_duration = (
+                    _time.perf_counter() - _otel_start
+                ) * 1000
+                if _otel_span:
+                    _otel_span.set_attribute(
+                        "run.duration_ms", _otel_duration
+                    )
+                    _otel_span.set_attribute("run.status", "success")
+
+                _otel_metrics = get_metrics()
+                if _otel_metrics.swarm_runs:
+                    _otel_metrics.swarm_runs.add(
+                        1,
+                        {
+                            "swarm.type": "ConcurrentWorkflow",
+                            "status": "success",
+                        },
+                    )
+                if _otel_metrics.swarm_duration:
+                    _otel_metrics.swarm_duration.record(
+                        _otel_duration,
+                        {"swarm.type": "ConcurrentWorkflow"},
+                    )
+
+                return result
         except Exception:
-            # Save conversation history on error
+            _otel_metrics = get_metrics()
+            if _otel_metrics.swarm_runs:
+                _otel_metrics.swarm_runs.add(
+                    1,
+                    {
+                        "swarm.type": "ConcurrentWorkflow",
+                        "status": "error",
+                    },
+                )
+
             if self.autosave and self.swarm_workspace_dir:
                 try:
                     self._save_conversation_history()
@@ -590,7 +638,6 @@ class ConcurrentWorkflow:
                     )
             raise
         finally:
-            # Always cleanup resources
             self.cleanup()
 
     def batch_run(
