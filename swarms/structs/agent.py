@@ -96,6 +96,7 @@ from swarms.structs.transforms import (
     handle_transforms,
 )
 from swarms.telemetry.main import log_agent_data
+from swarms.telemetry.otel import traced_method
 from swarms.tools.base_tool import BaseTool
 from swarms.tools.handoffs_tool import handoff_task
 from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
@@ -4687,6 +4688,7 @@ Subtask Breakdown:
                     )
         return None
 
+    @traced_method("swarms.agent.run", component_type="agent")
     def run(
         self,
         task: Optional[Union[str, Any]] = None,
@@ -5118,6 +5120,7 @@ Subtask Breakdown:
                 **kwargs,
             )
 
+    @traced_method("swarms.agent.run_batched", component_type="agent")
     def run_batched(
         self,
         tasks: List[str],

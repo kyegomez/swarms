@@ -8,6 +8,7 @@ from loguru import logger as loguru_logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.swarm_id import swarm_id
+from swarms.telemetry.otel import traced_method
 from swarms.utils.formatter import formatter
 from swarms.utils.get_cpu_cores import get_cpu_cores
 from swarms.utils.history_output_formatter import (
@@ -529,6 +530,10 @@ class ConcurrentWorkflow:
         except Exception as e:
             logger.error(f"Cleanup failed: {str(e)}")
 
+    @traced_method(
+        "swarms.concurrent_workflow.run",
+        component_type="workflow",
+    )
     def run(
         self,
         task: str,
@@ -593,6 +598,10 @@ class ConcurrentWorkflow:
             # Always cleanup resources
             self.cleanup()
 
+    @traced_method(
+        "swarms.concurrent_workflow.batch_run",
+        component_type="workflow",
+    )
     def batch_run(
         self,
         tasks: List[str],

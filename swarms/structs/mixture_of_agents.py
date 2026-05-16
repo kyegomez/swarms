@@ -8,6 +8,7 @@ from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.multi_agent_exec import run_agents_concurrently
+from swarms.telemetry.otel import traced_method
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -194,6 +195,10 @@ class MixtureOfAgents:
             conversation=self.conversation, type=self.output_type
         )
 
+    @traced_method(
+        "swarms.mixture_of_agents.run",
+        component_type="workflow",
+    )
     def run(
         self,
         task: str,
@@ -205,6 +210,10 @@ class MixtureOfAgents:
             logger.error(f"Error running Mixture of Agents: {e}")
             return f"Error: {e}"
 
+    @traced_method(
+        "swarms.mixture_of_agents.run_batched",
+        component_type="workflow",
+    )
     def run_batched(self, tasks: List[str]) -> List[str]:
         """
         Run the mixture of agents for a batch of tasks.
@@ -217,6 +226,10 @@ class MixtureOfAgents:
         """
         return [self.run(task) for task in tasks]
 
+    @traced_method(
+        "swarms.mixture_of_agents.run_concurrently",
+        component_type="workflow",
+    )
     def run_concurrently(self, tasks: List[str]) -> List[str]:
         """
         Run the mixture of agents for a batch of tasks concurrently.
