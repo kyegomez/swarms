@@ -2,7 +2,7 @@ import concurrent.futures
 import json
 import os
 import time
-from typing import Callable, List, Optional, Union
+from typing import Callable, List, Literal, Optional, Union
 
 from loguru import logger as loguru_logger
 from swarms.structs.agent import Agent
@@ -83,6 +83,7 @@ class ConcurrentWorkflow:
         show_dashboard: bool = False,
         autosave: bool = True,
         verbose: bool = False,
+        on_error: Literal["store", "raise"] = "store",
     ):
         self.id = id if id is not None else swarm_id()
         self.name = name
@@ -95,6 +96,7 @@ class ConcurrentWorkflow:
         self.show_dashboard = show_dashboard
         self.autosave = autosave
         self.verbose = verbose
+        self.on_error = on_error
         self.swarm_workspace_dir = None
         self.metadata_output_path = (
             f"concurrent_workflow_name_{name}_id_{self.id}.json"
@@ -332,6 +334,8 @@ class ConcurrentWorkflow:
 
                     raise
 
+            first_error: Optional[Exception] = None
+
             with concurrent.futures.ThreadPoolExecutor(
                 max_workers=max_workers
             ) as executor:
@@ -351,12 +355,22 @@ class ConcurrentWorkflow:
                         logger.error(
                             f"Agent {agent.agent_name} failed: {str(e)}"
                         )
+                        if first_error is None:
+                            first_error = e
                         results.append(
-                            (agent.agent_name, f"Error: {str(e)}")
+                            (
+                                f"{agent.agent_name} (failed)"
+                                if self.on_error == "store"
+                                else agent.agent_name,
+                                f"Error: {str(e)}",
+                            )
                         )
 
             for agent_name, output in results:
                 self.conversation.add(role=agent_name, content=output)
+
+            if self.on_error == "raise" and first_error is not None:
+                raise first_error
 
             if self.show_dashboard:
                 self.display_agent_dashboard(
@@ -419,10 +433,21 @@ class ConcurrentWorkflow:
                 future_to_agent
             ):
                 agent = future_to_agent[future]
-                output = future.result()
-                self.conversation.add(
-                    role=agent.agent_name, content=output
-                )
+                try:
+                    output = future.result()
+                    self.conversation.add(
+                        role=agent.agent_name, content=output
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Agent {agent.agent_name} failed: {str(e)}"
+                    )
+                    if self.on_error == "raise":
+                        raise
+                    self.conversation.add(
+                        role=f"{agent.agent_name} (failed)",
+                        content=f"Error: {str(e)}",
+                    )
 
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type

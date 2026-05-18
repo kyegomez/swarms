@@ -490,5 +490,80 @@ def test_concurrent_workflow_autosave_saves_conversation_after_run(
     get_workspace_dir.cache_clear()
 
 
+class _MockAgent:
+    """Minimal stand-in that looks like an Agent to ConcurrentWorkflow."""
+
+    def __init__(self, name: str, response: str = "ok"):
+        self.agent_name = name
+        self._response = response
+        self.print_on = True
+
+    def run(self, task=None, img=None, imgs=None, **kwargs):
+        return self._response
+
+    def cleanup(self):
+        pass
+
+
+class _FailingAgent(_MockAgent):
+    def run(self, task=None, img=None, imgs=None, **kwargs):
+        raise RuntimeError(f"{self.agent_name} exploded")
+
+
+# ---------------------------------------------------------------------------
+# on_error tests (no real LLM calls)
+# ---------------------------------------------------------------------------
+
+
+def test_concurrent_workflow_partial_results_on_agent_failure():
+    """One failing agent must not discard outputs from passing siblings."""
+    good1 = _MockAgent("Good-1", "result-1")
+    good2 = _MockAgent("Good-2", "result-2")
+    bad = _FailingAgent("Bad")
+
+    wf = ConcurrentWorkflow(
+        agents=[good1, good2, bad],
+        on_error="store",
+        autosave=False,
+    )
+    result = wf.run("test task")
+
+    # Must not raise — partial results are returned
+    assert result is not None
+
+    # Inspect the raw conversation history so no formatter slicing can hide entries.
+    history = wf.conversation.conversation_history
+    roles = [entry.get("role", "") for entry in history]
+    contents = [entry.get("content", "") for entry in history]
+
+    # Both passing agents must appear
+    assert any("Good-1" in r for r in roles), "Good-1 output missing"
+    assert any("Good-2" in r for r in roles), "Good-2 output missing"
+
+    # The failing agent must appear under the "(failed)" marker
+    assert any(
+        "Bad" in r and "failed" in r for r in roles
+    ), "Failed-agent error entry missing"
+
+    # Error content stored
+    assert any("exploded" in c for c in contents), (
+        "Error message not stored in conversation"
+    )
+
+
+def test_concurrent_workflow_on_error_raise_propagates():
+    """on_error='raise' must let the exception escape."""
+    good = _MockAgent("Good", "ok")
+    bad = _FailingAgent("Bad")
+
+    wf = ConcurrentWorkflow(
+        agents=[good, bad],
+        on_error="raise",
+        autosave=False,
+    )
+    with pytest.raises(RuntimeError, match="exploded"):
+        wf.run("test task")
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
