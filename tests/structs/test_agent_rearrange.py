@@ -1,4 +1,22 @@
+"""
+Unit and integration tests for AgentRearrange.
+
+Covers:
+- Initialization, agent management, flow validation
+- Sequential and concurrent flow execution
+- Sequential awareness (including repeated agents)
+- Error propagation through run/__call__/batch_run
+- batch_run concurrency, ordering, conversation isolation, image forwarding,
+  and batch_size validation (mock-based unit tests)
+"""
+
+import threading
+import time
+from typing import List, Optional
+from unittest.mock import MagicMock, patch
+
 import pytest
+
 from swarms import Agent, AgentRearrange
 
 
@@ -8,7 +26,7 @@ from swarms import Agent, AgentRearrange
 
 
 def create_sample_agents():
-    """Create sample agents for testing."""
+    """Create sample agents for integration tests against a real LLM."""
     return [
         Agent(
             agent_name="ResearchAgent",
@@ -40,6 +58,41 @@ def create_sample_agents():
     ]
 
 
+def _make_agent(name: str, delay: float = 0.0):
+    """Return a minimal mock Agent that sleeps *delay* seconds then echoes."""
+    agent = MagicMock()
+    agent.agent_name = name
+    agent.system_prompt = f"I am {name}."
+
+    def _run(task, *a, **kw):
+        if delay:
+            time.sleep(delay)
+        return f"{name}:{task}"
+
+    agent.run = _run
+    return agent
+
+
+def _make_pipeline(
+    *agent_names: str, delay: float = 0.0
+) -> AgentRearrange:
+    """
+    Build a sequential AgentRearrange pipeline with mock agents.
+
+    Requires at least 2 agent names because validate_flow() demands '->'.
+    """
+    assert len(agent_names) >= 2, "_make_pipeline needs >=2 agents"
+    agents = [_make_agent(n, delay=delay) for n in agent_names]
+    flow = " -> ".join(agent_names)
+    return AgentRearrange(
+        agents=agents,
+        flow=flow,
+        max_loops=1,
+        autosave=False,
+        output_type="final",
+    )
+
+
 # ============================================================================
 # Initialization Tests
 # ============================================================================
@@ -63,7 +116,6 @@ def test_initialization():
     )
     assert agent_rearrange.max_loops == 1
     assert agent_rearrange.verbose is True
-    print("✓ test_initialization passed")
 
 
 def test_initialization_with_team_awareness():
@@ -81,7 +133,6 @@ def test_initialization_with_team_awareness():
         agent_rearrange.flow
         == "ResearchAgent -> WriterAgent -> ReviewerAgent"
     )
-    print("✓ test_initialization_with_team_awareness passed")
 
 
 def test_initialization_with_custom_output_type():
@@ -96,8 +147,6 @@ def test_initialization_with_custom_output_type():
             verbose=True,
         )
         assert agent_rearrange.output_type == output_type
-
-    print("✓ test_initialization_with_custom_output_type passed")
 
 
 # ============================================================================
@@ -126,7 +175,6 @@ def test_add_agent():
     agent_rearrange.add_agent(new_agent)
     assert "EditorAgent" in agent_rearrange.agents
     assert len(agent_rearrange.agents) == 3
-    print("✓ test_add_agent passed")
 
 
 def test_remove_agent():
@@ -142,7 +190,6 @@ def test_remove_agent():
     agent_rearrange.remove_agent("ReviewerAgent")
     assert "ReviewerAgent" not in agent_rearrange.agents
     assert len(agent_rearrange.agents) == 2
-    print("✓ test_remove_agent passed")
 
 
 def test_add_agents():
@@ -176,7 +223,6 @@ def test_add_agents():
     assert "Agent4" in agent_rearrange.agents
     assert "Agent5" in agent_rearrange.agents
     assert len(agent_rearrange.agents) == 3
-    print("✓ test_add_agents passed")
 
 
 # ============================================================================
@@ -195,7 +241,6 @@ def test_validate_flow_valid():
     )
 
     assert agent_rearrange.validate_flow() is True
-    print("✓ test_validate_flow_valid passed")
 
 
 def test_validate_flow_invalid():
@@ -208,15 +253,10 @@ def test_validate_flow_invalid():
         verbose=True,
     )
 
-    # Change to invalid flow
     agent_rearrange.flow = "ResearchAgent -> NonExistentAgent"
 
-    try:
+    with pytest.raises(ValueError, match="not registered"):
         agent_rearrange.validate_flow()
-        assert False, "Should have raised ValueError"
-    except ValueError as e:
-        assert "not registered" in str(e)
-        print("✓ test_validate_flow_invalid passed")
 
 
 def test_validate_flow_no_arrow():
@@ -231,12 +271,8 @@ def test_validate_flow_no_arrow():
 
     agent_rearrange.flow = "ResearchAgent WriterAgent"
 
-    try:
+    with pytest.raises(ValueError, match="'->"):
         agent_rearrange.validate_flow()
-        assert False, "Should have raised ValueError"
-    except ValueError as e:
-        assert "'->" in str(e)
-        print("✓ test_validate_flow_no_arrow passed")
 
 
 # ============================================================================
@@ -257,7 +293,6 @@ def test_set_custom_flow():
     new_flow = "WriterAgent -> ResearchAgent -> ReviewerAgent"
     agent_rearrange.set_custom_flow(new_flow)
     assert agent_rearrange.flow == new_flow
-    print("✓ test_set_custom_flow passed")
 
 
 def test_sequential_flow():
@@ -273,7 +308,6 @@ def test_sequential_flow():
 
     result = agent_rearrange.run("What is 2+2?")
     assert result is not None
-    print("✓ test_sequential_flow passed")
 
 
 def test_concurrent_flow():
@@ -289,7 +323,6 @@ def test_concurrent_flow():
 
     result = agent_rearrange.run("What is 3+3?")
     assert result is not None
-    print("✓ test_concurrent_flow passed")
 
 
 # ============================================================================
@@ -310,7 +343,6 @@ def test_get_sequential_flow_structure():
     flow_structure = agent_rearrange.get_sequential_flow_structure()
     assert flow_structure is not None
     assert isinstance(flow_structure, str)
-    print("✓ test_get_sequential_flow_structure passed")
 
 
 def test_get_agent_sequential_awareness():
@@ -328,7 +360,6 @@ def test_get_agent_sequential_awareness():
     )
     assert awareness is not None
     assert isinstance(awareness, str)
-    print("✓ test_get_agent_sequential_awareness passed")
 
 
 # ============================================================================
@@ -349,7 +380,6 @@ def test_run_basic():
 
     result = agent_rearrange.run("Calculate 5+5")
     assert result is not None
-    print("✓ test_run_basic passed")
 
 
 def test_run_with_different_output_types():
@@ -368,8 +398,6 @@ def test_run_with_different_output_types():
         result = agent_rearrange.run("What is the capital of France?")
         assert result is not None
 
-    print("✓ test_run_with_different_output_types passed")
-
 
 def test_callable_execution():
     """Test __call__ method."""
@@ -384,31 +412,6 @@ def test_callable_execution():
 
     result = agent_rearrange("What is 10+10?")
     assert result is not None
-    print("✓ test_callable_execution passed")
-
-
-# ============================================================================
-# Batch Processing Tests
-# ============================================================================
-
-
-def test_batch_run():
-    """Test batch processing."""
-    agents = create_sample_agents()
-
-    agent_rearrange = AgentRearrange(
-        agents=agents,
-        flow="ResearchAgent -> WriterAgent",
-        max_loops=1,
-        verbose=True,
-    )
-
-    tasks = ["What is 1+1?", "What is 2+2?"]
-    results = agent_rearrange.batch_run(tasks, batch_size=2)
-
-    assert results is not None
-    assert len(results) == 2
-    print("✓ test_batch_run passed")
 
 
 def test_concurrent_run():
@@ -427,7 +430,6 @@ def test_concurrent_run():
 
     assert results is not None
     assert len(results) == 2
-    print("✓ test_concurrent_run passed")
 
 
 # ============================================================================
@@ -450,7 +452,6 @@ def test_to_dict():
     assert "name" in result_dict
     assert "flow" in result_dict
     assert "agents" in result_dict
-    print("✓ test_to_dict passed")
 
 
 # ============================================================================
@@ -473,19 +474,14 @@ def test_complete_workflow():
         output_type="all",
     )
 
-    # Single run
     result1 = agent_rearrange.run("What is Python?")
     assert result1 is not None
 
-    # Get flow structure
     flow_structure = agent_rearrange.get_sequential_flow_structure()
     assert flow_structure is not None
 
-    # Serialize
     result_dict = agent_rearrange.to_dict()
     assert isinstance(result_dict, dict)
-
-    print("✓ test_complete_workflow passed")
 
 
 # ============================================================================
@@ -634,7 +630,6 @@ def test_repeated_agent_flow_valid():
     )
 
     assert agent_rearrange.validate_flow() is True
-    print("✓ test_repeated_agent_flow_valid passed")
 
 
 def test_repeated_agent_awareness_position_0():
@@ -651,11 +646,9 @@ def test_repeated_agent_awareness_position_0():
         "Writer", tasks, task_idx=0
     )
 
-    # Writer at position 0: no agent ahead, Reviewer behind
     assert "Agent behind" in awareness
     assert "Reviewer" in awareness
     assert "Agent ahead" not in awareness
-    print("✓ test_repeated_agent_awareness_position_0 passed")
 
 
 def test_repeated_agent_awareness_position_2():
@@ -672,11 +665,9 @@ def test_repeated_agent_awareness_position_2():
         "Writer", tasks, task_idx=2
     )
 
-    # Writer at position 2: Reviewer ahead, no agent behind
     assert "Agent ahead" in awareness
     assert "Reviewer" in awareness
     assert "Agent behind" not in awareness
-    print("✓ test_repeated_agent_awareness_position_2 passed")
 
 
 def test_repeated_agent_awareness_differs_per_position():
@@ -697,9 +688,6 @@ def test_repeated_agent_awareness_differs_per_position():
     )
 
     assert awareness_0 != awareness_2
-    print(
-        "✓ test_repeated_agent_awareness_differs_per_position passed"
-    )
 
 
 def test_repeated_agent_awareness_fallback_without_idx():
@@ -712,7 +700,6 @@ def test_repeated_agent_awareness_fallback_without_idx():
     )
 
     tasks = agent_rearrange.flow.split("->")
-    # Without task_idx, falls back to finding first occurrence
     awareness = agent_rearrange._get_sequential_awareness(
         "Writer", tasks
     )
@@ -720,9 +707,6 @@ def test_repeated_agent_awareness_fallback_without_idx():
     assert awareness is not None
     assert isinstance(awareness, str)
     assert "Sequential awareness" in awareness
-    print(
-        "✓ test_repeated_agent_awareness_fallback_without_idx passed"
-    )
 
 
 def test_repeated_agent_three_occurrences():
@@ -736,28 +720,23 @@ def test_repeated_agent_three_occurrences():
 
     tasks = agent_rearrange.flow.split("->")
 
-    # Writer at pos 0: no ahead, Reviewer behind
     a0 = agent_rearrange._get_sequential_awareness(
         "Writer", tasks, task_idx=0
     )
     assert "Agent behind" in a0
     assert "Agent ahead" not in a0
 
-    # Writer at pos 2: Reviewer ahead, Reviewer behind
     a2 = agent_rearrange._get_sequential_awareness(
         "Writer", tasks, task_idx=2
     )
     assert "Agent ahead" in a2
     assert "Agent behind" in a2
 
-    # Writer at pos 4: Reviewer ahead, no behind
     a4 = agent_rearrange._get_sequential_awareness(
         "Writer", tasks, task_idx=4
     )
     assert "Agent ahead" in a4
     assert "Agent behind" not in a4
-
-    print("✓ test_repeated_agent_three_occurrences passed")
 
 
 def test_repeated_agent_run():
@@ -775,14 +754,11 @@ def test_repeated_agent_run():
     assert result is not None
     assert len(str(result)) > 0
 
-    # Verify Writer appears twice in conversation
     messages = agent_rearrange.conversation.to_dict()
     writer_msgs = [m for m in messages if m.get("role") == "Writer"]
     assert (
         len(writer_msgs) == 2
     ), f"Expected 2 Writer messages, got {len(writer_msgs)}"
-
-    print("✓ test_repeated_agent_run passed")
 
 
 def test_repeated_agent_awareness_in_conversation():
@@ -800,7 +776,6 @@ def test_repeated_agent_awareness_in_conversation():
 
     messages = agent_rearrange.conversation.to_dict()
 
-    # Find awareness messages that precede Writer messages
     writer_awareness = []
     for idx, msg in enumerate(messages):
         if "Sequential awareness" in str(msg.get("content", "")):
@@ -817,64 +792,305 @@ def test_repeated_agent_awareness_in_conversation():
         writer_awareness[0] != writer_awareness[1]
     ), "Both Writer invocations got identical awareness"
 
-    print("✓ test_repeated_agent_awareness_in_conversation passed")
+
+# ============================================================================
+# batch_run — return-value correctness (mock-based)
+# ============================================================================
 
 
-def main():
-    """Run all tests."""
-    tests = [
-        test_initialization,
-        test_initialization_with_team_awareness,
-        test_initialization_with_custom_output_type,
-        test_add_agent,
-        test_remove_agent,
-        test_add_agents,
-        test_validate_flow_valid,
-        test_validate_flow_invalid,
-        test_validate_flow_no_arrow,
-        test_set_custom_flow,
-        test_sequential_flow,
-        test_concurrent_flow,
-        test_get_sequential_flow_structure,
-        test_get_agent_sequential_awareness,
-        test_run_basic,
-        test_run_with_different_output_types,
-        test_callable_execution,
-        test_batch_run,
-        test_concurrent_run,
-        test_to_dict,
-        test_complete_workflow,
-        test_missing_agent_raises,
-        test_broken_conversation_raises,
-        test_agent_error_raises,
-        test_callable_propagates,
-        test_batch_run_propagates,
-        test_error_logged_once,
-        test_successful_run_returns_result,
-        test_successful_callable_returns_result,
-        test_repeated_agent_flow_valid,
-        test_repeated_agent_awareness_position_0,
-        test_repeated_agent_awareness_position_2,
-        test_repeated_agent_awareness_differs_per_position,
-        test_repeated_agent_awareness_fallback_without_idx,
-        test_repeated_agent_three_occurrences,
-        test_repeated_agent_run,
-        test_repeated_agent_awareness_in_conversation,
-    ]
+class TestBatchRunReturns:
+    def test_returns_list_same_length_as_tasks(self):
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        tasks = ["t1", "t2", "t3"]
+        results = pipeline.batch_run(tasks=tasks, batch_size=10)
+        assert isinstance(results, list)
+        assert len(results) == len(tasks)
 
-    print("=" * 60)
-    print("Running AgentRearrange Tests")
-    print("=" * 60)
+    def test_single_task(self):
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        results = pipeline.batch_run(
+            tasks=["only task"], batch_size=5
+        )
+        assert len(results) == 1
 
-    for test in tests:
-        try:
-            test()
-        except Exception as e:
-            print(f"✗ {test.__name__} failed: {e}")
+    def test_empty_task_list(self):
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        results = pipeline.batch_run(tasks=[], batch_size=5)
+        assert results == []
 
-    print("=" * 60)
-    print("All tests completed!")
-    print("=" * 60)
+    def test_results_in_input_order(self):
+        """Results must match the task order, not thread-completion order."""
+        pipeline = _make_pipeline("AgentA", "AgentB", delay=0.02)
+        tasks = [f"task-{i}" for i in range(8)]
+        results = pipeline.batch_run(tasks=tasks, batch_size=8)
+        for i, result in enumerate(results):
+            assert (
+                f"task-{i}" in result
+            ), f"result[{i}] = {result!r} does not contain task-{i}"
+
+    def test_results_across_multiple_batches_ordered(self):
+        """Order must be preserved even when tasks span multiple batches."""
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        tasks = [f"item-{i}" for i in range(7)]
+        results = pipeline.batch_run(tasks=tasks, batch_size=3)
+        assert len(results) == 7
+        for i, result in enumerate(results):
+            assert f"item-{i}" in result
+
+
+# ============================================================================
+# batch_run — concurrency
+# ============================================================================
+
+
+class TestBatchRunConcurrency:
+    def test_tasks_run_concurrently(self):
+        """
+        Verify concurrency by asserting that at least two tasks overlap in
+        execution, rather than relying on wall-clock timing thresholds.
+        """
+        N = 5
+        pipeline = _make_pipeline("SlowAgent", "SlowAgent2")
+        tasks = [f"task-{i}" for i in range(N)]
+
+        active_count = 0
+        overlap_detected = threading.Event()
+        state_lock = threading.Lock()
+        original_run = pipeline.run
+
+        def instrumented_run(task, img=None, *a, **kw):
+            nonlocal active_count
+            with state_lock:
+                active_count += 1
+                if active_count >= 2:
+                    overlap_detected.set()
+            try:
+                time.sleep(0.05)
+                return original_run(task, img, *a, **kw)
+            finally:
+                with state_lock:
+                    active_count -= 1
+
+        pipeline.run = instrumented_run
+        results = pipeline.batch_run(tasks=tasks, batch_size=N)
+
+        assert len(results) == N
+        assert (
+            overlap_detected.is_set()
+        ), "Expected at least two batch_run tasks to overlap in execution"
+
+    def test_threadpoolexecutor_is_used(self):
+        """Patch ThreadPoolExecutor to confirm it is invoked for each batch."""
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        tasks = ["t1", "t2", "t3"]
+
+        with patch(
+            "swarms.structs.agent_rearrange.ThreadPoolExecutor",
+            wraps=__import__(
+                "concurrent.futures", fromlist=["ThreadPoolExecutor"]
+            ).ThreadPoolExecutor,
+        ) as mock_tpe:
+            pipeline.batch_run(tasks=tasks, batch_size=10)
+            assert mock_tpe.call_count == 1
+
+    def test_multiple_batches_uses_executor_per_batch(self):
+        """One ThreadPoolExecutor context-manager per batch."""
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        tasks = [f"t{i}" for i in range(6)]
+
+        with patch(
+            "swarms.structs.agent_rearrange.ThreadPoolExecutor",
+            wraps=__import__(
+                "concurrent.futures", fromlist=["ThreadPoolExecutor"]
+            ).ThreadPoolExecutor,
+        ) as mock_tpe:
+            pipeline.batch_run(tasks=tasks, batch_size=2)
+            # 6 tasks / batch_size=2 -> 3 batches -> 3 executor instances
+            assert mock_tpe.call_count == 3
+
+
+# ============================================================================
+# batch_run — conversation isolation
+# ============================================================================
+
+
+class TestConversationIsolation:
+    def test_original_conversation_not_mutated(self):
+        """The pipeline's own conversation should not change after batch_run."""
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        original_msg_count = len(
+            pipeline.conversation.conversation_history
+        )
+
+        pipeline.batch_run(tasks=["task1", "task2"], batch_size=5)
+
+        after_msg_count = len(
+            pipeline.conversation.conversation_history
+        )
+        assert (
+            after_msg_count == original_msg_count
+        ), "pipeline.conversation was mutated by batch_run"
+
+    def test_each_task_gets_own_conversation_copy(self):
+        """Each worker clone must have its own conversation, not share one."""
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        tasks = ["alpha", "beta", "gamma"]
+
+        seen_conversations: list = []
+
+        def _mock_run(self_inner, task=None, img=None, *a, **kw):
+            seen_conversations.append(self_inner.conversation)
+            return f"result:{task}"
+
+        with patch.object(AgentRearrange, "_run", _mock_run):
+            pipeline.batch_run(tasks=tasks, batch_size=10)
+
+        assert len(seen_conversations) == len(tasks)
+        for i in range(len(seen_conversations)):
+            for j in range(i + 1, len(seen_conversations)):
+                assert (
+                    seen_conversations[i] is not seen_conversations[j]
+                ), f"Tasks {i} and {j} shared the same conversation object"
+
+    def test_stateful_agent_state_does_not_bleed_across_tasks(self):
+        """
+        Regression: concurrent tasks must not corrupt each other's results
+        via shared agent state. With deepcopy each task owns its own agent
+        instance, so last_task cannot be overwritten by a racing thread.
+        """
+
+        class StatefulAgent:
+            def __init__(self, name: str):
+                self.agent_name = name
+                self.system_prompt = ""
+                self.last_task = None
+
+            def run(self, task, *args, **kwargs):
+                time.sleep(0.05)
+                self.last_task = task
+                return f"{self.agent_name}::{self.last_task}"
+
+        pipeline = AgentRearrange(
+            agents=[StatefulAgent("A"), StatefulAgent("B")],
+            flow="A -> B",
+            max_loops=1,
+            autosave=False,
+            output_type="final",
+        )
+
+        N = 10
+        tasks = [f"t{i}" for i in range(N)]
+        results = pipeline.batch_run(tasks=tasks, batch_size=N)
+
+        assert len(results) == N
+        for i, result in enumerate(results):
+            assert f"t{i}" in str(
+                result
+            ), f"result[{i}] missing 't{i}': {result!r} — agent state race detected"
+
+
+# ============================================================================
+# batch_run — image forwarding
+# ============================================================================
+
+
+class TestBatchRunWithImages:
+    def test_img_list_passed_per_task(self):
+        """When img is provided, each task receives its corresponding image path."""
+        received: List[Optional[str]] = []
+
+        agent_a = _make_agent("AgentA")
+        agent_b = _make_agent("AgentB")
+
+        pipeline = AgentRearrange(
+            agents=[agent_a, agent_b],
+            flow="AgentA -> AgentB",
+            max_loops=1,
+            autosave=False,
+            output_type="final",
+        )
+
+        tasks = ["t1", "t2", "t3"]
+        images = ["img1.png", "img2.png", "img3.png"]
+
+        def _mock_run(self_inner, task=None, img=None, *a, **kw):
+            received.append(img)
+            return f"result:{task}"
+
+        with patch.object(AgentRearrange, "_run", _mock_run):
+            results = pipeline.batch_run(
+                tasks=tasks, img=images, batch_size=5
+            )
+
+        assert len(results) == 3
+        assert sorted(received) == sorted(images)
+
+    def test_no_img_passes_none(self):
+        """When img is omitted, None is passed as img for every task."""
+        received_imgs: List[Optional[str]] = []
+
+        agent_a = _make_agent("AgentA")
+        agent_b = _make_agent("AgentB")
+
+        pipeline = AgentRearrange(
+            agents=[agent_a, agent_b],
+            flow="AgentA -> AgentB",
+            max_loops=1,
+            autosave=False,
+            output_type="final",
+        )
+
+        def _mock_run(self_inner, task=None, img=None, *a, **kw):
+            received_imgs.append(img)
+            return f"result:{task}"
+
+        with patch.object(AgentRearrange, "_run", _mock_run):
+            pipeline.batch_run(tasks=["t1", "t2"], batch_size=5)
+
+        assert all(img is None for img in received_imgs)
+
+
+# ============================================================================
+# batch_run — batch_size validation
+# ============================================================================
+
+
+class TestBatchSizeBoundaries:
+    @pytest.mark.parametrize("batch_size", [1, 2, 3, 5, 100])
+    def test_various_batch_sizes_return_all_results(self, batch_size):
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        tasks = [f"task-{i}" for i in range(5)]
+        results = pipeline.batch_run(
+            tasks=tasks, batch_size=batch_size
+        )
+        assert len(results) == len(tasks)
+
+    def test_batch_size_one_still_uses_executor(self):
+        """Even batch_size=1 should go through ThreadPoolExecutor."""
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        with patch(
+            "swarms.structs.agent_rearrange.ThreadPoolExecutor",
+            wraps=__import__(
+                "concurrent.futures", fromlist=["ThreadPoolExecutor"]
+            ).ThreadPoolExecutor,
+        ) as mock_tpe:
+            pipeline.batch_run(tasks=["only"], batch_size=1)
+            assert mock_tpe.call_count == 1
+
+    @pytest.mark.parametrize("batch_size", [0, -1, -10])
+    def test_invalid_batch_size_raises(self, batch_size):
+        """batch_size <= 0 must raise ValueError immediately."""
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        with pytest.raises(ValueError, match="batch_size"):
+            pipeline.batch_run(tasks=["t1"], batch_size=batch_size)
+
+    def test_img_length_mismatch_raises(self):
+        """Mismatched img and tasks lengths must raise ValueError."""
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        with pytest.raises(ValueError, match="img length"):
+            pipeline.batch_run(
+                tasks=["t1", "t2"], img=["img1.png"], batch_size=5
+            )
 
 
 if __name__ == "__main__":

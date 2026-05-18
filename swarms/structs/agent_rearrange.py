@@ -32,7 +32,6 @@ class AgentRearrange:
     - Sequential and concurrent agent execution
     - Custom flow patterns with arrow (->) and comma (,) syntax
     - Team awareness and sequential flow information
-    - Human-in-the-loop integration
     - Memory system support
     - Batch and concurrent processing capabilities
     - Comprehensive error handling and logging
@@ -41,7 +40,6 @@ class AgentRearrange:
     - Use '->' to define sequential execution: "agent1 -> agent2 -> agent3"
     - Use ',' to define concurrent execution: "agent1, agent2 -> agent3"
     - Combine both: "agent1 -> agent2, agent3 -> agent4"
-    - Use 'H' for human-in-the-loop: "agent1 -> H -> agent2"
 
     Attributes:
         id (str): Unique identifier for the agent rearrange system
@@ -52,8 +50,6 @@ class AgentRearrange:
         max_loops (int): Maximum number of execution loops
         verbose (bool): Whether to enable verbose logging
         memory_system (Any): Optional memory system for persistence
-        human_in_the_loop (bool): Whether to enable human interaction
-        custom_human_in_the_loop (Callable): Custom human interaction handler
         output_type (OutputType): Format for output results
         autosave (bool): Whether to automatically save execution data
         rules (str): System rules and constraints
@@ -95,10 +91,6 @@ class AgentRearrange:
         max_loops: int = 1,
         verbose: bool = True,
         memory_system: Any = None,
-        human_in_the_loop: bool = False,
-        custom_human_in_the_loop: Optional[
-            Callable[[str], str]
-        ] = None,
         output_type: OutputType = "all",
         autosave: bool = True,
         rules: str = None,
@@ -127,11 +119,6 @@ class AgentRearrange:
             verbose (bool): Whether to enable verbose logging.
                 Defaults to True.
             memory_system (Any, optional): Optional memory system for persistence.
-                Defaults to None.
-            human_in_the_loop (bool): Whether to enable human interaction points.
-                Defaults to False.
-            custom_human_in_the_loop (Callable[[str], str], optional): Custom function
-                for handling human interaction. Takes input string, returns response.
                 Defaults to None.
             output_type (OutputType): Format for output results. Can be "all", "final",
                 "list", or "dict". Defaults to "all".
@@ -162,8 +149,6 @@ class AgentRearrange:
         self.verbose = verbose
         self.max_loops = max_loops if max_loops > 0 else 1
         self.memory_system = memory_system
-        self.human_in_the_loop = human_in_the_loop
-        self.custom_human_in_the_loop = custom_human_in_the_loop
         self.output_type = output_type
         self.autosave = autosave
         self.time_enabled = time_enabled
@@ -254,27 +239,6 @@ class AgentRearrange:
         logger.info(f"Adding agent {agent.agent_name} to the swarm.")
         self.agents[agent.agent_name] = agent
 
-    def track_history(
-        self,
-        agent_name: str,
-        result: str,
-    ):
-        """
-        Tracks the execution history for a specific agent.
-
-        Records the result of an agent's execution in the swarm history
-        for later analysis or debugging purposes.
-
-        Args:
-            agent_name (str): The name of the agent whose result to track.
-            result (str): The result/output from the agent's execution.
-
-        Note:
-            This method is typically called internally during agent execution
-            to maintain a complete history of all agent activities.
-        """
-        self.swarm_history[agent_name].append(result)
-
     def remove_agent(self, agent_name: str):
         """
         Removes an agent from the swarm.
@@ -320,10 +284,7 @@ class AgentRearrange:
 
             # Loop over the agent names
             for agent_name in agent_names:
-                if (
-                    agent_name not in self.agents
-                    and agent_name != "H"
-                ):
+                if agent_name not in self.agents:
                     raise ValueError(
                         f"Agent '{agent_name}' is not registered."
                     )
@@ -376,9 +337,7 @@ class AgentRearrange:
             prev_agents = [
                 name.strip() for name in prev_task.split(",")
             ]
-            if (
-                prev_agents and prev_agents[0] != "H"
-            ):  # Skip human agents
+            if prev_agents:
                 awareness_info.append(
                     f"Agent ahead: {', '.join(prev_agents)}"
                 )
@@ -389,9 +348,7 @@ class AgentRearrange:
             next_agents = [
                 name.strip() for name in next_task.split(",")
             ]
-            if (
-                next_agents and next_agents[0] != "H"
-            ):  # Skip human agents
+            if next_agents:
                 awareness_info.append(
                     f"Agent behind: {', '.join(next_agents)}"
                 )
@@ -417,9 +374,7 @@ class AgentRearrange:
 
         for i, task in enumerate(tasks):
             agent_names = [name.strip() for name in task.split(",")]
-            if (
-                agent_names and agent_names[0] != "H"
-            ):  # Skip human agents
+            if agent_names:
                 position_info = (
                     f"Step {i+1}: {', '.join(agent_names)}"
                 )
@@ -428,7 +383,7 @@ class AgentRearrange:
                     prev_agents = [
                         name.strip() for name in prev_task.split(",")
                     ]
-                    if prev_agents and prev_agents[0] != "H":
+                    if prev_agents:
                         position_info += (
                             f" (follows: {', '.join(prev_agents)})"
                         )
@@ -437,7 +392,7 @@ class AgentRearrange:
                     next_agents = [
                         name.strip() for name in next_task.split(",")
                     ]
-                    if next_agents and next_agents[0] != "H":
+                    if next_agents:
                         position_info += (
                             f" (leads to: {', '.join(next_agents)})"
                         )
@@ -1125,7 +1080,7 @@ class AgentRearrange:
                 ``{"type": "agent_end", "agent": ..., "output": ...}``.
 
         Not yet supported in streaming mode: ``max_loops > 1``,
-        ``custom_tasks``, ``human_in_the_loop``. Use ``run()`` for those.
+        ``custom_tasks``. Use ``run()`` for those.
         """
         self.conversation.add("User", task)
 

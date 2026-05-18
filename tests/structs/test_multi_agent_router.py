@@ -1,7 +1,33 @@
+import os
+
 import pytest
 
 from swarms.structs.agent import Agent
 from swarms.structs.multi_agent_router import MultiAgentRouter
+
+
+def _minimal_agents():
+    """Lightweight agents for tests that don't need a real LLM call."""
+    return [
+        Agent(
+            agent_name="Agent1",
+            agent_description="Test Agent1",
+            system_prompt="You are Agent1",
+            model_name="openai/gpt-4o",
+            max_loops=1,
+            verbose=False,
+            print_on=False,
+        ),
+        Agent(
+            agent_name="Agent2",
+            agent_description="Test Agent2",
+            system_prompt="You are Agent2",
+            model_name="openai/gpt-4o",
+            max_loops=1,
+            verbose=False,
+            print_on=False,
+        ),
+    ]
 
 
 # Test fixtures
@@ -347,6 +373,60 @@ def test_concurrent_large_batch_processing():
     assert len(results) == 3
     assert all(result is not None for result in results)
     assert all(isinstance(result, (list, dict)) for result in results)
+
+
+# ============================================================================
+# BOSS SYSTEM PROMPT / DISCOVERY TESTS
+# ============================================================================
+
+
+def test_boss_system_prompt_contains_agent_names():
+    """The generated boss prompt must mention each registered agent by name."""
+    router = MultiAgentRouter(agents=_minimal_agents())
+    prompt = router._create_boss_system_prompt()
+
+    assert "Agent1" in prompt
+    assert "Agent2" in prompt
+    assert "You are a boss agent" in prompt
+
+
+def test_agents_dict_membership():
+    """router.agents is a name-keyed dict; lookups should be membership tests."""
+    router = MultiAgentRouter(agents=_minimal_agents())
+    assert "Agent1" in router.agents
+    assert "NonexistentAgent" not in router.agents
+
+
+# ============================================================================
+# CONSTRUCTION-TIME VALIDATION
+# ============================================================================
+
+
+def test_missing_api_key_raises():
+    """MultiAgentRouter with no agents and no OPENAI_API_KEY must raise ValueError."""
+    saved = os.environ.pop("OPENAI_API_KEY", None)
+    try:
+        with pytest.raises(ValueError, match="OpenAI API key"):
+            MultiAgentRouter(agents=[])
+    finally:
+        if saved is not None:
+            os.environ["OPENAI_API_KEY"] = saved
+
+
+def test_route_task_with_no_agents_raises():
+    """Routing with an empty agent list must raise."""
+    if not os.getenv("OPENAI_API_KEY"):
+        pytest.skip("OPENAI_API_KEY not set")
+    router = MultiAgentRouter(agents=[])
+    with pytest.raises(Exception):
+        router.route_task("Test task")
+
+
+def test_route_task_with_empty_task_raises():
+    """An empty task string must raise ValueError."""
+    router = MultiAgentRouter(agents=_minimal_agents())
+    with pytest.raises(ValueError):
+        router.route_task("")
 
 
 if __name__ == "__main__":
