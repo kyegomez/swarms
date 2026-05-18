@@ -565,5 +565,92 @@ def test_concurrent_workflow_on_error_raise_propagates():
         wf.run("test task")
 
 
+def test_concurrent_workflow_invalid_on_error_raises_value_error():
+    """Unsupported on_error value must raise ValueError at construction time."""
+    with pytest.raises(ValueError, match="on_error"):
+        ConcurrentWorkflow(
+            agents=[_MockAgent("A"), _MockAgent("B")],
+            on_error="ignore",  # invalid
+            autosave=False,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Dashboard-path tests (show_dashboard=True, renderer stubbed out)
+# ---------------------------------------------------------------------------
+
+
+def test_concurrent_workflow_dashboard_partial_results_on_agent_failure(
+    monkeypatch,
+):
+    """Dashboard path: failing agent must not discard passing siblings."""
+    good1 = _MockAgent("Good-1", "result-1")
+    good2 = _MockAgent("Good-2", "result-2")
+    bad = _FailingAgent("Bad")
+
+    # Stub out all dashboard rendering so no terminal UI code runs.
+    monkeypatch.setattr(
+        "swarms.structs.concurrent_workflow.formatter",
+        _NullFormatter(),
+        raising=False,
+    )
+
+    wf = ConcurrentWorkflow(
+        agents=[good1, good2, bad],
+        on_error="store",
+        show_dashboard=True,
+        autosave=False,
+    )
+    result = wf.run("test task")
+
+    assert result is not None
+
+    history = wf.conversation.conversation_history
+    roles = [entry.get("role", "") for entry in history]
+    contents = [entry.get("content", "") for entry in history]
+
+    assert any("Good-1" in r for r in roles), "Good-1 output missing"
+    assert any("Good-2" in r for r in roles), "Good-2 output missing"
+    assert any(
+        "Bad" in r and "failed" in r for r in roles
+    ), "Failed-agent error entry missing"
+    assert any(
+        "exploded" in c for c in contents
+    ), "Error message not stored"
+
+
+def test_concurrent_workflow_dashboard_on_error_raise_propagates(
+    monkeypatch,
+):
+    """Dashboard path: on_error='raise' must propagate the exception."""
+    good = _MockAgent("Good", "ok")
+    bad = _FailingAgent("Bad")
+
+    monkeypatch.setattr(
+        "swarms.structs.concurrent_workflow.formatter",
+        _NullFormatter(),
+        raising=False,
+    )
+
+    wf = ConcurrentWorkflow(
+        agents=[good, bad],
+        on_error="raise",
+        show_dashboard=True,
+        autosave=False,
+    )
+    with pytest.raises(RuntimeError, match="exploded"):
+        wf.run("test task")
+
+
+class _NullFormatter:
+    """Drop-in for ``formatter`` that silently ignores all dashboard calls."""
+
+    def print_agent_dashboard(self, *a, **kw):
+        pass
+
+    def stop_dashboard(self, *a, **kw):
+        pass
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
