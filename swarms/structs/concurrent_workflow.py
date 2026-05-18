@@ -359,9 +359,11 @@ class ConcurrentWorkflow:
                             first_error = e
                         results.append(
                             (
-                                f"{agent.agent_name} (failed)"
-                                if self.on_error == "store"
-                                else agent.agent_name,
+                                (
+                                    f"{agent.agent_name} (failed)"
+                                    if self.on_error == "store"
+                                    else agent.agent_name
+                                ),
                                 f"Error: {str(e)}",
                             )
                         )

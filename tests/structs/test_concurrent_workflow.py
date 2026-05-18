@@ -546,9 +546,9 @@ def test_concurrent_workflow_partial_results_on_agent_failure():
     ), "Failed-agent error entry missing"
 
     # Error content stored
-    assert any("exploded" in c for c in contents), (
-        "Error message not stored in conversation"
-    )
+    assert any(
+        "exploded" in c for c in contents
+    ), "Error message not stored in conversation"
 
 
 def test_concurrent_workflow_on_error_raise_propagates():

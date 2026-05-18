@@ -61,21 +61,23 @@ broken.run = lambda *a, **kw: (_ for _ in ()).throw(
 wf = ConcurrentWorkflow(
     name="ResearchTeam",
     agents=[researcher, strategist, broken],
-    on_error="store",   # default — can be omitted
+    on_error="store",  # default — can be omitted
     output_type="list",
     autosave=False,
 )
 
-result = wf.run("Summarise the current state of renewable energy adoption.")
+result = wf.run(
+    "Summarise the current state of renewable energy adoption."
+)
 
 print("\nFormatted output:")
 pprint.pprint(result)
 
 print("\nRaw conversation history:")
 for entry in wf.conversation.conversation_history:
-    role    = entry.get("role", "")
+    role = entry.get("role", "")
     content = entry.get("content", "")
-    marker  = "  *** ERROR ***" if "(failed)" in role else ""
+    marker = "  *** ERROR ***" if "(failed)" in role else ""
     print(f"  {role}: {content[:120]!r}{marker}")
 
 # ---------------------------------------------------------------------------
@@ -113,7 +115,11 @@ wf2 = ConcurrentWorkflow(
 )
 
 try:
-    wf2.run("What are the biggest trends in renewable energy investment?")
+    wf2.run(
+        "What are the biggest trends in renewable energy investment?"
+    )
 except RuntimeError as exc:
     print(f"\nCaught expected RuntimeError: {exc}")
-    print("(on_error='raise' lets the exception escape — old behaviour preserved.)")
+    print(
+        "(on_error='raise' lets the exception escape — old behaviour preserved.)"
+    )
