@@ -10,7 +10,7 @@ from swarms.structs.graph_workflow import (
 )
 
 try:
-    import rustworkx as rx
+    import rustworkx as rx  # noqa: F401
 
     RUSTWORKX_AVAILABLE = True
 except ImportError:
@@ -1008,6 +1008,137 @@ def test_graph_workflow_on_node_complete_run_overrides_init():
     # Only the run-level callback should have been called
     assert len(run_calls) == 1
     assert len(init_calls) == 0
+
+
+# ---------------------------------------------------------------------------
+# Shared mock helper (used by validate tests below)
+# ---------------------------------------------------------------------------
+
+
+def _mock_agent(name: str, response: str = None):
+    """Return a MagicMock that looks like an Agent to GraphWorkflow."""
+    from unittest.mock import MagicMock
+
+    a = MagicMock()
+    a.agent_name = name
+    a.run = MagicMock(return_value=response or f"output-{name}")
+    return a
+
+
+# ---------------------------------------------------------------------------
+# validate() / compile-time validation tests (no real LLM calls)
+# ---------------------------------------------------------------------------
+
+
+def test_validate_returns_dict_with_expected_keys():
+    """validate() always returns a dict with is_valid, errors, warnings, fixed."""
+    a = _mock_agent("VA")
+    b = _mock_agent("VB")
+    wf = GraphWorkflow(name="V-Basic")
+    wf.add_node(a)
+    wf.add_node(b)
+    wf.add_edge("VA", "VB")
+
+    result = wf.validate()
+    assert isinstance(result, dict)
+    for key in ("is_valid", "errors", "warnings", "fixed"):
+        assert key in result
+
+
+def test_validate_clean_workflow_is_valid():
+    """A properly wired workflow reports is_valid=True with no errors."""
+    a = _mock_agent("CA")
+    b = _mock_agent("CB")
+    wf = GraphWorkflow(name="V-Clean")
+    wf.add_node(a)
+    wf.add_node(b)
+    wf.add_edge("CA", "CB")
+    wf.compile()
+
+    result = wf.validate()
+    assert result["is_valid"] is True
+    assert result["errors"] == []
+
+
+def test_validate_detects_isolated_node():
+    """validate() warns about a node with no edges."""
+    a = _mock_agent("IA")
+    b = _mock_agent("IB")
+    orphan = _mock_agent("Orphan")
+
+    wf = GraphWorkflow(name="V-Isolated")
+    wf.add_node(a)
+    wf.add_node(b)
+    wf.add_node(orphan)
+    wf.add_edge("IA", "IB")
+
+    result = wf.validate()
+    warning_text = " ".join(result["warnings"])
+    assert (
+        "Orphan" in warning_text or "isolated" in warning_text.lower()
+    )
+
+
+def test_validate_detects_unreachable_node():
+    """validate() warns about nodes unreachable from the explicit entry point."""
+    a = _mock_agent("UA")
+    b = _mock_agent("UB")
+    c = _mock_agent("UC")
+
+    wf = GraphWorkflow(name="V-Unreachable")
+    wf.add_node(a)
+    wf.add_node(b)
+    wf.add_node(c)
+    wf.add_edge("UA", "UB")
+    wf.add_edge("UA", "UC")
+    # Manually override entry_points so only UA is entry; a disconnected D would be unreachable
+    d = _mock_agent("UD")
+    wf.add_node(d)
+    wf.add_edge(
+        "UD", "UB"
+    )  # UD has an out-edge but is not reachable from UA
+    wf.set_entry_points(["UA"])
+
+    result = wf.validate()
+    warning_text = " ".join(result["warnings"])
+    assert (
+        "UD" in warning_text or "unreachable" in warning_text.lower()
+    )
+
+
+def test_validate_raise_on_error_raises_for_invalid_workflow():
+    """validate(raise_on_error=True) raises ValueError for invalid workflows."""
+    wf = GraphWorkflow(name="V-RaiseErr")
+    wf.nodes["Ghost"] = Node(
+        id="Ghost", agent=None
+    )  # invalid — no agent
+
+    with pytest.raises(ValueError, match="validation failed"):
+        wf.validate(raise_on_error=True)
+
+
+def test_validate_raise_on_error_false_does_not_raise():
+    """validate(raise_on_error=False) returns dict even for invalid workflows."""
+    wf = GraphWorkflow(name="V-NoRaise")
+    wf.nodes["Ghost"] = Node(id="Ghost", agent=None)
+
+    result = wf.validate(raise_on_error=False)
+    assert isinstance(result, dict)
+    assert result["is_valid"] is False
+
+
+def test_compile_calls_validate_and_reports_errors():
+    """compile() surfaces validation errors: the validation result is non-empty errors list."""
+    wf = GraphWorkflow(name="V-CompileCheck")
+    wf.nodes["Ghost"] = Node(id="Ghost", agent=None)
+
+    # compile() should complete without raising but validation errors are present
+    wf.compile()
+
+    # Calling validate directly confirms the errors that compile() would have logged
+    result = wf.validate(raise_on_error=False)
+    assert not result["is_valid"]
+    assert len(result["errors"]) > 0
 
 
 if __name__ == "__main__":

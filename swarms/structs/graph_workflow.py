@@ -923,6 +923,28 @@ class GraphWorkflow:
                 logger.debug(f"Entry points: {self.entry_points}")
                 logger.debug(f"End points: {self.end_points}")
 
+            # Run structural validation so misconfiguration is surfaced at
+            # build time rather than mid-execution.  We never raise here so
+            # that compile() stays backward-compatible; callers that want
+            # strict enforcement should call validate(raise_on_error=True)
+            # explicitly.
+            if self.nodes:
+                _vr = self.validate(
+                    auto_fix=False, raise_on_error=False
+                )
+                if _vr["errors"]:
+                    logger.warning(
+                        f"GraphWorkflow compile: validation found "
+                        f"{len(_vr['errors'])} error(s) — "
+                        + "; ".join(_vr["errors"])
+                    )
+                if _vr["warnings"] and self.verbose:
+                    logger.warning(
+                        f"GraphWorkflow compile: validation found "
+                        f"{len(_vr['warnings'])} warning(s) — "
+                        + "; ".join(_vr["warnings"])
+                    )
+
             # Pre-compute topological layers for efficient execution
             if self.verbose:
                 logger.debug("Computing topological layers")
@@ -3261,16 +3283,35 @@ class GraphWorkflow:
             )
             raise e
 
-    def validate(self, auto_fix: bool = False) -> Dict[str, Any]:
+    def validate(
+        self,
+        auto_fix: bool = False,
+        raise_on_error: bool = False,
+    ) -> Dict[str, Any]:
         """
         Validate the workflow structure, checking for potential issues such as isolated nodes,
-        cyclic dependencies, etc.
+        cyclic dependencies, unreachable nodes, and missing entry/end points.
 
         Args:
-            auto_fix (bool): Whether to automatically fix some simple issues (like auto-setting entry/exit points)
+            auto_fix (bool): Whether to automatically fix simple issues such as
+                auto-setting missing entry/exit points and adding unreachable
+                nodes to entry points.
+            raise_on_error (bool): When ``True``, raise a ``ValueError`` if
+                validation determines the workflow is invalid (i.e.
+                ``result["is_valid"]`` is ``False``).  Defaults to ``False``
+                so that existing callers that inspect the returned dict are
+                unaffected.
 
         Returns:
-            Dict[str, Any]: Dictionary containing validation results, including validity, warnings and errors
+            Dict[str, Any]: Dictionary containing:
+                - ``is_valid`` (bool) — overall validity flag.
+                - ``errors`` (List[str]) — fatal problems that prevent execution.
+                - ``warnings`` (List[str]) — non-fatal issues worth addressing.
+                - ``fixed`` (List[str]) — issues resolved when ``auto_fix=True``.
+                - ``cycles`` (List[List[str]]) — detected cycles, if any.
+
+        Raises:
+            ValueError: If ``raise_on_error=True`` and the workflow is invalid.
         """
         if self.verbose:
             logger.debug(
@@ -3429,11 +3470,24 @@ class GraphWorkflow:
                         f"Auto-fixed {len(result['fixed'])} issues: {', '.join(result['fixed'])}"
                     )
 
+            if raise_on_error and not result["is_valid"]:
+                all_issues = result["errors"] + result["warnings"]
+                raise ValueError(
+                    "GraphWorkflow validation failed:\n"
+                    + "\n".join(f"  - {i}" for i in all_issues)
+                )
+
             return result
+        except ValueError:
+            raise
         except Exception as e:
             result["is_valid"] = False
             result["errors"].append(str(e))
             logger.exception(f"Error during workflow validation: {e}")
+            if raise_on_error:
+                raise ValueError(
+                    f"GraphWorkflow validation failed: {e}"
+                ) from e
             return result
 
     def export_summary(self) -> Dict[str, Any]:
