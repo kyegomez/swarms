@@ -10,7 +10,7 @@ from swarms.structs.graph_workflow import (
 )
 
 try:
-    import rustworkx as rx
+    import rustworkx as rx  # noqa: F401
 
     RUSTWORKX_AVAILABLE = True
 except ImportError:
@@ -1008,6 +1008,172 @@ def test_graph_workflow_on_node_complete_run_overrides_init():
     # Only the run-level callback should have been called
     assert len(run_calls) == 1
     assert len(init_calls) == 0
+
+
+# ---------------------------------------------------------------------------
+# Subgraph / nested GraphWorkflow tests (no real LLM calls)
+# ---------------------------------------------------------------------------
+
+
+def _mock_agent(name: str, response: str = None):
+    """Return a MagicMock that looks like an Agent."""
+    from unittest.mock import MagicMock
+
+    a = MagicMock()
+    a.agent_name = name
+    a.run = MagicMock(return_value=response or f"output-{name}")
+    return a
+
+
+def test_node_from_subgraph_creates_subgraph_node():
+    """Node.from_subgraph returns a SUBGRAPH-typed node with the inner workflow."""
+    inner = GraphWorkflow(name="inner")
+    a = _mock_agent("Inner-A")
+    inner.add_node(a)
+
+    node = Node.from_subgraph(inner)
+
+    assert node.type == NodeType.SUBGRAPH
+    assert node.agent is inner
+    assert node.id == "inner"
+
+
+def test_node_from_subgraph_custom_id():
+    """Node.from_subgraph respects an explicit node_id override."""
+    inner = GraphWorkflow(name="inner")
+    inner.add_node(_mock_agent("Inner-A"))
+
+    node = Node.from_subgraph(inner, node_id="my-subgraph")
+    assert node.id == "my-subgraph"
+
+
+def test_add_node_accepts_graph_workflow():
+    """add_node should accept a GraphWorkflow and register it as SUBGRAPH."""
+    inner = GraphWorkflow(name="ResearchPipeline")
+    inner.add_node(_mock_agent("Researcher", "research done"))
+
+    outer = GraphWorkflow(name="Outer")
+    outer.add_node(inner)
+
+    assert "ResearchPipeline" in outer.nodes
+    assert outer.nodes["ResearchPipeline"].type == NodeType.SUBGRAPH
+
+
+def test_subgraph_executes_and_output_reaches_downstream():
+    """Outer graph passes subgraph output to the downstream agent."""
+    # Inner graph: single agent
+    inner_agent = _mock_agent("InnerAgent", "inner result")
+    inner = GraphWorkflow(name="Inner")
+    inner.add_node(inner_agent)
+
+    # Downstream agent in outer graph
+    downstream = _mock_agent("Downstream", "downstream done")
+
+    outer = GraphWorkflow(name="Outer")
+    outer.add_node(inner)
+    outer.add_node(downstream)
+    outer.add_edge("Inner", "Downstream")
+
+    result = outer.run("test task")
+
+    assert result is not None
+    # Inner agent must have been called
+    inner_agent.run.assert_called_once()
+    # Downstream agent must have been called with the inner graph's output
+    downstream.run.assert_called_once()
+    call_prompt = downstream.run.call_args[0][0]
+    assert "inner result" in call_prompt
+
+
+def test_subgraph_result_in_outer_output():
+    """Outer result dict contains the subgraph node's output."""
+    inner_agent = _mock_agent("IA", "inner-output")
+    inner = GraphWorkflow(name="SubWF")
+    inner.add_node(inner_agent)
+
+    outer = GraphWorkflow(name="Outer")
+    outer.add_node(inner)
+
+    result = outer.run("task")
+
+    assert "SubWF" in result
+    assert "inner-output" in result["SubWF"]
+
+
+def test_to_spec_embeds_subgraph_spec():
+    """to_spec encodes subgraph nodes with type='subgraph' and a nested spec."""
+    inner_agent = _mock_agent("IA")
+    inner = GraphWorkflow(name="Inner")
+    inner.add_node(inner_agent)
+    inner.compile()
+
+    outer = GraphWorkflow(name="Outer")
+    outer.add_node(inner)
+    outer.compile()
+
+    spec = outer.to_spec()
+
+    subgraph_node = next(
+        (n for n in spec["nodes"] if n.get("type") == "subgraph"),
+        None,
+    )
+    assert subgraph_node is not None, "No subgraph node found in spec"
+    assert subgraph_node["id"] == "Inner"
+    assert "spec" in subgraph_node
+    assert subgraph_node["spec"]["name"] == "Inner"
+
+
+def test_from_topology_spec_round_trip_with_subgraph():
+    """to_spec / from_topology_spec round-trip preserves nested subgraph topology."""
+    inner_agent = _mock_agent("IA")
+    inner = GraphWorkflow(name="InnerWF")
+    inner.add_node(inner_agent)
+    inner.compile()
+
+    outer_agent = _mock_agent("OA")
+    outer = GraphWorkflow(name="OuterWF")
+    outer.add_node(inner)
+    outer.add_node(outer_agent)
+    outer.add_edge("InnerWF", "OA")
+    outer.compile()
+
+    spec = outer.to_spec()
+    registry = {"IA": inner_agent, "OA": outer_agent}
+    rebuilt = GraphWorkflow.from_topology_spec(spec, registry)
+
+    assert "InnerWF" in rebuilt.nodes
+    assert rebuilt.nodes["InnerWF"].type == NodeType.SUBGRAPH
+    assert "OA" in rebuilt.nodes
+    assert len(rebuilt.edges) == 1
+
+
+def test_from_topology_spec_subgraph_missing_spec_key():
+    """from_topology_spec raises ValueError when a subgraph node has no 'spec' key."""
+    spec = {
+        "nodes": [
+            {"id": "Sub", "type": "subgraph"}
+        ],  # missing "spec"
+        "edges": [],
+    }
+    with pytest.raises(ValueError, match="spec"):
+        GraphWorkflow.from_topology_spec(spec, {})
+
+
+def test_subgraph_checkpoint_dir_inherits_from_parent(tmp_path):
+    """Inner graph's checkpoint_dir is set to parent_dir/{node_id}."""
+    inner_agent = _mock_agent("IA", "inner-output")
+    inner = GraphWorkflow(name="SubCP")
+    inner.add_node(inner_agent)
+
+    cp_dir = str(tmp_path / "checkpoints")
+    outer = GraphWorkflow(name="Outer", checkpoint_dir=cp_dir)
+    outer.add_node(inner)
+    outer.compile()
+
+    outer.run("task")
+
+    assert inner.checkpoint_dir is not None
+    assert "SubCP" in inner.checkpoint_dir
 
 
 if __name__ == "__main__":
