@@ -1160,7 +1160,9 @@ def test_from_topology_spec_subgraph_missing_spec_key():
 
 
 def test_subgraph_checkpoint_dir_inherits_from_parent(tmp_path):
-    """Inner graph's checkpoint_dir is set to parent_dir/{node_id}."""
+    """Checkpoints for the inner graph are written under parent_dir/node_id,
+    and inner.checkpoint_dir is restored to its original value after the run.
+    """
     inner_agent = _mock_agent("IA", "inner-output")
     inner = GraphWorkflow(name="SubCP")
     inner.add_node(inner_agent)
@@ -1170,10 +1172,20 @@ def test_subgraph_checkpoint_dir_inherits_from_parent(tmp_path):
     outer.add_node(inner)
     outer.compile()
 
+    original_inner_cp = inner.checkpoint_dir  # None before run
     outer.run("task")
 
-    assert inner.checkpoint_dir is not None
-    assert "SubCP" in inner.checkpoint_dir
+    # checkpoint_dir is restored to original value after the run
+    assert inner.checkpoint_dir == original_inner_cp
+
+    # checkpoint files must have been written inside the namespaced sub-dir
+    nested_dir = tmp_path / "checkpoints" / "SubCP"
+    cp_files = (
+        list(nested_dir.glob("*.json")) if nested_dir.exists() else []
+    )
+    assert (
+        len(cp_files) > 0
+    ), f"No checkpoint files found under {nested_dir}"
 
 
 if __name__ == "__main__":

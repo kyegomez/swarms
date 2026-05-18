@@ -566,8 +566,8 @@ class RustworkxBackend(GraphBackend):
 
 
 class NodeType(str, Enum):
-    AGENT: Agent = "agent"
-    SUBGRAPH: str = "subgraph"
+    AGENT = "agent"
+    SUBGRAPH = "subgraph"
 
 
 class Node:
@@ -1968,6 +1968,7 @@ class GraphWorkflow:
                                     # state is stored under a sub-directory
                                     # keyed by the parent node ID.
                                     inner: GraphWorkflow = agent
+                                    _prev_cp = inner.checkpoint_dir
                                     if (
                                         self.checkpoint_dir
                                         and not inner.checkpoint_dir
@@ -1976,8 +1977,29 @@ class GraphWorkflow:
                                             Path(self.checkpoint_dir)
                                             / node_id
                                         )
+
+                                    def _run_inner(
+                                        _inner=inner,
+                                        _prompt=prompt,
+                                        _prev=_prev_cp,
+                                        _img=img,
+                                        _args=args,
+                                        _kwargs=kwargs,
+                                    ):
+                                        try:
+                                            return _inner.run(
+                                                _prompt,
+                                                img=_img,
+                                                *_args,
+                                                **_kwargs,
+                                            )
+                                        finally:
+                                            _inner.checkpoint_dir = (
+                                                _prev
+                                            )
+
                                     future = executor.submit(
-                                        inner.run, prompt
+                                        _run_inner
                                     )
                                 else:
                                     # Build per-agent kwargs, injecting
@@ -2041,7 +2063,14 @@ class GraphWorkflow:
 
                                 # Subgraph nodes return a dict; flatten to
                                 # a readable string for downstream agents.
-                                if isinstance(output, dict):
+                                # Only apply to SUBGRAPH nodes so that agent
+                                # nodes returning structured dicts are not
+                                # silently coerced.
+                                if (
+                                    isinstance(output, dict)
+                                    and self.nodes[node_id].type
+                                    == NodeType.SUBGRAPH
+                                ):
                                     output = "\n\n".join(
                                         f"[{k}]: {v}"
                                         for k, v in output.items()
@@ -2629,7 +2658,13 @@ class GraphWorkflow:
         Returns:
             Dict[str, Any]: A dictionary containing:
                 - ``name``, ``description``, ``max_loops`` — workflow metadata.
-                - ``nodes`` — list of ``{"id": ..., "agent_name": ..., "metadata": ...}`` dicts.
+                - ``nodes`` — sorted list of node dicts.  Two shapes are possible:
+
+                  * Agent node: ``{"id": ..., "agent_name": ..., "metadata": ...}``
+                  * Subgraph node: ``{"id": ..., "type": "subgraph", "spec": {...}, "metadata": ...}``
+                    where ``"spec"`` is the recursively serialised inner
+                    ``GraphWorkflow`` topology.
+
                 - ``edges`` — list of ``{"source": ..., "target": ..., "metadata": ...}`` dicts.
                 - ``entry_points`` — list of entry-point node IDs.
                 - ``end_points`` — list of end-point node IDs.
