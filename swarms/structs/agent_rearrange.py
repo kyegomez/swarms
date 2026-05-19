@@ -2,7 +2,16 @@ import copy
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import (
+    Any,
+    AsyncGenerator,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Union,
+)
 import asyncio
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -97,6 +106,9 @@ class AgentRearrange:
         team_awareness: bool = False,
         time_enabled: bool = False,
         message_id_on: bool = False,
+        stream_between_nodes: bool = False,
+        buffer_strategy: Literal["all", "line", "tokens"] = "line",
+        buffer_token_count: int = 100,
     ):
         """
         Initialize the AgentRearrange system.
@@ -132,6 +144,25 @@ class AgentRearrange:
                 Defaults to False.
             message_id_on (bool): Whether to include message IDs in conversations.
                 Defaults to False.
+            stream_between_nodes (bool): When ``True``, downstream agents in a
+                sequential flow begin generating from partial upstream output
+                rather than waiting for the upstream agent to finish.  Only
+                takes effect through ``arun_stream`` / ``run_stream``; the
+                synchronous ``run()`` path is unaffected.  Defaults to
+                ``False``.
+            buffer_strategy (Literal["all", "line", "tokens"]): Controls when
+                upstream output is flushed to the downstream agent.
+
+                - ``"all"``    – flush only after the upstream agent finishes
+                  (same as ``stream_between_nodes=False``, no pipeline benefit).
+                - ``"line"``   – flush after every newline character; downstream
+                  starts with the first complete line of upstream output.
+                - ``"tokens"`` – flush every ``buffer_token_count`` tokens.
+
+                Defaults to ``"line"``.
+            buffer_token_count (int): Number of tokens to accumulate before a
+                flush when ``buffer_strategy="tokens"``.  Ignored for other
+                strategies.  Defaults to 100.
 
         Raises:
             ValueError: If agents list is None or empty, max_loops is 0,
@@ -153,6 +184,9 @@ class AgentRearrange:
         self.autosave = autosave
         self.time_enabled = time_enabled
         self.message_id_on = message_id_on
+        self.stream_between_nodes = stream_between_nodes
+        self.buffer_strategy = buffer_strategy
+        self.buffer_token_count = buffer_token_count
 
         self.conversation = Conversation(
             name=f"{self.name}-Conversation",
@@ -1057,6 +1091,145 @@ class AgentRearrange:
         for name in agent_names:
             self.conversation.add(name, "".join(results[name]))
 
+    async def _buffer_upstream(
+        self,
+        upstream_gen: AsyncGenerator,
+        strategy: str,
+        token_count: int,
+    ) -> AsyncGenerator:
+        """Yield the growing upstream context string at each flush point.
+
+        Each yielded value is the **full accumulated upstream text so far**
+        (not just the new delta), so downstream agents always receive a
+        coherent, non-truncated prompt.
+
+        Args:
+            upstream_gen: Async generator yielding raw token strings from the
+                upstream agent.
+            strategy: One of ``"all"``, ``"line"``, or ``"tokens"``.
+            token_count: Flush interval used when ``strategy="tokens"``.
+
+        Yields:
+            str: Accumulated upstream text at each flush point.
+        """
+        accumulated: List[str] = []
+        token_buf: List[str] = []
+        token_buf_count = 0
+
+        async for token in upstream_gen:
+            accumulated.append(token)
+
+            if strategy == "line":
+                token_buf.append(token)
+                if "\n" in token:
+                    yield "".join(accumulated)
+                    token_buf = []
+            elif strategy == "tokens":
+                token_buf_count += 1
+                if token_buf_count >= token_count:
+                    yield "".join(accumulated)
+                    token_buf_count = 0
+            # "all" — no intermediate flushes
+
+        # Final flush — always yield the complete accumulated text
+        if accumulated:
+            yield "".join(accumulated)
+
+    async def _run_pipeline_stream(
+        self,
+        agent_name: str,
+        tasks: List[str],
+        task_idx: int,
+        upstream_context: str,
+        img: Optional[str],
+        with_events: bool,
+        **kwargs,
+    ) -> AsyncGenerator:
+        """Run one sequential step with pipeline streaming.
+
+        The upstream context is the full accumulated text from all prior steps.
+        This method streams the current agent's tokens to the caller while
+        simultaneously buffering them so the *next* step can start as soon as
+        the first flush arrives.
+
+        When the agent does not expose ``arun_stream``, execution falls back to
+        the synchronous ``agent.run()`` call so the pipeline degrades
+        gracefully.
+
+        Args:
+            agent_name: Name of the agent to run.
+            tasks: Full ordered list of flow steps (used for awareness info).
+            task_idx: Index of the current step within ``tasks``.
+            upstream_context: Full conversation string fed as this agent's input.
+            img: Optional image path forwarded to the agent.
+            with_events: If True, yield structured event dicts; otherwise yield
+                ``(agent_name, token)`` tuples.
+
+        Yields:
+            Tokens or event dicts, matching the ``arun_stream`` output contract.
+        """
+        agent = self.agents[agent_name]
+
+        awareness_info = self._get_sequential_awareness(
+            agent_name, tasks, task_idx=task_idx
+        )
+        if awareness_info:
+            self.conversation.add("system", awareness_info)
+
+        # Fallback: agent doesn't support streaming
+        if not hasattr(agent, "arun_stream"):
+            if with_events:
+                yield {"type": "agent_start", "agent": agent_name}
+            run_kwargs = {"task": upstream_context}
+            if img is not None:
+                run_kwargs["img"] = img
+            run_kwargs.update(kwargs)
+            output = agent.run(**run_kwargs)
+            self.conversation.add(agent_name, output or "")
+            if with_events:
+                yield {
+                    "type": "token",
+                    "agent": agent_name,
+                    "token": output or "",
+                }
+                yield {
+                    "type": "agent_end",
+                    "agent": agent_name,
+                    "output": output or "",
+                }
+            else:
+                yield (agent_name, output or "")
+            return
+
+        if with_events:
+            yield {"type": "agent_start", "agent": agent_name}
+
+        run_kwargs = {"task": upstream_context}
+        if img is not None:
+            run_kwargs["img"] = img
+        run_kwargs.update(kwargs)
+
+        chunks: List[str] = []
+        async for token in agent.arun_stream(**run_kwargs):
+            chunks.append(token)
+            if with_events:
+                yield {
+                    "type": "token",
+                    "agent": agent_name,
+                    "token": token,
+                }
+            else:
+                yield (agent_name, token)
+
+        output = "".join(chunks)
+        self.conversation.add(agent_name, output)
+        if with_events:
+            yield {
+                "type": "agent_end",
+                "agent": agent_name,
+                "output": output,
+            }
+
     async def arun_stream(
         self,
         task: str = None,
@@ -1089,29 +1262,269 @@ class AgentRearrange:
 
         tasks_list = self.flow.split("->")
 
-        for task_idx, task_segment in enumerate(tasks_list):
-            agent_names = [
-                name.strip() for name in task_segment.split(",")
-            ]
+        if self.stream_between_nodes:
+            # Pipeline mode: downstream agents start generating as soon as
+            # the upstream agent's first buffer flush arrives, rather than
+            # waiting for it to finish.
+            #
+            # How it works:
+            #  1. Step 0 streams; its tokens go into a shared output queue.
+            #  2. On the first buffer flush of step 0, step 1 is launched as
+            #     a concurrent asyncio.Task with the partial context so far.
+            #  3. Step 1's tokens also go into the same queue.
+            #  4. The flush-and-launch cascade continues for every subsequent
+            #     sequential pair.
+            #  5. Concurrent steps (agent1, agent2) use the standard path.
+            #
+            # Conversation integrity: each agent's *full* output is added to
+            # self.conversation when it finishes, preserving correct history.
 
-            if len(agent_names) > 1:
-                async for evt in self._run_concurrent_workflow_stream(
-                    agent_names=agent_names,
-                    img=img,
-                    with_events=with_events,
-                    **kwargs,
-                ):
-                    yield evt
-            else:
-                async for evt in self._run_sequential_workflow_stream(
-                    agent_name=agent_names[0],
-                    tasks=tasks_list,
-                    task_idx=task_idx,
-                    img=img,
-                    with_events=with_events,
-                    **kwargs,
-                ):
-                    yield evt
+            out_q: asyncio.Queue = asyncio.Queue()
+            _DONE = object()
+            _ERROR = object()
+
+            # active_count tracks tasks in-flight; incremented before
+            # create_task, decremented when _DONE lands in the queue.
+            # Safe without a lock because asyncio is single-threaded.
+            active_count = 0
+
+            # Prevents a step from being launched more than once
+            launched: Dict[int, bool] = {}
+            next_step_launched: Dict[int, bool] = {}
+
+            async def _pipeline_step(
+                step_idx: int,
+                input_context: str,
+            ) -> None:
+                """Run one step of the pipeline, feeding tokens to out_q."""
+                nonlocal active_count, launched, next_step_launched
+                task_segment = tasks_list[step_idx]
+                step_names = [
+                    n.strip() for n in task_segment.split(",")
+                ]
+
+                if len(step_names) > 1:
+                    # Concurrent sub-step: collect via standard helper,
+                    # then emit to queue.
+                    try:
+                        async for (
+                            evt
+                        ) in self._run_concurrent_workflow_stream(
+                            agent_names=step_names,
+                            img=img,
+                            with_events=with_events,
+                            **kwargs,
+                        ):
+                            await out_q.put(("evt", evt))
+                    except Exception as exc:
+                        await out_q.put((_ERROR, exc))
+                    finally:
+                        await out_q.put((_DONE, step_idx))
+                    return
+
+                agent_name = step_names[0]
+                agent = self.agents[agent_name]
+
+                awareness_info = self._get_sequential_awareness(
+                    agent_name, tasks_list, task_idx=step_idx
+                )
+                if awareness_info:
+                    self.conversation.add("system", awareness_info)
+
+                if with_events:
+                    await out_q.put(
+                        (
+                            "evt",
+                            {
+                                "type": "agent_start",
+                                "agent": agent_name,
+                            },
+                        )
+                    )
+
+                chunks: List[str] = []
+                token_since_flush = 0
+                first_flush_done = next_step_launched.get(
+                    step_idx, False
+                )
+
+                try:
+                    if not hasattr(agent, "arun_stream"):
+                        # Fallback for agents without streaming support
+                        run_kwargs_fb = {"task": input_context}
+                        if img is not None:
+                            run_kwargs_fb["img"] = img
+                        run_kwargs_fb.update(kwargs)
+                        fb_output = agent.run(**run_kwargs_fb)
+                        fb_output = fb_output or ""
+                        chunks.append(fb_output)
+                        token_event = (
+                            {
+                                "type": "token",
+                                "agent": agent_name,
+                                "token": fb_output,
+                            }
+                            if with_events
+                            else (agent_name, fb_output)
+                        )
+                        await out_q.put(("evt", token_event))
+                    else:
+                        run_kwargs_p = {"task": input_context}
+                        if img is not None:
+                            run_kwargs_p["img"] = img
+                        run_kwargs_p.update(kwargs)
+
+                        async for token in agent.arun_stream(
+                            **run_kwargs_p
+                        ):
+                            chunks.append(token)
+                            token_since_flush += 1
+
+                            token_event = (
+                                {
+                                    "type": "token",
+                                    "agent": agent_name,
+                                    "token": token,
+                                }
+                                if with_events
+                                else (agent_name, token)
+                            )
+                            await out_q.put(("evt", token_event))
+                            await asyncio.sleep(0)
+
+                            # Buffer flush — launch next sequential step early
+                            if not first_flush_done:
+                                should_flush = (
+                                    self.buffer_strategy == "line"
+                                    and "\n" in token
+                                ) or (
+                                    self.buffer_strategy == "tokens"
+                                    and token_since_flush
+                                    >= self.buffer_token_count
+                                )
+                                if should_flush:
+                                    first_flush_done = True
+                                    next_step_launched[step_idx] = (
+                                        True
+                                    )
+                                    next_idx = step_idx + 1
+                                    if next_idx < len(tasks_list):
+                                        next_seg = tasks_list[
+                                            next_idx
+                                        ]
+                                        next_names = [
+                                            n.strip()
+                                            for n in next_seg.split(
+                                                ","
+                                            )
+                                        ]
+                                        if (
+                                            len(next_names) == 1
+                                            and next_idx
+                                            not in launched
+                                        ):
+                                            partial = "".join(chunks)
+                                            partial_ctx = (
+                                                input_context
+                                                + "\n"
+                                                + partial
+                                            )
+                                            launched[next_idx] = True
+                                            active_count += 1
+                                            asyncio.create_task(
+                                                _pipeline_step(
+                                                    next_idx,
+                                                    partial_ctx,
+                                                )
+                                            )
+                                    token_since_flush = 0
+
+                    output = "".join(chunks)
+                    self.conversation.add(agent_name, output)
+
+                    if with_events:
+                        await out_q.put(
+                            (
+                                "evt",
+                                {
+                                    "type": "agent_end",
+                                    "agent": agent_name,
+                                    "output": output,
+                                },
+                            )
+                        )
+
+                    # If next step was NOT launched early (strategy="all" or
+                    # no flush triggered), launch it now the normal way.
+                    next_idx = step_idx + 1
+                    if (
+                        next_idx < len(tasks_list)
+                        and next_idx not in launched
+                    ):
+                        launched[next_idx] = True
+                        active_count += 1
+                        asyncio.create_task(
+                            _pipeline_step(
+                                next_idx,
+                                self.conversation.get_str(),
+                            )
+                        )
+
+                except Exception as exc:
+                    await out_q.put((_ERROR, exc))
+                finally:
+                    await out_q.put((_DONE, step_idx))
+
+            # Boot the first step
+            launched[0] = True
+            active_count += 1
+            asyncio.create_task(
+                _pipeline_step(0, self.conversation.get_str())
+            )
+
+            # Drain until all in-flight steps signal done
+            error: Optional[Exception] = None
+            while active_count > 0:
+                kind, payload = await out_q.get()
+                if kind is _DONE:
+                    active_count -= 1
+                elif kind is _ERROR:
+                    error = payload
+                    break
+                else:
+                    yield payload
+
+            if error is not None:
+                raise error
+
+        else:
+            for task_idx, task_segment in enumerate(tasks_list):
+                agent_names = [
+                    name.strip() for name in task_segment.split(",")
+                ]
+
+                if len(agent_names) > 1:
+                    async for (
+                        evt
+                    ) in self._run_concurrent_workflow_stream(
+                        agent_names=agent_names,
+                        img=img,
+                        with_events=with_events,
+                        **kwargs,
+                    ):
+                        yield evt
+                else:
+                    async for (
+                        evt
+                    ) in self._run_sequential_workflow_stream(
+                        agent_name=agent_names[0],
+                        tasks=tasks_list,
+                        task_idx=task_idx,
+                        img=img,
+                        with_events=with_events,
+                        **kwargs,
+                    ):
+                        yield evt
 
     def run_stream(
         self,
