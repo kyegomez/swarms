@@ -225,7 +225,9 @@ class NetworkXBackend(GraphBackend):
             NetworkXBackend: A new backend instance with reversed edges.
         """
         reversed_backend = NetworkXBackend()
-        reversed_backend.graph = self.graph.reverse()
+        # copy=False avoids deepcopy of node attributes, which fails for
+        # Agent objects that hold unpicklable thread locks.
+        reversed_backend.graph = self.graph.reverse(copy=False)
         return reversed_backend
 
     def topological_generations(self) -> List[List[str]]:
