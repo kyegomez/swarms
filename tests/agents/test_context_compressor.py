@@ -58,7 +58,7 @@ class TestInit:
         assert cc.summarizer_max_tokens == 4000
         assert cc.summarizer_model is None
 
-    @pytest.mark.parametrize("bad", [0, -0.1, 1.1, -1, 0.0])
+    @pytest.mark.parametrize("bad", [0.0, -0.1, 1.1, -1])
     def test_invalid_threshold_raises(self, bad):
         with pytest.raises(ValueError, match="threshold must be in"):
             ContextCompressor(threshold=bad)
@@ -369,6 +369,7 @@ class TestIntegration:
         conv = Conversation(
             system_prompt="You are a helpful assistant.",
             memory_md_path=memory_path,
+            conversations_dir=str(tmp_path),
             time_enabled=False,
             token_count=False,
         )
@@ -407,13 +408,24 @@ class TestIntegration:
         # Raw user/assistant turns should be gone
         assert "What is 2+2?" not in full_text
 
-        # MEMORY.md must have been re-created (wiped + re-seeded)
+        # MEMORY.md must have been wiped and re-seeded with summary content
         import os
 
         assert os.path.exists(memory_path)
+        with open(memory_path, "r", encoding="utf-8") as f:
+            memory_text = f.read()
+        assert "[Compressed Memory Summary]" in memory_text
+        assert raw_summary in memory_text
+        assert "What is 2+2?" not in memory_text
+        assert "It is 4." not in memory_text
+        assert "What about 3+3?" not in memory_text
+        assert "That is 6." not in memory_text
 
-        # Archive dir should exist with at least one history file
+        # Archive dir must exist and contain at least one history_*.md file
         archive_dir = str(tmp_path / "archive")
-        if os.path.exists(archive_dir):
-            archives = os.listdir(archive_dir)
-            assert any("history_" in f for f in archives)
+        assert os.path.exists(archive_dir)
+        archives = os.listdir(archive_dir)
+        assert any(
+            f.startswith("history_") and f.endswith(".md")
+            for f in archives
+        )
