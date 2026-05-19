@@ -13,3 +13,6 @@ requests
 litellm==1.76.1
 mcp
 schedule
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-exporter-otlp

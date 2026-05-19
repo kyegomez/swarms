@@ -9,6 +9,7 @@ from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
 from swarms.structs.swarm_id import swarm_id
 from swarms.telemetry.main import log_agent_data
+from swarms.telemetry.open_telemetry import trace_method
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -694,6 +695,7 @@ class AgentRearrange:
 
         raise e
 
+    @trace_method("swarms.agent_rearrange.run")
     def run(
         self,
         task: str = None,

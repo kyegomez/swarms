@@ -16,6 +16,7 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
+from swarms.telemetry.open_telemetry import trace_method
 
 
 class HandOffsResponse(BaseModel):
@@ -335,6 +336,7 @@ class MultiAgentRouter:
             )
             raise
 
+    @trace_method("swarms.multi_agent_router.run")
     def run(self, task: str):
         """Route a task to the appropriate agent and return the result"""
         return self.route_task(task)

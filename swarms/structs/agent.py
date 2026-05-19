@@ -96,6 +96,7 @@ from swarms.structs.transforms import (
     handle_transforms,
 )
 from swarms.telemetry.main import log_agent_data
+from swarms.telemetry.open_telemetry import trace_method
 from swarms.tools.base_tool import BaseTool
 from swarms.tools.handoffs_tool import handoff_task
 from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
@@ -4089,6 +4090,7 @@ Subtask Breakdown:
                 "".join(thinking_parts), title=title
             )
 
+    @trace_method("swarms.agent.call_llm")
     def call_llm(
         self,
         task: str,
@@ -4687,6 +4689,7 @@ Subtask Breakdown:
                     )
         return None
 
+    @trace_method("swarms.agent.run")
     def run(
         self,
         task: Optional[Union[str, Any]] = None,

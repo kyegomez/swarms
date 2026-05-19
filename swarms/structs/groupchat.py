@@ -16,6 +16,7 @@ from swarms.utils.history_output_formatter import (
 from swarms.prompts.multi_agent_collab_prompt import (
     MULTI_AGENT_COLLAB_PROMPT_TWO,
 )
+from swarms.telemetry.open_telemetry import trace_method
 
 SpeakerFunction = Callable[[List[str], "Agent"], bool]
 
@@ -1266,6 +1267,7 @@ class GroupChat:
         # Get response from the randomly selected agent
         self._get_agent_response(random_agent, img, imgs)
 
+    @trace_method("swarms.groupchat.run")
     def run(
         self,
         task: str,
