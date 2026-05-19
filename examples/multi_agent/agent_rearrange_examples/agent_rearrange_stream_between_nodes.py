@@ -18,7 +18,12 @@ Run:
     python examples/multi_agent/agent_rearrange_examples/agent_rearrange_stream_between_nodes.py
 """
 
+import sys
 import time
+
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8")
+
 from swarms import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
 

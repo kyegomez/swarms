@@ -1,7 +1,7 @@
 """
 Tests for AgentRearrange stream_between_nodes pipeline feature.
 
-All tests use real Agent objects backed by a live LLM (gpt-5.4).
+All tests use real Agent objects backed by a live LLM (claude-sonnet-4-5).
 No mocks are used for the agents themselves; the pipeline mechanics
 are exercised end-to-end through arun_stream / run_stream.
 """

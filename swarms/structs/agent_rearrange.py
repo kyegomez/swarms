@@ -4,7 +4,6 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from typing import (
     Any,
-    AsyncGenerator,
     Callable,
     Dict,
     List,
@@ -185,6 +184,15 @@ class AgentRearrange:
         self.time_enabled = time_enabled
         self.message_id_on = message_id_on
         self.stream_between_nodes = stream_between_nodes
+        if buffer_strategy not in {"all", "line", "tokens"}:
+            raise ValueError(
+                f"buffer_strategy must be one of {{'all', 'line', 'tokens'}}, "
+                f"got {buffer_strategy!r}"
+            )
+        if buffer_strategy == "tokens" and buffer_token_count <= 0:
+            raise ValueError(
+                "buffer_token_count must be > 0 when buffer_strategy='tokens'"
+            )
         self.buffer_strategy = buffer_strategy
         self.buffer_token_count = buffer_token_count
 
@@ -1091,145 +1099,6 @@ class AgentRearrange:
         for name in agent_names:
             self.conversation.add(name, "".join(results[name]))
 
-    async def _buffer_upstream(
-        self,
-        upstream_gen: AsyncGenerator,
-        strategy: str,
-        token_count: int,
-    ) -> AsyncGenerator:
-        """Yield the growing upstream context string at each flush point.
-
-        Each yielded value is the **full accumulated upstream text so far**
-        (not just the new delta), so downstream agents always receive a
-        coherent, non-truncated prompt.
-
-        Args:
-            upstream_gen: Async generator yielding raw token strings from the
-                upstream agent.
-            strategy: One of ``"all"``, ``"line"``, or ``"tokens"``.
-            token_count: Flush interval used when ``strategy="tokens"``.
-
-        Yields:
-            str: Accumulated upstream text at each flush point.
-        """
-        accumulated: List[str] = []
-        token_buf: List[str] = []
-        token_buf_count = 0
-
-        async for token in upstream_gen:
-            accumulated.append(token)
-
-            if strategy == "line":
-                token_buf.append(token)
-                if "\n" in token:
-                    yield "".join(accumulated)
-                    token_buf = []
-            elif strategy == "tokens":
-                token_buf_count += 1
-                if token_buf_count >= token_count:
-                    yield "".join(accumulated)
-                    token_buf_count = 0
-            # "all" — no intermediate flushes
-
-        # Final flush — always yield the complete accumulated text
-        if accumulated:
-            yield "".join(accumulated)
-
-    async def _run_pipeline_stream(
-        self,
-        agent_name: str,
-        tasks: List[str],
-        task_idx: int,
-        upstream_context: str,
-        img: Optional[str],
-        with_events: bool,
-        **kwargs,
-    ) -> AsyncGenerator:
-        """Run one sequential step with pipeline streaming.
-
-        The upstream context is the full accumulated text from all prior steps.
-        This method streams the current agent's tokens to the caller while
-        simultaneously buffering them so the *next* step can start as soon as
-        the first flush arrives.
-
-        When the agent does not expose ``arun_stream``, execution falls back to
-        the synchronous ``agent.run()`` call so the pipeline degrades
-        gracefully.
-
-        Args:
-            agent_name: Name of the agent to run.
-            tasks: Full ordered list of flow steps (used for awareness info).
-            task_idx: Index of the current step within ``tasks``.
-            upstream_context: Full conversation string fed as this agent's input.
-            img: Optional image path forwarded to the agent.
-            with_events: If True, yield structured event dicts; otherwise yield
-                ``(agent_name, token)`` tuples.
-
-        Yields:
-            Tokens or event dicts, matching the ``arun_stream`` output contract.
-        """
-        agent = self.agents[agent_name]
-
-        awareness_info = self._get_sequential_awareness(
-            agent_name, tasks, task_idx=task_idx
-        )
-        if awareness_info:
-            self.conversation.add("system", awareness_info)
-
-        # Fallback: agent doesn't support streaming
-        if not hasattr(agent, "arun_stream"):
-            if with_events:
-                yield {"type": "agent_start", "agent": agent_name}
-            run_kwargs = {"task": upstream_context}
-            if img is not None:
-                run_kwargs["img"] = img
-            run_kwargs.update(kwargs)
-            output = agent.run(**run_kwargs)
-            self.conversation.add(agent_name, output or "")
-            if with_events:
-                yield {
-                    "type": "token",
-                    "agent": agent_name,
-                    "token": output or "",
-                }
-                yield {
-                    "type": "agent_end",
-                    "agent": agent_name,
-                    "output": output or "",
-                }
-            else:
-                yield (agent_name, output or "")
-            return
-
-        if with_events:
-            yield {"type": "agent_start", "agent": agent_name}
-
-        run_kwargs = {"task": upstream_context}
-        if img is not None:
-            run_kwargs["img"] = img
-        run_kwargs.update(kwargs)
-
-        chunks: List[str] = []
-        async for token in agent.arun_stream(**run_kwargs):
-            chunks.append(token)
-            if with_events:
-                yield {
-                    "type": "token",
-                    "agent": agent_name,
-                    "token": token,
-                }
-            else:
-                yield (agent_name, token)
-
-        output = "".join(chunks)
-        self.conversation.add(agent_name, output)
-        if with_events:
-            yield {
-                "type": "agent_end",
-                "agent": agent_name,
-                "output": output,
-            }
-
     async def arun_stream(
         self,
         task: str = None,
@@ -1304,8 +1173,9 @@ class AgentRearrange:
                 ]
 
                 if len(step_names) > 1:
-                    # Concurrent sub-step: collect via standard helper,
-                    # then emit to queue.
+                    # Concurrent sub-step: stream via standard helper, then
+                    # chain to the next sequential step once outputs are
+                    # committed to self.conversation.
                     try:
                         async for (
                             evt
@@ -1316,6 +1186,20 @@ class AgentRearrange:
                             **kwargs,
                         ):
                             await out_q.put(("evt", evt))
+                        # Chain to next step now that conversation is updated
+                        next_idx = step_idx + 1
+                        if (
+                            next_idx < len(tasks_list)
+                            and next_idx not in launched
+                        ):
+                            launched[next_idx] = True
+                            active_count += 1
+                            asyncio.create_task(
+                                _pipeline_step(
+                                    next_idx,
+                                    self.conversation.get_str(),
+                                )
+                            )
                     except Exception as exc:
                         await out_q.put((_ERROR, exc))
                     finally:
