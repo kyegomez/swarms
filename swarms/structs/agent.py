@@ -96,6 +96,7 @@ from swarms.structs.transforms import (
     handle_transforms,
 )
 from swarms.telemetry.main import log_agent_data
+from swarms.telemetry.opentelemetry import start_span
 from swarms.tools.base_tool import BaseTool
 from swarms.tools.handoffs_tool import handoff_task
 from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
@@ -4211,17 +4212,31 @@ Subtask Breakdown:
         if "is_last" in kwargs:
             del kwargs["is_last"]
 
+        span_attributes = {
+            "agent.name": self.agent_name,
+            "agent.id": self.id,
+            "agent.model": self.get_current_model(),
+            "agent.loop": current_loop,
+            "agent.has_image": img is not None,
+        }
+
+        def _run_llm_with_span(**run_kwargs):
+            with start_span(
+                "agent.llm.call", attributes=span_attributes
+            ):
+                return self.llm.run(**run_kwargs)
+
         try:
             if self.stream and hasattr(self.llm, "stream"):
                 original_stream = self.llm.stream
                 self.llm.stream = True
 
                 if img is not None:
-                    streaming_response = self.llm.run(
+                    streaming_response = _run_llm_with_span(
                         task=task, img=img, *args, **kwargs
                     )
                 else:
-                    streaming_response = self.llm.run(
+                    streaming_response = _run_llm_with_span(
                         task=task, *args, **kwargs
                     )
 
@@ -4363,11 +4378,11 @@ Subtask Breakdown:
                 self.llm.stream = True
 
                 if img is not None:
-                    streaming_response = self.llm.run(
+                    streaming_response = _run_llm_with_span(
                         task=task, img=img, *args, **kwargs
                     )
                 else:
-                    streaming_response = self.llm.run(
+                    streaming_response = _run_llm_with_span(
                         task=task, *args, **kwargs
                     )
 
@@ -4506,7 +4521,7 @@ Subtask Breakdown:
                 if img is not None:
                     args["img"] = img
 
-                out = self.llm.run(**args, **kwargs)
+                out = _run_llm_with_span(**args, **kwargs)
 
                 return out
 

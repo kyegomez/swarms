@@ -4,10 +4,12 @@ from swarms.telemetry.main import (
     get_comprehensive_system_info,
     log_agent_data,
 )
+from swarms.telemetry.opentelemetry import start_span
 
 __all__ = [
     "generate_user_id",
     "get_machine_id",
     "get_comprehensive_system_info",
     "log_agent_data",
+    "start_span",
 ]
