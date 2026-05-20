@@ -721,7 +721,7 @@ class GraphWorkflow:
         task (str): The task to be executed by the workflow.
         _compiled (bool): Whether the graph has been compiled for optimization.
         _sorted_layers (List[List[str]]): Pre-computed topological layers for faster execution.
-        _max_workers (int): Pre-computed max workers for thread pool.
+        _max_workers (int): Maximum nodes executed concurrently. Set from max_parallel_nodes if provided, otherwise int(get_cpu_cores() * 0.95) with a minimum of 1.
         verbose (bool): Whether to enable verbose logging.
     """
 
@@ -743,6 +743,7 @@ class GraphWorkflow:
         backend: str = "networkx",
         checkpoint_dir: Optional[str] = None,
         on_node_complete: Optional[Callable[[str, Any], None]] = None,
+        max_parallel_nodes: Optional[int] = None,
     ):
         self.id = id
         self.verbose = verbose
@@ -787,7 +788,12 @@ class GraphWorkflow:
         # Private optimization attributes
         self._compiled = False
         self._sorted_layers = []
-        self._max_workers = max(1, int(get_cpu_cores() * 0.95))
+        self.max_parallel_nodes = max_parallel_nodes
+        self._max_workers = (
+            max(1, max_parallel_nodes)
+            if max_parallel_nodes is not None
+            else max(1, int(get_cpu_cores() * 0.95))
+        )
         self._compilation_timestamp = None
 
         if self.verbose:
