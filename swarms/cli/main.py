@@ -17,9 +17,11 @@ error handling, progress feedback, and user-friendly output formatting.
 """
 
 import argparse
+import difflib
 import getpass
 import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -54,6 +56,36 @@ from swarms.structs.llm_council import LLMCouncil
 from swarms.utils.formatter import formatter
 
 load_swarms_env()
+
+
+# Single source of truth for valid CLI commands. Used by argparse for
+# strict validation and by the typo-correction pre-check in main() to
+# suggest the closest match when a user mistypes a command.
+COMMAND_CHOICES: List[str] = [
+    "init",
+    "onboarding",
+    "get-api-key",
+    "check-login",
+    "run-agents",
+    "load-markdown",
+    "agent",
+    "chat",
+    "upgrade",
+    "autoswarm",
+    "setup-check",
+    "llm-council",
+    "heavy-swarm",
+    "tips",
+    "models",
+]
+
+
+def _suggest_command(typed: str) -> Optional[str]:
+    """Return the closest valid command, or None if nothing is close enough."""
+    matches = difflib.get_close_matches(
+        typed, COMMAND_CHOICES, n=1, cutoff=0.5
+    )
+    return matches[0] if matches else None
 
 
 def run_autoswarm(
@@ -942,26 +974,11 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         action=CustomHelpAction,
         help="Show this help message and exit",
     )
-    command_choices = [
-        "init",
-        "onboarding",
-        "get-api-key",
-        "check-login",
-        "run-agents",
-        "load-markdown",
-        "agent",
-        "chat",
-        "upgrade",
-        "autoswarm",
-        "setup-check",
-        "llm-council",
-        "heavy-swarm",
-    ]
     parser.add_argument(
         "command",
         metavar="COMMAND",
-        choices=command_choices,
-        help=f"Command to execute. Available commands: {', '.join(command_choices)}",
+        choices=COMMAND_CHOICES,
+        help=f"Command to execute. Available commands: {', '.join(COMMAND_CHOICES)}",
     )
     parser.add_argument(
         "--yaml-file",
@@ -1158,6 +1175,44 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         type=str,
         default=None,
         help="Directory for 'swarms init' (default: prompted interactively)",
+    )
+    # Tips command arguments
+    parser.add_argument(
+        "--count",
+        type=int,
+        default=1,
+        help="Number of tips to show (used with 'swarms tips')",
+    )
+    parser.add_argument(
+        "--category",
+        type=str,
+        default=None,
+        help="Restrict tips to a category: commands, agents, swarms, models, pro, trivia, env, community",
+    )
+    parser.add_argument(
+        "--all",
+        dest="all_tips",
+        action="store_true",
+        help="Show every tip in the selected category (or every category when no --category is given)",
+    )
+    # Models command arguments
+    parser.add_argument(
+        "--search",
+        type=str,
+        default=None,
+        help="Fuzzy-search the model list (used with 'swarms models')",
+    )
+    parser.add_argument(
+        "--info",
+        type=str,
+        default=None,
+        help="Show full metadata for a single model (used with 'swarms models')",
+    )
+    parser.add_argument(
+        "--provider",
+        type=str,
+        default=None,
+        help="Restrict 'swarms models' to one provider (e.g. openai, anthropic)",
     )
     return parser
 
@@ -1998,6 +2053,81 @@ def handle_init(args: argparse.Namespace) -> None:
             )
         )
 
+    # Contextual next-step tip
+    from swarms.cli.tips import render_tip
+
+    console.print()
+    console.print(render_tip(category="commands"))
+    console.print()
+
+
+def handle_tips(args: argparse.Namespace) -> None:
+    """
+    Display random tips & tricks for the Swarms CLI.
+
+    Flags:
+        --count N       Show N random tips (default: 1).
+        --category CAT  Restrict to one category (e.g. agents, swarms, pro).
+        --all           Show every tip in the (optionally filtered) pool.
+    """
+    from swarms.cli.tips import (
+        TIP_CATEGORIES,
+        list_categories,
+        render_random_tips,
+        render_tip,
+    )
+
+    category = getattr(args, "category", None)
+    show_all = getattr(args, "all_tips", False)
+    n = max(1, getattr(args, "count", 1) or 1)
+
+    try:
+        if show_all:
+            categories = [category] if category else list_categories()
+            for cat in categories:
+                console.print(f"\n[bold red]── {cat} ──[/bold red]")
+                for tip_body in TIP_CATEGORIES[cat]:
+                    console.print(render_tip(body=tip_body))
+            return
+
+        for line in render_random_tips(n=n, category=category):
+            console.print(line)
+    except ValueError as e:
+        show_error(
+            "Unknown tip category",
+            f"{e}\nRun 'swarms tips' with no --category to see a random tip from any pool.",
+        )
+
+
+def handle_models(args: argparse.Namespace) -> None:
+    """
+    Discover and inspect LLM models available via LiteLLM.
+
+    Flags:
+        --search PATTERN   Fuzzy-match against the model list.
+        --info NAME        Show full metadata for one model.
+        --provider NAME    Filter the list to one provider.
+
+    With no flag, prints every model grouped by provider.
+    """
+    from swarms.cli.models import (
+        list_models,
+        search_models,
+        show_model_info,
+    )
+
+    info_name = getattr(args, "info", None)
+    search_pattern = getattr(args, "search", None)
+    provider = getattr(args, "provider", None)
+
+    if info_name:
+        show_model_info(console, info_name)
+        return
+    if search_pattern:
+        search_models(console, search_pattern)
+        return
+    list_models(console, provider=provider)
+
 
 def route_command(args: argparse.Namespace) -> None:
     """
@@ -2035,6 +2165,8 @@ def route_command(args: argparse.Namespace) -> None:
         ),
         "llm-council": handle_llm_council,
         "heavy-swarm": handle_heavy_swarm,
+        "tips": handle_tips,
+        "models": handle_models,
     }
 
     handler = command_handlers.get(args.command)
@@ -2045,6 +2177,95 @@ def route_command(args: argparse.Namespace) -> None:
             "Unknown command",
             f"Command '{args.command}' is not recognized. Use 'swarms help' to see available commands.",
         )
+
+
+def _classify_command_error(message: str) -> List[str]:
+    """
+    Inspect an exception message and return a list of targeted recovery hints.
+
+    Matches are case-insensitive and additive: multiple hints can fire for a
+    single error (e.g. a missing-key error that also mentions a stale model).
+    """
+    err = message.lower()
+    hints: List[str] = []
+
+    if (
+        "401" in err
+        or "unauthorized" in err
+        or "authenticationerror" in err
+        or "invalid api key" in err
+        or "missing api key" in err
+    ):
+        hints.append(
+            "Authentication failed — set your provider key in [bold]swarms init[/bold] "
+            "or get one via [bold]swarms get-api-key[/bold]"
+        )
+
+    if (
+        "model not found" in err
+        or "model_not_found" in err
+        or ("model" in err and "does not exist" in err)
+    ):
+        hints.append(
+            "Find a valid model with [bold]swarms models --search <name>[/bold] "
+            "or list them all with [bold]swarms models[/bold]"
+        )
+
+    if "workspace_dir" in err or "workspace directory" in err:
+        hints.append(
+            "Workspace not configured — run [bold]swarms init[/bold] to scaffold one"
+        )
+
+    if "rate limit" in err or "ratelimit" in err or "429" in err:
+        hints.append(
+            "Rate-limited by provider — slow down, use a smaller model with "
+            "[bold]--model-name[/bold], or retry in a minute"
+        )
+
+    if (
+        "connection" in err
+        or "timeout" in err
+        or "timed out" in err
+        or "network" in err
+    ):
+        hints.append(
+            "Network issue — check connectivity, then run [bold]swarms setup-check --verbose[/bold]"
+        )
+
+    if "modulenotfounderror" in err or "no module named" in err:
+        hints.append(
+            "Missing dependency — try [bold]swarms upgrade[/bold] or "
+            "[bold]pip install -U swarms[/bold]"
+        )
+
+    return hints
+
+
+def _show_command_error(error: Exception) -> None:
+    """Render a command-execution error with classified recovery hints."""
+    hints = _classify_command_error(str(error))
+
+    hint_block = ""
+    if hints:
+        hint_block = (
+            "[bold white]Suggested next steps:[/bold white]\n"
+            + "\n".join(f"  • {h}" for h in hints)
+        )
+    else:
+        hint_block = (
+            "[bold white]Troubleshooting tips:[/bold white]\n"
+            "- Double-check your arguments and the command structure\n"
+            "- Try [bold]swarms --help[/bold] for command details\n"
+            "- Run [bold]swarms setup-check --verbose[/bold] to validate your environment\n"
+            "- Report bugs at https://github.com/kyegomez/swarms/issues"
+        )
+
+    console.print(
+        f"\n[{COLORS['error']}]Oops! An unexpected error occurred while running your command:[/{COLORS['error']}]\n"
+        f"[bold]{rich_escape(str(error))}[/bold]\n\n"
+        f"{hint_block}\n\n"
+        f"[dim]Traceback:[/dim]\n{rich_escape(traceback.format_exc())}"
+    )
 
 
 def main() -> None:
@@ -2076,21 +2297,34 @@ def main() -> None:
     try:
         show_ascii_art()
 
+        # Typo correction: catch mistyped command name before argparse
+        # rejects it with a generic "invalid choice" error.
+        if (
+            len(sys.argv) > 1
+            and not sys.argv[1].startswith("-")
+            and sys.argv[1] not in COMMAND_CHOICES
+        ):
+            typed = sys.argv[1]
+            suggestion = _suggest_command(typed)
+            hint = (
+                f"\nDid you mean [bold white]swarms {suggestion}[/bold white]?"
+                if suggestion
+                else ""
+            )
+            show_error(
+                f"Unknown command '{typed}'",
+                f"Available commands: {', '.join(COMMAND_CHOICES)}{hint}\n"
+                f"Run [bold white]swarms --help[/bold white] for full usage.",
+            )
+            return
+
         parser = setup_argument_parser()
         args = parser.parse_args()
 
         try:
             route_command(args)
         except Exception as e:
-            console.print(
-                f"\n[{COLORS['error']}]Oops! An unexpected error occurred while running your command:[/{COLORS['error']}]\n"
-                f"[bold]{rich_escape(str(e))}[/bold]\n\n"
-                "[bold white]Troubleshooting tips:[/bold white]\n"
-                "- Double-check your arguments and the command structure\n"
-                "- Try 'swarms help' for command details and examples\n"
-                "- If the issue persists, please report it at https://github.com/OpenAgentsInc/swarms/issues\n\n"
-                f"[dim]Traceback:[/dim]\n{rich_escape(traceback.format_exc())}"
-            )
+            _show_command_error(e)
             return
     except Exception as error:
         formatter.print_panel(

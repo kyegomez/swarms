@@ -12,8 +12,6 @@ import webbrowser
 from pathlib import Path
 from typing import Optional, Tuple
 
-import random
-
 from rich.align import Align
 from rich.console import Console, Group
 from rich.panel import Panel
@@ -22,6 +20,7 @@ from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
 
+from swarms.cli.tips import render_tip
 from swarms.utils.workspace_utils import get_workspace_dir
 
 # Initialize console with custom styling
@@ -97,45 +96,6 @@ def show_ascii_art():
     cwd = str(Path.cwd()).replace(str(Path.home()), "~")
     provider = _detect_active_provider()
 
-    # ── Pre-header startup tip ───────────────────────────────────────────────
-    startup_tips = [
-        # Commands
-        "New project? Run [bold]swarms init[/bold] to scaffold .env and workspace",
-        "Start chatting instantly with [bold]swarms chat[/bold]",
-        "Verify your setup anytime with [bold]swarms setup-check[/bold]",
-        "See every command with [bold]swarms --help[/bold]",
-        "Auto-build a swarm with [bold]swarms autoswarm --task '...'[/bold]",
-        "Deep multi-agent analysis with [bold]swarms heavy-swarm --task '...'[/bold]",
-        "Run a multi-model debate with [bold]swarms llm-council --task '...'[/bold]",
-        "Load agents from YAML with [bold]swarms run-agents --yaml-file agents.yaml[/bold]",
-        "Load agents from markdown files with [bold]swarms load-markdown --markdown-path ./agents/[/bold]",
-        "Run a one-shot agent task with [bold]swarms agent --name '...' --task '...'[/bold]",
-        "Upgrade to the latest version with [bold]swarms upgrade[/bold]",
-        # Agent tips
-        "Pass [bold]--max-loops auto[/bold] to let an agent decide when it's done",
-        "Use [bold]--system-prompt[/bold] to give your agent a custom persona or role",
-        "Use [bold]--model-name[/bold] to switch models, e.g. [bold]gpt-4o[/bold], [bold]claude-3-5-sonnet[/bold]",
-        "Use [bold]--temperature 0.1[/bold] for more deterministic, factual agent responses",
-        "Use [bold]--temperature 0.9[/bold] for more creative, varied agent responses",
-        "Use [bold]--verbose[/bold] to see every step an agent takes in real time",
-        "Use [bold]--streaming-on[/bold] to stream agent output token by token",
-        "Use [bold]--context-length[/bold] to control how much history an agent retains",
-        "Save and resume agent state with [bold]--autosave --saved-state-path ./state.json[/bold]",
-        "Fetch a pre-built system prompt with [bold]--marketplace-prompt-id[/bold]",
-        # Swarm tips
-        "HeavySwarm spawns specialist sub-agents — great for research or code review",
-        "LLM Council runs the same task across multiple models and aggregates answers",
-        "AutoSwarm auto-generates the right swarm topology for your task",
-        "Combine [bold]--loops-per-agent[/bold] with [bold]--random-loops-per-agent[/bold] for non-deterministic swarms",
-        "Use [bold]--worker-model-name[/bold] to choose which model powers HeavySwarm workers",
-        # General
-        "Store your API keys in a [bold].env[/bold] file — swarms loads it automatically",
-        "Set [bold]WORKSPACE_DIR[/bold] to control where agents read and write files",
-        "Run [bold]swarms setup-check --verbose[/bold] to diagnose environment issues",
-        "Star the repo and contribute at [bold]https://github.com/kyegomez/swarms[/bold]",
-        "Join the community at [bold]https://discord.gg/EamjgSaEQf[/bold]",
-        "Full docs at [bold]https://docs.swarms.world[/bold]",
-    ]
     # ── Pixel-art alien icon (👾) ─────────────────────────────────────────────
     icon = Text()
     icon.append("▄     ▄\n", style="bold red")
@@ -159,42 +119,17 @@ def show_ascii_art():
     header.add_column(vertical="top")
     header.add_row(icon, info)
 
-    # ── Rotating command tip ──────────────────────────────────────────────────
-    tips = [
-        "[bold white]swarms init[/bold white] — scaffold a new project with .env and workspace",
-        "[bold white]swarms chat[/bold white] — interactive autonomous agent",
-        "[bold white]swarms agent --name '...' --task '...'[/bold white] — one-shot agent",
-        "[bold white]swarms autoswarm --task '...'[/bold white] — auto-generate a swarm",
-        "[bold white]swarms heavy-swarm --task '...'[/bold white] — deep multi-agent analysis",
-        "[bold white]swarms llm-council --task '...'[/bold white] — multi-model debate",
-        "[bold white]swarms load-markdown --markdown-path ./agents/[/bold white] — load agents",
-        "[bold white]swarms run-agents --yaml-file agents.yaml[/bold white] — run from YAML",
-        "[bold white]swarms upgrade[/bold white] — update to the latest version",
-        "[bold white]swarms setup-check --verbose[/bold white] — diagnose your environment",
-        "[bold white]--max-loops auto[/bold white] — let an agent decide when it's done",
-        "[bold white]--verbose[/bold white] — see every step an agent takes in real time",
-        "[bold white]--streaming-on[/bold white] — stream agent output token by token",
-        "[bold white]--model-name gpt-4o[/bold white] — switch models on any agent",
-        "[bold white]--temperature 0.1[/bold white] — more deterministic responses",
-        "[bold white]--autosave --saved-state-path ./state.json[/bold white] — save agent state",
-        "Store API keys in [bold white].env[/bold white] — swarms loads it automatically",
-        "Set [bold white]WORKSPACE_DIR[/bold white] to control agent file access",
-    ]
-
-    tip_line = Text.from_markup(
-        f"[bold red] ⚡[/bold red]  [dim white]{random.choice(tips)}[/dim white]"
-    )
-
-    startup_tip = Text.from_markup(
-        f"[bold red] Tip:[/bold red]  [white]{random.choice(startup_tips)}[/white]"
-    )
+    # Two rotating tips: a quick command hint inside the panel + a longer
+    # contextual tip below it. Both pull from swarms.cli.tips for variety.
+    panel_tip = render_tip(category="commands")
+    startup_tip = render_tip()
 
     # ── Panel ─────────────────────────────────────────────────────────────────
     panel_content = Group(
         header,
         Text(""),
         Rule(style="dim red"),
-        tip_line,
+        panel_tip,
     )
 
     console.print(
@@ -521,6 +456,12 @@ def run_setup_check(verbose: bool = False):
         console.print(
             "\n[dim]Run 'swarms setup-check' again after making changes to verify.[/dim]"
         )
+    else:
+        # Contextual next-step tip on success
+        from swarms.cli.tips import render_tip
+
+        console.print()
+        console.print(render_tip(category="commands"))
 
     return all_passed
 
