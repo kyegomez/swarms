@@ -2074,6 +2074,9 @@ def main() -> None:
         purposes while maintaining a clean user experience.
     """
     try:
+        # Refresh env discovery at execution time so the CLI uses
+        # the caller's current working directory.
+        load_swarms_env()
         show_ascii_art()
 
         parser = setup_argument_parser()
