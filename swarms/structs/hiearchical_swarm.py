@@ -25,7 +25,11 @@ import json
 import os
 import time
 import traceback
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    wait as cf_wait,
+    TimeoutError as ConcurrentTimeoutError,
+)
 from typing import Any, Callable, List, Optional, Union
 
 from loguru import logger
@@ -696,6 +700,9 @@ class HierarchicalSwarm:
         autosave: bool = True,
         verbose: bool = False,
         parallel_execution: bool = True,
+        worker_timeout: Optional[int] = None,
+        heartbeat_interval: int = 30,
+        max_retries: int = 2,
         agent_as_judge: bool = False,
         judge_agent_model_name: str = "gpt-5.4",
         *args,
@@ -757,6 +764,9 @@ class HierarchicalSwarm:
         self.autosave = autosave
         self.verbose = verbose
         self.parallel_execution = parallel_execution
+        self.worker_timeout = worker_timeout
+        self.heartbeat_interval = heartbeat_interval
+        self.max_retries = max_retries
         self.agent_as_judge = agent_as_judge
         self.judge_agent_model_name = judge_agent_model_name
         self.swarm_workspace_dir = None
@@ -1713,13 +1723,23 @@ class HierarchicalSwarm:
         try:
             if self.parallel_execution:
                 max_workers = max(1, int(os.cpu_count() * 0.75))
-                futures_map = {}
                 results = [None] * len(orders)
 
-                with ThreadPoolExecutor(
-                    max_workers=max_workers
-                ) as executor:
-                    for i, order in enumerate(orders):
+                # pending: (original_index, order, retry_count)
+                pending = [
+                    (i, order, 0) for i, order in enumerate(orders)
+                ]
+
+                while pending:
+                    next_pending = []
+                    # One thread per pending task so every future starts
+                    # immediately and worker_timeout is truly per-task.
+                    executor = ThreadPoolExecutor(
+                        max_workers=max(max_workers, len(pending))
+                    )
+                    future_to_meta = {}
+
+                    for idx, order, retry_count in pending:
                         if self.interactive and self.dashboard:
                             self.dashboard.update_agent_status(
                                 order.agent_name,
@@ -1734,20 +1754,79 @@ class HierarchicalSwarm:
                             streaming_callback,
                             False,  # _add_to_conversation=False
                         )
-                        futures_map[future] = (i, order)
+                        future_to_meta[future] = (
+                            idx,
+                            order,
+                            retry_count,
+                        )
 
-                    for future in as_completed(futures_map):
-                        idx, order = futures_map[future]
-                        output = future.result()
-                        results[idx] = output
+                    done, not_done = cf_wait(
+                        future_to_meta.keys(),
+                        timeout=self.worker_timeout,
+                    )
 
-                        if self.interactive and self.dashboard:
-                            self.dashboard.update_agent_status(
-                                order.agent_name,
-                                "COMPLETED",
-                                order.task,
-                                str(output),
+                    for future in done:
+                        idx, order, retry_count = future_to_meta[
+                            future
+                        ]
+                        try:
+                            output = future.result()
+                            results[idx] = output
+                            if self.interactive and self.dashboard:
+                                self.dashboard.update_agent_status(
+                                    order.agent_name,
+                                    "COMPLETED",
+                                    order.task,
+                                    str(output),
+                                )
+                        except Exception as e:
+                            logger.error(
+                                f"[ERROR] Worker '{order.agent_name}' raised: {e}\n"
+                                f"[TRACE] {traceback.format_exc()}"
                             )
+                            results[idx] = None
+
+                    for future in not_done:
+                        idx, order, retry_count = future_to_meta[
+                            future
+                        ]
+                        logger.warning(
+                            f"[TIMEOUT] Worker '{order.agent_name}' exceeded "
+                            f"{self.worker_timeout}s timeout "
+                            f"(attempt {retry_count + 1}/{self.max_retries + 1}). "
+                            f"Task: {order.task[:80]}"
+                        )
+                        if retry_count < self.max_retries:
+                            if self.interactive and self.dashboard:
+                                self.dashboard.update_agent_status(
+                                    order.agent_name,
+                                    "TIMEOUT",
+                                    order.task,
+                                    f"Timed out — retrying (attempt {retry_count + 1})",
+                                )
+                            next_pending.append(
+                                (idx, order, retry_count + 1)
+                            )
+                        else:
+                            fail_msg = (
+                                f"[FAILED] Worker '{order.agent_name}' timed out "
+                                f"after {self.max_retries + 1} attempt(s). "
+                                f"Task: {order.task[:80]}"
+                            )
+                            logger.error(fail_msg)
+                            results[idx] = fail_msg
+                            if self.interactive and self.dashboard:
+                                self.dashboard.update_agent_status(
+                                    order.agent_name,
+                                    "FAILED",
+                                    order.task,
+                                    fail_msg,
+                                )
+
+                    # Don't block on hung threads — they are daemon threads
+                    # and will be cleaned up when the process exits.
+                    executor.shutdown(wait=False)
+                    pending = next_pending
 
                 # Write outputs to conversation in submission order
                 for i, order in enumerate(orders):
@@ -1761,7 +1840,6 @@ class HierarchicalSwarm:
             else:
                 outputs = []
                 for i, order in enumerate(orders):
-                    # Update dashboard for agent execution
                     if self.interactive and self.dashboard:
                         self.dashboard.update_agent_status(
                             order.agent_name,
@@ -1770,22 +1848,76 @@ class HierarchicalSwarm:
                             "Processing...",
                         )
 
-                    output = self.call_single_agent(
-                        order.agent_name,
-                        order.task,
-                        streaming_callback=streaming_callback,
-                    )
+                    if self.worker_timeout is None:
+                        output = self.call_single_agent(
+                            order.agent_name,
+                            order.task,
+                            streaming_callback,
+                        )
+                    else:
+                        output = None
+                        for attempt in range(self.max_retries + 1):
+                            seq_executor = ThreadPoolExecutor(
+                                max_workers=1
+                            )
+                            future = seq_executor.submit(
+                                self.call_single_agent,
+                                order.agent_name,
+                                order.task,
+                                streaming_callback,
+                            )
+                            try:
+                                output = future.result(
+                                    timeout=self.worker_timeout
+                                )
+                                seq_executor.shutdown(wait=False)
+                                break
+                            except ConcurrentTimeoutError:
+                                seq_executor.shutdown(wait=False)
+                                logger.warning(
+                                    f"[TIMEOUT] Worker '{order.agent_name}' exceeded "
+                                    f"{self.worker_timeout}s timeout "
+                                    f"(attempt {attempt + 1}/{self.max_retries + 1}). "
+                                    f"Task: {order.task[:80]}"
+                                )
+                                if attempt < self.max_retries:
+                                    if (
+                                        self.interactive
+                                        and self.dashboard
+                                    ):
+                                        self.dashboard.update_agent_status(
+                                            order.agent_name,
+                                            "TIMEOUT",
+                                            order.task,
+                                            f"Timed out — retrying (attempt {attempt + 1})",
+                                        )
+                                else:
+                                    output = (
+                                        f"[FAILED] Worker '{order.agent_name}' timed out "
+                                        f"after {self.max_retries + 1} attempt(s). "
+                                        f"Task: {order.task[:80]}"
+                                    )
+                                    logger.error(output)
+                            except Exception as e:
+                                seq_executor.shutdown(wait=False)
+                                logger.error(
+                                    f"[ERROR] Worker '{order.agent_name}' raised: {e}\n"
+                                    f"[TRACE] {traceback.format_exc()}"
+                                )
+                                break
 
-                    # Update dashboard with completed status
                     if self.interactive and self.dashboard:
-                        # Always show full output without truncation
-                        output_display = str(output)
-
+                        status = (
+                            "FAILED"
+                            if isinstance(output, str)
+                            and output.startswith("[FAILED]")
+                            else "COMPLETED"
+                        )
                         self.dashboard.update_agent_status(
                             order.agent_name,
-                            "COMPLETED",
+                            status,
                             order.task,
-                            output_display,
+                            str(output),
                         )
 
                     outputs.append(output)
