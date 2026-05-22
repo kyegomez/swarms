@@ -26,7 +26,8 @@ import os
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Callable, List, Optional, Union
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -644,6 +645,40 @@ class JudgeReport(BaseModel):
     overall_quality: int = Field(..., ge=0, le=10)
     scores: List[AgentScore]
     summary: str
+    verdict: str = Field(
+        default="APPROVE",
+        description="APPROVE if the swarm output is satisfactory. REVISE if the director should replan.",
+    )
+    feedback: str = Field(
+        default="",
+        description="Actionable feedback for the director explaining what went wrong and how to fix it.",
+    )
+    failed_subtasks: List[str] = Field(
+        default_factory=list,
+        description="Agent names whose outputs failed or must be redone.",
+    )
+
+
+class ReplanActionType(str, Enum):
+    ADD = "ADD"
+    REASSIGN = "REASSIGN"
+    REORDER = "REORDER"
+    DROP = "DROP"
+
+
+class ReplanAction(BaseModel):
+    action_type: ReplanActionType = Field(
+        ...,
+        description="ADD new subtasks, REASSIGN failed ones to different agents, REORDER remaining subtasks, or DROP unnecessary ones.",
+    )
+    orders: List[HierarchicalOrder] = Field(
+        default_factory=list,
+        description="New or revised orders to execute as part of this replan.",
+    )
+    reasoning: str = Field(
+        ...,
+        description="Why this replan action was chosen and what it addresses.",
+    )
 
 
 class HierarchicalSwarm:
@@ -1196,7 +1231,65 @@ class HierarchicalSwarm:
             )
 
             if self.agent_as_judge:
-                feedback = self.run_judge_agent(outputs)
+                judge_result = self.run_judge_agent(outputs)
+                report = self._parse_judge_report(judge_result)
+
+                if (
+                    report is not None
+                    and report.verdict.upper() == "REVISE"
+                ):
+                    logger.info(
+                        f"Judge verdict: REVISE — triggering replan. "
+                        f"Failed subtasks: {report.failed_subtasks}"
+                    )
+                    # Build a result map so the director has per-agent context
+                    subtask_results = {
+                        order.agent_name: out
+                        for order, out in zip(orders, outputs)
+                        if out is not None
+                    }
+                    replan_orders = self._replan(
+                        original_task=task,
+                        judge_feedback=report.feedback,
+                        failed_subtasks=report.failed_subtasks,
+                        subtask_results=subtask_results,
+                    )
+                    if replan_orders:
+                        replan_outputs = self.execute_orders(
+                            replan_orders,
+                            streaming_callback=streaming_callback,
+                        )
+                        # Merge: keep original outputs indexed by position,
+                        # replace entries for re-run agents by order index.
+                        # Using a list (not dict) avoids silent overwrites when
+                        # the director issues multiple orders to the same agent.
+                        merged = list(outputs)
+                        replan_map = {
+                            ro.agent_name: ro_out
+                            for ro, ro_out in zip(
+                                replan_orders, replan_outputs
+                            )
+                        }
+                        for i, order in enumerate(orders):
+                            if order.agent_name in replan_map:
+                                merged[i] = replan_map[
+                                    order.agent_name
+                                ]
+                        # Append any brand-new agents not in the original orders
+                        original_names = {
+                            o.agent_name for o in orders
+                        }
+                        for ro, ro_out in zip(
+                            replan_orders, replan_outputs
+                        ):
+                            if ro.agent_name not in original_names:
+                                merged.append(ro_out)
+                        feedback = merged
+                    else:
+                        feedback = judge_result
+                else:
+                    feedback = judge_result
+
             elif self.director_feedback_on is True:
                 feedback = self.feedback_director(outputs)
             else:
@@ -1457,6 +1550,103 @@ class HierarchicalSwarm:
                 f"[ERROR] run_judge_agent failed: {str(e)}\n[TRACE] {traceback.format_exc()}"
             )
             return str(outputs)
+
+    def _parse_judge_report(
+        self, result: Any
+    ) -> Optional[JudgeReport]:
+        """Parse a judge agent result into a JudgeReport, returning None on failure."""
+        try:
+            if isinstance(result, JudgeReport):
+                return result
+            if isinstance(result, dict):
+                return JudgeReport(**result)
+            if isinstance(result, str):
+                return JudgeReport(**json.loads(result))
+        except Exception as e:
+            logger.warning(f"Could not parse JudgeReport: {e}")
+        return None
+
+    def _replan(
+        self,
+        original_task: str,
+        judge_feedback: str,
+        failed_subtasks: List[str],
+        subtask_results: Dict[str, Any],
+    ) -> List[HierarchicalOrder]:
+        """
+        Call the director to produce revised orders for failed subtasks.
+
+        The director receives the original task, judge feedback, the list of
+        failed agent names, and their previous outputs.  It returns a
+        ReplanAction whose ``orders`` are the only subtasks that will be
+        re-executed; successful subtasks are left untouched.
+
+        Args:
+            original_task: The top-level task the swarm was given.
+            judge_feedback: Actionable feedback string from the JudgeReport.
+            failed_subtasks: Agent names whose outputs were rejected.
+            subtask_results: Mapping of agent_name -> previous output for context.
+
+        Returns:
+            List of HierarchicalOrder objects to re-execute.
+        """
+        try:
+            schema = BaseTool().base_model_to_dict(ReplanAction)
+
+            replan_director = Agent(
+                agent_name="Director-Replan",
+                agent_description="Director replanning based on judge feedback",
+                model_name=self.director_model_name,
+                max_loops=1,
+                base_model=ReplanAction,
+                tools_list_dictionary=[schema],
+                output_type="final",
+            )
+
+            available_agents = self.list_worker_agents()
+            replan_prompt = (
+                f"The judge has reviewed the swarm's output and requires a revision.\n\n"
+                f"Original task: {original_task}\n\n"
+                f"Judge feedback: {judge_feedback}\n\n"
+                f"Failed subtasks (agents that need to be re-run or replaced): {failed_subtasks}\n\n"
+                f"Previous subtask results:\n{json.dumps(subtask_results, default=str)}\n\n"
+                f"Available worker agents:\n{available_agents}\n\n"
+                f"Conversation history:\n{self.conversation.get_str()}\n\n"
+                "Produce a ReplanAction. Choose ADD to issue brand-new subtasks, "
+                "REASSIGN to re-run failed subtasks on different agents, "
+                "REORDER to change execution order, or DROP to remove unnecessary subtasks. "
+                "Only include orders that must be (re-)executed — successful subtasks do not need to be repeated."
+            )
+
+            result = replan_director.run(task=replan_prompt)
+            self.conversation.add(
+                role="Director-Replan", content=result
+            )
+            logger.info(f"Replan action from director:\n{result}")
+
+            # Parse the ReplanAction
+            try:
+                if isinstance(result, ReplanAction):
+                    action = result
+                elif isinstance(result, dict):
+                    action = ReplanAction(**result)
+                else:
+                    action = ReplanAction(**json.loads(result))
+                logger.info(
+                    f"Replan action type: {action.action_type}, orders: {len(action.orders)}"
+                )
+                return action.orders
+            except Exception as parse_err:
+                logger.warning(
+                    f"Failed to parse ReplanAction ({parse_err}); no replan orders generated — failed subtasks will not be re-executed."
+                )
+                return []
+
+        except Exception as e:
+            logger.error(
+                f"[ERROR] _replan failed: {str(e)}\n[TRACE] {traceback.format_exc()}"
+            )
+            return []
 
     def call_single_agent(
         self,
