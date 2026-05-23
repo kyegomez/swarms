@@ -4069,8 +4069,14 @@ Subtask Breakdown:
         origin = getattr(ann, "__origin__", None)
         if origin is dict:
             return True
-        if isinstance(ann, str) and "dict" in ann.lower():
-            return True
+        if isinstance(ann, str):
+            ann = ann.strip()
+            if ann in {"dict", "Dict", "typing.Dict"}:
+                return True
+            if ann.startswith("dict[") or ann.startswith("Dict["):
+                return True
+            if ann.startswith("typing.Dict["):
+                return True
         return False
 
     def _use_stream_events(
@@ -4405,50 +4411,51 @@ Subtask Breakdown:
 
                         final_chunk = chunk
 
-                    # Final ModelResponse to stream
-                    if (
-                        final_chunk
-                        and hasattr(final_chunk, "usage")
-                        and final_chunk.usage
-                    ):
-                        usage = final_chunk.usage
-                        print(
-                            f"ModelResponseStream(id='{getattr(final_chunk, 'id', 'N/A')}', "
-                            f"created={getattr(final_chunk, 'created', 'N/A')}, "
-                            f"model='{getattr(final_chunk, 'model', self.get_current_model())}', "
-                            f"object='{getattr(final_chunk, 'object', 'chat.completion.chunk')}', "
-                            f"system_fingerprint='{getattr(final_chunk, 'system_fingerprint', 'N/A')}', "
-                            f"choices=[StreamingChoices(finish_reason='{final_chunk.choices[0].finish_reason}', "
-                            f"index=0, delta=Delta(provider_specific_fields=None, content=None, role=None, "
-                            f"function_call=None, tool_calls=None, audio=None), logprobs=None)], "
-                            f"provider_specific_fields=None, "
-                            f"usage=Usage(completion_tokens={usage.completion_tokens}, "
-                            f"prompt_tokens={usage.prompt_tokens}, "
-                            f"total_tokens={usage.total_tokens}, "
-                            f"completion_tokens_details=CompletionTokensDetailsWrapper("
-                            f"accepted_prediction_tokens={usage.completion_tokens_details.accepted_prediction_tokens}, "
-                            f"audio_tokens={usage.completion_tokens_details.audio_tokens}, "
-                            f"reasoning_tokens={usage.completion_tokens_details.reasoning_tokens}, "
-                            f"rejected_prediction_tokens={usage.completion_tokens_details.rejected_prediction_tokens}, "
-                            f"text_tokens={usage.completion_tokens_details.text_tokens}), "
-                            f"prompt_tokens_details=PromptTokensDetailsWrapper("
-                            f"audio_tokens={usage.prompt_tokens_details.audio_tokens}, "
-                            f"cached_tokens={usage.prompt_tokens_details.cached_tokens}, "
-                            f"text_tokens={usage.prompt_tokens_details.text_tokens}, "
-                            f"image_tokens={usage.prompt_tokens_details.image_tokens})))"
-                        )
-                    else:
-                        print(
-                            f"ModelResponseStream(id='{getattr(final_chunk, 'id', 'N/A')}', "
-                            f"created={getattr(final_chunk, 'created', 'N/A')}, "
-                            f"model='{getattr(final_chunk, 'model', self.get_current_model())}', "
-                            f"object='{getattr(final_chunk, 'object', 'chat.completion.chunk')}', "
-                            f"system_fingerprint='{getattr(final_chunk, 'system_fingerprint', 'N/A')}', "
-                            f"choices=[StreamingChoices(finish_reason='{final_chunk.choices[0].finish_reason}', "
-                            f"index=0, delta=Delta(provider_specific_fields=None, content=None, role=None, "
-                            f"function_call=None, tool_calls=None, audio=None), logprobs=None)], "
-                            f"provider_specific_fields=None)"
-                        )
+                    # Final ModelResponse to stream — only print when no
+                    # callback is handling display
+                    if streaming_callback is None and final_chunk:
+                        if (
+                            hasattr(final_chunk, "usage")
+                            and final_chunk.usage
+                        ):
+                            usage = final_chunk.usage
+                            print(
+                                f"ModelResponseStream(id='{getattr(final_chunk, 'id', 'N/A')}', "
+                                f"created={getattr(final_chunk, 'created', 'N/A')}, "
+                                f"model='{getattr(final_chunk, 'model', self.get_current_model())}', "
+                                f"object='{getattr(final_chunk, 'object', 'chat.completion.chunk')}', "
+                                f"system_fingerprint='{getattr(final_chunk, 'system_fingerprint', 'N/A')}', "
+                                f"choices=[StreamingChoices(finish_reason='{final_chunk.choices[0].finish_reason}', "
+                                f"index=0, delta=Delta(provider_specific_fields=None, content=None, role=None, "
+                                f"function_call=None, tool_calls=None, audio=None), logprobs=None)], "
+                                f"provider_specific_fields=None, "
+                                f"usage=Usage(completion_tokens={usage.completion_tokens}, "
+                                f"prompt_tokens={usage.prompt_tokens}, "
+                                f"total_tokens={usage.total_tokens}, "
+                                f"completion_tokens_details=CompletionTokensDetailsWrapper("
+                                f"accepted_prediction_tokens={usage.completion_tokens_details.accepted_prediction_tokens}, "
+                                f"audio_tokens={usage.completion_tokens_details.audio_tokens}, "
+                                f"reasoning_tokens={usage.completion_tokens_details.reasoning_tokens}, "
+                                f"rejected_prediction_tokens={usage.completion_tokens_details.rejected_prediction_tokens}, "
+                                f"text_tokens={usage.completion_tokens_details.text_tokens}), "
+                                f"prompt_tokens_details=PromptTokensDetailsWrapper("
+                                f"audio_tokens={usage.prompt_tokens_details.audio_tokens}, "
+                                f"cached_tokens={usage.prompt_tokens_details.cached_tokens}, "
+                                f"text_tokens={usage.prompt_tokens_details.text_tokens}, "
+                                f"image_tokens={usage.prompt_tokens_details.image_tokens})))"
+                            )
+                        else:
+                            print(
+                                f"ModelResponseStream(id='{getattr(final_chunk, 'id', 'N/A')}', "
+                                f"created={getattr(final_chunk, 'created', 'N/A')}, "
+                                f"model='{getattr(final_chunk, 'model', self.get_current_model())}', "
+                                f"object='{getattr(final_chunk, 'object', 'chat.completion.chunk')}', "
+                                f"system_fingerprint='{getattr(final_chunk, 'system_fingerprint', 'N/A')}', "
+                                f"choices=[StreamingChoices(finish_reason='{final_chunk.choices[0].finish_reason}', "
+                                f"index=0, delta=Delta(provider_specific_fields=None, content=None, role=None, "
+                                f"function_call=None, tool_calls=None, audio=None), logprobs=None)], "
+                                f"provider_specific_fields=None)"
+                            )
 
                     self.llm.stream = original_stream
                     return (

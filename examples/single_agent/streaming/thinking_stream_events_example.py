@@ -72,7 +72,9 @@ def main() -> None:
             "and model support."
         )
 
-    print("\n\n=== stream=True (detailed mode) + streaming_events=True ===\n")
+    print(
+        "\n\n=== stream=True (detailed mode) + streaming_events=True ===\n"
+    )
     detailed_agent = Agent(
         agent_name="Reasoner-Detailed",
         model_name=MODEL,
@@ -84,34 +86,35 @@ def main() -> None:
         max_loops=1,
         verbose=False,
     )
-    saw_thinking = False
-    saw_content = False
-
-    original_on_event = on_event.__code__
+    flags = {"saw_thinking": False, "saw_content": False}
 
     def on_event_detailed(event: dict) -> None:
-        global saw_thinking, saw_content
         evt_type = event.get("type")
         if evt_type == "thinking":
-            saw_thinking = True
+            flags["saw_thinking"] = True
             print(event["token"], end="", flush=True)
         elif evt_type == "content":
-            saw_content = True
+            flags["saw_content"] = True
             print(event["token"], end="", flush=True)
-        elif evt_type in ("thinking_start", "thinking_end", "content_start", "content_end"):
+        elif evt_type in (
+            "thinking_start",
+            "thinking_end",
+            "content_start",
+            "content_end",
+        ):
             print(f"\n[{evt_type}]", flush=True)
 
-    saw_thinking = False
-    saw_content = False
     detailed_agent.streaming_callback = on_event_detailed
     detailed_agent.run(TASK)
     print()
-    if not saw_thinking:
+    if not flags["saw_thinking"]:
         print("WARNING: no thinking events in detailed mode.")
-    if not saw_content:
+    if not flags["saw_content"]:
         print("WARNING: no content events in detailed mode.")
-    if saw_thinking and saw_content:
-        print("\nPASS: both thinking and content events have 'type' field in detailed mode.")
+    if flags["saw_thinking"] and flags["saw_content"]:
+        print(
+            "\nPASS: both thinking and content events have 'type' field in detailed mode."
+        )
 
 
 if __name__ == "__main__":

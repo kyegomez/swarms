@@ -968,13 +968,7 @@ class AgentRearrange:
                             "agent": agent_name,
                             "token": token,
                         }
-                    elif evt_type in (
-                        "thinking",
-                        "thinking_start",
-                        "thinking_end",
-                        "content_start",
-                        "content_end",
-                    ):
+                    else:
                         yield {**item, "agent": agent_name}
                 continue
             chunks.append(item)
@@ -1071,13 +1065,7 @@ class AgentRearrange:
                                 "agent": kind,
                                 "token": payload.get("token", ""),
                             }
-                        elif evt_type in (
-                            "thinking",
-                            "thinking_start",
-                            "thinking_end",
-                            "content_start",
-                            "content_end",
-                        ):
+                        else:
                             yield {**payload, "agent": kind}
                     else:
                         yield {
