@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import json
 import os
 import random
@@ -235,7 +236,12 @@ class Agent:
         preset_stopping_token (bool): Enable preset stopping token
         streaming_on (bool): Enable basic streaming with formatted panels
         stream (bool): Enable detailed token-by-token streaming with metadata (citations, tokens used, etc.)
-        streaming_callback (Optional[Callable[[str], None]]): Callback function to receive streaming tokens in real-time. Defaults to None.
+        streaming_callback (Optional[Callable]): Callback for streaming tokens. With
+            ``streaming_events=True`` or a ``dict``-typed first parameter, receives
+            structured events (``thinking`` / ``content``). Otherwise receives content
+            strings only (backward compatible). Defaults to None.
+        streaming_events (bool): When True, ``streaming_callback`` receives tagged event
+            dicts for thinking and content tokens. Defaults to False.
         verbose (bool): Enable verbose mode
         stopping_func (Callable): The stopping function
         custom_exit_command (str): The custom exit command
@@ -364,7 +370,8 @@ class Agent:
         preset_stopping_token: Optional[bool] = False,
         streaming_on: Optional[bool] = False,
         stream: Optional[bool] = False,
-        streaming_callback: Optional[Callable[[str], None]] = None,
+        streaming_callback: Optional[Callable] = None,
+        streaming_events: Optional[bool] = False,
         verbose: Optional[bool] = False,
         stopping_func: Optional[Callable] = None,
         custom_exit_command: Optional[str] = "exit",
@@ -455,6 +462,7 @@ class Agent:
         self.streaming_on = streaming_on
         self.stream = stream
         self.streaming_callback = streaming_callback
+        self.streaming_events = bool(streaming_events)
         self.verbose = verbose
         self.stopping_func = stopping_func
         self.custom_exit_command = custom_exit_command
@@ -498,7 +506,10 @@ class Agent:
         self.show_tool_execution_output = show_tool_execution_output
         self.reasoning_effort = reasoning_effort
         self.thinking_tokens = thinking_tokens
-        self.reasoning_enabled = reasoning_enabled
+        # thinking_tokens alone should enable extended thinking at the API layer
+        self.reasoning_enabled = reasoning_enabled or (
+            thinking_tokens is not None
+        )
         self.fallback_model_name = fallback_model_name
         self.handoffs = handoffs
         self.capabilities = capabilities
@@ -4036,16 +4047,112 @@ Subtask Breakdown:
             accumulator[i] for i in sorted(accumulator)
         )
 
-    def _extract_thinking_from_stream(self, stream):
-        """Yield only content chunks from a stream, displaying thinking chunks as a panel first.
+    @staticmethod
+    def _callback_accepts_stream_events(
+        callback: Optional[Callable],
+    ) -> bool:
+        """True when callback's first parameter is annotated as dict."""
+        if callback is None:
+            return False
+        try:
+            sig = inspect.signature(callback)
+        except (TypeError, ValueError):
+            return False
+        params = list(sig.parameters.values())
+        if not params:
+            return False
+        ann = params[0].annotation
+        if ann is inspect.Parameter.empty:
+            return False
+        if ann is dict:
+            return True
+        origin = getattr(ann, "__origin__", None)
+        if origin is dict:
+            return True
+        if isinstance(ann, str) and "dict" in ann.lower():
+            return True
+        return False
+
+    def _use_stream_events(
+        self,
+        streaming_callback: Optional[Callable] = None,
+        streaming_events: Optional[bool] = None,
+    ) -> bool:
+        """Whether to emit structured thinking/content stream events."""
+        if streaming_events is not None:
+            return bool(streaming_events)
+        if self.streaming_events:
+            return True
+        return self._callback_accepts_stream_events(
+            streaming_callback
+        )
+
+    @staticmethod
+    def _emit_stream_event(
+        callback: Optional[Callable],
+        event: Dict[str, Any],
+        *,
+        use_events: bool,
+    ) -> None:
+        if callback is None:
+            return
+        if use_events:
+            callback(event)
+        elif event.get("type") == "content":
+            token = event.get("token")
+            if token:
+                callback(token)
+
+    def _extract_thinking_from_stream(
+        self,
+        stream,
+        stream_sink: Optional[Callable] = None,
+        use_stream_events: bool = False,
+    ):
+        """Yield only content chunks from a stream, surfacing thinking via callback/events.
 
         Anthropic (and other reasoning providers) emit thinking deltas before content
-        deltas. This generator consumes all thinking chunks silently, then flushes a
-        single thinking panel to the console, and finally yields every subsequent
-        content chunk unchanged so callers can handle them normally.
+        deltas. Thinking chunks are not yielded to the content stream. When
+        ``use_stream_events`` is True (or the sink accepts dict events), thinking
+        tokens are forwarded in real time via ``stream_sink``. Otherwise the
+        accumulated thinking is shown as a single Rich panel when ``print_on``.
         """
-        thinking_parts = []
+        thinking_parts: List[str] = []
         thinking_displayed = False
+        thinking_phase_open = False
+
+        def _flush_thinking_panel() -> None:
+            nonlocal thinking_displayed
+            if (
+                thinking_parts
+                and not thinking_displayed
+                and self.print_on
+            ):
+                title = (
+                    f"{self.agent_name} | Thinking"
+                    if self.agent_name
+                    else "Thinking"
+                )
+                formatter.print_thinking_panel(
+                    "".join(thinking_parts), title=title
+                )
+            thinking_displayed = True
+
+        def _close_thinking_phase() -> None:
+            nonlocal thinking_phase_open
+            if not thinking_parts:
+                return
+            if use_stream_events and thinking_phase_open:
+                self._emit_stream_event(
+                    stream_sink,
+                    {
+                        "type": "thinking_end",
+                        "text": "".join(thinking_parts),
+                    },
+                    use_events=True,
+                )
+            thinking_phase_open = False
+            _flush_thinking_panel()
 
         for chunk in stream:
             if not hasattr(chunk, "choices") or not chunk.choices:
@@ -4057,37 +4164,26 @@ Subtask Breakdown:
 
             if reasoning:
                 thinking_parts.append(reasoning)
-                continue  # swallow the thinking chunk; don't pass to content stream
-
-            # First non-thinking chunk — flush accumulated thinking
-            if thinking_parts and not thinking_displayed:
-                if self.print_on:
-                    title = (
-                        f"{self.agent_name} | Thinking"
-                        if self.agent_name
-                        else "Thinking"
+                if use_stream_events and stream_sink is not None:
+                    if not thinking_phase_open:
+                        self._emit_stream_event(
+                            stream_sink,
+                            {"type": "thinking_start"},
+                            use_events=True,
+                        )
+                        thinking_phase_open = True
+                    self._emit_stream_event(
+                        stream_sink,
+                        {"type": "thinking", "token": reasoning},
+                        use_events=True,
                     )
-                    formatter.print_thinking_panel(
-                        "".join(thinking_parts), title=title
-                    )
-                thinking_displayed = True
+                continue
 
+            _close_thinking_phase()
             yield chunk
 
-        # Edge case: stream ended with only thinking and no content chunks
-        if (
-            thinking_parts
-            and not thinking_displayed
-            and self.print_on
-        ):
-            title = (
-                f"{self.agent_name} | Thinking"
-                if self.agent_name
-                else "Thinking"
-            )
-            formatter.print_thinking_panel(
-                "".join(thinking_parts), title=title
-            )
+        if thinking_parts and not thinking_displayed:
+            _close_thinking_phase()
 
     def call_llm(
         self,
@@ -4233,10 +4329,15 @@ Subtask Breakdown:
                     final_chunk = None
                     first_chunk = None
                     tool_calls_out: list = []
+                    _use_evts = self._use_stream_events(
+                        streaming_callback
+                    )
 
                     for chunk in self._stream_with_tool_collection(
                         self._extract_thinking_from_stream(
-                            streaming_response
+                            streaming_response,
+                            stream_sink=streaming_callback,
+                            use_stream_events=_use_evts,
                         ),
                         tool_calls_out,
                     ):
@@ -4294,12 +4395,13 @@ Subtask Breakdown:
                                 ),
                                 "logprobs": chunk.choices[0].logprobs,
                                 "timestamp": time.time(),
+                                "type": "content",
                             }
-
-                            print(f"ResponseStream {token_info}")
 
                             if streaming_callback is not None:
                                 streaming_callback(token_info)
+                            else:
+                                print(f"ResponseStream {token_info}")
 
                         final_chunk = chunk
 
@@ -4381,13 +4483,18 @@ Subtask Breakdown:
 
                     # Check if streaming_callback is provided (for ConcurrentWorkflow dashboard integration)
                     if streaming_callback is not None:
-                        # Real-time callback streaming — thinking panel is printed as a
-                        # side effect inside _extract_thinking_from_stream; no Live context
-                        # is active so there is no interleaving risk.
+                        use_events = self._use_stream_events(
+                            streaming_callback
+                        )
+                        content_phase_open = False
+                        # Real-time callback streaming — thinking events fire inside
+                        # _extract_thinking_from_stream; no Live context is active.
                         streaming_response = (
                             self._stream_with_tool_collection(
                                 self._extract_thinking_from_stream(
-                                    streaming_response
+                                    streaming_response,
+                                    stream_sink=streaming_callback,
+                                    use_stream_events=use_events,
                                 ),
                                 tool_calls_out,
                             )
@@ -4402,8 +4509,34 @@ Subtask Breakdown:
                                     0
                                 ].delta.content
                                 chunks.append(content)
-                                streaming_callback(content)
+                                if use_events:
+                                    if not content_phase_open:
+                                        self._emit_stream_event(
+                                            streaming_callback,
+                                            {"type": "content_start"},
+                                            use_events=True,
+                                        )
+                                        content_phase_open = True
+                                    self._emit_stream_event(
+                                        streaming_callback,
+                                        {
+                                            "type": "content",
+                                            "token": content,
+                                        },
+                                        use_events=True,
+                                    )
+                                else:
+                                    streaming_callback(content)
                         complete_response = "".join(chunks)
+                        if use_events and content_phase_open:
+                            self._emit_stream_event(
+                                streaming_callback,
+                                {
+                                    "type": "content_end",
+                                    "text": complete_response,
+                                },
+                                use_events=True,
+                            )
                     # Check print_on parameter for different streaming behaviors
                     elif self.print_on is False:
                         # Silent streaming - no printing, just collect chunks
@@ -4873,6 +5006,7 @@ Subtask Breakdown:
         self,
         task: str,
         img: Optional[str] = None,
+        with_events: bool = False,
         **kwargs,
     ):
         """Run the agent and yield response tokens one-by-one as they are generated.
@@ -4888,15 +5022,22 @@ Subtask Breakdown:
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
+            with_events: When True, yield structured event dicts (``thinking``,
+                ``content``, phase boundaries) instead of plain content strings.
             **kwargs: Any extra kwargs forwarded to _run().
 
         Yields:
-            str: Individual token strings in generation order.
+            str: Individual content token strings when ``with_events=False``.
+            dict: Structured stream events when ``with_events=True``.
 
         Example::
 
             for token in agent.run_stream("Analyse NVDA"):
                 print(token, end="", flush=True)
+
+            for evt in agent.run_stream("Analyse NVDA", with_events=True):
+                if evt["type"] == "thinking":
+                    print(evt["token"], end="", flush=True)
         """
         import queue
         import threading
@@ -4906,15 +5047,25 @@ Subtask Breakdown:
         _exc: list = [None]
 
         def _on_token(token):
-            if isinstance(token, str) and token:
+            if with_events:
+                if isinstance(token, dict):
+                    token_queue.put(token)
+                elif isinstance(token, str) and token:
+                    token_queue.put(
+                        {"type": "content", "token": token}
+                    )
+            elif isinstance(token, str) and token:
                 token_queue.put(token)
             elif isinstance(token, dict):
                 t = token.get("token", "")
-                if t:
+                if t and token.get("type") == "content":
                     token_queue.put(t)
 
         original_streaming_on = self.streaming_on
+        original_streaming_events = self.streaming_events
         self.streaming_on = True
+        if with_events:
+            self.streaming_events = True
 
         def _run_thread():
             try:
@@ -4928,6 +5079,7 @@ Subtask Breakdown:
                 _exc[0] = exc
             finally:
                 self.streaming_on = original_streaming_on
+                self.streaming_events = original_streaming_events
                 token_queue.put(_DONE)
 
         thread = threading.Thread(target=_run_thread, daemon=True)
@@ -4948,6 +5100,7 @@ Subtask Breakdown:
         self,
         task: str,
         img: Optional[str] = None,
+        with_events: bool = False,
         **kwargs,
     ):
         """Async generator version of run_stream — yields tokens as they arrive.
@@ -4959,15 +5112,22 @@ Subtask Breakdown:
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
+            with_events: When True, yield structured event dicts (``thinking``,
+                ``content``, phase boundaries) instead of plain content strings.
             **kwargs: Extra kwargs forwarded to _run().
 
         Yields:
-            str: Individual token strings in generation order.
+            str: Individual content token strings when ``with_events=False``.
+            dict: Structured stream events when ``with_events=True``.
 
         Example::
 
             async for token in agent.arun_stream("Analyse NVDA"):
                 print(token, end="", flush=True)
+
+            async for evt in agent.arun_stream("Analyse NVDA", with_events=True):
+                if evt["type"] == "thinking":
+                    print(evt["token"], end="", flush=True)
         """
         import asyncio
         import threading
@@ -4978,19 +5138,32 @@ Subtask Breakdown:
         _exc: list = [None]
 
         def _on_token(token):
-            if isinstance(token, str) and token:
+            if with_events:
+                if isinstance(token, dict):
+                    loop.call_soon_threadsafe(
+                        token_queue.put_nowait, token
+                    )
+                elif isinstance(token, str) and token:
+                    loop.call_soon_threadsafe(
+                        token_queue.put_nowait,
+                        {"type": "content", "token": token},
+                    )
+            elif isinstance(token, str) and token:
                 loop.call_soon_threadsafe(
                     token_queue.put_nowait, token
                 )
             elif isinstance(token, dict):
                 t = token.get("token", "")
-                if t:
+                if t and token.get("type") == "content":
                     loop.call_soon_threadsafe(
                         token_queue.put_nowait, t
                     )
 
         original_streaming_on = self.streaming_on
+        original_streaming_events = self.streaming_events
         self.streaming_on = True
+        if with_events:
+            self.streaming_events = True
 
         def _run_sync():
             try:
@@ -5004,6 +5177,7 @@ Subtask Breakdown:
                 _exc[0] = exc
             finally:
                 self.streaming_on = original_streaming_on
+                self.streaming_events = original_streaming_events
                 loop.call_soon_threadsafe(
                     token_queue.put_nowait, _DONE
                 )
@@ -6263,16 +6437,14 @@ Summary: {summary}
         if self.tool_call_summary is True:
             temp_llm = self.temp_llm_instance_for_tool_summary()
 
-            tool_response = temp_llm.run(
-                f"""
+            tool_response = temp_llm.run(f"""
                 Please analyze and summarize the following tool execution output in a clear and concise way. 
                 Focus on the key information and insights that would be most relevant to the user's original request.
                 If there are any errors or issues, highlight them prominently.
                 
                 Tool Output:
                 {output}
-                """
-            )
+                """)
 
             self.short_memory.add(
                 role=self.agent_name,

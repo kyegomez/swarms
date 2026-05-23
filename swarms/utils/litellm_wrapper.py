@@ -1305,10 +1305,7 @@ class LiteLLM:
                     if completion_params.get("max_tokens", 0) < 16000:
                         completion_params["max_tokens"] = 16000
 
-            if (
-                self.reasoning_enabled is True
-                and self.thinking_tokens is not None
-            ):
+            if self.thinking_tokens is not None:
                 thinking = {
                     "type": "enabled",
                     "budget_tokens": self.thinking_tokens,

@@ -953,16 +953,32 @@ class AgentRearrange:
         if img is not None:
             run_kwargs["img"] = img
         run_kwargs.update(kwargs)
-        async for token in agent.arun_stream(**run_kwargs):
-            chunks.append(token)
+        async for item in agent.arun_stream(
+            with_events=with_events, **run_kwargs
+        ):
             if with_events:
-                yield {
-                    "type": "token",
-                    "agent": agent_name,
-                    "token": token,
-                }
-            else:
-                yield (agent_name, token)
+                if isinstance(item, dict):
+                    evt_type = item.get("type")
+                    if evt_type == "content":
+                        token = item.get("token", "")
+                        if token:
+                            chunks.append(token)
+                        yield {
+                            "type": "token",
+                            "agent": agent_name,
+                            "token": token,
+                        }
+                    elif evt_type in (
+                        "thinking",
+                        "thinking_start",
+                        "thinking_end",
+                        "content_start",
+                        "content_end",
+                    ):
+                        yield {**item, "agent": agent_name}
+                continue
+            chunks.append(item)
+            yield (agent_name, item)
 
         output = "".join(chunks)
         self.conversation.add(agent.agent_name, output)
@@ -1006,9 +1022,18 @@ class AgentRearrange:
                 if img is not None:
                     run_kwargs["img"] = img
                 run_kwargs.update(kwargs)
-                async for token in agent.arun_stream(**run_kwargs):
-                    results[name].append(token)
-                    await q.put((name, token))
+                async for item in agent.arun_stream(
+                    with_events=with_events, **run_kwargs
+                ):
+                    if with_events and isinstance(item, dict):
+                        if item.get("type") == "content":
+                            token = item.get("token", "")
+                            if token:
+                                results[name].append(token)
+                        await q.put((name, item))
+                    else:
+                        results[name].append(item)
+                        await q.put((name, item))
             except Exception as e:  # noqa: BLE001
                 await q.put((ERROR, e))
             finally:
@@ -1038,11 +1063,28 @@ class AgentRearrange:
                         t.cancel()
                     raise payload
                 if with_events:
-                    yield {
-                        "type": "token",
-                        "agent": kind,
-                        "token": payload,
-                    }
+                    if isinstance(payload, dict):
+                        evt_type = payload.get("type")
+                        if evt_type == "content":
+                            yield {
+                                "type": "token",
+                                "agent": kind,
+                                "token": payload.get("token", ""),
+                            }
+                        elif evt_type in (
+                            "thinking",
+                            "thinking_start",
+                            "thinking_end",
+                            "content_start",
+                            "content_end",
+                        ):
+                            yield {**payload, "agent": kind}
+                    else:
+                        yield {
+                            "type": "token",
+                            "agent": kind,
+                            "token": payload,
+                        }
                 else:
                     yield (kind, payload)
                 # Yield control so the other producer(s) can run; without
@@ -1076,7 +1118,9 @@ class AgentRearrange:
             with_events: When False (default), yield ``(agent_name, token)``
                 tuples. When True, yield structured event dicts:
                 ``{"type": "agent_start", "agent": ...}``,
-                ``{"type": "token", "agent": ..., "token": ...}``,
+                ``{"type": "token", "agent": ..., "token": ...}`` (content),
+                ``{"type": "thinking", "agent": ..., "token": ...}``,
+                ``{"type": "thinking_start"|"thinking_end", ...}``,
                 ``{"type": "agent_end", "agent": ..., "output": ...}``.
 
         Not yet supported in streaming mode: ``max_loops > 1``,
