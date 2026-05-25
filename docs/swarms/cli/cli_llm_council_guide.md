@@ -158,5 +158,5 @@ swarms llm-council --task "<query>" [--verbose]
 
 - [CLI Heavy Swarm Guide](./cli_heavy_swarm_guide.md) - Complex task analysis
 - [CLI Reference](./cli_reference.md) - Complete command documentation
-- [LLM Council Python API](../examples/llm_council_quickstart.md) - Programmatic usage
+- [LLM Council Examples](../examples/llm_council_examples.md) - Programmatic usage
 

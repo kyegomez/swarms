@@ -521,7 +521,7 @@ analysis = MajorityVoting(agents=agents, max_loops=1)
 |--------------|---------------------|
 | **[LLMCouncil](./llm_council_examples.md)** | When you want agents to rank each other's responses and a chairman to synthesize |
 | **[CouncilAsAJudge](./council_as_judge_example.md)** | When you need multi-dimensional evaluation (accuracy, helpfulness, etc.) with specialized judges |
-| **[DebateWithJudge](../examples/debate_quickstart.md)** | When you want adversarial debate between two opposing positions |
+| **[DebateWithJudge](../structs/debate_with_judge.md)** | When you want adversarial debate between two opposing positions |
 | **[ConcurrentWorkflow](./concurrent_workflow.md)** | When agents work on different tasks rather than the same task |
 | **[SequentialWorkflow](./sequential_example.md)** | When tasks need to flow sequentially through agents |
 
@@ -530,5 +530,5 @@ analysis = MajorityVoting(agents=agents, max_loops=1)
 ## Next Steps
 
 - See [GitHub Examples](https://github.com/kyegomez/swarms/tree/master/examples/multi_agent/majority_voting) for more use cases
-- Learn about [Consensus Mechanisms](../concept/consensus_mechanisms.md) in multi-agent systems
+- Learn about [Swarm Architecture Patterns](../concept/swarm_architectures.md) in multi-agent systems
 - Try [CouncilAsAJudge](./council_as_judge_example.md) for multi-dimensional evaluation

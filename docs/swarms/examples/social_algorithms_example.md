@@ -484,7 +484,7 @@ print(f"Failed: {result.failed_steps}")
 
 ## Next Steps
 
-- Explore [SocialAlgorithms Quickstart](../../examples/social_algorithms_quickstart.md)
+- Explore the [SocialAlgorithms Reference](../structs/social_algorithms.md)
 - See [12+ Algorithm Examples](https://github.com/kyegomez/swarms/tree/master/examples/multi_agent/social_algorithms_examples)
 - Study patterns: Consensus, Negotiation, Peer Review, Auction, Hierarchical
 - Design your own custom communication protocols

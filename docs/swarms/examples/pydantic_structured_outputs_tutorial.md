@@ -562,7 +562,7 @@ This tutorial covered the following topics:
 
 - Explore [Agent Reference Documentation](../structs/agent.md) for advanced configuration options
 - Learn about [Tools and MCP Integration](../tools/tools_examples.md)
-- Review [Additional Examples](../../examples/index.md) for more use cases
+- Review [Model Provider Examples](model_providers.md) for more use cases
 
 !!! question "Support and Resources"
     For additional assistance:

@@ -728,7 +728,7 @@ print(result)
 
 
 For more detailed information about X402 integration, see:
-- [X402 Payment Integration](../examples/x402_payment_integration.md)
-- [X402 Discovery Query](../examples/x402_discovery_query.md)
+- [X402 Service Purchase Agent](#example-2-x402-service-purchase-agent)
+- [X402 Discovery Agent](#example-1-x402-discovery-agent)
 - [X402 Documentation](https://docs.cdp.coinbase.com/x402)
 

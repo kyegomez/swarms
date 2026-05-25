@@ -8,7 +8,7 @@ This page provides a comprehensive overview of all available multi-agent archite
     | Architecture | Use Case | Key Functionality | Documentation |
     |-------------|----------|-------------------|---------------|
     | MajorityVoting | Decision making through consensus | Combines multiple agent opinions and selects the most common answer | [Docs](majorityvoting.md) |
-    | MAKER | Long-horizon precision | Step-wise decomposition with first-to-ahead-by-k voting and red-flagging per step | [Docs](maker.md) |
+    | MAKER | Long-horizon precision | Step-wise decomposition with first-to-ahead-by-k voting and red-flagging per step | Planned docs |
     | AgentRearrange | Optimizing agent order | Dynamically reorders agents based on task requirements | [Docs](agent_rearrange.md) |
     | RoundRobin | Equal task distribution | Cycles through agents in a fixed order | [Docs](round_robin_swarm.md) |
     | Mixture of Agents | Complex problem solving | Combines diverse expert agents for comprehensive analysis | [Docs](moa.md) |

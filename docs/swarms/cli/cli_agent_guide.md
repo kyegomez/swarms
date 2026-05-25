@@ -237,6 +237,6 @@ done
 ## Next Steps
 
 - [CLI YAML Configuration](./cli_yaml_guide.md) - Run agents from YAML files
-- [CLI Multi-Agent Guide](../examples/cli_multi_agent_quickstart.md) - LLM Council and Heavy Swarm
+- [CLI LLM Council Guide](./cli_llm_council_guide.md) - Run collaborative multi-agent council workflows
 - [CLI Reference](./cli_reference.md) - Complete command documentation
 

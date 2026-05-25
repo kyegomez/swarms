@@ -477,12 +477,12 @@ RECOMMENDATIONS
 |--------------|---------------------|
 | **[MajorityVoting](./majority_voting_example.md)** | When you need multiple agents to independently solve a task and build consensus |
 | **[LLMCouncil](./llm_council_examples.md)** | When you want agents to rank each other's generated responses |
-| **[DebateWithJudge](../examples/debate_quickstart.md)** | When you want two agents to argue opposing viewpoints |
+| **[DebateWithJudge](../structs/debate_with_judge.md)** | When you want two agents to argue opposing viewpoints |
 
 ---
 
 ## Next Steps
 
 - See [GitHub Examples](https://github.com/kyegomez/swarms/tree/master/examples/multi_agent/council_of_judges)
-- Learn about [Multi-Agent Evaluation Patterns](../examples/multi_agent_architectures_overview.md)
+- Learn about [Multi-Agent Evaluation Patterns](../structs/overview.md)
 - Try [MajorityVoting](./majority_voting_example.md) for consensus-based generation

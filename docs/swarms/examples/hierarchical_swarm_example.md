@@ -266,4 +266,4 @@ This will output a visual tree structure showing the Director and all worker age
 5. **Context Preservation**: The swarm maintains full conversation history automatically
 6. **Hierarchy Visualization**: Use `display_hierarchy()` to visualize swarm structure before execution
 
-For more detailed information about the `HierarchicalSwarm` API and advanced usage patterns, see the [main documentation](hierarchical_swarm.md). 
+For more detailed information about the `HierarchicalSwarm` API and advanced usage patterns, see the [main documentation](../structs/hierarchical_swarm.md).

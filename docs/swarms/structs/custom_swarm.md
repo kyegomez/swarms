@@ -699,7 +699,7 @@ def run_batch_analysis():
 
 ## Conversation Management Integration
 
-The swarm uses the Swarms framework's [Conversation structure](../conversation/) for comprehensive message storage and management. This provides:
+The swarm uses the Swarms framework's [Conversation structure](conversation.md) for comprehensive message storage and management. This provides:
 
 ### Key Features
 
@@ -753,7 +753,7 @@ stats = swarm.conversation.count_messages_by_role()
 token_usage = swarm.conversation.export_and_count_categories()
 ```
 
-For complete documentation on conversation management, see the [Conversation Structure Documentation](../conversation/).
+For complete documentation on conversation management, see the [Conversation Structure Documentation](conversation.md).
 
 
 ---
@@ -784,18 +784,18 @@ By following the patterns and best practices outlined in this guide, you can cre
 5. **Test thoroughly** with unit tests and integration tests
 6. **Configure appropriately** for your deployment environment
 
-For more advanced patterns and examples, explore the [Swarms Examples](../../examples/) and consider contributing your custom swarms back to the community by submitting a pull request to the [Swarms repository](https://github.com/kyegomez/swarms).
+For more advanced patterns and examples, explore the [Swarms Examples](../examples/unique_swarms.md) and consider contributing your custom swarms back to the community by submitting a pull request to the [Swarms repository](https://github.com/kyegomez/swarms).
 
 ---
 
 ## Additional Resources
 
-- [Conversation Structure Documentation](../conversation/) - Complete guide to conversation management
+- [Conversation Structure Documentation](conversation.md) - Complete guide to conversation management
 
-- [Agent Documentation](../../agents/) - Learn about creating and configuring agents
+- [Agent Documentation](../agents/index.md) - Learn about creating and configuring agents
 
-- [Multi-Agent Architectures](../overview/) - Explore other swarm patterns and architectures
+- [Multi-Agent Architectures](overview.md) - Explore other swarm patterns and architectures
 
-- [Examples Repository](../../examples/) - Real-world swarm implementations
+- [Examples Repository](../examples/unique_swarms.md) - Real-world swarm implementations
 
 - [Swarms Framework GitHub](https://github.com/kyegomez/swarms) - Source code and contributions

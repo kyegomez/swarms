@@ -30,7 +30,7 @@ These agents are inspired by cognitive science and human reasoning processes, in
 | **Reflexion Agent** | Self-reflective | [Reflexion: Language Agents with Verbal Reinforcement Learning](https://arxiv.org/abs/2303.11366) (Shinn et al., 2023) | • Self-evaluation<br/>• Experience memory<br/>• Adaptive improvement<br/>• Learning from failures | • Continuous improvement tasks<br/>• Long-term projects<br/>• Learning scenarios<br/>• Quality refinement | `ReflexionAgent` | [Guide](reflexion_agent.md) |
 | **GKP Agent** | Knowledge-based | [Generated Knowledge Prompting](https://arxiv.org/abs/2110.08387) (Liu et al., 2022) | • Knowledge generation<br/>• Multi-perspective reasoning<br/>• Information synthesis<br/>• Fact integration | • Knowledge-intensive tasks<br/>• Research questions<br/>• Fact-based reasoning<br/>• Information synthesis | `GKPAgent` | [Guide](gkp_agent.md) |
 | **Agent Judge** | Evaluation | [Agent-as-a-Judge: Evaluate Agents with Agents](https://arxiv.org/abs/2410.10934) | • Quality assessment<br/>• Structured evaluation<br/>• Performance metrics<br/>• Feedback generation | • Quality control<br/>• Output evaluation<br/>• Performance assessment<br/>• Model comparison | `AgentJudge` | [Guide](agent_judge.md) |
-| **REACT Agent** | Action-based | [ReAct: Synergizing Reasoning and Acting](https://arxiv.org/abs/2210.03629) (Yao et al., 2022) | • Reason-Act-Observe cycle<br/>• Memory integration<br/>• Action planning<br/>• Experience building | • Interactive tasks<br/>• Tool usage scenarios<br/>• Planning problems<br/>• Learning environments | `ReactAgent` | [Guide](react_agent.md) |
+| **REACT Agent** | Action-based | [ReAct: Synergizing Reasoning and Acting](https://arxiv.org/abs/2210.03629) (Yao et al., 2022) | • Reason-Act-Observe cycle<br/>• Memory integration<br/>• Action planning<br/>• Experience building | • Interactive tasks<br/>• Tool usage scenarios<br/>• Planning problems<br/>• Learning environments | `ReactAgent` | [Guide](../examples/react_agent_tutorial.md) |
 
 ## Agent Architectures
 
@@ -339,7 +339,7 @@ graph TD
 
 **Implementation**: `ReactAgent`
 
-**Documentation**: [REACT Agent Guide](react_agent.md)
+**Documentation**: [REACT Agent Guide](../examples/react_agent_tutorial.md)
 
 
 ## Implementation Guide
@@ -423,4 +423,4 @@ For comprehensive technical documentation on each reasoning agent implementation
 
 ---
 
-Reasoning agents represent a significant advancement in enterprise agent capabilities, implementing sophisticated cognitive architectures that deliver enhanced reliability, consistency, and performance compared to traditional language model implementations. 
+Reasoning agents represent a significant advancement in enterprise agent capabilities, implementing sophisticated cognitive architectures that deliver enhanced reliability, consistency, and performance compared to traditional language model implementations.

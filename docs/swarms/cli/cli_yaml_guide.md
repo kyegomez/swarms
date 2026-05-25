@@ -315,6 +315,6 @@ swarms load-markdown --markdown-path ./agents/ --concurrent
 ## Next Steps
 
 - [CLI Agent Guide](./cli_agent_guide.md) - Create agents from command line
-- [CLI Multi-Agent Guide](../examples/cli_multi_agent_quickstart.md) - LLM Council and Heavy Swarm
+- [CLI LLM Council Guide](./cli_llm_council_guide.md) - Run collaborative multi-agent council workflows
 - [CLI Reference](./cli_reference.md) - Complete command documentation
 

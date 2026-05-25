@@ -110,6 +110,6 @@ swarms llm-council --task "What are the best practices for code review?"
 ## Next Steps
 
 - [CLI Agent Guide](./cli_agent_guide.md) - Create custom agents from CLI
-- [CLI Multi-Agent Guide](../examples/cli_multi_agent_quickstart.md) - Run LLM Council and Heavy Swarm
+- [CLI LLM Council Guide](./cli_llm_council_guide.md) - Run collaborative multi-agent council workflows
 - [CLI Reference](./cli_reference.md) - Complete command documentation
 

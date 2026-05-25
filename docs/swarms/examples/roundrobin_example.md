@@ -339,12 +339,12 @@ swarm = RoundRobinSwarm(
 | **[SequentialWorkflow](./sequential_example.md)** | When tasks must flow in fixed order |
 | **[GroupChat](./groupchat_comprehensive_examples.md)** | For real-time interactive discussions |
 | **[MajorityVoting](./majority_voting_example.md)** | When you need consensus via voting |
-| **[GroupChat](./groupchat_example.md)** | For expertise-based speaker selection |
+| **[GroupChat Reference](../structs/group_chat.md)** | For expertise-based speaker selection |
 
 ---
 
 ## Next Steps
 
-- Explore [RoundRobinSwarm Quickstart](../../examples/roundrobin_quickstart.md)
+- Explore the [RoundRobinSwarm Reference](../structs/round_robin_swarm.md)
 - See [GitHub Examples](https://github.com/kyegomez/swarms/tree/master/examples/multi_agent/groupchat)
-- Learn about [Group Communication Patterns](../../examples/multi_agent_architectures_overview.md)
+- Learn about [Group Communication Patterns](../structs/agent_multi_agent_communication.md)

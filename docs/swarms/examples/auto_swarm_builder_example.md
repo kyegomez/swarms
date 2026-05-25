@@ -419,5 +419,5 @@ task = "Create cross-functional team: technical, business, creative, operational
 ## Next Steps
 
 - See [GitHub Examples](https://github.com/kyegomez/swarms/tree/master/examples/multi_agent/asb)
-- Learn about [Agent Design Principles](../concept/agent_design.md)
+- Learn about [Agent Architecture Concepts](../framework/agents_explained.md)
 - Try [SwarmRouter](./swarm_router.md) for task routing
