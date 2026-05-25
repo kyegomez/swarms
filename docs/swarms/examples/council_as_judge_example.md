@@ -211,7 +211,7 @@ print(eval_b)
 
 ### Example 3: Evaluating Technical Documentation
 
-```python
+````python
 from swarms import CouncilAsAJudge
 
 # Council for technical documentation
@@ -281,7 +281,7 @@ evaluation = council.run(task=api_docs)
 print("DOCUMENTATION QUALITY EVALUATION:")
 print("="*60)
 print(evaluation)
-```
+````
 
 ---
 

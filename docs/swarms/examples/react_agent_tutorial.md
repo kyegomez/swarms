@@ -267,7 +267,7 @@ my_tool_schema = {
 }
 
 self.agent = Agent(
-    ...
+    ...,
     tools_list_dictionary=[react_agent_schema, my_tool_schema],
 )
 ```

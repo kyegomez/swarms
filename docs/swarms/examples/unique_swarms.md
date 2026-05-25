@@ -28,7 +28,8 @@ Return types are generally `Union[dict, List[str]]`, where:
 
 ### Circular Swarm
 ```python
-def circular_swarm(agents: AgentListType, tasks: List[str], return_full_history: bool = True)
+def circular_swarm(agents: AgentListType, tasks: List[str], return_full_history: bool = True):
+    ...
 ```
 
 **Information Flow:**
@@ -63,7 +64,8 @@ flowchart LR
 
 ### Star Swarm
 ```python
-def star_swarm(agents: AgentListType, tasks: List[str], return_full_history: bool = True)
+def star_swarm(agents: AgentListType, tasks: List[str], return_full_history: bool = True):
+    ...
 ```
 
 **Information Flow:**
@@ -97,7 +99,8 @@ flowchart TD
 
 ### Mesh Swarm
 ```python
-def mesh_swarm(agents: AgentListType, tasks: List[str], return_full_history: bool = True)
+def mesh_swarm(agents: AgentListType, tasks: List[str], return_full_history: bool = True):
+    ...
 ```
 
 **Information Flow:**
@@ -134,7 +137,8 @@ flowchart TD
 
 ### Pyramid Swarm
 ```python
-def pyramid_swarm(agents: AgentListType, tasks: List[str], return_full_history: bool = True)
+def pyramid_swarm(agents: AgentListType, tasks: List[str], return_full_history: bool = True):
+    ...
 ```
 
 **Information Flow:**
@@ -176,7 +180,8 @@ flowchart TD
 
 ### One-to-One Communication
 ```python
-def one_to_one(sender: Agent, receiver: Agent, task: str, max_loops: int = 1) -> str
+def one_to_one(sender: Agent, receiver: Agent, task: str, max_loops: int = 1) -> str:
+    ...
 ```
 
 **Information Flow:**
@@ -197,7 +202,8 @@ flowchart LR
 
 ### Broadcast Communication
 ```python
-async def broadcast(sender: Agent, agents: AgentListType, task: str) -> None
+async def broadcast(sender: Agent, agents: AgentListType, task: str) -> None:
+    ...
 ```
 
 **Information Flow:**
