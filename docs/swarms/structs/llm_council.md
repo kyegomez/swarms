@@ -369,13 +369,28 @@ The LLM Council is ideal for scenarios requiring:
 
 ## Examples
 
-For comprehensive examples demonstrating various use cases, see the [LLM Council Examples](../../../examples/multi_agent/llm_council_examples/) directory:
+For a guided walkthrough of the council pattern, see the in-site
+[LLM Council examples guide](../examples/llm_council_examples.md). The source
+examples are also available in the repository under
+`examples/multi_agent/llm_council_examples/`:
 
 - **Medical**: `medical_diagnosis_council.py`, `medical_treatment_council.py`
 - **Finance**: `finance_analysis_council.py`, `etf_stock_analysis_council.py`
 - **Business**: `business_strategy_council.py`, `marketing_strategy_council.py`
 - **Technology**: `technology_assessment_council.py`, `research_analysis_council.py`
 - **Legal**: `legal_analysis_council.py`
+
+To run one of the examples from a local checkout, install Swarms and execute the
+script directly:
+
+```bash
+pip install swarms
+python examples/multi_agent/llm_council_examples/marketing_strategy_council.py
+```
+
+Use the examples guide when you want explanation and expected behavior, and use
+the repository scripts when you want runnable starting points for your own
+domain-specific council.
 
 ### Quick Start Example
 
