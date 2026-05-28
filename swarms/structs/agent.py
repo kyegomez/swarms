@@ -2972,6 +2972,11 @@ class Agent:
         """
         Generate a comprehensive final summary of the autonomous task execution.
 
+        Args:
+            streaming_callback (Optional[Callable[[str], None]]): Optional callback
+                function to receive streaming tokens in real-time while generating
+                the final summary.
+
         Returns:
             str: Comprehensive summary
         """
