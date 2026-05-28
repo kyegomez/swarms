@@ -494,5 +494,220 @@ def test_hierarchical_swarm_autosave_saves_conversation_after_run(
     get_workspace_dir.cache_clear()
 
 
+##############################################################################
+# Streaming tests
+##############################################################################
+
+@pytest.fixture
+def streaming_swarm():
+    """Create a lightweight HierarchicalSwarm for streaming tests."""
+    return HierarchicalSwarm(
+        name="Streaming-Test-Swarm",
+        agents=[
+            Agent(
+                agent_name="Researcher",
+                system_prompt="List 2 short bullets on the topic.",
+                model_name="gpt-4.1-mini",
+                max_loops=1,
+                persistent_memory=False,
+                print_on=False,
+            ),
+            Agent(
+                agent_name="Writer",
+                system_prompt="Combine into one short paragraph.",
+                model_name="gpt-4.1-mini",
+                max_loops=1,
+                persistent_memory=False,
+                print_on=False,
+            ),
+        ],
+        max_loops=1,
+        output_type="dict",
+        autosave=False,
+        director_feedback_on=False,
+        planning_enabled=False,
+    )
+
+
+@pytest.mark.asyncio
+async def test_arun_stream_plain(streaming_swarm):
+    """arun_stream without events yields (agent_name, token) tuples."""
+    agent_names = set()
+    token_count = 0
+    async for agent_name, token in streaming_swarm.arun_stream(
+        "solid-state batteries"
+    ):
+        assert isinstance(agent_name, str)
+        assert isinstance(token, str)
+        agent_names.add(agent_name)
+        token_count += 1
+
+    assert token_count > 5, f"Too few tokens: {token_count}"
+    # Director + at least one worker
+    assert len(agent_names) >= 2, f"Expected >=2 agents, got {agent_names}"
+
+
+@pytest.mark.asyncio
+async def test_arun_stream_event_types(streaming_swarm):
+    """with_events=True emits all required event types with role and loop."""
+    event_types = set()
+    roles = set()
+    end_events = []
+
+    async for evt in streaming_swarm.arun_stream(
+        "solid-state batteries", with_events=True
+    ):
+        assert "type" in evt
+        event_types.add(evt["type"])
+        if "role" in evt:
+            roles.add(evt["role"])
+        if evt["type"].endswith("_end"):
+            end_events.append(evt)
+
+    # All required event types
+    assert "swarm_start" in event_types
+    assert "swarm_end" in event_types
+    assert "director_start" in event_types
+    assert "director_end" in event_types
+    assert "worker_start" in event_types
+    assert "worker_end" in event_types
+    assert "token" in event_types
+
+    # Roles tagged correctly
+    assert "director" in roles
+    assert "worker" in roles
+    assert "swarm" in roles
+
+    # End events (except swarm_end) carry output and loop
+    for e in end_events:
+        if e["type"] == "swarm_end":
+            continue
+        assert "loop" in e, f"Missing loop in {e}"
+        assert "output" in e and len(str(e["output"])) > 0, (
+            f"Missing output in {e}"
+        )
+
+
+@pytest.mark.asyncio
+async def test_arun_stream_parallel_interleaving():
+    """Parallel workers interleave tokens (>= 3 agent-name flips)."""
+    swarm = HierarchicalSwarm(
+        name="Parallel-Interleave-Test",
+        agents=[
+            Agent(
+                agent_name="Optimist",
+                system_prompt="Write 4-6 upbeat sentences about the topic.",
+                model_name="gpt-4.1-mini",
+                max_loops=1,
+                persistent_memory=False,
+                print_on=False,
+            ),
+            Agent(
+                agent_name="Pessimist",
+                system_prompt="Write 4-6 cautious sentences about the topic.",
+                model_name="gpt-4.1-mini",
+                max_loops=1,
+                persistent_memory=False,
+                print_on=False,
+            ),
+        ],
+        max_loops=1,
+        output_type="dict",
+        autosave=False,
+        director_feedback_on=False,
+        planning_enabled=False,
+        parallel_execution=True,
+    )
+
+    worker_sequence = []
+    async for evt in swarm.arun_stream(
+        "AI in healthcare", with_events=True
+    ):
+        if evt["type"] == "token" and evt["role"] == "worker":
+            worker_sequence.append(evt["agent"])
+
+    flips = sum(
+        1
+        for i in range(1, len(worker_sequence))
+        if worker_sequence[i] != worker_sequence[i - 1]
+    )
+    assert len(worker_sequence) > 10, (
+        f"Too few worker tokens: {len(worker_sequence)}"
+    )
+    assert flips >= 3, f"Expected >=3 flips, got {flips}"
+
+
+@pytest.mark.asyncio
+async def test_arun_stream_aggregator_feedback():
+    """Aggregator phase streams when director_feedback_on=True."""
+    swarm = HierarchicalSwarm(
+        name="Aggregator-Test",
+        agents=[
+            Agent(
+                agent_name="Researcher",
+                system_prompt="List 2 short bullets on the topic.",
+                model_name="gpt-4.1-mini",
+                max_loops=1,
+                persistent_memory=False,
+                print_on=False,
+            ),
+        ],
+        max_loops=1,
+        output_type="dict",
+        autosave=False,
+        director_feedback_on=True,
+        planning_enabled=False,
+    )
+
+    event_types = set()
+    roles = set()
+    async for evt in swarm.arun_stream(
+        "solid-state batteries", with_events=True
+    ):
+        event_types.add(evt["type"])
+        if "role" in evt:
+            roles.add(evt["role"])
+
+    assert "aggregator_start" in event_types
+    assert "aggregator_end" in event_types
+    assert "aggregator" in roles
+
+
+@pytest.mark.asyncio
+async def test_arun_stream_token_events_have_role_and_loop():
+    """Every token event carries role, agent, and loop fields."""
+    swarm = HierarchicalSwarm(
+        name="Token-Metadata-Test",
+        agents=[
+            Agent(
+                agent_name="Researcher",
+                system_prompt="List 2 short bullets on the topic.",
+                model_name="gpt-4.1-mini",
+                max_loops=1,
+                persistent_memory=False,
+                print_on=False,
+            ),
+        ],
+        max_loops=1,
+        output_type="dict",
+        autosave=False,
+        director_feedback_on=False,
+        planning_enabled=False,
+    )
+
+    token_count = 0
+    async for evt in swarm.arun_stream(
+        "solid-state batteries", with_events=True
+    ):
+        if evt["type"] == "token":
+            token_count += 1
+            assert "role" in evt, f"Token missing role: {evt}"
+            assert "agent" in evt, f"Token missing agent: {evt}"
+            assert "loop" in evt, f"Token missing loop: {evt}"
+            assert "token" in evt, f"Token missing token: {evt}"
+
+    assert token_count > 0
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
