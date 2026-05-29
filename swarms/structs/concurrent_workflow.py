@@ -2,7 +2,7 @@ import concurrent.futures
 import json
 import os
 import time
-from typing import Callable, List, Optional, Union
+from typing import Callable, List, Literal, Optional, Union
 
 from loguru import logger as loguru_logger
 from swarms.structs.agent import Agent
@@ -39,6 +39,14 @@ class ConcurrentWorkflow:
         max_loops (int): Maximum number of execution loops (currently unused)
         auto_generate_prompts (bool): Whether to enable automatic prompt engineering
         show_dashboard (bool): Whether to display real-time dashboard during execution
+        on_error (str): How to handle individual agent failures.
+            ``"store"`` (default) — captures each failure as a conversation entry
+            whose role is ``"<agent_name> (failed)"`` and whose content is
+            ``"Error: <message>"``.  Sibling agents that completed successfully
+            are unaffected and their outputs are preserved.
+            ``"raise"`` — after all futures have settled, re-raises the first
+            exception with its original traceback, reproducing the old
+            fail-fast behaviour.
         agent_statuses (dict): Dictionary tracking status and output of each agent
         metadata_output_path (str): Path for saving workflow metadata
         conversation (Conversation): Conversation object for storing agent interactions
@@ -60,10 +68,10 @@ class ConcurrentWorkflow:
         >>> agent1 = Agent(llm=llm, agent_name="Agent1")
         >>> agent2 = Agent(llm=llm, agent_name="Agent2")
         >>>
-        >>> # Create workflow
+        >>> # Create workflow — one agent failure won't discard the others
         >>> workflow = ConcurrentWorkflow(
         ...     agents=[agent1, agent2],
-        ...     show_dashboard=True
+        ...     on_error="store",   # default
         ... )
         >>>
         >>> # Run workflow
@@ -83,7 +91,41 @@ class ConcurrentWorkflow:
         show_dashboard: bool = False,
         autosave: bool = True,
         verbose: bool = False,
+        on_error: Literal["store", "raise"] = "store",
     ):
+        """
+        Initialise ConcurrentWorkflow.
+
+        Args:
+            id (str): Optional unique identifier; auto-generated when omitted.
+            name (str): Human-readable workflow name.
+            description (str): Short description of the workflow's purpose.
+            agents (List[Union[Agent, Callable]]): Agents to run concurrently.
+            auto_save (bool): Whether to save workflow metadata.
+            output_type (str): Output format passed to ``history_output_formatter``.
+            max_loops (int): Reserved for future multi-loop support.
+            auto_generate_prompts (bool): Enable automatic prompt engineering.
+            show_dashboard (bool): Show a real-time status dashboard during execution.
+            autosave (bool): Persist conversation history to disk after each run.
+            verbose (bool): Emit extra log messages.
+            on_error (Literal["store", "raise"]): Agent-failure policy.
+                ``"store"`` (default) — per-agent errors are written to the
+                conversation history under the role
+                ``"<agent_name> (failed)"`` so callers can inspect them;
+                successful siblings are always preserved.
+                ``"raise"`` — after all futures settle the first exception is
+                re-raised with its original traceback (fail-fast, old behaviour).
+
+        Raises:
+            ValueError: If ``agents`` is ``None`` or empty, or if ``on_error``
+                is not one of ``"store"`` or ``"raise"``.
+        """
+        if on_error not in ("store", "raise"):
+            raise ValueError(
+                f"ConcurrentWorkflow: invalid on_error={on_error!r}. "
+                "Expected 'store' or 'raise'."
+            )
+
         self.id = id if id is not None else swarm_id()
         self.name = name
         self.description = description
@@ -95,6 +137,7 @@ class ConcurrentWorkflow:
         self.show_dashboard = show_dashboard
         self.autosave = autosave
         self.verbose = verbose
+        self.on_error = on_error
         self.swarm_workspace_dir = None
         self.metadata_output_path = (
             f"concurrent_workflow_name_{name}_id_{self.id}.json"
@@ -120,6 +163,20 @@ class ConcurrentWorkflow:
         # Setup autosave workspace if enabled
         if self.autosave:
             self._setup_autosave()
+
+    # ------------------------------------------------------------------
+    # Private helpers shared by both execution paths
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _failed_role(agent_name: str) -> str:
+        """Return the conversation role label for a failed agent."""
+        return f"{agent_name} (failed)"
+
+    @staticmethod
+    def _format_agent_error(e: Exception) -> str:
+        """Return the conversation content string for a failed agent."""
+        return f"Error: {str(e)}"
 
     def fix_agents(self):
         """
@@ -332,6 +389,9 @@ class ConcurrentWorkflow:
 
                     raise
 
+            first_error: Optional[Exception] = None
+            first_tb = None
+
             with concurrent.futures.ThreadPoolExecutor(
                 max_workers=max_workers
             ) as executor:
@@ -351,12 +411,23 @@ class ConcurrentWorkflow:
                         logger.error(
                             f"Agent {agent.agent_name} failed: {str(e)}"
                         )
+                        if first_error is None:
+                            first_error = e
+                            first_tb = e.__traceback__
+                        role = (
+                            self._failed_role(agent.agent_name)
+                            if self.on_error == "store"
+                            else agent.agent_name
+                        )
                         results.append(
-                            (agent.agent_name, f"Error: {str(e)}")
+                            (role, self._format_agent_error(e))
                         )
 
             for agent_name, output in results:
                 self.conversation.add(role=agent_name, content=output)
+
+            if self.on_error == "raise" and first_error is not None:
+                raise first_error.with_traceback(first_tb)
 
             if self.show_dashboard:
                 self.display_agent_dashboard(
@@ -419,10 +490,21 @@ class ConcurrentWorkflow:
                 future_to_agent
             ):
                 agent = future_to_agent[future]
-                output = future.result()
-                self.conversation.add(
-                    role=agent.agent_name, content=output
-                )
+                try:
+                    output = future.result()
+                    self.conversation.add(
+                        role=agent.agent_name, content=output
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Agent {agent.agent_name} failed: {str(e)}"
+                    )
+                    if self.on_error == "raise":
+                        raise
+                    self.conversation.add(
+                        role=self._failed_role(agent.agent_name),
+                        content=self._format_agent_error(e),
+                    )
 
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
