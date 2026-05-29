@@ -244,6 +244,7 @@ nav:
         - Tools Reference:
           - Overview: "swarms/tools/main.md"
           - What are tools?: "swarms/tools/build_tool.md"
+          - Tool Runtime Safety and Validation: "swarms/tools/tool_runtime_safety.md"
           - Structured Outputs: "swarms/agents/structured_outputs.md"
           - Agent MCP Integration: "swarms/structs/agent_mcp.md"
         - Long Term Memory Reference:
