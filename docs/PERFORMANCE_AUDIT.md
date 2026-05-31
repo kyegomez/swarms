@@ -135,7 +135,7 @@ Hitting just **#1–#5** should cut typical autonomous-agent loop latency by **~
 - **Reversed graph rebuilt** on each ancestor/descendant query (`221-231, 388-407`) — cache `_reversed_graph` with the same invalidation guard.
 - **Edge list has no dedup** (`1145, 1209, 1281, 1356`) — duplicate edges silently inflate fan-in cost.
 
-### 3.5 `hiearchical_swarm.py`
+### 3.5 `hierarchical_swarm.py`
 - Dashboard rebuilds **all** Rich panels on every status tick (`282-320, 450-456`) — only the changed panel needs to refresh.
 
 ### 3.6 `mixture_of_agents.py`

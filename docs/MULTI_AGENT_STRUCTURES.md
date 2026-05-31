@@ -37,9 +37,9 @@ The table below lists every multi-agent structure currently shipped, with a one-
 | `ModelRouter` | Routes a task to the best *model* (not agent) given task requirements. | [link](swarms/structs/model_router.py) |
 | `SkillOrchestra` | Skill-aware orchestration — picks agents by declared skills and cost. | [link](swarms/structs/skill_orchestra.py) |
 | `AuctionSwarm` | Agents bid `(confidence, estimated_cost)` via a forced tool call; an auctioneer awards the task to the best bid. | [link](swarms/structs/auction_swarm.py) |
-| `HierarchicalSwarm` | Director agent decomposes the task and delegates to workers; synthesizes results. | [link](swarms/structs/hiearchical_swarm.py) |
+| `HierarchicalSwarm` | Director agent decomposes the task and delegates to workers; synthesizes results. | [link](swarms/structs/hierarchical_swarm.py) |
 | `HierarchicalStructuredCommunicationFramework` | "Talk Structurally, Act Hierarchically" — structured messages between supervisor / generator / evaluator / refiner roles. | [link](swarms/structs/hierarchical_structured_communication_framework.py) |
-| `HybridHierarchicalClusterSwarm` | Hierarchy routes to clusters; inside clusters agents communicate peer-to-peer. | [link](swarms/structs/hybrid_hiearchical_peer_swarm.py) |
+| `HybridHierarchicalClusterSwarm` | Hierarchy routes to clusters; inside clusters agents communicate peer-to-peer. | [link](swarms/structs/hybrid_hierarchical_peer_swarm.py) |
 | `PlannerWorkerSwarm` | Planner emits a task queue; a worker pool claims and executes tasks concurrently. | [link](swarms/structs/planner_worker_swarm.py) |
 | `MixtureOfAgents` | N workers respond in parallel for L layers; aggregator synthesizes the final answer. | [link](swarms/structs/mixture_of_agents.py) |
 | `SelfMoASeq` | Sequential self-MoA: many samples from one strong model, sliding-window aggregation. | [link](swarms/structs/self_moa_seq.py) |
