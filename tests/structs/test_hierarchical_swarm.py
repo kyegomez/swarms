@@ -2,7 +2,7 @@ import os
 import pytest
 
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 from swarms.utils.workspace_utils import get_workspace_dir
 
 
