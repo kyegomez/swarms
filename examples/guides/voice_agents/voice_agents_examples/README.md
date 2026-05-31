@@ -15,7 +15,7 @@ This directory contains examples for building speech-enabled agents with the Swa
 | [agent_with_speech.py](agent_with_speech.py) | Speech-enabled agent with streaming TTS callback |
 | [debate_with_speech.py](debate_with_speech.py) | Multi-agent debate with voice output for each agent |
 | [google_calendar_agent.py](google_calendar_agent.py) | Voice agent integrated with Google Calendar |
-| [hiearchical_speech_swarm.py](hiearchical_speech_swarm.py) | Hierarchical swarm where each role has a distinct voice |
+| [hierarchical_speech_swarm.py](hierarchical_speech_swarm.py) | Hierarchical swarm where each role has a distinct voice |
 | [run_auto_agent_with_speech.py](run_auto_agent_with_speech.py) | Autonomous agent with terminal (bash) access and streaming TTS |
 
 ## Usage
