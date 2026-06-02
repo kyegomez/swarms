@@ -2,7 +2,7 @@ import copy
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union, get_args
 import asyncio
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -17,6 +17,10 @@ from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 
 logger = initialize_logger(log_folder="rearrange")
+
+# Resolved at import time from the canonical Literal type so it stays in
+# sync if HistoryOutputType ever gains/loses members.
+_VALID_OUTPUT_TYPES = set(get_args(OutputType))
 
 
 class AgentRearrange:
@@ -207,6 +211,12 @@ class AgentRearrange:
         if self.output_type is None or self.output_type == "":
             raise ValueError("output_type cannot be None or empty")
 
+        if self.output_type not in _VALID_OUTPUT_TYPES:
+            raise ValueError(
+                f"output_type must be one of "
+                f"{sorted(_VALID_OUTPUT_TYPES)}; got {self.output_type!r}"
+            )
+
     def set_custom_flow(self, flow: str):
         """
         Sets a custom flow pattern for agent execution.
@@ -215,19 +225,85 @@ class AgentRearrange:
         The flow pattern defines how agents should be executed in sequence or
         parallel using the standard syntax ('->' for sequential, ',' for concurrent).
 
+        The new flow is validated immediately so typos surface at the call site
+        rather than at the next ``run()``.
+
         Args:
             flow (str): The new flow pattern to use for agent execution.
-                Must follow the syntax: "agent1 -> agent2, agent3 -> agent4"
+                Examples: ``"agent1 -> agent2, agent3 -> agent4"``,
+                ``"agent1, agent2"`` (pure fan-out).
 
-        Note:
-            The flow will be validated on the next execution. If invalid,
-            a ValueError will be raised during the run() method.
+        Raises:
+            ValueError: If the new flow is empty or references unregistered agents.
 
         Example:
             >>> rearrange_system.set_custom_flow("researcher -> writer, editor")
         """
+        previous_flow = self.flow
         self.flow = flow
+        try:
+            self.validate_flow()
+        except ValueError:
+            self.flow = previous_flow
+            raise
         logger.info(f"Custom flow set: {flow}")
+
+    def explain(self, return_str: bool = False) -> Optional[str]:
+        """Print or return the resolved execution plan for this flow.
+
+        Walks the flow string and lists every step in order, marking each
+        step as sequential or parallel. Does NOT invoke any agents or LLMs.
+        Useful for CI smoke tests, debugging, and pre-flight verification.
+
+        Validates the flow first; raises if invalid.
+
+        Args:
+            return_str: When True, returns the plan as a string. When False
+                (default), prints it and returns None.
+
+        Returns:
+            The plan string if ``return_str=True``; otherwise ``None``.
+
+        Example:
+            >>> rearrange.explain()
+            Flow: Ingestor -> Tech, Business, Legal -> Synthesizer
+
+            Step 1: Ingestor                          [sequential]
+            Step 2: Tech, Business, Legal             [parallel, 3 agents]
+            Step 3: Synthesizer                       [sequential]
+
+            3 steps, 5 agent invocations across 1 loop(s).
+        """
+        self.validate_flow()
+
+        steps = [s.strip() for s in self.flow.split("->")]
+        total_invocations = 0
+        rows: List[tuple] = []
+        for i, step in enumerate(steps, start=1):
+            agent_names = [name.strip() for name in step.split(",")]
+            total_invocations += len(agent_names)
+            label = ", ".join(agent_names)
+            if len(agent_names) == 1:
+                kind = "[sequential]"
+            else:
+                kind = f"[parallel, {len(agent_names)} agents]"
+            rows.append((i, label, kind))
+
+        width = max((len(label) for _, label, _ in rows), default=0)
+        lines: List[str] = [f"Flow: {self.flow}", ""]
+        for i, label, kind in rows:
+            lines.append(f"Step {i}: {label:<{width}}  {kind}")
+        lines.append("")
+        lines.append(
+            f"{len(steps)} steps, {total_invocations} agent invocations "
+            f"across {self.max_loops} loop(s)."
+        )
+
+        plan = "\n".join(lines)
+        if return_str:
+            return plan
+        print(plan)
+        return None
 
     def add_agent(self, agent: Agent):
         """
@@ -262,28 +338,32 @@ class AgentRearrange:
         """
         Validates the flow pattern.
 
+        A valid flow is a non-empty string built from one or more steps
+        separated by ``->`` (sequential dependence). Each step is one or
+        more comma-separated agent names that execute concurrently.
+        Pure-concurrent flows (e.g. ``"a, b, c"``) and pure-sequential
+        flows (e.g. ``"a -> b -> c"``) are both valid.
+
         Raises:
-            ValueError: If the flow pattern is incorrectly formatted or contains duplicate agent names.
+            ValueError: If the flow is empty or references an agent name
+                that is not registered.
 
         Returns:
             bool: True if the flow pattern is valid.
         """
-        if "->" not in self.flow:
-            raise ValueError(
-                "Flow must include '->' to denote the direction of the task."
-            )
+        if not self.flow or not self.flow.strip():
+            raise ValueError("flow cannot be empty")
 
-        agents_in_flow = []
+        agents_in_flow: List[str] = []
+        steps = self.flow.split("->")
 
-        # Arrow
-        tasks = self.flow.split("->")
-
-        # For the task in tasks
-        for task in tasks:
-            agent_names = [name.strip() for name in task.split(",")]
-
-            # Loop over the agent names
+        for step in steps:
+            agent_names = [name.strip() for name in step.split(",")]
             for agent_name in agent_names:
+                if not agent_name:
+                    raise ValueError(
+                        f"Empty agent name in flow segment {step!r}"
+                    )
                 if agent_name not in self.agents:
                     raise ValueError(
                         f"Agent '{agent_name}' is not registered."
@@ -524,22 +604,40 @@ class AgentRearrange:
 
         agent = self.agents[agent_name]
 
-        # Add sequential awareness information for the agent
+        # Sequential awareness is delivered through a temporary extension
+        # of the agent's system prompt rather than being added to the
+        # shared conversation. Two reasons:
+        #   1. The shared transcript stays clean — downstream agents do
+        #      not see other agents' private awareness payloads.
+        #   2. System-prompt content is excluded from the agent's default
+        #      response format ("str-all-except-first"), so the awareness
+        #      text cannot leak back into the conversation through the
+        #      agent's echo of its prompt.
+        # Mutation is safe here because sequential agents run one at a
+        # time, and batch_run gives each task its own orchestrator clone.
         awareness_info = self._get_sequential_awareness(
             agent_name, tasks, task_idx=task_idx
         )
-        if awareness_info:
-            self.conversation.add("system", awareness_info)
-            logger.info(
-                f"Added sequential awareness for {agent_name}: {awareness_info}"
-            )
+        original_system_prompt = getattr(agent, "system_prompt", None)
+        try:
+            if awareness_info and original_system_prompt is not None:
+                agent.system_prompt = (
+                    f"{original_system_prompt}\n\n{awareness_info}"
+                )
+                logger.info(
+                    f"Added sequential awareness for {agent_name}: {awareness_info}"
+                )
 
-        current_task = agent.run(
-            task=self.conversation.get_str(),
-            img=img,
-            *args,
-            **kwargs,
-        )
+            current_task = agent.run(
+                task=self.conversation.get_str(),
+                img=img,
+                *args,
+                **kwargs,
+            )
+        finally:
+            if awareness_info and original_system_prompt is not None:
+                agent.system_prompt = original_system_prompt
+
         if not isinstance(current_task, str):
             current_task = any_to_str(current_task)
 
@@ -763,6 +861,41 @@ class AgentRearrange:
         """
         return self.run(task=task, *args, **kwargs)
 
+    def _clone_for_task(self) -> "AgentRearrange":
+        """Build an isolated clone of this orchestrator for one batch_run task.
+
+        Each clone gets:
+        - A fresh ``Conversation`` so per-task history does not bleed across
+          parallel workers and the original conversation is never mutated.
+        - A per-agent ``deepcopy`` where the agent supports it (so stateful
+          agents do not race), falling back to the original instance when
+          deepcopy fails (e.g. the agent holds a ``_thread.lock``, an HTTP
+          connection pool, or other non-picklable resources).
+
+        This replaces a previous ``copy.deepcopy(self)`` strategy that raised
+        ``TypeError: cannot pickle '_thread.lock' object`` whenever any agent
+        contained non-picklable internals.
+        """
+        clone = self.__class__.__new__(self.__class__)
+        clone.__dict__.update(self.__dict__)
+
+        clone.conversation = Conversation(
+            name=f"{self.name}-Conversation",
+            time_enabled=self.time_enabled,
+            token_count=False,
+            message_id_on=self.message_id_on,
+        )
+
+        cloned_agents: Dict[str, Any] = {}
+        for agent_name, agent in self.agents.items():
+            try:
+                cloned_agents[agent_name] = copy.deepcopy(agent)
+            except Exception:
+                cloned_agents[agent_name] = agent
+        clone.agents = cloned_agents
+
+        return clone
+
     def batch_run(
         self,
         tasks: List[str],
@@ -813,8 +946,11 @@ class AgentRearrange:
                 else [None] * len(batch_tasks)
             )
 
-            # Process batch concurrently. Each task gets a full deepcopy of
-            # self so conversation history and agent state are fully isolated.
+            # Process batch concurrently. Each task gets an isolated clone so
+            # conversation history and agent state cannot bleed across tasks.
+            # ``_clone_for_task`` is robust to agents that contain non-picklable
+            # resources (thread locks, sockets) which a full ``deepcopy(self)``
+            # would have choked on.
             max_workers = min(len(batch_tasks), os.cpu_count() or 4)
             futures_ordered = []
             with ThreadPoolExecutor(
@@ -823,7 +959,7 @@ class AgentRearrange:
                 for task_item, img_path in zip(
                     batch_tasks, batch_imgs
                 ):
-                    clone = copy.deepcopy(self)
+                    clone = self._clone_for_task()
                     future = executor.submit(
                         clone.run,
                         task_item,
@@ -939,11 +1075,16 @@ class AgentRearrange:
         """
         agent = self.agents[agent_name]
 
+        # Awareness is injected via a temporary system-prompt extension.
+        # See _run_sequential_workflow for rationale.
         awareness_info = self._get_sequential_awareness(
             agent_name, tasks, task_idx=task_idx
         )
-        if awareness_info:
-            self.conversation.add("system", awareness_info)
+        original_system_prompt = getattr(agent, "system_prompt", None)
+        if awareness_info and original_system_prompt is not None:
+            agent.system_prompt = (
+                f"{original_system_prompt}\n\n{awareness_info}"
+            )
 
         if with_events:
             yield {"type": "agent_start", "agent": agent_name}
@@ -953,16 +1094,20 @@ class AgentRearrange:
         if img is not None:
             run_kwargs["img"] = img
         run_kwargs.update(kwargs)
-        async for token in agent.arun_stream(**run_kwargs):
-            chunks.append(token)
-            if with_events:
-                yield {
-                    "type": "token",
-                    "agent": agent_name,
-                    "token": token,
-                }
-            else:
-                yield (agent_name, token)
+        try:
+            async for token in agent.arun_stream(**run_kwargs):
+                chunks.append(token)
+                if with_events:
+                    yield {
+                        "type": "token",
+                        "agent": agent_name,
+                        "token": token,
+                    }
+                else:
+                    yield (agent_name, token)
+        finally:
+            if awareness_info and original_system_prompt is not None:
+                agent.system_prompt = original_system_prompt
 
         output = "".join(chunks)
         self.conversation.add(agent.agent_name, output)
