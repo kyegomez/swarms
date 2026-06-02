@@ -32,7 +32,9 @@ common_prompt = (
     "Be specific and avoid hedging."
 )
 
-haiku = _agent("Haiku_Worker", "claude-haiku-4-5-20251001", common_prompt)
+haiku = _agent(
+    "Haiku_Worker", "claude-haiku-4-5-20251001", common_prompt
+)
 gpt4o = _agent("GPT4o_Worker", "gpt-4o-mini", common_prompt)
 sonnet = _agent("Sonnet_Worker", "claude-sonnet-4-6", common_prompt)
 aggregator = _agent(
@@ -68,7 +70,12 @@ def main() -> None:
     messages = pipeline.run(TASK)
     print(f"Completed in {time.perf_counter() - t0:.2f}s\n")
 
-    order = ["Haiku_Worker", "GPT4o_Worker", "Sonnet_Worker", "Aggregator"]
+    order = [
+        "Haiku_Worker",
+        "GPT4o_Worker",
+        "Sonnet_Worker",
+        "Aggregator",
+    ]
     latest = {}
     for msg in messages:
         role = msg.get("role")

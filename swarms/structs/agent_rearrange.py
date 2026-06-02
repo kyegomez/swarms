@@ -2,7 +2,15 @@ import copy
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, Dict, List, Optional, Union, get_args
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Union,
+    get_args,
+)
 import asyncio
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation

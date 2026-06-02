@@ -42,7 +42,8 @@ aware = AgentRearrange(
 )
 aware.run("Pick a color.")
 leaks = [
-    m for m in aware.conversation.to_dict()
+    m
+    for m in aware.conversation.to_dict()
     if "Sequential awareness" in str(m.get("content", ""))
 ]
 print(f"awareness leaks in shared conversation: {len(leaks)}")

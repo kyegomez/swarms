@@ -307,7 +307,9 @@ def test_invalid_output_type_raises_at_init():
     """A misspelled output_type should fail loudly in reliability_check."""
     agents = create_sample_agents()
 
-    with pytest.raises(ValueError, match="output_type must be one of"):
+    with pytest.raises(
+        ValueError, match="output_type must be one of"
+    ):
         AgentRearrange(
             agents=agents,
             flow="ResearchAgent -> WriterAgent",
@@ -861,12 +863,13 @@ def test_awareness_not_in_shared_conversation():
 
     messages = agent_rearrange.conversation.to_dict()
     leaked = [
-        m for m in messages
+        m
+        for m in messages
         if "Sequential awareness" in str(m.get("content", ""))
     ]
-    assert leaked == [], (
-        f"Sequential awareness leaked into the shared conversation: {leaked}"
-    )
+    assert (
+        leaked == []
+    ), f"Sequential awareness leaked into the shared conversation: {leaked}"
 
 
 def test_awareness_delivered_per_agent_via_system_prompt():
@@ -886,6 +889,7 @@ def test_awareness_delivered_per_agent_via_system_prompt():
                     (agent_name, agent_obj.system_prompt)
                 )
                 return f"{agent_name} acknowledged"
+
             return _track
 
         agent.run = _make_tracker(agent, name)
@@ -902,14 +906,14 @@ def test_awareness_delivered_per_agent_via_system_prompt():
     ]
     assert len(writer_prompts) == 2
     assert all("Sequential awareness" in sp for sp in writer_prompts)
-    assert writer_prompts[0] != writer_prompts[1], (
-        "Repeated Writer invocations received identical awareness"
-    )
+    assert (
+        writer_prompts[0] != writer_prompts[1]
+    ), "Repeated Writer invocations received identical awareness"
     # System prompt must be restored after the run completes
     for agent in agents:
-        assert agent.system_prompt == originals[agent.agent_name], (
-            f"system_prompt for {agent.agent_name} was not restored"
-        )
+        assert (
+            agent.system_prompt == originals[agent.agent_name]
+        ), f"system_prompt for {agent.agent_name} was not restored"
 
 
 # ============================================================================

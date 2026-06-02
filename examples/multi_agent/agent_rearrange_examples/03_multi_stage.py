@@ -87,7 +87,14 @@ def main() -> None:
     messages = pipeline.run(TASK)
     print(f"Completed in {time.perf_counter() - t0:.2f}s\n")
 
-    order = ["Ingestor", "Tech", "Business", "Legal", "Synthesizer", "Editor"]
+    order = [
+        "Ingestor",
+        "Tech",
+        "Business",
+        "Legal",
+        "Synthesizer",
+        "Editor",
+    ]
     latest = {}
     for msg in messages:
         role = msg.get("role")

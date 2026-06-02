@@ -498,6 +498,7 @@ def test_hierarchical_swarm_autosave_saves_conversation_after_run(
 # Streaming tests
 ##############################################################################
 
+
 @pytest.fixture
 def streaming_swarm():
     """Create a lightweight HierarchicalSwarm for streaming tests."""
@@ -544,7 +545,9 @@ async def test_arun_stream_plain(streaming_swarm):
 
     assert token_count > 5, f"Too few tokens: {token_count}"
     # Director + at least one worker
-    assert len(agent_names) >= 2, f"Expected >=2 agents, got {agent_names}"
+    assert (
+        len(agent_names) >= 2
+    ), f"Expected >=2 agents, got {agent_names}"
 
 
 @pytest.mark.asyncio
@@ -583,9 +586,9 @@ async def test_arun_stream_event_types(streaming_swarm):
         if e["type"] == "swarm_end":
             continue
         assert "loop" in e, f"Missing loop in {e}"
-        assert "output" in e and len(str(e["output"])) > 0, (
-            f"Missing output in {e}"
-        )
+        assert (
+            "output" in e and len(str(e["output"])) > 0
+        ), f"Missing output in {e}"
 
 
 @pytest.mark.asyncio
@@ -631,9 +634,9 @@ async def test_arun_stream_parallel_interleaving():
         for i in range(1, len(worker_sequence))
         if worker_sequence[i] != worker_sequence[i - 1]
     )
-    assert len(worker_sequence) > 10, (
-        f"Too few worker tokens: {len(worker_sequence)}"
-    )
+    assert (
+        len(worker_sequence) > 10
+    ), f"Too few worker tokens: {len(worker_sequence)}"
     assert flips >= 3, f"Expected >=3 flips, got {flips}"
 
 

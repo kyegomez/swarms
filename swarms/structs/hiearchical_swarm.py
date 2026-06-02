@@ -1531,7 +1531,9 @@ class HierarchicalSwarm:
                         )
 
                 # Temporarily enable streaming so call_llm honours the callback
-                original_streaming_on = getattr(agent, "streaming_on", False)
+                original_streaming_on = getattr(
+                    agent, "streaming_on", False
+                )
                 agent.streaming_on = True
                 try:
                     output = agent.run(
@@ -2064,12 +2066,17 @@ class HierarchicalSwarm:
 
             # Stream director in background, drain tokens here
             director_coro = self._stream_agent_in_thread(
-                self.director, director_task_str, img=img,
+                self.director,
+                director_task_str,
+                img=img,
             )
             director_task_obj = asyncio.ensure_future(director_coro)
 
             async for evt in self._drain_queue_tokens(
-                "director", self.director_name, current_loop, with_events
+                "director",
+                self.director_name,
+                current_loop,
+                with_events,
             ):
                 yield evt
 
@@ -2190,7 +2197,9 @@ class HierarchicalSwarm:
                             "role": "worker",
                             "agent": order.agent_name,
                             "output": "".join(
-                                worker_chunks.get(order.agent_name, [])
+                                worker_chunks.get(
+                                    order.agent_name, []
+                                )
                             ),
                             "loop": current_loop,
                         }
@@ -2220,7 +2229,9 @@ class HierarchicalSwarm:
                         }
 
                     w_coro = self._stream_agent_in_thread(
-                        agent, w_task, img=img,
+                        agent,
+                        w_task,
+                        img=img,
                     )
                     w_task_obj = asyncio.ensure_future(w_coro)
 
@@ -2286,7 +2297,10 @@ class HierarchicalSwarm:
                 j_task_obj = asyncio.ensure_future(j_coro)
 
                 async for evt in self._drain_queue_tokens(
-                    "aggregator", agg_name, current_loop, with_events,
+                    "aggregator",
+                    agg_name,
+                    current_loop,
+                    with_events,
                 ):
                     yield evt
 
@@ -2336,7 +2350,10 @@ class HierarchicalSwarm:
                 fb_task_obj = asyncio.ensure_future(fb_coro)
 
                 async for evt in self._drain_queue_tokens(
-                    "aggregator", agg_name, current_loop, with_events,
+                    "aggregator",
+                    agg_name,
+                    current_loop,
+                    with_events,
                 ):
                     yield evt
 

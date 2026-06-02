@@ -66,16 +66,28 @@ def main() -> None:
     print("=" * 72)
 
     t0 = time.perf_counter()
-    messages = pipeline.run("Introduce multi-agent orchestration in one paragraph.")
+    messages = pipeline.run(
+        "Introduce multi-agent orchestration in one paragraph."
+    )
     print(f"\nCompleted in {time.perf_counter() - t0:.2f}s\n")
 
     latest = {}
     for msg in messages:
         role = msg.get("role")
-        if role in {"Source", "Translator_FR", "Translator_ES", "Translator_JP"}:
+        if role in {
+            "Source",
+            "Translator_FR",
+            "Translator_ES",
+            "Translator_JP",
+        }:
             latest[role] = msg.get("content", "")
 
-    for name in ["Source", "Translator_FR", "Translator_ES", "Translator_JP"]:
+    for name in [
+        "Source",
+        "Translator_FR",
+        "Translator_ES",
+        "Translator_JP",
+    ]:
         out = latest.get(name)
         if not out:
             continue
