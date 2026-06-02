@@ -313,7 +313,12 @@ def get_required_params(
     return [
         k
         for k, v in typed_signature.parameters.items()
-        if v.default == inspect.Signature.empty
+        if v.kind
+        not in (
+            inspect.Parameter.VAR_POSITIONAL,
+            inspect.Parameter.VAR_KEYWORD,
+        )
+        and v.default is inspect.Signature.empty
     ]
 
 
@@ -331,7 +336,7 @@ def get_default_values(
     return {
         k: v.default
         for k, v in typed_signature.parameters.items()
-        if v.default != inspect.Signature.empty
+        if v.default is not inspect.Signature.empty
     }
 
 
@@ -377,7 +382,12 @@ def get_missing_annotations(
     all_missing = {
         k
         for k, v in typed_signature.parameters.items()
-        if v.annotation is inspect.Signature.empty
+        if v.kind
+        not in (
+            inspect.Parameter.VAR_POSITIONAL,
+            inspect.Parameter.VAR_KEYWORD,
+        )
+        and v.annotation is inspect.Signature.empty
     }
     missing = all_missing.intersection(set(required))
     unannotated_with_default = all_missing.difference(missing)

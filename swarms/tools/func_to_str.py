@@ -19,7 +19,17 @@ def function_to_str(function: dict[str, Any]) -> str:
     for param, details in function["parameters"][
         "properties"
     ].items():
-        function_str += f"  {param} ({details['type']}): {details.get('description', '')}\n"
+        type_str = (
+            details.get("type")
+            or "/".join(
+                o.get("type", "any")
+                for o in details.get(
+                    "anyOf", details.get("oneOf", [])
+                )
+            )
+            or "any"
+        )
+        function_str += f"  {param} ({type_str}): {details.get('description', '')}\n"
 
     return function_str
 
