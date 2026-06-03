@@ -26,8 +26,6 @@ boost" (Anthropic, April 2026)
 
 from typing import Any, Callable, List, Optional
 
-from loguru import logger
-
 from swarms.prompts.advisor_swarm_prompts import (
     ADVISOR_SYSTEM_PROMPT,
     EXECUTOR_SYSTEM_PROMPT,

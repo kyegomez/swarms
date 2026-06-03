@@ -31,8 +31,6 @@ import traceback
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from loguru import logger
-
 from swarms.prompts.planner_generator_evaluator_prompts import (
     EVALUATOR_EVALUATE_STEP_PROMPT,
     EVALUATOR_SYSTEM_PROMPT,
