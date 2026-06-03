@@ -887,6 +887,14 @@ Thank you for contributing to swarms. Your work is extremely appreciated and rec
 </a>
 
 
+## We're Hiring
+
+Swarms is hiring. We're building the infrastructure for a world of autonomous agents, and we're looking for engineers, researchers, and operators who want to ship at the frontier of multi-agent AI.
+
+- **Open roles:** [swarms.ai/hiring](https://swarms.ai/hiring)
+- **Get in touch:** email [kye@swarms.world](mailto:kye@swarms.world) to learn more
+
+
 ## Join the Discord
 
 Join thousands of agent builders and AI engineers in the **[Swarms Discord](https://discord.gg/EamjgSaEQf)** for technical support, project showcases, collaboration, and the latest swarms ecosystem updates.
