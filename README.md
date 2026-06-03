@@ -758,7 +758,17 @@ Perfect for deploying large scale multi-agent systems. [Read the complete AOP do
 
 ## Documentation
 
-Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
+The full documentation lives at **[docs.swarms.world](https://docs.swarms.world)**. Below are the resources most useful when building with Swarms — both for humans and for AI coding assistants.
+
+| Resource | Link | What it's for |
+|---|---|---|
+| **Main documentation** | [docs.swarms.world](https://docs.swarms.world) | Guides, API reference, tutorials |
+| **`llms.txt` (LLM-ingestible docs)** | [docs.swarms.world/llms.txt](https://docs.swarms.world/llms.txt) | A single, machine-readable index of the entire documentation, formatted for LLMs and AI IDEs (Cursor, Claude Code, etc.) to consume in one fetch |
+| **MCP integration guide** | [docs.swarms.world/mcp](https://docs.swarms.world/mcp) | How to connect a Swarms `Agent` to any [Model Context Protocol](https://modelcontextprotocol.io) server, auto-discover its tools, and call them from a swarm |
+| **API reference** | [docs.swarms.world/api](https://docs.swarms.world/api) | Per-class reference for `Agent`, `SequentialWorkflow`, `ConcurrentWorkflow`, `AgentRearrange`, `GraphWorkflow`, `SwarmRouter`, and every multi-agent architecture |
+| **Environment setup** | [docs.swarms.world/environment-setup](https://docs.swarms.world/environment-setup) | API keys, model providers, and configuration options |
+
+> **Tip for AI coding assistants:** point your tool (Claude Code, Cursor, Windsurf, Continue, etc.) at `https://docs.swarms.world/llms.txt`. It will pull the entire docs index in one shot and write idiomatic Swarms code without per-question lookups.
 
 ---
 
@@ -882,15 +892,6 @@ Thank you for contributing to swarms. Your work is extremely appreciated and rec
 Join thousands of agent builders and AI engineers in the **[Swarms Discord](https://discord.gg/EamjgSaEQf)** for technical support, project showcases, collaboration, and the latest swarms ecosystem updates.
 
 [Join the Swarms Discord →](https://discord.gg/EamjgSaEQf)
-
-
-### Thank You to Our Community
-
-We're incredibly grateful to everyone who supports Swarms! Your stars, forks, and contributions help make this project better every day.
-
-[![Forkers repo roster for @kyegomez/swarms](https://reporoster.com/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network/members)
-
-[![Stargazers repo roster for @kyegomez/swarms](https://reporoster.com/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers)
 
 -----
 

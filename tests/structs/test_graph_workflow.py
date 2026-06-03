@@ -1188,5 +1188,125 @@ def test_subgraph_checkpoint_dir_inherits_from_parent(tmp_path):
     ), f"No checkpoint files found under {nested_dir}"
 
 
+# ---------------------------------------------------------------------------
+# validate() / compile-time validation tests (real agents, real LLM)
+# ---------------------------------------------------------------------------
+
+
+def test_validate_returns_dict_with_expected_keys():
+    """validate() always returns a dict with is_valid, errors, warnings, fixed."""
+    a = create_test_agent(
+        "Validator-A", "Answers questions concisely"
+    )
+    b = create_test_agent("Validator-B", "Summarises text")
+    wf = GraphWorkflow(name="V-Basic")
+    wf.add_node(a)
+    wf.add_node(b)
+    wf.add_edge("Validator-A", "Validator-B")
+
+    result = wf.validate()
+    assert isinstance(result, dict)
+    for key in ("is_valid", "errors", "warnings", "fixed"):
+        assert key in result
+
+
+def test_validate_clean_workflow_is_valid():
+    """A properly wired workflow reports is_valid=True with no errors."""
+    a = create_test_agent("Clean-A", "Answers questions concisely")
+    b = create_test_agent("Clean-B", "Summarises text")
+    wf = GraphWorkflow(name="V-Clean")
+    wf.add_node(a)
+    wf.add_node(b)
+    wf.add_edge("Clean-A", "Clean-B")
+    wf.compile()
+
+    result = wf.validate()
+    assert result["is_valid"] is True
+    assert result["errors"] == []
+
+
+def test_validate_detects_isolated_node():
+    """validate() warns about a node with no edges."""
+    a = create_test_agent("Isolated-A", "Answers questions concisely")
+    b = create_test_agent("Isolated-B", "Summarises text")
+    orphan = create_test_agent(
+        "Orphan-Node", "Orphaned agent with no edges"
+    )
+
+    wf = GraphWorkflow(name="V-Isolated")
+    wf.add_node(a)
+    wf.add_node(b)
+    wf.add_node(orphan)
+    wf.add_edge("Isolated-A", "Isolated-B")
+
+    result = wf.validate()
+    warning_text = " ".join(result["warnings"])
+    assert (
+        "Orphan-Node" in warning_text
+        or "isolated" in warning_text.lower()
+    )
+
+
+def test_validate_detects_unreachable_node():
+    """validate() warns about nodes unreachable from the explicit entry point."""
+    a = create_test_agent("Reach-A", "Answers questions concisely")
+    b = create_test_agent("Reach-B", "Summarises text")
+    c = create_test_agent("Reach-C", "Analyses data")
+    d = create_test_agent("Reach-D", "Unreachable side node")
+
+    wf = GraphWorkflow(name="V-Unreachable")
+    wf.add_node(a)
+    wf.add_node(b)
+    wf.add_node(c)
+    wf.add_node(d)
+    wf.add_edge("Reach-A", "Reach-B")
+    wf.add_edge("Reach-A", "Reach-C")
+    wf.add_edge(
+        "Reach-D", "Reach-B"
+    )  # D has edges but is unreachable from A
+    wf.set_entry_points(["Reach-A"])
+
+    result = wf.validate()
+    warning_text = " ".join(result["warnings"])
+    assert (
+        "Reach-D" in warning_text
+        or "unreachable" in warning_text.lower()
+    )
+
+
+def test_validate_raise_on_error_raises_for_invalid_workflow():
+    """validate(raise_on_error=True) raises ValueError for invalid workflows."""
+    wf = GraphWorkflow(name="V-RaiseErr")
+    wf.nodes["Ghost"] = Node(
+        id="Ghost", agent=None
+    )  # invalid — no agent
+
+    with pytest.raises(ValueError, match="validation failed"):
+        wf.validate(raise_on_error=True)
+
+
+def test_validate_raise_on_error_false_does_not_raise():
+    """validate(raise_on_error=False) returns dict even for invalid workflows."""
+    wf = GraphWorkflow(name="V-NoRaise")
+    wf.nodes["Ghost"] = Node(id="Ghost", agent=None)
+
+    result = wf.validate(raise_on_error=False)
+    assert isinstance(result, dict)
+    assert result["is_valid"] is False
+
+
+def test_compile_calls_validate_and_reports_errors():
+    """compile() surfaces validation errors: the validation result has non-empty errors."""
+    wf = GraphWorkflow(name="V-CompileCheck")
+    wf.nodes["Ghost"] = Node(id="Ghost", agent=None)
+
+    # compile() completes without raising, but validation errors are detectable
+    wf.compile()
+
+    result = wf.validate(raise_on_error=False)
+    assert not result["is_valid"]
+    assert len(result["errors"]) > 0
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

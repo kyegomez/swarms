@@ -225,7 +225,9 @@ class NetworkXBackend(GraphBackend):
             NetworkXBackend: A new backend instance with reversed edges.
         """
         reversed_backend = NetworkXBackend()
-        reversed_backend.graph = self.graph.reverse()
+        # copy=False avoids deepcopy of node attributes, which fails for
+        # Agent objects that hold unpicklable thread locks.
+        reversed_backend.graph = self.graph.reverse(copy=False)
         return reversed_backend
 
     def topological_generations(self) -> List[List[str]]:
@@ -750,7 +752,7 @@ class GraphWorkflow:
         task (str): The task to be executed by the workflow.
         _compiled (bool): Whether the graph has been compiled for optimization.
         _sorted_layers (List[List[str]]): Pre-computed topological layers for faster execution.
-        _max_workers (int): Pre-computed max workers for thread pool.
+        _max_workers (int): Maximum nodes executed concurrently. Set from max_parallel_nodes if provided, otherwise int(get_cpu_cores() * 0.95) with a minimum of 1.
         verbose (bool): Whether to enable verbose logging.
     """
 
@@ -772,6 +774,7 @@ class GraphWorkflow:
         backend: str = "networkx",
         checkpoint_dir: Optional[str] = None,
         on_node_complete: Optional[Callable[[str, Any], None]] = None,
+        max_parallel_nodes: Optional[int] = None,
     ):
         self.id = id
         self.verbose = verbose
@@ -816,7 +819,12 @@ class GraphWorkflow:
         # Private optimization attributes
         self._compiled = False
         self._sorted_layers = []
-        self._max_workers = max(1, int(get_cpu_cores() * 0.95))
+        self.max_parallel_nodes = max_parallel_nodes
+        self._max_workers = (
+            max(1, max_parallel_nodes)
+            if max_parallel_nodes is not None
+            else max(1, int(get_cpu_cores() * 0.95))
+        )
         self._compilation_timestamp = None
 
         if self.verbose:
@@ -951,6 +959,28 @@ class GraphWorkflow:
             if self.verbose:
                 logger.debug(f"Entry points: {self.entry_points}")
                 logger.debug(f"End points: {self.end_points}")
+
+            # Run structural validation so misconfiguration is surfaced at
+            # build time rather than mid-execution.  We never raise here so
+            # that compile() stays backward-compatible; callers that want
+            # strict enforcement should call validate(raise_on_error=True)
+            # explicitly.
+            if self.nodes:
+                _vr = self.validate(
+                    auto_fix=False, raise_on_error=False
+                )
+                if _vr["errors"]:
+                    logger.warning(
+                        f"GraphWorkflow compile: validation found "
+                        f"{len(_vr['errors'])} error(s) — "
+                        + "; ".join(_vr["errors"])
+                    )
+                if _vr["warnings"] and self.verbose:
+                    logger.warning(
+                        f"GraphWorkflow compile: validation found "
+                        f"{len(_vr['warnings'])} warning(s) — "
+                        + "; ".join(_vr["warnings"])
+                    )
 
             # Pre-compute topological layers for efficient execution
             if self.verbose:
@@ -3392,16 +3422,35 @@ class GraphWorkflow:
             )
             raise e
 
-    def validate(self, auto_fix: bool = False) -> Dict[str, Any]:
+    def validate(
+        self,
+        auto_fix: bool = False,
+        raise_on_error: bool = False,
+    ) -> Dict[str, Any]:
         """
         Validate the workflow structure, checking for potential issues such as isolated nodes,
-        cyclic dependencies, etc.
+        cyclic dependencies, unreachable nodes, and missing entry/end points.
 
         Args:
-            auto_fix (bool): Whether to automatically fix some simple issues (like auto-setting entry/exit points)
+            auto_fix (bool): Whether to automatically fix simple issues such as
+                auto-setting missing entry/exit points and adding unreachable
+                nodes to entry points.
+            raise_on_error (bool): When ``True``, raise a ``ValueError`` if
+                validation determines the workflow is invalid (i.e.
+                ``result["is_valid"]`` is ``False``).  Defaults to ``False``
+                so that existing callers that inspect the returned dict are
+                unaffected.
 
         Returns:
-            Dict[str, Any]: Dictionary containing validation results, including validity, warnings and errors
+            Dict[str, Any]: Dictionary containing:
+                - ``is_valid`` (bool) — overall validity flag.
+                - ``errors`` (List[str]) — fatal problems that prevent execution.
+                - ``warnings`` (List[str]) — non-fatal issues worth addressing.
+                - ``fixed`` (List[str]) — issues resolved when ``auto_fix=True``.
+                - ``cycles`` (List[List[str]]) — detected cycles, if any.
+
+        Raises:
+            ValueError: If ``raise_on_error=True`` and the workflow is invalid.
         """
         if self.verbose:
             logger.debug(
@@ -3560,11 +3609,24 @@ class GraphWorkflow:
                         f"Auto-fixed {len(result['fixed'])} issues: {', '.join(result['fixed'])}"
                     )
 
+            if raise_on_error and not result["is_valid"]:
+                all_issues = result["errors"] + result["warnings"]
+                raise ValueError(
+                    "GraphWorkflow validation failed:\n"
+                    + "\n".join(f"  - {i}" for i in all_issues)
+                )
+
             return result
+        except ValueError:
+            raise
         except Exception as e:
             result["is_valid"] = False
             result["errors"].append(str(e))
             logger.exception(f"Error during workflow validation: {e}")
+            if raise_on_error:
+                raise ValueError(
+                    f"GraphWorkflow validation failed: {e}"
+                ) from e
             return result
 
     def export_summary(self) -> Dict[str, Any]:
