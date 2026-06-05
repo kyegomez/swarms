@@ -55,6 +55,15 @@ def test_mixture_of_agents_basic_initialization():
     assert moa.layers == 3
     assert moa.max_loops == 1
 
+    # Type assertions for MixtureOfAgents attributes
+    assert isinstance(moa.agents, list)
+    assert all(isinstance(agent, Agent) for agent in moa.agents)
+    assert isinstance(moa.aggregator_agent, Agent)
+    assert isinstance(moa.layers, int)
+    assert isinstance(moa.max_loops, int)
+    assert isinstance(moa.name, str)
+    assert isinstance(moa.description, str)
+
 
 def test_mixture_of_agents_execution():
     """Test MixtureOfAgents execution with multiple agents"""
