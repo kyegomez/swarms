@@ -1,5 +1,4 @@
 import concurrent.futures
-import json
 import os
 import traceback
 from typing import (
@@ -35,6 +34,7 @@ from swarms.structs.multi_agent_router import MultiAgentRouter
 from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
+from swarms.structs.serialization import SerializableMixin
 from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
@@ -64,11 +64,6 @@ SwarmType = Literal[
     "RoundRobin",
     "PlannerWorkerSwarm",
 ]
-
-
-class Document(BaseModel):
-    file_path: str
-    data: str
 
 
 class SwarmRouterConfig(BaseModel):
@@ -115,7 +110,7 @@ class SwarmRouterConfigError(Exception):
     pass
 
 
-class SwarmRouter:
+class SwarmRouter(SerializableMixin):
     """
     A class that dynamically routes tasks to different swarm types based on user selection or automatic matching.
 
@@ -136,11 +131,8 @@ class SwarmRouter:
         autosave_use_timestamp (bool, optional): If True, use timestamp in directory name; if False, use UUID.
             Defaults to True.
         flow (str, optional): Flow configuration string. Defaults to None.
-        return_json (bool, optional): Whether to return results as JSON. Defaults to False.
-        auto_generate_prompts (bool, optional): Whether to auto-generate agent prompts. Defaults to False.
         shared_memory_system (Any, optional): Shared memory system for agents. Defaults to None.
         rules (str, optional): Rules to inject into every agent. Defaults to None.
-        documents (List[str], optional): List of document file paths to use. Defaults to empty list.
         output_type (str, optional): Output format type. Defaults to "string". Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml', 'xml'.
 
     Attributes:
@@ -151,11 +143,8 @@ class SwarmRouter:
         swarm_type (SwarmType): Type of swarm being used
         autosave (bool): Whether autosaving is enabled
         flow (str): Flow configuration string
-        return_json (bool): Whether results are returned as JSON
-        auto_generate_prompts (bool): Whether prompt auto-generation is enabled
         shared_memory_system (Any): Shared memory system for agents
         rules (str): Rules injected into every agent
-        documents (List[str]): List of document file paths
         output_type (str): Output format type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml', 'xml'.
         logs (List[SwarmLog]): List of execution logs
         swarm: The instantiated swarm object
@@ -199,15 +188,10 @@ class SwarmRouter:
         swarm_type: SwarmType = "SequentialWorkflow",  # "ConcurrentWorkflow" # "auto"
         autosave: bool = False,
         rearrange_flow: str = None,
-        return_json: bool = False,
-        auto_generate_prompts: bool = False,
         shared_memory_system: Any = None,
         rules: str = None,
-        documents: List[str] = [],  # A list of docs file paths
         output_type: OutputType = "dict-all-except-first",
         speaker_fn: callable = None,
-        load_agents_from_csv: bool = False,
-        csv_file_path: str = None,
         return_entire_history: bool = True,
         multi_agent_collab_prompt: bool = True,
         list_all_agents: bool = False,
@@ -237,16 +221,11 @@ class SwarmRouter:
         self.swarm_type = swarm_type
         self.autosave = autosave
         self.rearrange_flow = rearrange_flow
-        self.return_json = return_json
-        self.auto_generate_prompts = auto_generate_prompts
         self.shared_memory_system = shared_memory_system
         self.rules = rules
-        self.documents = documents
         self.output_type = output_type
         self.speaker_fn = speaker_fn
         self.logs = []
-        self.load_agents_from_csv = load_agents_from_csv
-        self.csv_file_path = csv_file_path
         self.return_entire_history = return_entire_history
         self.multi_agent_collab_prompt = multi_agent_collab_prompt
         self.list_all_agents = list_all_agents
@@ -385,9 +364,6 @@ class SwarmRouter:
             raise e
 
     def setup(self):
-        if self.auto_generate_prompts is True:
-            self.activate_ape()
-
         # Handle shared memory
         if self.shared_memory_system is not None:
             self.activate_shared_memory()
@@ -428,32 +404,6 @@ class SwarmRouter:
             agent.system_prompt += f"### Swarm Rules ### {self.rules}"
 
         logger.info("Finished injecting rules")
-
-    def activate_ape(self):
-        """Activate automatic prompt engineering for agents that support it"""
-        try:
-            logger.info("Activating automatic prompt engineering...")
-            activated_count = 0
-            for agent in self.agents:
-                if hasattr(agent, "auto_generate_prompt"):
-                    agent.auto_generate_prompt = (
-                        self.auto_generate_prompts
-                    )
-                    activated_count += 1
-                    logger.debug(
-                        f"Activated APE for agent: {agent.name if hasattr(agent, 'name') else 'unnamed'}"
-                    )
-
-            logger.info(
-                f"Successfully activated APE for {activated_count} agents"
-            )
-
-        except Exception as e:
-            error_msg = f"Error activating automatic prompt engineering: {str(e)}"
-            logger.error(
-                f"Error activating automatic prompt engineering in SwarmRouter: {str(e)}"
-            )
-            raise RuntimeError(error_msg) from e
 
     def _initialize_swarm_factory(self) -> Dict[str, Callable]:
         """
@@ -959,61 +909,3 @@ class SwarmRouter:
             )
             result = future.result()
             return result
-
-    def _serialize_callable(
-        self, attr_value: Callable
-    ) -> Dict[str, Any]:
-        """
-        Serializes callable attributes by extracting their name and docstring.
-
-        Args:
-            attr_value (Callable): The callable to serialize.
-
-        Returns:
-            Dict[str, Any]: Dictionary with name and docstring of the callable.
-        """
-        return {
-            "name": getattr(
-                attr_value, "__name__", type(attr_value).__name__
-            ),
-            "doc": getattr(attr_value, "__doc__", None),
-        }
-
-    def _serialize_attr(self, attr_name: str, attr_value: Any) -> Any:
-        """
-        Serializes an individual attribute, handling non-serializable objects.
-
-        Args:
-            attr_name (str): The name of the attribute.
-            attr_value (Any): The value of the attribute.
-
-        Returns:
-            Any: The serialized value of the attribute.
-        """
-        try:
-            if callable(attr_value):
-                return self._serialize_callable(attr_value)
-            elif hasattr(attr_value, "to_dict"):
-                return (
-                    attr_value.to_dict()
-                )  # Recursive serialization for nested objects
-            else:
-                json.dumps(
-                    attr_value
-                )  # Attempt to serialize to catch non-serializable objects
-                return attr_value
-        except (TypeError, ValueError):
-            return f"<Non-serializable: {type(attr_value).__name__}>"
-
-    def to_dict(self) -> Dict[str, Any]:
-        """
-        Converts all attributes of the class, including callables, into a dictionary.
-        Handles non-serializable attributes by converting them or skipping them.
-
-        Returns:
-            Dict[str, Any]: A dictionary representation of the class attributes.
-        """
-        return {
-            attr_name: self._serialize_attr(attr_name, attr_value)
-            for attr_name, attr_value in self.__dict__.items()
-        }

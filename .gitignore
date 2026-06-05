@@ -27,8 +27,6 @@ infra.md
 runs
 Financial-Analysis-Agent_state.json
 conversations/
-models/
-evolved_gpt2_models/
 experimental
 ffn_alternatives
 artifacts_five

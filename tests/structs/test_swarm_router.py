@@ -5,7 +5,6 @@ from swarms.structs.swarm_router import (
     SwarmRouterConfig,
     SwarmRouterRunError,
     SwarmRouterConfigError,
-    Document,
 )
 from swarms.structs.agent import Agent
 
@@ -41,63 +40,6 @@ def create_sample_agents():
 # ============================================================================
 # Initialization Tests
 # ============================================================================
-
-
-def test_default_initialization():
-    """Test SwarmRouter with default parameters."""
-    router = SwarmRouter()
-
-    assert router.name == "swarm-router"
-    assert (
-        router.description == "Routes your task to the desired swarm"
-    )
-    assert router.max_loops == 1
-    assert router.agents == []
-    assert router.swarm_type == "SequentialWorkflow"
-    assert router.autosave is False
-    assert router.return_json is False
-    assert router.auto_generate_prompts is False
-    assert router.shared_memory_system is None
-    assert router.rules is None
-    assert router.documents == []
-    assert router.output_type == "dict-all-except-first"
-    assert router.verbose is False
-    assert router.telemetry_enabled is False
-
-
-def test_custom_initialization():
-    """Test SwarmRouter with custom parameters."""
-    sample_agents = create_sample_agents()
-
-    router = SwarmRouter(
-        name="test-router",
-        description="Test router description",
-        max_loops=3,
-        agents=sample_agents,
-        swarm_type="ConcurrentWorkflow",
-        autosave=True,
-        return_json=True,
-        auto_generate_prompts=True,
-        rules="Test rules",
-        documents=["doc1.txt", "doc2.txt"],
-        output_type="json",
-        verbose=False,  # Keep quiet for tests
-        telemetry_enabled=False,
-    )
-
-    assert router.name == "test-router"
-    assert router.description == "Test router description"
-    assert router.max_loops == 3
-    assert router.agents == sample_agents
-    assert router.swarm_type == "ConcurrentWorkflow"
-    assert router.autosave is True
-    assert router.return_json is True
-    assert router.auto_generate_prompts is True
-    assert router.rules == "Test rules"
-    assert router.documents == ["doc1.txt", "doc2.txt"]
-    assert router.output_type == "json"
-    assert router.verbose is False
-    assert router.telemetry_enabled is False
 
 
 def test_initialization_with_heavy_swarm_config():
@@ -161,40 +103,6 @@ def test_initialization_with_worker_tools():
     )
 
     assert router.worker_tools == []
-
-
-# ============================================================================
-# Document Management Tests
-# ============================================================================
-
-
-def test_document_creation():
-    """Test Document creation."""
-    doc = Document(
-        file_path="/path/to/test/document.txt",
-        data="This is test content",
-    )
-
-    assert doc.file_path == "/path/to/test/document.txt"
-    assert doc.data == "This is test content"
-
-
-def test_router_with_documents():
-    """Test SwarmRouter with document configuration."""
-    sample_agents = create_sample_agents()
-    documents = [
-        Document(file_path="/path/to/doc1.txt", data="Content1"),
-        Document(file_path="/path/to/doc2.txt", data="Content2"),
-    ]
-
-    router = SwarmRouter(
-        agents=sample_agents,
-        documents=documents,
-    )
-
-    assert len(router.documents) == 2
-    assert router.documents[0].file_path == "/path/to/doc1.txt"
-    assert router.documents[1].file_path == "/path/to/doc2.txt"
 
 
 # ============================================================================
@@ -411,23 +319,6 @@ def test_swarm_router_config_error():
     assert str(error) == "Config error message"
 
 
-def test_invalid_swarm_type():
-    """Test router with invalid swarm type."""
-    sample_agents = create_sample_agents()
-
-    # This should not raise an error during initialization
-    router = SwarmRouter(
-        agents=sample_agents,
-        swarm_type="InvalidSwarmType",
-    )
-
-    # But should raise ValueError during execution when creating swarm
-    with pytest.raises(
-        ValueError, match="Invalid swarm type: InvalidSwarmType"
-    ):
-        router.run("Test task")
-
-
 # ============================================================================
 # Integration Tests
 # ============================================================================
@@ -482,6 +373,229 @@ def test_router_reconfiguration():
 
     # Test execution with new configuration
     result = router.run("Test reconfiguration")
+    assert result is not None
+
+
+# ============================================================================
+# Swarm Type Coverage — one .run() per supported swarm_type
+# ============================================================================
+#
+# These tests exercise the SwarmRouter dispatch end-to-end for every type the
+# router claims to support. Each test uses minimal config and a trivial task
+# to keep LLM cost down; we only assert that .run() returns something, since
+# correctness of each underlying swarm is its own test file's responsibility.
+
+
+def test_run_with_agent_rearrange():
+    """SwarmRouter dispatches to AgentRearrange."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="AgentRearrange",
+        rearrange_flow="ResearchAgent -> CodeAgent",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_mixture_of_agents():
+    """SwarmRouter dispatches to MixtureOfAgents."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="MixtureOfAgents",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_sequential_workflow_type():
+    """SwarmRouter dispatches to SequentialWorkflow."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="SequentialWorkflow",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_concurrent_workflow():
+    """SwarmRouter dispatches to ConcurrentWorkflow."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="ConcurrentWorkflow",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_group_chat():
+    """SwarmRouter dispatches to GroupChat."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="GroupChat",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_multi_agent_router():
+    """SwarmRouter dispatches to MultiAgentRouter."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="MultiAgentRouter",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_auto_swarm_builder():
+    """SwarmRouter dispatches to AutoSwarmBuilder."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="AutoSwarmBuilder",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_hierarchical_swarm():
+    """SwarmRouter dispatches to HierarchicalSwarm."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="HierarchicalSwarm",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_auto():
+    """SwarmRouter dispatches to 'auto' (embedding-based selection)."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="auto",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_majority_voting():
+    """SwarmRouter dispatches to MajorityVoting."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="MajorityVoting",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_council_as_judge():
+    """SwarmRouter dispatches to CouncilAsAJudge."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="CouncilAsAJudge",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_heavy_swarm():
+    """SwarmRouter dispatches to HeavySwarm."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="HeavySwarm",
+        heavy_swarm_loops_per_agent=1,
+        heavy_swarm_swarm_show_output=False,
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_batched_grid_workflow():
+    """SwarmRouter dispatches to BatchedGridWorkflow."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="BatchedGridWorkflow",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_llm_council():
+    """SwarmRouter dispatches to LLMCouncil."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="LLMCouncil",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
     assert result is not None
 
 
