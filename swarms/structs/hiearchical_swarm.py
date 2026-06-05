@@ -1199,6 +1199,11 @@ class HierarchicalSwarm:
 
             if self.agent_as_judge:
                 feedback = self.run_judge_agent(outputs)
+                # Check if judge rejected the plan — if so, mark for replanning
+                if self._is_judge_rejection(feedback):
+                    logger.info(
+                        "Judge rejected the plan. Will trigger mid-flight replanning."
+                    )
             elif self.director_feedback_on is True:
                 feedback = self.feedback_director(outputs)
             else:
@@ -1211,6 +1216,31 @@ class HierarchicalSwarm:
             logger.error(
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
+
+    @staticmethod
+    def _is_judge_rejection(feedback: Any) -> bool:
+        """Check if the judge's feedback indicates plan rejection.
+
+        Detects rejection signals in both structured dicts and free-text feedback:
+        - Dict with 'status': 'REJECTED' or 'PARTIAL'
+        - Text containing REJECTED, FAILED, or REVISION_REQUIRED markers
+
+        Args:
+            feedback: Judge feedback (dict, str, or other).
+
+        Returns:
+            True if the judge rejected the plan or requested revision.
+        """
+        if isinstance(feedback, dict):
+            status = str(feedback.get("status", "")).upper()
+            return status in ("REJECTED", "PARTIAL", "REVISION_REQUIRED")
+        if isinstance(feedback, str):
+            feedback_upper = feedback.upper()
+            return any(
+                marker in feedback_upper
+                for marker in ("REJECTED", "REVISION_REQUIRED", "PLAN_FAILED")
+            )
+        return False
 
     def run(
         self,
@@ -1228,6 +1258,11 @@ class HierarchicalSwarm:
         This method orchestrates the complete swarm execution, performing multiple
         iterations based on the max_loops configuration. Each iteration builds upon
         the previous results, allowing for iterative refinement and improvement.
+
+        When the judge rejects a plan (agent_as_judge=True), the swarm performs
+        mid-flight replanning: the director creates a new plan based on the judge's
+        feedback, preserved results from approved subtasks, and only re-executes
+        failed or missing subtasks.
 
         The method maintains conversation history throughout all loops and provides
         context from previous iterations to subsequent ones.
@@ -1256,6 +1291,7 @@ class HierarchicalSwarm:
 
             current_loop = 0
             last_output = None
+            preserved_outputs = {}  # Track outputs from approved subtasks
 
             # Start dashboard if in interactive mode
             if self.interactive and self.dashboard:
@@ -1275,12 +1311,45 @@ class HierarchicalSwarm:
                 if current_loop == 0:
                     loop_task = task
                 else:
-                    loop_task = (
-                        f"Previous loop results: {last_output}\n\n"
-                        f"Original task: {task}\n\n"
-                        "Based on the previous results and any feedback, continue with the next iteration of the task. "
-                        "Refine, improve, or complete any remaining aspects of the analysis."
-                    )
+                    # If the judge rejected the last plan, include replanning context
+                    if self.agent_as_judge and self._is_judge_rejection(
+                        last_output
+                    ):
+                        judge_feedback = (
+                            last_output.get("global_feedback", str(last_output))
+                            if isinstance(last_output, dict)
+                            else str(last_output)
+                        )
+                        preserved_context = (
+                            f"Preserved outputs from approved subtasks:\n"
+                            f"{json.dumps(preserved_outputs, indent=2)}"
+                            if preserved_outputs
+                            else ""
+                        )
+                        loop_task = (
+                            f"REPLAN REQUIRED — Previous plan was rejected.\n"
+                            f"Judge feedback: {judge_feedback}\n\n"
+                            f"{preserved_context}\n\n"
+                            f"Original task: {task}\n\n"
+                            "Create a new plan addressing the judge's concerns. "
+                            "Do NOT redo subtasks whose outputs are preserved above. "
+                            "Only create new orders for failed or missing subtasks."
+                        )
+                        if self.interactive and self.dashboard:
+                            self.dashboard.update_director_status(
+                                "REPLANNING"
+                            )
+                        logger.info(
+                            f"Mid-flight replanning triggered by judge rejection. "
+                            f"Preserved {len(preserved_outputs)} approved outputs."
+                        )
+                    else:
+                        loop_task = (
+                            f"Previous loop results: {last_output}\n\n"
+                            f"Original task: {task}\n\n"
+                            "Based on the previous results and any feedback, continue with the next iteration of the task. "
+                            "Refine, improve, or complete any remaining aspects of the analysis."
+                        )
 
                 # Execute one step of the swarm
                 try:
@@ -1291,6 +1360,12 @@ class HierarchicalSwarm:
                         *args,
                         **kwargs,
                     )
+
+                    # Preserve outputs from approved subtasks for potential replanning
+                    if isinstance(last_output, dict):
+                        approved = last_output.get("approved_outputs")
+                        if approved:
+                            preserved_outputs.update(approved)
 
                 except Exception as e:
                     error_msg = (
