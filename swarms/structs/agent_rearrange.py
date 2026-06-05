@@ -1,5 +1,4 @@
 import copy
-import json
 import os
 from concurrent.futures import ThreadPoolExecutor
 from typing import (
@@ -13,10 +12,11 @@ from typing import (
 )
 import asyncio
 from swarms.structs.agent import Agent
+from swarms.telemetry.main import log_agent_data
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
+from swarms.structs.serialization import SerializableMixin
 from swarms.structs.swarm_id import swarm_id
-from swarms.telemetry.main import log_agent_data
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -31,7 +31,7 @@ logger = initialize_logger(log_folder="rearrange")
 _VALID_OUTPUT_TYPES = set(get_args(OutputType))
 
 
-class AgentRearrange:
+class AgentRearrange(SerializableMixin):
     """
     A sophisticated multi-agent system for task rearrangement and orchestration.
 
@@ -64,7 +64,6 @@ class AgentRearrange:
         memory_system (Any): Optional memory system for persistence
         output_type (OutputType): Format for output results
         autosave (bool): Whether to automatically save execution data
-        rules (str): System rules and constraints
         team_awareness (bool): Whether agents are aware of team structure
         time_enabled (bool): Whether to track timestamps
         message_id_on (bool): Whether to include message IDs
@@ -105,7 +104,6 @@ class AgentRearrange:
         memory_system: Any = None,
         output_type: OutputType = "all",
         autosave: bool = True,
-        rules: str = None,
         team_awareness: bool = False,
         time_enabled: bool = False,
         message_id_on: bool = False,
@@ -136,8 +134,6 @@ class AgentRearrange:
                 "list", or "dict". Defaults to "all".
             autosave (bool): Whether to automatically save execution data.
                 Defaults to True.
-            rules (str, optional): System rules and constraints to add to conversation.
-                Defaults to None.
             team_awareness (bool): Whether agents should be aware of team structure
                 and sequential flow. Defaults to False.
             time_enabled (bool): Whether to track timestamps in conversations.
@@ -172,9 +168,6 @@ class AgentRearrange:
             token_count=False,
             message_id_on=self.message_id_on,
         )
-
-        if rules:
-            self.conversation.add("user", rules)
 
         if team_awareness is True:
             # agents_info = get_agents_info(agents=self.agents, team_name=self.name)
@@ -549,6 +542,12 @@ class AgentRearrange:
         """
         logger.info(f"Running agents in parallel: {agent_names}")
 
+        missing = [n for n in agent_names if n not in self.agents]
+        if missing:
+            raise ValueError(
+                f"Agent(s) {missing} not registered in this AgentRearrange instance."
+            )
+
         # Get agent objects for concurrent execution
         agents_to_run = [
             self.agents[agent_name] for agent_name in agent_names
@@ -609,6 +608,11 @@ class AgentRearrange:
             the agent about its position in the workflow sequence.
         """
         logger.info(f"Running agent sequentially: {agent_name}")
+
+        if agent_name not in self.agents:
+            raise ValueError(
+                f"Agent '{agent_name}' is not registered in this AgentRearrange instance."
+            )
 
         agent = self.agents[agent_name]
 
@@ -698,10 +702,8 @@ class AgentRearrange:
         """
         self.conversation.add("User", task)
 
-        if not self.validate_flow():
-            logger.error("Flow validation failed")
-            return "Invalid flow configuration."
-
+        # Flow is validated at construction (and again in
+        # ``set_custom_flow``); skip the per-call re-split here.
         tasks = self.flow.split("->")
         response_dict = {}
 
@@ -832,16 +834,12 @@ class AgentRearrange:
             handled by the _catch_error method.
         """
         try:
-            log_agent_data(self.to_dict())
-
             out = self._run(
                 task=task,
                 img=img,
                 *args,
                 **kwargs,
             )
-
-            log_agent_data(self.to_dict())
 
             return out
 
@@ -1237,9 +1235,8 @@ class AgentRearrange:
         """
         self.conversation.add("User", task)
 
-        if not self.validate_flow():
-            raise ValueError("Invalid flow configuration.")
-
+        # Flow is validated at construction (and again in
+        # ``set_custom_flow``); skip the per-call re-split here.
         tasks_list = self.flow.split("->")
 
         for task_idx, task_segment in enumerate(tasks_list):
@@ -1313,93 +1310,6 @@ class AgentRearrange:
         t.join()
         if exc_holder[0] is not None:
             raise exc_holder[0]
-
-    def _serialize_callable(
-        self, attr_value: Callable
-    ) -> Dict[str, Any]:
-        """
-        Serializes callable attributes by extracting their name and docstring.
-
-        This helper method handles the serialization of callable objects (functions,
-        methods, etc.) by extracting their metadata for storage or logging purposes.
-
-        Args:
-            attr_value (Callable): The callable object to serialize.
-
-        Returns:
-            Dict[str, Any]: Dictionary containing the callable's name and docstring.
-                Keys are "name" and "doc", values are the corresponding attributes.
-
-        Note:
-            This method is used internally by to_dict() to handle non-serializable
-            callable attributes in a graceful manner.
-        """
-        return {
-            "name": getattr(
-                attr_value, "__name__", type(attr_value).__name__
-            ),
-            "doc": getattr(attr_value, "__doc__", None),
-        }
-
-    def _serialize_attr(self, attr_name: str, attr_value: Any) -> Any:
-        """
-        Serializes an individual attribute, handling non-serializable objects.
-
-        This helper method attempts to serialize individual attributes for storage
-        or logging. It handles different types of objects including callables,
-        objects with to_dict methods, and basic serializable types.
-
-        Args:
-            attr_name (str): The name of the attribute being serialized.
-            attr_value (Any): The value of the attribute to serialize.
-
-        Returns:
-            Any: The serialized value of the attribute. For non-serializable objects,
-                returns a string representation indicating the object type.
-
-        Note:
-            This method is used internally by to_dict() to handle various types
-            of attributes in a robust manner, ensuring the serialization process
-            doesn't fail on complex objects.
-        """
-        try:
-            if callable(attr_value):
-                return self._serialize_callable(attr_value)
-            elif hasattr(attr_value, "to_dict"):
-                return (
-                    attr_value.to_dict()
-                )  # Recursive serialization for nested objects
-            else:
-                json.dumps(
-                    attr_value
-                )  # Attempt to serialize to catch non-serializable objects
-                return attr_value
-        except (TypeError, ValueError):
-            return f"<Non-serializable: {type(attr_value).__name__}>"
-
-    def to_dict(self) -> Dict[str, Any]:
-        """
-        Converts all attributes of the class, including callables, into a dictionary.
-
-        This method provides a comprehensive serialization of the AgentRearrange
-        instance, converting all attributes into a dictionary format suitable for
-        storage, logging, or transmission. It handles complex objects gracefully
-        by using helper methods for serialization.
-
-        Returns:
-            Dict[str, Any]: A dictionary representation of all class attributes.
-                Non-serializable objects are converted to string representations
-                or serialized using their to_dict method if available.
-
-        Note:
-            This method is used for telemetry logging and state persistence.
-            It recursively handles nested objects and provides fallback handling
-            for objects that cannot be directly serialized.
-        """
-        return {
-            attr_name: self._serialize_attr(attr_name, attr_value)
-            for attr_name, attr_value in self.__dict__.items()
-        }
 
 
 def rearrange(
