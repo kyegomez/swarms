@@ -19,7 +19,7 @@ architect = Agent(
         "are willing to accept. In loop 2, revise based on the critique "
         "you received."
     ),
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -31,7 +31,7 @@ sre = Agent(
         "blast radius of failures, rollback story, observability gaps, "
         "and on-call burden. Give specific, actionable pushback."
     ),
-    model_name="gpt-4.1",
+    model_name="claude-sonnet-4-6",
     max_loops=1,
 )
 
@@ -43,7 +43,7 @@ security = Agent(
         "authz, data exposure, supply chain, and trust boundaries. "
         "Name at least one concrete attack the prior speakers missed."
     ),
-    model_name="gpt-4.1",
+    model_name="gemini/gemini-2.5-pro",
     max_loops=1,
 )
 
@@ -56,7 +56,7 @@ staff_engineer = Agent(
         "change to the design that addresses the blocking ones. End "
         "your turn with a clear ship / iterate / reject verdict."
     ),
-    model_name="gpt-4.1",
+    model_name="claude-opus-4-7",
     max_loops=1,
 )
 

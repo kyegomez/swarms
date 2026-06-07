@@ -12,7 +12,7 @@ optimist = Agent(
         "You are an optimist. Your job is to identify the strongest "
         "reasons the proposal under discussion will succeed. Be specific."
     ),
-    model_name="gpt-4.1",
+    model_name="claude-sonnet-4-6",
     max_loops=1,
 )
 
@@ -24,7 +24,7 @@ skeptic = Agent(
         "speaker's strongest claim with a concrete failure mode or "
         "missing assumption."
     ),
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -35,7 +35,7 @@ synthesiser = Agent(
         "You are a synthesiser. Reconcile the optimist's case and the "
         "skeptic's pushback into one clear recommendation."
     ),
-    model_name="gpt-4.1",
+    model_name="gemini/gemini-2.5-pro",
     max_loops=1,
 )
 

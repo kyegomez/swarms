@@ -18,7 +18,7 @@ cio = Agent(
         "case: market fit, expected AUM, and how the product slots into "
         "the existing lineup. Be concrete about target investors."
     ),
-    model_name="gpt-4.1",
+    model_name="claude-opus-4-7",
     max_loops=1,
 )
 
@@ -31,7 +31,7 @@ risk_officer = Agent(
         "selloff, tracking error, liquidity of the underlying basket. "
         "Quantify wherever possible."
     ),
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -44,7 +44,7 @@ allocation_strategist = Agent(
         "criteria, and how it differs from existing thematic ETFs in "
         "the market."
     ),
-    model_name="gpt-4.1",
+    model_name="gemini/gemini-2.5-pro",
     max_loops=1,
 )
 
@@ -56,7 +56,7 @@ compliance = Agent(
         "naming-rule concerns (e.g. SEC Names Rule 35d-1). State what "
         "must be true for the product to be approved."
     ),
-    model_name="gpt-4.1",
+    model_name="claude-sonnet-4-6",
     max_loops=1,
 )
 

@@ -18,7 +18,7 @@ oncologist = Agent(
         "rates for the staging given, and contraindications. Be precise "
         "about which regimens you would consider first-line."
     ),
-    model_name="gpt-4.1",
+    model_name="claude-opus-4-7",
     max_loops=1,
 )
 
@@ -31,7 +31,7 @@ surgeon = Agent(
         "surgery sequences with the systemic plan the prior speaker "
         "proposed (neoadjuvant vs adjuvant)."
     ),
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -44,7 +44,7 @@ palliative = Agent(
         "back if the proposed plan trades quality of life for marginal "
         "survival benefit. Suggest concrete symptom-management additions."
     ),
-    model_name="gpt-4.1",
+    model_name="gemini/gemini-2.5-pro",
     max_loops=1,
 )
 
