@@ -49,17 +49,19 @@ def test_initialization_with_heavy_swarm_config():
     router = SwarmRouter(
         agents=sample_agents,
         swarm_type="HeavySwarm",
-        heavy_swarm_loops_per_agent=2,
+        heavy_swarm_max_loops=2,
         heavy_swarm_question_agent_model_name="gpt-5.4",
         heavy_swarm_worker_model_name="gpt-5.4",
         heavy_swarm_swarm_show_output=False,
+        heavy_swarm_variant="heavy",
     )
 
     assert router.swarm_type == "HeavySwarm"
-    assert router.heavy_swarm_loops_per_agent == 2
+    assert router.heavy_swarm_max_loops == 2
     assert router.heavy_swarm_question_agent_model_name == "gpt-5.4"
     assert router.heavy_swarm_worker_model_name == "gpt-5.4"
     assert router.heavy_swarm_swarm_show_output is False
+    assert router.heavy_swarm_variant == "heavy"
 
 
 def test_initialization_with_agent_rearrange_config():
@@ -559,7 +561,7 @@ def test_run_with_heavy_swarm():
     router = SwarmRouter(
         agents=sample_agents,
         swarm_type="HeavySwarm",
-        heavy_swarm_loops_per_agent=1,
+        heavy_swarm_max_loops=1,
         heavy_swarm_swarm_show_output=False,
         max_loops=1,
         verbose=False,

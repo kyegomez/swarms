@@ -1,5 +1,7 @@
 import json
-from typing import Any, Callable, Dict, Iterable, Tuple
+from typing import Any, Callable, Dict, Iterable, Optional, Tuple
+
+from swarms.utils.loguru_logger import logger
 
 
 class SerializableMixin:
@@ -54,6 +56,7 @@ class SerializableMixin:
     """
 
     _to_dict_exclude: Tuple[str, ...] = ()
+    verbose: Optional[bool] = False
 
     def _serialize_callable(
         self, attr_value: Callable
@@ -116,3 +119,10 @@ class SerializableMixin:
             for attr_name, attr_value in self.__dict__.items()
             if attr_name not in excluded
         }
+
+    def _log(self, level: str, message: str) -> None:
+        """Log a message through the loguru logger when verbose is enabled."""
+        if not getattr(self, "verbose", False):
+            return
+
+        logger.opt(depth=1).log(level.upper(), message)

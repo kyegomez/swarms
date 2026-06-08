@@ -5270,27 +5270,23 @@ Subtask Breakdown:
         """
         Talk to multiple agents.
         """
-        # o# Use the existing executor from self.executor or create a new one if needed
-        with ThreadPoolExecutor() as executor:
-            # Create futures for each agent conversation
-            futures = [
-                executor.submit(
-                    self.talk_to, agent, task, *args, **kwargs
-                )
-                for agent in agents
-            ]
+        # Create futures for each agent conversation
+        futures = [
+            self.executor.submit(
+                self.talk_to, agent, task, *args, **kwargs
+            )
+            for agent in agents
+        ]
 
-            # Wait for all futures to complete and collect results
-            outputs = []
-            for future in futures:
-                try:
-                    result = future.result()
-                    outputs.append(result)
-                except Exception as e:
-                    logger.error(f"Error in agent communication: {e}")
-                    outputs.append(
-                        None
-                    )  # or handle error case as needed
+        # Wait for all futures to complete and collect results
+        outputs = []
+        for future in futures:
+            try:
+                result = future.result()
+                outputs.append(result)
+            except Exception as e:
+                logger.error(f"Error in agent communication: {e}")
+                outputs.append(None)  # or handle error case as needed
 
         return outputs
 
@@ -6315,31 +6311,25 @@ Summary: {summary}
         Raises:
             Exception: If an error occurs while processing any of the images.
         """
-        # Calculate number of workers as 95% of available CPU cores
-        cpu_count = os.cpu_count()
-        max_workers = max(1, int(cpu_count * 0.95))
+        # Submit all image processing tasks
+        future_to_img = {
+            self.executor.submit(
+                self.run, task=task, img=img, *args, **kwargs
+            ): img
+            for img in imgs
+        }
 
-        # Use ThreadPoolExecutor for concurrent processing
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # Submit all image processing tasks
-            future_to_img = {
-                executor.submit(
-                    self.run, task=task, img=img, *args, **kwargs
-                ): img
-                for img in imgs
-            }
-
-            # Collect results in order
-            outputs = []
-            for future in future_to_img:
-                try:
-                    output = future.result()
-                    outputs.append(output)
-                except Exception as e:
-                    logger.error(f"Error processing image: {e}")
-                    outputs.append(
-                        None
-                    )  # or raise the exception based on your preference
+        # Collect results in order
+        outputs = []
+        for future in future_to_img:
+            try:
+                output = future.result()
+                outputs.append(output)
+            except Exception as e:
+                logger.error(f"Error processing image: {e}")
+                outputs.append(
+                    None
+                )  # or raise the exception based on your preference
 
         # Combine the outputs into a single string if summarization is enabled
         if self.summarize_multiple_images is True:

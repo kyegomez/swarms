@@ -12,7 +12,7 @@ swarm = HeavySwarm(
     description="16-agent deep multi-domain analysis",
     worker_model_name="gpt-4.1",
     question_agent_model_name="gpt-4.1",
-    use_grok_heavy=True,
+    variant="heavy",
     show_dashboard=True,
     loops_per_agent=1,
 )
