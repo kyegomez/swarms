@@ -14,6 +14,7 @@ import asyncio
 from swarms.structs.agent import Agent
 from swarms.telemetry.main import log_agent_data
 from swarms.structs.conversation import Conversation
+from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.multi_agent_exec import run_agents_concurrently
 from swarms.structs.serialization import SerializableMixin
 from swarms.structs.swarm_id import swarm_id
@@ -146,13 +147,13 @@ class AgentRearrange(SerializableMixin):
                 flow is None or empty, or output_type is None or empty.
 
         Note:
-            The agents parameter is converted to a dictionary mapping agent names
-            to Agent objects for efficient lookup during execution.
+            Name-based lookups use ``find_agent_by_name``, which maintains a
+            cached name → agent index over ``self.agents``.
         """
         self.name = name
         self.description = description
         self.id = id
-        self.agents = {agent.agent_name: agent for agent in agents}
+        self.agents = list(agents) if agents else []
         self.flow = flow if flow is not None else ""
         self.verbose = verbose
         self.max_loops = max_loops if max_loops > 0 else 1
@@ -314,7 +315,7 @@ class AgentRearrange(SerializableMixin):
             agent (Agent): The agent to be added.
         """
         logger.info(f"Adding agent {agent.agent_name} to the swarm.")
-        self.agents[agent.agent_name] = agent
+        self.agents.append(agent)
 
     def remove_agent(self, agent_name: str):
         """
@@ -332,8 +333,7 @@ class AgentRearrange(SerializableMixin):
         Args:
             agents (List[Agent]): A list of Agent objects.
         """
-        for agent in agents:
-            self.agents[agent.agent_name] = agent
+        self.agents.extend(agents)
 
     def validate_flow(self):
         """
@@ -365,7 +365,9 @@ class AgentRearrange(SerializableMixin):
                     raise ValueError(
                         f"Empty agent name in flow segment {step!r}"
                     )
-                if agent_name not in self.agents:
+                try:
+                    find_agent_by_name(self.agents, agent_name)
+                except (TypeError, ValueError):
                     raise ValueError(
                         f"Agent '{agent_name}' is not registered."
                     )
@@ -542,16 +544,19 @@ class AgentRearrange(SerializableMixin):
         """
         logger.info(f"Running agents in parallel: {agent_names}")
 
-        missing = [n for n in agent_names if n not in self.agents]
+        agents_to_run = []
+        missing = []
+        for name in agent_names:
+            try:
+                agents_to_run.append(
+                    find_agent_by_name(self.agents, name)
+                )
+            except (TypeError, ValueError):
+                missing.append(name)
         if missing:
             raise ValueError(
                 f"Agent(s) {missing} not registered in this AgentRearrange instance."
             )
-
-        # Get agent objects for concurrent execution
-        agents_to_run = [
-            self.agents[agent_name] for agent_name in agent_names
-        ]
 
         # Run agents concurrently
         results = run_agents_concurrently(
@@ -609,12 +614,12 @@ class AgentRearrange(SerializableMixin):
         """
         logger.info(f"Running agent sequentially: {agent_name}")
 
-        if agent_name not in self.agents:
+        try:
+            agent = find_agent_by_name(self.agents, agent_name)
+        except (TypeError, ValueError):
             raise ValueError(
                 f"Agent '{agent_name}' is not registered in this AgentRearrange instance."
             )
-
-        agent = self.agents[agent_name]
 
         # Sequential awareness is delivered through a temporary extension
         # of the agent's system prompt rather than being added to the
@@ -892,12 +897,12 @@ class AgentRearrange(SerializableMixin):
             message_id_on=self.message_id_on,
         )
 
-        cloned_agents: Dict[str, Any] = {}
-        for agent_name, agent in self.agents.items():
+        cloned_agents: List[Any] = []
+        for agent in self.agents:
             try:
-                cloned_agents[agent_name] = copy.deepcopy(agent)
+                cloned_agents.append(copy.deepcopy(agent))
             except Exception:
-                cloned_agents[agent_name] = agent
+                cloned_agents.append(agent)
         clone.agents = cloned_agents
 
         return clone
@@ -1079,7 +1084,7 @@ class AgentRearrange(SerializableMixin):
         Yields ``(agent_name, token)`` tuples by default, or structured event
         dicts when ``with_events=True``.
         """
-        agent = self.agents[agent_name]
+        agent = find_agent_by_name(self.agents, agent_name)
 
         # Awareness is injected via a temporary system-prompt extension.
         # See _run_sequential_workflow for rationale.
@@ -1152,7 +1157,7 @@ class AgentRearrange(SerializableMixin):
 
         async def producer(name: str):
             try:
-                agent = self.agents[name]
+                agent = find_agent_by_name(self.agents, name)
                 run_kwargs = {"task": base_input}
                 if img is not None:
                     run_kwargs["img"] = img

@@ -3,6 +3,7 @@ import traceback
 from loguru import logger
 
 from swarms.structs.deep_discussion import one_on_one_debate
+from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.omni_agent_types import AgentListType, AgentType
 
 
@@ -49,19 +50,7 @@ def talk_to_agent(
         ... )
     """
     try:
-        target_agent = None
-        for agent in agents:
-            if (
-                hasattr(agent, "agent_name")
-                and agent.agent_name == agent_name
-            ):
-                target_agent = agent
-                break
-
-        if target_agent is None:
-            raise ValueError(
-                f"Agent '{agent_name}' not found in agent list."
-            )
+        target_agent = find_agent_by_name(agents, agent_name)
 
         # Initiate a one-on-one debate between the current agent and the target agent.
         return one_on_one_debate(

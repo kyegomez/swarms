@@ -8,6 +8,7 @@ from loguru import logger
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.ma_utils import create_agent_map
 from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.history_output_formatter import (
@@ -1352,11 +1353,7 @@ class GroupChat:
         Raises:
             AgentNotFoundError: If the agent is not found.
         """
-        agent = self.agent_map.get(agent_name)
-        if not agent:
-            raise AgentNotFoundError(
-                f"Agent '{agent_name}' not found"
-            )
+        agent = find_agent_by_name(self.agents, agent_name)
 
         try:
             # Get the complete conversation history

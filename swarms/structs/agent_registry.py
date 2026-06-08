@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, List, Optional
 from pydantic import BaseModel, Field, ValidationError
 
 from swarms.structs.agent import Agent
+from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.utils.loguru_logger import logger
 
 
@@ -207,14 +208,16 @@ class AgentRegistry:
         """
         with self.lock:
             try:
-                agent = self.agents[agent_name]
+                agent = find_agent_by_name(
+                    list(self.agents.values()), agent_name
+                )
                 logger.info(
                     f"Agent {agent_name} retrieved successfully."
                 )
                 return agent
-            except KeyError as e:
+            except (TypeError, ValueError) as e:
                 logger.error(f"Error: {e}")
-                raise
+                raise KeyError(agent_name) from e
 
     def list_agents(self) -> List[str]:
         """
@@ -290,15 +293,9 @@ class AgentRegistry:
             Agent: The agent with the given name.
         """
         try:
-            with ThreadPoolExecutor() as executor:
-                futures = {
-                    executor.submit(self.get, agent_name): agent_name
-                    for agent_name in self.agents.keys()
-                }
-                for future in as_completed(futures):
-                    agent = future.result()
-                    if agent.agent_name == agent_name:
-                        return agent
+            return find_agent_by_name(
+                list(self.agents.values()), agent_name
+            )
         except Exception as e:
             logger.error(f"Error: {e}")
             raise e

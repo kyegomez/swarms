@@ -18,6 +18,7 @@ import yaml
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.omni_agent_types import AgentType
 from pydantic import BaseModel
 from swarms.utils.loguru_logger import initialize_logger
@@ -234,9 +235,7 @@ class BaseSwarm(ABC):
 
     def get_agent_by_name(self, name: str):
         """Get a agent by name"""
-        for agent in self.agents:
-            if agent.name == name:
-                return agent
+        return find_agent_by_name(self.agents, name)
 
     def reset_all_agents(self):
         """Resets the state of all agents."""
@@ -264,10 +263,7 @@ class BaseSwarm(ABC):
         Returns:
             Agent: The Agent object if found, None otherwise.
         """
-        for agent in self.agents:
-            if agent.agent_name == name:
-                return agent
-        return None
+        return find_agent_by_name(self.agents, name)
 
     def self_find_agent_by_id(self, id: uuid.UUID):
         """
@@ -283,18 +279,6 @@ class BaseSwarm(ABC):
             if agent.id == id:
                 return agent
         return None
-
-    def agent_exists(self, name: str):
-        """
-        Check if an agent exists in the swarm.
-
-        Args:
-            name (str): The name of the agent to check.
-
-        Returns:
-            bool: True if the agent exists, False otherwise.
-        """
-        return self.self_find_agent_by_name(name) is not None
 
     def direct_message(
         self,
@@ -460,10 +444,7 @@ class BaseSwarm(ABC):
         """
         Select an agent through their name
         """
-        # Find agent with id
-        for agent in self.agents:
-            if agent.name == agent_name:
-                return agent
+        return find_agent_by_name(self.agents, agent_name)
 
     def task_assignment_by_id(
         self, task: str, agent_id: str, *args, **kwargs

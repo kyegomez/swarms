@@ -158,12 +158,12 @@ def handoff_task(
                 try:
                     response = future.result()
                     result = f"""
-Agent: {agent_name}
-Reasoning: {reasoning}
-Task: {task}
-Response:
-{response}
-"""
+                    Agent: {agent_name}
+                    Reasoning: {reasoning}
+                    Task: {task}
+                    Response:
+                    {response}
+                    """
                     results.append(result)
                     logger.info(f"Completed handoff to {agent_name}")
 

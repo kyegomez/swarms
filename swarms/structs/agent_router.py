@@ -4,6 +4,7 @@ from typing import Any, Callable, List, Optional, Union
 from litellm import embedding
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.omni_agent_types import AgentType
 from swarms.utils.loguru_logger import initialize_logger
 
@@ -180,48 +181,30 @@ class AgentRouter:
         Args:
             agent_name (str): The name of the agent to update.
         """
-        agent = next(
-            (a for a in self.agents if a.name == agent_name), None
-        )
-        if agent:
-            history = agent.short_memory.return_history_as_string()
-            history_text = " ".join(history)
-            updated_text = f"{agent.name} {agent.description} {agent.system_prompt} {history_text}"
+        agent = find_agent_by_name(self.agents, agent_name)
 
-            # Find the agent's index
-            agent_index = next(
-                (
-                    i
-                    for i, a in enumerate(self.agents)
-                    if a.name == agent_name
-                ),
-                None,
-            )
+        history = agent.short_memory.return_history_as_string()
+        history_text = " ".join(history)
+        updated_text = f"{agent.name} {agent.description} {agent.system_prompt} {history_text}"
 
-            if agent_index is not None:
-                # Generate new embedding with updated text
-                updated_embedding = self._generate_embedding(
-                    updated_text
-                )
-
-                # Update the stored data
-                self.agent_embeddings[agent_index] = updated_embedding
-                self.agent_metadata[agent_index] = {
-                    "name": agent_name,
-                    "text": updated_text,
-                }
-
-                logger.info(
-                    f"Updated agent {agent_name} with interaction history."
-                )
-            else:
-                logger.warning(
-                    f"Agent {agent_name} not found in the agents list."
-                )
-        else:
+        try:
+            agent_index = self.agents.index(agent)
+        except ValueError:
             logger.warning(
-                f"Agent {agent_name} not found in the router."
+                f"Agent {agent_name} not found in the agents list."
             )
+            return
+
+        updated_embedding = self._generate_embedding(updated_text)
+        self.agent_embeddings[agent_index] = updated_embedding
+        self.agent_metadata[agent_index] = {
+            "name": agent_name,
+            "text": updated_text,
+        }
+
+        logger.info(
+            f"Updated agent {agent_name} with interaction history."
+        )
 
     @retry(
         stop=stop_after_attempt(3),
