@@ -218,6 +218,8 @@ print(final_post)
 | **[HeavySwarm](https://docs.swarms.world/api/heavy-swarm)** | Implements a five-phase workflow with specialized agents (Research, Analysis, Alternatives, Verification) for comprehensive task analysis. | Complex research and analysis tasks, financial analysis, strategic planning, and comprehensive reporting. |
 | **[SwarmRouter](https://docs.swarms.world/api/swarm-router)** | A universal orchestrator that provides a single interface to run any type of swarm with dynamic selection. | Simplifying complex workflows, switching between swarm strategies, and unified multi-agent management. |
 
+Learn more about all of the 60+ Multi-Agent Structures we have available [here](/docs/MULTI_AGENT_STRUCTURES.md)
+
 -----
 
 ### SequentialWorkflow
