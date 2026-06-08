@@ -7,6 +7,8 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.structs.ma_blocks import return_all_agent_names
+from swarms.structs.serialization import SerializableMixin
 
 logger = initialize_logger("round-robin")
 
@@ -66,7 +68,7 @@ def build_collaborative_task(
     )
 
 
-class RoundRobinSwarm:
+class RoundRobinSwarm(SerializableMixin):
     """
     A swarm implementation that executes tasks in a true round-robin fashion.
 
@@ -143,14 +145,6 @@ class RoundRobinSwarm:
             f"Successfully initialized {self.name} with {len(self.agents)} agents",
         )
 
-    def _log(self, level: str, message: str) -> None:
-        """Route a log message through the loguru logger only when
-        `self.verbose` is True. Levels: 'info', 'debug', 'error', 'success'.
-        """
-        if not self.verbose:
-            return
-        getattr(logger, level)(message)
-
     def _execute_agent(
         self, agent: Agent, task: str, *args, **kwargs
     ) -> str:
@@ -211,7 +205,7 @@ class RoundRobinSwarm:
         try:
             self.conversation.add(role="User", content=task)
             n = len(self.agents)
-            agent_names = [agent.agent_name for agent in self.agents]
+            agent_names = return_all_agent_names(self.agents)
 
             self._log(
                 "info",

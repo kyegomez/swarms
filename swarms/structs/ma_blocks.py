@@ -196,19 +196,6 @@ def find_agent_by_name(
     return agent
 
 
-def get_all_agent_names(
-    agents: List[Union["Agent", Callable]],
-) -> List[str]:
-    """
-    Get all agent names from a list of agents.
-
-    Uses map for speed (avoids interpreter loop overhead of list comp).
-    """
-    # Use a local var to avoid slow attribute lookups in tight loop
-    attr = getattr
-    return list(map(lambda a: attr(a, "agent_name"), agents))
-
-
 def find_agent_by_id(
     agents: List[Union["Agent", Callable]],
     agent_id: str,
@@ -245,3 +232,14 @@ def find_multiple_agents_by_name(
     return [
         agent for agent in agents if agent.agent_name in agent_names
     ]
+
+
+def return_all_agent_names(
+    agents: List[Union["Agent", Callable]],
+) -> List[str]:
+    """
+    Return all agent names from a list of agents.
+    Uses map for speed (avoids interpreter loop overhead of list comp).
+    """
+    attr = getattr  # local reference for faster attribute access
+    return list(map(lambda a: attr(a, "agent_name"), agents))

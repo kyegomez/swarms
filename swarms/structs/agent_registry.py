@@ -7,7 +7,10 @@ from typing import Any, Callable, Dict, List, Optional
 from pydantic import BaseModel, Field, ValidationError
 
 from swarms.structs.agent import Agent
-from swarms.structs.ma_blocks import find_agent_by_name
+from swarms.structs.ma_blocks import (
+    find_agent_by_id as find_agent_by_id_ma_blocks,
+    find_agent_by_name,
+)
 from swarms.utils.loguru_logger import logger
 
 
@@ -304,7 +307,9 @@ class AgentRegistry:
         """
         Find an agent by its ID.
         """
-        return self.agents.get(agent_id)
+        return find_agent_by_id_ma_blocks(
+            agents=self.agents, agent_id=agent_id
+        )
 
     def agents_to_json(self) -> str:
         """

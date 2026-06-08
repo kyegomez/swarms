@@ -1,7 +1,7 @@
 import concurrent.futures
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, List
+from typing import Any, Callable, List, Optional
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -11,12 +11,7 @@ from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
-from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
-from typing import Callable, Optional
-
-logger = initialize_logger(log_folder="majority_voting")
-
 
 CONSENSUS_AGENT_PROMPT = """
 You are the Consensus Agent, responsible for synthesizing and evaluating the responses from a panel of expert agents. Your task is to deliver a rigorous, insightful, and actionable consensus based on their outputs.
@@ -227,10 +222,7 @@ class MajorityVoting:
                                 consensus_agent_name, chunk, False
                             )
                     except Exception as callback_error:
-                        if self.verbose:
-                            logger.warning(
-                                f"[STREAMING] Callback failed for {consensus_agent_name}: {str(callback_error)}"
-                            )
+                        raise callback_error
 
             else:
                 consensus_streaming_callback = None

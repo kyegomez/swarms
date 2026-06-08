@@ -23,6 +23,9 @@ from swarms.structs.omni_agent_types import AgentType
 from pydantic import BaseModel
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.workspace_utils import get_workspace_dir
+from swarms.structs.ma_blocks import (
+    find_agent_by_id as find_agent_by_id_ma_blocks,
+)
 
 logger = initialize_logger(log_folder="base_swarm")
 
@@ -275,10 +278,9 @@ class BaseSwarm(ABC):
         Returns:
             Agent: The Agent object if found, None otherwise.
         """
-        for agent in self.agents:
-            if agent.id == id:
-                return agent
-        return None
+        return find_agent_by_id_ma_blocks(
+            agents=self.agents, agent_id=id
+        )
 
     def direct_message(
         self,
