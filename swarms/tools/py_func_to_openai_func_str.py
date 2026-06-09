@@ -16,7 +16,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    get_args,
 )
 
 from pydantic import BaseModel, Field

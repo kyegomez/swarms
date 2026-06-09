@@ -174,11 +174,6 @@ class SocialAlgorithms:
         # Validate inputs
         self._validate_inputs()
 
-        # Initialize agent mapping for quick lookup
-        self._agent_map = {
-            agent.agent_name: agent for agent in self.agents
-        }
-
         if self.verbose:
             logger.info(
                 f"Initialized SocialAlgorithm: {self.name} with {len(self.agents)} agents"
@@ -275,26 +270,6 @@ class SocialAlgorithms:
         else:
             logger.info(message)
 
-    def _get_agent_by_name(self, agent_name: str) -> Agent:
-        """
-        Get an agent by its name.
-
-        Args:
-            agent_name (str): Name of the agent to retrieve.
-
-        Returns:
-            Agent: The agent with the specified name.
-
-        Raises:
-            AgentNotFoundError: If no agent with the given name is found.
-        """
-        if agent_name not in self._agent_map:
-            raise AgentNotFoundError(
-                f"Agent '{agent_name}' not found in the algorithm"
-            )
-
-        return self._agent_map[agent_name]
-
     def _execute_with_timeout(
         self, func: Callable, *args, **kwargs
     ) -> Any:
@@ -369,7 +344,6 @@ class SocialAlgorithms:
             )
 
         self.agents.append(agent)
-        self._agent_map[agent.agent_name] = agent
 
         if self.verbose:
             logger.info(f"Added agent: {agent.agent_name}")
@@ -384,30 +358,10 @@ class SocialAlgorithms:
         Raises:
             AgentNotFoundError: If no agent with the given name is found.
         """
-        if agent_name not in self._agent_map:
-            raise AgentNotFoundError(
-                f"Agent '{agent_name}' not found"
-            )
-
-        # Remove from both lists
-        self.agents = [
-            agent
-            for agent in self.agents
-            if agent.agent_name != agent_name
-        ]
-        del self._agent_map[agent_name]
+        del self.agents[agent_name]
 
         if self.verbose:
             logger.info(f"Removed agent: {agent_name}")
-
-    def get_agent_names(self) -> List[str]:
-        """
-        Get a list of all agent names in the algorithm.
-
-        Returns:
-            List[str]: List of agent names.
-        """
-        return list(self._agent_map.keys())
 
     def get_communication_history(self) -> List[CommunicationStep]:
         """

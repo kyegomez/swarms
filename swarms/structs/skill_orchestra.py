@@ -28,6 +28,7 @@ from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.ma_utils import list_all_agents
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
@@ -587,12 +588,7 @@ class SkillOrchestra:
         if len(selected) == 1:
             # Single agent — run directly
             sel = selected[0]
-            agent = self.agent_map.get(sel.agent_name)
-            if agent is None:
-                logger.error(
-                    f"Agent '{sel.agent_name}' not found in agent map"
-                )
-                return results
+            agent = find_agent_by_name(self.agents, sel.agent_name)
 
             agent_task = sel.assigned_task or task
 
@@ -620,12 +616,9 @@ class SkillOrchestra:
             ) as executor:
                 future_to_agent = {}
                 for sel in selected:
-                    agent = self.agent_map.get(sel.agent_name)
-                    if agent is None:
-                        logger.error(
-                            f"Agent '{sel.agent_name}' not found"
-                        )
-                        continue
+                    agent = find_agent_by_name(
+                        self.agents, sel.agent_name
+                    )
                     agent_task = sel.assigned_task or task
                     future = executor.submit(
                         agent.run, task=agent_task, img=img

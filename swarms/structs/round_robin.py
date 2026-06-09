@@ -1,7 +1,4 @@
-import random
 from typing import List, Union
-
-import tenacity
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -10,17 +7,79 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.structs.ma_blocks import return_all_agent_names
+from swarms.structs.serialization import SerializableMixin
 
 logger = initialize_logger("round-robin")
 
 
-class RoundRobinSwarm:
-    """
-    A swarm implementation that executes tasks in a round-robin fashion.
+def build_turn_header(
+    agent_name: str,
+    position: int,
+    total: int,
+    loop: int,
+    max_loops: int,
+    prev_name: str = None,
+    next_name: str = None,
+    agent_names: List[str] = None,
+) -> str:
+    """Build the per-turn role header injected above each agent's task.
 
-    This swarm implements an AutoGen-style communication pattern where agents
-    are shuffled randomly each loop for varied interaction patterns. Each agent
-    receives the full conversation context to build upon others' responses.
+    Args:
+        agent_name: Name of the agent taking this turn.
+        position: 1-indexed position of this agent within the current loop.
+        total: Total number of agents in the roster.
+        loop: 1-indexed loop number.
+        max_loops: Total number of loops the swarm will run.
+        prev_name: Name of the agent who spoke immediately before, or
+            None if this is the opening turn.
+        next_name: Name of the agent who will speak next, or None if
+            this is the closing turn.
+        agent_names: All agent names in the swarm, used to populate the
+            "Other participants" list.
+    """
+    others = (
+        ", ".join(n for n in (agent_names or []) if n != agent_name)
+        or "(none)"
+    )
+    return (
+        f"You are {agent_name}, "
+        f"agent {position} of {total} in loop {loop} of {max_loops}. "
+        f"Previous speaker: {prev_name or '(none — you open the conversation)'}. "
+        f"Next speaker: {next_name or '(none — you close the conversation)'}. "
+        f"Other participants: {others}."
+    )
+
+
+def build_collaborative_task(
+    conversation_context: str, turn_header: str
+) -> str:
+    """Build the full prompt passed to an agent on its turn.
+
+    Concatenates the running transcript with the per-turn role header and
+    the standing collaboration instruction.
+    """
+    return (
+        f"{conversation_context}\n\n"
+        f"{turn_header}\n\n"
+        "Review the transcript above and build on the prior speaker's contribution. "
+        "Add your own perspective concisely; if you are the opening speaker, address the original task directly.\n\n"
+        "Your response:"
+    )
+
+
+class RoundRobinSwarm(SerializableMixin):
+    """
+    A swarm implementation that executes tasks in a true round-robin fashion.
+
+    Agents are visited in their declared insertion order, cycling through the
+    full roster once per loop. Over K loops with N agents the schedule is:
+
+        turn t -> agents[t % N]    for t in range(K * N)
+
+    The order is deterministic and identical on every loop, so each agent
+    receives exactly `max_loops` turns and every agent reads the full
+    conversation history accumulated by the agents that spoke before it.
 
     Args:
         name (str): Name of the swarm. Defaults to "RoundRobinSwarm".
@@ -28,8 +87,6 @@ class RoundRobinSwarm:
         agents (List[Agent]): List of agents in the swarm. Required.
         verbose (bool, optional): Flag to enable verbose mode. Defaults to False.
         max_loops (int, optional): Maximum number of loops to run. Defaults to 1.
-        callback (callable, optional): Callback function to be called after each loop. Defaults to None.
-        max_retries (int, optional): Maximum number of retries for agent execution. Defaults to 3.
         output_type (OutputType, optional): Type of output format. Defaults to "final".
 
     Attributes:
@@ -38,9 +95,7 @@ class RoundRobinSwarm:
         agents (List[Agent]): List of agents in the swarm.
         verbose (bool): Flag to enable verbose mode.
         max_loops (int): Maximum number of loops to run.
-        callback (callable): Callback function executed after each loop.
         index (int): Current index of the agent being executed.
-        max_retries (int): Maximum number of retries for agent execution.
         output_type (OutputType): Type of output format.
         conversation (Conversation): Conversation history for the swarm.
 
@@ -62,8 +117,6 @@ class RoundRobinSwarm:
         agents: List[Agent] = None,
         verbose: bool = False,
         max_loops: int = 1,
-        callback: callable = None,
-        max_retries: int = 3,
         output_type: OutputType = "final",
     ):
 
@@ -72,41 +125,31 @@ class RoundRobinSwarm:
         self.agents = agents
         self.verbose = verbose
         self.max_loops = max_loops
-        self.callback = callback
         self.index = 0
-        self.max_retries = max_retries
         self.output_type = output_type
 
         # Initialize conversation for tracking agent interactions
-        self.conversation = Conversation(name=f"{name}_conversation")
+        self.conversation = Conversation(
+            name=f"{name}_conversation",
+            time_enabled=True,
+            message_id_on=True,
+        )
 
-        if self.agents is None:
+        if not self.agents:
             raise ValueError(
                 "RoundRobinSwarm cannot be initialized without agents"
             )
 
-        # Set the max loops for every agent
-        if self.agents:
-            for agent in self.agents:
-                agent.max_loops = random.randint(1, 5)
-
-        logger.info(
-            f"Successfully initialized {self.name} with {len(self.agents)} agents"
+        self._log(
+            "info",
+            f"Successfully initialized {self.name} with {len(self.agents)} agents",
         )
 
-    @tenacity.retry(
-        stop=tenacity.stop_after_attempt(3),
-        wait=tenacity.wait_exponential(multiplier=1, min=4, max=10),
-        retry=tenacity.retry_if_exception_type(Exception),
-        before_sleep=lambda retry_state: logger.info(
-            f"Retrying in {retry_state.next_action.sleep} seconds..."
-        ),
-    )
     def _execute_agent(
         self, agent: Agent, task: str, *args, **kwargs
     ) -> str:
         """
-        Execute a single agent with retries and error handling.
+        Execute a single agent and append its response to the conversation.
 
         Args:
             agent (Agent): The agent to execute.
@@ -118,8 +161,9 @@ class RoundRobinSwarm:
             str: The result of the agent execution.
         """
         try:
-            logger.info(
-                f"Running Agent {agent.agent_name} on task: {task}"
+            self._log(
+                "info",
+                f"Running Agent {agent.agent_name} on task: {task}",
             )
             result = agent.run(task, *args, **kwargs)
             self.conversation.add(
@@ -128,8 +172,9 @@ class RoundRobinSwarm:
             )
             return result
         except Exception as e:
-            logger.error(
-                f"Error executing agent {agent.agent_name}: {str(e)}"
+            self._log(
+                "error",
+                f"Error executing agent {agent.agent_name}: {str(e)}",
             )
             raise
 
@@ -137,95 +182,101 @@ class RoundRobinSwarm:
         self, task: str, *args, **kwargs
     ) -> Union[str, dict, list]:
         """
-        Executes the given task on the agents in a randomized round-robin fashion.
+        Execute the task across the agents in true round-robin order.
 
-        This method implements an AutoGen-style communication pattern where:
-        - Agents are shuffled randomly each loop for varied interaction patterns
-        - Each agent receives the full conversation context to build upon others' responses
-        - Collaborative prompting encourages agents to acknowledge and extend prior contributions
+        The schedule is deterministic: for N agents and `max_loops` loops the
+        visit order is `agents[t % N]` for `t` in `range(max_loops * N)`. The
+        order is identical on every loop, every agent reads the full
+        conversation transcript accumulated so far, and every agent receives
+        exactly `max_loops` turns.
 
         Args:
             task (str): The task to be executed.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
+            *args: Variable length argument list passed to each agent.
+            **kwargs: Arbitrary keyword arguments passed to each agent.
 
         Returns:
-            Union[str, dict, list]: The result of the task execution in the specified output format.
+            Union[str, dict, list]: The result of the task execution in the
+                format specified by `output_type`.
 
         Raises:
-            ValueError: If no agents are configured
             Exception: If an exception occurs during task execution.
         """
-        if not self.agents:
-            logger.error("No agents configured for the swarm")
-            raise ValueError("No agents configured for the swarm")
-
         try:
-            # Add initial task to conversation
             self.conversation.add(role="User", content=task)
             n = len(self.agents)
+            agent_names = return_all_agent_names(self.agents)
 
-            # Build agent names list for context
-            agent_names = [agent.agent_name for agent in self.agents]
-
-            logger.info(
-                f"Starting randomized round-robin execution with task on {n} agents: {agent_names}"
+            self._log(
+                "info",
+                f"Starting round-robin execution with task on {n} agents: {agent_names}",
             )
 
             for loop in range(self.max_loops):
-                logger.debug(
-                    f"Starting loop {loop + 1}/{self.max_loops}"
+                self._log(
+                    "debug",
+                    f"Starting loop {loop + 1}/{self.max_loops}",
                 )
 
-                # Shuffle agents randomly each loop for varied interaction patterns
-                shuffled_agents = self.agents.copy()
-                random.shuffle(shuffled_agents)
+                for i, current_agent in enumerate(self.agents):
+                    self.index = (loop * n) + i
 
-                logger.debug(
-                    f"Agent order for loop {loop + 1}: {[a.agent_name for a in shuffled_agents]}"
-                )
+                    prev_name = (
+                        self.agents[i - 1].agent_name
+                        if i > 0
+                        else (
+                            self.agents[-1].agent_name
+                            if loop > 0
+                            else None
+                        )
+                    )
+                    next_name = (
+                        self.agents[i + 1].agent_name
+                        if i + 1 < n
+                        else (
+                            self.agents[0].agent_name
+                            if loop + 1 < self.max_loops
+                            else None
+                        )
+                    )
 
-                for i, current_agent in enumerate(shuffled_agents):
-                    # Get current conversation context
                     conversation_context = (
                         self.conversation.return_history_as_string()
                     )
 
-                    # Build collaborative prompt with context
-                    collaborative_task = f"""{conversation_context}
+                    turn_header = build_turn_header(
+                        agent_name=current_agent.agent_name,
+                        position=i + 1,
+                        total=n,
+                        loop=loop + 1,
+                        max_loops=self.max_loops,
+                        prev_name=prev_name,
+                        next_name=next_name,
+                        agent_names=agent_names,
+                    )
 
-                    As {current_agent.agent_name}, you are agent {i + 1} of {n} in this collaborative session. The other agents participating are: {', '.join(name for name in agent_names if name != current_agent.agent_name)}.
-
-                    Please review the conversation history above carefully and build upon the insights shared by other agents. Acknowledge their contributions where relevant and provide your unique perspective and expertise. Be concise but thorough in your response, and if this is the first response in the conversation, address the original task directly.
-
-                    Your response:"""
+                    collaborative_task = build_collaborative_task(
+                        conversation_context=conversation_context,
+                        turn_header=turn_header,
+                    )
 
                     try:
-                        result = self._execute_agent(
+                        self._execute_agent(
                             current_agent,
                             collaborative_task,
                             *args,
                             **kwargs,
                         )
                     except Exception as e:
-                        logger.error(
-                            f"Agent {current_agent.agent_name} failed: {str(e)}"
+                        self._log(
+                            "error",
+                            f"Agent {current_agent.agent_name} failed: {str(e)}",
                         )
                         raise
 
-                if self.callback:
-                    logger.debug(
-                        f"Executing callback for loop {loop + 1}"
-                    )
-                    try:
-                        self.callback(loop, result)
-                    except Exception as e:
-                        logger.error(
-                            f"Callback execution failed: {str(e)}"
-                        )
-
-            logger.success(
-                f"Successfully completed {self.max_loops} loops of randomized round-robin execution"
+            self._log(
+                "success",
+                f"Successfully completed {self.max_loops} loops of round-robin execution",
             )
 
             return history_output_formatter(
@@ -234,7 +285,9 @@ class RoundRobinSwarm:
             )
 
         except Exception as e:
-            logger.error(f"Round-robin execution failed: {str(e)}")
+            self._log(
+                "error", f"Round-robin execution failed: {str(e)}"
+            )
             raise
 
     def run_batch(

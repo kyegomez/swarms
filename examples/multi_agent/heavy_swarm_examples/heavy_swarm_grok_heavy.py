@@ -8,7 +8,7 @@ swarm = HeavySwarm(
     show_dashboard=True,
     loops_per_agent=1,
     agent_prints_on=False,
-    use_grok_heavy=True,
+    variant="heavy",
 )
 
 prompt = (

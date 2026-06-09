@@ -3,6 +3,7 @@ from swarms import Agent
 from swarms.utils.litellm_wrapper import LiteLLM
 from pydantic import BaseModel, Field
 from swarms.structs.conversation import Conversation
+from swarms.structs.ma_blocks import find_agent_by_name
 
 # Load environment variables
 load_dotenv()
@@ -237,19 +238,13 @@ class Swarm:
         agent_name = function_call.agent_name
         agent_task = function_call.task
 
-        agent = self.find_agent_by_name(agent_name)
+        agent = find_agent_by_name(self.agents, agent_name)
 
         worker_output = agent.run(task=agent_task)
 
         self.conversation.add(role=agent_name, content=worker_output)
 
         return self.conversation.return_history_as_string()
-
-    def find_agent_by_name(self, name: str):
-        for agent in self.agents:
-            if agent.agent_name == name:
-                return agent
-        return None
 
 
 swarm = Swarm()

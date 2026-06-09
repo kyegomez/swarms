@@ -13,7 +13,7 @@ swarm = HeavySwarm(
     description="Debate-style analysis with Grok thinking-style agents",
     worker_model_name="gpt-4.1",
     question_agent_model_name="gpt-4.1",
-    use_grok_agents=True,
+    variant="medium",
     show_dashboard=True,
     loops_per_agent=1,
 )

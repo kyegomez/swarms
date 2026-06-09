@@ -1,47 +1,10 @@
 from datetime import datetime
-from functools import wraps
 from typing import Any, Dict, List, Optional
-
-from loguru import logger
-from tenacity import (
-    before_sleep_log,
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
-
+from swarms.structs.serialization import SerializableMixin
 from swarms.structs.agent import Agent
 
 
-def retry_with_instance_config(func):
-    """
-    Decorator that applies retry configuration using instance variables.
-    This allows the retry decorator to access instance configuration.
-    """
-
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        # Create retry decorator with instance configuration
-        retry_decorator = retry(
-            stop=stop_after_attempt(self.max_retries + 1),
-            wait=wait_exponential(
-                multiplier=self.retry_backoff_multiplier,
-                min=self.retry_delay,
-                max=self.retry_max_delay,
-            ),
-            retry=retry_if_exception_type((Exception,)),
-            before_sleep=before_sleep_log(logger, "WARNING"),
-        )
-
-        # Apply the retry decorator to the function
-        retried_func = retry_decorator(func)
-        return retried_func(self, *args, **kwargs)
-
-    return wrapper
-
-
-class SelfMoASeq:
+class SelfMoASeq(SerializableMixin):
     """
     Self-MoA-Seq: Sequential Self-Mixture of Agents
 
@@ -79,28 +42,6 @@ class SelfMoASeq:
         additional_kwargs: Dict[str, Any] = {},
         top_p: Optional[float] = None,
     ):
-        # Validate parameters
-        if window_size < 2:
-            raise ValueError("window_size must be at least 2")
-        if reserved_slots >= window_size:
-            raise ValueError(
-                "reserved_slots must be less than window_size"
-            )
-        if not 0 <= temperature <= 2:
-            raise ValueError("temperature must be between 0 and 2")
-        if max_loops < 1:
-            raise ValueError("max_loops must be at least 1")
-        if num_samples < 2:
-            raise ValueError("num_samples must be at least 2")
-        if max_retries < 0:
-            raise ValueError("max_retries must be non-negative")
-        if retry_delay < 0:
-            raise ValueError("retry_delay must be non-negative")
-        if retry_backoff_multiplier < 1:
-            raise ValueError("retry_backoff_multiplier must be >= 1")
-        if retry_max_delay < retry_delay:
-            raise ValueError("retry_max_delay must be >= retry_delay")
-
         # Store parameters
         self.model_name = model_name
         self.temperature = temperature
@@ -119,13 +60,16 @@ class SelfMoASeq:
         self.retry_backoff_multiplier = retry_backoff_multiplier
         self.retry_max_delay = retry_max_delay
 
+        self.setup()
+
         # Allow model overrides
         proposer_model = proposer_model_name or self.model_name
         aggregator_model = aggregator_model_name or self.model_name
 
         # Setup logging
-        logger.info(
-            f"Initializing Self-MoA-Seq with model: {self.model_name}"
+        self._log(
+            "info",
+            f"Initializing Self-MoA-Seq with model: {self.model_name}",
         )
 
         # Initialize proposer agent (generates multiple samples)
@@ -166,9 +110,38 @@ class SelfMoASeq:
             "execution_time_seconds": 0,
         }
 
-        logger.info("Self-MoA-Seq initialization complete")
+        self._log("info", "Self-MoA-Seq initialization complete")
 
-    @retry_with_instance_config
+    def setup(self) -> None:
+        """
+        Validate constructor parameters stored on the instance.
+
+        Raises:
+            ValueError: If any configuration value falls outside its allowed
+                range. See the constructor docstring for the full set of
+                constraints.
+        """
+        if self.window_size < 2:
+            raise ValueError("window_size must be at least 2")
+        if self.reserved_slots >= self.window_size:
+            raise ValueError(
+                "reserved_slots must be less than window_size"
+            )
+        if not 0 <= self.temperature <= 2:
+            raise ValueError("temperature must be between 0 and 2")
+        if self.max_loops < 1:
+            raise ValueError("max_loops must be at least 1")
+        if self.num_samples < 2:
+            raise ValueError("num_samples must be at least 2")
+        if self.max_retries < 0:
+            raise ValueError("max_retries must be non-negative")
+        if self.retry_delay < 0:
+            raise ValueError("retry_delay must be non-negative")
+        if self.retry_backoff_multiplier < 1:
+            raise ValueError("retry_backoff_multiplier must be >= 1")
+        if self.retry_max_delay < self.retry_delay:
+            raise ValueError("retry_max_delay must be >= retry_delay")
+
     def _generate_samples(
         self, task: str, num_samples: int
     ) -> List[str]:
@@ -182,23 +155,30 @@ class SelfMoASeq:
         Returns:
             List of generated samples
         """
-        logger.info(f"Generating {num_samples} samples for task")
+        self._log(
+            "info", f"Generating {num_samples} samples for task"
+        )
         samples = []
 
         try:
             for i in range(num_samples):
-                logger.debug(f"Generating sample {i+1}/{num_samples}")
+                self._log(
+                    "debug", f"Generating sample {i+1}/{num_samples}"
+                )
                 sample = self.proposer.run(task)
                 samples.append(sample)
                 self.metrics["total_samples_generated"] += 1
 
-            logger.success(
-                f"Successfully generated {len(samples)} samples"
+            self._log(
+                "success",
+                f"Successfully generated {len(samples)} samples",
             )
             return samples
 
         except Exception as e:
-            logger.error(f"Error during sample generation: {str(e)}")
+            self._log(
+                "error", f"Error during sample generation: {str(e)}"
+            )
             raise
 
     def _format_aggregation_prompt(
@@ -234,7 +214,6 @@ class SelfMoASeq:
 
         return prompt
 
-    @retry_with_instance_config
     def _aggregate_window(
         self,
         task: str,
@@ -252,8 +231,9 @@ class SelfMoASeq:
         Returns:
             Synthesized output
         """
-        logger.debug(
-            f"Aggregating window of {len(window_samples)} samples"
+        self._log(
+            "debug",
+            f"Aggregating window of {len(window_samples)} samples",
         )
 
         try:
@@ -266,14 +246,15 @@ class SelfMoASeq:
             aggregated = self.aggregator.run(prompt)
             self.metrics["total_aggregations"] += 1
 
-            logger.debug("Window aggregation complete")
+            self._log("debug", "Window aggregation complete")
             return aggregated
 
         except Exception as e:
-            logger.error(f"Error during window aggregation: {str(e)}")
+            self._log(
+                "error", f"Error during window aggregation: {str(e)}"
+            )
             raise
 
-    @retry_with_instance_config
     def run(
         self,
         task: str,
@@ -297,8 +278,9 @@ class SelfMoASeq:
                 - aggregation_steps: Number of aggregation iterations
                 - metrics: Performance metrics
         """
-        logger.info(
-            f"Starting Self-MoA-Seq run with {self.num_samples} samples"
+        self._log(
+            "info",
+            f"Starting Self-MoA-Seq run with {self.num_samples} samples",
         )
         start_time = datetime.now()
 
@@ -308,11 +290,11 @@ class SelfMoASeq:
                 raise ValueError("task must be a non-empty string")
 
             # Phase 1: Generate samples
-            logger.info("Phase 1: Generating initial samples")
+            self._log("info", "Phase 1: Generating initial samples")
             samples = self._generate_samples(task, self.num_samples)
 
             # Phase 2: Sequential aggregation with sliding window
-            logger.info("Phase 2: Sequential aggregation")
+            self._log("info", "Phase 2: Sequential aggregation")
             best_output = samples[0]
             aggregation_step = 0
 
@@ -321,9 +303,10 @@ class SelfMoASeq:
 
             while remaining_samples:
                 aggregation_step += 1
-                logger.info(
+                self._log(
+                    "info",
                     f"Aggregation iteration {aggregation_step}, "
-                    f"remaining samples: {len(remaining_samples)}"
+                    f"remaining samples: {len(remaining_samples)}",
                 )
 
                 # Create window: reserved slots + new samples
@@ -343,8 +326,9 @@ class SelfMoASeq:
                 )
 
                 if aggregation_step >= self.max_loops:
-                    logger.warning(
-                        f"Reached max aggregation loops ({self.max_loops})"
+                    self._log(
+                        "warning",
+                        f"Reached max aggregation loops ({self.max_loops})",
                     )
                     break
 
@@ -361,38 +345,25 @@ class SelfMoASeq:
                 "timestamp": datetime.now().isoformat(),
             }
 
-            logger.success(
+            self._log(
+                "success",
                 f"Self-MoA-Seq completed in {elapsed:.2f}s "
-                f"with {aggregation_step} aggregation iterations"
+                f"with {aggregation_step} aggregation iterations",
             )
 
             if self.verbose:
-                self._log_summary(result)
+                self._log(
+                    "info",
+                    f"Self MoA Seq result: {result}",
+                )
 
             return result
 
         except Exception as e:
-            logger.error(f"Fatal error in Self-MoA-Seq.run: {str(e)}")
+            self._log(
+                "error", f"Fatal error in Self-MoA-Seq.run: {str(e)}"
+            )
             raise
-
-    def _log_summary(self, result: Dict[str, Any]) -> None:
-        """Log execution summary."""
-        logger.info("=" * 60)
-        logger.info("Self-MoA-Seq Execution Summary")
-        logger.info("=" * 60)
-        logger.info(
-            f"Total samples generated: {self.metrics['total_samples_generated']}"
-        )
-        logger.info(
-            f"Aggregation iterations: {result['aggregation_steps']}"
-        )
-        logger.info(
-            f"Execution time: {self.metrics['execution_time_seconds']:.2f}s"
-        )
-        logger.info(
-            f"Final output length: {len(result['final_output'])} chars"
-        )
-        logger.info("=" * 60)
 
     def get_metrics(self) -> Dict[str, Any]:
         """Get current performance metrics."""

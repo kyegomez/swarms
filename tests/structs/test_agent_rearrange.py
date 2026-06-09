@@ -259,8 +259,10 @@ def test_validate_flow_invalid():
         agent_rearrange.validate_flow()
 
 
-def test_validate_flow_no_arrow():
-    """Test flow validation without arrow syntax."""
+def test_validate_flow_no_arrow_now_falls_through_to_name_check():
+    """Without '->' the flow is treated as a single comma-step; the
+    space-separated input fails the unregistered-agent check instead of
+    the (now removed) arrow-required check."""
     agents = create_sample_agents()
 
     agent_rearrange = AgentRearrange(
@@ -271,8 +273,87 @@ def test_validate_flow_no_arrow():
 
     agent_rearrange.flow = "ResearchAgent WriterAgent"
 
-    with pytest.raises(ValueError, match="'->"):
+    with pytest.raises(ValueError, match="not registered"):
         agent_rearrange.validate_flow()
+
+
+def test_validate_flow_pure_concurrent():
+    """Pure fan-out flows ('a, b, c' with no ->) are now valid."""
+    agents = create_sample_agents()
+
+    rearrange = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent, WriterAgent, ReviewerAgent",
+        verbose=True,
+    )
+
+    assert rearrange.validate_flow() is True
+
+
+def test_validate_flow_fanout_then_aggregate():
+    """The 'a, b, c -> f' shape (fan-out then aggregate) is valid."""
+    agents = create_sample_agents()
+
+    rearrange = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent, WriterAgent -> ReviewerAgent",
+        verbose=True,
+    )
+
+    assert rearrange.validate_flow() is True
+
+
+def test_invalid_output_type_raises_at_init():
+    """A misspelled output_type should fail loudly in reliability_check."""
+    agents = create_sample_agents()
+
+    with pytest.raises(
+        ValueError, match="output_type must be one of"
+    ):
+        AgentRearrange(
+            agents=agents,
+            flow="ResearchAgent -> WriterAgent",
+            output_type="dictt",  # typo
+            verbose=False,
+        )
+
+
+def test_set_custom_flow_validates_immediately():
+    """set_custom_flow should reject an invalid flow at the call site,
+    and leave the previous flow intact on failure."""
+    agents = create_sample_agents()
+
+    rearrange = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent -> WriterAgent",
+        verbose=False,
+    )
+
+    with pytest.raises(ValueError, match="not registered"):
+        rearrange.set_custom_flow("ResearchAgent -> MissingAgent")
+
+    # Previous flow should be restored
+    assert rearrange.flow == "ResearchAgent -> WriterAgent"
+
+
+def test_explain_returns_plan_without_calling_llms():
+    """explain(return_str=True) yields a human-readable plan; no LLM calls."""
+    agents = create_sample_agents()
+
+    rearrange = AgentRearrange(
+        agents=agents,
+        flow="ResearchAgent -> WriterAgent, ReviewerAgent",
+        max_loops=1,
+        verbose=False,
+    )
+
+    plan = rearrange.explain(return_str=True)
+    assert isinstance(plan, str)
+    assert "Step 1: ResearchAgent" in plan
+    assert "[sequential]" in plan
+    assert "Step 2: WriterAgent, ReviewerAgent" in plan
+    assert "[parallel, 2 agents]" in plan
+    assert "2 steps" in plan
 
 
 # ============================================================================
@@ -761,8 +842,14 @@ def test_repeated_agent_run():
     ), f"Expected 2 Writer messages, got {len(writer_msgs)}"
 
 
-def test_repeated_agent_awareness_in_conversation():
-    """Test that different awareness messages are injected for each occurrence."""
+def test_awareness_not_in_shared_conversation():
+    """Per-agent sequential awareness must NOT leak into the shared transcript.
+
+    Previously, awareness like "Sequential awareness: Agent ahead: Reviewer"
+    was added as a system message visible to every downstream agent, which
+    polluted long flows and contributed to persona drift. The new contract:
+    awareness is appended to that agent's own task input only.
+    """
     agents = create_repeated_flow_agents()
 
     agent_rearrange = AgentRearrange(
@@ -775,22 +862,58 @@ def test_repeated_agent_awareness_in_conversation():
     agent_rearrange.run("Write about rain.")
 
     messages = agent_rearrange.conversation.to_dict()
-
-    writer_awareness = []
-    for idx, msg in enumerate(messages):
-        if "Sequential awareness" in str(msg.get("content", "")):
-            if (
-                idx + 1 < len(messages)
-                and messages[idx + 1].get("role") == "Writer"
-            ):
-                writer_awareness.append(msg.get("content", ""))
-
+    leaked = [
+        m
+        for m in messages
+        if "Sequential awareness" in str(m.get("content", ""))
+    ]
     assert (
-        len(writer_awareness) == 2
-    ), f"Expected 2 awareness messages before Writer, got {len(writer_awareness)}"
+        leaked == []
+    ), f"Sequential awareness leaked into the shared conversation: {leaked}"
+
+
+def test_awareness_delivered_per_agent_via_system_prompt():
+    """Each repeated occurrence of an agent should observe a DIFFERENT
+    system_prompt during its run() call (because awareness is injected
+    there), and the original system_prompt must be restored after."""
+    agents = create_repeated_flow_agents()
+    observed_system_prompts: List = []
+    originals = {a.agent_name: a.system_prompt for a in agents}
+
+    for agent in agents:
+        name = agent.agent_name
+
+        def _make_tracker(agent_obj, agent_name):
+            def _track(task=None, *a, **kw):
+                observed_system_prompts.append(
+                    (agent_name, agent_obj.system_prompt)
+                )
+                return f"{agent_name} acknowledged"
+
+            return _track
+
+        agent.run = _make_tracker(agent, name)
+
+    rearrange = AgentRearrange(
+        agents=agents,
+        flow="Writer -> Reviewer -> Writer",
+        max_loops=1,
+    )
+    rearrange.run("Write about thunder.")
+
+    writer_prompts = [
+        sp for name, sp in observed_system_prompts if name == "Writer"
+    ]
+    assert len(writer_prompts) == 2
+    assert all("Sequential awareness" in sp for sp in writer_prompts)
     assert (
-        writer_awareness[0] != writer_awareness[1]
-    ), "Both Writer invocations got identical awareness"
+        writer_prompts[0] != writer_prompts[1]
+    ), "Repeated Writer invocations received identical awareness"
+    # System prompt must be restored after the run completes
+    for agent in agents:
+        assert (
+            agent.system_prompt == originals[agent.agent_name]
+        ), f"system_prompt for {agent.agent_name} was not restored"
 
 
 # ============================================================================

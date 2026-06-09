@@ -124,11 +124,31 @@ def run_agent(
         raise RuntimeError(f"Error running agent: {str(e)}")
 
 
+_FIND_AGENT_INDEX_CACHE: dict = {}
+_FIND_AGENT_INDEX_CACHE_MAX = 256
+
+
+def _build_agent_name_index(agents):
+    index = {}
+    for agent in agents:
+        name = getattr(agent, "agent_name", None)
+        if name is not None:
+            index[name] = agent
+        alt = getattr(agent, "name", None)
+        if alt is not None and alt != name:
+            index[alt] = agent
+    return index
+
+
 def find_agent_by_name(
     agents: List[Union[Agent, Callable]], agent_name: str
 ) -> Agent:
     """
     Find an agent by its name in a list of agents.
+
+    Builds a name -> agent index on first call for a given list and
+    reuses it on subsequent calls, turning repeated lookups from O(n)
+    into O(1).
 
     Args:
         agents (List[Union[Agent, Callable]]): List of agents to search through
@@ -150,10 +170,76 @@ def find_agent_by_name(
     if not agent_name.strip():
         raise ValueError("Agent name cannot be empty or whitespace")
 
-    try:
-        for agent in agents:
-            if hasattr(agent, "name") and agent.name == agent_name:
-                return agent
+    key = id(agents)
+    length = len(agents)
+    cached = _FIND_AGENT_INDEX_CACHE.get(key)
+    if cached is None or cached[0] != length:
+        if (
+            len(_FIND_AGENT_INDEX_CACHE)
+            >= _FIND_AGENT_INDEX_CACHE_MAX
+        ):
+            _FIND_AGENT_INDEX_CACHE.clear()
+        index = _build_agent_name_index(agents)
+        _FIND_AGENT_INDEX_CACHE[key] = (length, index)
+    else:
+        index = cached[1]
+
+    agent = index.get(agent_name)
+    if agent is not None:
+        return agent
+
+    index = _build_agent_name_index(agents)
+    _FIND_AGENT_INDEX_CACHE[key] = (length, index)
+    agent = index.get(agent_name)
+    if agent is None:
         raise ValueError(f"Agent with name '{agent_name}' not found")
-    except Exception as e:
-        raise RuntimeError(f"Error finding agent: {str(e)}")
+    return agent
+
+
+def find_agent_by_id(
+    agents: List[Union["Agent", Callable]],
+    agent_id: str,
+) -> Agent:
+    """
+    Find an agent by its id in a list of agents.
+
+    Args:
+        agents (List[Union[Agent, Callable]]): The list of agent objects to search through.
+        agent_id (str): The unique identifier of the agent to find.
+
+    Returns:
+        Agent: The agent object with the matching id, or None if no match is found.
+    """
+    return next(
+        (agent for agent in agents if agent.id == agent_id), None
+    )
+
+
+def find_multiple_agents_by_name(
+    agents: List[Union["Agent", Callable]],
+    agent_names: List[str],
+) -> List[Agent]:
+    """
+    Find multiple agents by their names in a list of agents.
+
+    Args:
+        agents (List[Union[Agent, Callable]]): The list of agent objects to search through.
+        agent_names (List[str]): A list containing the names of agents to find.
+
+    Returns:
+        List[Agent]: A list of agent objects whose names are in agent_names.
+    """
+    return [
+        agent for agent in agents if agent.agent_name in agent_names
+    ]
+
+
+def return_all_agent_names(
+    agents: List[Union["Agent", Callable]],
+) -> List[str]:
+    """
+    Return all agent names from a list of agents.
+    Uses map for speed (avoids interpreter loop overhead of list comp).
+    """
+    attr = getattr  # local reference for faster attribute access
+    return list(map(lambda a: attr(a, "agent_name"), agents))

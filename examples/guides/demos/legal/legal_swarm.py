@@ -8,6 +8,7 @@ import PyPDF2
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -229,16 +230,10 @@ class LegalSwarm:
 
         return combined_text
 
-    def find_agent_by_name(self, name: str) -> Agent:
-        """
-        Find an agent by their name.
-        """
-        for agent in self.agents:
-            if agent.agent_name == name:
-                return agent
-
     def initial_processing(self):
-        clara_agent = self.find_agent_by_name("Clara-Intake-Agent")
+        clara_agent = find_agent_by_name(
+            self.agents, "Clara-Intake-Agent"
+        )
 
         # Run Clara's agent
         clara_output = clara_agent.run(
@@ -250,7 +245,9 @@ class LegalSwarm:
         )
 
     def create_contract(self, task: str):
-        mason_agent = self.find_agent_by_name("Mason-Contract-Agent")
+        mason_agent = find_agent_by_name(
+            self.agents, "Mason-Contract-Agent"
+        )
 
         mason_output = mason_agent.run(
             f"History: {self.conversation.get_str()}\n Your purpose is to create a contract based on the following details: {task}"
@@ -265,7 +262,9 @@ class LegalSwarm:
         )
 
         # Run Sophia's agent
-        sophia_agent = self.find_agent_by_name("Sophia-Counsel-Agent")
+        sophia_agent = find_agent_by_name(
+            self.agents, "Sophia-Counsel-Agent"
+        )
         sophia_output = sophia_agent.run(
             f"History: {self.conversation.get_str()}\n Your purpose is to review the contract Mason created and provide feedback."
         )
@@ -275,7 +274,9 @@ class LegalSwarm:
         )
 
         # Run Mason's agent
-        mason_agent = self.find_agent_by_name("Mason-Contract-Agent")
+        mason_agent = find_agent_by_name(
+            self.agents, "Mason-Contract-Agent"
+        )
         mason_output = mason_agent.run(
             f"History: {self.conversation.get_str()}\n Your purpose is to update the contract based on the feedback Sophia provided."
         )

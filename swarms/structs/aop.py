@@ -22,6 +22,7 @@ from swarms.structs.omni_agent_types import AgentType
 from swarms.tools.mcp_client_tools import (
     get_tools_for_multiple_mcp_servers,
 )
+from swarms.structs.ma_blocks import find_agent_by_name
 
 
 class TaskStatus(Enum):
@@ -1764,7 +1765,10 @@ class AOP:
             try:
                 if agent_name:
                     # Get specific agent info
-                    if agent_name not in self.agents:
+                    if (
+                        find_agent_by_name(self.agents, agent_name)
+                        is None
+                    ):
                         return {
                             "success": False,
                             "error": f"Agent '{agent_name}' not found",

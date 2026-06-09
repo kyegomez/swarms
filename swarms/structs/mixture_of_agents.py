@@ -18,8 +18,38 @@ logger = initialize_logger(log_folder="mixture_of_agents")
 
 
 class MixtureOfAgents:
-    """
-    A class to manage and run a mixture of agents, aggregating their responses.
+    """Run a layered Mixture-of-Agents workflow.
+
+    ``MixtureOfAgents`` sends the task and accumulated conversation
+    context to each worker agent concurrently for each configured layer.
+    After all layers complete, the aggregator agent receives the full
+    conversation and produces the final synthesized answer.
+
+    Args:
+        id: Optional identifier accepted for API compatibility.
+        name: Human-readable name for this mixture.
+        description: Description added to the conversation metadata when
+            listing the worker agents.
+        agents: Worker agents that run in parallel on each layer.
+        aggregator_agent: Optional preconfigured agent used to synthesize
+            the final response. If omitted, one is created from
+            ``aggregator_system_prompt`` and ``aggregator_model_name``.
+        aggregator_system_prompt: System prompt used when creating the
+            default aggregator agent.
+        layers: Number of worker-agent rounds to run before aggregation.
+        max_loops: Stored configuration value for compatibility with other
+            swarm classes.
+        output_type: Format passed to ``history_output_formatter``.
+        aggregator_model_name: Model name for the default aggregator agent.
+
+    Examples:
+        >>> from swarms import Agent
+        >>> agents = [
+        ...     Agent(agent_name="Researcher", model_name="gpt-4.1"),
+        ...     Agent(agent_name="Analyst", model_name="gpt-4.1"),
+        ... ]
+        >>> moa = MixtureOfAgents(agents=agents, layers=2)
+        >>> result = moa.run("Explain the trade-offs of multi-agent systems")
     """
 
     def __init__(
@@ -35,16 +65,24 @@ class MixtureOfAgents:
         output_type: OutputType = "final",
         aggregator_model_name: str = "claude-sonnet-4-20250514",
     ) -> None:
-        """
-        Initialize the Mixture of Agents class with agents and configuration.
+        """Initialize the mixture with worker and aggregator configuration.
 
         Args:
-            name (str, optional): The name of the mixture of agents. Defaults to "MixtureOfAgents".
-            description (str, optional): A description of the mixture of agents. Defaults to "A class to run a mixture of agents and aggregate their responses.".
-            agents (List[Agent], optional): A list of reference agents to be used in the mixture. Defaults to [].
-            aggregator_agent (Agent, optional): The aggregator agent to be used in the mixture. Defaults to None.
-            aggregator_system_prompt (str, optional): The system prompt for the aggregator agent. Defaults to "".
-            layers (int, optional): The number of layers to process in the mixture. Defaults to 3.
+            id: Optional identifier accepted for API compatibility.
+            name: Human-readable name for this mixture.
+            description: Description of this mixture's purpose.
+            agents: Worker agents to run concurrently on each layer.
+            aggregator_agent: Optional preconfigured aggregator agent.
+            aggregator_system_prompt: Prompt used to create the default
+                aggregator agent.
+            layers: Number of worker-agent rounds before aggregation.
+            max_loops: Stored configuration value for compatibility.
+            output_type: Desired formatted output type.
+            aggregator_model_name: Model used for the default aggregator.
+
+        Raises:
+            ValueError: If no agents, aggregator system prompt, or layers
+                are provided.
         """
         self.name = name
         self.description = description
@@ -72,8 +110,11 @@ class MixtureOfAgents:
             self.aggregator_agent = self.aggregator_agent_setup()
 
     def reliability_check(self) -> None:
-        """
-        Performs a reliability check on the Mixture of Agents class.
+        """Validate required configuration before the workflow starts.
+
+        Raises:
+            ValueError: If the worker-agent list is empty, the aggregator
+                prompt is missing, or ``layers`` is falsy.
         """
         logger.info(
             "Checking the reliability of the Mixture of Agents class."
@@ -92,6 +133,12 @@ class MixtureOfAgents:
         logger.info("Mixture of Agents class is ready for use.")
 
     def aggregator_agent_setup(self):
+        """Create the default aggregator agent.
+
+        Returns:
+            Agent: An agent configured to synthesize worker responses from
+                the shared conversation context.
+        """
         return Agent(
             agent_name="Aggregator Agent",
             agent_description="An agent that aggregates the responses of the other agents.",
@@ -108,25 +155,17 @@ class MixtureOfAgents:
         task: str,
         img: Optional[str] = None,
     ):
-        # # Run agents concurrently
-        # with concurrent.futures.ThreadPoolExecutor(
-        #     max_workers=os.cpu_count()
-        # ) as executor:
-        #     # Submit all agent tasks and store with their index
-        #     future_to_agent = {
-        #         executor.submit(
-        #             agent.run, task=task, img=img, imgs=imgs
-        #         ): agent
-        #         for agent in self.agents
-        #     }
+        """Run one worker layer concurrently.
 
-        #     # Collect results and add to conversation in completion order
-        #     for future in concurrent.futures.as_completed(
-        #         future_to_agent
-        #     ):
-        #         agent = future_to_agent[future]
-        #         output = future.result()
-        #         self.conversation.add(role=agent.name, content=output)
+        Args:
+            task: Task or accumulated conversation context to send to each
+                worker agent.
+            img: Optional image path, URL, or encoded image payload passed
+                through to each worker agent.
+
+        Returns:
+            A mapping of agent names to their outputs.
+        """
         agent_outputs = run_agents_concurrently(
             agents=self.agents,
             task=task,
@@ -141,28 +180,15 @@ class MixtureOfAgents:
         task: str,
         img: Optional[str] = None,
     ):
+        """Execute all layers and aggregate the final response.
 
-        # self.conversation.add(role="User", content=task)
+        Args:
+            task: User task for the mixture.
+            img: Optional image input forwarded to worker agents.
 
-        # for i in range(self.layers):
-        #     out = self.step(
-        #         task=self.conversation.get_str(), img=img, imgs=imgs
-        #     )
-        #     task = out
-
-        # out = self.aggregator_agent.run(
-        #     task=self.conversation.get_str()
-        # )
-
-        # self.conversation.add(
-        #     role=self.aggregator_agent.agent_name, content=out
-        # )
-
-        # out = history_output_formatter(
-        #     conversation=self.conversation, type=self.output_type
-        # )
-
-        # return out
+        Returns:
+            The conversation formatted according to ``self.output_type``.
+        """
 
         self.conversation.add(role="User", content=task)
 
@@ -199,6 +225,16 @@ class MixtureOfAgents:
         task: str,
         img: Optional[str] = None,
     ):
+        """Run the mixture for a single task.
+
+        Args:
+            task: User task for the mixture.
+            img: Optional image input forwarded to worker agents.
+
+        Returns:
+            The formatted mixture output, or an error string if execution
+            fails.
+        """
         try:
             return self._run(task=task, img=img)
         except Exception as e:
@@ -206,20 +242,24 @@ class MixtureOfAgents:
             return f"Error: {e}"
 
     def run_batched(self, tasks: List[str]) -> List[str]:
-        """
-        Run the mixture of agents for a batch of tasks.
+        """Run tasks sequentially through the same mixture instance.
 
         Args:
-            tasks (List[str]): A list of tasks for the mixture of agents.
+            tasks: Tasks to execute in order.
 
         Returns:
-            List[str]: A list of responses from the mixture of agents.
+            A list of formatted responses, one per task.
         """
         return [self.run(task) for task in tasks]
 
     def run_concurrently(self, tasks: List[str]) -> List[str]:
-        """
-        Run the mixture of agents for a batch of tasks concurrently.
+        """Run multiple tasks concurrently through this mixture.
+
+        Args:
+            tasks: Tasks to submit to the mixture in parallel.
+
+        Returns:
+            A list of formatted responses as each task completes.
         """
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=os.cpu_count()
