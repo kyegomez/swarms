@@ -1,27 +1,21 @@
 # Group Chat Examples
 
-This directory contains examples demonstrating group chat patterns for multi-agent conversations.
+This directory contains examples demonstrating the dynamic `GroupChat` — an asynchronous multi-agent room where every agent listens in parallel and independently decides whether to respond.
 
 ## Examples
 
-- [interactive_groupchat_example.py](interactive_groupchat_example.py) - Interactive group chat
-- [quantum_physics_swarm.py](quantum_physics_swarm.py) - Physics-focused group chat
-- [random_dynamic_speaker_example.py](random_dynamic_speaker_example.py) - Dynamic speaker selection
-
-## Interactive Group Chat Examples
-
-- [enhanced_collaboration_example.py](enhanced_collaboration_example.py) - Enhanced collaboration patterns
-- [interactive_groupchat_speaker_example.py](interactive_groupchat_speaker_example.py) - Speaker management
-- [medical_panel_example.py](medical_panel_example.py) - Medical panel discussion
-- [speaker_function_examples.py](speaker_function_examples.py) - Speaker function examples
-- [stream_example.py](stream_example.py) - Streaming example
+- [enhanced_collaboration_example.py](enhanced_collaboration_example.py) - Analyst / researcher / strategist scenarios
+- [medical_panel_example.py](medical_panel_example.py) - Panel of medical specialists discussing a complex multi-system case
+- [quantum_physics_swarm.py](quantum_physics_swarm.py) - Condensed-matter physics research team
+- [test_groupchat_feat.py](test_groupchat_feat.py) - Minimal smoke test
+- [stream_example.py](stream_example.py) - Single-agent token streaming demo
 
 ## Subdirectories
 
-- [groupchat_examples/](groupchat_examples/) - Additional group chat patterns
+- [groupchat_examples/](groupchat_examples/) - Domain-specific group chat scenarios (crypto tax, investment advisory, mortgage panel)
 
 ## Overview
 
-Group chat patterns enable multiple agents to engage in conversations, share information, and collaborate through natural language interactions. These examples demonstrate various conversation management strategies including turn-taking, topic management, and dynamic participation.
+`GroupChat` is an asynchronous, self-selecting agent room. There is no turn order, no speaker selection function, and no fixed number of rounds. When a message is posted, every other agent independently evaluates the message via a forced `respond(score, message)` tool call and broadcasts a reply only when its self-rated desire to speak clears the configured `threshold`. The conversation ends when either `max_loops` total messages have been posted or no new message arrives for `idle_timeout` seconds.
 
-Interactive group chat examples extend basic group chat patterns with advanced features like speaker management, role-based participation, streaming responses, and domain-specific panel discussions. These examples demonstrate sophisticated conversation management and real-time interaction patterns.
+Every participating agent must be configured with `tools_list_dictionary=[RESPOND_TOOL]` (imported from `swarms.structs.groupchat`) so that it returns the structured speaking decision the chat depends on.

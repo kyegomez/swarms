@@ -260,8 +260,6 @@ class SwarmRouter(SerializableMixin):
             every agent's ``long_term_memory``.
         output_type (OutputType, optional): How the final swarm output is
             formatted. Defaults to ``"dict-all-except-first"``.
-        speaker_fn (callable, optional): Speaker-selection function for
-            ``GroupChat``-style swarms.
         multi_agent_collab_prompt (bool, optional): Append the multi-agent
             collaboration prompt to every agent's system prompt. Defaults to
             ``True``.
@@ -270,8 +268,6 @@ class SwarmRouter(SerializableMixin):
         conversation (Any, optional): Pre-existing conversation object to seed
             the swarm with.
         agents_config (Dict, optional): Optional config overrides per agent.
-        speaker_function (str, optional): Name-based speaker function selector
-            (alternative to passing ``speaker_fn``).
         heavy_swarm_question_agent_model_name (str, optional): Model for the
             ``HeavySwarm`` question agent.
         heavy_swarm_worker_model_name (str, optional): Model for ``HeavySwarm``
@@ -338,12 +334,10 @@ class SwarmRouter(SerializableMixin):
         rearrange_flow: str = None,
         shared_memory_system: Any = None,
         output_type: OutputType = "dict-all-except-first",
-        speaker_fn: callable = None,
         multi_agent_collab_prompt: bool = True,
         list_all_agents: bool = False,
         conversation: Any = None,
         agents_config: Optional[Dict[Any, Any]] = None,
-        speaker_function: str = None,
         heavy_swarm_question_agent_model_name: str = "gpt-4.1",
         heavy_swarm_worker_model_name: str = "gpt-4.1",
         heavy_swarm_swarm_show_output: bool = True,
@@ -385,13 +379,11 @@ class SwarmRouter(SerializableMixin):
         self.rearrange_flow = rearrange_flow
         self.shared_memory_system = shared_memory_system
         self.output_type = output_type
-        self.speaker_fn = speaker_fn
         self.logs = []
         self.multi_agent_collab_prompt = multi_agent_collab_prompt
         self.list_all_agents = list_all_agents
         self.conversation = conversation
         self.agents_config = agents_config
-        self.speaker_function = speaker_function
         self.heavy_swarm_question_agent_model_name = (
             heavy_swarm_question_agent_model_name
         )
@@ -716,7 +708,6 @@ class SwarmRouter(SerializableMixin):
             description=self.description,
             agents=self.agents,
             max_loops=self.max_loops,
-            speaker_fn=self.speaker_fn,
             *args,
             **kwargs,
         )
@@ -805,8 +796,6 @@ class SwarmRouter(SerializableMixin):
                 if self.shared_memory_system is not None
                 else None
             ),
-            self.speaker_fn,
-            self.speaker_function,
             self.verbose,
             self.chairman_model,
             self.heavy_swarm_question_agent_model_name,

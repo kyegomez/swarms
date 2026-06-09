@@ -575,25 +575,49 @@ result = swarm.run("Produce a comprehensive competitive analysis of the AI chip 
 
 ### GroupChat
 
-Agents engage in a round-table discussion. A speaker selection function decides who speaks next. Use for brainstorming, debate, or collaborative problem-solving.
+An asynchronous, self-selecting groupchat. There are no rounds or speaker-selection functions — every agent listens in parallel and decides on its own whether to chime in. A forced `respond(score, message)` function call asks each agent how much it wants to speak (0..1); replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or no message arrives for `idle_timeout` seconds.
 
 ```python
-from swarms import Agent, GroupChat
-from swarms.structs.groupchat import expertise_based, round_robin_speaker
+from swarms import Agent
+from swarms.structs.groupchat import GroupChat, RESPOND_TOOL
 
-optimist  = Agent(agent_name="Optimist",  system_prompt="You argue for the benefits.", model_name="gpt-4.1", max_loops=1)
-pessimist = Agent(agent_name="Pessimist", system_prompt="You argue for the risks.",    model_name="gpt-4.1", max_loops=1)
-realist   = Agent(agent_name="Realist",   system_prompt="You seek balanced analysis.", model_name="gpt-4.1", max_loops=1)
+# Every agent MUST carry RESPOND_TOOL so the chat can ask it whether to speak.
+# Recommended per-agent: max_loops=1, persistent_memory=False.
+optimist = Agent(
+    agent_name="Optimist",
+    system_prompt="You argue for the benefits.",
+    model_name="gpt-4.1",
+    max_loops=1,
+    persistent_memory=False,
+    tools_list_dictionary=[RESPOND_TOOL],
+)
+pessimist = Agent(
+    agent_name="Pessimist",
+    system_prompt="You argue for the risks.",
+    model_name="gpt-4.1",
+    max_loops=1,
+    persistent_memory=False,
+    tools_list_dictionary=[RESPOND_TOOL],
+)
+realist = Agent(
+    agent_name="Realist",
+    system_prompt="You seek balanced analysis.",
+    model_name="gpt-4.1",
+    max_loops=1,
+    persistent_memory=False,
+    tools_list_dictionary=[RESPOND_TOOL],
+)
 
 chat = GroupChat(
     agents=[optimist, pessimist, realist],
-    speaker_fn=round_robin_speaker,   # or expertise_based, random_speaker, priority_speaker
-    max_loops=3,                      # 3 rounds of discussion
+    max_loops=10,        # hard cap on total messages posted
+    threshold=0.5,       # min decision score (0..1) to publish a reply
+    idle_timeout=8.0,    # seconds of silence before stopping
 )
 result = chat.run("Should we adopt AI for medical diagnosis?")
 ```
 
-**Speaker functions:** `round_robin_speaker`, `expertise_based`, `random_speaker`, `priority_speaker`, `random_dynamic_speaker`
+**Tuning:** raise `threshold` for a more selective room; lower it for livelier chats. Raise `idle_timeout` if agents need time to think before replying.
 
 ---
 

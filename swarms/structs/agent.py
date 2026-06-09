@@ -385,7 +385,7 @@ class Agent:
         load_state_path: str = None,
         role: agent_roles = "worker",
         print_on: bool = True,
-        tools_list_dictionary: Optional[List[Dict[str, Any]]] = None,
+        tools_list_dictionary: Optional[List[Dict[str, Any]]] = [],
         mcp_url: Optional[Union[str, MCPConnection]] = None,
         mcp_urls: List[str] = None,
         react_on: bool = False,

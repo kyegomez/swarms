@@ -12,7 +12,7 @@ This page provides a comprehensive overview of all available multi-agent archite
     | AgentRearrange | Optimizing agent order | Dynamically reorders agents based on task requirements | [Docs](agent_rearrange.md) |
     | RoundRobin | Equal task distribution | Cycles through agents in a fixed order | [Docs](round_robin_swarm.md) |
     | Mixture of Agents | Complex problem solving | Combines diverse expert agents for comprehensive analysis | [Docs](moa.md) |
-    | GroupChat | Collaborative discussions | Simulates group discussions with multiple agents | [Docs](group_chat.md) |
+    | GroupChat | Collaborative discussions | Asynchronous self-selecting chat where each agent independently decides whether to reply to each message | [Docs](group_chat.md) |
     | AgentRegistry | Agent management | Central registry for managing and accessing agents | [Docs](agent_registry.md) |
     | SpreadSheetSwarm | Data processing | Collaborative data processing and analysis | [Docs](spreadsheet_swarm.md) |
     | ForestSwarm | Hierarchical decision making | Tree-like structure for complex decision processes | [Docs](forest_swarm.md) |

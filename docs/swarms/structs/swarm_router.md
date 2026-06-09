@@ -25,8 +25,6 @@ Main class for routing tasks to different swarm types.
 | `rules` | str | Rules to inject into every agent |
 | `documents` | List[str] | List of document file paths |
 | `output_type` | OutputType | Output format type (e.g., "string", "dict", "list", "json", "yaml", "xml", "dict-all-except-first"). Defaults to "dict-all-except-first" |
-| `speaker_fn` | callable | Legacy speaker function for GroupChat swarm type (deprecated, use speaker_function instead) |
-| `speaker_function` | str | Speaker function name for GroupChat swarm type (e.g., "round-robin-speaker", "random-speaker", "priority-speaker", "random-dynamic-speaker") |
 | `load_agents_from_csv` | bool | Flag to enable/disable loading agents from CSV |
 | `csv_file_path` | str | Path to the CSV file for loading agents |
 | `return_entire_history` | bool | Flag to enable/disable returning the entire conversation history. Defaults to `True` |
@@ -315,16 +313,17 @@ result = concurrent_router.run("Conduct a comprehensive market analysis for Prod
 
 ### GroupChat
 
-Use Case: Simulating a group discussion with multiple agents.
+Use Case: Running an asynchronous, self-selecting discussion among multiple agents. Each agent decides independently whether to reply to any given message; replies above the chat's score threshold are broadcast back into the room.
+
+Note: When `swarm_type="GroupChat"`, every agent passed to the router must be configured with `tools_list_dictionary=[RESPOND_TOOL]` (importable from `swarms`). The router no longer accepts speaker-selection arguments.
 
 ```python
 group_chat_router = SwarmRouter(
     name="GroupChat",
-    description="Simulate a group discussion with multiple agents",
+    description="Asynchronous self-selecting discussion across specialised agents",
     max_loops=10,
     agents=[financial_analyst, market_researcher, competitor_analyst],
     swarm_type="GroupChat",
-    speaker_fn=custom_speaker_function
 )
 
 result = group_chat_router.run("Discuss the pros and cons of expanding into the Asian market")

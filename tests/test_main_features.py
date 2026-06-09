@@ -20,6 +20,7 @@ from swarms import (
     SwarmRouter,
     HierarchicalSwarm,
 )
+from swarms.structs.groupchat import RESPOND_TOOL
 
 from swarms.utils.workspace_utils import get_workspace_dir
 from swarms.structs.tree_swarm import ForestSwarm, Tree, TreeAgent
@@ -545,38 +546,6 @@ def test_swarm_router():
     }
 
 
-def test_groupchat():
-    """Test GroupChat functionality"""
-    agents = [
-        create_test_agent(
-            "Moderator",
-            "You are a discussion moderator who guides conversations.",
-        ),
-        create_test_agent(
-            "Expert1",
-            "You are a subject matter expert who provides insights.",
-        ),
-        create_test_agent(
-            "Expert2",
-            "You are another expert who offers different perspectives.",
-        ),
-    ]
-
-    groupchat = GroupChat(agents=agents, messages=[], max_round=2)
-
-    # GroupChat requires a different interface than other swarms
-    response = groupchat.run(
-        "Discuss the benefits and challenges of remote work."
-    )
-
-    assert response is not None
-    return {
-        "test_name": "test_groupchat",
-        "status": "passed",
-        "response": "GroupChat completed",
-    }
-
-
 def test_multi_agent_router():
     """Test MultiAgentRouter functionality"""
     agents = [
@@ -605,22 +574,36 @@ def test_multi_agent_router():
 
 
 def test_groupchat():
-    """Test GroupChat functionality"""
+    """Test GroupChat functionality using the new dynamic API.
+
+    Each agent is configured with ``tools_list_dictionary=[RESPOND_TOOL]``
+    so it can emit structured ``respond(score, message)`` decisions, with
+    ``persistent_memory=False`` to keep test runs hermetic.
+    """
     agents = [
         create_test_agent(
-            "Facilitator", "You facilitate group discussions."
+            "Facilitator",
+            "You facilitate group discussions.",
+            persistent_memory=False,
+            tools_list_dictionary=[RESPOND_TOOL],
         ),
         create_test_agent(
             "Participant1",
             "You are an active discussion participant.",
+            persistent_memory=False,
+            tools_list_dictionary=[RESPOND_TOOL],
         ),
         create_test_agent(
             "Participant2",
             "You provide thoughtful contributions to discussions.",
+            persistent_memory=False,
+            tools_list_dictionary=[RESPOND_TOOL],
         ),
     ]
 
-    group_chat = GroupChat(agents=agents, max_loops=2)
+    group_chat = GroupChat(
+        agents=agents, max_loops=2, idle_timeout=4.0
+    )
 
     response = group_chat.run(
         "Let's discuss the future of artificial intelligence."

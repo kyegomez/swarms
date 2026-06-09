@@ -47,7 +47,7 @@ The table below lists every multi-agent structure currently shipped, with a one-
 | `CouncilAsAJudge` | Council evaluates a response across multiple dimensions; ranks/scores outputs. | [link](swarms/structs/council_as_judge.py) |
 | `LLMCouncil` | Independent expert agents respond, peer-review each other, then synthesize. | [link](swarms/structs/llm_council.py) |
 | `DebateWithJudge` | Adversarial debate rounds followed by a judge ruling; supports self-refinement. | [link](swarms/structs/debate_with_judge.py) |
-| `GroupChat` | Round-table chat with pluggable speaker-selection (round-robin, expertise, random, priority, dynamic). | [link](swarms/structs/groupchat.py) |
+| `GroupChat` | Asynchronous self-selecting groupchat — every agent independently scores each message via a forced `respond(score, message)` tool call and broadcasts when the score clears `threshold`. | [link](swarms/structs/groupchat.py) |
 | `ForestSwarm` | A forest of `Tree`s of `TreeAgent`s; routes tasks to the best matching tree leaf. | [link](swarms/structs/tree_swarm.py) |
 | `AdvisorSwarm` | Cheap executor + powerful advisor consulted on-demand between turns. | [link](swarms/structs/advisor_swarm.py) |
 | `PlannerGeneratorEvaluator` | Three-agent harness: Planner emits step contracts, Generator produces, Evaluator scores. | [link](swarms/structs/planner_generator_evaluator.py) |
