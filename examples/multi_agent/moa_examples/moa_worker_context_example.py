@@ -32,5 +32,7 @@ swarm = MixtureOfAgents(
     output_type="final",
 )
 
-result = swarm.run("What are the main trade-offs between SQL and NoSQL databases?")
+result = swarm.run(
+    "What are the main trade-offs between SQL and NoSQL databases?"
+)
 print(result)
