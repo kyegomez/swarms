@@ -469,6 +469,8 @@ class HierarchicalSwarmDashboard:
                         padding=(1, 1),
                     )
                 )
+        else:
+            return
         self.live_display.update(self._layout)
 
     def start(self, max_loops: int = 1):
@@ -562,26 +564,8 @@ class HierarchicalSwarmDashboard:
 
     def force_refresh(self):
         """Force refresh the dashboard display."""
-        if self.live_display and self.is_active and self._layout is not None:
-            self._layout["operations_status"].update(
-                self._create_status_panel()
-            )
-            self._layout["director_operations"].update(
-                self._create_director_panel()
-            )
-            if self.detailed_view:
-                self._layout["agents"].update(
-                    self._create_detailed_agents_view()
-                )
-            else:
-                self._layout["agents"].update(
-                    Panel(
-                        self._create_agents_table(),
-                        border_style="red",
-                        padding=(1, 1),
-                    )
-                )
-            self.live_display.update(self._layout)
+        for section in ("operations_status", "director_operations", "agents"):
+            self._refresh_section(section)
 
     def show_full_output(self, agent_name: str, full_output: str):
         """Display full agent output in a separate panel."""
