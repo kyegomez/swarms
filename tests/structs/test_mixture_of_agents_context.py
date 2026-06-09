@@ -14,12 +14,7 @@ def _make_moa(layers: int = 2) -> MixtureOfAgents:
 
     workers = [_agent(f"Worker-{i}") for i in range(2)]
     aggregator = _agent("Aggregator")
-
-    with patch("swarms.structs.mixture_of_agents.run_agents_concurrently") as mock_run:
-        mock_run.return_value = {w.agent_name: w.agent_name + "-output" for w in workers}
-        moa = MixtureOfAgents(agents=workers, aggregator_agent=aggregator, layers=layers)
-        moa._run_concurrent_mock = mock_run
-    return moa
+    return MixtureOfAgents(agents=workers, aggregator_agent=aggregator, layers=layers)
 
 
 def test_layer0_workers_receive_only_task():
@@ -56,21 +51,19 @@ def test_layer1_workers_receive_task_and_previous_synthesis():
     assert calls[0] == "my task"
     assert "my task" in calls[1]
     assert "Previous layer synthesis" in calls[1]
-    # Must NOT contain role prefixes from earlier turns that would indicate full transcript
     assert "User:" not in calls[1]
 
 
-def test_aggregator_still_receives_full_conversation():
-    """The aggregator must see the full conversation, not just the last layer."""
+def test_aggregator_receives_worker_outputs_in_conversation():
+    """The aggregator input must contain worker outputs, confirming it sees the full conversation."""
     def fake_run(agents, task, img, return_agent_output_dict):
         return {a.agent_name: "worker-out" for a in agents}
 
-    moa = _make_moa(layers=2)
+    moa = _make_moa(layers=1)
     agg_calls = []
     moa.aggregator_agent.run = MagicMock(side_effect=lambda task: agg_calls.append(task) or "agg")
 
     with patch("swarms.structs.mixture_of_agents.run_agents_concurrently", side_effect=fake_run):
         moa._run(task="my task")
 
-    # The aggregator input should contain more than just the bare task
-    assert len(agg_calls[0]) > len("my task")
+    assert "worker-out" in agg_calls[0]

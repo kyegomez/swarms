@@ -20,10 +20,15 @@ logger = initialize_logger(log_folder="mixture_of_agents")
 class MixtureOfAgents:
     """Run a layered Mixture-of-Agents workflow.
 
-    ``MixtureOfAgents`` sends the task and accumulated conversation
-    context to each worker agent concurrently for each configured layer.
-    After all layers complete, the aggregator agent receives the full
-    conversation and produces the final synthesized answer.
+    ``MixtureOfAgents`` runs workers in parallel across multiple layers,
+    then synthesises their outputs with an aggregator agent.
+
+    Worker context per layer:
+    - Layer 0: each worker receives only the original task.
+    - Layer 1+: each worker receives the original task plus the
+      concatenated outputs from the previous layer.
+
+    The aggregator always receives the full conversation transcript.
 
     Args:
         id: Optional identifier accepted for API compatibility.
@@ -158,8 +163,8 @@ class MixtureOfAgents:
         """Run one worker layer concurrently.
 
         Args:
-            task: Task or accumulated conversation context to send to each
-                worker agent.
+            task: On layer 0 this is the raw user task. On later layers it
+                is ``"Original task: …\\n\\nPrevious layer synthesis:\\n…"``.
             img: Optional image path, URL, or encoded image payload passed
                 through to each worker agent.
 
