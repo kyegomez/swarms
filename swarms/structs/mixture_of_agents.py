@@ -192,20 +192,31 @@ class MixtureOfAgents:
 
         self.conversation.add(role="User", content=task)
 
-        full_context = self.conversation.get_str()
+        # Workers receive only the original task on the first layer, and
+        # task + previous-layer synthesis on subsequent layers. This avoids
+        # re-sending the full growing transcript to every worker on every layer.
+        worker_input = task
+        prev_layer_output: Optional[str] = None
 
         for i in range(self.layers):
-            # Pass the full context/history string to the step method
-            step_output = self.step(task=full_context, img=img)
+            if prev_layer_output is not None:
+                worker_input = (
+                    f"Original task: {task}\n\n"
+                    f"Previous layer synthesis:\n{prev_layer_output}"
+                )
 
-            # Log each agent's output with full context awareness
+            step_output = self.step(task=worker_input, img=img)
+
             for agent_name, agent_output in step_output.items():
                 self.conversation.add(
                     role=agent_name, content=agent_output
                 )
 
-            # Update the full_context with the latest conversation history
-            full_context = self.conversation.get_str()
+            # Summarise the layer as the concatenation of worker outputs so
+            # the next layer has a compact view of what was produced.
+            prev_layer_output = "\n\n".join(
+                f"{name}: {out}" for name, out in step_output.items()
+            )
 
         aggregator_output = self.aggregator_agent.run(
             task=self.conversation.get_str()
