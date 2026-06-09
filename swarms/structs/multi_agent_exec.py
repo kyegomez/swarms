@@ -164,7 +164,9 @@ def run_agents_concurrently(
                 output_dict = {}
                 for agent, future in zip(agents, futures):
                     try:
-                        result = future.result(timeout=per_task_timeout)
+                        result = future.result(
+                            timeout=per_task_timeout
+                        )
                     except concurrent.futures.TimeoutError:
                         result = TimeoutError(
                             f"Agent {getattr(agent, 'agent_name', agent)} timed out after {per_task_timeout}s"
@@ -180,14 +182,18 @@ def run_agents_concurrently(
                 return output_dict
             else:
                 results = []
-                for future in concurrent.futures.as_completed(
-                    futures, timeout=per_task_timeout
-                ):
+                for future in futures:
                     try:
-                        result = future.result()
-                        results.append(result)
+                        result = future.result(
+                            timeout=per_task_timeout
+                        )
+                    except concurrent.futures.TimeoutError:
+                        result = TimeoutError(
+                            f"Agent timed out after {per_task_timeout}s"
+                        )
                     except Exception as e:
-                        results.append(e)
+                        result = e
+                    results.append(result)
                 return results
 
     except Exception as e:
@@ -226,16 +232,17 @@ def run_agents_concurrently_multiprocess(
         >>> results = run_agents_concurrently_multiprocess(agents, "Analyze data", batch_size=2)
         >>> print(f"Processed {len(results)} agents")
     """
-    results = []
 
-    for i in range(0, len(agents), batch_size):
-        batch = agents[i : i + batch_size]
-        batch_results = asyncio.run(
-            run_agents_concurrently_async(batch, task)
-        )
-        results.extend(batch_results)
+    async def _run_all_batches():
+        results = []
+        for i in range(0, len(agents), batch_size):
+            batch = agents[i : i + batch_size]
+            results.extend(
+                await run_agents_concurrently_async(batch, task)
+            )
+        return results
 
-    return results
+    return asyncio.run(_run_all_batches())
 
 
 def batched_grid_agent_execution(

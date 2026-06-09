@@ -3,8 +3,6 @@
 import time
 from unittest.mock import MagicMock
 
-import pytest
-
 from swarms.structs.multi_agent_exec import (
     run_agents_concurrently,
     run_agents_concurrently_multiprocess,
@@ -28,34 +26,80 @@ def _agent(name: str, output: str = "ok", delay: float = 0.0):
 # asyncio.run() replacement for run_agents_concurrently_multiprocess
 # ---------------------------------------------------------------------------
 
+
 def test_multiprocess_runner_returns_results():
     agents = [_agent("A", "a"), _agent("B", "b")]
-    results = run_agents_concurrently_multiprocess(agents, task="t", batch_size=2)
+    results = run_agents_concurrently_multiprocess(
+        agents, task="t", batch_size=2
+    )
     assert set(results) == {"a", "b"}
 
 
 def test_multiprocess_runner_batches_correctly():
     agents = [_agent(str(i), str(i)) for i in range(4)]
-    results = run_agents_concurrently_multiprocess(agents, task="t", batch_size=2)
+    results = run_agents_concurrently_multiprocess(
+        agents, task="t", batch_size=2
+    )
     assert len(results) == 4
 
 
 # ---------------------------------------------------------------------------
-# per_task_timeout
+# per_task_timeout — dict return path
 # ---------------------------------------------------------------------------
 
-def test_timeout_returns_timeout_error_in_dict():
-    agents = [_agent("Fast", "done"), _agent("Slow", "never", delay=5.0)]
+
+def test_timeout_dict_returns_timeout_error_for_slow_agent():
+    agents = [
+        _agent("Fast", "done"),
+        _agent("Slow", "never", delay=0.5),
+    ]
     result = run_agents_concurrently(
-        agents, task="t", return_agent_output_dict=True, per_task_timeout=0.1
+        agents,
+        task="t",
+        return_agent_output_dict=True,
+        per_task_timeout=0.1,
     )
     assert result["Fast"] == "done"
     assert isinstance(result["Slow"], TimeoutError)
 
 
-def test_no_timeout_completes_normally():
+def test_no_timeout_dict_completes_normally():
     agents = [_agent("A", "a"), _agent("B", "b")]
     result = run_agents_concurrently(
-        agents, task="t", return_agent_output_dict=True, per_task_timeout=None
+        agents,
+        task="t",
+        return_agent_output_dict=True,
+        per_task_timeout=None,
     )
     assert result == {"A": "a", "B": "b"}
+
+
+# ---------------------------------------------------------------------------
+# per_task_timeout — list return path
+# ---------------------------------------------------------------------------
+
+
+def test_timeout_list_returns_timeout_error_for_slow_agent():
+    agents = [
+        _agent("Fast", "done"),
+        _agent("Slow", "never", delay=0.5),
+    ]
+    results = run_agents_concurrently(
+        agents,
+        task="t",
+        return_agent_output_dict=False,
+        per_task_timeout=0.1,
+    )
+    assert any(r == "done" for r in results)
+    assert any(isinstance(r, TimeoutError) for r in results)
+
+
+def test_no_timeout_list_completes_normally():
+    agents = [_agent("A", "a"), _agent("B", "b")]
+    results = run_agents_concurrently(
+        agents,
+        task="t",
+        return_agent_output_dict=False,
+        per_task_timeout=None,
+    )
+    assert set(results) == {"a", "b"}
