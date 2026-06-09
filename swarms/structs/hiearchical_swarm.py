@@ -383,7 +383,7 @@ class HierarchicalSwarmDashboard:
             for i, order in enumerate(
                 self.director_orders
             ):  # Show first 5 orders
-                director_text.append(f"{i+1}. ", style="bold cyan")
+                director_text.append(f"{i + 1}. ", style="bold cyan")
                 director_text.append(
                     f"{order.get('agent_name', 'Unknown')}: ",
                     style="bold white",
@@ -446,7 +446,11 @@ class HierarchicalSwarmDashboard:
 
     def _refresh_section(self, section: str) -> None:
         """Rebuild only the named layout section and push to Live."""
-        if not (self.live_display and self.is_active and self._layout is not None):
+        if not (
+            self.live_display
+            and self.is_active
+            and self._layout is not None
+        ):
             return
         if section == "operations_status":
             self._layout["operations_status"].update(
@@ -564,7 +568,11 @@ class HierarchicalSwarmDashboard:
 
     def force_refresh(self):
         """Force refresh the dashboard display."""
-        for section in ("operations_status", "director_operations", "agents"):
+        for section in (
+            "operations_status",
+            "director_operations",
+            "agents",
+        ):
             self._refresh_section(section)
 
     def show_full_output(self, agent_name: str, full_output: str):
@@ -1047,7 +1055,6 @@ class HierarchicalSwarm:
         self, task: str = None, img: Optional[str] = None
     ):
         try:
-
             agent = Agent(
                 agent_name=self.director_name,
                 agent_description="A director agent that can create a plan and distribute orders to agents",
@@ -1836,7 +1843,8 @@ class HierarchicalSwarm:
                 + "-" * 60
                 + f"\nError   : {str(e)}"
                 f"\nTrace   :\n{traceback.format_exc()}"
-                + "-" * 60
+                + "-"
+                * 60
                 + "\nIf this issue persists, please report it:"
                 "\n  https://github.com/kyegomez/swarms/issues"
                 "\n" + "=" * 60 + "\n"

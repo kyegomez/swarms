@@ -7,7 +7,9 @@ instead of the full layout on every update call.
 
 import time
 
-from swarms.utils.hierarchical_swarm_dashboard import HierarchicalSwarmDashboard
+from swarms.utils.hierarchical_swarm_dashboard import (
+    HierarchicalSwarmDashboard,
+)
 
 if __name__ == "__main__":
     dashboard = HierarchicalSwarmDashboard(swarm_name="Demo-Swarm")
@@ -26,7 +28,10 @@ if __name__ == "__main__":
     )
     dashboard.update_director_orders(
         [
-            {"agent_name": "Researcher", "task": "Gather data on AI chips"},
+            {
+                "agent_name": "Researcher",
+                "task": "Gather data on AI chips",
+            },
             {"agent_name": "Analyst", "task": "Summarise findings"},
         ]
     )

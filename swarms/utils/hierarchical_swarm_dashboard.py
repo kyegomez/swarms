@@ -6,6 +6,7 @@ need to know how panels, tables, or layouts are rendered.
 """
 
 import time
+from typing import Optional
 
 from rich.console import Console
 from rich.layout import Layout
@@ -335,7 +336,7 @@ class HierarchicalSwarmDashboard:
             for i, order in enumerate(
                 self.director_orders
             ):  # Show first 5 orders
-                director_text.append(f"{i+1}. ", style="bold cyan")
+                director_text.append(f"{i + 1}. ", style="bold cyan")
                 director_text.append(
                     f"{order.get('agent_name', 'Unknown')}: ",
                     style="bold white",
@@ -398,7 +399,11 @@ class HierarchicalSwarmDashboard:
 
     def _refresh_section(self, section: str) -> None:
         """Rebuild only the named layout section and push to Live."""
-        if not (self.live_display and self.is_active and self._layout is not None):
+        if not (
+            self.live_display
+            and self.is_active
+            and self._layout is not None
+        ):
             return
         if section == "operations_status":
             self._layout["operations_status"].update(
@@ -516,7 +521,11 @@ class HierarchicalSwarmDashboard:
 
     def force_refresh(self):
         """Force refresh the dashboard display."""
-        for section in ("operations_status", "director_operations", "agents"):
+        for section in (
+            "operations_status",
+            "director_operations",
+            "agents",
+        ):
             self._refresh_section(section)
 
     def show_full_output(self, agent_name: str, full_output: str):
