@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-from swarms.structs.hiearchical_swarm import HierarchicalSwarmDashboard
+from swarms.utils.hierarchical_swarm_dashboard import HierarchicalSwarmDashboard
 
 
 def _started_dashboard() -> HierarchicalSwarmDashboard:

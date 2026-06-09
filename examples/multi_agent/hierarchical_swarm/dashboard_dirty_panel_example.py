@@ -7,7 +7,7 @@ instead of the full layout on every update call.
 
 import time
 
-from swarms.structs.hiearchical_swarm import HierarchicalSwarmDashboard
+from swarms.utils.hierarchical_swarm_dashboard import HierarchicalSwarmDashboard
 
 if __name__ == "__main__":
     dashboard = HierarchicalSwarmDashboard(swarm_name="Demo-Swarm")

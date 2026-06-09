@@ -79,6 +79,9 @@ class HierarchicalSwarmDashboard:
         self.agent_history = {}  # Track agent outputs across loops
         self.current_loop = 0
 
+        # Cached layout — rebuilt once in start(), sections updated in-place
+        self._layout: Optional["Layout"] = None
+
     def _get_spinner(self) -> str:
         """Get current spinner frame for loading animations."""
         self.spinner_idx = (self.spinner_idx + 1) % len(
@@ -393,14 +396,44 @@ class HierarchicalSwarmDashboard:
 
         return layout
 
+    def _refresh_section(self, section: str) -> None:
+        """Rebuild only the named layout section and push to Live."""
+        if not (self.live_display and self.is_active and self._layout is not None):
+            return
+        if section == "operations_status":
+            self._layout["operations_status"].update(
+                self._create_status_panel()
+            )
+        elif section == "director_operations":
+            self._layout["director_operations"].update(
+                self._create_director_panel()
+            )
+        elif section == "agents":
+            if self.detailed_view:
+                self._layout["agents"].update(
+                    self._create_detailed_agents_view()
+                )
+            else:
+                self._layout["agents"].update(
+                    Panel(
+                        self._create_agents_table(),
+                        border_style="red",
+                        padding=(1, 1),
+                    )
+                )
+        else:
+            return
+        self.live_display.update(self._layout)
+
     def start(self, max_loops: int = 1):
         """Start the dashboard display."""
         self.max_loops = max_loops
         self.start_time = time.time()
         self.is_active = True
 
+        self._layout = self._create_dashboard_layout()
         self.live_display = Live(
-            self._create_dashboard_layout(),
+            self._layout,
             console=self.console,
             refresh_per_second=10,
             transient=False,
@@ -436,32 +469,27 @@ class HierarchicalSwarmDashboard:
             "output": output,
         }
 
-        if self.live_display and self.is_active:
-            self.live_display.update(self._create_dashboard_layout())
+        self._refresh_section("agents")
 
     def update_director_status(self, status: str):
         """Update the director status."""
         self.director_status = status
-        if self.live_display and self.is_active:
-            self.live_display.update(self._create_dashboard_layout())
+        self._refresh_section("operations_status")
 
     def update_loop(self, current_loop: int):
         """Update the current execution loop."""
         self.current_loop = current_loop
-        if self.live_display and self.is_active:
-            self.live_display.update(self._create_dashboard_layout())
+        self._refresh_section("operations_status")
 
     def update_director_plan(self, plan: str):
         """Update the director's plan."""
         self.director_plan = plan
-        if self.live_display and self.is_active:
-            self.live_display.update(self._create_dashboard_layout())
+        self._refresh_section("director_operations")
 
     def update_director_orders(self, orders: list):
         """Update the director's orders."""
         self.director_orders = orders
-        if self.live_display and self.is_active:
-            self.live_display.update(self._create_dashboard_layout())
+        self._refresh_section("director_operations")
 
     def stop(self):
         """Stop the dashboard display."""
@@ -484,13 +512,12 @@ class HierarchicalSwarmDashboard:
         self.max_loops = max_loops
         self.director_name = director_name
         self.director_model_name = director_model_name
-        if self.live_display and self.is_active:
-            self.live_display.update(self._create_dashboard_layout())
+        self._refresh_section("operations_status")
 
     def force_refresh(self):
         """Force refresh the dashboard display."""
-        if self.live_display and self.is_active:
-            self.live_display.update(self._create_dashboard_layout())
+        for section in ("operations_status", "director_operations", "agents"):
+            self._refresh_section(section)
 
     def show_full_output(self, agent_name: str, full_output: str):
         """Display full agent output in a separate panel."""
@@ -511,5 +538,4 @@ class HierarchicalSwarmDashboard:
     def toggle_detailed_view(self):
         """Toggle between table view and detailed view."""
         self.detailed_view = not self.detailed_view
-        if self.live_display and self.is_active:
-            self.live_display.update(self._create_dashboard_layout())
+        self._refresh_section("agents")
