@@ -73,6 +73,7 @@ from swarms.structs.skill_orchestra import SkillOrchestra
 from swarms.structs.social_algorithms import SocialAlgorithms
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.swarm_rearrange import SwarmRearrange
+from swarms.structs.tournament_swarm import TournamentSwarm
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmType,
@@ -155,6 +156,7 @@ __all__ = [
     "SelfMoASeq",
     "SkillOrchestra",
     "DebateWithJudge",
+    "TournamentSwarm",
     "PlannerGeneratorEvaluator",
     "StepContract",
     "EvaluationReport",
