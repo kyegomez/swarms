@@ -195,6 +195,7 @@ class GroupChat(SerializableMixin):
         output_type: str = "str-all-except-first",
         verbose: bool = False,
         print_on: bool = True,
+        auto_equip: bool = True,
     ):
         """Initialize the dynamic groupchat runtime.
 
@@ -222,11 +223,39 @@ class GroupChat(SerializableMixin):
         self.output_type = output_type
         self.verbose = verbose
         self.print_on = print_on
+        self.auto_equip = auto_equip
 
         self.conversation = Conversation(time_enabled=True)
 
         if len(self.agents) < 2:
             raise ValueError("GroupChat requires at least 2 agents.")
+
+        if self.auto_equip:
+            self._ensure_respond_tool()
+
+    def _ensure_respond_tool(self) -> None:
+        """Inject ``RESPOND_TOOL`` into agents that do not already carry it.
+
+        Without the ``respond`` tool an agent's speaking decision can never be
+        parsed, so it would sit silent for the whole chat. The agent's LLM
+        client bakes ``tools_list_dictionary`` in at construction time, so
+        after appending the schema the client is rebuilt via
+        ``llm_handling()``.
+        """
+        for agent in self.agents:
+            tools = agent.tools_list_dictionary or []
+            if any(
+                tool.get("function", {}).get("name") == "respond"
+                for tool in tools
+                if isinstance(tool, dict)
+            ):
+                continue
+            agent.tools_list_dictionary = [*tools, RESPOND_TOOL]
+            agent.llm = agent.llm_handling()
+            self._log(
+                "info",
+                f"Injected respond tool into {agent.agent_name}",
+            )
 
     def _other_agents(self, exclude: str) -> str:
         """Return a comma-separated list of peers visible to one agent."""

@@ -708,6 +708,8 @@ class SwarmRouter(SerializableMixin):
             description=self.description,
             agents=self.agents,
             max_loops=self.max_loops,
+            output_type=self.output_type,
+            verbose=self.verbose,
             *args,
             **kwargs,
         )

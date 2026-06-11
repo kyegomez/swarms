@@ -4,6 +4,7 @@ This directory contains examples demonstrating the dynamic `GroupChat` — an as
 
 ## Examples
 
+- [dynamic_groupchat_example.py](dynamic_groupchat_example.py) - Minimal dynamic groupchat walkthrough
 - [enhanced_collaboration_example.py](enhanced_collaboration_example.py) - Analyst / researcher / strategist scenarios
 - [medical_panel_example.py](medical_panel_example.py) - Panel of medical specialists discussing a complex multi-system case
 - [quantum_physics_swarm.py](quantum_physics_swarm.py) - Condensed-matter physics research team
