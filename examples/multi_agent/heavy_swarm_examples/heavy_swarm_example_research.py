@@ -4,8 +4,8 @@ from swarms import HeavySwarm
 swarm = HeavySwarm(
     name="ResearchSwarm",
     description="Five-agent research/analysis/synthesis pipeline",
-    worker_model_name="gpt-4.1",
-    question_agent_model_name="gpt-4.1",
+    worker_model_name="gpt-5.4",
+    question_agent_model_name="gpt-5.4",
     max_loops=1,
     show_dashboard=True,
 )

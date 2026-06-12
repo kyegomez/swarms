@@ -20,7 +20,7 @@ def create_collaborative_agents():
 - Identifying patterns and correlations in data
 
 When collaborating, always reference specific data points and build upon others' insights with quantitative support.""",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         persistent_memory=False,
         tools_list_dictionary=[RESPOND_TOOL],
@@ -35,7 +35,7 @@ When collaborating, always reference specific data points and build upon others'
 - Providing qualitative insights that complement data analysis
 
 When collaborating, always connect market insights to business implications and build upon data analysis with market context.""",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         persistent_memory=False,
         tools_list_dictionary=[RESPOND_TOOL],
@@ -50,7 +50,7 @@ When collaborating, always connect market insights to business implications and 
 - Synthesizing multiple perspectives into coherent strategies
 
 When collaborating, always synthesize insights from all team members and provide strategic recommendations that leverage the collective expertise.""",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         persistent_memory=False,
         tools_list_dictionary=[RESPOND_TOOL],

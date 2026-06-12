@@ -6,7 +6,7 @@ from swarms.structs.groupchat import GroupChat, RESPOND_TOOL
 afu = Agent(
     agent_name="afu",
     system_prompt="You are afu, a creative copywriter for Xiaohongshu beauty posts.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     persistent_memory=False,
     tools_list_dictionary=[RESPOND_TOOL],
@@ -15,7 +15,7 @@ afu = Agent(
 nunu = Agent(
     agent_name="nunu",
     system_prompt="You are nunu, a beauty product reviewer who critiques copy for authenticity.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     persistent_memory=False,
     tools_list_dictionary=[RESPOND_TOOL],

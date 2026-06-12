@@ -68,7 +68,7 @@ The class uses **in-memory storage** for fast and efficient conversation managem
 | save_as_json_bool | bool | False | Save as JSON |
 | token_count | bool | False | Enable token counting |
 | message_id_on | bool | False | Enable message IDs |
-| tokenizer_model_name | str | "gpt-4.1" | Model name for tokenization |
+| tokenizer_model_name | str | "gpt-5.4" | Model name for tokenization |
 | conversations_dir | Optional[str] | None | Directory for conversations |
 | export_method | str | "json" | Export format ("json" or "yaml") |
 | dynamic_context_window | bool | True | Enable dynamic context window management |
@@ -653,7 +653,7 @@ conversation = Conversation(
     system_prompt="You are a helpful assistant",
     time_enabled=True,
     token_count=True,
-    tokenizer_model_name="gpt-4.1",
+    tokenizer_model_name="gpt-5.4",
     message_id_on=True,
     export_method="json",
     autosave=True
@@ -772,14 +772,14 @@ conversation = Conversation(
 data_analyst = Agent(
     agent_name="DataAnalyst",
     system_prompt="You are a senior data analyst...",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1
 )
 
 researcher = Agent(
     agent_name="ResearchSpecialist", 
     system_prompt="You are a research specialist...",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1
 )
 

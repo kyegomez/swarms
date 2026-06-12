@@ -9,9 +9,9 @@
 
 from swarms import Agent, AgentRearrange
 
-a = Agent(agent_name="A", model_name="gpt-4.1", max_loops=1)
-b = Agent(agent_name="B", model_name="gpt-4.1", max_loops=1)
-c = Agent(agent_name="C", model_name="gpt-4.1", max_loops=1)
+a = Agent(agent_name="A", model_name="gpt-5.4", max_loops=1)
+b = Agent(agent_name="B", model_name="gpt-5.4", max_loops=1)
+c = Agent(agent_name="C", model_name="gpt-5.4", max_loops=1)
 
 # All three run in parallel — no "->" needed
 flow = AgentRearrange(agents=[a, b, c], flow="A, B, C")

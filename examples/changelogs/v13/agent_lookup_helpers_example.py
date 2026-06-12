@@ -17,8 +17,8 @@ from swarms.structs.ma_blocks import (
 )
 
 agents = [
-    Agent(agent_name="Analyst", model_name="gpt-4.1", max_loops=1),
-    Agent(agent_name="Writer", model_name="gpt-4.1", max_loops=1),
+    Agent(agent_name="Analyst", model_name="gpt-5.4", max_loops=1),
+    Agent(agent_name="Writer", model_name="gpt-5.4", max_loops=1),
 ]
 
 # Cached name index — repeated lookups are O(1) after the first call

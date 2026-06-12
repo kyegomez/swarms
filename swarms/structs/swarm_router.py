@@ -312,8 +312,8 @@ class SwarmRouter(SerializableMixin):
     Example:
         >>> from swarms import Agent, SwarmRouter
         >>> agents = [
-        ...     Agent(agent_name="Researcher", model_name="gpt-4.1"),
-        ...     Agent(agent_name="Writer", model_name="gpt-4.1"),
+        ...     Agent(agent_name="Researcher", model_name="gpt-5.4"),
+        ...     Agent(agent_name="Writer", model_name="gpt-5.4"),
         ... ]
         >>> router = SwarmRouter(agents=agents, swarm_type="SequentialWorkflow")
         >>> result = router.run("Write a brief on transformer architectures.")
@@ -338,8 +338,8 @@ class SwarmRouter(SerializableMixin):
         list_all_agents: bool = False,
         conversation: Any = None,
         agents_config: Optional[Dict[Any, Any]] = None,
-        heavy_swarm_question_agent_model_name: str = "gpt-4.1",
-        heavy_swarm_worker_model_name: str = "gpt-4.1",
+        heavy_swarm_question_agent_model_name: str = "gpt-5.4",
+        heavy_swarm_worker_model_name: str = "gpt-5.4",
         heavy_swarm_swarm_show_output: bool = True,
         heavy_swarm_variant: SwarmVariant = "default",
         heavy_swarm_max_loops: int = 1,

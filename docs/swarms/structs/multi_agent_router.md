@@ -84,7 +84,7 @@ healthcare_router = MultiAgentRouter(
     name="Healthcare-Router",
     description="Routes medical and healthcare-related tasks to specialized agents",
     agents=agents,
-    model="gpt-4.1",
+    model="gpt-5.4",
     temperature=0.1
 )
 

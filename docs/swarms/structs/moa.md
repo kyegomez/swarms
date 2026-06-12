@@ -244,7 +244,7 @@ from swarms import MixtureOfAgents, Agent
 director = Agent(
     agent_name="Director",
     system_prompt="Directs the tasks for the accountants",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -252,7 +252,7 @@ director = Agent(
 accountant1 = Agent(
     agent_name="Accountant1",
     system_prompt="Prepares financial statements",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -260,7 +260,7 @@ accountant1 = Agent(
 accountant2 = Agent(
     agent_name="Accountant2",
     system_prompt="Audits financial records",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -282,7 +282,7 @@ from swarms import MixtureOfAgents, Agent
 director = Agent(
     agent_name="Director",
     system_prompt="Directs the tasks for the accountants",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -290,7 +290,7 @@ director = Agent(
 accountant1 = Agent(
     agent_name="Accountant1",
     system_prompt="Prepares financial statements",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -298,7 +298,7 @@ accountant1 = Agent(
 accountant2 = Agent(
     agent_name="Accountant2",
     system_prompt="Audits financial records",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -326,7 +326,7 @@ from swarms import MixtureOfAgents, Agent
 director = Agent(
     agent_name="Director",
     system_prompt="Directs the tasks for the accountants",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -334,7 +334,7 @@ director = Agent(
 accountant1 = Agent(
     agent_name="Accountant1",
     system_prompt="Prepares financial statements",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -342,7 +342,7 @@ accountant1 = Agent(
 accountant2 = Agent(
     agent_name="Accountant2",
     system_prompt="Audits financial records",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -406,7 +406,7 @@ from swarms import MixtureOfAgents, Agent
 director = Agent(
     agent_name="Director",
     system_prompt="Directs the tasks for the accountants",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 
 )
@@ -414,14 +414,14 @@ director = Agent(
 accountant1 = Agent(
     agent_name="Accountant1",
     system_prompt="Prepares financial statements",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
 accountant2 = Agent(
     agent_name="Accountant2",
     system_prompt="Audits financial records",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 

@@ -177,7 +177,7 @@ research_agent = Agent(
 # Creative agent using GPT-4o for content generation
 creative_agent = Agent(
     agent_name="Creative-Agent", 
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     system_prompt="You are a creative content expert."
 )
 
@@ -199,7 +199,7 @@ from swarms import Agent, ModelRouter
 model_router = ModelRouter(
     models={
         "analysis": "claude-3-sonnet-20240229",
-        "creative": "gpt-4.1", 
+        "creative": "gpt-5.4", 
         "fast": "gpt-5.4",
         "local": "ollama/llama2"
     }

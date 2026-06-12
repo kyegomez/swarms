@@ -13,19 +13,19 @@ def build_agents() -> list:
     return [
         Agent(
             agent_name="Researcher",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
             print_on=False,
         ),
         Agent(
             agent_name="Writer",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
             print_on=False,
         ),
         Agent(
             agent_name="Editor",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
             print_on=False,
         ),

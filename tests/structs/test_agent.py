@@ -176,7 +176,7 @@ class TestAgentFeatures:
         print("\nTesting basic agent functionality...")
 
         agent = Agent(
-            agent_name="Test-Agent", model_name="gpt-4.1", max_loops=1
+            agent_name="Test-Agent", model_name="gpt-5.4", max_loops=1
         )
 
         response = agent.run("What is 2+2?")
@@ -200,7 +200,7 @@ class TestAgentFeatures:
         agent = Agent(
             agent_name="Memory-Test-Agent",
             max_loops=1,
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             context_length=8192,
         )
 
@@ -240,7 +240,7 @@ class TestAgentFeatures:
         for output_type, expected_type in output_types.items():
             agent = Agent(
                 agent_name=f"{output_type.capitalize()}-Output-Agent",
-                model_name="gpt-4.1",
+                model_name="gpt-5.4",
                 max_loops=1,
                 output_type=output_type,
             )
@@ -282,7 +282,7 @@ class TestAgentFeatures:
             # Create agent with initial state
             agent1 = Agent(
                 agent_name="State-Test-Agent",
-                model_name="gpt-4.1",
+                model_name="gpt-5.4",
                 max_loops=1,
                 saved_state_path=state_path,
             )
@@ -300,7 +300,7 @@ class TestAgentFeatures:
             # Create new agent and load state
             agent2 = Agent(
                 agent_name="State-Test-Agent",
-                model_name="gpt-4.1",
+                model_name="gpt-5.4",
                 max_loops=1,
             )
             agent2.load(state_path)
@@ -317,7 +317,7 @@ class TestAgentFeatures:
             # Test autosave functionality
             agent3 = Agent(
                 agent_name="Autosave-Test-Agent",
-                model_name="gpt-4.1",
+                model_name="gpt-5.4",
                 max_loops=1,
                 saved_state_path=os.path.join(
                     temp_dir, "autosave_state.json"
@@ -343,7 +343,7 @@ class TestAgentFeatures:
 
         agent = Agent(
             agent_name="Tools-Test-Agent",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
             tools=[sample_tool],
         )
@@ -368,7 +368,7 @@ class TestAgentFeatures:
 
         agent = Agent(
             agent_name="Concurrent-Test-Agent",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
         )
 
@@ -401,7 +401,7 @@ class TestAgentFeatures:
 
         agent = Agent(
             agent_name="Error-Test-Agent",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
             retry_attempts=3,
             retry_interval=1,
@@ -428,7 +428,7 @@ class TestAgentFeatures:
 
         agent = Agent(
             agent_name="Config-Test-Agent",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
             temperature=0.7,
             max_tokens=4000,
@@ -465,7 +465,7 @@ class TestAgentFeatures:
 
         agent = Agent(
             agent_name="Stopping-Condition-Agent",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
             stopping_condition=custom_stopping_condition,
         )
@@ -480,7 +480,7 @@ class TestAgentFeatures:
 
         agent = Agent(
             agent_name="Retry-Test-Agent",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
             retry_attempts=3,
             retry_interval=1,
@@ -496,7 +496,7 @@ class TestAgentFeatures:
 
         agent = Agent(
             agent_name="Bulk-Filter-Test-Agent",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
         )
 
@@ -519,7 +519,7 @@ class TestAgentFeatures:
 
         agent = Agent(
             agent_name="Async-Test-Agent",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
         )
 
@@ -548,7 +548,7 @@ class TestAgentFeatures:
             # Create agent with memory configuration
             agent1 = Agent(
                 agent_name="Memory-State-Test-Agent",
-                model_name="gpt-4.1",
+                model_name="gpt-5.4",
                 max_loops=1,
                 saved_state_path=state_path,
                 context_length=8192,
@@ -565,7 +565,7 @@ class TestAgentFeatures:
             # Create new agent and load state
             agent2 = Agent(
                 agent_name="Memory-State-Test-Agent",
-                model_name="gpt-4.1",
+                model_name="gpt-5.4",
                 max_loops=1,
             )
             agent2.load(state_path)
@@ -594,7 +594,7 @@ class TestAgentFeatures:
 
         agent = Agent(
             agent_name="Sentiment-Eval-Test-Agent",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
             sentiment_analyzer=mock_sentiment_analyzer,
             sentiment_threshold=0.5,
@@ -623,7 +623,7 @@ class TestAgentFeatures:
 
         agent = Agent(
             agent_name="Tool-Test-Agent",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
             tools=[tool1],
         )
@@ -650,7 +650,7 @@ class TestAgentFeatures:
 
         agent = Agent(
             agent_name="Config-Test-Agent",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
         )
 
@@ -682,7 +682,7 @@ class TestAgentFeatures:
 
         agent = Agent(
             agent_name="Dynamic-Temp-Agent",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=2,
             dynamic_temperature_enabled=True,
         )

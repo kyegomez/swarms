@@ -118,7 +118,7 @@ print(result)
 | `verbose` | `bool` | `False` | Enable detailed logging and progress tracking |
 | `consensus_agent_prompt` | `str` | Default prompt | Custom system prompt for the consensus agent |
 | `consensus_agent_name` | `str` | `"Consensus-Agent"` | Name of the consensus agent |
-| `consensus_agent_model_name` | `str` | `"gpt-4.1"` | Model name for the consensus agent |
+| `consensus_agent_model_name` | `str` | `"gpt-5.4"` | Model name for the consensus agent |
 | `additional_consensus_agent_kwargs` | `dict` | `{}` | Additional keyword arguments for consensus agent initialization |
 | `autosave` | `bool` | `False` | Automatically save conversation history |
 

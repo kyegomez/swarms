@@ -9,7 +9,7 @@ from swarms import Agent, RoundRobinSwarm
 
 agents = [
     Agent(
-        agent_name=f"Handler-{i}", model_name="gpt-4.1", max_loops=1
+        agent_name=f"Handler-{i}", model_name="gpt-5.4", max_loops=1
     )
     for i in range(3)
 ]

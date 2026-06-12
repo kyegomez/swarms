@@ -147,7 +147,7 @@ class AgentSpec(BaseModel):
         description="The initial instruction or context provided to the agent, guiding its behavior and responses during execution.",
     )
     model_name: Optional[str] = Field(
-        "gpt-4.1",
+        "gpt-5.4",
         description="The name of the AI model that the agent will utilize for processing tasks and generating outputs. For example: gpt-4o, gpt-4o-mini, openai/o3-mini",
     )
     auto_generate_prompt: Optional[bool] = Field(
@@ -235,7 +235,7 @@ class AutoSwarmBuilder:
         description (str): A description of the swarm's purpose. Defaults to "Auto Swarm Builder".
         verbose (bool): Whether to output detailed logs. Defaults to True.
         max_loops (int): Maximum number of execution loops. Defaults to 1.
-        model_name (str): The LLM model to use for the boss agent. Defaults to "gpt-4.1".
+        model_name (str): The LLM model to use for the boss agent. Defaults to "gpt-5.4".
         generate_router_config (bool): Whether to generate router configuration. Defaults to False.
         interactive (bool): Whether to enable interactive mode. Defaults to False.
         max_tokens (int): Maximum tokens for the LLM responses. Defaults to 8000.
@@ -249,7 +249,7 @@ class AutoSwarmBuilder:
         description: str = "Auto Swarm Builder",
         verbose: bool = True,
         max_loops: int = 1,
-        model_name: str = "gpt-4.1",
+        model_name: str = "gpt-5.4",
         generate_router_config: bool = False,
         interactive: bool = False,
         max_tokens: int = 8000,

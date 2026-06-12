@@ -41,8 +41,8 @@ Example:
     from swarms import Agent
 
     agents = [
-        Agent(agent_name="Researcher", model_name="gpt-4.1"),
-        Agent(agent_name="Critic", model_name="gpt-4.1"),
+        Agent(agent_name="Researcher", model_name="gpt-5.4"),
+        Agent(agent_name="Critic", model_name="gpt-5.4"),
     ]
 
     chat = GroupChat(agents=agents, max_loops=10, threshold=0.6)

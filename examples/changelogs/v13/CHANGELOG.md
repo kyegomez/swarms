@@ -15,8 +15,8 @@ All notable changes to the **Swarms** framework from **May 5, 2026** to **June 1
 ```python
 from swarms import Agent, GroupChat
 
-optimist = Agent(agent_name="Optimist", system_prompt="Argue the upside.", model_name="gpt-4.1", max_loops=1)
-pessimist = Agent(agent_name="Pessimist", system_prompt="Argue the risks.", model_name="gpt-4.1", max_loops=1)
+optimist = Agent(agent_name="Optimist", system_prompt="Argue the upside.", model_name="gpt-5.4", max_loops=1)
+pessimist = Agent(agent_name="Pessimist", system_prompt="Argue the risks.", model_name="gpt-5.4", max_loops=1)
 
 chat = GroupChat(
     agents=[optimist, pessimist],  # RESPOND_TOOL is auto-injected since 12.0.3
@@ -38,11 +38,11 @@ from swarms import Agent, GraphWorkflow, Node, Edge
 
 # Inner workflow becomes a single node in the outer one
 inner = GraphWorkflow(name="research")
-inner.add_node(Node.from_agent(Agent(agent_name="Researcher", model_name="gpt-4.1", max_loops=1)))
+inner.add_node(Node.from_agent(Agent(agent_name="Researcher", model_name="gpt-5.4", max_loops=1)))
 
 outer = GraphWorkflow(max_parallel_nodes=4)        # at most 4 nodes run at once
 outer.add_node(Node.from_subgraph(inner))          # nested subgraph node
-outer.add_node(Node.from_agent(Agent(agent_name="Writer", model_name="gpt-4.1", max_loops=1)))
+outer.add_node(Node.from_agent(Agent(agent_name="Writer", model_name="gpt-5.4", max_loops=1)))
 outer.add_edge(Edge(source="research", target="Writer"))
 
 outer.validate(raise_on_error=True)                # fail fast on cycles, orphans, missing entry points
@@ -59,8 +59,8 @@ result = outer.run(task="Write a brief on AI chips.")
 from swarms import Agent, SequentialWorkflow
 
 pipeline = SequentialWorkflow(agents=[
-    Agent(agent_name="Researcher", model_name="gpt-4.1", max_loops=1),
-    Agent(agent_name="Writer", model_name="gpt-4.1", max_loops=1),
+    Agent(agent_name="Researcher", model_name="gpt-5.4", max_loops=1),
+    Agent(agent_name="Writer", model_name="gpt-5.4", max_loops=1),
 ])
 
 # Plain token stream
@@ -81,9 +81,9 @@ for event in pipeline.run_stream("Same task.", with_events=True):
 ```python
 from swarms import Agent, AgentRearrange
 
-a = Agent(agent_name="A", model_name="gpt-4.1", max_loops=1)
-b = Agent(agent_name="B", model_name="gpt-4.1", max_loops=1)
-c = Agent(agent_name="C", model_name="gpt-4.1", max_loops=1)
+a = Agent(agent_name="A", model_name="gpt-5.4", max_loops=1)
+b = Agent(agent_name="B", model_name="gpt-5.4", max_loops=1)
+c = Agent(agent_name="C", model_name="gpt-5.4", max_loops=1)
 
 flow = AgentRearrange(agents=[a, b, c], flow="A, B, C")  # all three run in parallel — no "->" needed
 flow.explain()                                            # print the execution plan
@@ -98,7 +98,7 @@ result = flow.run("Brainstorm product names.")
 ```python
 from swarms import Agent, RoundRobinSwarm
 
-agents = [Agent(agent_name=f"Handler-{i}", model_name="gpt-4.1", max_loops=1) for i in range(3)]
+agents = [Agent(agent_name=f"Handler-{i}", model_name="gpt-5.4", max_loops=1) for i in range(3)]
 rr = RoundRobinSwarm(agents=agents, max_loops=1)  # fixed order: Handler-0 -> Handler-1 -> Handler-2
 result = rr.run("Review this proposal.")          # each agent knows who spoke before and who is next
 ```
@@ -169,7 +169,7 @@ state = chat.to_dict()
 - **`Agent.tools_list_dictionary` defaults to an empty list** instead of `None`. (`604613ff`)
 
   ```python
-  agent = Agent(agent_name="A", model_name="gpt-4.1")
+  agent = Agent(agent_name="A", model_name="gpt-5.4")
   agent.tools_list_dictionary  # [] — append schemas without a None check
   ```
 

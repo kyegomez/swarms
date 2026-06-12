@@ -88,7 +88,7 @@ def write_markdown_report(
 def create_test_agent(
     name: str,
     system_prompt: str = None,
-    model_name: str = "gpt-4.1",
+    model_name: str = "gpt-5.4",
     tools: List[Callable] = None,
     **kwargs,
 ) -> Agent:
@@ -175,7 +175,7 @@ def test_tool_execution_with_agent():
 def test_multimodal_execution():
     """Test agent's ability to process images"""
     agent = create_test_agent(
-        "VisionAgent", model_name="gpt-4.1", multi_modal=True
+        "VisionAgent", model_name="gpt-5.4", multi_modal=True
     )
 
     try:
@@ -409,7 +409,7 @@ def test_hierarchical_swarm():
 
         # Create director agent with explicit knowledge of available agents
         director = LiteLLM(
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             response_format=SwarmSpec,
             system_prompt=(
                 "As the Director of this Hierarchical Agent Swarm, you coordinate tasks among agents. "

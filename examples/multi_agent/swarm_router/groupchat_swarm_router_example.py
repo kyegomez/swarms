@@ -9,7 +9,7 @@ researcher = Agent(
         "You are a research-minded agent who values evidence and citations. "
         "Speak only when you can add a specific fact, study, or measurement."
     ),
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     persistent_memory=False,
     tools_list_dictionary=[RESPOND_TOOL],

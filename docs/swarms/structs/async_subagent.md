@@ -186,7 +186,7 @@ registry = SubagentRegistry(max_depth=3)
 
 agent = Agent(
     agent_name="Researcher",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -422,8 +422,8 @@ from swarms.structs.agent import Agent
 from swarms.structs.async_subagent import SubagentRegistry
 
 # Create agents
-analyst = Agent(agent_name="Analyst", model_name="gpt-4.1", max_loops=1)
-writer = Agent(agent_name="Writer", model_name="gpt-4.1", max_loops=1)
+analyst = Agent(agent_name="Analyst", model_name="gpt-5.4", max_loops=1)
+writer = Agent(agent_name="Writer", model_name="gpt-5.4", max_loops=1)
 
 # Create registry
 registry = SubagentRegistry(max_depth=3, max_workers=4)

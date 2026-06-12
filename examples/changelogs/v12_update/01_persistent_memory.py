@@ -7,7 +7,7 @@ from swarms import Agent
 persistent_agent = Agent(
     agent_name="ResearchAssistant",
     agent_description="Remembers context across sessions",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     persistent_memory=True,  # default — state survives restarts
 )
@@ -29,7 +29,7 @@ print(out2)
 stateless_agent = Agent(
     agent_name="EphemeralAgent",
     agent_description="No memory between sessions",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     persistent_memory=False,  # no disk activity at all
 )

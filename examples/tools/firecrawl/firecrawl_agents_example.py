@@ -4,7 +4,7 @@ from swarms import Agent
 
 agent = Agent(
     agent_name="Marketing Copy Improver",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     tools=[crawl_entire_site_firecrawl],
     dynamic_context_window=True,
     dynamic_temperature_enabled=True,

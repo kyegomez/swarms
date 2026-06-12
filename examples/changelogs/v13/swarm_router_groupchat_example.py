@@ -13,13 +13,13 @@ agents = [
     Agent(
         agent_name="Optimist",
         system_prompt="Argue the upside.",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
     ),
     Agent(
         agent_name="Pessimist",
         system_prompt="Argue the risks.",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
     ),
 ]

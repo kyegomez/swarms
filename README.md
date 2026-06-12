@@ -509,7 +509,7 @@ from swarms import Agent, GroupChat, RESPOND_TOOL
 tech_optimist = Agent(
     agent_name="TechOptimist",
     system_prompt="Argue for the benefits of AI in society.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     persistent_memory=False,
     tools_list_dictionary=[RESPOND_TOOL],
@@ -517,7 +517,7 @@ tech_optimist = Agent(
 tech_critic = Agent(
     agent_name="TechCritic",
     system_prompt="Argue against the unchecked advancement of AI.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     persistent_memory=False,
     tools_list_dictionary=[RESPOND_TOOL],
@@ -611,7 +611,7 @@ swarm = HeavySwarm(
     description="A team of agents that research the best gold ETFs",
     worker_model_name="claude-sonnet-4-20250514",
     show_dashboard=True,
-    question_agent_model_name="gpt-4.1",
+    question_agent_model_name="gpt-5.4",
     loops_per_agent=1,
     agent_prints_on=False,
     worker_tools=[exa_search],
@@ -674,17 +674,17 @@ def research_analysis_synthesis_algorithm(agents, task, **kwargs):
 researcher = Agent(
   agent_name="Researcher",
   agent_description="Expert in comprehensive research and information gathering.",
-  model_name="gpt-4.1"
+  model_name="gpt-5.4"
 )
 analyst = Agent(
   agent_name="Analyst",
   agent_description="Specialist in analyzing and interpreting data.",
-  model_name="gpt-4.1"
+  model_name="gpt-5.4"
 )
 synthesizer = Agent(
   agent_name="Synthesizer",
   agent_description="Focused on synthesizing and integrating research insights.",
-  model_name="gpt-4.1"
+  model_name="gpt-5.4"
 )
 
 # Create social algorithm

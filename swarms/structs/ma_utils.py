@@ -109,7 +109,7 @@ models = [
     "o4-mini",
     "claude-sonnet-4-20250514",
     "o3",
-    "gpt-4.1",
+    "gpt-5.4",
     "groq/llama-3.1-8b-instant",
     "gpt-4.1-nano",
 ]

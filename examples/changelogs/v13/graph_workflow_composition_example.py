@@ -13,7 +13,7 @@ inner = GraphWorkflow(name="research")
 inner.add_node(
     Node.from_agent(
         Agent(
-            agent_name="Researcher", model_name="gpt-4.1", max_loops=1
+            agent_name="Researcher", model_name="gpt-5.4", max_loops=1
         )
     )
 )
@@ -26,7 +26,7 @@ outer = GraphWorkflow(
 outer.add_node(Node.from_subgraph(inner))  # nested subgraph node
 outer.add_node(
     Node.from_agent(
-        Agent(agent_name="Writer", model_name="gpt-4.1", max_loops=1)
+        Agent(agent_name="Writer", model_name="gpt-5.4", max_loops=1)
     )
 )
 outer.add_edge(Edge(source="research", target="Writer"))

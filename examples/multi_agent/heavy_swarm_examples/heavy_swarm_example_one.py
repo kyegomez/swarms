@@ -3,7 +3,7 @@ from swarms.structs.heavy_swarm import HeavySwarm
 swarm = HeavySwarm(
     worker_model_name="claude-3-5-sonnet-20240620",
     show_dashboard=True,
-    question_agent_model_name="gpt-4.1",
+    question_agent_model_name="gpt-5.4",
     loops_per_agent=1,
 )
 

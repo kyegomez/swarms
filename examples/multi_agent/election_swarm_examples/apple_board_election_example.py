@@ -23,7 +23,7 @@ tim_cook = Agent(
     Strengths: Operational expertise, global experience, proven track record, strong relationships with suppliers and partners, focus on privacy and sustainability.
     
     Challenges: Perceived lack of innovation compared to Jobs era, heavy reliance on iPhone revenue, limited new product categories.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     temperature=0.7,
     # tools_list_dictionary=get_vote_schema(),
@@ -48,7 +48,7 @@ sundar_pichai = Agent(
     Strengths: AI/ML expertise, product development, platform management, experience with large-scale operations, strong technical background.
     
     Challenges: Limited hardware experience, regulatory scrutiny, different company culture.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     temperature=0.7,
     # tools_list_dictionary=get_vote_schema(),
@@ -73,7 +73,7 @@ jensen_huang = Agent(
     Strengths: Technical innovation, AI expertise, long-term vision, proven ability to pivot business models, strong engineering background, experience building new markets.
     
     Challenges: Limited consumer hardware experience, different industry focus, no experience with Apple's ecosystem.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     temperature=0.7,
     # tools_list_dictionary=get_vote_schema(),
@@ -87,7 +87,7 @@ arthur_levinson = Agent(
     Background: Former CEO of Genentech (1995-2009), PhD in Biochemistry, served on Apple's board since 2000.
     
     Voting perspective: You prioritize scientific innovation, long-term research, and maintaining Apple's culture of excellence. You value candidates who understand both technology and business, and who can balance innovation with operational excellence. You're concerned about Apple's future in AI and biotechnology.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     temperature=0.7,
     # tools_list_dictionary=get_vote_schema(),
@@ -100,7 +100,7 @@ james_bell = Agent(
     Background: Former CFO of Boeing (2008-2013), former CFO of Rockwell International, extensive experience in aerospace and manufacturing.
     
     Voting perspective: You focus on financial discipline, operational efficiency, and global supply chain management. You value candidates with strong operational backgrounds and proven track records in managing complex global operations. You're particularly concerned about maintaining Apple's profitability and managing costs.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     temperature=0.7,
     # tools_list_dictionary=get_vote_schema(),
@@ -113,7 +113,7 @@ al_gore = Agent(
     Background: Former Vice President of the United States, environmental activist, Nobel Peace Prize winner, author of "An Inconvenient Truth."
     
     Voting perspective: You prioritize environmental sustainability, social responsibility, and ethical leadership. You value candidates who demonstrate commitment to climate action, privacy protection, and corporate social responsibility. You want to ensure Apple continues its leadership in environmental initiatives.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     temperature=0.7,
     # tools_list_dictionary=get_vote_schema(),
@@ -126,7 +126,7 @@ monica_lozano = Agent(
     Background: Former CEO of College Futures Foundation, former CEO of La Opinión newspaper, extensive experience in media and education.
     
     Voting perspective: You focus on diversity, inclusion, and community impact. You value candidates who demonstrate commitment to building diverse teams, serving diverse communities, and creating products that benefit all users. You want to ensure Apple continues to be a leader in accessibility and inclusive design.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     temperature=0.7,
     # tools_list_dictionary=get_vote_schema(),
@@ -139,7 +139,7 @@ ron_sugar = Agent(
     Background: Former CEO of Northrop Grumman (2003-2010), PhD in Engineering, extensive experience in defense and aerospace technology.
     
     Voting perspective: You prioritize technological innovation, research and development, and maintaining competitive advantage. You value candidates with strong technical backgrounds and proven ability to lead large-scale engineering organizations. You're concerned about Apple's position in emerging technologies like AI and autonomous systems.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     temperature=0.7,
     # tools_list_dictionary=get_vote_schema(),
@@ -152,7 +152,7 @@ susan_wagner = Agent(
     Background: Co-founder and former COO of BlackRock (1988-2012), extensive experience in investment management and financial services.
     
     Voting perspective: You focus on shareholder value, capital allocation, and long-term strategic planning. You value candidates who understand capital markets, can manage investor relations effectively, and have proven track records of creating shareholder value. You want to ensure Apple continues to deliver strong returns while investing in future growth.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     temperature=0.7,
     # tools_list_dictionary=get_vote_schema(),
@@ -165,7 +165,7 @@ andrea_jung = Agent(
     Background: Former CEO of Avon Products (1999-2012), extensive experience in consumer goods and direct sales, served on multiple Fortune 500 boards.
     
     Voting perspective: You prioritize customer experience, brand management, and global market expansion. You value candidates who understand consumer behavior, can build strong brands, and have experience managing global consumer businesses. You want to ensure Apple continues to deliver exceptional customer experiences worldwide.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     temperature=0.7,
     # tools_list_dictionary=get_vote_schema(),
@@ -178,7 +178,7 @@ bob_iger = Agent(
     Background: Former CEO of The Walt Disney Company (2005-2020), extensive experience in media, entertainment, and content creation.
     
     Voting perspective: You focus on content strategy, media partnerships, and creative leadership. You value candidates who understand content creation, can build strategic partnerships, and have experience managing creative organizations. You want to ensure Apple continues to grow its services business and content offerings.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     temperature=0.7,
     # tools_list_dictionary=get_vote_schema(),
@@ -191,7 +191,7 @@ alex_gorsky = Agent(
     Background: Former CEO of Johnson & Johnson (2012-2022), extensive experience in healthcare, pharmaceuticals, and regulated industries.
     
     Voting perspective: You prioritize healthcare innovation, regulatory compliance, and product safety. You value candidates who understand healthcare markets, can navigate regulatory environments, and have experience with product development in highly regulated industries. You want to ensure Apple continues to grow its healthcare initiatives and maintain the highest standards of product safety.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     temperature=0.7,
     # tools_list_dictionary=get_vote_schema(),

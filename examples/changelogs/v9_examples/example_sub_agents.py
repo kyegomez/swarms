@@ -9,7 +9,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 main_agent = Agent(
     agent_name="Main Research Coordinator",
     agent_description="A coordinator agent that delegates research tasks to specialized sub-agents",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops="auto",  # Enable autonomous mode
 )
 

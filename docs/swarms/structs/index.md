@@ -52,12 +52,12 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 research_agent = Agent(
     agent_name="Research-Specialist",
     agent_description="Expert in market research and analysis",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
 )
 financial_agent = Agent(
     agent_name="Financial-Analyst",
     agent_description="Specialist in financial analysis and valuation",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
 )
 
 # Initialize the hierarchical swarm
@@ -266,7 +266,7 @@ from swarms import Agent, GroupChat, RESPOND_TOOL
 tech_optimist = Agent(
     agent_name="TechOptimist",
     system_prompt="Argue for the benefits of AI in society.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     persistent_memory=False,
     tools_list_dictionary=[RESPOND_TOOL],
@@ -275,7 +275,7 @@ tech_optimist = Agent(
 tech_critic = Agent(
     agent_name="TechCritic",
     system_prompt="Argue against the unchecked advancement of AI.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     persistent_memory=False,
     tools_list_dictionary=[RESPOND_TOOL],

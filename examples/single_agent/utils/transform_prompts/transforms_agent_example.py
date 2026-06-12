@@ -25,12 +25,12 @@ agent = Agent(
 # Alternative way to configure transforms using dictionary
 # agent_with_dict_transforms = Agent(
 #     agent_name="Trading-Agent-Dict",
-#     model_name="gpt-4.1",
+#     model_name="gpt-5.4",
 #     max_loops=1,
 #     transforms={
 #         "enabled": True,
 #         "method": "middle-out",
-#         "model_name": "gpt-4.1",
+#         "model_name": "gpt-5.4",
 #         "preserve_system_messages": True,
 #         "preserve_recent_messages": 3,
 #     },

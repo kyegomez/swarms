@@ -299,19 +299,19 @@ class Agent:
 
     Examples:
     >>> from swarms import Agent
-    >>> agent = Agent(model_name="gpt-4.1", max_loops=1)
+    >>> agent = Agent(model_name="gpt-5.4", max_loops=1)
     >>> response = agent.run("Generate a report on the financials.")
     >>> print(response)
     >>> # Generate a report on the financials.
 
     >>> # Detailed token streaming example
-    >>> agent = Agent(model_name="gpt-4.1", max_loops=1, stream=True)
+    >>> agent = Agent(model_name="gpt-5.4", max_loops=1, stream=True)
     >>> response = agent.run("Tell me a story.")  # Will stream each token with detailed metadata
     >>> print(response)  # Final complete response
 
     >>> # Fallback model example
     >>> agent = Agent(
-    ...     fallback_models=["gpt-4.1", "gpt-5.4", "gpt-3.5-turbo"],
+    ...     fallback_models=["gpt-5.4", "gpt-5.4", "gpt-3.5-turbo"],
     ...     max_loops=1
     ... )
     >>> response = agent.run("Generate a report on the financials.")
@@ -319,7 +319,7 @@ class Agent:
 
     >>> # Marketplace prompt example - load a prompt in one line
     >>> agent = Agent(
-    ...     model_name="gpt-4.1",
+    ...     model_name="gpt-5.4",
     ...     marketplace_prompt_id="550e8400-e29b-41d4-a716-446655440000",
     ...     max_loops=1
     ... )
@@ -380,7 +380,7 @@ class Agent:
         tags: Optional[List[str]] = None,
         auto_generate_prompt: bool = False,
         plan_enabled: bool = False,
-        model_name: str = "gpt-4.1",
+        model_name: str = "gpt-5.4",
         llm_args: dict = None,
         load_state_path: str = None,
         role: agent_roles = "worker",

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 # Lazy import to avoid circular dependency
 
 # Default model configuration
-DEFAULT_MODEL = "gpt-4.1"
+DEFAULT_MODEL = "gpt-5.4"
 
 
 class MarkdownAgentConfig(BaseModel):

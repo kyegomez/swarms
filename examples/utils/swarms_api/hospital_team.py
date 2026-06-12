@@ -35,7 +35,7 @@ def create_medical_unit_swarm(client, patient_info):
                     "You review all information, make final decisions, and coordinate the team. "
                     "Provide a diagnosis, recommend next steps, and delegate tasks to the nurses and assistant."
                 ),
-                "model_name": "gpt-4.1",
+                "model_name": "gpt-5.4",
                 "role": "leader",
                 "max_loops": 1,
                 "max_tokens": 8192,
@@ -49,7 +49,7 @@ def create_medical_unit_swarm(client, patient_info):
                     "Assess the patient's symptoms, record vital signs, and report your findings to Dr. Smith. "
                     "Suggest any immediate nursing interventions if needed."
                 ),
-                "model_name": "gpt-4.1",
+                "model_name": "gpt-5.4",
                 "role": "worker",
                 "max_loops": 1,
                 "max_tokens": 4096,
@@ -63,7 +63,7 @@ def create_medical_unit_swarm(client, patient_info):
                     "Assist with patient care, administer medications as ordered, and monitor the patient's response. "
                     "Communicate any changes to Dr. Smith."
                 ),
-                "model_name": "gpt-4.1",
+                "model_name": "gpt-5.4",
                 "role": "worker",
                 "max_loops": 1,
                 "max_tokens": 4096,

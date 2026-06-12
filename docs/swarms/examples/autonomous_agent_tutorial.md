@@ -170,7 +170,7 @@ def exa_search(query: str) -> str:
 agent = Agent(
     agent_name="Research-Report-Agent",
     agent_description="Creates comprehensive research reports",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops="auto",
     tools=[exa_search],
     autosave=True,

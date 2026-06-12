@@ -9,7 +9,7 @@ def auto_chat_agent(
     name: str = "Swarms Agent",
     description: str = "A Swarms agent that can chat with the user.",
     system_prompt: Optional[str] = None,
-    model_name: str = "gpt-4.1",
+    model_name: str = "gpt-5.4",
     task: Optional[str] = None,
 ) -> Agent:
     """

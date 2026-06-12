@@ -27,7 +27,7 @@ from swarms import OpenAIAssistant
 assistant = OpenAIAssistant(
     name="Math Tutor",
     instructions="You are a helpful math tutor.",
-    model="gpt-4.1",
+    model="gpt-5.4",
     tools=[{"type": "code_interpreter"}]
 )
 
@@ -79,7 +79,7 @@ assistant.add_function(
 OpenAIAssistant(
     name: str,
     instructions: Optional[str] = None,
-    model: str = "gpt-4.1",
+    model: str = "gpt-5.4",
     tools: Optional[List[Dict[str, Any]]] = None,
     file_ids: Optional[List[str]] = None,
     metadata: Optional[Dict[str, Any]] = None,

@@ -28,10 +28,10 @@ swarm = HierarchicalSwarm(
     name="FullFeature-Swarm",
     agents=agents,
     max_loops=1,
-    director_model_name="gpt-4.1",
+    director_model_name="gpt-5.4",
     parallel_execution=False,  # agents run sequentially (one after the other)
     agent_as_judge=True,  # judge agent scores each output
-    judge_agent_model_name="gpt-4.1",
+    judge_agent_model_name="gpt-5.4",
 )
 
 
