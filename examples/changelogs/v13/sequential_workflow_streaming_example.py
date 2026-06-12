@@ -11,7 +11,9 @@ from swarms import Agent, SequentialWorkflow
 
 pipeline = SequentialWorkflow(
     agents=[
-        Agent(agent_name="Researcher", model_name="gpt-4.1", max_loops=1),
+        Agent(
+            agent_name="Researcher", model_name="gpt-4.1", max_loops=1
+        ),
         Agent(agent_name="Writer", model_name="gpt-4.1", max_loops=1),
     ],
 )

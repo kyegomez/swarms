@@ -8,7 +8,9 @@ speaker context (turn awareness), and logs are gated behind verbose.
 from swarms import Agent, RoundRobinSwarm
 
 agents = [
-    Agent(agent_name=f"Handler-{i}", model_name="gpt-4.1", max_loops=1)
+    Agent(
+        agent_name=f"Handler-{i}", model_name="gpt-4.1", max_loops=1
+    )
     for i in range(3)
 ]
 

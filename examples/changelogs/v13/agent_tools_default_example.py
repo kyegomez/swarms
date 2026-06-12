@@ -13,4 +13,6 @@ agent = Agent(agent_name="A", model_name="gpt-4.1", max_loops=1)
 print(f"Default: {agent.tools_list_dictionary}")
 
 agent.tools_list_dictionary.append(RESPOND_TOOL)
-print(f"After append: {len(agent.tools_list_dictionary)} tool schema(s)")
+print(
+    f"After append: {len(agent.tools_list_dictionary)} tool schema(s)"
+)

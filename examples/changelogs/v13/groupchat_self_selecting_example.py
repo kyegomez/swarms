@@ -23,10 +23,13 @@ pessimist = Agent(
 )
 
 chat = GroupChat(
-    agents=[optimist, pessimist],  # RESPOND_TOOL is auto-injected since 12.0.3
-    max_loops=10,       # hard cap on total messages
-    threshold=0.5,      # min desire-to-speak score (0..1) to publish
-    idle_timeout=8.0,   # seconds of silence before the chat ends
+    agents=[
+        optimist,
+        pessimist,
+    ],  # RESPOND_TOOL is auto-injected since 12.0.3
+    max_loops=10,  # hard cap on total messages
+    threshold=0.5,  # min desire-to-speak score (0..1) to publish
+    idle_timeout=8.0,  # seconds of silence before the chat ends
 )
 
 result = chat.run("Should we adopt AI for medical diagnosis?")

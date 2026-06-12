@@ -11,6 +11,7 @@ agent = Agent(
     temperature=1.0,
     thinking_tokens=1024,
     reasoning_effort="high",
+    persistent_memory=False,
     # streaming_on=True,
 )
 

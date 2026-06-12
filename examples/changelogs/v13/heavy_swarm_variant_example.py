@@ -6,7 +6,9 @@ grok-specific boolean flags.
 
 from swarms import HeavySwarm
 
-swarm = HeavySwarm(variant="heavy")  # was: grok-specific boolean flags
+swarm = HeavySwarm(
+    variant="heavy"
+)  # was: grok-specific boolean flags
 
 result = swarm.run("Deep analysis of the AI chip market.")
 print(result)

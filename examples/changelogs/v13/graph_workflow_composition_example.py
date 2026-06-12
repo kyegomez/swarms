@@ -12,14 +12,18 @@ from swarms import Agent, GraphWorkflow, Node, Edge
 inner = GraphWorkflow(name="research")
 inner.add_node(
     Node.from_agent(
-        Agent(agent_name="Researcher", model_name="gpt-4.1", max_loops=1)
+        Agent(
+            agent_name="Researcher", model_name="gpt-4.1", max_loops=1
+        )
     )
 )
 inner.set_entry_points(["Researcher"])
 inner.set_end_points(["Researcher"])
 
-outer = GraphWorkflow(max_parallel_nodes=4)  # at most 4 nodes run at once
-outer.add_node(Node.from_subgraph(inner))    # nested subgraph node
+outer = GraphWorkflow(
+    max_parallel_nodes=4
+)  # at most 4 nodes run at once
+outer.add_node(Node.from_subgraph(inner))  # nested subgraph node
 outer.add_node(
     Node.from_agent(
         Agent(agent_name="Writer", model_name="gpt-4.1", max_loops=1)
