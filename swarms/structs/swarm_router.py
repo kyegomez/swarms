@@ -14,6 +14,7 @@ from typing import (
 
 from pydantic import BaseModel, Field
 
+from swarms.agents.heavy_swarm_agents import SwarmVariant
 from swarms.prompts.multi_agent_collab_prompt import (
     MULTI_AGENT_COLLAB_PROMPT_TWO,
 )
@@ -24,7 +25,6 @@ from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.debate_with_judge import DebateWithJudge
 from swarms.structs.groupchat import GroupChat
-from swarms.agents.heavy_swarm_agents import SwarmVariant
 from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 from swarms.structs.llm_council import LLMCouncil
@@ -214,20 +214,14 @@ class SwarmRouterConfigError(Exception):
 
 
 class SwarmRouter(SerializableMixin):
-    """Single-entry-point router that dispatches a task to any supported swarm type.
+    """Single entry point for constructing and running swarm orchestrators.
 
-    ``SwarmRouter`` is the highest-level multi-agent abstraction in the framework.
-    Pass a list of agents and a ``swarm_type`` and it constructs the matching
-    orchestrator (``SequentialWorkflow``, ``ConcurrentWorkflow``,
-    ``HierarchicalSwarm``, ``MixtureOfAgents``, ``HeavySwarm`` etc.) and forwards
-    ``run()`` calls to it. This lets you swap architectures without rewriting
-    orchestration code.
-
-    Construction performs a reliability check on the configuration and, if
-    ``autosave=True``, sets up a workspace directory and saves ``config.json``.
-    The underlying swarm is constructed lazily on the first ``run()`` call and
-    then cached on the instance — repeated ``run()`` calls reuse it (keyed by
-    ``swarm_type``, agent identities, and construction-time config).
+    ``SwarmRouter`` lets callers configure one router and choose the underlying
+    orchestration strategy with ``swarm_type``. It validates the router
+    configuration during construction, lazily creates the selected swarm on the
+    first execution, and forwards ``run()`` calls to that swarm. The created
+    swarm is cached by swarm type, agent identities, and construction-time
+    configuration, so repeated executions reuse the same orchestrator instance.
 
     Args:
         id (str, optional): Stable identifier for this router instance.
@@ -244,8 +238,12 @@ class SwarmRouter(SerializableMixin):
             ``DebateWithJudge`` the first two are debaters and the third is the
             judge; for ``MixtureOfAgents`` the last agent is the aggregator.
         swarm_type (SwarmType, optional): Which orchestrator to instantiate.
-            See :data:`SwarmType` for the full list. Defaults to
-            ``"SequentialWorkflow"``.
+            Defaults to ``"SequentialWorkflow"``. The factory currently supports
+            ``SequentialWorkflow``, ``ConcurrentWorkflow``, ``AgentRearrange``,
+            ``MixtureOfAgents``, ``HierarchicalSwarm``, ``GroupChat``,
+            ``MultiAgentRouter``, ``MajorityVoting``, ``CouncilAsAJudge``,
+            ``HeavySwarm``, ``BatchedGridWorkflow``, ``LLMCouncil``,
+            ``DebateWithJudge``, ``RoundRobin``, and ``PlannerWorkerSwarm``.
         autosave (bool, optional): When ``True``, save ``config.json`` on init
             and ``state.json`` + ``metadata.json`` after each run to
             ``workspace_dir/swarms/SwarmRouter/{name}-{timestamp}/``. Defaults
@@ -301,13 +299,12 @@ class SwarmRouter(SerializableMixin):
             ``autosave=True``.
         logs (list): Per-instance log buffer.
 
-    Available swarm types (see :data:`SwarmType` for the canonical list):
+    Factory-backed swarm types:
         ``SequentialWorkflow``, ``ConcurrentWorkflow``, ``AgentRearrange``,
         ``MixtureOfAgents``, ``HierarchicalSwarm``, ``GroupChat``,
         ``MultiAgentRouter``, ``MajorityVoting``, ``CouncilAsAJudge``,
         ``HeavySwarm``, ``BatchedGridWorkflow``, ``LLMCouncil``,
-        ``DebateWithJudge``, ``RoundRobin``, ``PlannerWorkerSwarm``,
-        ``AutoSwarmBuilder``, ``auto``.
+        ``DebateWithJudge``, ``RoundRobin``, ``PlannerWorkerSwarm``.
 
     Example:
         >>> from swarms import Agent, SwarmRouter
@@ -417,11 +414,10 @@ class SwarmRouter(SerializableMixin):
         self.reliability_check()
 
     def _setup_autosave(self):
-        """
-        Setup autosave workspace directory and save initial configuration.
+        """Set up autosave storage and persist the initial router config.
 
-        Creates the workspace directory structure and saves the initial
-        configuration if autosave is enabled.
+        Autosave failures are logged as warnings and do not prevent the router
+        from initializing.
         """
         try:
             class_name = self.__class__.__name__
@@ -570,11 +566,11 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _initialize_swarm_factory(self) -> Dict[str, Callable]:
-        """
-        Initialize the swarm factory with O(1) lookup performance.
+        """Build the dispatch table used to instantiate swarm types.
 
         Returns:
-            Dict[str, Callable]: Dictionary mapping swarm types to their factory functions.
+            Dict[str, Callable]: Mapping from factory-backed ``swarm_type``
+                strings to bound factory methods.
         """
         return {
             "HeavySwarm": self._create_heavy_swarm,
@@ -595,7 +591,7 @@ class SwarmRouter(SerializableMixin):
         }
 
     def _create_heavy_swarm(self, *args, **kwargs):
-        """Factory function for HeavySwarm."""
+        """Create a ``HeavySwarm`` using the router's heavy-swarm settings."""
         return HeavySwarm(
             name=self.name,
             description=self.description,
@@ -612,7 +608,7 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_llm_council(self, *args, **kwargs):
-        """Factory function for LLMCouncil."""
+        """Create an ``LLMCouncil`` from the configured agents."""
         return LLMCouncil(
             name=self.name,
             description=self.description,
@@ -623,7 +619,7 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_debate_with_judge(self, *args, **kwargs):
-        """Factory function for DebateWithJudge."""
+        """Create a ``DebateWithJudge`` from pro, con, and judge agents."""
         return DebateWithJudge(
             pro_agent=self.agents[0],
             con_agent=self.agents[1],
@@ -634,7 +630,7 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_agent_rearrange(self, *args, **kwargs):
-        """Factory function for AgentRearrange."""
+        """Create an ``AgentRearrange`` using ``rearrange_flow``."""
         return AgentRearrange(
             name=self.name,
             description=self.description,
@@ -647,7 +643,7 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_batched_grid_workflow(self, *args, **kwargs):
-        """Factory function for BatchedGridWorkflow."""
+        """Create a ``BatchedGridWorkflow`` for grid-style batch execution."""
         return BatchedGridWorkflow(
             name=self.name,
             description=self.description,
@@ -656,7 +652,7 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_council_as_judge(self, *args, **kwargs):
-        """Factory function for CouncilAsAJudge."""
+        """Create a ``CouncilAsAJudge`` with the configured judge model."""
         return CouncilAsAJudge(
             name=self.name,
             description=self.description,
@@ -665,7 +661,7 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_hierarchical_swarm(self, *args, **kwargs):
-        """Factory function for HierarchicalSwarm."""
+        """Create a ``HierarchicalSwarm`` from the configured agents."""
         return HierarchicalSwarm(
             name=self.name,
             description=self.description,
@@ -677,7 +673,7 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_mixture_of_agents(self, *args, **kwargs):
-        """Factory function for MixtureOfAgents."""
+        """Create a ``MixtureOfAgents`` using the last agent as aggregator."""
         return MixtureOfAgents(
             name=self.name,
             description=self.description,
@@ -690,7 +686,7 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_majority_voting(self, *args, **kwargs):
-        """Factory function for MajorityVoting."""
+        """Create a ``MajorityVoting`` swarm from the configured agents."""
         return MajorityVoting(
             name=self.name,
             description=self.description,
@@ -702,7 +698,7 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_group_chat(self, *args, **kwargs):
-        """Factory function for GroupChat."""
+        """Create a ``GroupChat`` from the configured agents."""
         return GroupChat(
             name=self.name,
             description=self.description,
@@ -715,7 +711,7 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_multi_agent_router(self, *args, **kwargs):
-        """Factory function for MultiAgentRouter."""
+        """Create a ``MultiAgentRouter`` from the configured agents."""
         return MultiAgentRouter(
             name=self.name,
             description=self.description,
@@ -725,7 +721,7 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_sequential_workflow(self, *args, **kwargs):
-        """Factory function for SequentialWorkflow."""
+        """Create a ``SequentialWorkflow`` from the configured agents."""
         return SequentialWorkflow(
             name=self.name,
             description=self.description,
@@ -738,7 +734,7 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_concurrent_workflow(self, *args, **kwargs):
-        """Factory function for ConcurrentWorkflow."""
+        """Create a ``ConcurrentWorkflow`` from the configured agents."""
         return ConcurrentWorkflow(
             name=self.name,
             description=self.description,
@@ -750,7 +746,7 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_round_robin_swarm(self, *args, **kwargs):
-        """Factory function for RoundRobinSwarm."""
+        """Create a ``RoundRobinSwarm`` from the configured agents."""
         return RoundRobinSwarm(
             name=self.name,
             description=self.description,
@@ -762,7 +758,7 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_planner_worker_swarm(self, *args, **kwargs):
-        """Factory function for PlannerWorkerSwarm."""
+        """Create a ``PlannerWorkerSwarm`` from the configured agents."""
         return PlannerWorkerSwarm(
             name=self.name,
             description=self.description,
@@ -815,21 +811,24 @@ class SwarmRouter(SerializableMixin):
         return (self.swarm_type, agent_ids, config_hash)
 
     def _create_swarm(self, task: str = None, *args, **kwargs):
-        """
-        Dynamically create and return the specified swarm type with O(1) lookup performance.
-        Uses factory pattern with caching for optimal performance.
+        """Create or return the cached swarm selected by ``self.swarm_type``.
+
+        The task is accepted for call-site compatibility but is not part of the
+        cache key and is not passed to the factory. Runtime inputs such as
+        ``task``, ``tasks``, and ``img`` are forwarded later by :meth:`_run`.
 
         Args:
-            task (str, optional): The task to be executed by the swarm. Defaults to None.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
+            task (str, optional): Runtime task associated with the creation
+                request. Defaults to ``None``.
+            *args: Positional arguments forwarded to the selected factory.
+            **kwargs: Keyword arguments forwarded to the selected factory.
 
         Returns:
-            Union[AgentRearrange, MixtureOfAgents, SequentialWorkflow, ConcurrentWorkflow]:
-                The instantiated swarm object.
+            Any: The cached or newly instantiated swarm object.
 
         Raises:
-            ValueError: If an invalid swarm type is provided.
+            ValueError: If ``self.swarm_type`` has no registered factory.
+            RuntimeError: If the selected factory fails.
         """
 
         cache_key = self._compute_swarm_cache_key()
@@ -866,6 +865,7 @@ class SwarmRouter(SerializableMixin):
             ) from e
 
     def update_system_prompt_for_agent_in_swarm(self):
+        """Append the collaboration prompt to each configured agent."""
         # Use list comprehension for faster iteration
         for agent in self.agents:
             if agent.system_prompt is None:
@@ -873,6 +873,7 @@ class SwarmRouter(SerializableMixin):
             agent.system_prompt += MULTI_AGENT_COLLAB_PROMPT_TWO
 
     def agent_config(self):
+        """Return serialized configuration for each configured agent."""
         agent_config = {}
         for agent in self.agents:
             agent_config[agent.agent_name] = agent.to_dict()
@@ -880,6 +881,7 @@ class SwarmRouter(SerializableMixin):
         return agent_config
 
     def list_agents_to_eachother(self):
+        """Add the configured agent roster to the swarm conversation."""
         if self.swarm_type == "SequentialWorkflow":
             self.conversation = (
                 self.swarm.agent_rearrange.conversation
@@ -905,19 +907,20 @@ class SwarmRouter(SerializableMixin):
         *args,
         **kwargs,
     ) -> Any:
-        """
-        Dynamically run the specified task on the selected or matched swarm type.
+        """Run the selected swarm with a single task, task list, or image.
 
         Args:
-            task (str): The task to be executed by the swarm.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
+            task (str, optional): Single task passed to ``swarm.run`` as
+                ``task`` when ``tasks`` is not provided.
+            tasks (List[str], optional): Batch-style task list passed to
+                ``swarm.run`` as ``tasks``.
+            img (str, optional): Image path, URL, or encoded image data passed
+                to ``swarm.run`` as ``img``.
+            *args: Positional arguments forwarded while creating the swarm.
+            **kwargs: Keyword arguments forwarded to ``swarm.run``.
 
         Returns:
-            Any: The result of the swarm's execution.
-
-        Raises:
-            Exception: If an error occurs during task execution.
+            Any: Result returned by the underlying swarm.
         """
         self.swarm = self._create_swarm(task, *args, **kwargs)
 
@@ -970,22 +973,28 @@ class SwarmRouter(SerializableMixin):
         *args,
         **kwargs,
     ) -> Any:
-        """
-        Execute a task on the selected swarm type with specified compute resources.
+        """Execute work on the configured swarm type.
+
+        Creates the underlying swarm if needed, forwards the supplied runtime
+        payload to it, and autosaves state/metadata after successful execution
+        when autosave is enabled.
 
         Args:
-            task (str): The task to be executed by the swarm.
-            device (str, optional): Device to run on - "cpu" or "gpu". Defaults to "cpu".
-            all_cores (bool, optional): Whether to use all CPU cores. Defaults to True.
-            all_gpus (bool, optional): Whether to use all available GPUs. Defaults to False.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
+            task (str, optional): Single task to execute.
+            img (str, optional): Image path, URL, or encoded image data to pass
+                to the underlying swarm.
+            tasks (List[str], optional): Task list to pass to swarm types that
+                accept ``tasks``.
+            *args: Positional arguments forwarded while creating the swarm.
+            **kwargs: Keyword arguments forwarded to the underlying
+                ``swarm.run`` call.
 
         Returns:
-            Any: The result of the swarm's execution.
+            Any: Result returned by the underlying swarm.
 
         Raises:
-            Exception: If an error occurs during task execution.
+            SwarmRouterRunError: Re-raised when the underlying router run error
+                is encountered.
         """
         try:
             self._log(
@@ -1014,16 +1023,19 @@ class SwarmRouter(SerializableMixin):
         *args,
         **kwargs,
     ) -> Any:
-        """
-        Make the SwarmRouter instance callable.
+        """Call :meth:`run` directly from the router instance.
 
         Args:
-            task (str): The task to be executed by the swarm.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
+            task (str): Single task to execute.
+            img (str, optional): Image path, URL, or encoded image data passed
+                to :meth:`run`.
+            imgs (List[str], optional): Additional image payload forwarded via
+                ``kwargs`` to swarm implementations that support it.
+            *args: Positional arguments forwarded to :meth:`run`.
+            **kwargs: Keyword arguments forwarded to :meth:`run`.
 
         Returns:
-            Any: The result of the swarm's execution.
+            Any: Result returned by :meth:`run`.
         """
         result = self.run(
             task=task, img=img, imgs=imgs, *args, **kwargs
@@ -1038,19 +1050,21 @@ class SwarmRouter(SerializableMixin):
         *args,
         **kwargs,
     ) -> List[Any]:
-        """
-        Execute a batch of tasks on the selected or matched swarm type.
+        """Execute each task in ``tasks`` with repeated calls to :meth:`run`.
 
         Args:
-            tasks (List[str]): A list of tasks to be executed by the swarm.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
+            tasks (List[str]): Tasks to execute sequentially.
+            img (str, optional): Image payload passed to each run.
+            imgs (List[str], optional): Additional image payload forwarded via
+                ``kwargs`` to swarm implementations that support it.
+            *args: Positional arguments forwarded to each :meth:`run` call.
+            **kwargs: Keyword arguments forwarded to each :meth:`run` call.
 
         Returns:
-            List[Any]: A list of results from the swarm's execution.
+            List[Any]: Results in the same order as ``tasks``.
 
         Raises:
-            Exception: If an error occurs during task execution.
+            RuntimeError: If any task execution fails.
         """
         self._log("info", f"Executing batch of tasks: {tasks}")
         try:
@@ -1083,19 +1097,25 @@ class SwarmRouter(SerializableMixin):
         *args,
         **kwargs,
     ) -> Any:
-        """
-        Execute a task on the selected or matched swarm type concurrently.
+        """Execute one task through :meth:`run` in a thread pool.
+
+        This helper submits a single router execution to a
+        ``ThreadPoolExecutor`` and waits for its result. It does not split the
+        task across workers; concurrency is limited to the wrapper thread.
 
         Args:
-            task (str): The task to be executed by the swarm.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
+            task (str): Task to execute.
+            img (str, optional): Image payload passed to :meth:`run`.
+            imgs (List[str], optional): Additional image payload forwarded via
+                ``kwargs`` to swarm implementations that support it.
+            *args: Positional arguments forwarded to :meth:`run`.
+            **kwargs: Keyword arguments forwarded to :meth:`run`.
 
         Returns:
-            Any: The result of the swarm's execution.
+            Any: Result returned by :meth:`run`.
 
         Raises:
-            Exception: If an error occurs during task execution.
+            Exception: Re-raised if the submitted execution fails.
         """
         self._log("info", f"Executing task concurrently: {task}")
 

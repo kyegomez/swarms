@@ -17,6 +17,7 @@ target/
 Cargo.lock
 .claude/
 .pytest_cache
+.pycache_tmp
 databases
 static/generated
 conversations/
