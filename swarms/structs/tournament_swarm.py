@@ -1,6 +1,6 @@
 import json
 import math
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from loguru import logger
 
@@ -109,7 +109,7 @@ class TournamentSwarm:
 
     def __init__(
         self,
-        id: str = swarm_id(),
+        id: Optional[str] = None,
         name: str = "TournamentSwarm",
         description: str = "Runs candidate agents in a bracket of pairwise judge comparisons until one answer survives",
         agents: List[Agent] = None,
@@ -127,7 +127,8 @@ class TournamentSwarm:
         Initialize the TournamentSwarm.
 
         Args:
-            id (str): Unique identifier for the swarm.
+            id (Optional[str]): Unique identifier for the swarm. Defaults to
+                a freshly generated id.
             name (str): Name of the swarm.
             description (str): Description of the swarm's purpose.
             agents (List[Agent]): Candidate agents that each answer the task.
@@ -151,7 +152,7 @@ class TournamentSwarm:
             ValueError: If agents are missing, fewer than 2, have duplicate
                 names, or if bracket is not a supported type.
         """
-        self.id = id
+        self.id = id or swarm_id()
         self.name = name
         self.description = description
         self.agents = agents
@@ -375,9 +376,7 @@ class TournamentSwarm:
 
         return candidates[0]
 
-    def _run_swiss(
-        self, task: str, candidates: List[dict]
-    ) -> dict:
+    def _run_swiss(self, task: str, candidates: List[dict]) -> dict:
         """
         Run a Swiss bracket: no eliminations, candidates are paired against
         equal scorers each round, and the highest scorer wins.
@@ -461,17 +460,25 @@ class TournamentSwarm:
             key=lambda c: seeds[c["name"]],
         )
 
-        # Tie-break: head-to-head between two leaders if they met,
-        # otherwise seeding (input order).
-        if len(leaders) == 2:
-            pair = frozenset(
-                (leaders[0]["name"], leaders[1]["name"])
-            )
-            if pair in head_to_head:
-                winner_name = head_to_head[pair]
-                return next(
-                    c for c in leaders if c["name"] == winner_name
-                )
+        # Tie-break: among tied leaders, prefer whoever won the most
+        # head-to-head matches against the other tied leaders, then fall
+        # back to seeding (input order).
+        if len(leaders) > 1:
+            head_to_head_wins = {c["name"]: 0 for c in leaders}
+            for i in range(len(leaders)):
+                for j in range(i + 1, len(leaders)):
+                    pair = frozenset(
+                        (leaders[i]["name"], leaders[j]["name"])
+                    )
+                    if pair in head_to_head:
+                        head_to_head_wins[head_to_head[pair]] += 1
+
+            best_wins = max(head_to_head_wins.values())
+            leaders = [
+                c
+                for c in leaders
+                if head_to_head_wins[c["name"]] == best_wins
+            ]
 
         return leaders[0]
 
@@ -548,29 +555,54 @@ class TournamentSwarm:
         """
         Parse the judge's pick_winner tool call into a (choice, reasoning) pair.
 
-        Handles both object-style tool calls (ChatCompletionMessageToolCall)
-        and dict-style tool calls returned by the LiteLLM wrapper.
+        Handles object-style tool calls (ChatCompletionMessageToolCall),
+        dict-style tool calls returned by the LiteLLM wrapper, a dict of
+        pick_winner arguments directly, and a raw JSON string of any of the
+        above (in case the model returned text instead of a tool call).
 
         Args:
             raw_output (Any): The raw tool-call output from the judge call.
 
         Returns:
             tuple: (choice, reasoning) where choice is "a" or "b". Defaults to
-                "a" if the output cannot be parsed.
+                "a" if the winner field is missing or invalid.
+
+        Raises:
+            ValueError: If raw_output is empty, unparseable, or does not
+                contain a recognizable tool call or pick_winner arguments.
         """
         tool_calls = raw_output
+
+        if isinstance(tool_calls, str):
+            stripped = tool_calls.strip()
+            if not stripped:
+                raise ValueError("Judge returned an empty response")
+            try:
+                tool_calls = json.loads(stripped)
+            except json.JSONDecodeError:
+                raise ValueError(
+                    f"Judge did not return a tool call: {raw_output!r}"
+                )
+
         if isinstance(tool_calls, dict):
+            # Either a single tool-call dict, or the pick_winner
+            # arguments dict returned directly.
             tool_calls = [tool_calls]
+
         if not tool_calls:
             raise ValueError(
-                f"Judge returned no tool calls: {raw_output}"
+                f"Judge returned no tool calls: {raw_output!r}"
             )
 
         tool_call = tool_calls[0]
         if isinstance(tool_call, dict):
-            arguments = tool_call.get("function", {}).get(
-                "arguments", "{}"
-            )
+            if "function" in tool_call:
+                arguments = tool_call.get("function", {}).get(
+                    "arguments", "{}"
+                )
+            else:
+                # Already the pick_winner arguments dict.
+                arguments = tool_call
         else:
             arguments = tool_call.function.arguments
 
