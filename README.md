@@ -76,6 +76,9 @@ $ poetry add swarms
 
 ```bash
 # Clone the repository
+
+[![Listed on TakoAPI](https://img.shields.io/badge/Listed%20on-TakoAPI-7c3aed)](https://takoapi.com/agents/kyegomez-swarms)
+
 $ git clone https://github.com/kyegomez/swarms.git
 $ cd swarms
 $ pip install -r requirements.txt
