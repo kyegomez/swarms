@@ -91,6 +91,15 @@ BID_TOOL = {
     },
 }
 
+# Lower bound used when clamping/dividing by estimated_cost so a
+# zero-cost bid can never produce a divide-by-zero or an infinite score.
+MIN_ESTIMATED_COST = 1e-6
+
+# Tool-call output above this length is rejected by _extract_bid without
+# attempting ast.literal_eval, as a guard against pathological model
+# output causing excessive parse time.
+MAX_TOOL_OUTPUT_LEN = 10_000
+
 BID_PROMPT = """You are {agent_name}, one of several agents bidding to handle a task.
 
 Task:
@@ -125,6 +134,8 @@ def _extract_bid(tool_output: Any) -> Tuple[float, float]:
     if isinstance(tool_output, str):
         # Agents with output_type="str-all-except-first" (the default)
         # return tool calls as the str() of a list of dicts, not JSON.
+        if len(tool_output) > MAX_TOOL_OUTPUT_LEN:
+            return 0.0, 1.0
         try:
             tool_output = ast.literal_eval(tool_output)
         except (ValueError, SyntaxError):
@@ -162,13 +173,15 @@ def _extract_bid(tool_output: Any) -> Tuple[float, float]:
         estimated_cost = 1.0
 
     confidence = max(0.0, min(1.0, confidence))
-    estimated_cost = max(1e-6, estimated_cost)
+    estimated_cost = max(MIN_ESTIMATED_COST, estimated_cost)
     return confidence, estimated_cost
 
 
-def confidence_per_cost(confidence: float, estimated_cost: float) -> float:
+def confidence_per_cost(
+    confidence: float, estimated_cost: float
+) -> float:
     """Default scoring function: confidence divided by estimated cost."""
-    return confidence / max(estimated_cost, 1e-6)
+    return confidence / max(estimated_cost, MIN_ESTIMATED_COST)
 
 
 SCORING_FUNCTIONS = {
@@ -252,7 +265,9 @@ class AuctionSwarm(SerializableMixin):
         self.auto_equip = auto_equip
 
         if not self.agents:
-            raise ValueError("AuctionSwarm requires at least 1 agent.")
+            raise ValueError(
+                "AuctionSwarm requires at least 1 agent."
+            )
         if self.top_k < 1:
             raise ValueError("top_k must be at least 1.")
 
@@ -268,7 +283,6 @@ class AuctionSwarm(SerializableMixin):
             self.scoring_fn = scoring
 
         self.conversation = Conversation()
-        self._bid_tool_agents: set = set()
 
     def _ensure_bid_tool(self) -> None:
         """Inject ``BID_TOOL`` into agents that do not already carry it.
@@ -289,32 +303,37 @@ class AuctionSwarm(SerializableMixin):
                 continue
             agent.tools_list_dictionary = [*tools, BID_TOOL]
             agent.llm = agent.llm_handling()
-            self._bid_tool_agents.add(agent.agent_name)
             self._log(
                 "info", f"Injected bid tool into {agent.agent_name}"
             )
 
     def _remove_bid_tool(self) -> None:
-        """Strip ``BID_TOOL`` from agents it was injected into.
+        """Strip ``BID_TOOL`` from every agent that carries it.
 
         Leaving ``bid`` in an agent's ``tools_list_dictionary`` causes the
         winning agent's real task execution to call ``bid`` again instead of
-        producing its actual output, so the tool is removed before the
-        winners run and the LLM client is rebuilt via ``llm_handling()``.
+        producing its actual output, so the tool is removed from every agent
+        before the winners run (it is re-added for the next auction by
+        ``_ensure_bid_tool``) and the LLM client is rebuilt via
+        ``llm_handling()``.
         """
         for agent in self.agents:
-            if agent.agent_name not in self._bid_tool_agents:
+            tools = agent.tools_list_dictionary or []
+            if not any(
+                isinstance(tool, dict)
+                and tool.get("function", {}).get("name") == "bid"
+                for tool in tools
+            ):
                 continue
             agent.tools_list_dictionary = [
                 tool
-                for tool in (agent.tools_list_dictionary or [])
+                for tool in tools
                 if not (
                     isinstance(tool, dict)
                     and tool.get("function", {}).get("name") == "bid"
                 )
             ]
             agent.llm = agent.llm_handling()
-            self._bid_tool_agents.discard(agent.agent_name)
             self._log(
                 "info", f"Removed bid tool from {agent.agent_name}"
             )
@@ -367,11 +386,19 @@ class AuctionSwarm(SerializableMixin):
 
         if self.auto_equip:
             self._ensure_bid_tool()
+        try:
+            bids = self._run_auction(task)
+        finally:
+            if self.auto_equip:
+                self._remove_bid_tool()
 
-        bids = self._run_auction(task)
-
-        if self.auto_equip:
-            self._remove_bid_tool()
+        # Every agent's run() call during bidding left the bid prompt and
+        # the forced bid tool call in its short_memory. With
+        # output_type="str-all-except-first" (the default), that would leak
+        # into a later execution run's output as extra text ahead of the
+        # real response, so reset short_memory for every bidder now.
+        for agent in self.agents:
+            agent.short_memory = agent.short_memory_init()
 
         if self.print_on:
             bid_summary = "\n".join(
@@ -379,7 +406,9 @@ class AuctionSwarm(SerializableMixin):
                 f"estimated_cost={estimated_cost:.2f}, score={score:.4f}"
                 for agent, confidence, estimated_cost, score in bids
             )
-            formatter.print_panel(bid_summary, title=f"{self.name} - Bids")
+            formatter.print_panel(
+                bid_summary, title=f"{self.name} - Bids"
+            )
 
         self.conversation.add(
             role=self.name,
@@ -393,14 +422,6 @@ class AuctionSwarm(SerializableMixin):
         )
 
         winners = bids[: self.top_k]
-
-        # Each agent's run() call during bidding left the bid prompt and the
-        # forced bid tool call in its short_memory. With
-        # output_type="str-all-except-first" (the default), that leaks into
-        # the execution run's output as extra text ahead of the real
-        # response, so reset short_memory before the winners run for real.
-        for agent, *_ in winners:
-            agent.short_memory = agent.short_memory_init()
 
         results = run_agents_concurrently(
             [agent for agent, *_ in winners],
@@ -422,7 +443,9 @@ class AuctionSwarm(SerializableMixin):
             successful.append((agent, response))
 
         for agent, response in successful[1:]:
-            self.conversation.add(role=agent.agent_name, content=response)
+            self.conversation.add(
+                role=agent.agent_name, content=response
+            )
 
         if successful:
             best_agent, best_response = successful[0]
