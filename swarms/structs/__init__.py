@@ -8,6 +8,7 @@ from swarms.structs.async_subagent import (
     SubagentTask,
     TaskStatus,
 )
+from swarms.structs.auction_swarm import AuctionSwarm, BID_TOOL
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
@@ -83,6 +84,8 @@ from swarms.structs.swarming_architectures import (
 __all__ = [
     "AdvisorSwarm",
     "Agent",
+    "AuctionSwarm",
+    "BID_TOOL",
     "BaseStructure",
     "BaseSwarm",
     "ConcurrentWorkflow",
