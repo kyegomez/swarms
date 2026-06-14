@@ -55,7 +55,7 @@ graph TD
 
 ### Constructor
 
-```python
+```text
 AgentJudge(
     id: str = str(uuid.uuid4()),
     agent_name: str = "Agent Judge",
@@ -89,7 +89,7 @@ AgentJudge(
 
 #### step()
 
-```python
+```text
 step(
     task: str = None,
     img: Optional[str] = None
@@ -109,7 +109,7 @@ Processes a single task and returns the agent's evaluation.
 
 #### run()
 
-```python
+```text
 run(
     task: str = None,
     img: Optional[str] = None
@@ -129,7 +129,7 @@ Executes evaluation in multiple iterations with context building.
 
 #### run_batched()
 
-```python
+```text
 run_batched(
     tasks: Optional[List[str]] = None
 ) -> List[Union[str, int]]
