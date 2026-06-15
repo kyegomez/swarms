@@ -968,18 +968,28 @@ _BASH_BLOCKLIST = [
     ("/etc/passwd",),
     ("/etc/shadow",),
     ("/etc/sudoers",),
-    # Network exfiltration primitives
-    ("curl", "-d"),
-    ("wget", "--post"),
+    # Network exfiltration primitives — block all curl/wget network calls,
+    # not just data-posting variants; GET requests can reach internal services
+    # and cloud metadata endpoints just as effectively as POST.
+    ("curl ",),
+    ("wget ",),
     ("nc ", "-e"),
     ("ncat", "-e"),
-    # Environment/credential exposure
+    # Environment/credential exposure — bare env/set leak all env vars too
     ("printenv",),
-    ("env |",),
-    ("set |",),
+    ("env",),
+    ("set",),
     # History manipulation
     ("history -c",),
     ("unset histfile",),
+    # Arbitrary interpreter invocation with inline code execution.
+    # Pipe-to-interpreter was already blocked; direct -c/-e invocations were not.
+    ("python3", "-c"),
+    ("python", "-c"),
+    ("perl", "-e"),
+    ("ruby", "-e"),
+    ("node", "-e"),
+    ("php", "-r"),
 ]
 
 _BASH_BLOCKLIST_REGEX = [
@@ -992,6 +1002,18 @@ _BASH_BLOCKLIST_REGEX = [
     _re.compile(r">\s*/bin/"),
     _re.compile(r">\s*/usr/"),
     _re.compile(r">\s*/root/"),
+    # Credential file paths — cloud credentials, SSH keys, gcloud, kubeconfig
+    _re.compile(r"~/?\.aws/"),
+    _re.compile(r"~/?\.ssh/"),
+    _re.compile(r"~/?\.config/gcloud"),
+    _re.compile(r"~/?\.kube/config"),
+    _re.compile(r"~/?\.docker/config"),
+    # /proc/self/environ leaks all process environment variables
+    _re.compile(r"/proc/self/environ"),
+    # Cloud instance metadata endpoints (AWS IMDSv1/v2, GCP, Azure, DO, Oracle)
+    _re.compile(r"169\.254\.169\.254"),
+    _re.compile(r"metadata\.google\.internal"),
+    _re.compile(r"169\.254\.170\.2"),
 ]
 
 _BASH_MAX_LENGTH = 512
