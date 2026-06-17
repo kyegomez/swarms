@@ -24,14 +24,7 @@ from swarms.structs.graph_workflow import (
     Node,
     NodeType,
 )
-from swarms.structs.groupchat import (
-    GroupChat,
-    expertise_based,
-    priority_speaker,
-    random_dynamic_speaker,
-    random_speaker,
-    round_robin_speaker,
-)
+from swarms.structs.groupchat import GroupChat, RESPOND_TOOL
 from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 from swarms.structs.hybrid_hiearchical_peer_swarm import (
@@ -73,7 +66,6 @@ from swarms.structs.skill_orchestra import SkillOrchestra
 from swarms.structs.social_algorithms import SocialAlgorithms
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.swarm_rearrange import SwarmRearrange
-from swarms.structs.tournament_swarm import TournamentSwarm
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmType,
@@ -126,11 +118,6 @@ __all__ = [
     "run_agents_with_different_tasks",
     "run_single_agent",
     "GroupChat",
-    "expertise_based",
-    "round_robin_speaker",
-    "random_speaker",
-    "priority_speaker",
-    "random_dynamic_speaker",
     "MultiAgentRouter",
     "ModelRouter",
     "HybridHierarchicalClusterSwarm",
@@ -143,10 +130,6 @@ __all__ = [
     "aggregate",
     "find_agent_by_name",
     "run_agent",
-    "round_robin_speaker",
-    "random_speaker",
-    "priority_speaker",
-    "random_dynamic_speaker",
     "HierarchicalSwarm",
     "HeavySwarm",
     "CronJob",
@@ -156,7 +139,6 @@ __all__ = [
     "SelfMoASeq",
     "SkillOrchestra",
     "DebateWithJudge",
-    "TournamentSwarm",
     "PlannerGeneratorEvaluator",
     "StepContract",
     "EvaluationReport",
@@ -164,4 +146,5 @@ __all__ = [
     "SubagentRegistry",
     "SubagentTask",
     "TaskStatus",
+    "RESPOND_TOOL",
 ]
