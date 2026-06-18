@@ -25,7 +25,7 @@ def create_complex_investment_analysis_workflow():
     # Create specialized agents with detailed system prompts
     data_gathering_agent = Agent(
         agent_name="DataGatheringAgent",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         system_prompt="""You are a financial data gathering specialist. Your role is to:
         1. Identify and collect relevant financial data for the given investment target
@@ -40,7 +40,7 @@ def create_complex_investment_analysis_workflow():
 
     fundamental_analysis_agent = Agent(
         agent_name="FundamentalAnalysisAgent",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         system_prompt="""You are a fundamental analysis expert. Your role is to:
         1. Analyze company financials, business model, and competitive position
@@ -55,7 +55,7 @@ def create_complex_investment_analysis_workflow():
 
     technical_analysis_agent = Agent(
         agent_name="TechnicalAnalysisAgent",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         system_prompt="""You are a technical analysis specialist. Your role is to:
         1. Analyze price charts, trends, and trading patterns
@@ -70,7 +70,7 @@ def create_complex_investment_analysis_workflow():
 
     sentiment_analysis_agent = Agent(
         agent_name="SentimentAnalysisAgent",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         system_prompt="""You are a market sentiment analysis expert. Your role is to:
         1. Analyze social media sentiment and retail investor behavior
@@ -85,7 +85,7 @@ def create_complex_investment_analysis_workflow():
 
     risk_assessment_agent = Agent(
         agent_name="RiskAssessmentAgent",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         system_prompt="""You are a risk management specialist. Your role is to:
         1. Identify and quantify various risk factors (market, credit, liquidity, operational)
@@ -100,7 +100,7 @@ def create_complex_investment_analysis_workflow():
 
     market_context_agent = Agent(
         agent_name="MarketContextAgent",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         system_prompt="""You are a macro market analysis expert. Your role is to:
         1. Analyze broader market conditions and economic environment
@@ -115,7 +115,7 @@ def create_complex_investment_analysis_workflow():
 
     synthesis_agent = Agent(
         agent_name="SynthesisAgent",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         system_prompt="""You are an investment analysis synthesizer. Your role is to:
         1. Integrate findings from fundamental, technical, and sentiment analysis
@@ -130,7 +130,7 @@ def create_complex_investment_analysis_workflow():
 
     recommendation_agent = Agent(
         agent_name="FinalRecommendationAgent",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         system_prompt="""You are the final investment decision maker. Your role is to:
         1. Review all analysis and synthesis from the team
@@ -209,7 +209,7 @@ def create_complex_investment_analysis_workflow():
 #     # Create research agents for different domains
 #     academic_researcher = Agent(
 #         agent_name="AcademicResearcher",
-#         model_name="gpt-4.1",
+#         model_name="gpt-5.4",
 #         max_loops=1,
 #         system_prompt="You are an academic researcher specializing in peer-reviewed literature analysis. Focus on scientific papers, studies, and academic sources.",
 #         verbose=True,
@@ -217,7 +217,7 @@ def create_complex_investment_analysis_workflow():
 
 #     industry_analyst = Agent(
 #         agent_name="IndustryAnalyst",
-#         model_name="gpt-4.1",
+#         model_name="gpt-5.4",
 #         max_loops=1,
 #         system_prompt="You are an industry analyst focusing on market reports, industry trends, and commercial applications.",
 #         verbose=True,
@@ -225,7 +225,7 @@ def create_complex_investment_analysis_workflow():
 
 #     news_researcher = Agent(
 #         agent_name="NewsResearcher",
-#         model_name="gpt-4.1",
+#         model_name="gpt-5.4",
 #         max_loops=1,
 #         system_prompt="You are a news researcher specializing in current events, breaking news, and recent developments.",
 #         verbose=True,
@@ -233,7 +233,7 @@ def create_complex_investment_analysis_workflow():
 
 #     data_scientist = Agent(
 #         agent_name="DataScientist",
-#         model_name="gpt-4.1",
+#         model_name="gpt-5.4",
 #         max_loops=1,
 #         system_prompt="You are a data scientist focusing on quantitative analysis, statistical patterns, and data-driven insights.",
 #         verbose=True,
@@ -241,7 +241,7 @@ def create_complex_investment_analysis_workflow():
 
 #     synthesizer = Agent(
 #         agent_name="ResearchSynthesizer",
-#         model_name="gpt-4.1",
+#         model_name="gpt-5.4",
 #         max_loops=1,
 #         system_prompt="You are a research synthesizer who combines insights from multiple research domains into coherent conclusions.",
 #         verbose=True,
@@ -249,7 +249,7 @@ def create_complex_investment_analysis_workflow():
 
 #     quality_checker = Agent(
 #         agent_name="QualityChecker",
-#         model_name="gpt-4.1",
+#         model_name="gpt-5.4",
 #         max_loops=1,
 #         system_prompt="You are a quality assurance specialist who validates research findings and identifies potential gaps or biases.",
 #         verbose=True,

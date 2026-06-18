@@ -12,21 +12,21 @@ def main() -> None:
     researcher = Agent(
         agent_name="Researcher",
         agent_description="Researches topics in depth.",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         print_on=False,
     )
     coder = Agent(
         agent_name="Coder",
         agent_description="Writes and reviews code.",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         print_on=False,
     )
     writer = Agent(
         agent_name="Writer",
         agent_description="Drafts clean prose.",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         print_on=False,
     )

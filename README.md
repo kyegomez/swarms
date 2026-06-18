@@ -500,29 +500,38 @@ print(recommendation)
 
 ### GroupChat
 
-`GroupChat` creates a conversational environment where multiple agents can interact, discuss, and collaboratively solve a problem. You can define the speaking order or let it be determined dynamically. This architecture is ideal for tasks that benefit from debate and multi-perspective reasoning, such as contract negotiation, brainstorming, or complex decision-making.
+`GroupChat` is an asynchronous, self-selecting groupchat. All agents listen in parallel; for each broadcast message, every other agent runs a forced `respond(score, message)` function call to decide whether to chime in, and replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or no message arrives for `idle_timeout` seconds. There is no turn order — multiple agents can react to the same message at the same time, and silent agents stay silent.
 
 ```python
-from swarms import Agent, GroupChat
+from swarms import Agent, GroupChat, RESPOND_TOOL
 
-# Define agents for a debate
-tech_optimist = Agent(agent_name="TechOptimist", system_prompt="Argue for the benefits of AI in society.", model_name="gpt-5.4")
-tech_critic = Agent(agent_name="TechCritic", system_prompt="Argue against the unchecked advancement of AI.", model_name="gpt-5.4")
+# Every agent MUST carry RESPOND_TOOL so the chat can ask it whether to speak.
+tech_optimist = Agent(
+    agent_name="TechOptimist",
+    system_prompt="Argue for the benefits of AI in society.",
+    model_name="gpt-5.4",
+    max_loops=1,
+    persistent_memory=False,
+    tools_list_dictionary=[RESPOND_TOOL],
+)
+tech_critic = Agent(
+    agent_name="TechCritic",
+    system_prompt="Argue against the unchecked advancement of AI.",
+    model_name="gpt-5.4",
+    max_loops=1,
+    persistent_memory=False,
+    tools_list_dictionary=[RESPOND_TOOL],
+)
 
-# Create the group chat
 chat = GroupChat(
     agents=[tech_optimist, tech_critic],
-    max_loops=4, # Limit the number of turns in the conversation
+    max_loops=10,       # hard cap on total messages posted
+    threshold=0.5,      # min decision score (0..1) to publish a reply
+    idle_timeout=8.0,   # seconds of silence before stopping
 )
 
-# Run the chat with an initial topic
-conversation_history = chat.run(
-    "Let's discuss the societal impact of artificial intelligence."
-)
-
-# Print the full conversation
-for message in conversation_history:
-    print(f"[{message['agent_name']}]: {message['content']}")
+result = chat.run("Let's discuss the societal impact of artificial intelligence.")
+print(result)
 ```
 
 ----
@@ -602,7 +611,7 @@ swarm = HeavySwarm(
     description="A team of agents that research the best gold ETFs",
     worker_model_name="claude-sonnet-4-20250514",
     show_dashboard=True,
-    question_agent_model_name="gpt-4.1",
+    question_agent_model_name="gpt-5.4",
     loops_per_agent=1,
     agent_prints_on=False,
     worker_tools=[exa_search],
@@ -665,17 +674,17 @@ def research_analysis_synthesis_algorithm(agents, task, **kwargs):
 researcher = Agent(
   agent_name="Researcher",
   agent_description="Expert in comprehensive research and information gathering.",
-  model_name="gpt-4.1"
+  model_name="gpt-5.4"
 )
 analyst = Agent(
   agent_name="Analyst",
   agent_description="Specialist in analyzing and interpreting data.",
-  model_name="gpt-4.1"
+  model_name="gpt-5.4"
 )
 synthesizer = Agent(
   agent_name="Synthesizer",
   agent_description="Focused on synthesizing and integrating research insights.",
-  model_name="gpt-4.1"
+  model_name="gpt-5.4"
 )
 
 # Create social algorithm

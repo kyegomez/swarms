@@ -136,7 +136,7 @@ action_agent = Agent(
     agent_description="Practical implementation and execution agent",
     system_prompt=ACTION_AGENT_PROMPT,
     max_loops=1,
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     dynamic_temperature_enabled=True,
 )
 

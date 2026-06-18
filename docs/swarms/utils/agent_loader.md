@@ -67,7 +67,7 @@ When analyzing financial situations:
 |-------|------|----------|---------|-------------|
 | `name` | string | ✅ Yes | - | Your agent name |
 | `description` | string | ✅ Yes | - | Description of the agent's role and capabilities |
-| `model_name` | string | ❌ No | "gpt-4.1" | Name of the model to use |
+| `model_name` | string | ❌ No | "gpt-5.4" | Name of the model to use |
 | `temperature` | float | ❌ No | 0.1 | Model temperature (0.0-2.0) |
 | `max_loops` | integer | ❌ No | 1 | Maximum reasoning loops |
 | `mcp_url` | string | ❌ No | None | MCP server URL if needed |
@@ -594,7 +594,7 @@ class MarkdownAgentConfig(BaseModel):
     
     name: Optional[str] = None
     description: Optional[str] = None
-    model_name: Optional[str] = "gpt-4.1"
+    model_name: Optional[str] = "gpt-5.4"
     temperature: Optional[float] = Field(default=0.1, ge=0.0, le=2.0)
     mcp_url: Optional[int] = None
     system_prompt: Optional[str] = None
@@ -619,7 +619,7 @@ class MarkdownAgentConfig(BaseModel):
 |-------|------|----------|---------|------------|-------------|
 | `name` | Optional[str] | ❌ No | None | - | Agent name |
 | `description` | Optional[str] | ❌ No | None | - | Agent description |
-| `model_name` | Optional[str] | ❌ No | "gpt-4.1" | - | Model to use |
+| `model_name` | Optional[str] | ❌ No | "gpt-5.4" | - | Model to use |
 | `temperature` | Optional[float] | ❌ No | 0.1 | 0.0 ≤ x ≤ 2.0 | Model temperature |
 | `mcp_url` | Optional[int] | ❌ No | None | - | MCP server URL |
 | `system_prompt` | Optional[str] | ❌ No | None | Non-empty string | System prompt |

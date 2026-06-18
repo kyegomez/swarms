@@ -11,25 +11,25 @@ from swarms.structs.agent_rearrange import AgentRearrange
 def main() -> None:
     planner = Agent(
         agent_name="Planner",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         print_on=False,
     )
     coder = Agent(
         agent_name="Coder",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         print_on=False,
     )
     reviewer = Agent(
         agent_name="Reviewer",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         print_on=False,
     )
     tester = Agent(
         agent_name="Tester",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         print_on=False,
     )
@@ -44,7 +44,7 @@ def main() -> None:
     # Mutation paths the refactor touched.
     extra = Agent(
         agent_name="Documenter",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         print_on=False,
     )

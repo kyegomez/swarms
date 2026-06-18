@@ -13,7 +13,7 @@ tech_mediator = Agent(
     - R&D integration
     
     Facilitate resolution of this major semiconductor merger while considering market impact, regulatory compliance, and technological synergies.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
 )
 
 nvidia_rep = Agent(
@@ -27,7 +27,7 @@ nvidia_rep = Agent(
     - CUDA ecosystem expansion
     
     Represent NVIDIA's interests in acquiring AMD while leveraging complementary strengths.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
 )
 
 amd_rep = Agent(
@@ -41,7 +41,7 @@ amd_rep = Agent(
     - Fair value for innovation
     
     Advocate for AMD's technological assets and market position while ensuring fair treatment.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
 )
 
 industry_expert = Agent(
@@ -55,7 +55,7 @@ industry_expert = Agent(
     - Innovation pipeline
     
     Provide objective analysis of merger implications for the semiconductor industry.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
 )
 
 # Initialize the mediation session

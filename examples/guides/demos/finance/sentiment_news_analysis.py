@@ -193,7 +193,7 @@ agent = Agent(
     max_loops=1,
     tools_list_dictionary=tools,
     output_type="final",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
 )
 
 

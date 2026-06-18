@@ -202,7 +202,7 @@ from swarms import AdvisorSwarm
 # OpenAI models
 swarm = AdvisorSwarm(
     executor_model_name="gpt-5.4-mini",
-    advisor_model_name="gpt-4.1",
+    advisor_model_name="gpt-5.4",
 )
 
 # Mix providers

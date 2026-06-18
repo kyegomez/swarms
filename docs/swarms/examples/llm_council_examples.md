@@ -109,28 +109,28 @@ from swarms.structs.llm_council import LLMCouncil, get_gpt_councilor_prompt
 finance_expert = Agent(
     agent_name="Finance-Councilor",
     system_prompt="You are a financial analyst specializing in market analysis and investment strategies...",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
 tech_expert = Agent(
     agent_name="Technology-Councilor", 
     system_prompt="You are a technology strategist specializing in digital transformation...",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
 risk_expert = Agent(
     agent_name="Risk-Councilor",
     system_prompt="You are a risk management expert specializing in enterprise risk assessment...",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
 # Create council with custom members
 council = LLMCouncil(
     council_members=[finance_expert, tech_expert, risk_expert],
-    chairman_model="gpt-4.1",
+    chairman_model="gpt-5.4",
     verbose=True
 )
 
@@ -239,7 +239,7 @@ from swarms.structs.llm_council import LLMCouncil, get_gpt_councilor_prompt
 custom_agent = Agent(
     agent_name="Custom-Councilor",
     system_prompt=get_gpt_councilor_prompt(),
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 

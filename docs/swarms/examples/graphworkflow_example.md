@@ -106,7 +106,7 @@ research_agent = Agent(
     - Synthesizing findings into clear summaries
     - Verifying facts and checking sources
     - Organizing information logically""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -118,7 +118,7 @@ analysis_agent = Agent(
     - Extracting key insights and patterns
     - Identifying trends and implications
     - Preparing actionable recommendations""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -130,7 +130,7 @@ synthesis_agent = Agent(
     - Creating cohesive reports
     - Ensuring consistency and clarity
     - Highlighting key takeaways""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -165,7 +165,7 @@ data_collector = Agent(
     agent_name="DataCollector",
     agent_description="Expert in collecting and organizing data from various sources",
     system_prompt="You are a data collection specialist. Collect and organize data from various sources, ensuring accuracy and completeness.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -173,7 +173,7 @@ technical_analyst = Agent(
     agent_name="TechnicalAnalyst",
     agent_description="Specialist in technical analysis and data processing",
     system_prompt="You are a technical analyst. Perform technical analysis on data, identify patterns, and extract technical insights.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -181,7 +181,7 @@ market_analyst = Agent(
     agent_name="MarketAnalyst",
     agent_description="Expert in market trends and competitive analysis",
     system_prompt="You are a market analyst. Analyze market trends, competitive landscape, and market conditions.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -189,7 +189,7 @@ synthesis_agent = Agent(
     agent_name="SynthesisAgent",
     agent_description="Expert in synthesizing multiple perspectives into cohesive reports",
     system_prompt="You are a synthesis specialist. Combine insights from multiple analysts into a cohesive, comprehensive report.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -232,7 +232,7 @@ researcher = Agent(
     agent_description="Expert in comprehensive research and information gathering",
     system_prompt="""You are a research specialist. Conduct thorough research on the given topic,
     gather information from multiple sources, and provide comprehensive findings with citations.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -241,7 +241,7 @@ outline_creator = Agent(
     agent_description="Specialist in creating structured content outlines",
     system_prompt="""You are an outline specialist. Create detailed outlines based on research findings.
     Structure content logically with clear sections and subsections.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -250,7 +250,7 @@ writer = Agent(
     agent_description="Professional writer specializing in engaging content creation",
     system_prompt="""You are a professional writer. Write engaging content based on the outline and research.
     Ensure clarity, proper grammar, and engaging style.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -259,7 +259,7 @@ editor = Agent(
     agent_description="Expert editor specializing in content review and refinement",
     system_prompt="""You are an expert editor. Review content for accuracy, clarity, grammar, and style.
     Ensure consistency and professional quality.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -294,7 +294,7 @@ technical_analyst = Agent(
     agent_name="TechnicalAnalyst",
     agent_description="Expert in technical analysis focusing on implementation details",
     system_prompt="Analyze from a technical perspective focusing on implementation details, architecture, and technical feasibility.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -302,7 +302,7 @@ business_analyst = Agent(
     agent_name="BusinessAnalyst",
     agent_description="Specialist in business analysis focusing on ROI and market impact",
     system_prompt="Analyze from a business perspective focusing on ROI, market impact, revenue potential, and business strategy.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -310,7 +310,7 @@ risk_analyst = Agent(
     agent_name="RiskAnalyst",
     agent_description="Expert in risk assessment and mitigation strategies",
     system_prompt="Analyze from a risk perspective focusing on potential issues, threats, and mitigation strategies.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -318,7 +318,7 @@ synthesizer = Agent(
     agent_name="Synthesizer",
     agent_description="Expert in synthesizing multiple perspectives into comprehensive reports",
     system_prompt="Synthesize all analysis perspectives into a comprehensive report that integrates technical, business, and risk considerations.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -400,21 +400,21 @@ from swarms import Agent, GraphWorkflow
 market_agent = Agent(
     agent_name="MarketAnalyst",
     agent_description="Expert in market analysis and trends",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
 technical_agent = Agent(
     agent_name="TechnicalAnalyst",
     agent_description="Specialist in technical analysis and patterns",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
 synthesis_agent = Agent(
     agent_name="SynthesisAgent",
     agent_description="Expert in synthesizing analysis results",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 

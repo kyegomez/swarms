@@ -25,19 +25,19 @@ def research_analysis_writeup(agents, task, **_kwargs):
 def main() -> None:
     researcher = Agent(
         agent_name="Researcher",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         print_on=False,
     )
     analyst = Agent(
         agent_name="Analyst",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         print_on=False,
     )
     writer = Agent(
         agent_name="Writer",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         print_on=False,
     )
@@ -53,7 +53,7 @@ def main() -> None:
 
     extra = Agent(
         agent_name="Reviewer",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         print_on=False,
     )

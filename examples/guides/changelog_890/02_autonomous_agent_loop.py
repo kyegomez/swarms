@@ -54,7 +54,7 @@ a ranked list of the most promising stocks. For each, provide a detailed rationa
 agent = Agent(
     agent_name="Autonomous Energy Investment Researcher",
     system_prompt=energy_research_system_prompt,
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops="auto",
 )
 

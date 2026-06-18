@@ -25,7 +25,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [exec_utilities/](multi_agent/exec_utilities/) | Execution utilities including uvloop examples |
 | [forest_swarm_examples/](multi_agent/forest_swarm_examples/) | Forest swarm and tree-based swarm examples |
 | [graphworkflow_examples/](multi_agent/graphworkflow_examples/) | Graph workflow and graph-based processing examples |
-| [groupchat/](multi_agent/groupchat/) | Group chat and multi-agent conversation examples |
+| [groupchat/](multi_agent/groupchat/) | Asynchronous self-selecting group chat examples where agents independently decide whether to respond |
 | [heavy_swarm_examples/](multi_agent/heavy_swarm_examples/) | Heavy swarm implementations for complex tasks |
 | [hiearchical_swarm/](multi_agent/hiearchical_swarm/) | Hierarchical swarm structures and patterns |
 | [hscf/](multi_agent/hscf/) | Hierarchical Swarm Control Framework examples |
@@ -437,7 +437,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Forest Swarm](multi_agent/forest_swarm_examples/) | Forest and tree-based swarms |
 | [Hierarchical Swarm](multi_agent/hiearchical_swarm/hierarchical_swarm_example.py) | Hierarchical agent structures |
 | [Heavy Swarm](multi_agent/heavy_swarm_examples/) | Heavy swarm for complex tasks |
-| [Group Chat](multi_agent/groupchat/) | Multi-agent conversations and interactive group chat implementations |
+| [Group Chat](multi_agent/groupchat/) | Asynchronous self-selecting group chat where agents choose when to reply |
 | [Graph Workflow](multi_agent/graphworkflow_examples/graph_workflow_example.py) | Graph-based workflows |
 | [LLM Council](multi_agent/llm_council_examples/) | LLM Council collaboration |
 | [Majority Voting](multi_agent/majority_voting/) | Majority voting and consensus |

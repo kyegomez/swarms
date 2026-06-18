@@ -90,7 +90,7 @@ class Conversation:
         save_as_json_bool: bool = False,
         token_count: bool = False,
         message_id_on: bool = False,
-        tokenizer_model_name: str = "gpt-4.1",
+        tokenizer_model_name: str = "gpt-5.4",
         conversations_dir: Optional[str] = None,
         export_method: str = "json",
         dynamic_context_window: bool = True,

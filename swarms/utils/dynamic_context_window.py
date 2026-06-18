@@ -9,7 +9,7 @@ from typing import Optional
 def dynamic_auto_chunking_(
     content: str,
     context_length: Optional[int] = 8192,
-    tokenizer_model_name: Optional[str] = "gpt-4.1",
+    tokenizer_model_name: Optional[str] = "gpt-5.4",
 ):
     """
     Dynamically chunk the conversation history to fit within the context length.
@@ -62,7 +62,7 @@ def dynamic_auto_chunking_(
 def dynamic_auto_chunking(
     content: str,
     context_length: Optional[int] = 8192,
-    tokenizer_model_name: Optional[str] = "gpt-4.1",
+    tokenizer_model_name: Optional[str] = "gpt-5.4",
 ):
     """
     Dynamically chunk the conversation history to fit within the context length.

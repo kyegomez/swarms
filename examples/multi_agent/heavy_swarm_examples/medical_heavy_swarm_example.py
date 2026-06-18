@@ -14,7 +14,7 @@ def main():
         description="A team of agents that research the best and most promising treatments for diabetes, including theoretical approaches.",
         worker_model_name="claude-sonnet-4-20250514",
         show_dashboard=True,
-        question_agent_model_name="gpt-4.1",
+        question_agent_model_name="gpt-5.4",
         loops_per_agent=1,
     )
 

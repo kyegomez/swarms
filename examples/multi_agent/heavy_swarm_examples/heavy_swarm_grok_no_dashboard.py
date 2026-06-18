@@ -8,8 +8,8 @@ from swarms import HeavySwarm
 
 swarm = HeavySwarm(
     name="Quiet Grok Team",
-    worker_model_name="gpt-4.1",
-    question_agent_model_name="gpt-4.1",
+    worker_model_name="gpt-5.4",
+    question_agent_model_name="gpt-5.4",
     variant="medium",
     show_dashboard=False,
     agent_prints_on=False,

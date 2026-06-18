@@ -177,7 +177,7 @@ def __getattr__(name):
 ```
 
 ### 4.2 Repeated regex compilation
-`groupchat.py:952, 311`, `cron_job.py:121`, agent-name sanitisation. Hoist to module-level `_COMPILED = re.compile(...)`.
+`cron_job.py:121`, agent-name sanitisation. Hoist to module-level `_COMPILED = re.compile(...)`.
 
 ### 4.3 Serialisation round-trips
 - `base_structure.py:333-356` does `json.dumps(json.dumps(data))` before gzip — double encoding, ~2× the bytes.

@@ -13,7 +13,7 @@ from swarms import PlannerGeneratorEvaluator
 
 if __name__ == "__main__":
     harness = PlannerGeneratorEvaluator(
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_steps=3,
         max_retries_per_step=2,
         output_type="final",

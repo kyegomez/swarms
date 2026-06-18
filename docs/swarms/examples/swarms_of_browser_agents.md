@@ -36,7 +36,7 @@ class BrowserAgent:
     async def browser_agent_test(self, task: str):
         agent = Agent(
             task=task,
-            llm=ChatOpenAI(model="gpt-4.1"),
+            llm=ChatOpenAI(model="gpt-5.4"),
         )
         result = await agent.run()
         return result

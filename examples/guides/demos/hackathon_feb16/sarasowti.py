@@ -182,7 +182,7 @@ Maintain a warm, friendly, and authentic presence while ensuring all interaction
 ########################################
 
 model = LiteLLM(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     response_format=CallLog,
     system_prompt=MASTER_AGENT_SYS_PROMPT,
 )
@@ -194,7 +194,7 @@ counselor_agent = Agent(
     agent_description="Provides empathetic and effective college counseling and guidance.",
     system_prompt=COUNSELOR_AGENT_SYS_PROMPT,
     max_loops=1,
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     dynamic_temperature_enabled=True,
 )
 
@@ -204,7 +204,7 @@ buddy_agent = Agent(
     agent_description="Acts as a supportive, friendly companion to the student.",
     system_prompt=BUDDY_AGENT_SYS_PROMPT,
     max_loops=1,
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     dynamic_temperature_enabled=True,
 )
 

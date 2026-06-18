@@ -1,9 +1,14 @@
+"""Condensed-matter physics research team using the dynamic GroupChat.
+
+Three specialists (theoretical, experimental, computational) self-select
+when to respond to a research question.
+"""
+
 from swarms import Agent
-from swarms.structs.groupchat import GroupChat
+from swarms.structs.groupchat import GroupChat, RESPOND_TOOL
 
 
 if __name__ == "__main__":
-    # Initialize agents specialized for condensed matter physics
     theoretical_physicist = Agent(
         agent_name="TheoreticalPhysicist",
         system_prompt="""
@@ -22,7 +27,10 @@ if __name__ == "__main__":
 
         When presented with a physics problem, you immediately think in terms of mathematical equations and can derive the appropriate formalism from fundamental principles. You always show your mathematical work step-by-step and explain the physical meaning of each equation you write.
         """,
-        model="claude-3-5-sonnet-20240620",
+        model_name="claude-3-5-sonnet-20240620",
+        max_loops=1,
+        persistent_memory=False,
+        tools_list_dictionary=[RESPOND_TOOL],
     )
 
     experimental_physicist = Agent(
@@ -41,7 +49,10 @@ Your core competencies include:
 - **Experimental Design**: You excel at deriving equations for experimental sensitivity, resolution requirements, and optimization of measurement parameters. You can formulate equations for signal processing, noise reduction, and systematic error correction.
 
 When analyzing experimental data, you immediately think in terms of mathematical models and can derive equations that connect observations to underlying physical mechanisms. You always show your mathematical reasoning and explain how equations relate to experimental reality.""",
-        model="claude-3-5-sonnet-20240620",
+        model_name="claude-3-5-sonnet-20240620",
+        max_loops=1,
+        persistent_memory=False,
+        tools_list_dictionary=[RESPOND_TOOL],
     )
 
     computational_physicist = Agent(
@@ -60,30 +71,35 @@ Your core competencies include:
 - **High-Performance Computing**: You possess advanced skills in parallel algorithms, load balancing, and numerical optimization. You can derive equations for computational complexity, scaling behavior, and performance bottlenecks. You excel at formulating equations for parallel efficiency, communication overhead, and memory management.
 
 When developing computational methods, you think in terms of mathematical algorithms and can derive equations that translate physical problems into efficient numerical procedures. You always show your mathematical derivations and explain how equations map to computational implementations.""",
-        model="claude-3-5-sonnet-20240620",
+        model_name="claude-3-5-sonnet-20240620",
+        max_loops=1,
+        persistent_memory=False,
+        tools_list_dictionary=[RESPOND_TOOL],
     )
 
-    # Create list of agents including both Agent instances and callable
     agents = [
         theoretical_physicist,
         experimental_physicist,
         computational_physicist,
     ]
 
-    # Initialize another chat instance in interactive mode
-    interactive_chat = GroupChat(
-        name="Interactive Condensed Matter Physics Research Team",
-        description="An interactive team of condensed matter physics experts providing comprehensive analysis of quantum materials, phase transitions, and emergent phenomena",
+    chat = GroupChat(
+        name="Condensed Matter Physics Research Team",
+        description="A team of condensed matter physics experts providing comprehensive analysis of quantum materials, phase transitions, and emergent phenomena",
         agents=agents,
-        max_loops=1,
+        max_loops=15,
+        threshold=0.5,
+        idle_timeout=10.0,
         output_type="all",
-        interactive=True,
     )
 
     try:
-        # Start the interactive session
-        print("\nStarting interactive session...")
-        # interactive_chat.run("What is the best methodology to accumulate gold and silver commodities, what is the best long term strategy to accumulate them?")
-        interactive_chat.start_interactive_session()
+        result = chat.run(
+            "Discuss the current state of high-temperature superconductivity research: "
+            "what theoretical frameworks best explain the cuprates, what experimental "
+            "signatures still need explanation, and which computational methods are most "
+            "promising for predicting new superconducting materials?"
+        )
+        print(result)
     except Exception as e:
-        print(f"An error occurred in interactive mode: {e}")
+        print(f"An error occurred: {e}")

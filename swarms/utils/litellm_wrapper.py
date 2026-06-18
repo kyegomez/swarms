@@ -182,7 +182,7 @@ class LiteLLM:
 
     def __init__(
         self,
-        model_name: str = "gpt-4.1",
+        model_name: str = "gpt-5.4",
         system_prompt: str = None,
         stream: bool = False,
         temperature: float = 0.5,
@@ -218,7 +218,7 @@ class LiteLLM:
         Args:
             model_name (str, optional): The name of the model to use. Supports any model
                 available through LiteLLM (e.g., "gpt-4", "claude-3-opus", "gemini-pro").
-                Defaults to "gpt-4.1".
+                Defaults to "gpt-5.4".
             system_prompt (str, optional): The system prompt to use for the conversation.
                 This sets the behavior and context for the model. Defaults to None.
             stream (bool, optional): Whether to stream the output token by token.

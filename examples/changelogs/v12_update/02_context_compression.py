@@ -6,7 +6,7 @@ from swarms import Agent
 agent_compressed = Agent(
     agent_name="LongRunAgent",
     agent_description="Handles very long sessions without hitting the context limit",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=3,
     context_length=8000,  # token budget
     context_compression=True,  # default — auto-compress when near limit
@@ -26,7 +26,7 @@ print(result)
 agent_raw = Agent(
     agent_name="ShortTaskAgent",
     agent_description="Single-shot, no compression overhead",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     context_length=8000,
     context_compression=False,  # disabled — raw context only

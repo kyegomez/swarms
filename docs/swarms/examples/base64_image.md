@@ -34,7 +34,7 @@ from swarms.utils.image_file_b64 import get_image_data_uri
 
 # Initialize agent
 agent = Agent(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     verbose=True,
 )

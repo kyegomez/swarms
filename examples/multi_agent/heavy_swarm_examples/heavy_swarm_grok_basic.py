@@ -10,8 +10,8 @@ from swarms import HeavySwarm
 swarm = HeavySwarm(
     name="Grok Analysis Team",
     description="Multi-agent analysis with Grok-style agents",
-    worker_model_name="gpt-4.1",
-    question_agent_model_name="gpt-4.1",
+    worker_model_name="gpt-5.4",
+    question_agent_model_name="gpt-5.4",
     variant="medium",
     show_dashboard=True,
     loops_per_agent=1,

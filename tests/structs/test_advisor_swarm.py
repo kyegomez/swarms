@@ -29,12 +29,12 @@ class TestAdvisorSwarmInit:
     def test_custom_model_names(self):
         swarm = AdvisorSwarm(
             executor_model_name="gpt-5.4-mini",
-            advisor_model_name="gpt-4.1",
+            advisor_model_name="gpt-5.4",
         )
         assert swarm.executor_model_name == "gpt-5.4-mini"
-        assert swarm.advisor_model_name == "gpt-4.1"
+        assert swarm.advisor_model_name == "gpt-5.4"
         assert swarm.executor_agent.model_name == "gpt-5.4-mini"
-        assert swarm.advisor_agent.model_name == "gpt-4.1"
+        assert swarm.advisor_agent.model_name == "gpt-5.4"
 
     def test_custom_agents_override(self):
         custom_executor = Agent(
@@ -44,7 +44,7 @@ class TestAdvisorSwarmInit:
         )
         custom_advisor = Agent(
             agent_name="CustomAdvisor",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
         )
         swarm = AdvisorSwarm(

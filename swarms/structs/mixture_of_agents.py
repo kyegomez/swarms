@@ -45,8 +45,8 @@ class MixtureOfAgents:
     Examples:
         >>> from swarms import Agent
         >>> agents = [
-        ...     Agent(agent_name="Researcher", model_name="gpt-4.1"),
-        ...     Agent(agent_name="Analyst", model_name="gpt-4.1"),
+        ...     Agent(agent_name="Researcher", model_name="gpt-5.4"),
+        ...     Agent(agent_name="Analyst", model_name="gpt-5.4"),
         ... ]
         >>> moa = MixtureOfAgents(agents=agents, layers=2)
         >>> result = moa.run("Explain the trade-offs of multi-agent systems")

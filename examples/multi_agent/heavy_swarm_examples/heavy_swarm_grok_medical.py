@@ -11,8 +11,8 @@ from swarms import HeavySwarm
 swarm = HeavySwarm(
     name="Medical Research Team",
     description="Grok-style medical analysis",
-    worker_model_name="gpt-4.1",
-    question_agent_model_name="gpt-4.1",
+    worker_model_name="gpt-5.4",
+    question_agent_model_name="gpt-5.4",
     variant="medium",
     show_dashboard=True,
     loops_per_agent=2,

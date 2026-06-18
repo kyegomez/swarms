@@ -63,7 +63,7 @@ if __name__ == "__main__":
     generator = Agent(
         agent_name="PGE-Generator",
         agent_description="Generator that can write files to disk",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         tools=[write_file, list_files],
     )
@@ -71,13 +71,13 @@ if __name__ == "__main__":
     evaluator = Agent(
         agent_name="PGE-Evaluator",
         agent_description="Evaluator that can read and verify files on disk",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         tools=[read_file, list_files],
     )
 
     harness = PlannerGeneratorEvaluator(
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         generator_agent=generator,
         evaluator_agent=evaluator,
         max_steps=2,

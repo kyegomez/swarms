@@ -218,8 +218,8 @@ from swarms import Agent, HierarchicalSwarm
 swarm = HierarchicalSwarm(
     name="Analysis-Swarm",
     agents=[
-        Agent(agent_name="Market-Analyst", model_name="gpt-4.1", max_loops=1),
-        Agent(agent_name="Technical-Analyst", model_name="gpt-4.1", max_loops=1),
+        Agent(agent_name="Market-Analyst", model_name="gpt-5.4", max_loops=1),
+        Agent(agent_name="Technical-Analyst", model_name="gpt-5.4", max_loops=1),
     ],
     director_model_name="gpt-5.4",
 )
@@ -420,11 +420,11 @@ swarm = HierarchicalSwarm(
         Agent(agent_name="Data-Analyst", model_name="gpt-5.4", max_loops=1),
         Agent(agent_name="Strategy-Consultant", model_name="gpt-5.4", max_loops=1),
     ],
-    director_model_name="gpt-4.1",
+    director_model_name="gpt-5.4",
     director_feedback_on=False,
     parallel_execution=True,         # agents run concurrently
     agent_as_judge=True,             # structured scoring after each cycle
-    judge_agent_model_name="gpt-4.1",
+    judge_agent_model_name="gpt-5.4",
 )
 
 result = asyncio.run(

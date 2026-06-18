@@ -178,8 +178,8 @@ swarm = HeavySwarm(
     description="Comprehensive multi-agent analysis system",
     timeout=600,
     loops_per_agent=2,
-    question_agent_model_name="gpt-4.1",
-    worker_model_name="gpt-4.1",
+    question_agent_model_name="gpt-5.4",
+    worker_model_name="gpt-5.4",
     verbose=True,
     max_workers=8,
     show_dashboard=True,
@@ -267,14 +267,14 @@ print(questions['research_question'])
 print(questions['analysis_question'])
 
 # Grok mode
-grok_swarm = HeavySwarm(use_grok_agents=True, worker_model_name="gpt-4.1", question_agent_model_name="gpt-4.1")
+grok_swarm = HeavySwarm(use_grok_agents=True, worker_model_name="gpt-5.4", question_agent_model_name="gpt-5.4")
 questions = grok_swarm.get_questions_only("Analyze market trends for EVs")
 print(questions['harper_question'])
 print(questions['benjamin_question'])
 print(questions['lucas_question'])
 
 # Grok Heavy mode
-heavy_swarm = HeavySwarm(use_grok_heavy=True, worker_model_name="gpt-4.1", question_agent_model_name="gpt-4.1")
+heavy_swarm = HeavySwarm(use_grok_heavy=True, worker_model_name="gpt-5.4", question_agent_model_name="gpt-5.4")
 questions = heavy_swarm.get_questions_only("Analyze market trends for EVs")
 for key, question in questions.items():
     print(f"{key}: {question}")
@@ -438,13 +438,13 @@ research_agent = agents['research']
 print(f"Research agent name: {research_agent.agent_name}")
 
 # Grok mode
-grok_swarm = HeavySwarm(use_grok_agents=True, worker_model_name="gpt-4.1", question_agent_model_name="gpt-4.1")
+grok_swarm = HeavySwarm(use_grok_agents=True, worker_model_name="gpt-5.4", question_agent_model_name="gpt-5.4")
 agents = grok_swarm.create_agents()
 print(f"Captain: {agents['captain'].agent_name}")
 print(f"Harper: {agents['harper'].agent_name}")
 
 # Grok Heavy mode
-heavy_swarm = HeavySwarm(use_grok_heavy=True, worker_model_name="gpt-4.1", question_agent_model_name="gpt-4.1")
+heavy_swarm = HeavySwarm(use_grok_heavy=True, worker_model_name="gpt-5.4", question_agent_model_name="gpt-5.4")
 agents = heavy_swarm.create_agents()
 print(f"Total agents: {len(agents)}")  # 16
 print(f"Captain: {agents['captain'].agent_name}")  # Grok
@@ -465,8 +465,8 @@ from swarms.structs.heavy_swarm import HeavySwarm
 swarm = HeavySwarm(
     name="Grok Analysis Team",
     description="Multi-agent analysis with Grok-style agents",
-    worker_model_name="gpt-4.1",
-    question_agent_model_name="gpt-4.1",
+    worker_model_name="gpt-5.4",
+    question_agent_model_name="gpt-5.4",
     use_grok_agents=True,
     show_dashboard=True,
 )
@@ -484,8 +484,8 @@ from swarms.structs.heavy_swarm import HeavySwarm
 
 swarm = HeavySwarm(
     name="Medical Research Team",
-    worker_model_name="gpt-4.1",
-    question_agent_model_name="gpt-4.1",
+    worker_model_name="gpt-5.4",
+    question_agent_model_name="gpt-5.4",
     use_grok_agents=True,
     loops_per_agent=2,
     show_dashboard=True,
@@ -513,8 +513,8 @@ def web_search(query: str) -> str:
 
 swarm = HeavySwarm(
     name="Strategic Intel Team",
-    worker_model_name="gpt-4.1",
-    question_agent_model_name="gpt-4.1",
+    worker_model_name="gpt-5.4",
+    question_agent_model_name="gpt-5.4",
     use_grok_agents=True,
     worker_tools=[web_search],
     show_dashboard=True,
@@ -541,8 +541,8 @@ router = SwarmRouter(
     name="GrokRouter",
     description="Router with Grok Heavy agents",
     swarm_type="HeavySwarm",
-    heavy_swarm_worker_model_name="gpt-4.1",
-    heavy_swarm_question_agent_model_name="gpt-4.1",
+    heavy_swarm_worker_model_name="gpt-5.4",
+    heavy_swarm_question_agent_model_name="gpt-5.4",
     heavy_swarm_use_grok_agents=True,
 )
 
@@ -556,8 +556,8 @@ print(result)
 from swarms.structs.heavy_swarm import HeavySwarm
 
 swarm = HeavySwarm(
-    worker_model_name="gpt-4.1",
-    question_agent_model_name="gpt-4.1",
+    worker_model_name="gpt-5.4",
+    question_agent_model_name="gpt-5.4",
     use_grok_agents=True,
 )
 
@@ -605,8 +605,8 @@ from swarms import HeavySwarm
 
 swarm = HeavySwarm(
     name="Policy Analysis Team",
-    worker_model_name="gpt-4.1",
-    question_agent_model_name="gpt-4.1",
+    worker_model_name="gpt-5.4",
+    question_agent_model_name="gpt-5.4",
     use_grok_heavy=True,
     show_dashboard=True,
     loops_per_agent=2,
@@ -633,8 +633,8 @@ print(result)
 from swarms import HeavySwarm
 
 swarm = HeavySwarm(
-    worker_model_name="gpt-4.1",
-    question_agent_model_name="gpt-4.1",
+    worker_model_name="gpt-5.4",
+    question_agent_model_name="gpt-5.4",
     use_grok_heavy=True,
 )
 
@@ -707,8 +707,8 @@ from swarms.structs.heavy_swarm import HeavySwarm
 swarm = HeavySwarm(
     name="AdvancedMarketAnalysis",
     description="Deep market analysis with multiple iterations",
-    worker_model_name="gpt-4.1",
-    question_agent_model_name="gpt-4.1",
+    worker_model_name="gpt-5.4",
+    question_agent_model_name="gpt-5.4",
     show_dashboard=True,
     loops_per_agent=3,  # Multiple iterations for depth
     timeout=600,
@@ -738,7 +738,7 @@ from swarms.structs.heavy_swarm import HeavySwarm
 # Configure for question generation
 swarm = HeavySwarm(
     name="QuestionGenerator",
-    question_agent_model_name="gpt-4.1",
+    question_agent_model_name="gpt-5.4",
     worker_model_name="gpt-5.4",
     show_dashboard=False
 )
@@ -835,7 +835,7 @@ from swarms_tools import exa_search, calculator
 swarm = HeavySwarm(
     name="CustomToolsSwarm",
     description="HeavySwarm with enhanced tool capabilities",
-    worker_model_name="gpt-4.1",
+    worker_model_name="gpt-5.4",
     worker_tools=[exa_search, calculator],
     show_dashboard=True,
     timeout=600
@@ -863,8 +863,8 @@ from swarms.structs.heavy_swarm import HeavySwarm
 swarm = HeavySwarm(
     name="EnterpriseAnalysis",
     description="High-performance enterprise analysis",
-    worker_model_name="gpt-4.1",  # Highest quality
-    question_agent_model_name="gpt-4.1",
+    worker_model_name="gpt-5.4",  # Highest quality
+    question_agent_model_name="gpt-5.4",
     show_dashboard=True,
     loops_per_agent=5,  # Maximum depth
     timeout=1800,  # 30 minutes
@@ -895,7 +895,7 @@ from swarms.structs.heavy_swarm import HeavySwarm
 swarm = HeavySwarm(
     name="DiverseAnalysis",
     description="Analysis with random iteration depth",
-    worker_model_name="gpt-4.1",
+    worker_model_name="gpt-5.4",
     question_agent_model_name="gpt-5.4",
     show_dashboard=True,
     loops_per_agent=1,  # Base loops

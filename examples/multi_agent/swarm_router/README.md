@@ -4,6 +4,7 @@ This directory contains examples demonstrating swarm routing patterns for direct
 
 ## Examples
 
+- [groupchat_swarm_router_example.py](groupchat_swarm_router_example.py) - Self-selecting groupchat via SwarmRouter
 - [heavy_swarm_router_example.py](heavy_swarm_router_example.py) - Router for heavy swarms
 - [market_analysis_swarm_router_concurrent.py](market_analysis_swarm_router_concurrent.py) - Concurrent market analysis router
 - [sr_moa_example.py](sr_moa_example.py) - Swarm router with MOA
