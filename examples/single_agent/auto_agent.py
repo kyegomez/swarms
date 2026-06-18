@@ -4,7 +4,7 @@ from swarms import Agent
 agent = Agent(
     agent_name="Quantitative-Trading-Agent",
     agent_description="Advanced quantitative trading and algorithmic analysis agent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops="auto",
 )
 

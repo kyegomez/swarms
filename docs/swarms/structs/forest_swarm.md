@@ -49,7 +49,7 @@ Calculates the cosine similarity between two embedding vectors.
 | `name`                   | `str`            | Name of the agent                                                               |
 | `description`            | `str`            | Description of the agent                                                        |
 | `system_prompt`          | `str`            | A string that defines the agent's area of expertise and task-handling capability.|
-| `model_name`             | `str`            | Name of the language model to use (default: "gpt-4.1")                         |
+| `model_name`             | `str`            | Name of the language model to use (default: "gpt-5.4")                         |
 | `agent_name`             | `str`            | The name of the agent.                                                          |
 | `system_prompt_embedding`| `List[float]`    | **litellm-generated embedding** of the system prompt for similarity-based task matching.|
 | `relevant_keywords`      | `List[str]`      | Keywords dynamically extracted from the system prompt to assist in task matching.|

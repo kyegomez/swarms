@@ -51,7 +51,7 @@ This pattern works well for tasks where correctness is verifiable: writing that 
 from swarms import PlannerGeneratorEvaluator
 
 harness = PlannerGeneratorEvaluator(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_steps=3,
     max_retries_per_step=2,
     output_type="final",

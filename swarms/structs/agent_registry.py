@@ -9,6 +9,8 @@ from pydantic import BaseModel, Field, ValidationError
 from swarms.structs.agent import Agent
 from swarms.structs.ma_blocks import (
     find_agent_by_id as find_agent_by_id_ma_blocks,
+)
+from swarms.structs.ma_blocks import (
     find_agent_by_name,
 )
 from swarms.utils.loguru_logger import logger

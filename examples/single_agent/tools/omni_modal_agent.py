@@ -270,7 +270,7 @@ print(test)
 #             tools=[generate_modalities],
 #             system_prompt=self.system_prompt,
 #             max_loops=1,
-#             model_name="gpt-4.1",
+#             model_name="gpt-5.4",
 #         )
 
 #     def run(self, task: str):

@@ -20,7 +20,7 @@ from swarms import Agent
 
 # Configure a single fallback model
 agent = Agent(
-    model_name="gpt-4.1",  # Primary model
+    model_name="gpt-5.4",  # Primary model
     fallback_model_name="gpt-5.4",  # Fallback model
     max_loops=1
 )
@@ -33,7 +33,7 @@ from swarms import Agent
 
 # Configure multiple fallback models using unified list
 agent = Agent(
-    fallback_models=["gpt-4.1", "gpt-5.4", "gpt-3.5-turbo", "claude-3-haiku"],  # First is primary, rest are fallbacks
+    fallback_models=["gpt-5.4", "gpt-5.4", "gpt-3.5-turbo", "claude-3-haiku"],  # First is primary, rest are fallbacks
     max_loops=1
 )
 ```
@@ -45,7 +45,7 @@ from swarms import Agent
 
 # You can use both single fallback and fallback list
 agent = Agent(
-    model_name="gpt-4.1",  # Primary model
+    model_name="gpt-5.4",  # Primary model
     fallback_model_name="gpt-5.4",  # Single fallback
     fallback_models=["gpt-3.5-turbo", "claude-3-haiku"],  # Additional fallbacks
     max_loops=1
@@ -53,7 +53,7 @@ agent = Agent(
 
 # Or use the unified list approach (recommended)
 agent = Agent(
-    fallback_models=["gpt-4.1", "gpt-5.4", "gpt-3.5-turbo", "claude-3-haiku"],
+    fallback_models=["gpt-5.4", "gpt-5.4", "gpt-3.5-turbo", "claude-3-haiku"],
     max_loops=1
 )
 # Final order: gpt-4o -> gpt-4o-mini -> gpt-3.5-turbo -> claude-3-haiku
@@ -128,7 +128,7 @@ from swarms import Agent
 
 # Create agent with fallback models
 agent = Agent(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     fallback_models=["gpt-5.4", "gpt-3.5-turbo"],
     max_loops=1
 )
@@ -144,7 +144,7 @@ print(response)
 from swarms import Agent
 
 agent = Agent(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     fallback_models=["gpt-5.4", "gpt-3.5-turbo"],
     max_loops=1
 )
@@ -156,7 +156,7 @@ print(f"Current model: {agent.get_current_model()}")
 response = agent.run("Analyze this data")
 
 # Check if fallback was used
-if agent.get_current_model() != "gpt-4.1":
+if agent.get_current_model() != "gpt-5.4":
     print(f"Used fallback model: {agent.get_current_model()}")
 ```
 
@@ -166,7 +166,7 @@ if agent.get_current_model() != "gpt-4.1":
 from swarms import Agent
 
 agent = Agent(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     fallback_models=["gpt-5.4", "gpt-3.5-turbo"],
     max_loops=1
 )
@@ -247,7 +247,7 @@ Enable verbose logging to see detailed fallback information:
 
 ```python
 agent = Agent(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     fallback_models=["gpt-5.4"],
     verbose=True  # Enable detailed logging
 )
@@ -261,11 +261,11 @@ If you're upgrading from an agent without fallback support:
 
 ```python
 # Before
-agent = Agent(model_name="gpt-4.1")
+agent = Agent(model_name="gpt-5.4")
 
 # After
 agent = Agent(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     fallback_models=["gpt-5.4", "gpt-3.5-turbo"]
 )
 ```

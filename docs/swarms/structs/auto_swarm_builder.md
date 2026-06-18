@@ -25,7 +25,7 @@ The AutoSwarmBuilder is designed to:
 | `description` | str | "Auto Swarm Builder" | A description of the swarm's purpose |
 | `verbose` | bool | True | Whether to output detailed logs |
 | `max_loops` | int | 1 | Maximum number of execution loops |
-| `model_name` | str | "gpt-4.1" | The LLM model to use for the boss agent |
+| `model_name` | str | "gpt-5.4" | The LLM model to use for the boss agent |
 | `generate_router_config` | bool | False | Whether to generate router configuration |
 | `interactive` | bool | False | Whether to enable interactive mode |
 | `max_tokens` | int | 8000 | Maximum tokens for the LLM responses |
@@ -371,7 +371,7 @@ from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 swarm = AutoSwarmBuilder(
     name="Data Analysis Swarm",
     description="A swarm specialized in data analysis and visualization",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_tokens=12000,
     verbose=True,
     execution_type="return-agents"
@@ -542,7 +542,7 @@ swarm = AutoSwarmBuilder(
     name="Financial Analysis Swarm",
     description="A specialized swarm for financial analysis",
     system_prompt=custom_prompt,
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_tokens=12000
 )
 
@@ -561,7 +561,7 @@ from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 swarm = AutoSwarmBuilder(
     name="Advanced Swarm",
     description="A highly configured swarm with advanced settings",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_tokens=16000,
     additional_llm_args={"temperature": 0.3},
     verbose=True,

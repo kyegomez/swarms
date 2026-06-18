@@ -56,7 +56,7 @@ The harness follows this workflow:
 
 | Parameter | Type | Default | Required | Description |
 |-----------|------|---------|----------|-------------|
-| `model_name` | `str` | `"gpt-4.1"` | No | Model identifier for all three agents |
+| `model_name` | `str` | `"gpt-5.4"` | No | Model identifier for all three agents |
 | `planner_model_name` | `str` | `None` | No | Override model for the Planner |
 | `generator_model_name` | `str` | `None` | No | Override model for the Generator |
 | `evaluator_model_name` | `str` | `None` | No | Override model for the Evaluator |
@@ -132,7 +132,7 @@ Run the harness on multiple tasks sequentially.
 from swarms import PlannerGeneratorEvaluator
 
 harness = PlannerGeneratorEvaluator(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_steps=3,
     max_retries_per_step=2,
     output_type="final",
@@ -171,20 +171,20 @@ def read_file(filename: str) -> str:
 
 generator = Agent(
     agent_name="PGE-Generator",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     tools=[write_file],
 )
 
 evaluator = Agent(
     agent_name="PGE-Evaluator",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     tools=[read_file],
 )
 
 harness = PlannerGeneratorEvaluator(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     generator_agent=generator,
     evaluator_agent=evaluator,
     max_steps=3,
@@ -202,13 +202,13 @@ from swarms import Agent, PlannerGeneratorEvaluator
 
 evaluator = Agent(
     agent_name="PGE-Evaluator",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     mcp_config={"url": "http://localhost:3000/playwright"},
 )
 
 harness = PlannerGeneratorEvaluator(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     evaluator_agent=evaluator,
     max_steps=5,
     max_retries_per_step=3,
@@ -225,7 +225,7 @@ Provide default score thresholds that apply when the Planner doesn't define them
 from swarms import PlannerGeneratorEvaluator
 
 harness = PlannerGeneratorEvaluator(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     default_thresholds={
         "accuracy": 8.0,
         "clarity": 7.0,

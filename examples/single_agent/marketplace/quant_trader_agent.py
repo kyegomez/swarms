@@ -6,7 +6,7 @@ tts_callback = StreamingTTSCallback(
 )
 
 agent = Agent(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     marketplace_prompt_id="6d165e47-1827-4abe-9a84-b25005d8e3b4",
     max_loops="auto",
     streaming_on=True,

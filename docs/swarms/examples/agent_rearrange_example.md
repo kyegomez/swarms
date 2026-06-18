@@ -21,7 +21,7 @@ researcher = Agent(
    - Synthesizing findings into clear summaries
    - Verifying facts and checking sources
    - Organizing information logically""",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -35,7 +35,7 @@ writer = Agent(
    - Ensuring proper grammar and style
    - Adapting tone for the target audience
    - Incorporating research findings effectively""",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -49,7 +49,7 @@ editor = Agent(
    - Improving sentence structure and flow
    - Ensuring consistency in style and tone
    - Verifying facts and checking sources""",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -87,7 +87,7 @@ market_researcher = Agent(
    agent_name="Market-Researcher",
    agent_description="Expert in market research and trend analysis",
    system_prompt="Research market trends, competitive landscape, and market opportunities",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -96,7 +96,7 @@ financial_researcher = Agent(
    agent_name="Financial-Researcher",
    agent_description="Specialist in financial data analysis",
    system_prompt="Research financial data, performance metrics, and financial trends",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -105,7 +105,7 @@ analyst = Agent(
    agent_name="Analyst",
    agent_description="Expert in synthesizing research findings",
    system_prompt="Synthesize research findings from multiple sources into actionable insights",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -143,7 +143,7 @@ researcher = Agent(
    agent_name="Researcher",
    agent_description="Expert in comprehensive research",
    system_prompt="Conduct comprehensive research on the topic and provide detailed findings",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -152,7 +152,7 @@ technical_writer = Agent(
    agent_name="Technical-Writer",
    agent_description="Specialist in technical content writing",
    system_prompt="Write technical content based on research findings",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -161,7 +161,7 @@ marketing_writer = Agent(
    agent_name="Marketing-Writer",
    agent_description="Expert in marketing content creation",
    system_prompt="Write marketing content based on research findings",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -170,7 +170,7 @@ editor = Agent(
    agent_name="Editor",
    agent_description="Expert editor for content review",
    system_prompt="Review and edit all written content for quality and consistency",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -208,7 +208,7 @@ researcher = Agent(
    agent_name="Researcher",
    agent_description="Expert in research and information gathering",
    system_prompt="Research the topic thoroughly and provide comprehensive findings",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -217,7 +217,7 @@ writer = Agent(
    agent_name="Writer",
    agent_description="Professional writer",
    system_prompt="Write content based on the research provided. Consider what the editor will need.",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -226,7 +226,7 @@ editor = Agent(
    agent_name="Editor",
    agent_description="Expert editor",
    system_prompt="Edit the written content for clarity, accuracy, and style",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -272,7 +272,7 @@ extractor = Agent(
    agent_name="Data-Extractor",
    agent_description="Expert in extracting data from documents",
    system_prompt="Extract key data points and information from documents accurately",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -281,7 +281,7 @@ validator = Agent(
    agent_name="Data-Validator",
    agent_description="Specialist in data validation",
    system_prompt="Validate extracted data for accuracy, completeness, and consistency",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -290,7 +290,7 @@ formatter = Agent(
    agent_name="Data-Formatter",
    agent_description="Expert in data formatting",
    system_prompt="Format validated data into structured output suitable for downstream processing",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -324,7 +324,7 @@ from swarms import Agent, AgentRearrange
 market_agent = Agent(
    agent_name="Market-Analyst",
    agent_description="Expert in market analysis and trends",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -332,7 +332,7 @@ market_agent = Agent(
 technical_agent = Agent(
    agent_name="Technical-Analyst",
    agent_description="Specialist in technical analysis and patterns",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -340,7 +340,7 @@ technical_agent = Agent(
 synthesis_agent = Agent(
    agent_name="Synthesis-Agent",
    agent_description="Expert in synthesizing analysis results",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -385,7 +385,7 @@ researcher = Agent(
    agent_name="Researcher",
    agent_description="Expert in research and information gathering",
    system_prompt="Research the topic thoroughly and provide comprehensive findings",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -394,7 +394,7 @@ writer = Agent(
    agent_name="Writer",
    agent_description="Professional writer",
    system_prompt="Write content based on the research provided",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -403,7 +403,7 @@ editor = Agent(
    agent_name="Editor",
    agent_description="Expert editor",
    system_prompt="Edit the written content for clarity, accuracy, and style",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -460,7 +460,7 @@ researcher = Agent(
    agent_name="Researcher",
    agent_description="Expert in research",
    system_prompt="Research the topic and store findings in memory",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -469,7 +469,7 @@ writer = Agent(
    agent_name="Writer",
    agent_description="Professional writer",
    system_prompt="Write content based on research from memory",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -507,7 +507,7 @@ researcher = Agent(
    agent_name="Researcher",
    agent_description="Expert in research",
    system_prompt="Research the topic thoroughly",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -516,7 +516,7 @@ writer = Agent(
    agent_name="Writer",
    agent_description="Professional writer",
    system_prompt="Write content based on research",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -525,7 +525,7 @@ editor = Agent(
    agent_name="Editor",
    agent_description="Expert editor",
    system_prompt="Edit content for quality",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -571,7 +571,7 @@ from swarms import Agent, AgentRearrange
 market_agent = Agent(
    agent_name="Market-Analyst",
    agent_description="Expert in market analysis and trends",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -579,7 +579,7 @@ market_agent = Agent(
 technical_agent = Agent(
    agent_name="Technical-Analyst",
    agent_description="Specialist in technical analysis and patterns",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -587,7 +587,7 @@ technical_agent = Agent(
 synthesis_agent = Agent(
    agent_name="Synthesis-Agent",
    agent_description="Expert in synthesizing analysis results",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -632,7 +632,7 @@ researcher = Agent(
    agent_name="Researcher",
    agent_description="Expert in research",
    system_prompt="Research the topic thoroughly",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 
@@ -641,7 +641,7 @@ writer = Agent(
    agent_name="Writer",
    agent_description="Professional writer",
    system_prompt="Write content based on research",
-   model_name="gpt-4.1",
+   model_name="gpt-5.4",
    max_loops=1,
 )
 

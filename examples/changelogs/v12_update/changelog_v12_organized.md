@@ -26,7 +26,7 @@ Added `persistent_memory: bool = True` to `Agent`. When `True` (default) the age
 # Stateless — no cross-session carry-over
 agent = Agent(
     agent_name="MyAgent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     persistent_memory=False,
 )
 ```
@@ -42,7 +42,7 @@ Added a `grep` tool to the autonomous loop tool set. The agent can now search fo
 Parameters: `pattern` (required), `path`, `recursive`, `case_insensitive`, `include_line_numbers`, `file_pattern`, `context_lines`.
 
 ```python
-agent = Agent(agent_name="Coder", model_name="gpt-4.1", max_loops="auto")
+agent = Agent(agent_name="Coder", model_name="gpt-5.4", max_loops="auto")
 agent.run("Find all TODO comments in the src/ directory")
 ```
 

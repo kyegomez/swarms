@@ -14,7 +14,7 @@ def main() -> None:
         description=(
             "Researches topics in depth and returns factual summaries."
         ),
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         print_on=False,
     )
@@ -23,14 +23,14 @@ def main() -> None:
         description=(
             "Writes and explains Python code with clean, idiomatic style."
         ),
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         print_on=False,
     )
     writing = Agent(
         agent_name="WritingAgent",
         description="Drafts clear prose suitable for blog posts and reports.",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         print_on=False,
     )
@@ -38,7 +38,7 @@ def main() -> None:
     router = MultiAgentRouter(
         name="demo-router",
         agents=[research, code, writing],
-        model="gpt-4.1",
+        model="gpt-5.4",
         print_on=False,
     )
 

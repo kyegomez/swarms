@@ -339,7 +339,7 @@ swarm = RoundRobinSwarm(
 | **[SequentialWorkflow](./sequential_example.md)** | When tasks must flow in fixed order |
 | **[GroupChat](./groupchat_comprehensive_examples.md)** | For real-time interactive discussions |
 | **[MajorityVoting](./majority_voting_example.md)** | When you need consensus via voting |
-| **[GroupChat](./groupchat_example.md)** | For expertise-based speaker selection |
+| **[GroupChat](./groupchat_comprehensive_examples.md)** | For asynchronous self-selecting agent discussions |
 
 ---
 

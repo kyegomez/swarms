@@ -142,7 +142,7 @@ sales_agent1 = Agent(
     agent_name="Sales Agent 1 - Automation Specialist",
     system_prompt="You're Sales Agent 1, your purpose is to generate sales for a company by focusing on the benefits of automating accounting processes!",
     agent_description="Generate sales by focusing on the benefits of automation!",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -150,7 +150,7 @@ sales_agent2 = Agent(
     agent_name="Sales Agent 2 - Cost Saving Specialist",
     system_prompt="You're Sales Agent 2, your purpose is to generate sales for a company by emphasizing the cost savings of using swarms of agents!",
     agent_description="Generate sales by emphasizing cost savings!",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -158,7 +158,7 @@ sales_agent3 = Agent(
     agent_name="Sales Agent 3 - Efficiency Specialist",
     system_prompt="You're Sales Agent 3, your purpose is to generate sales for a company by highlighting the efficiency and accuracy of our swarms of agents in accounting processes!",
     agent_description="Generate sales by highlighting efficiency and accuracy!",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -191,14 +191,14 @@ from swarms import Agent, RoundRobinSwarm
 researcher1 = Agent(
     agent_name="Technical Researcher",
     system_prompt="You are a technical researcher who analyzes topics from a technical perspective.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
 researcher2 = Agent(
     agent_name="Market Researcher",
     system_prompt="You are a market researcher who analyzes topics from a business and market perspective.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 

@@ -119,7 +119,7 @@ quant_report_task_prompt = (
 
 # Initialize the agent with the system prompt
 agent = Agent(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops="auto",
     tools=[exa_search],
     marketplace_prompt_id="1191250b-9fb3-42e0-b0e9-25ec83260ab2",

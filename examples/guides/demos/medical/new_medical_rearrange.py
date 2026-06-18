@@ -27,7 +27,7 @@ chief_medical_officer = Agent(
     - Differential Diagnoses
     - Specialist Consultations Needed
     - Recommended Next Steps""",
-    model_name="gpt-4.1",  # Models from litellm -> claude-2
+    model_name="gpt-5.4",  # Models from litellm -> claude-2
     max_loops=1,
 )
 
@@ -60,7 +60,7 @@ virologist = Agent(
     - Disease progression timeline
     - Risk factors for severe disease
     - Potential complications""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -91,7 +91,7 @@ internist = Agent(
     - System-specific symptoms
     - Relevant lab abnormalities
     - Risk factors for complications""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -127,7 +127,7 @@ synthesizer = Agent(
     - Confidence levels for each diagnosis
     - Knowledge gaps identified
     - Risk assessment""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 

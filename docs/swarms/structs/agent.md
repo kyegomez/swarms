@@ -397,7 +397,7 @@ from swarms import Agent
 # --- Default: memory survives process restarts ---
 agent = Agent(
     agent_name="Persistent-Agent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     system_prompt="You are a helpful assistant.",
     # persistent_memory=True is the default — MEMORY.md is read and written
     # at $WORKSPACE_DIR/agents/Persistent-Agent/MEMORY.md
@@ -410,7 +410,7 @@ agent.run("My name is Alice and I work in finance.")
 # --- Stateless: no cross-session memory ---
 stateless_agent = Agent(
     agent_name="Stateless-Agent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     system_prompt="You are a helpful assistant.",
     persistent_memory=False,  # no MEMORY.md read or written
 )
@@ -431,7 +431,7 @@ from swarms import Agent
 # --- Default: automatic summarisation when the window gets full ---
 agent = Agent(
     agent_name="Long-Session-Agent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     system_prompt="You are a research assistant.",
     max_loops=10,
     context_length=8192,
@@ -446,7 +446,7 @@ agent.run("Deep-dive analysis of transformer architecture papers.")
 # --- Disabled: keep every raw message intact ---
 audit_agent = Agent(
     agent_name="Audit-Agent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     system_prompt="You are a compliance auditor.",
     context_compression=False,  # never rewrite history
 )
@@ -462,7 +462,7 @@ from swarms import Agent
 # Persistent across runs + automatic context management (production default)
 production_agent = Agent(
     agent_name="Production-Agent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     system_prompt="You are a customer support assistant.",
     persistent_memory=True,       # remember users between sessions
     context_compression=True,     # keep the window healthy automatically
@@ -472,7 +472,7 @@ production_agent = Agent(
 # Stateless + no compression (CI / unit-test friendly)
 test_agent = Agent(
     agent_name="Test-Agent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     system_prompt="You are a helpful assistant.",
     persistent_memory=False,      # no disk I/O
     context_compression=False,    # raw, deterministic history
@@ -875,7 +875,7 @@ from swarms.structs.agent import Agent
 agent = Agent(
     agent_name="Quantitative-Trading-Agent",
     agent_description="Advanced quantitative trading and algorithmic analysis agent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     dynamic_temperature_enabled=True,
     max_loops="auto",  # Enable autonomous planning and execution
     dynamic_context_window=True,
@@ -944,7 +944,7 @@ from swarms.structs.agent import Agent
 # Initialize autonomous agent
 agent = Agent(
     agent_name="File-Management-Agent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops="auto",
     interactive=False,
 )
@@ -993,7 +993,7 @@ from swarms.structs.agent import Agent
 coordinator = Agent(
     agent_name="Research-Coordinator",
     agent_description="Coordinates complex research by delegating to specialized sub-agents",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops="auto",
     selected_tools="all",  # Enable all autonomous tools including sub-agent tools
 )
@@ -1109,7 +1109,7 @@ from swarms import Agent
 # Agent with multiple loops for iterative reasoning
 agent = Agent(
     agent_name="Iterative-Reasoning-Agent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=3,  # Run 3 reasoning loops
     reasoning_prompt_on=True,
     system_prompt="You are an agent that reasons through problems step by step.",
@@ -1129,7 +1129,7 @@ from swarms import Agent
 # Agent with dynamic loops that adjust based on task complexity
 agent = Agent(
     agent_name="Dynamic-Agent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     dynamic_loops=True,  # Automatically determines number of loops
     system_prompt="You are an adaptive agent that adjusts your reasoning depth based on task complexity.",
 )
@@ -1192,7 +1192,7 @@ load_dotenv()
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
     system_prompt=None,  # System prompt is dynamically generated
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     agent_description=None,
     max_loops=1,
     autosave=True,
@@ -1224,7 +1224,7 @@ from swarms import Agent
 
 # Initialize agent with detailed streaming
 agent = Agent(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     stream=True,  # Enable detailed token-by-token streaming
 )
@@ -1397,7 +1397,7 @@ agent = Agent(
     output_type="json",
     
     # LLM Configuration
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     temperature=0.3,
     max_tokens=8000,
     top_p=0.95,

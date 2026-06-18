@@ -1,14 +1,5 @@
 from swarms.structs.agent import Agent
-from swarms.structs.groupchat import (
-    GroupChat,
-    round_robin,
-    expertise_based,
-    random_selection,
-    sentiment_based,
-    length_based,
-    question_based,
-    topic_based,
-)
+from swarms.structs.groupchat import GroupChat, RESPOND_TOOL
 from datetime import datetime
 import time
 
@@ -66,7 +57,14 @@ class TestReport:
 
 
 def create_test_agents(num_agents, diverse_prompts=False):
-    """Helper function to create test agents with diverse prompts"""
+    """Helper function to create test agents with diverse prompts.
+
+    Each agent is configured for the new dynamic GroupChat:
+    - ``tools_list_dictionary=[RESPOND_TOOL]`` so the agent emits a structured
+      ``respond(score, message)`` decision per inbound message.
+    - ``max_loops=1`` because GroupChat itself orchestrates iterations.
+    - ``persistent_memory=False`` so test runs do not pollute on-disk memory.
+    """
     agents = []
     specialties = [
         (
@@ -94,7 +92,6 @@ def create_test_agents(num_agents, diverse_prompts=False):
     for i in range(num_agents):
         specialty, base_prompt = specialties[i % len(specialties)]
         if diverse_prompts:
-            # Add personality traits and communication style to make responses more diverse
             traits = [
                 "Be analytical and data-focused",
                 "Use analogies and examples",
@@ -112,14 +109,16 @@ def create_test_agents(num_agents, diverse_prompts=False):
                 system_prompt=prompt,
                 model_name="gpt-4",
                 max_loops=1,
-                temperature=0.7,  # Add temperature to increase response variety
+                temperature=0.7,
+                persistent_memory=False,
+                tools_list_dictionary=[RESPOND_TOOL],
             )
         )
     return agents
 
 
 def test_basic_groupchat(report):
-    """Test basic GroupChat initialization and conversation"""
+    """Test basic GroupChat initialization and a single conversation run."""
     start_time = time.time()
 
     try:
@@ -129,9 +128,11 @@ def test_basic_groupchat(report):
             description="A test group chat",
             agents=agents,
             max_loops=2,
+            idle_timeout=4.0,
         )
 
-        chat.run("Say hello!")
+        result = chat.run("Say hello!")
+        assert result is not None
         report.add_result(
             "Basic GroupChat Test",
             True,
@@ -147,79 +148,22 @@ def test_basic_groupchat(report):
         )
 
 
-def test_speaker_functions(report):
-    """Test all available speaker functions with enhanced prompts"""
-    speaker_functions = {
-        "round_robin": (
-            round_robin,
-            "What are your thoughts on sustainable practices?",
-        ),
-        "expertise_based": (
-            expertise_based,
-            "Discuss the impact of AI on your field.",
-        ),
-        "random_selection": (
-            random_selection,
-            "How do you approach problem-solving?",
-        ),
-        "sentiment_based": (
-            sentiment_based,
-            "Share your positive outlook on future trends.",
-        ),
-        "length_based": (
-            length_based,
-            "Provide a detailed analysis of recent developments.",
-        ),
-        "question_based": (
-            question_based,
-            "What challenges do you foresee in your industry?",
-        ),
-        "topic_based": (
-            topic_based,
-            "How does digital transformation affect your sector?",
-        ),
-    }
-
-    for name, (func, prompt) in speaker_functions.items():
-        start_time = time.time()
-        try:
-            # Create agents with diverse prompts for this test
-            agents = create_test_agents(3, diverse_prompts=True)
-            chat = GroupChat(
-                name=f"{name.title()} Test",
-                description=f"Testing {name} speaker function with diverse responses",
-                agents=agents,
-                speaker_fn=func,
-                max_loops=2,
-                rules="1. Be unique in your responses\n2. Build on others' points\n3. Stay relevant to your expertise",
-            )
-
-            chat.run(prompt)
-            report.add_result(
-                f"Speaker Function - {name}",
-                True,
-                duration=time.time() - start_time,
-            )
-
-        except Exception as e:
-            report.add_result(
-                f"Speaker Function - {name}",
-                False,
-                message=str(e),
-                duration=time.time() - start_time,
-            )
-
-
 def test_varying_agent_counts(report):
-    """Test GroupChat with different numbers of agents"""
-    agent_counts = [1, 3, 5, 7]
+    """Test GroupChat with different numbers of agents.
+
+    GroupChat now requires at least 2 agents, so we test 2, 3, and 5.
+    """
+    agent_counts = [2, 3, 5]
 
     for count in agent_counts:
         start_time = time.time()
         try:
             agents = create_test_agents(count)
             chat = GroupChat(
-                name=f"{count}-Agent Test", agents=agents, max_loops=2
+                name=f"{count}-Agent Test",
+                agents=agents,
+                max_loops=2,
+                idle_timeout=4.0,
             )
 
             chat.run("Introduce yourselves briefly.")
@@ -238,35 +182,88 @@ def test_varying_agent_counts(report):
             )
 
 
+def test_threshold_behavior(report):
+    """Test GroupChat with high and low publish thresholds.
+
+    A high ``threshold`` (0.9) makes agents very selective; a low threshold
+    (0.1) makes them eager to publish. Both must run without error.
+    """
+    for label, threshold in (("high", 0.9), ("low", 0.1)):
+        start_time = time.time()
+        try:
+            agents = create_test_agents(2)
+            chat = GroupChat(
+                name=f"Threshold-{label}",
+                agents=agents,
+                max_loops=2,
+                threshold=threshold,
+                idle_timeout=4.0,
+            )
+            chat.run("Briefly comment on the future of remote work.")
+            report.add_result(
+                f"Threshold Behavior - {label} ({threshold})",
+                True,
+                duration=time.time() - start_time,
+            )
+        except Exception as e:
+            report.add_result(
+                f"Threshold Behavior - {label} ({threshold})",
+                False,
+                message=str(e),
+                duration=time.time() - start_time,
+            )
+
+
+def test_idle_timeout(report):
+    """Test GroupChat early termination via a small ``idle_timeout``.
+
+    With a 1-second idle timeout, the chat should stop quickly once no new
+    messages are produced. We verify completion within a generous wall-clock
+    budget that still confirms early termination.
+    """
+    start_time = time.time()
+    try:
+        agents = create_test_agents(2)
+        chat = GroupChat(
+            name="Idle Timeout Test",
+            agents=agents,
+            max_loops=50,  # high cap so termination must come from idle
+            idle_timeout=1.0,
+            threshold=0.99,  # extremely selective → silence is likely
+        )
+        chat.run("Hello there.")
+        elapsed = time.time() - start_time
+
+        # If idle_timeout works, total runtime should not blow past max_loops.
+        # We assert it finished in a reasonable window (well under 60s).
+        assert (
+            elapsed < 60
+        ), f"Idle timeout did not fire in time: {elapsed:.1f}s"
+
+        report.add_result(
+            "Idle Timeout Test",
+            True,
+            message=f"Completed in {elapsed:.2f}s",
+            duration=elapsed,
+        )
+    except Exception as e:
+        report.add_result(
+            "Idle Timeout Test",
+            False,
+            message=str(e),
+            duration=time.time() - start_time,
+        )
+
+
 def test_error_cases(report):
-    """Test error handling with expanded cases"""
+    """Test error handling for the new GroupChat constructor."""
     test_cases = [
         ("Empty Agents List", lambda: GroupChat(agents=[])),
         (
-            "Invalid Max Loops",
-            lambda: GroupChat(
-                agents=[create_test_agents(1)[0]], max_loops=0
-            ),
+            "Single Agent",
+            lambda: GroupChat(agents=create_test_agents(1)),
         ),
-        (
-            "Empty Task",
-            lambda: GroupChat(agents=[create_test_agents(1)[0]]).run(
-                ""
-            ),
-        ),
-        (
-            "None Task",
-            lambda: GroupChat(agents=[create_test_agents(1)[0]]).run(
-                None
-            ),
-        ),
-        (
-            "Invalid Speaker Function",
-            lambda: GroupChat(
-                agents=[create_test_agents(1)[0]],
-                speaker_fn=lambda x, y: "not a boolean",  # This should raise ValueError
-            ),
-        ),
+        ("None Agents", lambda: GroupChat(agents=None)),
     ]
 
     for name, test_func in test_cases:
@@ -279,10 +276,7 @@ def test_error_cases(report):
                 message="Expected ValueError not raised",
                 duration=time.time() - start_time,
             )
-        except (
-            ValueError,
-            TypeError,
-        ):  # Include TypeError for invalid speaker function
+        except ValueError:
             report.add_result(
                 f"Error Case - {name}",
                 True,
@@ -292,97 +286,22 @@ def test_error_cases(report):
             report.add_result(
                 f"Error Case - {name}",
                 False,
-                message=f"Unexpected error: {str(e)}",
+                message=f"Unexpected error: {type(e).__name__}: {e}",
                 duration=time.time() - start_time,
             )
-
-
-def test_concurrent_execution(report):
-    """Test concurrent execution with various task counts"""
-    start_time = time.time()
-
-    try:
-        agents = create_test_agents(3)
-        chat = GroupChat(
-            name="Concurrent Test", agents=agents, max_loops=1
-        )
-
-        tasks = [
-            "Task 1: Introduce yourself",
-            "Task 2: What's your specialty?",
-            "Task 3: How can you help?",
-            "Task 4: What are your limitations?",
-            "Task 5: Give an example of your expertise",
-        ]
-
-        results = chat.concurrent_run(tasks)
-        report.add_result(
-            "Concurrent Execution Test",
-            True,
-            message=f"Successfully completed {len(results)} tasks",
-            duration=time.time() - start_time,
-        )
-
-    except Exception as e:
-        report.add_result(
-            "Concurrent Execution Test",
-            False,
-            message=str(e),
-            duration=time.time() - start_time,
-        )
-
-
-def test_conversation_rules(report):
-    """Test GroupChat with different conversation rules"""
-    start_time = time.time()
-
-    try:
-        agents = create_test_agents(3, diverse_prompts=True)
-        chat = GroupChat(
-            name="Rules Test",
-            description="Testing conversation with specific rules",
-            agents=agents,
-            max_loops=2,
-            rules="""
-            1. Keep responses under 50 words
-            2. Always be professional
-            3. Stay on topic
-            4. Provide unique perspectives
-            5. Build on previous responses
-            """,
-        )
-
-        chat.run(
-            "How can we ensure ethical AI development across different sectors?"
-        )
-        report.add_result(
-            "Conversation Rules Test",
-            True,
-            duration=time.time() - start_time,
-        )
-
-    except Exception as e:
-        report.add_result(
-            "Conversation Rules Test",
-            False,
-            message=str(e),
-            duration=time.time() - start_time,
-        )
 
 
 if __name__ == "__main__":
     report = TestReport()
     report.start()
 
-    print("Starting Enhanced GroupChat Test Suite...\n")
+    print("Starting GroupChat Test Suite...\n")
 
-    # Run all tests
     test_basic_groupchat(report)
-    test_speaker_functions(report)
     test_varying_agent_counts(report)
+    test_threshold_behavior(report)
+    test_idle_timeout(report)
     test_error_cases(report)
-    test_concurrent_execution(report)
-    test_conversation_rules(report)
 
     report.end()
     print(report.generate_report())

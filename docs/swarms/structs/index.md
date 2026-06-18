@@ -29,7 +29,7 @@ Multi-agent systems unlock new levels of intelligence, reliability, and efficien
 | **[AgentRearrange](https://docs.swarms.world/swarms/structs/agent_rearrange/)** | Dynamically maps complex relationships (e.g., `a -> b, c`) between agents. | Flexible and adaptive workflows, task distribution, dynamic routing. |
 | **[GraphWorkflow](https://docs.swarms.world/swarms/structs/graph_workflow/)** | Orchestrates agents as nodes in a Directed Acyclic Graph (DAG). | Complex projects with intricate dependencies, like software builds. |
 | **[MixtureOfAgents (MoA)](https://docs.swarms.world/swarms/structs/moa/)** | Utilizes multiple expert agents in parallel and synthesizes their outputs. | Complex problem-solving, achieving state-of-the-art performance through collaboration. |
-| **[GroupChat](https://docs.swarms.world/swarms/structs/group_chat/)** | Agents collaborate and make decisions through a conversational interface. | Real-time collaborative decision-making, negotiations, brainstorming. |
+| **[GroupChat](https://docs.swarms.world/swarms/structs/group_chat/)** | Asynchronous self-selecting chat — each agent decides independently whether each message is worth a reply. | Real-time collaborative decision-making, negotiations, brainstorming. |
 | **[ForestSwarm](https://docs.swarms.world/swarms/structs/forest_swarm/)** | Dynamically selects the most suitable agent or tree of agents for a given task. | Task routing, optimizing for expertise, complex decision-making trees. |
 | **[SpreadSheetSwarm](https://docs.swarms.world/swarms/structs/spreadsheet_swarm/)** | Manages thousands of agents concurrently, tracking tasks and outputs in a structured format. | Massive-scale parallel operations, large-scale data generation and analysis. |
 | **[SwarmRouter](https://docs.swarms.world/swarms/structs/swarm_router/)** | Universal orchestrator that provides a single interface to run any type of swarm with dynamic selection. | Simplifying complex workflows, switching between swarm strategies, unified multi-agent management. |
@@ -52,12 +52,12 @@ from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 research_agent = Agent(
     agent_name="Research-Specialist",
     agent_description="Expert in market research and analysis",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
 )
 financial_agent = Agent(
     agent_name="Financial-Analyst",
     agent_description="Specialist in financial analysis and valuation",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
 )
 
 # Initialize the hierarchical swarm
@@ -256,19 +256,37 @@ print(recommendation)
 
 ### GroupChat
 
-`GroupChat` creates a conversational environment where multiple agents can interact, discuss, and collaboratively solve a problem. You can define the speaking order or let it be determined dynamically. This architecture is ideal for tasks that benefit from debate and multi-perspective reasoning, such as contract negotiation, brainstorming, or complex decision-making.
+`GroupChat` is an asynchronous, self-selecting chat room. Every agent listens to every broadcast message in parallel, and for each message it independently scores how much it wants to reply via a forced `respond(score, message)` tool call. Replies whose score exceeds `threshold` are broadcast back into the room. The chat ends when either `max_loops` total messages have been posted or no new message arrives for `idle_timeout` seconds. This architecture is ideal for tasks that benefit from debate and multi-perspective reasoning, such as contract negotiation, brainstorming, or complex decision-making.
 
 ```python
-from swarms import Agent, GroupChat
+from swarms import Agent, GroupChat, RESPOND_TOOL
 
-# Define agents for a debate
-tech_optimist = Agent(agent_name="TechOptimist", system_prompt="Argue for the benefits of AI in society.", model_name="gpt-5.4")
-tech_critic = Agent(agent_name="TechCritic", system_prompt="Argue against the unchecked advancement of AI.", model_name="gpt-5.4")
+# Every participant must carry the RESPOND_TOOL schema so the chat can read
+# its structured (score, message) decision on each turn.
+tech_optimist = Agent(
+    agent_name="TechOptimist",
+    system_prompt="Argue for the benefits of AI in society.",
+    model_name="gpt-5.4",
+    max_loops=1,
+    persistent_memory=False,
+    tools_list_dictionary=[RESPOND_TOOL],
+)
+
+tech_critic = Agent(
+    agent_name="TechCritic",
+    system_prompt="Argue against the unchecked advancement of AI.",
+    model_name="gpt-5.4",
+    max_loops=1,
+    persistent_memory=False,
+    tools_list_dictionary=[RESPOND_TOOL],
+)
 
 # Create the group chat
 chat = GroupChat(
     agents=[tech_optimist, tech_critic],
-    max_loops=4, # Limit the number of turns in the conversation
+    max_loops=8,        # hard cap on total messages posted
+    threshold=0.5,      # only broadcast replies with score > 0.5
+    idle_timeout=8.0,   # stop after 8s of silence
 )
 
 # Run the chat with an initial topic
@@ -276,9 +294,7 @@ conversation_history = chat.run(
     "Let's discuss the societal impact of artificial intelligence."
 )
 
-# Print the full conversation
-for message in conversation_history:
-    print(f"[{message['agent_name']}]: {message['content']}")
+print(conversation_history)
 ```
 
 --

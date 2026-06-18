@@ -6,13 +6,13 @@ def main():
         Agent(
             agent_name="Researcher",
             system_prompt="You provide concise research notes.",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
         ),
         Agent(
             agent_name="Writer",
             system_prompt="You turn ideas into clear summaries.",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_loops=1,
         ),
     ]

@@ -123,7 +123,7 @@ from swarms.structs.agent import Agent
 coordinator = Agent(
     agent_name="Research-Coordinator",
     agent_description="Coordinates parallel research across multiple domains",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops="auto",
     interactive=False,
 )
@@ -338,7 +338,7 @@ from swarms.structs.agent import Agent
 coordinator = Agent(
     agent_name="Market-Research-Lead",
     agent_description="Coordinates parallel market research across sectors",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops="auto",
     interactive=False,
 )
@@ -372,7 +372,7 @@ from swarms.structs.agent import Agent
 coordinator = Agent(
     agent_name="Data-Pipeline-Manager",
     agent_description="Manages long-running data processing pipelines",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops="auto",
     interactive=False,
 )
@@ -401,7 +401,7 @@ from swarms.structs.agent import Agent
 coordinator = Agent(
     agent_name="Content-Director",
     agent_description="Directs content creation across formats and audiences",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops="auto",
     interactive=False,
 )
@@ -439,7 +439,7 @@ from swarms.structs.agent import Agent
 coordinator = Agent(
     agent_name="Delegation-Only-Coordinator",
     agent_description="Coordinates work purely through sub-agent delegation",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops="auto",
     interactive=False,
     selected_tools=[

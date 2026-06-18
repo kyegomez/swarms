@@ -82,7 +82,7 @@ from swarms.structs.llm_council import LLMCouncil, get_gpt_councilor_prompt
 custom_agent = Agent(
     agent_name="Custom-Councilor",
     system_prompt=get_gpt_councilor_prompt(),
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 

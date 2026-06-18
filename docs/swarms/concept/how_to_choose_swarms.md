@@ -468,13 +468,13 @@ print(recommendation)
 
 [📖 Documentation](https://docs.swarms.world/swarms/structs/group_chat/)
 
-GroupChat creates a conversational environment where multiple agents can interact, discuss, and collaboratively solve problems. Agents take turns in conversation, building on each other's ideas and reaching consensus through dialogue. This architecture is ideal for brainstorming, negotiation, and complex decision-making requiring iterative discussion.
+GroupChat is an asynchronous, self-selecting room. Every agent listens to every broadcast message in parallel and independently scores how much it wants to reply via a forced `respond(score, message)` tool call. Replies whose score exceeds the configured `threshold` are broadcast back into the room. There are no rounds, no turn order, and no central speaker selector — agents decide for themselves whether each message is worth a response. The chat ends when either `max_loops` total messages have been posted or no new message arrives for `idle_timeout` seconds.
 
 Best For: GroupChat is ideal for brainstorming sessions, negotiation and debate, collaborative problem-solving, real-time decision-making, creative ideation, and contract or agreement drafting.
 
-Advantages: This architecture enables natural conversational interaction, builds on collective intelligence, allows for clarification and follow-up, and mimics human collaborative processes.
+Advantages: This architecture lets specialised agents stay silent on messages outside their expertise, mixes model providers transparently, and scales to many participants without a coordinator bottleneck.
 
-Trade-offs: GroupChat can be unpredictable in direction, may require careful moderation, has conversation length that can be variable, and is not suitable for time-critical tasks.
+Trade-offs: GroupChat can be unpredictable in direction, requires `threshold` tuning to avoid either silent rooms or runaway chatter, has variable conversation length, and is not suitable for time-critical tasks.
 
 ### Architecture Diagram
 
@@ -499,50 +499,54 @@ graph TD
 ### Code Example
 
 ```python
-from swarms import Agent, GroupChat
+from swarms import Agent, GroupChat, RESPOND_TOOL
 
-# Define agents with different perspectives for a debate
+# Define agents with different perspectives for an asynchronous discussion.
+# Every participant must include tools_list_dictionary=[RESPOND_TOOL] so the
+# chat can read each agent's structured (score, message) decision.
+
 optimist = Agent(
     agent_name="TechnologyOptimist",
     system_prompt="Argue for the benefits and opportunities of AI advancement. Focus on positive impacts.",
     model_name="anthropic/claude-sonnet-4-5",
-    top_p=None,
     max_loops=1,
-    dynamic_temperature_enabled=True,
+    persistent_memory=False,
+    tools_list_dictionary=[RESPOND_TOOL],
 )
 
 critic = Agent(
     agent_name="TechnologyCritic",
     system_prompt="Critically examine AI development challenges, risks, and potential negative consequences.",
     model_name="anthropic/claude-sonnet-4-5",
-    top_p=None,
     max_loops=1,
-    dynamic_temperature_enabled=True,
+    persistent_memory=False,
+    tools_list_dictionary=[RESPOND_TOOL],
 )
 
 ethicist = Agent(
     agent_name="EthicsSpecialist",
     system_prompt="Focus on ethical implications, responsible AI development, and societal considerations.",
     model_name="anthropic/claude-sonnet-4-5",
-    top_p=None,
     max_loops=1,
-    dynamic_temperature_enabled=True,
+    persistent_memory=False,
+    tools_list_dictionary=[RESPOND_TOOL],
 )
 
 moderator = Agent(
     agent_name="Moderator",
     system_prompt="Facilitate constructive dialogue, ensure all voices are heard, and help reach balanced conclusions.",
     model_name="anthropic/claude-sonnet-4-5",
-    top_p=None,
     max_loops=1,
-    dynamic_temperature_enabled=True,
+    persistent_memory=False,
+    tools_list_dictionary=[RESPOND_TOOL],
 )
 
-# Create the group chat with controlled conversation length
+# Create the group chat. Replies are broadcast only when score > threshold.
 chat = GroupChat(
     agents=[optimist, critic, ethicist, moderator],
-    max_loops=6,  # Limit conversation turns for focused discussion
-    speaker_selection_method="round_robin"  # Alternating turns
+    max_loops=10,        # hard cap on total messages
+    threshold=0.55,      # raise to silence weak replies, lower for liveliness
+    idle_timeout=8.0,    # stop after 8 seconds with no new message
 )
 
 # Run the collaborative discussion
@@ -553,10 +557,7 @@ conversation_history = chat.run(
 
 # Display the full conversation
 print("=== Group Chat Discussion ===\n")
-for i, message in enumerate(conversation_history, 1):
-    print(f"Turn {i}: [{message['agent_name']}]")
-    print(f"{message['content']}\n")
-    print("-" * 50)
+print(conversation_history)
 ```
 
 ---

@@ -16,7 +16,7 @@ def test_pge_basic_initialization():
     harness = PlannerGeneratorEvaluator(
         name="Test-PGE-Harness",
         description="Test harness for PGE",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_steps=3,
         max_retries_per_step=2,
     )
@@ -36,15 +36,15 @@ def test_pge_basic_initialization():
 def test_pge_custom_model_names():
     """Test PGE with different models per agent"""
     harness = PlannerGeneratorEvaluator(
-        model_name="gpt-4.1",
-        planner_model_name="gpt-4.1",
-        generator_model_name="gpt-4.1",
-        evaluator_model_name="gpt-4.1",
+        model_name="gpt-5.4",
+        planner_model_name="gpt-5.4",
+        generator_model_name="gpt-5.4",
+        evaluator_model_name="gpt-5.4",
     )
 
-    assert harness.planner_model_name == "gpt-4.1"
-    assert harness.generator_model_name == "gpt-4.1"
-    assert harness.evaluator_model_name == "gpt-4.1"
+    assert harness.planner_model_name == "gpt-5.4"
+    assert harness.generator_model_name == "gpt-5.4"
+    assert harness.evaluator_model_name == "gpt-5.4"
 
 
 def test_pge_with_custom_agents():
@@ -52,7 +52,7 @@ def test_pge_with_custom_agents():
     custom_generator = Agent(
         agent_name="Custom-Generator",
         agent_description="Generator with custom config",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         verbose=False,
         print_on=False,
@@ -61,14 +61,14 @@ def test_pge_with_custom_agents():
     custom_evaluator = Agent(
         agent_name="Custom-Evaluator",
         agent_description="Evaluator with custom config",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         verbose=False,
         print_on=False,
     )
 
     harness = PlannerGeneratorEvaluator(
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         generator_agent=custom_generator,
         evaluator_agent=custom_evaluator,
     )
@@ -102,7 +102,7 @@ def test_pge_error_handling():
 def test_pge_run_validates_task():
     """Test that run() rejects empty tasks"""
     harness = PlannerGeneratorEvaluator(
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
     )
 
     try:
@@ -117,7 +117,7 @@ def test_pge_shared_state_file(tmp_path):
     shared_state_path = str(tmp_path / "state.md")
 
     harness = PlannerGeneratorEvaluator(
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         shared_state_path=shared_state_path,
     )
 
@@ -139,7 +139,7 @@ def test_pge_shared_state_file(tmp_path):
 def test_pge_extract_step_count():
     """Test step count extraction from plan text"""
     harness = PlannerGeneratorEvaluator(
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_steps=10,
     )
 
@@ -167,7 +167,7 @@ def test_pge_extract_step_count():
 def test_pge_extract_thresholds():
     """Test threshold extraction from plan's evaluation criteria table"""
     harness = PlannerGeneratorEvaluator(
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
     )
 
     plan = """
@@ -186,7 +186,7 @@ def test_pge_extract_thresholds():
 def test_pge_parse_evaluation_pass():
     """Test evaluation parsing when all criteria pass"""
     harness = PlannerGeneratorEvaluator(
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
     )
 
     raw = """
@@ -211,7 +211,7 @@ def test_pge_parse_evaluation_pass():
 def test_pge_parse_evaluation_fail():
     """Test evaluation parsing when a criterion fails"""
     harness = PlannerGeneratorEvaluator(
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
     )
 
     raw = """
@@ -261,7 +261,7 @@ def test_pge_execution():
 
         harness = PlannerGeneratorEvaluator(
             name="Test-Execution-Harness",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             max_steps=2,
             max_retries_per_step=1,
             shared_state_path=shared_state_path,

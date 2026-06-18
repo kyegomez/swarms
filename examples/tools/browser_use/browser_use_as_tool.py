@@ -36,7 +36,7 @@ class BrowserUseAgent:
         """
         agent = BrowserAgent(
             task=task,
-            llm=ChatOpenAI(model="gpt-4.1"),
+            llm=ChatOpenAI(model="gpt-5.4"),
         )
         result = await agent.run()
         return result.model_dump_json(indent=4)
@@ -85,7 +85,7 @@ def browser_agent_tool(task: str):
 
 agent = Agent(
     name="Browser Agent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     tools=[browser_agent_tool],
 )
 

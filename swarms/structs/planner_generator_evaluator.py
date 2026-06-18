@@ -186,19 +186,19 @@ class PlannerGeneratorEvaluator:
 
     Examples:
         >>> # Simple usage with defaults
-        >>> harness = PlannerGeneratorEvaluator(model_name="gpt-4.1")
+        >>> harness = PlannerGeneratorEvaluator(model_name="gpt-5.4")
         >>> result = harness.run("Write a market analysis report for EV batteries")
 
         >>> # With custom agents that have tools (e.g., Evaluator with Playwright MCP)
         >>> from swarms import Agent
         >>> evaluator = Agent(
         ...     agent_name="PGE-Evaluator",
-        ...     model_name="gpt-4.1",
+        ...     model_name="gpt-5.4",
         ...     max_loops=1,
         ...     mcp_config={"url": "http://localhost:3000/playwright"},
         ... )
         >>> harness = PlannerGeneratorEvaluator(
-        ...     model_name="gpt-4.1",
+        ...     model_name="gpt-5.4",
         ...     evaluator_agent=evaluator,
         ... )
         >>> result = harness.run("Build a todo app with React frontend")
@@ -209,7 +209,7 @@ class PlannerGeneratorEvaluator:
         id: str = None,
         name: str = "PlannerGeneratorEvaluator",
         description: str = "Three-agent Planner-Generator-Evaluator harness with iterative feedback loop",
-        model_name: str = "gpt-4.1",
+        model_name: str = "gpt-5.4",
         planner_model_name: Optional[str] = None,
         generator_model_name: Optional[str] = None,
         evaluator_model_name: Optional[str] = None,

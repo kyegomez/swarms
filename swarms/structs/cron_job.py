@@ -473,7 +473,7 @@ class CronJob:
 
 #         You communicate in precise, technical terms while maintaining clarity for stakeholders.""",
 #         max_loops=1,
-#         model_name="gpt-4.1",
+#         model_name="gpt-5.4",
 #         dynamic_temperature_enabled=True,
 #         output_type="str-all-except-first",
 #         streaming_on=True,
