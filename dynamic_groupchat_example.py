@@ -37,6 +37,7 @@ chat = GroupChat(
     max_loops=4,
     threshold=0.6,
     output_type="dict",
+    auto_equip=True,
 )
 
 result = chat.run(
