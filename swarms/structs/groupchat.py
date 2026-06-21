@@ -52,7 +52,7 @@ Example:
 import asyncio
 import json
 import time
-from typing import Any, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -196,6 +196,7 @@ class GroupChat(SerializableMixin):
         verbose: bool = False,
         print_on: bool = True,
         auto_equip: bool = True,
+        streaming_callback: Optional[Callable[[str, str, bool], None]] = None,
     ):
         """Initialize the dynamic groupchat runtime.
 
@@ -210,6 +211,8 @@ class GroupChat(SerializableMixin):
             idle_timeout: Seconds of inactivity before the chat stops.
             output_type: Format passed to ``history_output_formatter``.
             verbose: Whether to emit internal log messages.
+            streaming_callback: Optional callback function for streaming updates.
+                Called with (agent_name, content, is_final) parameters.
 
         Raises:
             ValueError: If fewer than two agents are provided.
@@ -224,6 +227,7 @@ class GroupChat(SerializableMixin):
         self.verbose = verbose
         self.print_on = print_on
         self.auto_equip = auto_equip
+        self.streaming_callback = streaming_callback
 
         self.conversation = Conversation(time_enabled=True)
 
@@ -299,6 +303,7 @@ class GroupChat(SerializableMixin):
         score: Optional[float],
         inboxes: dict,
         state: dict,
+        streaming_callback: Optional[Callable] = None,
     ) -> None:
         """Record a message and enqueue it for every other agent.
 
@@ -330,6 +335,9 @@ class GroupChat(SerializableMixin):
             )
             style = "bold green" if score is None else "bold blue"
             formatter.print_panel(content, title=title, style=style)
+
+        if streaming_callback is not None:
+            streaming_callback(sender, content, False)
 
         for name, inbox in inboxes.items():
             if name == sender:
@@ -376,6 +384,7 @@ class GroupChat(SerializableMixin):
                     score=score,
                     inboxes=inboxes,
                     state=state,
+                    streaming_callback=state.get("streaming_callback"),
                 )
 
     async def _idle_monitor(self, state: dict) -> None:
@@ -394,15 +403,24 @@ class GroupChat(SerializableMixin):
                 stop.set()
                 return
 
-    async def _run_async(self, task: str) -> Any:
+    async def _run_async(
+        self, task: str, streaming_callback_override: Optional[Callable] = None
+    ) -> Any:
         """Run the groupchat asynchronously and return formatted history.
 
         Args:
             task: Initial user message that seeds every agent's inbox.
+            streaming_callback_override: Optional per-call streaming callback.
 
         Returns:
             Conversation history formatted according to ``self.output_type``.
         """
+        effective_callback = (
+            streaming_callback_override
+            if streaming_callback_override is not None
+            else self.streaming_callback
+        )
+
         self._log("info", f"[{self.name}] initial task: {task}")
 
         inboxes = {a.agent_name: asyncio.Queue() for a in self.agents}
@@ -411,6 +429,7 @@ class GroupChat(SerializableMixin):
             "stop": asyncio.Event(),
             "last_activity": time.monotonic(),
             "message_count": 0,
+            "streaming_callback": effective_callback,
         }
 
         await self._broadcast(
@@ -419,6 +438,7 @@ class GroupChat(SerializableMixin):
             score=None,
             inboxes=inboxes,
             state=state,
+            streaming_callback=effective_callback,
         )
 
         agent_tasks = [
@@ -440,28 +460,49 @@ class GroupChat(SerializableMixin):
             *agent_tasks, monitor_task, return_exceptions=True
         )
 
+        if effective_callback is not None:
+            for agent in self.agents:
+                effective_callback(agent.agent_name, "", True)
+
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
         )
 
-    def run(self, task: str) -> Any:
+    def run(
+        self,
+        task: str,
+        streaming_callback: Optional[Callable[[str, str, bool], None]] = None,
+    ) -> Any:
         """Synchronously run the groupchat until it becomes idle or capped.
 
         Args:
             task: Initial user task or message for the group.
+            streaming_callback: Optional per-call streaming callback.
+                If not provided, uses the instance-level streaming_callback
+                set during initialization.
 
         Returns:
             Formatted conversation output from ``_run_async``.
         """
-        return asyncio.run(self._run_async(task))
+        return asyncio.run(
+            self._run_async(task, streaming_callback_override=streaming_callback)
+        )
 
-    def run_batch(self, tasks: List[str]) -> List[Any]:
+    def run_batch(
+        self,
+        tasks: List[str],
+        streaming_callback: Optional[Callable[[str, str, bool], None]] = None,
+    ) -> List[Any]:
         """Run the groupchat in batch mode.
 
         Args:
             tasks: List of user tasks or messages for the group.
+            streaming_callback: Optional per-call streaming callback.
 
         Returns:
             List of formatted conversation outputs from ``_run_async``.
         """
-        return [self.run(task) for task in tasks]
+        return [
+            self.run(task, streaming_callback=streaming_callback)
+            for task in tasks
+        ]
