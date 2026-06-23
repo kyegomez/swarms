@@ -1,6 +1,7 @@
 import asyncio
 import concurrent.futures
 import os
+import time
 from typing import Any, Callable, List, Optional, Union
 
 from loguru import logger
@@ -114,20 +115,28 @@ def run_agents_concurrently(
         img (Optional[str]): Optional image data to pass to agent run() if supported.
         max_workers (Optional[int]): Maximum threads for the executor (default: 95% of CPU cores).
         return_agent_output_dict (bool): If True, returns a dict mapping agent names to outputs.
-                                         Otherwise returns a list of results in completion order.
+                                         Otherwise returns a list of results in input order.
+        per_task_timeout (Optional[float]): Maximum number of seconds to wait for each agent's
+                                         result, measured from the moment all agents were submitted
+                                         (not from when each result is collected). If an agent is
+                                         still running when its deadline elapses, its result is a
+                                         TimeoutError instead of the agent's output. The underlying
+                                         thread is not cancelled and may keep running in the
+                                         background; the executor is shut down without waiting for
+                                         it so this function itself does not block.
 
     Returns:
-        List[Any] or Dict[str, Any]: List of results from each agent's run() method in completion order,
+        List[Any] or Dict[str, Any]: List of results from each agent's run() method in input order,
                                      or a dict of agent names to results (preserving agent order)
                                      if return_agent_output_dict is True.
-                                     If an agent fails, the corresponding result is the Exception.
+                                     If an agent fails or times out, the corresponding result is
+                                     the Exception (or TimeoutError) instead of raising.
 
     Notes:
         - ThreadPoolExecutor is used for efficient, parallel execution.
         - By default, utilizes nearly all available CPU cores for optimal performance.
         - Any Exception during agent execution is caught and included in the results.
-        - If return_agent_output_dict is True, the results dict preserves agent input order.
-        - Otherwise, the results list is in order of completion (not input order).
+        - Both the list and dict return shapes preserve agent input order.
 
     Example:
         >>> agents = [Agent1(), Agent2()]
@@ -144,12 +153,12 @@ def run_agents_concurrently(
             num_cores = os.cpu_count()
             max_workers = int(num_cores * 0.95) if num_cores else 1
 
-        futures = []
-        agent_id_map = {}
-
-        with concurrent.futures.ThreadPoolExecutor(
+        executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=max_workers
-        ) as executor:
+        )
+        try:
+            futures = []
+            submitted_at = time.monotonic()
             for agent in agents:
                 agent_kwargs = {}
                 if task is not None:
@@ -158,43 +167,48 @@ def run_agents_concurrently(
                     agent_kwargs["img"] = img
                 future = executor.submit(agent.run, **agent_kwargs)
                 futures.append(future)
-                agent_id_map[future] = agent
+
+            def _collect(future, label):
+                if per_task_timeout is None:
+                    try:
+                        return future.result()
+                    except Exception as e:
+                        return e
+                remaining = max(
+                    0.0,
+                    per_task_timeout
+                    - (time.monotonic() - submitted_at),
+                )
+                try:
+                    return future.result(timeout=remaining)
+                except concurrent.futures.TimeoutError:
+                    return TimeoutError(
+                        f"Agent {label} timed out after {per_task_timeout}s"
+                    )
+                except Exception as e:
+                    return e
 
             if return_agent_output_dict:
                 output_dict = {}
                 for agent, future in zip(agents, futures):
-                    try:
-                        result = future.result(
-                            timeout=per_task_timeout
-                        )
-                    except concurrent.futures.TimeoutError:
-                        result = TimeoutError(
-                            f"Agent {getattr(agent, 'agent_name', agent)} timed out after {per_task_timeout}s"
-                        )
-                    except Exception as e:
-                        result = e
                     name = (
                         getattr(agent, "agent_name", None)
                         or getattr(agent, "name", None)
                         or str(agent)
                     )
-                    output_dict[name] = result
+                    output_dict[name] = _collect(future, name)
                 return output_dict
             else:
                 results = []
-                for future in futures:
-                    try:
-                        result = future.result(
-                            timeout=per_task_timeout
-                        )
-                    except concurrent.futures.TimeoutError:
-                        result = TimeoutError(
-                            f"Agent timed out after {per_task_timeout}s"
-                        )
-                    except Exception as e:
-                        result = e
-                    results.append(result)
+                for agent, future in zip(agents, futures):
+                    label = getattr(agent, "agent_name", agent)
+                    results.append(_collect(future, label))
                 return results
+        finally:
+            # Don't wait for stragglers past their timeout; the
+            # threads keep running in the background and are reaped
+            # by the executor once they finish.
+            executor.shutdown(wait=False)
 
     except Exception as e:
         logger.error(
