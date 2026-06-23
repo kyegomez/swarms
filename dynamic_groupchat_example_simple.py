@@ -8,7 +8,6 @@ a1 = Agent(
     model_name="gpt-5.5",
     max_loops=1,
     persistent_memory=False,
-    print_on=True,
     output_type="final",
 )
 
@@ -17,7 +16,6 @@ a2 = Agent(
     system_prompt="You push back on weak claims and ask sharp questions.",
     model_name="claude-haiku-4-5",
     max_loops=1,
-    print_on=True,
     persistent_memory=False,
     output_type="final",
 )
@@ -28,7 +26,6 @@ a3 = Agent(
     model_name="gpt-5.5",
     max_loops=1,
     persistent_memory=False,
-    print_on=True,
     output_type="final",
 )
 
@@ -38,6 +35,7 @@ chat = GroupChat(
     threshold=0.6,
     output_type="dict",
     auto_equip=True,
+    verbose=True,
 )
 
 result = chat.run(
