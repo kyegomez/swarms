@@ -60,7 +60,7 @@ Example:
 import asyncio
 import json
 from collections import deque
-from typing import Any, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 from swarms.prompts.groupchat_prompt import GROUPCHAT_DECIDE_PROMPT
 from swarms.structs.agent import Agent
@@ -178,6 +178,9 @@ class GroupChat(SerializableMixin):
         output_type: str = "str-all-except-first",
         verbose: bool = False,
         auto_equip: bool = True,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
     ):
         """Initialize the turn-based groupchat runtime.
 
@@ -200,6 +203,8 @@ class GroupChat(SerializableMixin):
             output_type: Format passed to ``history_output_formatter``.
             verbose: Whether to emit internal log messages and print each
                 posted message as a panel to stdout.
+            streaming_callback: Optional callback for streaming messages.
+                Called with (sender, content, is_final) for each posted message.
 
         Raises:
             ValueError: If fewer than two agents are provided.
@@ -215,6 +220,7 @@ class GroupChat(SerializableMixin):
         self.output_type = output_type
         self.verbose = verbose
         self.auto_equip = auto_equip
+        self.streaming_callback = streaming_callback
 
         self.conversation = Conversation(time_enabled=True)
 
@@ -284,7 +290,13 @@ class GroupChat(SerializableMixin):
         return _extract_args(tool_output)
 
     def _post(
-        self, sender: str, content: str, score: Optional[float]
+        self,
+        sender: str,
+        content: str,
+        score: Optional[float],
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
     ) -> None:
         """Record a message in the shared conversation and optionally print it.
 
@@ -309,6 +321,11 @@ class GroupChat(SerializableMixin):
             )
             style = "bold green" if score is None else "bold blue"
             formatter.print_panel(content, title=title, style=style)
+        if streaming_callback:
+            try:
+                streaming_callback(sender, content, False)
+            except Exception as e:
+                self._log("warning", f"Streaming callback failed: {e}")
 
     async def _collect_bids(
         self, sender: str, message: str, history: str
@@ -368,7 +385,13 @@ class GroupChat(SerializableMixin):
 
         return best
 
-    async def _run_async(self, task: str) -> Any:
+    async def _run_async(
+        self,
+        task: str,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+    ) -> Any:
         """Run the turn-based groupchat and return formatted history.
 
         Each turn: snapshot the shared history, collect a bid from every agent,
@@ -378,13 +401,20 @@ class GroupChat(SerializableMixin):
 
         Args:
             task: Initial user message that seeds the conversation.
+            streaming_callback: Optional callback for streaming messages.
+                Called with (sender, content, is_final) for each posted message.
 
         Returns:
             Conversation history formatted according to ``self.output_type``.
         """
         self._log("info", f"[{self.name}] initial task: {task}")
 
-        self._post(sender="User", content=task, score=None)
+        self._post(
+            sender="User",
+            content=task,
+            score=None,
+            streaming_callback=streaming_callback,
+        )
         last_sender, last_message = "User", task
 
         recent: "deque[str]" = deque(
@@ -408,34 +438,64 @@ class GroupChat(SerializableMixin):
 
             agent, score, reply = selection
             self._post(
-                sender=agent.agent_name, content=reply, score=score
+                sender=agent.agent_name,
+                content=reply,
+                score=score,
+                streaming_callback=streaming_callback,
             )
             recent.append(agent.agent_name)
             last_sender, last_message = agent.agent_name, reply
             message_count += 1
 
+        if streaming_callback:
+            try:
+                streaming_callback("", "", True)
+            except Exception as e:
+                self._log("warning", f"Streaming callback failed: {e}")
+
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
         )
 
-    def run(self, task: str) -> Any:
+    def run(
+        self,
+        task: str,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+    ) -> Any:
         """Synchronously run the groupchat until a lull or ``max_loops``.
 
         Args:
             task: Initial user task or message for the group.
+            streaming_callback: Optional callback for streaming messages.
+                Called with (sender, content, is_final) for each posted message.
 
         Returns:
             Formatted conversation output from ``_run_async``.
         """
-        return asyncio.run(self._run_async(task))
+        return asyncio.run(
+            self._run_async(task, streaming_callback=streaming_callback)
+        )
 
-    def run_batch(self, tasks: List[str]) -> List[Any]:
+    def run_batch(
+        self,
+        tasks: List[str],
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+    ) -> List[Any]:
         """Run the groupchat in batch mode.
 
         Args:
             tasks: List of user tasks or messages for the group.
+            streaming_callback: Optional callback for streaming messages.
+                Called with (sender, content, is_final) for each posted message.
 
         Returns:
             List of formatted conversation outputs from ``_run_async``.
         """
-        return [self.run(task) for task in tasks]
+        return [
+            self.run(task, streaming_callback=streaming_callback)
+            for task in tasks
+        ]
