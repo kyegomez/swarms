@@ -1,25 +1,3 @@
-"""
-Hierarchical Swarm Implementation
-
-This module provides a hierarchical swarm architecture where a director agent coordinates
-multiple worker agents to execute complex tasks through a structured workflow.
-
-Flow:
-1. User provides a task
-2. Director creates a plan
-3. Director distributes orders to agents individually or multiple tasks at once
-4. Agents execute tasks and report back to the director
-5. Director evaluates results and issues new orders if needed (up to max_loops)
-6. All context and conversation history is preserved throughout the process
-
-Todo
-- Add layers of management -- a list of list of agents that act as departments
-- Auto build agents from input prompt - and then add them to the swarm
-- Make it faster and more high performance
-- Enable the director to choose a multi-agent approach to the task, it orchestrates how the agents talk and work together.
-- Improve the director feedback, maybe add agent as a judge to the worker agent instead of the director.
-"""
-
 import asyncio
 import json
 import os
@@ -44,6 +22,7 @@ from swarms.prompts.multi_agent_collab_prompt import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.omni_agent_types import AgentListType
 from swarms.tools.base_tool import BaseTool
@@ -229,12 +208,6 @@ class HierarchicalSwarm:
         self.description = description
         self.director = director
         self.agents = agents
-        # O(1) agent lookup via dict - keyed by agent_name
-        self.agent_map = {
-            agent.agent_name: agent
-            for agent in (agents or [])
-            if hasattr(agent, "agent_name")
-        }
         self.max_loops = max_loops
         self.output_type = output_type
         self.feedback_director_model_name = (
@@ -517,6 +490,7 @@ class HierarchicalSwarm:
         self, task: str = None, img: Optional[str] = None
     ):
         try:
+
             agent = Agent(
                 agent_name=self.director_name,
                 agent_description="A director agent that can create a plan and distribute orders to agents",
@@ -990,18 +964,7 @@ class HierarchicalSwarm:
             Exception: If agent execution fails.
         """
         try:
-            # Find agent by name - O(1) lookup via dict
-            agent = self.agent_map.get(agent_name)
-
-            if agent is None:
-                available_agents = [
-                    a.agent_name
-                    for a in self.agents
-                    if hasattr(a, "agent_name")
-                ]
-                raise ValueError(
-                    f"Agent '{agent_name}' not found in swarm. Available agents: {available_agents}"
-                )
+            agent = find_agent_by_name(self.agents, agent_name)
 
             # Update dashboard for agent execution
             if self.interactive and self.dashboard:
@@ -1613,9 +1576,9 @@ class HierarchicalSwarm:
                         }
 
                 async def _worker_producer(order):
-                    agent = self.agent_map.get(order.agent_name)
-                    if agent is None:
-                        return
+                    agent = find_agent_by_name(
+                        self.agents, order.agent_name
+                    )
                     w_task = (
                         f"History: {self.conversation.get_str()} "
                         f"\n\n Task: {order.task}"
@@ -1707,9 +1670,9 @@ class HierarchicalSwarm:
                 # --- Sequential workers ---
                 worker_outputs = []
                 for order in orders:
-                    agent = self.agent_map.get(order.agent_name)
-                    if agent is None:
-                        continue
+                    agent = find_agent_by_name(
+                        self.agents, order.agent_name
+                    )
                     w_task = (
                         f"History: {self.conversation.get_str()} "
                         f"\n\n Task: {order.task}"
