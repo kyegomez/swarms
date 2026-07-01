@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import dataclasses, fnmatch, hashlib, hmac, os, re, secrets, shutil, signal, subprocess, sys, time
+import dataclasses, fnmatch, hashlib, hmac, os, re, secrets, shlex, shutil, signal, subprocess, sys, time
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Literal, Mapping, Optional, Sequence, Tuple, Union
 
@@ -16,8 +16,6 @@ class ArgvPatternDeniedError(SecurityError): pass
 class ConfirmationRequired(SecurityError):
     def __init__(self, tool: str, request_id: Optional[str] = None) -> None:
         super().__init__(f"Confirmation required for {tool!r}; pass confirm=True.")
-        self.tool = tool
-        self.request_id = request_id
         self.tool = tool
         self.request_id = request_id
 
@@ -173,6 +171,7 @@ def _check_write_path(
     *,
     policy: WritePolicy,
     original: Optional[Path] = None,
+    workspace_root: Optional[str] = None,
 ) -> None:
     if policy.follow_symlinks == "reject":
         # Walk the *unresolved* path's components — symlinks at the leaf or
@@ -197,7 +196,7 @@ def _check_write_path(
     _check_realpath(
         real,
         policy_deny=ReadPolicy().deny_paths,
-        workspace=policy.require_cwd_under,
+        workspace=workspace_root or policy.require_cwd_under,
     )
 def read_file(path: str, encoding: str = "utf-8", offset: int = 0, limit: Optional[int] = None, *, policy: Optional[ReadPolicy] = None, workspace_root: Optional[str] = None) -> str:
     if offset < 0:
@@ -206,7 +205,8 @@ def read_file(path: str, encoding: str = "utf-8", offset: int = 0, limit: Option
         raise InvalidInputError("limit exceeds 10 MiB cap")
     p = _reject_nul(path, arg_name="path")
     real = _canonical(p)
-    _check_realpath(real, policy_deny=(policy or ReadPolicy()).deny_paths, workspace=workspace_root)
+    eff = policy or ReadPolicy()
+    _check_realpath(real, policy_deny=eff.deny_paths, workspace=workspace_root)
     try:
         if real.is_dir():
             return f"Error: {real} is a directory; use list_directory"
@@ -424,10 +424,7 @@ def _atomic_write(
     mode = "wb" if isinstance(content, bytes) else "w"
     enc = None if isinstance(content, bytes) else encoding
     with open(tmp, mode, encoding=enc) as fh:
-        if isinstance(content, str):
-            fh.write(content)
-        else:
-            fh.write(content)
+        fh.write(content)
         fh.flush()
         os.fsync(fh.fileno())
     os.replace(tmp, target)
@@ -452,7 +449,7 @@ def write_file(
     eff = policy or WritePolicy()
     real = _canonical(p)
     leaf = Path(p)
-    _check_write_path(real, policy=eff, original=leaf)
+    _check_write_path(real, policy=eff, original=leaf, workspace_root=workspace_root)
     if eff.require_confirm and mode != "fail" and not confirm:
         raise ConfirmationRequired(tool="write_file")
     if mode == "overwrite" and not confirm and eff.require_confirm:
@@ -501,7 +498,7 @@ def edit_file(
         raise InvalidInputError("'new' exceeds content size cap")
     real = _canonical(p)
     leaf = Path(p)
-    _check_write_path(real, policy=eff, original=leaf)
+    _check_write_path(real, policy=eff, original=leaf, workspace_root=workspace_root)
     if eff.require_confirm and not confirm:
         raise ConfirmationRequired(tool="edit_file")
     text = real.read_text(encoding="utf-8")
@@ -536,7 +533,7 @@ def delete_file(
     eff = policy or WritePolicy()
     real = _canonical(p)
     leaf = Path(p)
-    _check_write_path(real, policy=eff, original=leaf)
+    _check_write_path(real, policy=eff, original=leaf, workspace_root=workspace_root)
     if eff.require_confirm and not confirm:
         raise ConfirmationRequired(tool="delete_file")
     if real.is_dir() and not recursive:
@@ -696,14 +693,12 @@ def create_computer_use_tools(
     shell_policy: ShellPolicy = None,
 ):
     """Create all computer-use tools pre-configured for a workspace."""
-    import re, shlex
     workspace_root = workspace_root or os.environ.get("COMPUTER_USE_WORKSPACE",
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))) if "/examples/tools" in os.getcwd() else os.getcwd())
+        str(Path(__file__).resolve().parent.parent.parent) if "/examples/tools" in os.getcwd() else os.getcwd())
     write_policy = write_policy or WritePolicy(require_confirm=False, follow_symlinks="reject")
     shell_policy = shell_policy or ShellPolicy(cwd_extra=frozenset({"/tmp", workspace_root}))
     def _run_cmd(cmd: str):
         """Run a shell command."""
-        import re, shlex
         argv = shlex.split(re.sub(r'^\s*cd\s+\S+\s*&&\s*', '', cmd.strip()))
         return run_command(argv=argv, cwd=workspace_root, policy=shell_policy)
     def _read(path: str):
