@@ -11,27 +11,35 @@ a turn-based panel. Each participant receives every message, evaluates whether
 it has something useful to add, and only broadcasts a reply when its self-rated
 desire to speak clears the configured threshold.
 
-Flow:
+Flow (turn-based, one speaker per turn):
 
-    task -> initial message posted to every agent's inbox
-    -> each agent's coroutine pulls messages, calls respond(score, message) via
-       a forced function call, and broadcasts when score > threshold
-    -> broadcasts wake every other agent's inbox concurrently
-    -> stop when no messages have been produced for `idle_timeout` seconds,
-       or `max_loops` total messages have been posted
+    task -> posted to the shared conversation; every agent sees it
+    -> each turn, all agents privately "bid" via respond(score, message):
+       a self-rated desire to speak plus the reply they would give
+    -> the single highest bidder above `threshold` takes the floor; only its
+       message is posted to the conversation
+    -> a recency penalty discourages the same agent from speaking twice in a
+       row, so the floor passes around the room
+    -> stop when no agent bids above `threshold` for a turn (a conversational
+       lull), or `max_loops` total messages have been posted
+
+Only one agent speaks per turn, mirroring human turn-taking: everyone listens,
+the most motivated/relevant participant jumps in, and the rest stay silent
+unless they have something better to add.
 
 Key concepts:
 
     RESPOND_TOOL
         A forced function-calling schema used to make every agent return a
-        structured `(score, message)` decision instead of free-form text.
+        structured `(score, message)` bid instead of free-form text.
 
     threshold
-        The minimum score required for a reply to be published. Raising this
-        value makes agents more selective; lowering it creates livelier chats.
+        The minimum (recency-adjusted) score required to take the floor.
+        Raising it makes the room more selective; lowering it livelier.
 
-    idle_timeout
-        The amount of quiet time, in seconds, after which the conversation ends.
+    recency_penalty / recency_window
+        How much to subtract from the bid of an agent that spoke within the
+        last `recency_window` turns. Prevents one agent from monologuing.
 
     max_loops
         A hard cap on total posted messages, including the initial user task.
@@ -51,9 +59,10 @@ Example:
 
 import asyncio
 import json
-import time
+from collections import deque
 from typing import Any, List, Optional, Tuple
 
+from swarms.prompts.groupchat_prompt import GROUPCHAT_DECIDE_PROMPT
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.serialization import SerializableMixin
@@ -90,36 +99,6 @@ RESPOND_TOOL = {
         },
     },
 }
-
-DECIDE_PROMPT = """You are {agent_name} in a groupchat with: {other_agents}.
-
-Conversation so far:
-{history}
-
-Latest message from {sender}:
-{message}
-
-Decide whether to speak. Silence is the default — most messages do NOT warrant
-a reply from you. Only respond when you genuinely add value.
-
-Score high (>= 0.7) ONLY if:
-  - The message is directly in your area of expertise AND you have something
-    substantive to contribute that nobody else has said.
-  - You're directly addressed or @-mentioned.
-  - There's a factual error or weak claim you can sharpen or correct.
-  - You can move the conversation forward with a concrete next step or question.
-
-Score low (< 0.5) — stay silent — if:
-  - The topic is outside your expertise.
-  - Your point would echo or paraphrase something already said.
-  - You'd only be adding agreement, encouragement, or filler ("great point",
-    "I agree", "well said").
-  - The conversation is already converging and you'd just pile on.
-  - You spoke very recently and have nothing new to add.
-
-Call the `respond` function. If score < 0.5, return an empty message.
-Otherwise, give a tight, specific reply — no preamble, no restating others.
-"""
 
 
 def _extract_args(tool_output: Any) -> Tuple[float, str]:
@@ -166,20 +145,22 @@ def _extract_args(tool_output: Any) -> Tuple[float, str]:
 
 
 class GroupChat(SerializableMixin):
-    """Coordinate an asynchronous, self-selecting agent groupchat.
+    """Coordinate a turn-based, self-selecting agent groupchat.
 
-    ``GroupChat`` starts one coroutine per agent. Every coroutine listens
-    to its own inbox, asks the corresponding agent model whether it should
-    reply, and broadcasts qualifying replies to every other inbox.
+    Each turn every agent privately bids on whether to speak; the single
+    highest (recency-adjusted) bidder above ``threshold`` takes the floor and
+    its reply is the only message posted. This mirrors human turn-taking:
+    everyone listens to the same conversation, the most motivated participant
+    jumps in, and the rest stay silent unless they can do better next turn.
 
-    Unlike round-robin group chats, there is no global speaking order. Multiple
-    agents can react to the same message at nearly the same time, and agents can
-    remain silent when they have nothing useful to add.
+    There is no fixed speaking order — who speaks emerges from the bids — but a
+    ``recency_penalty`` discourages one agent from monologuing so the floor
+    moves around the room.
 
     The conversation stops when either:
 
-    - ``max_loops`` total messages have been posted.
-    - No new messages arrive for ``idle_timeout`` seconds.
+    - ``max_loops`` total messages have been posted, or
+    - no agent bids above ``threshold`` for a turn (a conversational lull).
     """
 
     _to_dict_exclude = ("agents", "conversation")
@@ -187,42 +168,52 @@ class GroupChat(SerializableMixin):
     def __init__(
         self,
         name: str = "dynamic-groupchat",
-        description: str = "Agents choose whether to speak at any time.",
+        description: str = "Agents take turns; one speaker per turn.",
         agents: Optional[List[Agent]] = None,
         max_loops: int = 20,
         threshold: float = 0.5,
+        recency_penalty: float = 0.3,
+        recency_window: int = 1,
         idle_timeout: float = 8.0,
         output_type: str = "str-all-except-first",
         verbose: bool = False,
-        print_on: bool = True,
         auto_equip: bool = True,
     ):
-        """Initialize the dynamic groupchat runtime.
+        """Initialize the turn-based groupchat runtime.
 
         Args:
             name: Human-readable name used in logs and serialized state.
             description: Short description of the chat structure.
             agents: Agents participating in the conversation. At least two are
-                required because each message is broadcast to "other" agents.
+                required for a meaningful discussion.
             max_loops: Maximum number of messages posted before stopping. The
                 initial user task counts as the first message.
-            threshold: Minimum decision score required to publish a reply.
-            idle_timeout: Seconds of inactivity before the chat stops.
+            threshold: Minimum (recency-adjusted) bid required to take the
+                floor. A turn where no agent clears it ends the chat.
+            recency_penalty: Amount subtracted from the bid of any agent that
+                spoke within the last ``recency_window`` turns. Discourages a
+                single agent from monologuing. Set to ``0.0`` to disable.
+            recency_window: How many of the most recent speakers are subject to
+                ``recency_penalty``.
+            idle_timeout: Deprecated/unused — the chat now ends on a bidding
+                lull rather than a wall-clock timeout. Kept for compatibility.
             output_type: Format passed to ``history_output_formatter``.
-            verbose: Whether to emit internal log messages.
+            verbose: Whether to emit internal log messages and print each
+                posted message as a panel to stdout.
 
         Raises:
             ValueError: If fewer than two agents are provided.
         """
         self.name = name
         self.description = description
-        self.agents = agents or []
+        self.agents = agents
         self.max_loops = max_loops
         self.threshold = threshold
+        self.recency_penalty = recency_penalty
+        self.recency_window = recency_window
         self.idle_timeout = idle_timeout
         self.output_type = output_type
         self.verbose = verbose
-        self.print_on = print_on
         self.auto_equip = auto_equip
 
         self.conversation = Conversation(time_enabled=True)
@@ -277,7 +268,7 @@ class GroupChat(SerializableMixin):
         via ``asyncio.to_thread`` so one slow model call cannot block the
         whole groupchat.
         """
-        prompt = DECIDE_PROMPT.format(
+        prompt = GROUPCHAT_DECIDE_PROMPT.format(
             agent_name=agent.agent_name,
             other_agents=self._other_agents(agent.agent_name),
             history=history,
@@ -292,37 +283,25 @@ class GroupChat(SerializableMixin):
             return 0.0, ""
         return _extract_args(tool_output)
 
-    async def _broadcast(
-        self,
-        sender: str,
-        content: str,
-        score: Optional[float],
-        inboxes: dict,
-        state: dict,
+    def _post(
+        self, sender: str, content: str, score: Optional[float]
     ) -> None:
-        """Record a message and enqueue it for every other agent.
+        """Record a message in the shared conversation and optionally print it.
 
-        The conversation write and shared counters are protected by
-        ``state["lock"]``. Queue fan-out happens after the lock is released so
-        waiting agents can process messages concurrently.
+        There are no per-agent inboxes: every agent reads the same
+        ``Conversation`` when it builds its next bid, so a single append makes
+        the message visible to everyone the following turn.
         """
-        async with state["lock"]:
-            metadata = {"score": score} if score is not None else None
-            self.conversation.add(
-                role=sender, content=content, metadata=metadata
-            )
-            state["message_count"] += 1
-            state["last_activity"] = time.monotonic()
-            self._log(
-                "info",
-                f"{sender} -> {content[:80]} "
-                f"(score={score if score is None else f'{score:.2f}'}, "
-                f"count={state['message_count']})",
-            )
-            if state["message_count"] >= self.max_loops:
-                state["stop"].set()
-
-        if self.print_on:
+        metadata = {"score": score} if score is not None else None
+        self.conversation.add(
+            role=sender, content=content, metadata=metadata
+        )
+        self._log(
+            "info",
+            f"{sender} -> {content[:80]} "
+            f"(score={'-' if score is None else f'{score:.2f}'})",
+        )
+        if self.verbose:
             title = (
                 f"{sender}"
                 if score is None
@@ -331,121 +310,116 @@ class GroupChat(SerializableMixin):
             style = "bold green" if score is None else "bold blue"
             formatter.print_panel(content, title=title, style=style)
 
-        for name, inbox in inboxes.items():
-            if name == sender:
-                continue
-            await inbox.put((sender, content))
+    async def _collect_bids(
+        self, sender: str, message: str, history: str
+    ) -> List[Tuple[Agent, float, str]]:
+        """Ask every agent, concurrently, for a speaking bid this turn.
 
-    async def _agent_loop(
-        self,
-        agent: Agent,
-        inbox: "asyncio.Queue[Tuple[str, str]]",
-        inboxes: dict,
-        state: dict,
-    ) -> None:
-        """Run one agent's inbox-processing loop.
-
-        Each agent waits for messages from other participants, snapshots the
-        current conversation history, asks the model for a structured speaking
-        decision, and broadcasts the reply if it clears ``threshold``.
+        Each agent returns a ``(score, message)`` pair: how much it wants the
+        floor and the reply it would give. Bidding is the cheap "do I have
+        something to add right now?" instinct — it runs in parallel for speed,
+        but at most one bid is ever posted (see ``_select_speaker``). Agent
+        calls are blocking, so each runs in its own thread via
+        ``asyncio.to_thread`` and one slow model cannot stall the turn.
         """
-        stop: asyncio.Event = state["stop"]
-
-        while not stop.is_set():
-            try:
-                sender, message = await asyncio.wait_for(
-                    inbox.get(), timeout=0.5
+        results = await asyncio.gather(
+            *(
+                asyncio.to_thread(
+                    self._decide_sync, agent, sender, message, history
                 )
-            except asyncio.TimeoutError:
-                continue
-
-            if stop.is_set():
-                return
-
-            async with state["lock"]:
-                history = self.conversation.return_history_as_string()
-
-            score, reply = await asyncio.to_thread(
-                self._decide_sync, agent, sender, message, history
+                for agent in self.agents
             )
+        )
+        return [
+            (agent, score, reply)
+            for agent, (score, reply) in zip(self.agents, results)
+        ]
 
-            if score > self.threshold and reply:
-                await self._broadcast(
-                    sender=agent.agent_name,
-                    content=reply,
-                    score=score,
-                    inboxes=inboxes,
-                    state=state,
-                )
+    def _select_speaker(
+        self,
+        bids: List[Tuple[Agent, float, str]],
+        recent: set,
+    ) -> Optional[Tuple[Agent, float, str]]:
+        """Pick the single agent that takes the floor this turn.
 
-    async def _idle_monitor(self, state: dict) -> None:
-        """Set the stop event after ``idle_timeout`` seconds of inactivity."""
-        stop: asyncio.Event = state["stop"]
-        while not stop.is_set():
-            await asyncio.sleep(0.5)
-            if (
-                time.monotonic() - state["last_activity"]
-                > self.idle_timeout
-            ):
-                self._log(
-                    "info",
-                    f"idle for {self.idle_timeout}s — stopping",
-                )
-                stop.set()
-                return
+        The winner is the highest *recency-adjusted* bid that (a) carries a
+        non-empty reply and (b) clears ``threshold``. Agents that spoke within
+        the last ``recency_window`` turns have ``recency_penalty`` subtracted
+        from their score, so the floor passes around instead of one agent
+        monologuing. Returns ``None`` when nobody clears the bar — a lull that
+        ends the conversation.
+
+        Returns:
+            ``(agent, raw_score, reply)`` for the chosen speaker, or ``None``.
+        """
+        best: Optional[Tuple[Agent, float, str]] = None
+        best_adjusted = self.threshold
+
+        for agent, score, reply in bids:
+            if not reply:
+                continue
+            adjusted = score
+            if agent.agent_name in recent:
+                adjusted -= self.recency_penalty
+            if adjusted <= best_adjusted:
+                continue
+            best_adjusted = adjusted
+            best = (agent, score, reply)
+
+        return best
 
     async def _run_async(self, task: str) -> Any:
-        """Run the groupchat asynchronously and return formatted history.
+        """Run the turn-based groupchat and return formatted history.
+
+        Each turn: snapshot the shared history, collect a bid from every agent,
+        let the single highest (recency-adjusted) bidder speak, and post only
+        that reply. The loop stops at the first lull — a turn where no agent
+        clears ``threshold`` — or once ``max_loops`` messages have been posted.
 
         Args:
-            task: Initial user message that seeds every agent's inbox.
+            task: Initial user message that seeds the conversation.
 
         Returns:
             Conversation history formatted according to ``self.output_type``.
         """
         self._log("info", f"[{self.name}] initial task: {task}")
 
-        inboxes = {a.agent_name: asyncio.Queue() for a in self.agents}
-        state = {
-            "lock": asyncio.Lock(),
-            "stop": asyncio.Event(),
-            "last_activity": time.monotonic(),
-            "message_count": 0,
-        }
+        self._post(sender="User", content=task, score=None)
+        last_sender, last_message = "User", task
 
-        await self._broadcast(
-            sender="User",
-            content=task,
-            score=None,
-            inboxes=inboxes,
-            state=state,
+        recent: "deque[str]" = deque(
+            maxlen=max(1, self.recency_window)
         )
+        message_count = 1  # the user task counts as the first message
 
-        agent_tasks = [
-            asyncio.create_task(
-                self._agent_loop(
-                    a, inboxes[a.agent_name], inboxes, state
-                )
+        while message_count < self.max_loops:
+            history = self.conversation.return_history_as_string()
+            bids = await self._collect_bids(
+                last_sender, last_message, history
             )
-            for a in self.agents
-        ]
-        monitor_task = asyncio.create_task(self._idle_monitor(state))
 
-        await state["stop"].wait()
+            selection = self._select_speaker(bids, set(recent))
+            if selection is None:
+                self._log(
+                    "info",
+                    "no agent cleared the threshold — lull, stopping",
+                )
+                break
 
-        for t in agent_tasks:
-            t.cancel()
-        monitor_task.cancel()
-        await asyncio.gather(
-            *agent_tasks, monitor_task, return_exceptions=True
-        )
+            agent, score, reply = selection
+            self._post(
+                sender=agent.agent_name, content=reply, score=score
+            )
+            recent.append(agent.agent_name)
+            last_sender, last_message = agent.agent_name, reply
+            message_count += 1
 
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
         )
 
     def run(self, task: str) -> Any:
-        """Synchronously run the groupchat until it becomes idle or capped.
+        """Synchronously run the groupchat until a lull or ``max_loops``.
 
         Args:
             task: Initial user task or message for the group.

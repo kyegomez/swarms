@@ -12,7 +12,6 @@ agent = Agent(
     thinking_tokens=1024,
     reasoning_effort="high",
     persistent_memory=False,
-    # streaming_on=True,
 )
 
 out = agent.run(
