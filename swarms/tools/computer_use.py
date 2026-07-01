@@ -1,26 +1,78 @@
-"""Security-hardened computer-use toolkit: read_file, list_directory, grep_files, write_file, edit_file, patch_file, delete_file, run_command."""
+"""Security-hardened computer-use toolkit.
+
+Tools: read_file, list_directory, grep_files, write_file,
+       edit_file, patch_file, delete_file, run_command.
+"""
 
 from __future__ import annotations
 
-import dataclasses, fnmatch, hashlib, hmac, os, re, secrets, shlex, shutil, signal, subprocess, sys, time
+import dataclasses
+import fnmatch
+import os
+import re
+import secrets
+import shlex
+import shutil
+import signal
+import subprocess
+import time
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Literal, Mapping, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+)
+
+# ── Exceptions ──────────────────────────────────────────────────────────────
 
 
-class SecurityError(Exception): pass
-class PathPolicyError(SecurityError): pass
-class SymlinkPolicyError(SecurityError): pass
-class InvalidInputError(SecurityError): pass
-class BinaryNotAllowedError(SecurityError): pass
-class ArgvPatternDeniedError(SecurityError): pass
+class SecurityError(Exception):
+    """Base exception for all security-related failures in this module."""
+
+
+class PathPolicyError(SecurityError):
+    """Raised when a path is denied or outside the allowed workspace."""
+
+
+class SymlinkPolicyError(SecurityError):
+    """Raised when a path traverses a symlink where symlinks are rejected."""
+
+
+class InvalidInputError(SecurityError):
+    """Raised when a function argument fails validation."""
+
+
+class BinaryNotAllowedError(SecurityError):
+    """Raised when a command binary is not on the shell allow-list."""
+
+
+class ArgvPatternDeniedError(SecurityError):
+    """Raised when a command argument matches the substring deny-list."""
+
+
 class ConfirmationRequired(SecurityError):
-    def __init__(self, tool: str, request_id: Optional[str] = None) -> None:
-        super().__init__(f"Confirmation required for {tool!r}; pass confirm=True.")
+    def __init__(
+        self, tool: str, request_id: Optional[str] = None
+    ) -> None:
+        super().__init__(
+            f"Confirmation required for {tool!r}; pass confirm=True."
+        )
         self.tool = tool
         self.request_id = request_id
 
 
+# ── Globals & shared helpers ────────────────────────────────────────────────
+
+
 _GLOB_SAFE = re.compile(r"^[A-Za-z0-9_./?!\*\-]+$")
+
 _PATH_DENY_DEFAULT = frozenset(
     {
         "/etc",
@@ -33,19 +85,28 @@ _PATH_DENY_DEFAULT = frozenset(
         "/usr/lib64",
     }
 )
+
+
+# ── Policy dataclasses ──────────────────────────────────────────────────────
+
+
 @dataclasses.dataclass(frozen=True)
 class ReadPolicy:
     """Policy for read-only filesystem tools."""
+
     require_cwd_under: Optional[str] = None
     deny_paths: frozenset[str] = _PATH_DENY_DEFAULT
     follow_symlinks: bool = False
     max_file_size_bytes: int = 10 * 1024 * 1024
     max_output_bytes: int = 1 * 1024 * 1024
-    max_glob_tokens: int = 64  # raised to keep tests honest, not user-facing
+    max_glob_tokens: int = 64
     rg_timeout_seconds: float = 10.0
+
+
 @dataclasses.dataclass(frozen=True)
 class WritePolicy:
-    """Policy for write/edit/delete operations."""
+    """Policy for write / edit / delete operations."""
+
     require_cwd_under: Optional[str] = None
     require_confirm: bool = True
     mode_default: Literal["fail", "overwrite", "append"] = "fail"
@@ -54,30 +115,99 @@ class WritePolicy:
     backup_on_overwrite: bool = True
     backup_dir: str = ".swarm_backups"
     follow_symlinks: Literal["reject", "allow"] = "reject"
-    max_content_bytes: int = 1 * 1024 * 1024  # for edit_file old/new
+    max_content_bytes: int = 1 * 1024 * 1024
+
 
 @dataclasses.dataclass(frozen=True)
 class ShellPolicy:
     """Policy for shell execution."""
+
     binary_allowlist: frozenset[str] = frozenset(
         {
-            "ls", "cat", "grep", "rg", "find", "head", "tail", "wc", "sort", "sleep",
-            "uniq", "tr", "cut", "paste", "sed", "awk", "git", "npm", "node",
-            "python", "python3", "pip", "pip3", "pytest", "cargo", "rustc",
-            "go", "make", "cmake", "gcc", "clang", "curl", "wget", "jq",
-            "tar", "gzip", "gunzip", "zip", "unzip", "ssh", "scp", "rsync",
-            "ps", "top", "htop", "df", "du", "free", "uname", "whoami",
-            "id", "env", "printenv", "date", "cal", "bc", "diff", "patch",
+            "ls",
+            "cat",
+            "grep",
+            "rg",
+            "find",
+            "head",
+            "tail",
+            "wc",
+            "sort",
+            "sleep",
+            "uniq",
+            "tr",
+            "cut",
+            "paste",
+            "sed",
+            "awk",
+            "git",
+            "npm",
+            "node",
+            "python",
+            "python3",
+            "pip",
+            "pip3",
+            "pytest",
+            "cargo",
+            "rustc",
+            "go",
+            "make",
+            "cmake",
+            "gcc",
+            "clang",
+            "curl",
+            "wget",
+            "jq",
+            "tar",
+            "gzip",
+            "gunzip",
+            "zip",
+            "unzip",
+            "ssh",
+            "scp",
+            "rsync",
+            "ps",
+            "top",
+            "htop",
+            "df",
+            "du",
+            "free",
+            "uname",
+            "whoami",
+            "id",
+            "env",
+            "printenv",
+            "date",
+            "cal",
+            "bc",
+            "diff",
+            "patch",
         }
     )
+
     argv_substring_denylist: frozenset[str] = frozenset(
         {
-            "rm -rf", "mkfs", "dd if=", ">/dev/sd", "chmod -R 777",
-            ":(){:|:", "curl ", "| sh", "wget ", "| sh", ">/etc/",
-            "/etc/passwd", "/etc/shadow", "/root/.ssh", "ssh-keygen",
-            "iptables", "ufw ", "systemctl ", "service ",
+            "rm -rf",
+            "mkfs",
+            "dd if=",
+            ">/dev/sd",
+            "chmod -R 777",
+            ":(){:|:",
+            "curl ",
+            "| sh",
+            "wget ",
+            ">/etc/",
+            "/etc/passwd",
+            "/etc/shadow",
+            "/root/.ssh",
+            "ssh-keygen",
+            "iptables",
+            "ufw ",
+            "systemctl ",
+            "service ",
         }
     )
+
     cwd_under: str = "/workspace"
     cwd_extra: frozenset[str] = frozenset({"/tmp", "/home"})
     timeout_default: int = 30
@@ -89,29 +219,54 @@ class ShellPolicy:
     max_arg_token_bytes: int = 4096
     kill_process_group_on_timeout: bool = True
     redact_stdin_in_logs: bool = True
+
     blocked_env_keys: frozenset[str] = frozenset(
         {
-            "AWS_SECRET_ACCESS_KEY", "AWS_ACCESS_KEY_ID",
-            "GITHUB_TOKEN", "GH_TOKEN", "ANTHROPIC_API_KEY",
-            "OPENAI_API_KEY", "GOOGLE_API_KEY", "GEMINI_API_KEY",
-            "HUGGINGFACE_TOKEN", "HF_TOKEN", "AZURE_CLIENT_SECRET",
-            "STRIPE_SECRET_KEY", "SLACK_TOKEN", "TELEGRAM_BOT_TOKEN",
-            "DISCORD_TOKEN", "GITLAB_TOKEN", "BITBUCKET_TOKEN",
-            "SENDGRID_API_KEY", "TWILIO_AUTH_TOKEN", "MAILGUN_API_KEY",
-            "DATADOG_API_KEY", "NEW_RELIC_LICENSE_KEY",
-            "OPENAI_ORGANIZATION", "COHERE_API_KEY",
+            "AWS_SECRET_ACCESS_KEY",
+            "AWS_ACCESS_KEY_ID",
+            "GITHUB_TOKEN",
+            "GH_TOKEN",
+            "ANTHROPIC_API_KEY",
+            "OPENAI_API_KEY",
+            "GOOGLE_API_KEY",
+            "GEMINI_API_KEY",
+            "HUGGINGFACE_TOKEN",
+            "HF_TOKEN",
+            "AZURE_CLIENT_SECRET",
+            "STRIPE_SECRET_KEY",
+            "SLACK_TOKEN",
+            "TELEGRAM_BOT_TOKEN",
+            "DISCORD_TOKEN",
+            "GITLAB_TOKEN",
+            "BITBUCKET_TOKEN",
+            "SENDGRID_API_KEY",
+            "TWILIO_AUTH_TOKEN",
+            "MAILGUN_API_KEY",
+            "DATADOG_API_KEY",
+            "NEW_RELIC_LICENSE_KEY",
+            "OPENAI_ORGANIZATION",
+            "COHERE_API_KEY",
             "REPLICATE_API_TOKEN",
         }
     )
-# Path / input helpers (shared by every tool)
+
+
+# ── Path / input helpers (shared by every tool) ────────────────────────────
+
+
 def _reject_nul(value: Any, *, arg_name: str) -> str:
     """Reject strings containing NUL bytes."""
     if not isinstance(value, str):
         raise InvalidInputError(f"{arg_name} must be a string")
     if "\x00" in value:
-        raise InvalidInputError(f"{arg_name} must not contain NUL bytes")
+        raise InvalidInputError(
+            f"{arg_name} must not contain NUL bytes"
+        )
     return value
+
+
 def _validate_glob(glob: str) -> str:
+    """Reject flag-injection and NUL-bytes; enforce a safe character set."""
     if glob.startswith("-"):
         raise InvalidInputError(
             f"glob {glob!r} starts with '-' (flag injection risk)"
@@ -125,9 +280,14 @@ def _validate_glob(glob: str) -> str:
         )
     return glob
 
+
 def _canonical(path: Union[str, os.PathLike]) -> Path:
+    """Resolve *path* to an absolute real-path, following all symlinks."""
     return Path(os.path.realpath(os.fspath(path)))
+
+
 def _deny_match(real: Path, deny: Iterable[str]) -> bool:
+    """Return True if *real* matches any path in the *deny* set (exact, parent, or glob)."""
     for raw in deny:
         if not raw:
             continue
@@ -148,12 +308,14 @@ def _deny_match(real: Path, deny: Iterable[str]) -> bool:
                 continue
     return False
 
+
 def _check_realpath(
     real: Path,
     *,
     policy_deny: Iterable[str],
     workspace: Optional[str],
 ) -> None:
+    """Validate *real* is not on the deny-list and (if *workspace* is set) is under it."""
     if _deny_match(real, policy_deny):
         raise PathPolicyError(f"path {real} is on the deny-list")
     if workspace is not None:
@@ -164,7 +326,10 @@ def _check_realpath(
                     f"path {real} is outside workspace {ws}"
                 )
         except OSError as exc:
-            raise PathPolicyError(f"path {real} could not be resolved: {exc}") from exc
+            raise PathPolicyError(
+                f"path {real} could not be resolved: {exc}"
+            ) from exc
+
 
 def _check_write_path(
     real: Path,
@@ -173,13 +338,13 @@ def _check_write_path(
     original: Optional[Path] = None,
     workspace_root: Optional[str] = None,
 ) -> None:
+    """Validate a write-target path: reject symlinks if policy says so, then run the standard deny/workspace check."""
     if policy.follow_symlinks == "reject":
-        # Walk the *unresolved* path's components — symlinks at the leaf or
-        # any parent must be rejected. We also resolve after the check via
-        # ``real`` for the deny-list / workspace comparison.
         leaf = original if original is not None else real
         scan: List[Path] = []
-        cur: Optional[Path] = leaf if leaf.is_absolute() else Path.cwd() / leaf
+        cur: Optional[Path] = (
+            leaf if leaf.is_absolute() else Path.cwd() / leaf
+        )
         seen: set = set()
         while cur is not None and cur not in seen:
             seen.add(cur)
@@ -198,15 +363,33 @@ def _check_write_path(
         policy_deny=ReadPolicy().deny_paths,
         workspace=workspace_root or policy.require_cwd_under,
     )
-def read_file(path: str, encoding: str = "utf-8", offset: int = 0, limit: Optional[int] = None, *, policy: Optional[ReadPolicy] = None, workspace_root: Optional[str] = None) -> str:
+
+
+# ── Theme 1 — Read-only filesystem tools ────────────────────────────────────
+
+
+def read_file(
+    path: str,
+    encoding: str = "utf-8",
+    offset: int = 0,
+    limit: Optional[int] = None,
+    *,
+    policy: Optional[ReadPolicy] = None,
+    workspace_root: Optional[str] = None,
+) -> str:
+    """Read a file's contents with optional offset/limit slicing."""
     if offset < 0:
         raise InvalidInputError("offset must be >= 0")
     if limit is not None and limit > 10_000_000:
         raise InvalidInputError("limit exceeds 10 MiB cap")
+
     p = _reject_nul(path, arg_name="path")
     real = _canonical(p)
     eff = policy or ReadPolicy()
-    _check_realpath(real, policy_deny=eff.deny_paths, workspace=workspace_root)
+    _check_realpath(
+        real, policy_deny=eff.deny_paths, workspace=workspace_root
+    )
+
     try:
         if real.is_dir():
             return f"Error: {real} is a directory; use list_directory"
@@ -226,10 +409,14 @@ def read_file(path: str, encoding: str = "utf-8", offset: int = 0, limit: Option
         data = data[offset:]
     if limit is not None:
         data = data[:limit]
-    if len(data.encode(encoding, errors="replace")) > eff.max_output_bytes:
+    if (
+        len(data.encode(encoding, errors="replace"))
+        > eff.max_output_bytes
+    ):
         data = data[: eff.max_output_bytes]
         return data + "{...truncated, +N bytes...}"
     return data
+
 
 def list_directory(
     path: str = ".",
@@ -239,7 +426,7 @@ def list_directory(
     policy: Optional[ReadPolicy] = None,
     workspace_root: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """List a directory's entries, no file contents."""
+    """List a directory's entries (no file contents)."""
     p = _reject_nul(path, arg_name="path")
     glob_v = _validate_glob(glob)
     real = _canonical(p)
@@ -247,8 +434,10 @@ def list_directory(
     _check_realpath(
         real, policy_deny=eff.deny_paths, workspace=workspace_root
     )
+
     if not real.is_dir():
         raise PathPolicyError(f"{real} is not a directory")
+
     out: List[Dict[str, Any]] = []
     for entry in sorted(real.iterdir()):
         if not include_hidden and entry.name.startswith("."):
@@ -259,8 +448,10 @@ def list_directory(
             lstat = entry.lstat()
         except OSError:
             continue
-        kind = "symlink" if entry.is_symlink() else (
-            "dir" if entry.is_dir() else "file"
+        kind = (
+            "symlink"
+            if entry.is_symlink()
+            else "dir" if entry.is_dir() else "file"
         )
         out.append(
             {
@@ -272,7 +463,10 @@ def list_directory(
         )
     return out
 
+
 _RG_PATH_DENY = frozenset({"/proc", "/sys", "/dev"})
+
+
 def grep_files(
     pattern: str,
     path: str = ".",
@@ -283,7 +477,7 @@ def grep_files(
     policy: Optional[ReadPolicy] = None,
     workspace_root: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """Grep a directory tree for ``pattern`` (ripgrep if available)."""
+    """Grep a directory tree for *pattern* (ripgrep if available, else Python)."""
     if not pattern:
         raise InvalidInputError("pattern is required")
     if "\x00" in pattern:
@@ -292,9 +486,11 @@ def grep_files(
         raise InvalidInputError("context_lines must be >= 0")
     if max_matches <= 0:
         raise InvalidInputError("max_matches must be > 0")
+
     glob_v = _validate_glob(glob)
     real = _canonical(_reject_nul(path, arg_name="path"))
     eff = policy or ReadPolicy()
+
     if _deny_match(real, _RG_PATH_DENY):
         raise PathPolicyError(
             f"{real} is on the ripgrep deny-list {_RG_PATH_DENY}"
@@ -302,6 +498,7 @@ def grep_files(
     _check_realpath(
         real, policy_deny=eff.deny_paths, workspace=workspace_root
     )
+
     rg_path = shutil.which("rg")
     if rg_path is not None:
         return _grep_with_rg(
@@ -322,6 +519,8 @@ def grep_files(
         max_matches=max_matches,
         follow=eff.follow_symlinks,
     )
+
+
 def _grep_with_rg(
     rg_path: str,
     *,
@@ -333,6 +532,7 @@ def _grep_with_rg(
     timeout: float,
     max_output: int,
 ) -> List[Dict[str, Any]]:
+    """Run ripgrep with the given parameters and return raw-match dicts."""
     argv = [
         rg_path,
         "--no-heading",
@@ -355,9 +555,13 @@ def _grep_with_rg(
             f"ripgrep timed out after {timeout}s"
         ) from exc
 
-    stdout_b = proc.stdout.encode("utf-8", errors="replace")[:max_output]
+    stdout_b = proc.stdout.encode("utf-8", errors="replace")[
+        :max_output
+    ]
     out: List[Dict[str, Any]] = []
-    for line in stdout_b.decode("utf-8", errors="replace").splitlines():
+    for line in stdout_b.decode(
+        "utf-8", errors="replace"
+    ).splitlines():
         if len(out) >= max_matches:
             break
         out.append({"raw": line})
@@ -366,6 +570,7 @@ def _grep_with_rg(
             f"ripgrep failed (rc={proc.returncode}): {proc.stderr.strip()}"
         )
     return out
+
 
 def _grep_python(
     *,
@@ -376,6 +581,7 @@ def _grep_python(
     max_matches: int,
     follow: bool,
 ) -> List[Dict[str, Any]]:
+    """Pure-Python grep fallback with context-before/after per match."""
     rx = re.compile(pattern)
     matches: List[Dict[str, Any]] = []
     for path in root.rglob(glob_v):
@@ -384,43 +590,59 @@ def _grep_python(
         if path.is_symlink() and not follow:
             continue
         try:
-            with path.open("r", encoding="utf-8", errors="replace") as fh:
+            with path.open(
+                "r", encoding="utf-8", errors="replace"
+            ) as fh:
                 lines = fh.readlines()
         except OSError:
             continue
         for idx, line in enumerate(lines):
             if not rx.search(line):
                 continue
-            ctx_before = lines[max(0, idx - context_lines): idx]
-            ctx_after = lines[idx + 1: idx + 1 + context_lines]
+            ctx_before = lines[max(0, idx - context_lines) : idx]
+            ctx_after = lines[idx + 1 : idx + 1 + context_lines]
             matches.append(
                 {
                     "path": str(path),
                     "line": idx + 1,
                     "match": line.rstrip("\n"),
-                    "context_before": [l.rstrip("\n") for l in ctx_before],
-                    "context_after": [l.rstrip("\n") for l in ctx_after],
+                    "context_before": [
+                        ln.rstrip("\n") for ln in ctx_before
+                    ],
+                    "context_after": [
+                        ln.rstrip("\n") for ln in ctx_after
+                    ],
                 }
             )
             if len(matches) >= max_matches:
                 return matches
     return matches
 
-# Theme 2 — Write/edit filesystem tools
+
+# ── Theme 2 — Write / edit filesystem tools ─────────────────────────────────
+
 
 def _confirm_or_raise(policy: WritePolicy, *, tool: str) -> None:
+    """Raise ``ConfirmationRequired`` if the policy requires confirmation."""
     if policy.require_confirm:
-        raise ConfirmationRequired(tool=tool, request_id=secrets.token_hex(8))
+        raise ConfirmationRequired(
+            tool=tool, request_id=secrets.token_hex(8)
+        )
+
+
 def _atomic_write(
     target: Path,
     content: Union[str, bytes],
     *,
     encoding: str = "utf-8",
 ) -> None:
+    """Write *content* to *target* atomically via a temp-file + rename."""
     target.parent.mkdir(parents=True, exist_ok=True)
-    tmp = target.with_suffix(
-        target.suffix + f".tmp.{os.getpid()}.{int(time.time() * 1_000_000)}"
+    suffix = (
+        target.suffix
+        + f".tmp.{os.getpid()}.{int(time.time() * 1_000_000)}"
     )
+    tmp = target.with_suffix(suffix)
     mode = "wb" if isinstance(content, bytes) else "w"
     enc = None if isinstance(content, bytes) else encoding
     with open(tmp, mode, encoding=enc) as fh:
@@ -428,6 +650,17 @@ def _atomic_write(
         fh.flush()
         os.fsync(fh.fileno())
     os.replace(tmp, target)
+
+
+def _backup(real: Path, *, backup_dir: str) -> None:
+    """Copy *real* to ``{backup_dir}/{real.name}.{timestamp}.bak``."""
+    bak_root = real.parent / backup_dir
+    bak_root.mkdir(parents=True, exist_ok=True)
+    stamp = int(time.time() * 1_000_000)
+    bak = bak_root / f"{real.name}.{stamp}.bak"
+    shutil.copy2(real, bak)
+
+
 def write_file(
     path: str,
     content: str,
@@ -437,32 +670,47 @@ def write_file(
     policy: Optional[WritePolicy] = None,
     workspace_root: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Write ``content`` to ``path`` atomically.
+    """Write *content* to *path* atomically.
 
-    ``mode='fail'`` refuses if the file exists. ``mode='overwrite'`` requires
-    ``confirm=True`` (or a policy with ``require_confirm=False``).
+    ``mode='fail'`` refuses if the file exists.  ``mode='overwrite'`` and
+    ``mode='append'`` require ``confirm=True`` (or a policy with
+    ``require_confirm=False``).
     """
     p = _reject_nul(path, arg_name="path")
     content = _reject_nul(content, arg_name="content")
+
     if mode not in ("fail", "overwrite", "append"):
         raise InvalidInputError(f"unknown mode {mode!r}")
+
     eff = policy or WritePolicy()
     real = _canonical(p)
     leaf = Path(p)
-    _check_write_path(real, policy=eff, original=leaf, workspace_root=workspace_root)
+    _check_write_path(
+        real, policy=eff, original=leaf, workspace_root=workspace_root
+    )
+
     if eff.require_confirm and mode != "fail" and not confirm:
         raise ConfirmationRequired(tool="write_file")
-    if mode == "overwrite" and not confirm and eff.require_confirm:
-        raise ConfirmationRequired(tool="write_file")
+
     exists = real.exists()
     if mode == "fail" and exists:
-        return {"path": str(real), "written": False, "reason": "exists"}
+        return {
+            "path": str(real),
+            "written": False,
+            "reason": "exists",
+        }
+
     if eff.backup_on_overwrite and mode == "overwrite" and exists:
         _backup(real, backup_dir=eff.backup_dir)
+
     if mode == "append":
         with open(real, "a", encoding="utf-8") as fh:
             fh.write(content)
-        return {"path": str(real), "appended": True, "bytes": len(content)}
+        return {
+            "path": str(real),
+            "appended": True,
+            "bytes": len(content),
+        }
 
     _atomic_write(real, content)
     return {
@@ -471,12 +719,7 @@ def write_file(
         "bytes": len(content.encode("utf-8")),
     }
 
-def _backup(real: Path, *, backup_dir: str) -> None:
-    bak_root = real.parent / backup_dir
-    bak_root.mkdir(parents=True, exist_ok=True)
-    stamp = int(time.time() * 1_000_000)
-    bak = bak_root / f"{real.name}.{stamp}.bak"
-    shutil.copy2(real, bak)
+
 def edit_file(
     path: str,
     old: str,
@@ -487,23 +730,34 @@ def edit_file(
     policy: Optional[WritePolicy] = None,
     workspace_root: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Replace ``old`` with ``new`` in ``path``, asserting match count."""
+    """Replace *old* with *new* in *path*, asserting match count."""
     p = _reject_nul(path, arg_name="path")
     old = _reject_nul(old, arg_name="old")
     new = _reject_nul(new, arg_name="new")
+
     eff = policy or WritePolicy()
     if len(old.encode("utf-8")) > eff.max_content_bytes:
         raise InvalidInputError("'old' exceeds content size cap")
     if len(new.encode("utf-8")) > eff.max_content_bytes:
         raise InvalidInputError("'new' exceeds content size cap")
+
     real = _canonical(p)
     leaf = Path(p)
-    _check_write_path(real, policy=eff, original=leaf, workspace_root=workspace_root)
+    _check_write_path(
+        real, policy=eff, original=leaf, workspace_root=workspace_root
+    )
+
     if eff.require_confirm and not confirm:
         raise ConfirmationRequired(tool="edit_file")
+
     text = real.read_text(encoding="utf-8")
     count = text.count(old)
-    target = expected_replacements if expected_replacements is not None else 1
+    target = (
+        expected_replacements
+        if expected_replacements is not None
+        else 1
+    )
+
     if count != target:
         return {
             "path": str(real),
@@ -512,14 +766,39 @@ def edit_file(
             "actual": count,
             "error": "match count mismatch",
         }
+
     new_text = text.replace(old, new, target)
     if eff.backup_on_overwrite:
         _backup(real, backup_dir=eff.backup_dir)
     _atomic_write(real, new_text)
-    return {"path": str(real), "replaced": target, "bytes": len(new_text.encode("utf-8"))}
+    return {
+        "path": str(real),
+        "replaced": target,
+        "bytes": len(new_text.encode("utf-8")),
+    }
 
-def patch_file(path, old, new, *, confirm=False, policy=None, workspace_root=None):
-    return edit_file(path, old=old, new=new, expected_replacements=1, confirm=confirm, policy=policy, workspace_root=workspace_root)
+
+def patch_file(
+    path: str,
+    old: str,
+    new: str,
+    *,
+    confirm: bool = False,
+    policy: Optional[WritePolicy] = None,
+    workspace_root: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Alias for ``edit_file`` with ``expected_replacements=1``."""
+    return edit_file(
+        path,
+        old=old,
+        new=new,
+        expected_replacements=1,
+        confirm=confirm,
+        policy=policy,
+        workspace_root=workspace_root,
+    )
+
+
 def delete_file(
     path: str,
     recursive: bool = False,
@@ -528,27 +807,67 @@ def delete_file(
     policy: Optional[WritePolicy] = None,
     workspace_root: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Delete a file or recursive directory (snapshot first)."""
+    """Delete a file (or recursive directory, snapshot first)."""
     p = _reject_nul(path, arg_name="path")
     eff = policy or WritePolicy()
     real = _canonical(p)
     leaf = Path(p)
-    _check_write_path(real, policy=eff, original=leaf, workspace_root=workspace_root)
+    _check_write_path(
+        real, policy=eff, original=leaf, workspace_root=workspace_root
+    )
+
     if eff.require_confirm and not confirm:
         raise ConfirmationRequired(tool="delete_file")
+
     if real.is_dir() and not recursive:
         raise SecurityError(
             f"{real} is a directory; pass recursive=True to remove"
         )
+
     if real.is_dir():
-        bak = real.parent / eff.backup_dir / f"rm-{secrets.token_hex(6)}"
+        bak = (
+            real.parent
+            / eff.backup_dir
+            / f"rm-{secrets.token_hex(6)}"
+        )
         shutil.copytree(real, bak)
         shutil.rmtree(real)
-        return {"path": str(real), "deleted": True, "snapshot": str(bak)}
+        return {
+            "path": str(real),
+            "deleted": True,
+            "snapshot": str(bak),
+        }
+
     if not real.exists():
-        return {"path": str(real), "deleted": False, "reason": "missing"}
+        return {
+            "path": str(real),
+            "deleted": False,
+            "reason": "missing",
+        }
+
     real.unlink()
     return {"path": str(real), "deleted": True}
+
+
+# ── Theme 3 — Shell execution ───────────────────────────────────────────────
+
+
+def _filter_env(
+    provided: Optional[Mapping[str, str]],
+    policy: ShellPolicy,
+) -> Dict[str, str]:
+    """Strip ``blocked_env_keys`` from the provided env (or from ``os.environ`` if *provided* is None)."""
+    if provided is None:
+        return {
+            k: v
+            for k, v in os.environ.items()
+            if k not in policy.blocked_env_keys
+        }
+    return {
+        k: v
+        for k, v in provided.items()
+        if k not in policy.blocked_env_keys
+    }
 
 
 def run_command(
@@ -560,65 +879,83 @@ def run_command(
     *,
     policy: Optional[ShellPolicy] = None,
 ) -> Dict[str, Any]:
-    """Run a subprocess with a hard allow-list and substrine deny-list.
+    """Run a subprocess with a hard allow-list and substring deny-list.
 
-    Always ``shell=False``. The call is refused before :func:`subprocess.run`
+    Always ``shell=False``.  The call is refused before :func:`subprocess.run`
     if any check fails.
     """
     eff = policy or ShellPolicy()
     argv = tuple(argv)
+
     if not argv:
-        raise InvalidInputError("argv must contain at least one element")
+        raise InvalidInputError(
+            "argv must contain at least one element"
+        )
     if len(argv) > eff.max_argv_tokens:
         raise InvalidInputError(
             f"argv has {len(argv)} tokens; cap is {eff.max_argv_tokens}"
         )
+
     cleaned: List[str] = []
     for tok in argv:
         tok_s = str(tok)
         if "\x00" in tok_s:
-            raise InvalidInputError("argv tokens must not contain NUL bytes")
+            raise InvalidInputError(
+                "argv tokens must not contain NUL bytes"
+            )
         if len(tok_s.encode("utf-8")) > eff.max_arg_token_bytes:
             raise InvalidInputError(
                 f"argv token exceeds {eff.max_arg_token_bytes} bytes"
             )
         cleaned.append(tok_s)
+
     binary = cleaned[0]
     if binary not in eff.binary_allowlist:
         raise BinaryNotAllowedError(
             f"binary {binary!r} is not on the allow-list"
         )
+
     flat = " ".join(cleaned)
     for bad in eff.argv_substring_denylist:
         if bad in flat:
             raise ArgvPatternDeniedError(
                 f"argv contains forbidden substring {bad!r}"
             )
+
     real_cwd = _canonical(cwd)
-    in_workspace = (real_cwd == Path(os.path.realpath(eff.cwd_under))
-                    or Path(os.path.realpath(eff.cwd_under)) in real_cwd.parents)
-    in_extras = any(real_cwd == Path(p) or Path(p) in real_cwd.parents
-                    for p in eff.cwd_extra)
+    ws_real = Path(os.path.realpath(eff.cwd_under))
+    in_workspace = real_cwd == ws_real or ws_real in real_cwd.parents
+    in_extras = any(
+        real_cwd == Path(p) or Path(p) in real_cwd.parents
+        for p in eff.cwd_extra
+    )
     if not (in_workspace or in_extras):
         raise PathPolicyError(
-            f"cwd {real_cwd} is outside {eff.cwd_under} and not in {eff.cwd_extra}"
+            f"cwd {real_cwd} is outside {eff.cwd_under} "
+            f"and not in {eff.cwd_extra}"
         )
+
     if timeout < 1 or timeout > eff.timeout_max:
         raise InvalidInputError(
             f"timeout must be in [1, {eff.timeout_max}]"
         )
+
     env_final = _filter_env(env, eff)
     stdin_bytes: Optional[bytes] = None
     if stdin is not None:
         if "\x00" in stdin:
-            raise InvalidInputError("stdin must not contain NUL bytes")
+            raise InvalidInputError(
+                "stdin must not contain NUL bytes"
+            )
         stdin_bytes = stdin.encode("utf-8")
         if len(stdin_bytes) > eff.max_stdin_bytes:
             raise InvalidInputError(
                 f"stdin exceeds {eff.max_stdin_bytes} bytes"
             )
+
     stdout_truncated = stderr_truncated = False
     started = time.monotonic()
+
     try:
         proc = subprocess.run(
             cleaned,
@@ -644,12 +981,16 @@ def run_command(
         return {
             "argv": list(cleaned),
             "returncode": -1,
-            "stdout": (exc.stdout or "")[: eff.max_stdout_bytes]
-            if isinstance(exc.stdout, str)
-            else "",
-            "stderr": (exc.stderr or "")[: eff.max_stderr_bytes]
-            if isinstance(exc.stderr, str)
-            else "",
+            "stdout": (
+                (exc.stdout or "")[: eff.max_stdout_bytes]
+                if isinstance(exc.stdout, str)
+                else ""
+            ),
+            "stderr": (
+                (exc.stderr or "")[: eff.max_stderr_bytes]
+                if isinstance(exc.stderr, str)
+                else ""
+            ),
             "duration_ms": duration_ms,
             "truncated": {"stdout": False, "stderr": False},
             "error": f"timeout after {timeout}s",
@@ -659,15 +1000,12 @@ def run_command(
     stdout = proc.stdout or ""
     stderr = proc.stderr or ""
 
+    TRUNC_MSG = "{... truncated at 1 MiB, see redirect files ...}"
     if len(stdout.encode("utf-8")) > eff.max_stdout_bytes:
-        stdout = stdout[: eff.max_stdout_bytes] + (
-            "{... truncated at 1 MiB, see redirect files ...}"
-        )
+        stdout = stdout[: eff.max_stdout_bytes] + TRUNC_MSG
         stdout_truncated = True
     if len(stderr.encode("utf-8")) > eff.max_stderr_bytes:
-        stderr = stderr[: eff.max_stderr_bytes] + (
-            "{... truncated at 1 MiB, see redirect files ...}"
-        )
+        stderr = stderr[: eff.max_stderr_bytes] + TRUNC_MSG
         stderr_truncated = True
 
     return {
@@ -676,51 +1014,111 @@ def run_command(
         "stdout": stdout,
         "stderr": stderr,
         "duration_ms": duration_ms,
-        "truncated": {"stdout": stdout_truncated, "stderr": stderr_truncated},
+        "truncated": {
+            "stdout": stdout_truncated,
+            "stderr": stderr_truncated,
+        },
     }
 
-def _filter_env(
-    provided: Optional[Mapping[str, str]],
-    policy: ShellPolicy,
-) -> Dict[str, str]:
-    if provided is None:
-        return {k: v for k, v in os.environ.items() if k not in policy.blocked_env_keys}
-    return {k: v for k, v in provided.items() if k not in policy.blocked_env_keys}
+
+# ── Factory function ────────────────────────────────────────────────────────
+
 
 def create_computer_use_tools(
-    workspace_root: str = None,
-    write_policy: WritePolicy = None,
-    shell_policy: ShellPolicy = None,
-):
+    workspace_root: Optional[str] = None,
+    write_policy: Optional[WritePolicy] = None,
+    shell_policy: Optional[ShellPolicy] = None,
+) -> Dict[str, Callable]:
     """Create all computer-use tools pre-configured for a workspace."""
-    workspace_root = workspace_root or os.environ.get("COMPUTER_USE_WORKSPACE",
-        str(Path(__file__).resolve().parent.parent.parent) if "/examples/tools" in os.getcwd() else os.getcwd())
-    write_policy = write_policy or WritePolicy(require_confirm=False, follow_symlinks="reject")
-    shell_policy = shell_policy or ShellPolicy(cwd_extra=frozenset({"/tmp", workspace_root}))
-    def _run_cmd(cmd: str):
+    if workspace_root is None:
+        if "/examples/tools" in os.getcwd():
+            workspace_root = str(
+                Path(__file__).resolve().parent.parent.parent
+            )
+        else:
+            workspace_root = os.getcwd()
+        workspace_root = os.environ.get(
+            "COMPUTER_USE_WORKSPACE", workspace_root
+        )
+
+    write_policy = write_policy or WritePolicy(
+        require_confirm=False, follow_symlinks="reject"
+    )
+    shell_policy = shell_policy or ShellPolicy(
+        cwd_extra=frozenset({"/tmp", workspace_root})
+    )
+
+    def _run_cmd(cmd: str) -> Dict[str, Any]:
         """Run a shell command."""
-        argv = shlex.split(re.sub(r'^\s*cd\s+\S+\s*&&\s*', '', cmd.strip()))
-        return run_command(argv=argv, cwd=workspace_root, policy=shell_policy)
-    def _read(path: str):
+        stripped = re.sub(r"^\s*cd\s+\S+\s*&&\s*", "", cmd.strip())
+        argv = shlex.split(stripped)
+        return run_command(
+            argv=argv, cwd=workspace_root, policy=shell_policy
+        )
+
+    def _read(path: str) -> str:
         """Read a file's contents."""
         return read_file(path, workspace_root=workspace_root)
-    def _list_dir(path: str = "."):
+
+    def _list_dir(path: str = ".") -> List[Dict[str, Any]]:
         """List directory contents."""
         return list_directory(path, workspace_root=workspace_root)
-    def _grep(pattern: str, path: str = "."):
-        """Search for pattern in files."""
-        return grep_files(pattern, path, workspace_root=workspace_root)
-    def _write(path: str, content: str):
+
+    def _grep(pattern: str, path: str = ".") -> List[Dict[str, Any]]:
+        """Search for *pattern* in files."""
+        return grep_files(
+            pattern, path, workspace_root=workspace_root
+        )
+
+    def _write(path: str, content: str) -> Dict[str, Any]:
         """Write content to a file (overwrite mode)."""
-        return write_file(path, content, mode="overwrite", confirm=True, policy=write_policy, workspace_root=workspace_root)
-    def _edit(path: str, old: str, new: str):
-        """Edit a file by replacing old text with new text."""
-        return edit_file(path, old=old, new=new, confirm=True, policy=write_policy, workspace_root=workspace_root)
-    def _patch(path: str, old: str, new: str):
+        return write_file(
+            path,
+            content,
+            mode="overwrite",
+            confirm=True,
+            policy=write_policy,
+            workspace_root=workspace_root,
+        )
+
+    def _edit(path: str, old: str, new: str) -> Dict[str, Any]:
+        """Edit a file by replacing *old* text with *new* text."""
+        return edit_file(
+            path,
+            old=old,
+            new=new,
+            confirm=True,
+            policy=write_policy,
+            workspace_root=workspace_root,
+        )
+
+    def _patch(path: str, old: str, new: str) -> Dict[str, Any]:
         """Patch a file (single replacement)."""
-        return patch_file(path, old=old, new=new, confirm=True, policy=write_policy, workspace_root=workspace_root)
-    def _delete(path: str):
+        return patch_file(
+            path,
+            old=old,
+            new=new,
+            confirm=True,
+            policy=write_policy,
+            workspace_root=workspace_root,
+        )
+
+    def _delete(path: str) -> Dict[str, Any]:
         """Delete a file."""
-        return delete_file(path, confirm=True, policy=write_policy, workspace_root=workspace_root)
-    return {"read_file": _read, "list_directory": _list_dir, "grep_files": _grep,
-            "write_file": _write, "edit_file": _edit, "patch_file": _patch, "delete_file": _delete, "run_command": _run_cmd}
+        return delete_file(
+            path,
+            confirm=True,
+            policy=write_policy,
+            workspace_root=workspace_root,
+        )
+
+    return {
+        "read_file": _read,
+        "list_directory": _list_dir,
+        "grep_files": _grep,
+        "write_file": _write,
+        "edit_file": _edit,
+        "patch_file": _patch,
+        "delete_file": _delete,
+        "run_command": _run_cmd,
+    }
