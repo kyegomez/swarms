@@ -57,7 +57,7 @@ async def run_agent_async(agent: AgentType, task: str) -> Any:
         ...     result = await run_agent_async(agent, "Process data")
         ...     return result
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         None, run_single_agent, agent, task
     )
@@ -99,6 +99,7 @@ def run_agents_concurrently(
     img: Optional[str] = None,
     max_workers: Optional[int] = None,
     return_agent_output_dict: bool = False,
+    per_task_timeout: float | None = None,
 ) -> Any:
     """
     Execute multiple agents concurrently using a ThreadPoolExecutor.
@@ -114,12 +115,15 @@ def run_agents_concurrently(
         max_workers (Optional[int]): Maximum threads for the executor (default: 95% of CPU cores).
         return_agent_output_dict (bool): If True, returns a dict mapping agent names to outputs.
                                          Otherwise returns a list of results in completion order.
+        per_task_timeout (float | None): Timeout in seconds for each agent task. If None, no timeout
+                                         is applied. If a task exceeds the timeout, a TimeoutError
+                                         is raised and captured in the results.
 
     Returns:
         List[Any] or Dict[str, Any]: List of results from each agent's run() method in completion order,
                                      or a dict of agent names to results (preserving agent order)
                                      if return_agent_output_dict is True.
-                                     If an agent fails, the corresponding result is the Exception.
+                                     If an agent fails or times out, the corresponding result is the Exception.
 
     Notes:
         - ThreadPoolExecutor is used for efficient, parallel execution.
@@ -127,6 +131,7 @@ def run_agents_concurrently(
         - Any Exception during agent execution is caught and included in the results.
         - If return_agent_output_dict is True, the results dict preserves agent input order.
         - Otherwise, the results list is in order of completion (not input order).
+        - Per-task timeouts prevent hung agents from blocking the entire batch indefinitely.
 
     Example:
         >>> agents = [Agent1(), Agent2()]
@@ -137,6 +142,9 @@ def run_agents_concurrently(
         ...    agents, task="Summarize", return_agent_output_dict=True)
         >>> for name, val in results_dict.items():
         ...     print(f"Result from {name}: {val}")
+        >>> # With timeout
+        >>> results_with_timeout = run_agents_concurrently(
+        ...    agents, task="Summarize", per_task_timeout=30.0)
     """
     try:
         if max_workers is None:
@@ -164,7 +172,12 @@ def run_agents_concurrently(
                 output_dict = {}
                 for agent, future in zip(agents, futures):
                     try:
-                        result = future.result()
+                        if per_task_timeout is not None:
+                            result = future.result(
+                                timeout=per_task_timeout
+                            )
+                        else:
+                            result = future.result()
                     except Exception as e:
                         result = e
                     # Prefer .agent_name or .name, fallback to str(agent)
@@ -181,7 +194,12 @@ def run_agents_concurrently(
                     futures
                 ):
                     try:
-                        result = future.result()
+                        if per_task_timeout is not None:
+                            result = future.result(
+                                timeout=per_task_timeout
+                            )
+                        else:
+                            result = future.result()
                         results.append(result)
                     except Exception as e:
                         results.append(e)
@@ -224,12 +242,11 @@ def run_agents_concurrently_multiprocess(
         >>> print(f"Processed {len(results)} agents")
     """
     results = []
-    loop = asyncio.get_event_loop()
 
     # Process agents in batches to avoid overwhelming system resources
     for i in range(0, len(agents), batch_size):
         batch = agents[i : i + batch_size]
-        batch_results = loop.run_until_complete(
+        batch_results = asyncio.run(
             run_agents_concurrently_async(batch, task)
         )
         results.extend(batch_results)
