@@ -6,6 +6,7 @@ This directory contains demonstration examples of single agent implementations f
 
 - [insurance_agent.py](insurance_agent.py) - Insurance processing agent
 - [persistent_legal_agent.py](persistent_legal_agent.py) - Legal document processing agent with persistence
+- [cos.py](cos.py) - Chief of Staff swarm demonstration for multi-task delegation and full workspace
 
 ## Overview
 
