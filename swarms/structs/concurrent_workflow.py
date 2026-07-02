@@ -2,7 +2,7 @@ import concurrent.futures
 import json
 import os
 import time
-from typing import Callable, List, Optional, Union
+from typing import Callable, List, Literal, Optional, Union
 
 from loguru import logger as loguru_logger
 from swarms.structs.agent import Agent
@@ -39,6 +39,9 @@ class ConcurrentWorkflow:
         max_loops (int): Maximum number of execution loops (currently unused)
         auto_generate_prompts (bool): Whether to enable automatic prompt engineering
         show_dashboard (bool): Whether to display real-time dashboard during execution
+        on_error (Literal["raise", "store"]): Error handling mode. "store" (default)
+            collects per-agent errors and returns partial results. "raise" propagates
+            the first agent error immediately (fail-fast behavior).
         agent_statuses (dict): Dictionary tracking status and output of each agent
         metadata_output_path (str): Path for saving workflow metadata
         conversation (Conversation): Conversation object for storing agent interactions
@@ -83,6 +86,7 @@ class ConcurrentWorkflow:
         show_dashboard: bool = False,
         autosave: bool = True,
         verbose: bool = False,
+        on_error: Literal["raise", "store"] = "store",
     ):
         self.id = id if id is not None else swarm_id()
         self.name = name
@@ -95,6 +99,7 @@ class ConcurrentWorkflow:
         self.show_dashboard = show_dashboard
         self.autosave = autosave
         self.verbose = verbose
+        self.on_error = on_error
         self.swarm_workspace_dir = None
         self.metadata_output_path = (
             f"concurrent_workflow_name_{name}_id_{self.id}.json"
@@ -351,6 +356,8 @@ class ConcurrentWorkflow:
                         logger.error(
                             f"Agent {agent.agent_name} failed: {str(e)}"
                         )
+                        if self.on_error == "raise":
+                            raise
                         results.append(
                             (agent.agent_name, f"Error: {str(e)}")
                         )
@@ -419,10 +426,22 @@ class ConcurrentWorkflow:
                 future_to_agent
             ):
                 agent = future_to_agent[future]
-                output = future.result()
-                self.conversation.add(
-                    role=agent.agent_name, content=output
-                )
+                try:
+                    output = future.result()
+                    self.conversation.add(
+                        role=agent.agent_name, content=output
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Agent {agent.agent_name} failed: {str(e)}"
+                    )
+                    if self.on_error == "raise":
+                        raise
+                    # Store error marker so callers can filter failed agents
+                    self.conversation.add(
+                        role=f"{agent.agent_name} (failed)",
+                        content=f"Error: {str(e)}",
+                    )
 
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
@@ -458,7 +477,12 @@ class ConcurrentWorkflow:
             Exception: If the agent execution fails.
         """
         if streaming_callback is None:
-            return agent.run(task=task, img=img, imgs=imgs)
+            try:
+                return agent.run(task=task, img=img, imgs=imgs)
+            except Exception as e:
+                error_msg = f"Agent {agent.agent_name} failed: {str(e)}"
+                logger.error(error_msg)
+                raise
 
         def agent_streaming_callback(chunk: str):
             try:
