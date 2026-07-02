@@ -2,7 +2,9 @@
 
 ## Description
 
-New `FuguAgent` class (`swarms/agents/fugu.py`) implementing the Fugu/Trinity orchestration pattern — a multi-agent system that presents itself as a single model API.
+New `FuguAgent` class in `examples/multi_agent/fugu_agent/` implementing the Fugu/Trinity orchestration pattern — a multi-agent system that presents itself as a single model API.
+
+> **Note:** This implementation lives in `examples/` and is not exported from the main `swarms` package. It is available for testing and evaluation before potential inclusion.
 
 ### Core Architecture
 
@@ -17,14 +19,15 @@ The `FuguAgent` coordinates a pool of worker agents through a dedicated coordina
 - **Visibility routing** — Each `AgentTask` specifies which prior step outputs (by index) the worker can see, implementing the Conductor's access-list pattern.
 - **Chain-of-thought aggregation** — Final answer synthesized by passing all step outputs through the coordinator.
 
-**Files changed:**
+**Files:**
 
-| File | Change |
-|------|--------|
-| `swarms/agents/fugu.py` | New — core FuguAgent implementation (380 LOC) |
-| `swarms/agents/__init__.py` | Added `FuguAgent` export |
-| `swarms/structs/swarm_router.py` | Added `"FuguAgent"` to `SwarmType` + `_create_fugu_agent()` |
-| `examples/single_agent/fugu_example.py` | New — minimal usage example |
+| File | Description |
+|------|-------------|
+| `examples/multi_agent/fugu_agent/fugu_agent.py` | Core FuguAgent implementation with pydantic models and type hints |
+| `examples/multi_agent/fugu_agent/__init__.py` | Module exports |
+| `examples/multi_agent/fugu_agent/example_basic.py` | Minimal usage with auto-detected models |
+| `examples/multi_agent/fugu_agent/example_with_workers.py` | Usage with explicit worker agents |
+| `examples/single_agent/fugu_example.py` | Deprecated redirect to new location |
 
 ## Architecture
 
@@ -126,7 +129,7 @@ sequenceDiagram
 ## Usage
 
 ```python
-from swarms import FuguAgent
+from examples.multi_agent.fugu_agent import FuguAgent
 
 agent = FuguAgent(
     coordinator_model="gpt-4o-mini",
@@ -140,7 +143,8 @@ result = agent.run("Write a short story about a robot discovering music.")
 Workers are auto-detected from `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GOOGLE_API_KEY`, or can be passed explicitly:
 
 ```python
-from swarms import FuguAgent, Agent
+from swarms import Agent
+from examples.multi_agent.fugu_agent import FuguAgent
 
 agent = FuguAgent(
     workers=[
@@ -151,31 +155,18 @@ agent = FuguAgent(
 )
 ```
 
-Also available via `SwarmRouter`:
+## Code Quality
 
-```python
-from swarms import SwarmRouter, Agent
-
-router = SwarmRouter(
-    agents=[Agent(agent_name="a", model_name="gpt-4o"), Agent(agent_name="b", model_name="claude-sonnet-4-5")],
-    swarm_type="FuguAgent",
-    max_loops=5,
-)
-result = router.run("Write a story about a robot.")
-```
-
-## Issue
-
-N/A — new feature.
+- **Pydantic models** for `AgentTask`, `AgentTaskResult`, `VerificationResult` with field validation
+- **Comprehensive type hints** throughout all methods and functions
+- **Docstrings** on all public classes and methods
+- **`__repr__`** methods on `WorkflowState`, `MemoryStore`, and `FuguAgent` for debugging
 
 ## Dependencies
 
-None beyond existing swarms dependencies. No new packages required.
+- `pydantic` — used for data validation on `AgentTask`, `AgentTaskResult`, `VerificationResult`
+- Standard library: `sqlite3`, `json`, `os`, `time`
 
 ## Tag Maintainer
 
 kye@swarms.world
-
-## Twitter Handle
-
-N/A
