@@ -51,8 +51,12 @@ print(f"Selected swarm type: {swarm_type}")
 For more control over the matching process, you can create and configure your own SwarmMatcher instance:
 
 ```python
-from swarms_utils.swarm_matcher import SwarmMatcher, SwarmMatcherConfig, SwarmType
-, initialize_swarm_types
+from swarms_utils.swarm_matcher import (
+    SwarmMatcher,
+    SwarmMatcherConfig,
+    SwarmType,
+    initialize_swarm_types,
+)
 
 # Create a configuration
 config = SwarmMatcherConfig(
