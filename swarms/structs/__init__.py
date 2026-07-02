@@ -24,7 +24,7 @@ from swarms.structs.graph_workflow import (
     Node,
     NodeType,
 )
-from swarms.structs.groupchat import GroupChat, RESPOND_TOOL
+from swarms.structs.groupchat import RESPOND_TOOL, GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 from swarms.structs.hybrid_hiearchical_peer_swarm import (
