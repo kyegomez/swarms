@@ -19,7 +19,7 @@ load_dotenv()
 def main() -> None:
     """Run a simple FuguAgent task."""
     agent = FuguAgent(
-        coordinator_model="gpt-4o-mini",
+        coordinator_model="gpt-5",
         max_turns=5,
         verbose=True,
     )
