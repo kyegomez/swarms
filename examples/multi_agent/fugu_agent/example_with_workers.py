@@ -22,7 +22,7 @@ def main() -> None:
     workers = [
         Agent(
             agent_name="coder",
-            model_name="gpt-4o",
+            model_name="gpt-5.1",
             system_prompt="You are an expert programmer. Write clean, well-documented code.",
             max_loops=1,
         ),
@@ -34,14 +34,14 @@ def main() -> None:
         ),
         Agent(
             agent_name="writer",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.1",
             system_prompt="You are a skilled technical writer. Write clear, concise content.",
             max_loops=1,
         ),
     ]
 
     agent = FuguAgent(
-        coordinator_model="gpt-4o-mini",
+        coordinator_model="gpt-5.4",
         workers=workers,
         max_turns=5,
         verbose=True,
