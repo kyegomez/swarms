@@ -27,34 +27,55 @@ from swarms.structs.agent import Agent
 
 
 MODEL_TIER: dict[str, int] = {
-    "gpt-5": 10,
-    "o3": 10,
-    "o4": 10,
-    "claude-opus-4": 9,
-    "claude-opus-3": 9,
-    "claude-sonnet-4-5": 8,
-    "claude-sonnet-4": 8,
-    "claude-sonnet-3-5": 7,
-    "gemini-3-ultra": 9,
-    "gemini-3-pro": 8,
-    "gemini-2-5-pro": 7,
-    "gemini-2-5-flash": 6,
-    "gemini-2-0-flash": 5,
-    "gpt-4o": 7,
-    "gpt-4o-mini": 5,
-    "gpt-4-turbo": 6,
-    "gpt-4": 6,
-    "gpt-3-5-turbo": 3,
-    "qwen3-32b": 6,
-    "qwen3-8b": 4,
-    "qwen2-72b": 5,
-    "deepseek-r1": 6,
-    "deepseek-v3": 6,
-    "llama-4-405b": 8,
-    "llama-4-70b": 6,
-    "llama-4-8b": 4,
-    "gemma-3-27b": 5,
-    "gemma-3-12b": 4,
+{
+  "gpt-5": 10,
+  "gpt-5-thinking": 10,
+  "o4": 10,
+  "o3": 10,
+
+  "claude-opus-4.1": 10,
+  "claude-opus-4": 9,
+  "claude-sonnet-4": 9,
+  "claude-sonnet-3.7": 8,
+  "claude-sonnet-3.5": 7,
+
+  "gemini-2.5-pro": 9,
+  "gemini-2.5-flash": 7,
+  "gemini-2.0-flash": 5,
+
+  "grok-4": 9,
+  "grok-4-heavy": 10,
+
+  "gpt-4o": 7,
+  "gpt-4-turbo": 6,
+  "gpt-4": 6,
+  "gpt-4o-mini": 5,
+  "gpt-3.5-turbo": 3,
+
+  "deepseek-r1": 8,
+  "deepseek-v3.1": 8,
+  "deepseek-v3": 7,
+
+  "qwen3-235b-a22b-thinking": 8,
+  "qwen3-235b-a22b-instruct": 7,
+  "qwen3-32b": 6,
+  "qwen3-8b": 4,
+  "qwen2.5-72b": 6,
+
+  "kimi-k2": 8,
+
+  "magistral-medium": 7,
+  "magistral-small": 5,
+
+  "llama-4-maverick": 8,
+  "llama-4-scout": 6,
+
+  "command-a": 7,
+  "command-r7b": 5,
+
+  "gemma-3-27b": 5,
+  "gemma-3-12b": 4,
+  "ministral-8b": 4
 }
 
 
