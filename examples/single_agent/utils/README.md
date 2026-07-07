@@ -9,11 +9,11 @@ This directory contains utility functions and helpers for single agent operation
 - [dynamic_context_window.py](dynamic_context_window.py) - Dynamic context window management
 - [fallback_test.py](fallback_test.py) - Fallback mechanism testing
 - [grok_4_agent.py](grok_4_agent.py) - Grok 4 agent implementation
-- [handoffs_example.py](handoffs_example.py) - Agent handoff examples
 - [list_agent_output_types.py](list_agent_output_types.py) - Output type listing
 - [markdown_agent.py](markdown_agent.py) - Markdown processing agent
-- [medical_agent_add_to_marketplace.py](medical_agent_add_to_marketplace.py) - Marketplace integration example
 - [xml_output_example.py](xml_output_example.py) - XML output example
+
+> Handoff and marketplace helpers moved: see [../autonomy/handoffs/](../autonomy/handoffs/) and [../integrations/marketplace/](../integrations/marketplace/).
 
 ## Subdirectories
 

@@ -48,105 +48,24 @@ This directory contains comprehensive examples demonstrating various capabilitie
 
 | Example | Description |
 |---------|-------------|
-| [single_agent/](single_agent/) | Single agent implementations including demos, external agent integrations, LLM integrations (Azure, Claude, DeepSeek, Mistral, OpenAI, Qwen), onboarding, RAG, reasoning agents, tools integration, utils, vision capabilities, and MCP integration |
-| [README.md](single_agent/README.md) | Complete single agent examples documentation |
-| [simple_agent.py](single_agent/simple_agent.py) | Basic single agent example |
-| [auto_agent.py](single_agent/auto_agent.py) | Auto agent implementation |
-| [agent_mcp.py](single_agent/agent_mcp.py) | MCP integration example |
-| [agent_skill_examples/](single_agent/agent_skill_examples/) | Agent skill examples including dynamic skills loader, custom skills, and pre-built skills (code review, data visualization, financial analysis) |
-| [demos/](single_agent/demos/) | Single agent demonstration examples including insurance and legal agents |
-| [full_autonomy/](single_agent/full_autonomy/) | Autonomous agent examples with marketplace integration and full autonomy capabilities |
-| [example_autonomous_looper_run_bash.py](single_agent/full_autonomy/example_autonomous_looper_run_bash.py) | Autonomous agent with `run_bash` tool for terminal access |
-| [handoffs/](single_agent/handoffs/) | Agent handoff examples including autonomous agents with handoffs |
-| [external_agents/](single_agent/external_agents/) | External agent integrations including OpenAI Assistant wrapper |
-| [llms/](single_agent/llms/) | LLM integration examples for Azure, Claude, DeepSeek, Mistral, OpenAI, O3, and Qwen |
-| [azure_agent_api_verison.py](single_agent/llms/azure_agent_api_verison.py) | Azure agent API version example |
-| [azure_agent.py](single_agent/llms/azure_agent.py) | Azure agent example |
-| [azure_model_support.py](single_agent/llms/azure_model_support.py) | Azure model support |
-| [base_llm.py](single_agent/llms/base_llm.py) | Base LLM example |
-| [mistral_example.py](single_agent/llms/mistral_example.py) | Mistral example |
-| [o3_agent.py](single_agent/llms/o3_agent.py) | O3 agent example |
-| [qwen_3_base.py](single_agent/llms/qwen_3_base.py) | Qwen 3 base example |
-| [claude_examples/](single_agent/llms/claude_examples/) | Claude model examples |
-| [claude_4_example.py](single_agent/llms/claude_examples/claude_4_example.py) | Claude 4 example |
-| [claude_4.py](single_agent/llms/claude_examples/claude_4.py) | Claude 4 implementation |
-| [swarms_claude_example.py](single_agent/llms/claude_examples/swarms_claude_example.py) | Swarms Claude example |
-| [deepseek_examples/](single_agent/llms/deepseek_examples/) | DeepSeek model examples |
-| [deepseek_r1.py](single_agent/llms/deepseek_examples/deepseek_r1.py) | DeepSeek R1 example |
-| [fast_r1_groq.py](single_agent/llms/deepseek_examples/fast_r1_groq.py) | Fast R1 Groq example |
-| [groq_deepseek_agent.py](single_agent/llms/deepseek_examples/groq_deepseek_agent.py) | Groq DeepSeek agent |
-| [openai_examples/](single_agent/llms/openai_examples/) | OpenAI model examples |
-| [4o_mini_demo.py](single_agent/llms/openai_examples/4o_mini_demo.py) | GPT-4o mini demo |
-| [reasoning_duo_batched.py](single_agent/llms/openai_examples/reasoning_duo_batched.py) | Reasoning duo batched example |
-| [test_async_litellm.py](single_agent/llms/openai_examples/test_async_litellm.py) | Async LiteLLM test |
-| [onboard/](single_agent/onboard/) | Agent onboarding examples and configurations |
-| [marketplace/](single_agent/marketplace/) | Marketplace prompt integration examples including quant trader agent |
-| [rag/](single_agent/rag/) | Retrieval Augmented Generation (RAG) implementations with vector database integrations |
-| [full_agent_rag_example.py](single_agent/rag/full_agent_rag_example.py) | Full agent RAG example |
-| [pinecone_example.py](single_agent/rag/pinecone_example.py) | Pinecone vector database example |
-| [qdrant_agent.py](single_agent/rag/qdrant_agent.py) | Qdrant agent example |
-| [qdrant_rag_example.py](single_agent/rag/qdrant_rag_example.py) | Qdrant RAG example |
-| [simple_example.py](single_agent/rag/simple_example.py) | Simple RAG example |
-| [reasoning_agent_examples/](single_agent/reasoning_agent_examples/) | Reasoning agent patterns including consistency, GPK, iterative, and reasoning duo |
-| [agent_judge_evaluation_criteria_example.py](single_agent/reasoning_agent_examples/agent_judge_evaluation_criteria_example.py) | Agent judge evaluation criteria example |
-| [agent_judge_example.py](single_agent/reasoning_agent_examples/agent_judge_example.py) | Agent judge example |
-| [consistency_agent.py](single_agent/reasoning_agent_examples/consistency_agent.py) | Consistency agent |
-| [consistency_example.py](single_agent/reasoning_agent_examples/consistency_example.py) | Consistency example |
-| [gpk_agent.py](single_agent/reasoning_agent_examples/gpk_agent.py) | GPK agent |
-| [iterative_agent.py](single_agent/reasoning_agent_examples/iterative_agent.py) | Iterative agent |
-| [reasoning_agent_router_now.py](single_agent/reasoning_agent_examples/reasoning_agent_router_now.py) | Reasoning agent router (current) |
-| [reasoning_agent_router.py](single_agent/reasoning_agent_examples/reasoning_agent_router.py) | Reasoning agent router |
-| [reasoning_duo_example.py](single_agent/reasoning_agent_examples/reasoning_duo_example.py) | Reasoning duo example |
-| [reasoning_duo_test.py](single_agent/reasoning_agent_examples/reasoning_duo_test.py) | Reasoning duo test |
-| [reasoning_duo.py](single_agent/reasoning_agent_examples/reasoning_duo.py) | Reasoning duo implementation |
-| [tools/](single_agent/tools/) | Tool integration examples including Exa search, LiteLLM, multi-tool usage, Omni modal, Solana, structured outputs, and browser agents |
-| [agent_with_exa.py](single_agent/tools/agent_with_exa.py) | Agent with Exa search integration |
-| [exa_search_agent.py](single_agent/tools/exa_search_agent.py) | Exa search agent example |
-| [example_async_vs_multithread.py](single_agent/tools/example_async_vs_multithread.py) | Async vs multithread example |
-| [litellm_tool_example.py](single_agent/tools/litellm_tool_example.py) | LiteLLM tool example |
-| [multi_tool_usage_agent.py](single_agent/tools/multi_tool_usage_agent.py) | Multi-tool usage agent |
-| [new_tools_examples.py](single_agent/tools/new_tools_examples.py) | New tools examples |
-| [omni_modal_agent.py](single_agent/tools/omni_modal_agent.py) | Omni modal agent |
-| [swarms_of_browser_agents.py](single_agent/tools/swarms_of_browser_agents.py) | Swarms of browser agents |
-| [swarms_tools_example.py](single_agent/tools/swarms_tools_example.py) | Swarms tools example |
-| [together_deepseek_agent.py](single_agent/tools/together_deepseek_agent.py) | Together DeepSeek agent |
-| [solana_tool/](single_agent/tools/solana_tool/) | Solana tool integration |
-| [solana_tool.py](single_agent/tools/solana_tool/solana_tool.py) | Solana tool implementation |
-| [solana_tool_test.py](single_agent/tools/solana_tool/solana_tool_test.py) | Solana tool test |
-| [structured_outputs/](single_agent/tools/structured_outputs/) | Structured outputs examples |
-| [example_meaning_of_life_agents.py](single_agent/tools/structured_outputs/example_meaning_of_life_agents.py) | Meaning of life agents example |
-| [structured_outputs_example.py](single_agent/tools/structured_outputs/structured_outputs_example.py) | Structured outputs example |
-| [tools_examples/](single_agent/tools/tools_examples/) | Additional tool examples |
-| [dex_screener.py](single_agent/tools/tools_examples/dex_screener.py) | DEX screener tool |
-| [financial_news_agent.py](single_agent/tools/tools_examples/financial_news_agent.py) | Financial news agent |
-| [simple_tool_example.py](single_agent/tools/tools_examples/simple_tool_example.py) | Simple tool example |
-| [swarms_tool_example_simple.py](single_agent/tools/tools_examples/swarms_tool_example_simple.py) | Simple Swarms tool example |
-| [utils/](single_agent/utils/) | Single agent utility functions including async agents, custom base URLs, dynamic context windows, fallback tests, handoffs, markdown agents, and XML output |
-| [async_agent.py](single_agent/utils/async_agent.py) | Async agent example |
-| [custom_agent_base_url.py](single_agent/utils/custom_agent_base_url.py) | Custom agent base URL |
-| [dynamic_context_window.py](single_agent/utils/dynamic_context_window.py) | Dynamic context window example |
-| [fallback_test.py](single_agent/utils/fallback_test.py) | Fallback test example |
-| [grok_4_agent.py](single_agent/utils/grok_4_agent.py) | Grok 4 agent example |
-| [handoffs_example.py](single_agent/utils/handoffs_example.py) | Handoffs example |
-| [list_agent_output_types.py](single_agent/utils/list_agent_output_types.py) | List agent output types |
-| [markdown_agent.py](single_agent/utils/markdown_agent.py) | Markdown agent example |
-| [medical_agent_add_to_marketplace.py](single_agent/utils/medical_agent_add_to_marketplace.py) | Medical agent marketplace example |
-| [xml_output_example.py](single_agent/utils/xml_output_example.py) | XML output example |
-| [autosaving_examples/](single_agent/utils/autosaving_examples/) | Autosaving examples |
-| [autosave_basic_example.py](single_agent/utils/autosaving_examples/autosave_basic_example.py) | Basic autosave example |
-| [autosave_config_access_example.py](single_agent/utils/autosaving_examples/autosave_config_access_example.py) | Autosave config access example |
-| [autosave_directory_structure_example.py](single_agent/utils/autosaving_examples/autosave_directory_structure_example.py) | Autosave directory structure example |
-| [autosave_recovery_example.py](single_agent/utils/autosaving_examples/autosave_recovery_example.py) | Autosave recovery example |
-| [transform_prompts/](single_agent/utils/transform_prompts/) | Prompt transformation examples |
-| [transforms_agent_example.py](single_agent/utils/transform_prompts/transforms_agent_example.py) | Transform agent example |
-| [transforms_examples.py](single_agent/utils/transform_prompts/transforms_examples.py) | Transform examples |
-| [vision/](single_agent/vision/) | Vision and multimodal agent examples including image processing and batch image examples |
-| [anthropic_vision_test.py](single_agent/vision/anthropic_vision_test.py) | Anthropic vision test |
-| [image_batch_example.py](single_agent/vision/image_batch_example.py) | Image batch processing example |
-| [multimodal_example.py](single_agent/vision/multimodal_example.py) | Multimodal example |
-| [multiple_image_processing.py](single_agent/vision/multiple_image_processing.py) | Multiple image processing |
-| [vision_test.py](single_agent/vision/vision_test.py) | Vision test |
-| [vision_tools.py](single_agent/vision/vision_tools.py) | Vision tools |
+| [single_agent/README.md](single_agent/README.md) | Full index of single-agent examples |
+| [getting_started/](single_agent/getting_started/) | First runs: minimal agent, interactive mode, onboarding |
+| [getting_started/simple_agent.py](single_agent/getting_started/simple_agent.py) | Basic single agent example |
+| [getting_started/interactive.py](single_agent/getting_started/interactive.py) | Interactive REPL-style agent |
+| [capabilities/tools/](single_agent/capabilities/tools/) | Tool integration: MCP, Exa search, LiteLLM, multi-tool, Solana, structured outputs, browser agents |
+| [capabilities/skills/](single_agent/capabilities/skills/) | Agent skills: dynamic, custom, and pre-built (code review, data viz, financial analysis) |
+| [capabilities/rag/](single_agent/capabilities/rag/) | Retrieval-augmented generation with Pinecone and Qdrant |
+| [capabilities/vision/](single_agent/capabilities/vision/) | Vision and multimodal agents, batch image processing |
+| [capabilities/streaming/](single_agent/capabilities/streaming/) | Token streaming, streaming with tools and loops |
+| [capabilities/prompt_caching/](single_agent/capabilities/prompt_caching/) | Provider-side prompt caching (Anthropic, OpenAI) |
+| [reasoning/](single_agent/reasoning/) | Reasoning agents: judges, consistency, iterative, reasoning duo/router |
+| [autonomy/autonomous_agents/](single_agent/autonomy/autonomous_agents/) | Autonomous loops, sub-agents, `run_bash` looper |
+| [autonomy/handoffs/](single_agent/autonomy/handoffs/) | Agent-to-agent handoffs |
+| [integrations/marketplace/](single_agent/integrations/marketplace/) | Marketplace prompts and publishing agents to the marketplace |
+| [integrations/external_agents/](single_agent/integrations/external_agents/) | Bridges to external agent systems |
+| [demos/](single_agent/demos/) | Applied demos: insurance, persistent legal agent |
+| [utils/](single_agent/utils/) | Config, output formats, autosaving, prompt transforms |
+| _Model/provider examples (Azure, Claude, DeepSeek, Mistral, OpenAI, Qwen, …)_ | Moved to [models/](models/) — see [models/README.md](models/README.md) |
 
 ### Tools & Integrations
 
@@ -299,9 +218,9 @@ This directory contains comprehensive examples demonstrating various capabilitie
 |---------|-------------|
 | [marketplace/](marketplace/) | Swarms marketplace prompt integration examples for using pre-built prompts from the marketplace |
 | [zia_agent.py](marketplace/zia_agent.py) | Zia agent implementation using marketplace prompts |
-| [single_agent/marketplace/](single_agent/marketplace/) | Single agent marketplace examples including marketplace prompt integration and quant trader agent |
-| [marketplace_prompt_example.py](single_agent/marketplace/marketplace_prompt_example.py) | Example of using marketplace prompts with agents |
-| [quant_trader_agent.py](single_agent/marketplace/quant_trader_agent.py) | Quantitative trader agent using marketplace prompts |
+| [single_agent/integrations/marketplace/](single_agent/integrations/marketplace/) | Single agent marketplace examples including marketplace prompt integration and quant trader agent |
+| [marketplace_prompt_example.py](single_agent/integrations/marketplace/marketplace_prompt_example.py) | Example of using marketplace prompts with agents |
+| [quant_trader_agent.py](single_agent/integrations/marketplace/quant_trader_agent.py) | Quantitative trader agent using marketplace prompts |
 
 ### Guides & Tutorials
 
@@ -400,20 +319,20 @@ This directory contains comprehensive examples demonstrating various capabilitie
 
 | Use Case | Example |
 |----------|---------|
-| New to Swarms? | Start with [single_agent/simple_agent.py](single_agent/simple_agent.py) for basic concepts |
+| New to Swarms? | Start with [single_agent/simple_agent.py](single_agent/getting_started/simple_agent.py) for basic concepts |
 | Want to use the CLI? | Check out [cli/](cli/) for all CLI command examples |
 | Want multi-agent workflows? | Check out [multi_agent/duo_agent.py](multi_agent/duo_agent.py) |
 | Need tool integration? | Explore [tools/agent_as_tools.py](tools/agent_as_tools.py) |
 | Interested in AOP? | Try [aop_examples/client/example_new_agent_tools.py](aop_examples/client/example_new_agent_tools.py) for agent discovery |
 | Want to see social algorithms? | Check out [multi_agent/social_algorithms_examples/](multi_agent/social_algorithms_examples/) |
 | Looking for guides? | Visit [guides/](guides/) for comprehensive tutorials |
-| Need RAG? | Try [single_agent/rag/](single_agent/rag/) for RAG examples |
+| Need RAG? | Try [single_agent/rag/](single_agent/capabilities/rag/) for RAG examples |
 | Want reasoning agents? | Check out [reasoning_agents/](reasoning_agents/) for reasoning agent examples |
 | Interested in marketplace prompts? | Explore [marketplace/](marketplace/) for marketplace prompt integration examples |
 | Want voice/speech capabilities? | Check out [voice_agents/](voice_agents/) for speech-enabled agent examples |
-| Interested in agent skills? | Explore [single_agent/agent_skill_examples/](single_agent/agent_skill_examples/) for dynamic skills |
-| Want autonomous agents? | Check out [single_agent/full_autonomy/](single_agent/full_autonomy/) for full autonomy examples |
-| Need agent handoffs? | See [single_agent/handoffs/](single_agent/handoffs/) for handoff patterns |
+| Interested in agent skills? | Explore [single_agent/capabilities/skills/](single_agent/capabilities/skills/) for dynamic skills |
+| Want autonomous agents? | Check out [single_agent/autonomy/autonomous_agents/](single_agent/autonomy/autonomous_agents/) for full autonomy examples |
+| Need agent handoffs? | See [single_agent/handoffs/](single_agent/autonomy/handoffs/) for handoff patterns |
 | Looking for latest features? | Visit [guides/changelog_890/](guides/changelog_890/) for January 2026 release examples |
 
 ## Key Examples by Category
@@ -453,18 +372,18 @@ This directory contains comprehensive examples demonstrating various capabilitie
 
 | Example | Description |
 |---------|-------------|
-| [Simple Agent](single_agent/simple_agent.py) | Basic agent setup |
-| [Auto Agent](single_agent/auto_agent.py) | Auto agent implementation |
-| [Agent Skills](single_agent/agent_skill_examples/) | Dynamic skills loader and custom skill examples |
-| [Autonomous Agents](single_agent/full_autonomy/) | Full autonomy examples with marketplace integration |
-| [Agent Handoffs](single_agent/handoffs/) | Agent handoff patterns and examples |
-| [Marketplace Integration](single_agent/marketplace/) | Marketplace prompt integration examples |
-| [Reasoning Agents](single_agent/reasoning_agent_examples/) | Advanced reasoning patterns including consistency, GPK, iterative, and reasoning duo |
-| [Vision Agents](single_agent/vision/multimodal_example.py) | Vision and multimodal capabilities |
-| [RAG Agents](single_agent/rag/) | Retrieval augmented generation |
-| [External Agents](single_agent/external_agents/) | External agent integrations |
-| [Onboarding](single_agent/onboard/) | Agent onboarding examples |
-| [Tools Integration](single_agent/tools/) | Comprehensive tool integration examples |
+| [Simple Agent](single_agent/getting_started/simple_agent.py) | Basic agent setup |
+| [Auto Agent](single_agent/autonomy/autonomous_agents/auto_agent.py) | Auto agent implementation |
+| [Agent Skills](single_agent/capabilities/skills/) | Dynamic skills loader and custom skill examples |
+| [Autonomous Agents](single_agent/autonomy/autonomous_agents/) | Full autonomy examples with marketplace integration |
+| [Agent Handoffs](single_agent/autonomy/handoffs/) | Agent handoff patterns and examples |
+| [Marketplace Integration](single_agent/integrations/marketplace/) | Marketplace prompt integration examples |
+| [Reasoning Agents](single_agent/reasoning/) | Advanced reasoning patterns including consistency, GPK, iterative, and reasoning duo |
+| [Vision Agents](single_agent/capabilities/vision/multimodal_example.py) | Vision and multimodal capabilities |
+| [RAG Agents](single_agent/capabilities/rag/) | Retrieval augmented generation |
+| [External Agents](single_agent/integrations/external_agents/) | External agent integrations |
+| [Onboarding](single_agent/getting_started/onboarding/) | Agent onboarding examples |
+| [Tools Integration](single_agent/capabilities/tools/) | Comprehensive tool integration examples |
 | [Voice Agents](voice_agents/) | Speech-enabled agent examples |
 
 ### Tool Integrations
@@ -486,22 +405,22 @@ This directory contains comprehensive examples demonstrating various capabilitie
 
 | Example | Description |
 |---------|-------------|
-| [OpenAI](single_agent/llms/openai_examples/4o_mini_demo.py) | OpenAI models |
-| [Claude](single_agent/llms/claude_examples/claude_4_example.py) | Claude models |
-| [DeepSeek](single_agent/llms/deepseek_examples/deepseek_r1.py) | DeepSeek models |
-| [DeepSeek Groq](single_agent/llms/deepseek_examples/groq_deepseek_agent.py) | DeepSeek with Groq integration |
-| [Azure](single_agent/llms/azure_agent.py) | Azure OpenAI |
-| [Mistral](single_agent/llms/mistral_example.py) | Mistral models |
-| [O3](single_agent/llms/o3_agent.py) | O3 model integration |
-| [Qwen](single_agent/llms/qwen_3_base.py) | Qwen model integration |
-| [Ollama](https://docs.swarms.world) | Local Ollama and other providers via LiteLLM—see docs and [single_agent/llms/](single_agent/llms/) |
+| [OpenAI](models/openai/4o_mini_demo.py) | OpenAI models |
+| [Claude](models/anthropic/claude_4_example.py) | Claude models |
+| [DeepSeek](models/deepseek/deepseek_r1.py) | DeepSeek models |
+| [DeepSeek Groq](models/deepseek/groq_deepseek_agent.py) | DeepSeek with Groq integration |
+| [Azure](models/azure/azure_agent.py) | Azure OpenAI |
+| [Mistral](models/mistral/mistral_example.py) | Mistral models |
+| [O3](models/openai/o3_agent.py) | O3 model integration |
+| [Qwen](models/qwen/qwen_3_base.py) | Qwen model integration |
+| [Ollama](https://docs.swarms.world) | Local Ollama and other providers via LiteLLM—see docs and [models/](models/) |
 
 ### Marketplace Examples
 
 | Example | Description |
 |---------|-------------|
-| [Marketplace Prompt](single_agent/marketplace/marketplace_prompt_example.py) | Using marketplace prompts with agents |
-| [Quant Trader Agent](single_agent/marketplace/quant_trader_agent.py) | Quantitative trader agent with marketplace prompts |
+| [Marketplace Prompt](single_agent/integrations/marketplace/marketplace_prompt_example.py) | Using marketplace prompts with agents |
+| [Quant Trader Agent](single_agent/integrations/marketplace/quant_trader_agent.py) | Quantitative trader agent with marketplace prompts |
 | [Zia Agent](marketplace/zia_agent.py) | Zia agent with marketplace prompt integration |
 
 ### CLI Examples

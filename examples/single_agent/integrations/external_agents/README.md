@@ -4,7 +4,7 @@ This directory contains examples demonstrating integration with external agent s
 
 ## Examples
 
-- [openai_assistant_wrapper.py](openai_assistant_wrapper.py) - OpenAI Assistant integration wrapper
+_No runnable examples yet — this folder is a placeholder for external agent bridges._
 
 ## Overview
 
