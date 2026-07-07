@@ -196,6 +196,8 @@ class LiteLLM:
         retries: int = 3,
         verbose: bool = False,
         caching: bool = False,
+        prompt_caching: bool = False,
+        cache_config: dict = None,
         mcp_call: bool = False,
         top_p: float = 1.0,
         functions: List[dict] = None,
@@ -245,8 +247,28 @@ class LiteLLM:
                 Defaults to 3.
             verbose (bool, optional): Whether to enable verbose logging for debugging.
                 Defaults to False.
-            caching (bool, optional): Whether to enable response caching for identical
-                requests. Defaults to False.
+            caching (bool, optional): Whether to enable LiteLLM response caching for
+                identical requests (a full-response cache). Defaults to False.
+            prompt_caching (bool, optional): Whether to enable provider-side prompt
+                caching. When True, ephemeral ``cache_control`` breakpoints are added to
+                the system prompt and the final message so the large, stable prefix of
+                each request is cached and re-billed at a discount (Anthropic model
+                family: Claude on Anthropic / Bedrock / Vertex). Providers that cache
+                automatically (e.g. OpenAI) are left untouched. Defaults to False.
+            cache_config (dict, optional): Fine-grained prompt-caching options; only
+                consulted when ``prompt_caching=True``. Recognized keys (all optional):
+
+                    ttl (str): "5m" (default) or "1h" for Anthropic's extended cache.
+                    cache_system_prompt (bool): cache the system prefix (default True).
+                    cache_messages (bool): cache through the last message (default True).
+                    cache_tools (bool): cache the tool definitions block (default True).
+                    override (bool): force cache_control injection on/off regardless of
+                        the detected provider — e.g. to opt Gemini/Vertex in, or a
+                        custom alias out. Default None (auto-detect: Anthropic only).
+                    prompt_cache_key (str): OpenAI routing hint for higher hit rates.
+                    prompt_cache_retention (str): OpenAI cache TTL ("in_memory" | "24h").
+
+                Defaults to None (all defaults above apply).
             mcp_call (bool, optional): Whether this is an MCP (Model Context Protocol) call.
                 Affects how tool calls are formatted in the response. Defaults to False.
             top_p (float, optional): Top-p (nucleus) sampling parameter. Controls diversity
@@ -298,6 +320,8 @@ class LiteLLM:
         self.tool_choice = tool_choice
         self.parallel_tool_calls = parallel_tool_calls
         self.caching = caching
+        self.prompt_caching = prompt_caching
+        self.cache_config = cache_config or {}
         self.mcp_call = mcp_call
         self.top_p = top_p
         self.functions = functions
@@ -656,7 +680,189 @@ class LiteLLM:
             # Only add task message if no image (since vision_processing handles both)
             messages.append({"role": "user", "content": task})
 
+        # Insert prompt-caching breakpoints on the stable prefix if enabled.
+        if self.prompt_caching and messages:
+            self._apply_prompt_caching(messages)
+
         return messages
+
+    def _cache_opt(self, key: str, default):
+        """Read a single option out of ``self.cache_config`` with a default."""
+        if isinstance(self.cache_config, dict):
+            val = self.cache_config.get(key, default)
+            return default if val is None else val
+        return default
+
+    def _supports_prompt_caching(self) -> bool:
+        """
+        Whether to inject ``cache_control`` breakpoints for the current model.
+
+        ``cache_control`` ephemeral blocks are the explicit prompt-caching
+        mechanism for the **Anthropic model family** — Claude on the Anthropic
+        API, on AWS Bedrock, and on Google Vertex AI. Only those are marked by
+        default.
+
+        Every other provider is intentionally left alone:
+          * OpenAI / xAI / Deepseek cache automatically (no markers needed).
+          * Gemini / Google AI Studio uses its own context-caching API, not
+            ``cache_control`` — injecting the blocks there corrupts the request
+            ("contents is not specified"), so we must not touch it.
+
+        Override: ``cache_config={"override": True/False}`` forces injection on
+        or off regardless of the model — useful for proxies, custom aliases, or
+        to opt Gemini/Vertex into the ``cache_control`` path (which LiteLLM's
+        docs say it supports, though behavior varies by version).
+
+        Note: ``litellm.utils.supports_prompt_caching`` is deliberately NOT used
+        here — it returns True for providers (e.g. Gemini) whose caching is not
+        driven by ``cache_control``, which would break those requests.
+        """
+        override = self._cache_opt("override", None)
+        if override is not None:
+            return bool(override)
+        name = (self.model_name or "").lower()
+        # Anthropic Claude, incl. "bedrock/anthropic.claude-*" and
+        # "vertex_ai/claude-*". Excludes Gemini/Vertex-Gemini and OpenAI.
+        return "claude" in name or "anthropic" in name
+
+    def _cache_control_value(self) -> dict:
+        """
+        Build the ``cache_control`` marker, honoring the configured TTL.
+
+        Default TTL is 5 minutes (``{"type": "ephemeral"}``); ``ttl="1h"`` opts
+        into Anthropic's 1-hour cache (2x write cost, survives longer gaps).
+        """
+        marker = {"type": "ephemeral"}
+        ttl = self._cache_opt("ttl", "5m")
+        if ttl and ttl != "5m":
+            marker["ttl"] = ttl
+        return marker
+
+    def _add_cache_control(self, message: dict) -> None:
+        """
+        Attach a ``cache_control`` breakpoint to a single message in-place,
+        converting plain string content into the block form that
+        LiteLLM/Anthropic require for cache markers.
+        """
+        content = message.get("content")
+        if content is None:
+            return
+
+        marker = self._cache_control_value()
+        if isinstance(content, str):
+            if not content.strip():
+                return
+            message["content"] = [
+                {
+                    "type": "text",
+                    "text": content,
+                    "cache_control": marker,
+                }
+            ]
+        elif isinstance(content, list) and content:
+            # Prefer marking the last text block; otherwise the last block.
+            for block in reversed(content):
+                if (
+                    isinstance(block, dict)
+                    and block.get("type") == "text"
+                ):
+                    block["cache_control"] = marker
+                    return
+            last = content[-1]
+            if isinstance(last, dict):
+                last["cache_control"] = marker
+
+    def _apply_prompt_caching(self, messages: list) -> None:
+        """
+        Insert ``cache_control`` breakpoints for provider-side prompt caching.
+
+        By default two breakpoints are used (Anthropic allows up to four): the
+        system prompt (stable across the whole run) and the final message (so the
+        growing conversation prefix is cached incrementally across loops). Each is
+        individually toggleable via ``cache_config``:
+
+            cache_config = {
+                "cache_system_prompt": True,   # cache the system prefix
+                "cache_messages": True,        # cache through the last message
+            }
+
+        No-op for providers that do not support ``cache_control``; those (e.g.
+        OpenAI) cache automatically and need no markers.
+        """
+        if not self._supports_prompt_caching():
+            return
+
+        # Cache the system prompt — the largest stable prefix of the request.
+        if self._cache_opt("cache_system_prompt", True):
+            for m in messages:
+                if isinstance(m, dict) and m.get("role") == "system":
+                    self._add_cache_control(m)
+                    break
+
+        # Cache through the final message for incremental multi-turn caching.
+        if self._cache_opt("cache_messages", True):
+            self._add_cache_control(messages[-1])
+
+    def _maybe_cache_tools(self, tools: list) -> list:
+        """
+        Optionally add a ``cache_control`` breakpoint to the tool definitions.
+
+        Tool schemas render before ``system`` in the prefix and are large and
+        stable, so caching them is a big win for tool-heavy agents. Marking the
+        LAST tool caches the entire tool block. Controlled by
+        ``cache_config={"cache_tools": True}`` (default True); only applied for
+        Anthropic-family models with ``prompt_caching`` enabled.
+        """
+        if not tools:
+            return tools
+        if not (
+            self.prompt_caching and self._supports_prompt_caching()
+        ):
+            return tools
+        if not self._cache_opt("cache_tools", True):
+            return tools
+
+        # Copy so we never mutate the shared tools_list_dictionary in place.
+        cached = [
+            dict(t) if isinstance(t, dict) else t for t in tools
+        ]
+        if isinstance(cached[-1], dict):
+            cached[-1]["cache_control"] = self._cache_control_value()
+        return cached
+
+    def _apply_cache_request_params(
+        self, completion_params: dict
+    ) -> None:
+        """
+        Apply request-level caching parameters that are not message annotations.
+
+        * OpenAI (automatic caching): pass through ``prompt_cache_key`` and
+          ``prompt_cache_retention`` from ``cache_config`` when set.
+        * Anthropic 1-hour TTL: attach the beta header LiteLLM needs for the
+          extended cache when ``cache_config={"ttl": "1h"}``.
+        """
+        if not self.prompt_caching:
+            return
+
+        # OpenAI-style controls (harmless/ignored on providers that don't use
+        # them; LiteLLM routes them for OpenAI-compatible backends).
+        key = self._cache_opt("prompt_cache_key", None)
+        if key is not None:
+            completion_params["prompt_cache_key"] = key
+        retention = self._cache_opt("prompt_cache_retention", None)
+        if retention is not None:
+            completion_params["prompt_cache_retention"] = retention
+
+        # Anthropic 1-hour cache requires the extended-TTL beta header.
+        if (
+            self._supports_prompt_caching()
+            and self._cache_opt("ttl", "5m") == "1h"
+        ):
+            headers = completion_params.get("extra_headers") or {}
+            headers.setdefault(
+                "anthropic-beta", "extended-cache-ttl-2025-04-11"
+            )
+            completion_params["extra_headers"] = headers
 
     def anthropic_vision_processing(
         self, task: str, image: str, messages: list
@@ -1257,7 +1463,9 @@ class LiteLLM:
             if self.tools_list_dictionary is not None:
                 completion_params.update(
                     {
-                        "tools": self.tools_list_dictionary,
+                        "tools": self._maybe_cache_tools(
+                            self.tools_list_dictionary
+                        ),
                         "tool_choice": self.tool_choice,
                         "parallel_tool_calls": self.parallel_tool_calls,
                     }
@@ -1327,6 +1535,9 @@ class LiteLLM:
                         completion_params["max_tokens"] = (
                             self.thinking_tokens + 1024
                         )
+
+            # Apply request-level caching params (OpenAI keys, 1h TTL header)
+            self._apply_cache_request_params(completion_params)
 
             # Process additional args if any
             self._process_additional_args(completion_params, args)

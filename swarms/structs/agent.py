@@ -265,6 +265,23 @@ class Agent:
             "create_sub_agent", "assign_task".
             Defaults to "all" (all tools enabled). Pass a list of tool names to restrict tools, or "all"
             for unrestricted access. Use this to control which tools the agent can use during autonomous execution.
+        prompt_caching (bool): Enable provider-side prompt caching. When True, ephemeral
+            cache_control breakpoints are added to the stable prefix of each request (system
+            prompt, tools, and the last message) so it is cached and re-billed at a discount.
+            Applies to the Anthropic model family (Claude on Anthropic / Bedrock / Vertex);
+            providers that cache automatically (e.g. OpenAI) are left untouched. Defaults to False.
+        cache_config (dict): Fine-grained prompt-caching options; only consulted when
+            prompt_caching=True. All keys optional:
+                "ttl" (str): "5m" (default) or "1h" for Anthropic's extended cache.
+                "cache_system_prompt" (bool): cache the system prefix (default True).
+                "cache_messages" (bool): cache through the last message (default True).
+                "cache_tools" (bool): cache the tool-definitions block (default True).
+                "override" (bool): force cache_control injection on/off regardless of the
+                    detected provider (e.g. opt Gemini/Vertex in, or a custom alias out).
+                    Default None (auto-detect: Anthropic only).
+                "prompt_cache_key" (str): OpenAI routing hint for higher cache hit rates.
+                "prompt_cache_retention" (str): OpenAI cache TTL ("in_memory" | "24h").
+            Defaults to None.
 
     Methods:
         run: Run the agent
@@ -382,6 +399,8 @@ class Agent:
         plan_enabled: bool = False,
         model_name: str = "gpt-5.4",
         llm_args: dict = None,
+        prompt_caching: bool = False,
+        cache_config: dict = None,
         load_state_path: str = None,
         role: agent_roles = "worker",
         print_on: bool = True,
@@ -477,6 +496,8 @@ class Agent:
         self.plan_enabled = plan_enabled
         self.model_name = model_name
         self.llm_args = llm_args
+        self.prompt_caching = prompt_caching
+        self.cache_config = cache_config
         self.load_state_path = load_state_path
         self.role = role
         self.print_on = print_on
@@ -1112,6 +1133,8 @@ class Agent:
                 "thinking_tokens": self.thinking_tokens,
                 "reasoning_enabled": self.reasoning_enabled,
                 "agent_name": self.agent_name,
+                "prompt_caching": self.prompt_caching,
+                "cache_config": self.cache_config,
             }
 
             # Initialize tools_list_dictionary, if applicable

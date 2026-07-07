@@ -60,7 +60,7 @@ Example:
 import asyncio
 import json
 from collections import deque
-from typing import Any, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 from swarms.prompts.groupchat_prompt import GROUPCHAT_DECIDE_PROMPT
 from swarms.structs.agent import Agent
@@ -70,6 +70,9 @@ from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="groupchat")
 
 RESPOND_TOOL = {
     # The LLM is forced to call this function for every decision. This keeps
@@ -119,15 +122,30 @@ def _extract_args(tool_output: Any) -> Tuple[float, str]:
     if not tool_output:
         return 0.0, ""
 
-    fn = (
-        tool_output.get("function")
-        if isinstance(tool_output, dict)
-        else None
-    )
+    # Providers return tool calls in two shapes: a plain dict
+    # ``{"function": {"name", "arguments"}}`` (the MCP-normalized form), or a
+    # raw provider object such as litellm's ``ChatCompletionMessageToolCall``
+    # where ``function`` and ``arguments`` are *attributes*, not keys. Normalize
+    # any pydantic-style object to a dict so both shapes parse identically.
+    if not isinstance(tool_output, dict) and hasattr(
+        tool_output, "model_dump"
+    ):
+        try:
+            tool_output = tool_output.model_dump()
+        except Exception:
+            pass
+
+    if isinstance(tool_output, dict):
+        fn = tool_output.get("function")
+    else:
+        fn = getattr(tool_output, "function", None)
     if not fn:
         return 0.0, ""
 
-    args = fn.get("arguments")
+    if isinstance(fn, dict):
+        args = fn.get("arguments")
+    else:
+        args = getattr(fn, "arguments", None)
     if isinstance(args, str):
         try:
             args = json.loads(args)
@@ -279,19 +297,40 @@ class GroupChat(SerializableMixin):
             tool_output = agent.run(task=prompt)
             # print(f"Agent {agent.agent_name} response: {tool_output}")
         except Exception as e:
-            self._log("warning", f"{agent.agent_name} failed: {e}")
+            # Surface failures unconditionally — a swallowed error here looks
+            # exactly like "the agent chose to stay silent", which makes a bad
+            # model name or missing API key impossible to diagnose.
+            logger.warning(
+                f"[{self.name}] {agent.agent_name} failed to bid: "
+                f"{type(e).__name__}: {e}"
+            )
             return 0.0, ""
         return _extract_args(tool_output)
 
     def _post(
-        self, sender: str, content: str, score: Optional[float]
+        self,
+        sender: str,
+        content: str,
+        score: Optional[float],
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
     ) -> None:
         """Record a message in the shared conversation and optionally print it.
 
         There are no per-agent inboxes: every agent reads the same
         ``Conversation`` when it builds its next bid, so a single append makes
         the message visible to everyone the following turn.
+
+        When ``streaming_callback`` is provided, the posted message is replayed
+        token-by-token to the callback before being recorded, so consumers can
+        render the speaker's reply as it "arrives" — mirroring the live
+        streaming of ``SequentialWorkflow`` / ``AgentRearrange`` where one agent
+        speaks at a time.
         """
+        if streaming_callback is not None:
+            self._stream_reply(sender, content, streaming_callback)
+
         metadata = {"score": score} if score is not None else None
         self.conversation.add(
             role=sender, content=content, metadata=metadata
@@ -309,6 +348,31 @@ class GroupChat(SerializableMixin):
             )
             style = "bold green" if score is None else "bold blue"
             formatter.print_panel(content, title=title, style=style)
+
+    def _stream_reply(
+        self,
+        sender: str,
+        content: str,
+        streaming_callback: Callable[[str, str, bool], None],
+    ) -> None:
+        """Replay a posted message to ``streaming_callback`` as token chunks.
+
+        The groupchat is turn-based — exactly one agent holds the floor per
+        turn — so its reply is generated atomically (inside the bid) rather than
+        streamed live. To still offer the token-over-time experience of the
+        other swarm structures, the finished reply is chunked on whitespace and
+        emitted one piece at a time, followed by a final empty-chunk sentinel.
+
+        The callback signature matches the rest of the framework:
+        ``streaming_callback(agent_name: str, chunk: str, is_final: bool)``.
+        ``is_final=True`` marks the end of this speaker's turn.
+        """
+        words = content.split(" ")
+        for i, word in enumerate(words):
+            chunk = word if i == len(words) - 1 else f"{word} "
+            if chunk:
+                streaming_callback(sender, chunk, False)
+        streaming_callback(sender, "", True)
 
     async def _collect_bids(
         self, sender: str, message: str, history: str
@@ -368,7 +432,13 @@ class GroupChat(SerializableMixin):
 
         return best
 
-    async def _run_async(self, task: str) -> Any:
+    async def _run_async(
+        self,
+        task: str,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+    ) -> Any:
         """Run the turn-based groupchat and return formatted history.
 
         Each turn: snapshot the shared history, collect a bid from every agent,
@@ -378,13 +448,22 @@ class GroupChat(SerializableMixin):
 
         Args:
             task: Initial user message that seeds the conversation.
+            streaming_callback: Optional ``(agent_name, chunk, is_final)``
+                callback. Each posted message — the initial user task and every
+                speaker's reply — is streamed to it token-by-token, with an
+                ``is_final=True`` sentinel marking the end of each turn.
 
         Returns:
             Conversation history formatted according to ``self.output_type``.
         """
         self._log("info", f"[{self.name}] initial task: {task}")
 
-        self._post(sender="User", content=task, score=None)
+        self._post(
+            sender="User",
+            content=task,
+            score=None,
+            streaming_callback=streaming_callback,
+        )
         last_sender, last_message = "User", task
 
         recent: "deque[str]" = deque(
@@ -400,15 +479,34 @@ class GroupChat(SerializableMixin):
 
             selection = self._select_speaker(bids, set(recent))
             if selection is None:
-                self._log(
-                    "info",
-                    "no agent cleared the threshold — lull, stopping",
-                )
+                # Distinguish a genuine conversational lull from a misconfigured
+                # room. If not a single agent produced a non-empty reply on the
+                # very first turn, the cause is almost never "nobody had
+                # anything to say" — it's a bad model name, missing API key, or
+                # a model that can't make the forced ``respond`` tool call.
+                if message_count == 1 and not any(
+                    reply for _, _, reply in bids
+                ):
+                    logger.warning(
+                        f"[{self.name}] No agent produced a reply on the first "
+                        "turn. The chat will end immediately. Likely causes: an "
+                        "invalid model_name, a missing/invalid API key, or a "
+                        "model without function-calling support. Run with "
+                        "verbose=True to see each agent's bid."
+                    )
+                else:
+                    self._log(
+                        "info",
+                        "no agent cleared the threshold — lull, stopping",
+                    )
                 break
 
             agent, score, reply = selection
             self._post(
-                sender=agent.agent_name, content=reply, score=score
+                sender=agent.agent_name,
+                content=reply,
+                score=score,
+                streaming_callback=streaming_callback,
             )
             recent.append(agent.agent_name)
             last_sender, last_message = agent.agent_name, reply
@@ -418,16 +516,31 @@ class GroupChat(SerializableMixin):
             conversation=self.conversation, type=self.output_type
         )
 
-    def run(self, task: str) -> Any:
+    def run(
+        self,
+        task: str,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+    ) -> Any:
         """Synchronously run the groupchat until a lull or ``max_loops``.
 
         Args:
             task: Initial user task or message for the group.
+            streaming_callback: Optional ``(agent_name, chunk, is_final)``
+                callback that receives each posted message as a stream of token
+                chunks, with ``is_final=True`` marking the end of a speaker's
+                turn. Matches the streaming signature used across the framework
+                (``ConcurrentWorkflow``, ``HierarchicalSwarm``, etc.).
 
         Returns:
             Formatted conversation output from ``_run_async``.
         """
-        return asyncio.run(self._run_async(task))
+        return asyncio.run(
+            self._run_async(
+                task, streaming_callback=streaming_callback
+            )
+        )
 
     def run_batch(self, tasks: List[str]) -> List[Any]:
         """Run the groupchat in batch mode.
