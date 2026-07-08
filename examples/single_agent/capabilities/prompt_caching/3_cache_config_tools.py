@@ -1,19 +1,20 @@
 """
-Cache tool definitions — Anthropic.
+Cache the tool definitions with cache_config.
 
 Tool schemas render before the system prompt and are large + stable, so caching
-them helps tool-heavy agents. `cache_tools` is True by default; shown explicitly.
+them helps tool-heavy agents. `cache_tools` is True by default; shown here
+explicitly alongside a tool.
 
     export ANTHROPIC_API_KEY="sk-ant-..."
-    python 3_cache_tools.py
+    python 3_cache_config_tools.py
 """
 
 from swarms import Agent
 
 SYSTEM_PROMPT = (
-    "You are a senior financial analyst. Ground claims in fundamentals; "
-    "state assumptions; analysis only, never personalized advice. "
-    * 200
+    "You are a senior financial analyst. Ground every claim in fundamentals, "
+    "state assumptions explicitly, and provide analysis only — never "
+    "personalized investment advice. " * 200
 )
 
 TOOLS = [
@@ -21,7 +22,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_quote",
-            "description": "Get a stock quote for a ticker.",
+            "description": "Get a stock quote for a ticker symbol.",
             "parameters": {
                 "type": "object",
                 "properties": {"ticker": {"type": "string"}},

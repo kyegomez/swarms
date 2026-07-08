@@ -1,20 +1,20 @@
 """
-Cache only the system prompt — Anthropic.
+Cache only the system prompt with cache_config.
 
 By default both the system prompt and the last message get a cache breakpoint.
-Set `cache_messages=False` to cache only the stable system prefix (useful when
-each user turn is different and won't be reused).
+Set `cache_messages=False` to cache only the stable system prefix — useful when
+each user turn is different and won't be reused.
 
     export ANTHROPIC_API_KEY="sk-ant-..."
-    python 4_system_only.py
+    python 4_cache_config_system_only.py
 """
 
 from swarms import Agent
 
 SYSTEM_PROMPT = (
-    "You are a senior financial analyst. Ground claims in fundamentals; "
-    "state assumptions; analysis only, never personalized advice. "
-    * 200
+    "You are a senior financial analyst. Ground every claim in fundamentals, "
+    "state assumptions explicitly, and provide analysis only — never "
+    "personalized investment advice. " * 200
 )
 
 agent = Agent(

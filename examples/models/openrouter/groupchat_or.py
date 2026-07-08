@@ -26,8 +26,8 @@ realist = Agent(
 
 chat = GroupChat(
     agents=[optimist, skeptic, realist],
-    max_loops=9,       # stop after 9 total messages
-    threshold=0.5,     # only publish replies scoring above 0.5
+    max_loops=9,  # stop after 9 total messages
+    threshold=0.5,  # only publish replies scoring above 0.5
 )
 
 result = chat.run(

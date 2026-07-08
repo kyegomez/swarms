@@ -1,21 +1,21 @@
 """
-Prompt caching — OpenAI.
+Prompt caching with OpenAI via cache_config.
 
 OpenAI caches automatically for prompts >= 1,024 tokens (no cache_control
-markers). `cache_config` passes through OpenAI's two optional controls:
+markers needed). `cache_config` passes through OpenAI's two optional controls:
   * prompt_cache_key       — routing hint that raises cache hit rates
   * prompt_cache_retention — "in_memory" (default) or "24h"
 
     export OPENAI_API_KEY="sk-..."
-    python 5_openai_caching.py
+    python 5_cache_config_openai.py
 """
 
 from swarms import Agent
 
 SYSTEM_PROMPT = (
-    "You are a senior financial analyst. Ground claims in fundamentals; "
-    "state assumptions; analysis only, never personalized advice. "
-    * 200
+    "You are a senior financial analyst. Ground every claim in fundamentals, "
+    "state assumptions explicitly, and provide analysis only — never "
+    "personalized investment advice. " * 200
 )
 
 agent = Agent(

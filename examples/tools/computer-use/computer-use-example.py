@@ -12,7 +12,6 @@ The agent has access to all computer_use tools:
 - run_command (shell)
 """
 
-import os
 from swarms import Agent
 from swarms.tools.computer_use import create_computer_use_tools
 
@@ -61,7 +60,8 @@ Return a final report with:
     tools=list(tools.values()),
 )
 
-result = agent.run("""
+result = agent.run(
+    """
 Create and debug a PyTorch model at `/$HOME/pytorch_model.py`.
 
 Start by creating the initial model file, then test it.
@@ -73,6 +73,7 @@ The model should demonstrate:
 3. Training loop with loss computation
 4. Evaluation mode
 5. GPU/CPU device handling
-""")
+"""
+)
 
 print(result)

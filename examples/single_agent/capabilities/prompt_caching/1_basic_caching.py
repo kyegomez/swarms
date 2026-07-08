@@ -1,20 +1,20 @@
 """
-Basic prompt caching — Anthropic.
+Basic prompt caching with an Agent.
 
-`prompt_caching=True` is the only flag needed. It caches the large, stable
-system prompt so repeat calls are re-billed at a discount.
+`prompt_caching=True` is the only flag needed. On Anthropic it caches the large,
+stable system prompt so repeat calls reuse it at a steep discount.
 
     export ANTHROPIC_API_KEY="sk-ant-..."
-    python 1_basic_anthropic.py
+    python 1_basic_caching.py
 """
 
 from swarms import Agent
 
 # Large, stable prefix (repeated to clear Opus 4.x's 4,096-token cache minimum).
 SYSTEM_PROMPT = (
-    "You are a senior financial analyst. Ground claims in fundamentals; "
-    "state assumptions; analysis only, never personalized advice. "
-    * 200
+    "You are a senior financial analyst. Ground every claim in fundamentals, "
+    "state assumptions explicitly, and provide analysis only — never "
+    "personalized investment advice. " * 200
 )
 
 agent = Agent(
