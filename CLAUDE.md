@@ -404,7 +404,8 @@ result = pipeline.run("Build a Python function that validates email addresses.")
 - `A -> B` — A runs, then B receives A's output
 - `A, B` — A and B run concurrently with the same input
 - `A -> B, C -> D` — A runs first, then B and C run concurrently, then D receives their combined output
-- `A -> H -> B` — Insert a human-in-the-loop step (requires `human_in_the_loop=True`)
+
+`AgentRearrange` has no built-in human-in-the-loop step — every name in `flow` must correspond to an agent in `agents`, or the flow will fail at run time. For a human checkpoint, break the pipeline into separate `AgentRearrange`/`Agent.run()` calls and insert your own logic (e.g. `input()`) between them — see the "Human-in-the-loop with AgentRearrange" pattern below.
 
 **When to use:** Any workflow where you need explicit, readable control over agent execution order and parallelism.
 
@@ -1020,23 +1021,20 @@ for agent_name, answer in results.items():
 
 ### Pattern: Human-in-the-loop with AgentRearrange
 
+`AgentRearrange` has no native human-in-the-loop step — chain separate `.run()` calls yourself and insert your own checkpoint logic between them:
+
 ```python
-from swarms import Agent, AgentRearrange
+from swarms import Agent
 
-def human_input(response: str) -> str:
-    print(f"\nAgent says:\n{response}\n")
-    return input("Your feedback: ")
+drafter  = Agent(agent_name="Drafter",  model_name="gpt-5.4")
+finisher = Agent(agent_name="Finisher", model_name="gpt-5.4")
 
-pipeline = AgentRearrange(
-    agents=[
-        Agent(agent_name="Drafter",  model_name="gpt-5.4"),
-        Agent(agent_name="Finisher", model_name="gpt-5.4"),
-    ],
-    flow="Drafter -> H -> Finisher",
-    human_in_the_loop=True,
-    custom_human_in_the_loop=human_input,
-)
-result = pipeline.run("Draft a press release about our product launch.")
+draft = drafter.run("Draft a press release about our product launch.")
+
+print(f"\nAgent says:\n{draft}\n")
+feedback = input("Your feedback: ")
+
+result = finisher.run(f"Revise this draft based on the feedback.\n\nDraft:\n{draft}\n\nFeedback:\n{feedback}")
 ```
 
 ### Pattern: GraphWorkflow with fan-out / fan-in
