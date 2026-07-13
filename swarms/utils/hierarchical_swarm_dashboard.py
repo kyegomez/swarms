@@ -1,7 +1,7 @@
 """Rich-based dashboard UI for ``HierarchicalSwarm``.
 
 All Rich (``rich.*``) presentation logic for ``HierarchicalSwarm`` lives here
-so the orchestration code in ``swarms/structs/hiearchical_swarm.py`` does not
+so the orchestration code in ``swarms/structs/hierarchical_swarm.py`` does not
 need to know how panels, tables, or layouts are rendered.
 """
 
