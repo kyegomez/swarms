@@ -175,6 +175,9 @@ class HierarchicalSwarm:
         parallel_execution: bool = True,
         agent_as_judge: bool = False,
         judge_agent_model_name: str = "gpt-5.4",
+        worker_timeout: float = 300.0,
+        heartbeat_interval: float = 30.0,
+        max_retries: int = 2,
         *args,
         **kwargs,
     ):
@@ -198,6 +201,9 @@ class HierarchicalSwarm:
             autosave (bool): Whether to enable autosaving of conversation history.
             verbose (bool): Whether to enable verbose logging.
             parallel_execution (bool): Whether to execute agent tasks in parallel (default: True).
+            worker_timeout (float): Max seconds per worker before timeout (default: 300).
+            heartbeat_interval (float): Seconds between worker heartbeat checks (default: 30).
+            max_retries (int): Max retries for timed-out workers before marking FAILED (default: 2).
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -230,6 +236,9 @@ class HierarchicalSwarm:
         self.parallel_execution = parallel_execution
         self.agent_as_judge = agent_as_judge
         self.judge_agent_model_name = judge_agent_model_name
+        self.worker_timeout = worker_timeout
+        self.heartbeat_interval = heartbeat_interval
+        self.max_retries = max_retries
         self.swarm_workspace_dir = None
 
         # Setup autosave workspace if enabled
@@ -1183,6 +1192,7 @@ class HierarchicalSwarm:
                 max_workers = max(1, int(os.cpu_count() * 0.75))
                 futures_map = {}
                 results = [None] * len(orders)
+                retry_counts = {i: 0 for i in range(len(orders))}
 
                 with ThreadPoolExecutor(
                     max_workers=max_workers
@@ -1206,16 +1216,82 @@ class HierarchicalSwarm:
 
                     for future in as_completed(futures_map):
                         idx, order = futures_map[future]
-                        output = future.result()
-                        results[idx] = output
-
-                        if self.interactive and self.dashboard:
-                            self.dashboard.update_agent_status(
-                                order.agent_name,
-                                "COMPLETED",
-                                order.task,
-                                str(output),
+                        try:
+                            output = future.result(
+                                timeout=self.worker_timeout
                             )
+                            results[idx] = output
+                            if self.interactive and self.dashboard:
+                                self.dashboard.update_agent_status(
+                                    order.agent_name,
+                                    "COMPLETED",
+                                    order.task,
+                                    str(output),
+                                )
+                        except TimeoutError:
+                            retry_counts[idx] += 1
+                            if retry_counts[idx] <= self.max_retries:
+                                logger.warning(
+                                    f"[TIMEOUT] Worker {order.agent_name} "
+                                    f"timed out after {self.worker_timeout}s "
+                                    f"(retry {retry_counts[idx]}/{self.max_retries}). "
+                                    f"Reassigning task: {order.task}"
+                                )
+                                # Resubmit the task for retry
+                                retry_future = executor.submit(
+                                    self.call_single_agent,
+                                    order.agent_name,
+                                    order.task,
+                                    streaming_callback,
+                                    False,
+                                )
+                                futures_map[retry_future] = (idx, order)
+                            else:
+                                error_msg = (
+                                    f"[FAILED] Worker {order.agent_name} "
+                                    f"exceeded max retries ({self.max_retries}) "
+                                    f"for task: {order.task}"
+                                )
+                                logger.error(error_msg)
+                                results[idx] = {
+                                    "error": error_msg,
+                                    "status": "FAILED",
+                                    "agent": order.agent_name,
+                                }
+                                if self.interactive and self.dashboard:
+                                    self.dashboard.update_agent_status(
+                                        order.agent_name,
+                                        "FAILED",
+                                        order.task,
+                                        error_msg,
+                                    )
+                        except Exception as e:
+                            retry_counts[idx] += 1
+                            if retry_counts[idx] <= self.max_retries:
+                                logger.warning(
+                                    f"[ERROR] Worker {order.agent_name} "
+                                    f"failed: {str(e)} "
+                                    f"(retry {retry_counts[idx]}/{self.max_retries})"
+                                )
+                                retry_future = executor.submit(
+                                    self.call_single_agent,
+                                    order.agent_name,
+                                    order.task,
+                                    streaming_callback,
+                                    False,
+                                )
+                                futures_map[retry_future] = (idx, order)
+                            else:
+                                error_msg = (
+                                    f"[FAILED] Worker {order.agent_name} "
+                                    f"failed after {self.max_retries} retries: {str(e)}"
+                                )
+                                logger.error(error_msg)
+                                results[idx] = {
+                                    "error": str(e),
+                                    "status": "FAILED",
+                                    "agent": order.agent_name,
+                                }
 
                 # Write outputs to conversation in submission order
                 for i, order in enumerate(orders):
