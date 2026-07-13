@@ -2,9 +2,9 @@ from swarms import Agent
 
 # Initialize the agent
 agent = Agent(
-    agent_name="Quantitative-Trading-Agent--new",
-    agent_description="Advanced quantitative trading and algorithmic analysis agent",
-    system_prompt="You are a helpful assistant that can answer questions and help with tasks and your name is Quantitative-Trading-Agent",
+    agent_name="Generalist-Assistant",
+    agent_description="A versatile assistant capable of answering a wide range of questions and tackling diverse tasks.",
+    system_prompt="You are a friendly and knowledgeable generalist assistant ready to help with any query or problem.",
     model_name="gpt-5.6-sol",
     max_loops=1,
     top_p=None,
@@ -15,7 +15,7 @@ agent = Agent(
 )
 
 out = agent.run(
-    task="Analyze the best semiconductor ETFs and provide a detailed comparison. Include metrics such as performance, expense ratio, holdings, and any notable strategies.",
+    task="How can I become more productive in my daily life? Please provide practical tips and strategies.",
 )
 
 print(out)
