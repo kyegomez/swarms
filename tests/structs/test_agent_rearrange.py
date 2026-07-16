@@ -8,6 +8,8 @@ Covers:
 - Error propagation through run/__call__/batch_run
 - batch_run concurrency, ordering, conversation isolation, image forwarding,
   and batch_size validation (mock-based unit tests)
+- Per-node retry/fallback flow annotations (!N, >X, ?X): parsing,
+  validation, sequential and concurrent execution behavior
 """
 
 import threading
@@ -17,7 +19,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from swarms import Agent, AgentRearrange
+from swarms import (
+    Agent,
+    AgentRearrange,
+    NodeSpec,
+    parse_flow_node,
+)
 
 
 # ============================================================================
@@ -1214,6 +1221,331 @@ class TestBatchSizeBoundaries:
             pipeline.batch_run(
                 tasks=["t1", "t2"], img=["img1.png"], batch_size=5
             )
+
+
+# ============================================================================
+# Per-node retry/fallback annotations (!N, >X, ?X)
+# ============================================================================
+
+
+def _make_flaky_agent(name: str, fail_times: int = 0):
+    """Mock agent whose run() raises for the first *fail_times* calls.
+
+    The call counter is exposed as ``agent.calls["count"]`` so tests
+    can assert exactly how many attempts were made.
+    """
+    agent = MagicMock()
+    agent.agent_name = name
+    agent.system_prompt = f"I am {name}."
+    calls = {"count": 0}
+
+    def _run(task=None, *a, **kw):
+        calls["count"] += 1
+        if calls["count"] <= fail_times:
+            raise RuntimeError(f"{name} failure #{calls['count']}")
+        return f"{name}-ok"
+
+    agent.run = _run
+    agent.calls = calls
+    return agent
+
+
+class TestParseFlowNode:
+    """Unit tests for the flow-node annotation parser."""
+
+    def test_plain_node(self):
+        node = parse_flow_node("AgentA")
+        assert node == NodeSpec("AgentA", 0, None)
+        assert not node.annotated
+
+    def test_retry_annotation(self):
+        node = parse_flow_node("AgentA!3")
+        assert node == NodeSpec("AgentA", 3, None)
+        assert node.annotated
+
+    def test_retry_with_fallback(self):
+        node = parse_flow_node("AgentA!3>AgentB")
+        assert node == NodeSpec("AgentA", 3, "AgentB")
+
+    def test_immediate_fallback_question_mark(self):
+        node = parse_flow_node("AgentA?AgentB")
+        assert node == NodeSpec("AgentA", 0, "AgentB")
+
+    def test_immediate_fallback_angle_bracket(self):
+        node = parse_flow_node("AgentA>AgentB")
+        assert node == NodeSpec("AgentA", 0, "AgentB")
+
+    def test_whitespace_tolerated(self):
+        node = parse_flow_node("  AgentA ! 2 > AgentB  ")
+        assert node == NodeSpec("AgentA", 2, "AgentB")
+
+    def test_str_round_trip(self):
+        assert str(parse_flow_node("A!2>B")) == "A!2>B"
+        assert str(parse_flow_node("A")) == "A"
+
+    @pytest.mark.parametrize(
+        "token",
+        ["", "   ", "A!", "A!x", "A>", "A?", "A>B>C", "!3", "A!!2"],
+    )
+    def test_malformed_tokens_raise(self, token):
+        with pytest.raises(ValueError):
+            parse_flow_node(token)
+
+    def test_self_fallback_raises(self):
+        with pytest.raises(ValueError, match="itself"):
+            parse_flow_node("AgentA?AgentA")
+
+
+class TestFlowAnnotationValidation:
+    """validate_flow must catch bad annotations at parse time."""
+
+    def test_valid_annotated_flow(self):
+        a = _make_agent("A")
+        b = _make_agent("B")
+        d = _make_agent("D")
+        wf = AgentRearrange(
+            agents=[a, b, d],
+            flow="A -> B!2>D",
+            autosave=False,
+        )
+        assert wf.validate_flow() is True
+
+    def test_unknown_fallback_rejected(self):
+        a = _make_agent("A")
+        b = _make_agent("B")
+        wf = AgentRearrange(
+            agents=[a, b],
+            flow="A -> B",
+            autosave=False,
+        )
+        with pytest.raises(ValueError, match="Ghost"):
+            wf.set_custom_flow("A -> B!2>Ghost")
+        # previous flow restored on failure
+        assert wf.flow == "A -> B"
+
+    def test_malformed_annotation_rejected(self):
+        a = _make_agent("A")
+        b = _make_agent("B")
+        wf = AgentRearrange(
+            agents=[a, b],
+            flow="A -> B",
+            autosave=False,
+        )
+        with pytest.raises(ValueError, match="Malformed"):
+            wf.set_custom_flow("A -> B!x")
+
+    def test_explain_renders_annotations(self):
+        a = _make_agent("A")
+        b = _make_agent("B")
+        d = _make_agent("D")
+        wf = AgentRearrange(
+            agents=[a, b, d],
+            flow="A -> B!2>D",
+            autosave=False,
+        )
+        plan = wf.explain(return_str=True)
+        assert "B!2>D" in plan
+
+
+class TestSequentialRetryFallback:
+    """Retry/fallback behavior for sequential (->) nodes."""
+
+    def test_retry_recovers_after_transient_failures(self):
+        a = _make_flaky_agent("A")
+        b = _make_flaky_agent("B", fail_times=2)
+        c = _make_flaky_agent("C")
+        wf = AgentRearrange(
+            agents=[a, b, c],
+            flow="A -> B!2 -> C",
+            autosave=False,
+            output_type="final",
+        )
+        result = wf.run("task")
+        # initial attempt + 2 retries
+        assert b.calls["count"] == 3
+        assert "C-ok" in str(result)
+
+    def test_retries_exhausted_without_fallback_raises(self):
+        a = _make_flaky_agent("A")
+        b = _make_flaky_agent("B", fail_times=99)
+        wf = AgentRearrange(
+            agents=[a, b],
+            flow="A -> B!1",
+            autosave=False,
+            output_type="final",
+        )
+        with pytest.raises(RuntimeError, match="B failure"):
+            wf.run("task")
+        assert b.calls["count"] == 2
+
+    def test_fallback_runs_after_retries_exhausted(self):
+        a = _make_flaky_agent("A")
+        b = _make_flaky_agent("B", fail_times=99)
+        d = _make_flaky_agent("D")
+        c = _make_flaky_agent("C")
+        wf = AgentRearrange(
+            agents=[a, b, c, d],
+            flow="A -> B!1>D -> C",
+            autosave=False,
+            output_type="final",
+        )
+        result = wf.run("task")
+        assert b.calls["count"] == 2
+        assert d.calls["count"] == 1
+        assert "C-ok" in str(result)
+
+    def test_immediate_fallback_on_first_failure(self):
+        a = _make_flaky_agent("A")
+        b = _make_flaky_agent("B", fail_times=99)
+        d = _make_flaky_agent("D")
+        wf = AgentRearrange(
+            agents=[a, b, d],
+            flow="A -> B?D",
+            autosave=False,
+            output_type="final",
+        )
+        result = wf.run("task")
+        assert b.calls["count"] == 1
+        assert d.calls["count"] == 1
+        assert "D-ok" in str(result)
+
+    def test_fallback_failure_propagates(self):
+        a = _make_flaky_agent("A")
+        b = _make_flaky_agent("B", fail_times=99)
+        d = _make_flaky_agent("D", fail_times=99)
+        wf = AgentRearrange(
+            agents=[a, b, d],
+            flow="A -> B?D",
+            autosave=False,
+            output_type="final",
+        )
+        with pytest.raises(RuntimeError, match="D failure"):
+            wf.run("task")
+
+    def test_fallback_output_recorded_under_fallback_name(self):
+        a = _make_flaky_agent("A")
+        b = _make_flaky_agent("B", fail_times=99)
+        d = _make_flaky_agent("D")
+        wf = AgentRearrange(
+            agents=[a, b, d],
+            flow="A -> B?D",
+            autosave=False,
+            output_type="dict",
+        )
+        wf.run("task")
+        history = wf.conversation.return_history_as_string()
+        assert "D-ok" in history
+
+    def test_retries_do_not_duplicate_conversation_entries(self):
+        a = _make_flaky_agent("A")
+        b = _make_flaky_agent("B", fail_times=2)
+        wf = AgentRearrange(
+            agents=[a, b],
+            flow="A -> B!2",
+            autosave=False,
+            output_type="final",
+        )
+        wf.run("task")
+        history = wf.conversation.return_history_as_string()
+        assert history.count("B-ok") == 1
+
+    def test_plain_flow_behavior_unchanged(self):
+        """Unannotated flows run exactly one attempt per node."""
+        a = _make_flaky_agent("A")
+        b = _make_flaky_agent("B")
+        wf = AgentRearrange(
+            agents=[a, b],
+            flow="A -> B",
+            autosave=False,
+            output_type="final",
+        )
+        result = wf.run("task")
+        assert a.calls["count"] == 1
+        assert b.calls["count"] == 1
+        assert "B-ok" in str(result)
+
+
+class TestConcurrentRetryFallback:
+    """Retry/fallback behavior inside parallel (,) groups."""
+
+    def test_annotated_node_in_parallel_group_retries(self):
+        a = _make_flaky_agent("A")
+        b = _make_flaky_agent("B", fail_times=1)
+        c = _make_flaky_agent("C")
+        d = _make_flaky_agent("D")
+        wf = AgentRearrange(
+            agents=[a, b, c, d],
+            flow="A -> B!1, C -> D",
+            autosave=False,
+            output_type="final",
+        )
+        result = wf.run("task")
+        assert b.calls["count"] == 2
+        assert c.calls["count"] == 1
+        assert "D-ok" in str(result)
+
+    def test_parallel_fallback_routes_to_backup(self):
+        a = _make_flaky_agent("A")
+        b = _make_flaky_agent("B", fail_times=99)
+        c = _make_flaky_agent("C")
+        d = _make_flaky_agent("D")
+        wf = AgentRearrange(
+            agents=[a, b, c, d],
+            flow="A -> B?D, C",
+            autosave=False,
+            output_type="final",
+        )
+        wf.run("task")
+        assert b.calls["count"] == 1
+        assert d.calls["count"] == 1
+        assert c.calls["count"] == 1
+        history = wf.conversation.return_history_as_string()
+        assert "D-ok" in history
+        assert "C-ok" in history
+
+    def test_parallel_group_without_annotations_unchanged(self):
+        """Plain parallel groups keep using the fast path."""
+        a = _make_flaky_agent("A")
+        b = _make_flaky_agent("B")
+        c = _make_flaky_agent("C")
+        wf = AgentRearrange(
+            agents=[a, b, c],
+            flow="A -> B, C",
+            autosave=False,
+            output_type="final",
+        )
+        wf.run("task")
+        assert b.calls["count"] == 1
+        assert c.calls["count"] == 1
+
+
+class TestAnnotationAwareness:
+    """Awareness strings must show base names, not annotations."""
+
+    def test_flow_info_strips_annotations(self):
+        a = _make_agent("A")
+        b = _make_agent("B")
+        d = _make_agent("D")
+        wf = AgentRearrange(
+            agents=[a, b, d],
+            flow="A -> B!2>D",
+            autosave=False,
+        )
+        info = wf.get_sequential_flow_structure()
+        assert "B!2" not in info
+        assert "B" in info
+
+    def test_sequential_awareness_strips_annotations(self):
+        a = _make_agent("A")
+        b = _make_agent("B")
+        d = _make_agent("D")
+        wf = AgentRearrange(
+            agents=[a, b, d],
+            flow="A -> B!2>D",
+            autosave=False,
+        )
+        awareness = wf.get_agent_sequential_awareness("A")
+        assert "B!2" not in awareness
 
 
 if __name__ == "__main__":

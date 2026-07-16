@@ -348,6 +348,57 @@ output = agent_system.run("Some task")`
 
 This will raise a `ValueError` with the message `"Agent 'Worker3' is not registered."`.
 
+## Per-Node Retry and Fallback Annotations
+---------------------------------------
+
+Individual nodes in the flow can declare their own error-handling
+policy inline, instead of wrapping the entire run in `try/except`:
+
+| Syntax | Behavior |
+|--------|----------|
+| `"A -> B!3 -> C"` | `B` retries up to 3 extra times on failure |
+| `"A -> B!3>D -> C"` | `B` retries 3 times, then falls back to agent `D` |
+| `"A -> B?D -> C"` | `B` routes to `D` on the first failure |
+| `"A -> B>D -> C"` | Same as `?` — immediate fallback |
+
+**Rules:**
+
+- `!`, `>`, and `?` are reserved characters and cannot appear in agent names used inside a flow.
+
+- Fallback agents must be registered in `agents`. Unknown fallback names fail in `validate_flow()` / `set_custom_flow()` rather than mid-run.
+
+- The fallback agent runs once. If it also fails, the error propagates exactly like an unannotated node's error.
+
+- Annotations also work inside parallel groups: `"A -> B!2>D, C -> E"`.
+
+- Retries never duplicate conversation history — an attempt is only recorded after it succeeds.
+
+- In `output_type="dict"` results, the output is recorded under the agent that actually produced it (the fallback's name when the fallback ran).
+
+```python
+from swarms import Agent, AgentRearrange
+
+pipeline = AgentRearrange(
+    agents=[researcher, analyst, backup_analyst, writer],
+    flow="Researcher -> Analyst!2>Backup_Analyst -> Writer",
+)
+result = pipeline.run("Quarterly market analysis")
+```
+
+Programmatic access to the parser is available via
+`parse_flow_node`, which returns a `NodeSpec` dataclass:
+
+```python
+from swarms import parse_flow_node
+
+node = parse_flow_node("Analyst!2>Backup_Analyst")
+# NodeSpec(name='Analyst', retries=2, fallback='Backup_Analyst')
+```
+
+Note: retry/fallback policies are not yet enforced in streaming mode
+(`run_stream` / `arun_stream`) — annotated nodes resolve to their
+base agent there.
+
 ## Parallel and Sequential Processing
 ----------------------------------
 

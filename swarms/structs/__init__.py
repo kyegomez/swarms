@@ -1,7 +1,12 @@
 from swarms.structs.advisor_swarm import AdvisorSwarm
 from swarms.structs.agent import Agent
 from swarms.structs.agent_loader import AgentLoader
-from swarms.structs.agent_rearrange import AgentRearrange, rearrange
+from swarms.structs.agent_rearrange import (
+    AgentRearrange,
+    NodeSpec,
+    parse_flow_node,
+    rearrange,
+)
 from swarms.structs.aop import AOP
 from swarms.structs.async_subagent import (
     SubagentRegistry,
@@ -91,6 +96,8 @@ __all__ = [
     "GroupChat",
     "MajorityVoting",
     "AgentRearrange",
+    "NodeSpec",
+    "parse_flow_node",
     "rearrange",
     "RoundRobinSwarm",
     "SequentialWorkflow",

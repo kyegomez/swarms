@@ -1,12 +1,15 @@
 import copy
 import os
+import re
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from typing import (
     Any,
     Callable,
     Dict,
     List,
     Optional,
+    Tuple,
     Union,
     get_args,
 )
@@ -31,6 +34,114 @@ logger = initialize_logger(log_folder="rearrange")
 # sync if HistoryOutputType ever gains/loses members.
 _VALID_OUTPUT_TYPES = set(get_args(OutputType))
 
+# One flow-node token with optional retry/fallback annotations.
+# Grammar (whitespace tolerated around every part):
+#   name            plain node
+#   name!N          retry up to N extra times on failure
+#   name!N>other    retry N times, then fall back to `other`
+#   name?other      on failure, immediately fall back to `other`
+#   name>other      same as `?` (immediate fallback)
+# `!`, `>`, and `?` are reserved and cannot appear in agent names.
+_NODE_TOKEN_RE = re.compile(
+    r"^(?P<name>[^!>?]+?)\s*"
+    r"(?:!\s*(?P<retries>\d+))?\s*"
+    r"(?:[>?]\s*(?P<fallback>[^!>?]+))?$"
+)
+
+
+@dataclass(frozen=True)
+class NodeSpec:
+    """A single node in an AgentRearrange flow.
+
+    Carries the per-node error-handling policy parsed from flow
+    annotations (see ``parse_flow_node``).
+
+    Attributes:
+        name (str): The agent name this node executes.
+        retries (int): Extra attempts after the first failure
+            (``0`` means fail on the first error).
+        fallback (Optional[str]): Agent to route to once all
+            attempts on ``name`` are exhausted. ``None`` means
+            the error propagates.
+    """
+
+    name: str
+    retries: int = 0
+    fallback: Optional[str] = None
+
+    @property
+    def annotated(self) -> bool:
+        """True when this node declares any retry/fallback policy."""
+        return self.retries > 0 or self.fallback is not None
+
+    def __str__(self) -> str:
+        out = self.name
+        if self.retries:
+            out += f"!{self.retries}"
+        if self.fallback:
+            out += f">{self.fallback}"
+        return out
+
+
+def parse_flow_node(token: str) -> NodeSpec:
+    """Parse one flow-node token into a ``NodeSpec``.
+
+    Supported forms::
+
+        "B"       plain node
+        "B!3"     B retries up to 3 extra times on failure
+        "B!3>D"   B retries 3 times, then falls back to D
+        "B?D"     B routes to D on the first failure
+        "B>D"     same as "B?D"
+
+    Args:
+        token (str): A single node token from a flow string
+            (i.e. the text between ``->`` / ``,`` separators).
+
+    Returns:
+        NodeSpec: The parsed node with its retry/fallback policy.
+
+    Raises:
+        ValueError: If the token is empty, malformed (e.g. a
+            non-numeric retry count, a dangling ``>``), or the
+            fallback names the node itself.
+    """
+    stripped = token.strip()
+    if not stripped:
+        raise ValueError("Empty agent name in flow")
+
+    match = _NODE_TOKEN_RE.match(stripped)
+    if match is None:
+        raise ValueError(
+            f"Malformed flow node {stripped!r}. Expected 'name', "
+            "'name!N', 'name!N>fallback', or 'name?fallback'."
+        )
+
+    name = match.group("name").strip()
+    retries = int(match.group("retries") or 0)
+    fallback = match.group("fallback")
+    if fallback is not None:
+        fallback = fallback.strip()
+        if fallback == name:
+            raise ValueError(
+                f"Node {name!r} cannot fall back to itself"
+            )
+
+    return NodeSpec(name=name, retries=retries, fallback=fallback)
+
+
+def _node_display_name(token: str) -> str:
+    """Best-effort base agent name for display/awareness contexts.
+
+    Falls back to the stripped raw token when the token does not
+    parse (e.g. custom-task text injected into the flow), so
+    non-critical paths never raise.
+    """
+    try:
+        return parse_flow_node(token).name
+    except ValueError:
+        return token.strip()
+
 
 class AgentRearrange(SerializableMixin):
     """
@@ -44,6 +155,7 @@ class AgentRearrange(SerializableMixin):
     Key Features:
     - Sequential and concurrent agent execution
     - Custom flow patterns with arrow (->) and comma (,) syntax
+    - Per-node retry and fallback annotations (!N, >X, ?X)
     - Team awareness and sequential flow information
     - Memory system support
     - Batch and concurrent processing capabilities
@@ -53,6 +165,15 @@ class AgentRearrange(SerializableMixin):
     - Use '->' to define sequential execution: "agent1 -> agent2 -> agent3"
     - Use ',' to define concurrent execution: "agent1, agent2 -> agent3"
     - Combine both: "agent1 -> agent2, agent3 -> agent4"
+
+    Per-Node Retry & Fallback:
+    - "A -> B!3 -> C"    B retries up to 3 extra times on failure
+    - "A -> B!3>D -> C"  B retries 3 times, then falls back to D
+    - "A -> B?D -> C"    B routes to D on the first failure
+    - Fallback agents must be registered in ``agents``; unknown
+      names fail in ``validate_flow`` rather than mid-run.
+    - The fallback agent runs once; if it also fails, the error
+      propagates as usual.
 
     Attributes:
         id (str): Unique identifier for the agent rearrange system
@@ -282,13 +403,15 @@ class AgentRearrange(SerializableMixin):
         total_invocations = 0
         rows: List[tuple] = []
         for i, step in enumerate(steps, start=1):
-            agent_names = [name.strip() for name in step.split(",")]
-            total_invocations += len(agent_names)
-            label = ", ".join(agent_names)
-            if len(agent_names) == 1:
+            nodes = [
+                parse_flow_node(token) for token in step.split(",")
+            ]
+            total_invocations += len(nodes)
+            label = ", ".join(str(node) for node in nodes)
+            if len(nodes) == 1:
                 kind = "[sequential]"
             else:
-                kind = f"[parallel, {len(agent_names)} agents]"
+                kind = f"[parallel, {len(nodes)} agents]"
             rows.append((i, label, kind))
 
         width = max((len(label) for _, label, _ in rows), default=0)
@@ -345,9 +468,14 @@ class AgentRearrange(SerializableMixin):
         Pure-concurrent flows (e.g. ``"a, b, c"``) and pure-sequential
         flows (e.g. ``"a -> b -> c"``) are both valid.
 
+        Nodes may carry retry/fallback annotations (``B!3``,
+        ``B!3>D``, ``B?D``). Both the node's agent and its fallback
+        agent must be registered.
+
         Raises:
-            ValueError: If the flow is empty or references an agent name
-                that is not registered.
+            ValueError: If the flow is empty, a node token is
+                malformed, or a node (or its fallback) references an
+                agent name that is not registered.
 
         Returns:
             bool: True if the flow pattern is valid.
@@ -359,19 +487,24 @@ class AgentRearrange(SerializableMixin):
         steps = self.flow.split("->")
 
         for step in steps:
-            agent_names = [name.strip() for name in step.split(",")]
-            for agent_name in agent_names:
-                if not agent_name:
+            tokens = [token.strip() for token in step.split(",")]
+            for token in tokens:
+                if not token:
                     raise ValueError(
                         f"Empty agent name in flow segment {step!r}"
                     )
-                try:
-                    find_agent_by_name(self.agents, agent_name)
-                except (TypeError, ValueError):
-                    raise ValueError(
-                        f"Agent '{agent_name}' is not registered."
-                    )
-                agents_in_flow.append(agent_name)
+                node = parse_flow_node(token)
+                referenced = [node.name]
+                if node.fallback is not None:
+                    referenced.append(node.fallback)
+                for ref in referenced:
+                    try:
+                        find_agent_by_name(self.agents, ref)
+                    except (TypeError, ValueError):
+                        raise ValueError(
+                            f"Agent '{ref}' is not registered."
+                        )
+                agents_in_flow.append(node.name)
 
         logger.info(f"Flow: {self.flow} is valid.")
         return True
@@ -403,7 +536,8 @@ class AgentRearrange(SerializableMixin):
             agent_position = None
             for i, task in enumerate(tasks):
                 agent_names = [
-                    name.strip() for name in task.split(",")
+                    _node_display_name(token)
+                    for token in task.split(",")
                 ]
                 if agent_name in agent_names:
                     agent_position = i
@@ -418,7 +552,8 @@ class AgentRearrange(SerializableMixin):
         if agent_position > 0:
             prev_task = tasks[agent_position - 1]
             prev_agents = [
-                name.strip() for name in prev_task.split(",")
+                _node_display_name(token)
+                for token in prev_task.split(",")
             ]
             if prev_agents:
                 awareness_info.append(
@@ -429,7 +564,8 @@ class AgentRearrange(SerializableMixin):
         if agent_position < len(tasks) - 1:
             next_task = tasks[agent_position + 1]
             next_agents = [
-                name.strip() for name in next_task.split(",")
+                _node_display_name(token)
+                for token in next_task.split(",")
             ]
             if next_agents:
                 awareness_info.append(
@@ -456,7 +592,9 @@ class AgentRearrange(SerializableMixin):
         flow_info = []
 
         for i, task in enumerate(tasks):
-            agent_names = [name.strip() for name in task.split(",")]
+            agent_names = [
+                _node_display_name(token) for token in task.split(",")
+            ]
             if agent_names:
                 position_info = (
                     f"Step {i+1}: {', '.join(agent_names)}"
@@ -464,7 +602,8 @@ class AgentRearrange(SerializableMixin):
                 if i > 0:
                     prev_task = tasks[i - 1]
                     prev_agents = [
-                        name.strip() for name in prev_task.split(",")
+                        _node_display_name(token)
+                        for token in prev_task.split(",")
                     ]
                     if prev_agents:
                         position_info += (
@@ -473,7 +612,8 @@ class AgentRearrange(SerializableMixin):
                 if i < len(tasks) - 1:
                     next_task = tasks[i + 1]
                     next_agents = [
-                        name.strip() for name in next_task.split(",")
+                        _node_display_name(token)
+                        for token in next_task.split(",")
                     ]
                     if next_agents:
                         position_info += (
@@ -527,8 +667,9 @@ class AgentRearrange(SerializableMixin):
         simultaneously and their results are collected and returned.
 
         Args:
-            agent_names (List[str]): List of agent names to run concurrently.
-                These agents will execute in parallel.
+            agent_names (List[str]): List of agent node tokens to run
+                concurrently. Tokens may carry retry/fallback
+                annotations (``B!3``, ``B!3>D``, ``B?D``).
             img (str, optional): Image input for agents that support it.
                 Defaults to None.
             *args: Additional positional arguments passed to agent execution.
@@ -536,46 +677,168 @@ class AgentRearrange(SerializableMixin):
 
         Returns:
             Dict[str, str]: Dictionary mapping agent names to their execution results.
-                Keys are agent names, values are their respective outputs.
+                Keys are agent names (the fallback agent's name when a
+                fallback executed), values are their respective outputs.
 
         Note:
-            This method uses the run_agents_concurrently utility function
-            to handle the actual parallel execution and result collection.
+            Unannotated groups use the run_agents_concurrently utility
+            for parallel execution. Groups containing annotated nodes
+            run each node under its retry/fallback policy in its own
+            worker thread instead.
         """
-        logger.info(f"Running agents in parallel: {agent_names}")
+        specs = [parse_flow_node(token) for token in agent_names]
 
-        agents_to_run = []
-        missing = []
-        for name in agent_names:
-            try:
-                agents_to_run.append(
-                    find_agent_by_name(self.agents, name)
-                )
-            except (TypeError, ValueError):
-                missing.append(name)
-        if missing:
-            raise ValueError(
-                f"Agent(s) {missing} not registered in this AgentRearrange instance."
-            )
-
-        # Run agents concurrently
-        results = run_agents_concurrently(
-            agents=agents_to_run,
-            task=self.conversation.get_str(),
+        logger.info(
+            f"Running agents in parallel: "
+            f"{[spec.name for spec in specs]}"
         )
 
-        # Process results and update conversation
+        if not any(spec.annotated for spec in specs):
+            agents_to_run = []
+            missing = []
+            for spec in specs:
+                try:
+                    agents_to_run.append(
+                        find_agent_by_name(self.agents, spec.name)
+                    )
+                except (TypeError, ValueError):
+                    missing.append(spec.name)
+            if missing:
+                raise ValueError(
+                    f"Agent(s) {missing} not registered in this AgentRearrange instance."
+                )
+
+            # Run agents concurrently
+            results = run_agents_concurrently(
+                agents=agents_to_run,
+                task=self.conversation.get_str(),
+            )
+
+            # Process results and update conversation
+            response_dict = {}
+            for i, spec in enumerate(specs):
+                result = results[i]
+
+                self.conversation.add(spec.name, result)
+                response_dict[spec.name] = result
+                logger.debug(f"Agent {spec.name} output: {result}")
+
+            return response_dict
+
+        # Annotated path: each node runs under its retry/fallback
+        # policy in its own worker thread. The shared conversation is
+        # only written after every worker returns, from this thread,
+        # so history stays consistent regardless of completion order.
+        base_task = self.conversation.get_str()
+        with ThreadPoolExecutor(max_workers=len(specs)) as executor:
+            futures = [
+                executor.submit(
+                    self._run_node_with_policy,
+                    spec,
+                    base_task,
+                    img,
+                    *args,
+                    **kwargs,
+                )
+                for spec in specs
+            ]
+            outcomes = [future.result() for future in futures]
+
         response_dict = {}
-        for i, agent_name in enumerate(agent_names):
-            result = results[i]
-
-            # print(f"Result: {result}")
-
-            self.conversation.add(agent_name, result)
-            response_dict[agent_name] = result
-            logger.debug(f"Agent {agent_name} output: {result}")
+        for executed_name, output in outcomes:
+            self.conversation.add(executed_name, output)
+            response_dict[executed_name] = output
+            logger.debug(f"Agent {executed_name} output: {output}")
 
         return response_dict
+
+    def _apply_node_policy(
+        self,
+        node: NodeSpec,
+        attempt: Callable[[str], str],
+    ) -> Tuple[str, str]:
+        """Drive ``attempt`` under a node's retry/fallback policy.
+
+        Calls ``attempt(node.name)`` up to ``node.retries + 1``
+        times. If every attempt raises and the node declares a
+        fallback, runs ``attempt(node.fallback)`` once. Errors from
+        the fallback (or from a node without one) propagate.
+
+        Args:
+            node (NodeSpec): The node whose policy to enforce.
+            attempt (Callable[[str], str]): Executes one attempt for
+                the given agent name and returns its output.
+
+        Returns:
+            Tuple[str, str]: ``(executed_agent_name, output)`` where
+                the name is ``node.fallback`` when the fallback ran.
+
+        Raises:
+            Exception: The last error from the primary agent when all
+                attempts fail and no fallback is declared, or any
+                error raised by the fallback attempt.
+        """
+        attempts = node.retries + 1
+        last_error: Optional[Exception] = None
+        for attempt_no in range(1, attempts + 1):
+            try:
+                return node.name, attempt(node.name)
+            except Exception as e:  # noqa: BLE001
+                last_error = e
+                logger.warning(
+                    f"Node '{node.name}' attempt "
+                    f"{attempt_no}/{attempts} failed: {e}"
+                )
+        if node.fallback is not None:
+            logger.warning(
+                f"Node '{node.name}' exhausted {attempts} "
+                f"attempt(s); falling back to '{node.fallback}'"
+            )
+            return node.fallback, attempt(node.fallback)
+        raise last_error
+
+    def _run_node_with_policy(
+        self,
+        node: NodeSpec,
+        task: str,
+        img: str = None,
+        *args,
+        **kwargs,
+    ) -> Tuple[str, str]:
+        """Execute one node directly against ``task`` under its policy.
+
+        Runs the agent's ``run()`` without touching the shared
+        conversation — callers add the returned output themselves,
+        which keeps this method safe to call from worker threads.
+
+        Args:
+            node (NodeSpec): The node to execute.
+            task (str): The task/context string passed to the agent.
+            img (str, optional): Image input for agents that support
+                it. Defaults to None.
+            *args: Additional positional arguments for ``agent.run``.
+            **kwargs: Additional keyword arguments for ``agent.run``.
+
+        Returns:
+            Tuple[str, str]: ``(executed_agent_name, output)``.
+
+        Raises:
+            Exception: Propagated per ``_apply_node_policy``.
+        """
+
+        def _attempt(agent_name: str) -> str:
+            agent = find_agent_by_name(self.agents, agent_name)
+            output = agent.run(
+                task=task,
+                img=img,
+                *args,
+                **kwargs,
+            )
+            if not isinstance(output, str):
+                output = any_to_str(output)
+            return output
+
+        return self._apply_node_policy(node, _attempt)
 
     def _run_sequential_workflow(
         self,
@@ -662,6 +925,53 @@ class AgentRearrange(SerializableMixin):
 
         return current_task
 
+    def _execute_sequential_node(
+        self,
+        node: NodeSpec,
+        tasks: List[str],
+        task_idx: int = None,
+        img: str = None,
+        *args,
+        **kwargs,
+    ) -> Tuple[str, str]:
+        """Run one sequential flow node under its retry/fallback policy.
+
+        Each attempt goes through ``_run_sequential_workflow`` so
+        sequential awareness injection and conversation updates behave
+        exactly as they do for unannotated nodes. Failed attempts do
+        not write to the conversation (the write happens after a
+        successful ``agent.run``), so retries never duplicate history.
+
+        Args:
+            node (NodeSpec): The node to execute.
+            tasks (List[str]): All flow steps, for awareness context.
+            task_idx (int, optional): Position of this node in the
+                flow. Defaults to None.
+            img (str, optional): Image input for agents that support
+                it. Defaults to None.
+            *args: Additional positional arguments for execution.
+            **kwargs: Additional keyword arguments for execution.
+
+        Returns:
+            Tuple[str, str]: ``(executed_agent_name, output)`` where
+                the name is the fallback agent's when it ran.
+
+        Raises:
+            Exception: Propagated per ``_apply_node_policy``.
+        """
+
+        def _attempt(agent_name: str) -> str:
+            return self._run_sequential_workflow(
+                agent_name=agent_name,
+                tasks=tasks,
+                task_idx=task_idx,
+                img=img,
+                *args,
+                **kwargs,
+            )
+
+        return self._apply_node_policy(node, _attempt)
+
     def _run(
         self,
         task: str = None,
@@ -734,15 +1044,15 @@ class AgentRearrange(SerializableMixin):
             )
 
             for task_idx, task in enumerate(tasks):
-                agent_names = [
-                    name.strip() for name in task.split(",")
+                node_tokens = [
+                    token.strip() for token in task.split(",")
                 ]
 
-                if len(agent_names) > 1:
+                if len(node_tokens) > 1:
                     # Concurrent processing - comma detected
                     concurrent_results = (
                         self._run_concurrent_workflow(
-                            agent_names=agent_names,
+                            agent_names=node_tokens,
                             img=img,
                             *args,
                             **kwargs,
@@ -751,25 +1061,28 @@ class AgentRearrange(SerializableMixin):
                     response_dict.update(concurrent_results)
 
                 else:
-                    # Sequential processing
-                    agent_name = agent_names[0]
-                    result = self._run_sequential_workflow(
-                        agent_name=agent_name,
-                        tasks=tasks,
-                        task_idx=task_idx,
-                        img=img,
-                        *args,
-                        **kwargs,
+                    # Sequential processing. The node may carry
+                    # retry/fallback annotations (B!3, B!3>D, B?D).
+                    node = parse_flow_node(node_tokens[0])
+                    executed_name, result = (
+                        self._execute_sequential_node(
+                            node=node,
+                            tasks=tasks,
+                            task_idx=task_idx,
+                            img=img,
+                            *args,
+                            **kwargs,
+                        )
                     )
 
                     # Use indexed key to preserve all outputs
                     # from repeated agents (e.g., "Writer_0", "Writer_2")
-                    if agent_name in response_dict:
-                        response_dict[f"{agent_name}_{task_idx}"] = (
-                            result
-                        )
+                    if executed_name in response_dict:
+                        response_dict[
+                            f"{executed_name}_{task_idx}"
+                        ] = result
                     else:
-                        response_dict[agent_name] = result
+                        response_dict[executed_name] = result
 
             loop_count += 1
 
@@ -1236,7 +1549,10 @@ class AgentRearrange(SerializableMixin):
                 ``{"type": "agent_end", "agent": ..., "output": ...}``.
 
         Not yet supported in streaming mode: ``max_loops > 1``,
-        ``custom_tasks``. Use ``run()`` for those.
+        ``custom_tasks``, and retry/fallback annotations (``!N``,
+        ``>X``, ``?X``) — annotated nodes resolve to their base
+        agent, but the retry/fallback policy is not enforced. Use
+        ``run()`` for those.
         """
         self.conversation.add("User", task)
 
@@ -1246,7 +1562,8 @@ class AgentRearrange(SerializableMixin):
 
         for task_idx, task_segment in enumerate(tasks_list):
             agent_names = [
-                name.strip() for name in task_segment.split(",")
+                parse_flow_node(token).name
+                for token in task_segment.split(",")
             ]
 
             if len(agent_names) > 1:
