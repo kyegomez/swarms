@@ -175,6 +175,9 @@ class HierarchicalSwarm:
         parallel_execution: bool = True,
         agent_as_judge: bool = False,
         judge_agent_model_name: str = "gpt-5.4",
+        director_settings: Optional[Dict[str, Any]] = None,
+        max_agent_retries: int = 1,
+        max_reassignment_attempts: int = 1,
         *args,
         **kwargs,
     ):
@@ -198,6 +201,13 @@ class HierarchicalSwarm:
             autosave (bool): Whether to enable autosaving of conversation history.
             verbose (bool): Whether to enable verbose logging.
             parallel_execution (bool): Whether to execute agent tasks in parallel (default: True).
+            director_settings (dict, optional): Additional ``Agent`` keyword
+                arguments for the automatically created director. These values
+                override the legacy director configuration parameters.
+            max_agent_retries (int): Number of times to retry a failed worker
+                before reporting it as unavailable.
+            max_reassignment_attempts (int): Number of times the director may
+                reassign work from unavailable agents.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -224,6 +234,24 @@ class HierarchicalSwarm:
         )
         self.director_temperature = director_temperature
         self.director_top_p = director_top_p
+        self.director_settings = dict(director_settings or {})
+        self.director_name = self.director_settings.get(
+            "agent_name", self.director_name
+        )
+        self.director_model_name = self.director_settings.get(
+            "model_name", self.director_model_name
+        )
+        self.director_system_prompt = self.director_settings.get(
+            "system_prompt", self.director_system_prompt
+        )
+        self.director_temperature = self.director_settings.get(
+            "temperature", self.director_temperature
+        )
+        self.director_top_p = self.director_settings.get(
+            "top_p", self.director_top_p
+        )
+        self.max_agent_retries = max_agent_retries
+        self.max_reassignment_attempts = max_reassignment_attempts
         self.planning_enabled = planning_enabled
         self.autosave = autosave
         self.verbose = verbose
@@ -312,6 +340,9 @@ class HierarchicalSwarm:
         # Reliability checks
         self.reliability_checks()
 
+        # Hierarchical swarms pass only final responses between agents.
+        self.enforce_final_agent_outputs()
+
         # Add agent context to the director
         self.add_context_to_director()
 
@@ -330,6 +361,13 @@ class HierarchicalSwarm:
 
         if self.multi_agent_prompt_improvements:
             self.prepare_worker_agents()
+
+    def enforce_final_agent_outputs(self) -> None:
+        """Force every configurable agent to return only its final response."""
+        agents = [self.director, *(self.agents or [])]
+        for agent in agents:
+            if hasattr(agent, "output_type"):
+                agent.output_type = "final"
 
     def _setup_autosave(self):
         """
@@ -467,40 +505,66 @@ class HierarchicalSwarm:
         try:
             schema = BaseTool().base_model_to_dict(SwarmSpec)
 
-            return Agent(
-                agent_name=self.director_name,
-                agent_description="A director agent that can create a plan and distribute orders to agents",
-                system_prompt=self.director_system_prompt,
-                model_name=self.director_model_name,
-                temperature=self.director_temperature,
-                top_p=self.director_top_p,
-                max_loops=1,
-                base_model=SwarmSpec,
-                tools_list_dictionary=[schema],
-                output_type="dict-all-except-first",
+            settings = {
+                "agent_name": self.director_name,
+                "agent_description": "A director agent that can create a plan and distribute orders to agents",
+                "system_prompt": self.director_system_prompt,
+                "model_name": self.director_model_name,
+                "temperature": self.director_temperature,
+                "top_p": self.director_top_p,
+                "max_loops": 1,
+                "base_model": SwarmSpec,
+                "tools_list_dictionary": [schema],
+                "output_type": "dict-all-except-first",
+            }
+            settings.update(
+                {
+                    key: value
+                    for key, value in self.director_settings.items()
+                    if key != "planning_system_prompt"
+                }
             )
+            settings["output_type"] = "final"
+            return Agent(**settings)
 
         except Exception as e:
             error_msg = f"[ERROR] Failed to setup director: {str(e)}"
             logger.error(
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
+            raise
 
     def setup_director_with_planning(
         self, task: str = None, img: Optional[str] = None
     ):
         try:
 
-            agent = Agent(
-                agent_name=self.director_name,
-                agent_description="A director agent that can create a plan and distribute orders to agents",
-                system_prompt=DIRECTOR_PLANNING_PROMPT,
-                model_name=self.director_model_name,
-                temperature=self.director_temperature,
-                top_p=self.director_top_p,
-                max_loops=1,
-                output_type="final",
+            settings = {
+                "agent_name": self.director_name,
+                "agent_description": "A director agent that can create a plan and distribute orders to agents",
+                "model_name": self.director_model_name,
+                "temperature": self.director_temperature,
+                "top_p": self.director_top_p,
+                "max_loops": 1,
+                "output_type": "final",
+            }
+            settings.update(
+                {
+                    key: value
+                    for key, value in self.director_settings.items()
+                    if key
+                    not in {
+                        "base_model",
+                        "tools_list_dictionary",
+                        "planning_system_prompt",
+                    }
+                }
             )
+            settings["system_prompt"] = self.director_settings.get(
+                "planning_system_prompt", DIRECTOR_PLANNING_PROMPT
+            )
+            settings["output_type"] = "final"
+            agent = Agent(**settings)
 
             return agent.run(task=task, img=img)
 
@@ -509,19 +573,9 @@ class HierarchicalSwarm:
             logger.error(
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
+            raise
 
     def reliability_checks(self):
-        """
-        Perform validation checks to ensure the swarm is properly configured.
-
-        This method validates:
-        1. That at least one agent is provided
-        2. That max_loops is greater than 0
-        3. That a director is available (creates default if needed)
-
-        Raises:
-            ValueError: If the swarm configuration is invalid.
-        """
         try:
             if not self.agents or len(self.agents) == 0:
                 raise ValueError(
@@ -531,6 +585,16 @@ class HierarchicalSwarm:
             if self.max_loops <= 0:
                 raise ValueError(
                     "Max loops must be greater than 0. Please set a valid number of loops."
+                )
+
+            if self.max_agent_retries < 0:
+                raise ValueError(
+                    "max_agent_retries must be greater than or equal to 0."
+                )
+
+            if self.max_reassignment_attempts < 0:
+                raise ValueError(
+                    "max_reassignment_attempts must be greater than or equal to 0."
                 )
 
             if self.director is None:
@@ -860,9 +924,10 @@ class HierarchicalSwarm:
             feedback_director = Agent(
                 agent_name="Director",
                 agent_description="Director module that provides feedback to the worker agents",
-                model_name=self.director_model_name,
+                model_name=self.feedback_director_model_name,
                 max_loops=1,
                 system_prompt=HIEARCHICAL_SWARM_SYSTEM_PROMPT,
+                output_type="final",
             )
 
             output = feedback_director.run(
@@ -937,6 +1002,7 @@ class HierarchicalSwarm:
             Callable[[str, str, bool], None]
         ] = None,
         _add_to_conversation: bool = True,
+        _raise_on_failure: bool = False,
         *args,
         **kwargs,
     ):
@@ -1035,6 +1101,236 @@ class HierarchicalSwarm:
             logger.error(
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
+            if _raise_on_failure:
+                raise
+
+    def _record_agent_failure(
+        self,
+        order: HierarchicalOrder,
+        error: Exception,
+        attempts: int,
+    ) -> Dict[str, Any]:
+        """Record an unavailable worker in shared swarm context."""
+        failure = {
+            "status": "failed",
+            "agent_name": order.agent_name,
+            "task": order.task,
+            "error": str(error),
+            "attempts": attempts,
+        }
+        self.conversation.add(
+            role="System",
+            content=(
+                "[WORKER UNAVAILABLE] "
+                f"{order.agent_name} failed task {order.task!r} after "
+                f"{attempts} attempt(s). Error: {error}. Do not assign new "
+                "work to this agent during the current recovery cycle."
+            ),
+        )
+        logger.warning(
+            f"Worker {order.agent_name} is unavailable after "
+            f"{attempts} attempt(s): {error}"
+        )
+        return failure
+
+    def _execute_order_with_retries(
+        self,
+        order: HierarchicalOrder,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+        add_to_conversation: bool = True,
+    ):
+        """Execute one order and return an explicit failure if retries expire."""
+        attempts = self.max_agent_retries + 1
+        last_error = None
+
+        for attempt in range(1, attempts + 1):
+            try:
+                output = self.call_single_agent(
+                    order.agent_name,
+                    order.task,
+                    streaming_callback=streaming_callback,
+                    _add_to_conversation=add_to_conversation,
+                    _raise_on_failure=True,
+                )
+                return output, None
+            except Exception as error:
+                last_error = error
+                if attempt < attempts:
+                    logger.warning(
+                        f"Retrying worker {order.agent_name} for task "
+                        f"{order.task!r} ({attempt}/{attempts})"
+                    )
+
+        failure = self._record_agent_failure(
+            order=order,
+            error=last_error,
+            attempts=attempts,
+        )
+        return failure, failure
+
+    def _execute_orders_once(
+        self,
+        orders: List[HierarchicalOrder],
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+    ):
+        """Execute a set of orders without triggering reassignment."""
+        results = [None] * len(orders)
+        failures = []
+
+        if self.parallel_execution:
+            max_workers = max(1, int((os.cpu_count() or 1) * 0.75))
+            futures_map = {}
+            with ThreadPoolExecutor(
+                max_workers=max_workers
+            ) as executor:
+                for index, order in enumerate(orders):
+                    if self.interactive and self.dashboard:
+                        self.dashboard.update_agent_status(
+                            order.agent_name,
+                            "RUNNING",
+                            order.task,
+                            "Processing...",
+                        )
+                    future = executor.submit(
+                        self._execute_order_with_retries,
+                        order,
+                        streaming_callback,
+                        False,
+                    )
+                    futures_map[future] = (index, order)
+
+                for future in as_completed(futures_map):
+                    index, order = futures_map[future]
+                    output, failure = future.result()
+                    results[index] = output
+                    if failure is not None:
+                        failures.append(failure)
+                    if self.interactive and self.dashboard:
+                        status = (
+                            "ERROR"
+                            if failure is not None
+                            else "COMPLETED"
+                        )
+                        self.dashboard.update_agent_status(
+                            order.agent_name,
+                            status,
+                            order.task,
+                            str(output),
+                        )
+
+            for index, order in enumerate(orders):
+                if results[index] is not None and not (
+                    isinstance(results[index], dict)
+                    and results[index].get("status") == "failed"
+                ):
+                    self.conversation.add(
+                        role=order.agent_name,
+                        content=results[index],
+                    )
+        else:
+            for index, order in enumerate(orders):
+                if self.interactive and self.dashboard:
+                    self.dashboard.update_agent_status(
+                        order.agent_name,
+                        "RUNNING",
+                        order.task,
+                        "Processing...",
+                    )
+                output, failure = self._execute_order_with_retries(
+                    order,
+                    streaming_callback=streaming_callback,
+                )
+                results[index] = output
+                if failure is not None:
+                    failures.append(failure)
+                if self.interactive and self.dashboard:
+                    status = (
+                        "ERROR"
+                        if failure is not None
+                        else "COMPLETED"
+                    )
+                    self.dashboard.update_agent_status(
+                        order.agent_name,
+                        status,
+                        order.task,
+                        str(output),
+                    )
+
+        return results, failures
+
+    def _request_reassignment(
+        self,
+        failures: List[Dict[str, Any]],
+        unavailable_agents: set,
+    ) -> List[HierarchicalOrder]:
+        """Ask the director to move failed work to available workers."""
+        available_agents = [
+            getattr(agent, "agent_name", str(agent))
+            for agent in self.agents
+            if getattr(agent, "agent_name", str(agent))
+            not in unavailable_agents
+        ]
+        if not available_agents:
+            self.conversation.add(
+                role="System",
+                content=(
+                    "[RECOVERY STOPPED] No healthy worker agents remain "
+                    "for reassignment."
+                ),
+            )
+            return []
+
+        recovery_task = (
+            "Recover from worker failures without stopping the swarm. "
+            "Reassign only the failed tasks below to healthy agents. Never "
+            "assign work to an unavailable agent.\n\n"
+            f"Failed tasks: {json.dumps(failures, default=str)}\n"
+            f"Unavailable agents: {sorted(unavailable_agents)}\n"
+            f"Healthy agents: {available_agents}\n\n"
+            "Return a SwarmSpec with a recovery plan and replacement orders."
+        )
+        try:
+            output = self.director.run(
+                task=(
+                    f"History: {self.conversation.get_str()}\n\n"
+                    f"Task: {recovery_task}"
+                )
+            )
+            self.conversation.add(
+                role="Director",
+                content=output,
+            )
+            _, orders = self.parse_orders(output)
+        except Exception as error:
+            self.conversation.add(
+                role="System",
+                content=(
+                    "[RECOVERY FAILED] The director could not produce "
+                    f"replacement orders: {error}"
+                ),
+            )
+            logger.error(f"Director reassignment failed: {error}")
+            return []
+
+        valid_agent_names = set(available_agents)
+        valid_orders = [
+            order
+            for order in orders
+            if order.agent_name in valid_agent_names
+        ]
+        if len(valid_orders) != len(orders):
+            self.conversation.add(
+                role="System",
+                content=(
+                    "[RECOVERY NOTICE] Ignored replacement orders assigned "
+                    "to unavailable or unknown agents."
+                ),
+            )
+        return valid_orders
 
     def parse_orders(self, output):
         """
@@ -1140,6 +1436,11 @@ class HierarchicalSwarm:
                     raise ValueError(
                         f"Missing 'plan' or 'orders' in director output: {output}"
                     )
+            elif isinstance(output, str):
+                parsed_output = json.loads(output)
+                return self.parse_orders(parsed_output)
+            elif isinstance(output, SwarmSpec):
+                return output.plan, output.orders
             else:
                 raise ValueError(
                     f"Unexpected output format from director: {type(output)}"
@@ -1179,86 +1480,58 @@ class HierarchicalSwarm:
             Exception: If order execution fails.
         """
         try:
-            if self.parallel_execution:
-                max_workers = max(1, int(os.cpu_count() * 0.75))
-                futures_map = {}
-                results = [None] * len(orders)
+            outputs, failures = self._execute_orders_once(
+                orders=orders,
+                streaming_callback=streaming_callback,
+            )
+            unavailable_agents = {
+                failure["agent_name"] for failure in failures
+            }
+            reassignment_attempt = 0
 
-                with ThreadPoolExecutor(
-                    max_workers=max_workers
-                ) as executor:
-                    for i, order in enumerate(orders):
-                        if self.interactive and self.dashboard:
-                            self.dashboard.update_agent_status(
-                                order.agent_name,
-                                "RUNNING",
-                                order.task,
-                                "Processing...",
-                            )
-                        future = executor.submit(
-                            self.call_single_agent,
-                            order.agent_name,
-                            order.task,
-                            streaming_callback,
-                            False,  # _add_to_conversation=False
-                        )
-                        futures_map[future] = (i, order)
+            while (
+                failures
+                and reassignment_attempt
+                < self.max_reassignment_attempts
+            ):
+                reassignment_attempt += 1
+                self.conversation.add(
+                    role="System",
+                    content=(
+                        "[RECOVERY STARTED] Asking the director to reassign "
+                        f"{len(failures)} failed task(s). Recovery attempt "
+                        f"{reassignment_attempt}/"
+                        f"{self.max_reassignment_attempts}."
+                    ),
+                )
+                replacement_orders = self._request_reassignment(
+                    failures=failures,
+                    unavailable_agents=unavailable_agents,
+                )
+                if not replacement_orders:
+                    break
 
-                    for future in as_completed(futures_map):
-                        idx, order = futures_map[future]
-                        output = future.result()
-                        results[idx] = output
-
-                        if self.interactive and self.dashboard:
-                            self.dashboard.update_agent_status(
-                                order.agent_name,
-                                "COMPLETED",
-                                order.task,
-                                str(output),
-                            )
-
-                # Write outputs to conversation in submission order
-                for i, order in enumerate(orders):
-                    if results[i] is not None:
-                        self.conversation.add(
-                            role=order.agent_name, content=results[i]
-                        )
-
-                return results
-
-            else:
-                outputs = []
-                for i, order in enumerate(orders):
-                    # Update dashboard for agent execution
-                    if self.interactive and self.dashboard:
-                        self.dashboard.update_agent_status(
-                            order.agent_name,
-                            "RUNNING",
-                            order.task,
-                            "Processing...",
-                        )
-
-                    output = self.call_single_agent(
-                        order.agent_name,
-                        order.task,
+                replacement_outputs, failures = (
+                    self._execute_orders_once(
+                        orders=replacement_orders,
                         streaming_callback=streaming_callback,
                     )
+                )
+                outputs.extend(replacement_outputs)
+                unavailable_agents.update(
+                    failure["agent_name"] for failure in failures
+                )
 
-                    # Update dashboard with completed status
-                    if self.interactive and self.dashboard:
-                        # Always show full output without truncation
-                        output_display = str(output)
+            if failures:
+                self.conversation.add(
+                    role="System",
+                    content=(
+                        "[RECOVERY INCOMPLETE] The swarm continued, but "
+                        f"{len(failures)} task(s) could not be completed."
+                    ),
+                )
 
-                        self.dashboard.update_agent_status(
-                            order.agent_name,
-                            "COMPLETED",
-                            order.task,
-                            output_display,
-                        )
-
-                    outputs.append(output)
-
-                return outputs
+            return outputs
 
         except Exception as e:
             error_msg = (
@@ -1274,6 +1547,14 @@ class HierarchicalSwarm:
                 "\n" + "=" * 60 + "\n"
             )
             logger.error(error_msg)
+            self.conversation.add(
+                role="System",
+                content=(
+                    "[ORDER EXECUTION ERROR] The swarm continued after an "
+                    f"unexpected orchestration error: {e}"
+                ),
+            )
+            return []
 
     def batched_run(
         self,
@@ -1788,9 +2069,10 @@ class HierarchicalSwarm:
                 fb_agent = Agent(
                     agent_name="Director",
                     agent_description="Director module that provides feedback to the worker agents",
-                    model_name=self.director_model_name,
+                    model_name=self.feedback_director_model_name,
                     max_loops=1,
                     system_prompt=HIEARCHICAL_SWARM_SYSTEM_PROMPT,
+                    output_type="final",
                 )
                 fb_task_str = (
                     "You are the Director. Carefully review the outputs "

@@ -1,8 +1,13 @@
 import os
+from typing import Any
+
 import pytest
 
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hiearchical_swarm import (
+    HierarchicalOrder,
+    HierarchicalSwarm,
+)
 from swarms.utils.workspace_utils import get_workspace_dir
 
 
@@ -710,6 +715,178 @@ async def test_arun_stream_token_events_have_role_and_loop():
             assert "token" in evt, f"Token missing token: {evt}"
 
     assert token_count > 0
+
+
+##############################################################################
+# Director settings and worker recovery tests
+##############################################################################
+
+
+class StubAgent:
+    def __init__(
+        self,
+        agent_name: str,
+        outputs: list[Any],
+    ):
+        self.agent_name = agent_name
+        self.description = f"{agent_name} test agent"
+        self.system_prompt = self.description
+        self.outputs = iter(outputs)
+        self.calls = 0
+        self.output_type = "dict"
+
+    def run(self, *args, **kwargs):
+        self.calls += 1
+        output = next(self.outputs)
+        if isinstance(output, Exception):
+            raise output
+        return output
+
+
+def make_recovery_swarm(
+    director: StubAgent,
+    workers: list[StubAgent],
+    **kwargs,
+) -> HierarchicalSwarm:
+    return HierarchicalSwarm(
+        director=director,
+        agents=workers,
+        autosave=False,
+        planning_enabled=False,
+        director_feedback_on=False,
+        add_collaboration_prompt=False,
+        **kwargs,
+    )
+
+
+def test_director_settings_are_forwarded(monkeypatch):
+    captured = {}
+
+    def build_director(**kwargs):
+        captured.update(kwargs)
+        return StubAgent(kwargs["agent_name"], [])
+
+    monkeypatch.setattr(
+        "swarms.structs.hiearchical_swarm.Agent",
+        build_director,
+    )
+    worker = StubAgent("Worker", ["done"])
+
+    swarm = HierarchicalSwarm(
+        agents=[worker],
+        autosave=False,
+        planning_enabled=False,
+        director_settings={
+            "agent_name": "Custom Director",
+            "model_name": "custom-model",
+            "max_loops": 3,
+            "reasoning_effort": "high",
+            "output_type": "dict",
+        },
+    )
+
+    assert swarm.director_name == "Custom Director"
+    assert swarm.director_model_name == "custom-model"
+    assert captured["max_loops"] == 3
+    assert captured["reasoning_effort"] == "high"
+    assert captured["output_type"] == "final"
+    assert worker.output_type == "final"
+    assert swarm.director.output_type == "final"
+
+
+def test_custom_director_and_workers_are_forced_to_final_output():
+    director = StubAgent("Director", [])
+    worker = StubAgent("Worker", ["done"])
+
+    swarm = make_recovery_swarm(director, [worker])
+
+    assert director.output_type == "final"
+    assert worker.output_type == "final"
+
+    plan, orders = swarm.parse_orders(
+        '{"plan": "Use the worker", "orders": '
+        '[{"agent_name": "Worker", "task": "Do the work"}]}'
+    )
+    assert plan == "Use the worker"
+    assert orders[0].agent_name == "Worker"
+
+
+def test_failed_worker_is_retried_and_reassigned():
+    failed_worker = StubAgent(
+        "Failed Worker",
+        [RuntimeError("offline"), RuntimeError("offline")],
+    )
+    healthy_worker = StubAgent("Healthy Worker", ["recovered"])
+    director = StubAgent(
+        "Director",
+        [
+            {
+                "plan": "Move the failed task to a healthy worker.",
+                "orders": [
+                    {
+                        "agent_name": "Healthy Worker",
+                        "task": "complete the task",
+                    }
+                ],
+            }
+        ],
+    )
+    swarm = make_recovery_swarm(
+        director,
+        [failed_worker, healthy_worker],
+        max_agent_retries=1,
+        max_reassignment_attempts=1,
+        parallel_execution=False,
+    )
+
+    outputs = swarm.execute_orders(
+        [
+            HierarchicalOrder(
+                agent_name="Failed Worker",
+                task="complete the task",
+            )
+        ]
+    )
+
+    assert failed_worker.calls == 2
+    assert healthy_worker.calls == 1
+    assert director.calls == 1
+    assert outputs[-1] == "recovered"
+    assert "[WORKER UNAVAILABLE]" in swarm.conversation.get_str()
+    assert "[RECOVERY STARTED]" in swarm.conversation.get_str()
+
+
+def test_one_failed_worker_does_not_stop_other_orders():
+    failed_worker = StubAgent(
+        "Failed Worker",
+        [RuntimeError("offline")],
+    )
+    healthy_worker = StubAgent("Healthy Worker", ["completed"])
+    director = StubAgent("Director", [])
+    swarm = make_recovery_swarm(
+        director,
+        [failed_worker, healthy_worker],
+        max_agent_retries=0,
+        max_reassignment_attempts=0,
+        parallel_execution=True,
+    )
+
+    outputs = swarm.execute_orders(
+        [
+            HierarchicalOrder(
+                agent_name="Failed Worker",
+                task="first task",
+            ),
+            HierarchicalOrder(
+                agent_name="Healthy Worker",
+                task="second task",
+            ),
+        ]
+    )
+
+    assert outputs[0]["status"] == "failed"
+    assert outputs[1] == "completed"
+    assert healthy_worker.calls == 1
 
 
 if __name__ == "__main__":

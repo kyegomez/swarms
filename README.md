@@ -125,6 +125,7 @@ agent = Agent(
     model_name="gpt-5.4", # Specify the LLM
     max_loops="auto",              # Set the number of interactions
     interactive=True,         # Enable interactive mode for real-time feedback
+    temperature=None,
 )
 
 # Run the agent with a task
