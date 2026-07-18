@@ -201,25 +201,19 @@ markdown_extensions:
   - pymdownx.inlinehilite
 
 nav:
-  # - Home:
-  #   - Overview: "quickstart.md"
   #   - Installation: "swarms/install/install.md"
   #   - Environment Configuration: "swarms/install/env.md"
   #   - Agents: "swarms/agents/index.md"
   #   - Multi-Agent Architectures: "swarms/structs/index.md"
 
   - Home:
-    - Overview: "index.md"
     - Onboarding: 
       - Installation: "swarms/install/install.md"
       - Environment Configuration: "swarms/install/env.md"
-      - Quickstart: "quickstart.md"
       - Agents: "swarms/agents/index.md"
       - Multi-Agent Architectures: "swarms/structs/index.md"
     
     - Protocol:
-      - Overview: "protocol/overview.md"
-      - SIPs: "protocol/sip.md"
       - Feature Set: "swarms/features.md"
       - Swarms Ecosystem: "swarms/ecosystem.md"
       - Technical Support: "swarms/support.md"
@@ -320,27 +314,13 @@ nav:
       - SubagentRegistry: "swarms/structs/async_subagent.md"
 
     - Tools:
-      - Overview: "swarms_tools/overview.md"
       - BaseTool Reference: "swarms/tools/base_tool.md"
       - MCP Client Utils: "swarms/tools/mcp_client_call.md"
-      - Run Bash Tool Tutorial: "examples/autonomous_looper_run_bash_tutorial.md"
 
-      - Vertical Tools:
-        - Finance: "swarms_tools/finance.md"
-        - Search: "swarms_tools/search.md"
-        - Social Media:
-          - Twitter: "swarms_tools/twitter.md"
 
 
     - Deployment Solutions:
-      - Overview: "deployment_solutions/overview.md"
-      - FastAPI + Uvicorn: "deployment_solutions/fastapi_agent_api.md"
       - CronJob: "swarms/structs/cron_job.md"
-      - Agent on MCP: "examples/mcp_ds.md"
-      - Providers:
-        - Deploy on Google Cloud Run: "swarms_cloud/cloud_run.md"
-        - Deploy on Phala: "swarms_cloud/phala_deploy.md"
-        - Deploy on Cloudflare Workers: "swarms_cloud/cloudflare_workers.md"
       - Agent Orchestration Protocol (AOP):
         - AOP Reference: "swarms/structs/aop.md"
         - AOP Server Setup: "swarms/examples/aop_server_example.md"
@@ -353,7 +333,6 @@ nav:
   - Contributors:
     - Overview: "contributors/main.md"
     - Environment Setup: "contributors/environment_setup.md"
-    - Bounty Program: "governance/bounty_program.md"
     
     - Development Guides:
       - Code Style Guide & Best Practices: "swarms/framework/code_cleanliness.md"
@@ -365,5 +344,3 @@ nav:
       - Understanding Swarms Architecture: "swarms/concept/framework_architecture.md"
       - Development Philosophy & Principles: "swarms/concept/philosophy.md"
 
-    - Changelog:
-      - v10: "changelogs/v10.md"
