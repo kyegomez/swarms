@@ -290,6 +290,13 @@ class SwarmRouter(SerializableMixin):
         worker_tools (List[Callable], optional): Tools passed to ``HeavySwarm``
             workers.
         chairman_model (str, optional): Chairman model for ``LLMCouncil``.
+        director_model_name (str, optional): Model name for the director agent
+            when ``swarm_type="HierarchicalSwarm"``. Defaults to ``"gpt-5.4"``.
+        director_settings (Optional[Dict[str, Any]], optional): Additional
+            ``Agent`` keyword arguments forwarded to the ``HierarchicalSwarm``
+            director (e.g. ``system_prompt``, ``temperature``, ``top_p``).
+            Overrides ``director_model_name`` and other legacy director
+            configuration when the corresponding key is present.
 
     Attributes:
         agents (List[Union[Agent, Callable]]): The configured agent roster.
