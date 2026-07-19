@@ -57,14 +57,16 @@ async def run_agent_async(agent: AgentType, task: str) -> Any:
         ...     result = await run_agent_async(agent, "Process data")
         ...     return result
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         None, run_single_agent, agent, task
     )
 
 
 async def run_agents_concurrently_async(
-    agents: List[AgentType], task: str
+    agents: List[AgentType],
+    task: str,
+    per_task_timeout: Optional[float] = None,
 ) -> List[Any]:
     """
     Run multiple agents concurrently using asyncio gather.
@@ -76,9 +78,14 @@ async def run_agents_concurrently_async(
     Args:
         agents (List[AgentType]): List of agent instances to run concurrently
         task (str): The task string to be executed by all agents
+        per_task_timeout (Optional[float]): Maximum time in seconds each agent
+            is allowed to run. If an agent exceeds this timeout, the result for
+            that agent will be an asyncio.TimeoutError instead of its output.
+            Defaults to None (no timeout).
 
     Returns:
-        List[Any]: List of results from each agent in the same order as input
+        List[Any]: List of results from each agent in the same order as input.
+            If a timeout occurs, the corresponding entry is an asyncio.TimeoutError.
 
     Example:
         >>> async def main():
@@ -87,8 +94,20 @@ async def run_agents_concurrently_async(
         ...     for i, result in enumerate(results):
         ...         print(f"Agent {i+1} result: {result}")
     """
+    async def run_with_timeout(agent: AgentType, task: str) -> Any:
+        try:
+            if per_task_timeout is not None:
+                return await asyncio.wait_for(
+                    run_agent_async(agent, task),
+                    timeout=per_task_timeout,
+                )
+            else:
+                return await run_agent_async(agent, task)
+        except asyncio.TimeoutError as e:
+            return e
+
     results = await asyncio.gather(
-        *(run_agent_async(agent, task) for agent in agents)
+        *(run_with_timeout(agent, task) for agent in agents)
     )
     return results
 
@@ -224,12 +243,11 @@ def run_agents_concurrently_multiprocess(
         >>> print(f"Processed {len(results)} agents")
     """
     results = []
-    loop = asyncio.get_event_loop()
 
     # Process agents in batches to avoid overwhelming system resources
     for i in range(0, len(agents), batch_size):
         batch = agents[i : i + batch_size]
-        batch_results = loop.run_until_complete(
+        batch_results = asyncio.run(
             run_agents_concurrently_async(batch, task)
         )
         results.extend(batch_results)
