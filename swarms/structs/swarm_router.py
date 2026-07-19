@@ -347,6 +347,8 @@ class SwarmRouter(SerializableMixin):
         worker_tools: List[Callable] = None,
         chairman_model: str = "gpt-5.1",
         autosave_use_timestamp: bool = True,
+        director_model_name: str = "gpt-5.4",
+        director_settings: Optional[Dict[str, Any]] = None,
         *args,
         **kwargs,
     ):
@@ -400,6 +402,8 @@ class SwarmRouter(SerializableMixin):
         self.chairman_model = chairman_model
         self.autosave = autosave
         self.autosave_use_timestamp = autosave_use_timestamp
+        self.director_model_name = director_model_name
+        self.director_settings = director_settings
         self.swarm_workspace_dir = None
 
         # Initialize swarm factory for O(1) lookup performance
@@ -668,6 +672,8 @@ class SwarmRouter(SerializableMixin):
             agents=self.agents,
             max_loops=self.max_loops,
             output_type=self.output_type,
+            director_model_name=self.director_model_name,
+            director_settings=self.director_settings,
             *args,
             **kwargs,
         )
