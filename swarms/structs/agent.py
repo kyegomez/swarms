@@ -1695,6 +1695,14 @@ class Agent:
                 attempt = 0
                 success = False
                 while attempt < self.retry_attempts and not success:
+                    # Checkpoint the conversation length before this attempt
+                    # so a failure partway through (e.g. a bad handoff/MCP
+                    # tool call) can roll back everything this attempt
+                    # added, instead of leaving it in place for the next
+                    # attempt to duplicate on top of.
+                    memory_length_before_attempt = len(
+                        self.short_memory.conversation_history
+                    )
                     try:
 
                         show_loading = (
@@ -1843,6 +1851,24 @@ class Agent:
                         AuthenticationError,
                         Exception,
                     ) as e:
+
+                        # Roll back any messages this failed attempt added
+                        # (the assistant response and any handoff/tool/MCP
+                        # follow-up messages added after it) so retrying
+                        # doesn't leave duplicate or orphaned turns in the
+                        # conversation history.
+                        while (
+                            len(
+                                self.short_memory.conversation_history
+                            )
+                            > memory_length_before_attempt
+                        ):
+                            self.short_memory.delete(
+                                len(
+                                    self.short_memory.conversation_history
+                                )
+                                - 1
+                            )
 
                         if self.autosave is True:
                             log_agent_data(self.to_dict())

@@ -2372,6 +2372,68 @@ class TestLLMArgsAndHandling:
         print("✓ LLM handling args and kwargs test passed")
 
 
+class TestAgentRetryMemoryRollback:
+    """Regression tests for issue #1718.
+
+    ``Agent._run`` adds the LLM response to ``short_memory`` before the
+    post-response steps (handoff parsing, tool execution, MCP handling)
+    have succeeded. If one of those steps raises, the broad ``except``
+    around the retry loop retries the whole attempt without undoing the
+    ``short_memory.add`` from the failed attempt, so a later successful
+    attempt leaves a duplicate/contradictory assistant turn in history.
+    """
+
+    def test_failed_handoff_parse_is_rolled_back_on_retry(self):
+        """A malformed handoff tool call must not leave a stray message
+        in short_memory once a later retry attempt succeeds."""
+        with patch("swarms.structs.agent.LiteLLM") as mock_llm:
+            mock_llm.return_value.run.return_value = "unused"
+            agent = Agent(
+                agent_name="rollback_test_agent",
+                max_loops=1,
+                retry_attempts=2,
+                verbose=False,
+                print_on=False,
+                persistent_memory=False,
+            )
+
+        bad_handoff_response = [
+            {
+                "function": {
+                    "name": "handoff_task",
+                    # Malformed JSON: raises inside the handoff-parsing
+                    # step, after the response has already been added
+                    # to short_memory.
+                    "arguments": "{not valid json",
+                }
+            }
+        ]
+        good_response = "final answer"
+        call_count = {"n": 0}
+
+        def fake_call_llm(*args, **kwargs):
+            call_count["n"] += 1
+            if call_count["n"] == 1:
+                return bad_handoff_response
+            return good_response
+
+        agent.parse_llm_output = lambda response: response
+        agent.call_llm = fake_call_llm
+
+        result = agent._run(task="do something")
+
+        assert result == good_response
+        assert call_count["n"] == 2
+
+        assistant_messages = [
+            m
+            for m in agent.short_memory.conversation_history
+            if m.get("role") == agent.agent_name
+        ]
+        assert len(assistant_messages) == 1
+        assert assistant_messages[0]["content"] == good_response
+
+
 # ============================================================================
 # MAIN TEST RUNNER
 # ============================================================================
