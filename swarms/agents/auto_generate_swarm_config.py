@@ -344,8 +344,14 @@ def write_autoswarm_file(
                 f"    swarm_type={_format_value(swarm_arch['swarm_type'])},"
             )
         if swarm_arch.get("max_loops"):
+            try:
+                max_loops_val = int(swarm_arch["max_loops"])
+            except (ValueError, TypeError):
+                raise ValueError(
+                    f"swarm_architecture.max_loops must be an integer, got {type(swarm_arch['max_loops']).__name__}: {swarm_arch['max_loops']!r}"
+                )
             router_lines.append(
-                f"    max_loops={swarm_arch['max_loops']},"
+                f"    max_loops={max_loops_val},"
             )
         router_lines.append(")")
         parts.append("\n".join(router_lines))
