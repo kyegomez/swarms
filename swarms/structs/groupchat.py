@@ -218,6 +218,11 @@ class GroupChat(SerializableMixin):
             output_type: Format passed to ``history_output_formatter``.
             verbose: Whether to emit internal log messages and print each
                 posted message as a panel to stdout.
+            auto_equip: When ``True`` (default), automatically inject
+                ``RESPOND_TOOL`` into any agent that doesn't already carry it,
+                so every agent can produce a machine-readable speaking bid.
+                Set to ``False`` if your agents already declare the tool
+                themselves.
 
         Raises:
             ValueError: If fewer than two agents are provided.

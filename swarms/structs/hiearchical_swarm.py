@@ -146,9 +146,27 @@ class HierarchicalSwarm:
         feedback_director_model_name (str): Model name for the feedback director.
         director_name (str): Name identifier for the director agent.
         director_model_name (str): Model name for the main director agent.
+        director_settings (dict): Additional ``Agent`` keyword arguments for the
+                                auto-created director; overrides director_name,
+                                director_model_name, director_system_prompt,
+                                director_temperature, and director_top_p when set.
+        director_system_prompt (str): System prompt used by the director agent.
+        director_temperature (float): Sampling temperature for the director agent.
+        director_top_p (float): Nucleus sampling value for the director agent.
         add_collaboration_prompt (bool): Whether to add collaboration prompts to agents.
         director_feedback_on (bool): Whether director feedback is enabled.
+        interactive (bool): Whether to run with the live dashboard enabled.
+        multi_agent_prompt_improvements (bool): Whether to enrich worker system
+                                               prompts and context before a run.
+        planning_enabled (bool): Whether the director produces a plan before
+                                delegating tasks to workers.
         parallel_execution (bool): Whether to execute agent tasks in parallel (default: True).
+        max_agent_retries (int): Number of retries for a failed worker before it
+                                is reported as unavailable.
+        max_reassignment_attempts (int): Number of times the director may
+                                        reassign work away from unavailable workers.
+        agent_as_judge (bool): Whether a judge agent scores worker outputs.
+        judge_agent_model_name (str): Model name for the judge agent, when enabled.
     """
 
     def __init__(
@@ -198,12 +216,30 @@ class HierarchicalSwarm:
             director_model_name (str): Model name for the main director agent.
             add_collaboration_prompt (bool): Whether to add collaboration prompts.
             director_feedback_on (bool): Whether director feedback is enabled.
+            interactive (bool): Whether to run with the live dashboard enabled.
+                When True, worker/director progress is rendered interactively.
+            director_system_prompt (str): System prompt for the director agent.
+                Defaults to ``HIEARCHICAL_SWARM_SYSTEM_PROMPT``.
+            multi_agent_prompt_improvements (bool): Whether to enrich worker
+                system prompts and inject swarm context before a run.
+            director_temperature (float): Sampling temperature for the director
+                agent when it is auto-created.
+            director_top_p (float): Nucleus sampling value for the director
+                agent when it is auto-created.
+            planning_enabled (bool): Whether the director drafts a plan (via
+                ``setup_director_with_planning``) before delegating tasks.
             autosave (bool): Whether to enable autosaving of conversation history.
             verbose (bool): Whether to enable verbose logging.
             parallel_execution (bool): Whether to execute agent tasks in parallel (default: True).
+            agent_as_judge (bool): Whether to score worker outputs with a judge
+                agent.
+            judge_agent_model_name (str): Model name for the judge agent, used
+                only when ``agent_as_judge=True``.
             director_settings (dict, optional): Additional ``Agent`` keyword
                 arguments for the automatically created director. These values
-                override the legacy director configuration parameters.
+                override the legacy director configuration parameters
+                (director_name, director_model_name, director_system_prompt,
+                director_temperature, director_top_p).
             max_agent_retries (int): Number of times to retry a failed worker
                 before reporting it as unavailable.
             max_reassignment_attempts (int): Number of times the director may

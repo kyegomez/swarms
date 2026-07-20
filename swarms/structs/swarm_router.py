@@ -290,6 +290,13 @@ class SwarmRouter(SerializableMixin):
         worker_tools (List[Callable], optional): Tools passed to ``HeavySwarm``
             workers.
         chairman_model (str, optional): Chairman model for ``LLMCouncil``.
+        director_model_name (str, optional): Model name for the director agent
+            when ``swarm_type="HierarchicalSwarm"``. Defaults to ``"gpt-5.4"``.
+        director_settings (Optional[Dict[str, Any]], optional): Additional
+            ``Agent`` keyword arguments forwarded to the ``HierarchicalSwarm``
+            director (e.g. ``system_prompt``, ``temperature``, ``top_p``).
+            Overrides ``director_model_name`` and other legacy director
+            configuration when the corresponding key is present.
 
     Attributes:
         agents (List[Union[Agent, Callable]]): The configured agent roster.
@@ -347,6 +354,8 @@ class SwarmRouter(SerializableMixin):
         worker_tools: List[Callable] = None,
         chairman_model: str = "gpt-5.1",
         autosave_use_timestamp: bool = True,
+        director_model_name: str = "gpt-5.4",
+        director_settings: Optional[Dict[str, Any]] = None,
         *args,
         **kwargs,
     ):
@@ -400,6 +409,8 @@ class SwarmRouter(SerializableMixin):
         self.chairman_model = chairman_model
         self.autosave = autosave
         self.autosave_use_timestamp = autosave_use_timestamp
+        self.director_model_name = director_model_name
+        self.director_settings = director_settings
         self.swarm_workspace_dir = None
 
         # Initialize swarm factory for O(1) lookup performance
@@ -668,6 +679,8 @@ class SwarmRouter(SerializableMixin):
             agents=self.agents,
             max_loops=self.max_loops,
             output_type=self.output_type,
+            director_model_name=self.director_model_name,
+            director_settings=self.director_settings,
             *args,
             **kwargs,
         )
