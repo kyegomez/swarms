@@ -96,10 +96,6 @@ class ConcurrentWorkflow:
         self.show_dashboard = show_dashboard
         self.autosave = autosave
         self.verbose = verbose
-        if on_error not in ("store", "raise"):
-            raise ValueError(
-                f"on_error must be 'store' or 'raise', got '{on_error}'"
-            )
         self.on_error = on_error
         self.swarm_workspace_dir = None
         self.metadata_output_path = (
@@ -424,6 +420,10 @@ class ConcurrentWorkflow:
             for future in concurrent.futures.as_completed(
                 future_to_agent
             ):
+            if on_error not in ("store", "raise"):
+            raise ValueError(
+                f"on_error must be 'store' or 'raise', got '{on_error}'"
+            )
                 agent = future_to_agent[future]
                 try:
                     output = future.result()
