@@ -83,6 +83,7 @@ class ConcurrentWorkflow:
         show_dashboard: bool = False,
         autosave: bool = True,
         verbose: bool = False,
+        on_error: str = "store",
     ):
         self.id = id if id is not None else swarm_id()
         self.name = name
@@ -95,6 +96,11 @@ class ConcurrentWorkflow:
         self.show_dashboard = show_dashboard
         self.autosave = autosave
         self.verbose = verbose
+        if on_error not in ("store", "raise"):
+            raise ValueError(
+                f"on_error must be 'store' or 'raise', got '{on_error}'"
+            )
+        self.on_error = on_error
         self.swarm_workspace_dir = None
         self.metadata_output_path = (
             f"concurrent_workflow_name_{name}_id_{self.id}.json"
@@ -419,10 +425,21 @@ class ConcurrentWorkflow:
                 future_to_agent
             ):
                 agent = future_to_agent[future]
-                output = future.result()
-                self.conversation.add(
-                    role=agent.agent_name, content=output
-                )
+                try:
+                    output = future.result()
+                    self.conversation.add(
+                        role=agent.agent_name, content=output
+                    )
+                except Exception as e:
+                    if self.on_error == "raise":
+                        raise
+                    logger.error(
+                        f"Agent {agent.agent_name} failed: {str(e)}"
+                    )
+                    self.conversation.add(
+                        role=f"{agent.agent_name} (failed)",
+                        content=f"Error: {str(e)}",
+                    )
 
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
