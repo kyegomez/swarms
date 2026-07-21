@@ -1875,12 +1875,7 @@ class GraphWorkflow:
                 execution_results = {}
                 prev_outputs = {}
 
-                # Derive a deterministic key for this task so checkpoints
-                # survive process restarts (Python's hash() is salted and
-                # is NOT stable across runs).
-                task_key = hashlib.sha256(
-                    task.encode("utf-8")
-                ).hexdigest()[:16]
+                checkpoint_prefix = self._checkpoint_prefix(task, loop)
 
                 # Seed entry-point nodes with end-point outputs from the
                 # previous loop so agents can refine iteratively.
@@ -1899,7 +1894,7 @@ class GraphWorkflow:
                     if self.checkpoint_dir:
                         checkpoint_path = (
                             Path(self.checkpoint_dir)
-                            / f"{task_key}_layer_{layer_idx}.json"
+                            / f"{checkpoint_prefix}_layer_{layer_idx}.json"
                         )
                         if checkpoint_path.exists():
                             try:
@@ -2163,7 +2158,7 @@ class GraphWorkflow:
                             cp_dir.mkdir(parents=True, exist_ok=True)
                             checkpoint_path = (
                                 cp_dir
-                                / f"{task_key}_layer_{layer_idx}.json"
+                                / f"{checkpoint_prefix}_layer_{layer_idx}.json"
                             )
                             layer_outputs = {
                                 nid: prev_outputs[nid]
@@ -2627,6 +2622,42 @@ class GraphWorkflow:
             )
             raise e
 
+    def _checkpoint_namespace_key(self) -> str:
+        """
+        Build a deterministic checkpoint namespace for this workflow.
+
+        The namespace intentionally excludes transient runtime state so the
+        same logical workflow can resume across process restarts while still
+        avoiding collisions with unrelated workflows sharing a checkpoint
+        directory.
+        """
+        namespace = {
+            "name": self.name,
+            "description": self.description,
+            "backend": type(self.graph_backend).__name__,
+            "nodes": sorted(self.nodes.keys()),
+            "edges": sorted(
+                (edge.source, edge.target) for edge in self.edges
+            ),
+        }
+        return hashlib.sha256(
+            json.dumps(
+                namespace,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()[:12]
+
+    def _checkpoint_prefix(self, task: str, loop: int) -> str:
+        """
+        Build a stable checkpoint prefix for a task and loop.
+        """
+        task_key = hashlib.sha256(task.encode("utf-8")).hexdigest()[
+            :16
+        ]
+        workflow_key = self._checkpoint_namespace_key()
+        return f"{workflow_key}_{task_key}_loop_{loop}"
+
     def clear_checkpoints(self, task: str) -> int:
         """
         Delete all checkpoint files written for a specific task.
@@ -2657,12 +2688,13 @@ class GraphWorkflow:
         cp_dir = Path(self.checkpoint_dir)
         if not cp_dir.exists():
             return 0
+        workflow_key = self._checkpoint_namespace_key()
         task_key = hashlib.sha256(task.encode("utf-8")).hexdigest()[
             :16
         ]
-        prefix = f"{task_key}_layer_"
+        prefix = f"{workflow_key}_{task_key}_loop_"
         deleted = 0
-        for cp_file in cp_dir.glob(f"{prefix}*.json"):
+        for cp_file in cp_dir.glob(f"{prefix}*_layer_*.json"):
             try:
                 cp_file.unlink()
                 deleted += 1
