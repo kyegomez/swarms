@@ -889,5 +889,174 @@ def test_one_failed_worker_does_not_stop_other_orders():
     assert healthy_worker.calls == 1
 
 
+##############################################################################
+# max_workers and nested-swarm worker tests
+##############################################################################
+
+
+class StubNestedSwarm:
+    """Mimics a nested orchestrator (e.g. another HierarchicalSwarm): it is
+    identified by ``name`` (no ``agent_name``) and accepts a
+    ``streaming_callback`` kwarg that it calls with the orchestrator's own
+    ``(sub_agent_name, chunk, is_final)`` convention.
+    """
+
+    def __init__(self, name: str, outputs: list):
+        self.name = name
+        self.description = f"{name} nested swarm"
+        self.outputs = iter(outputs)
+        self.calls = 0
+        self.output_type = "dict-all-except-first"
+
+    def run(self, task, streaming_callback=None, *args, **kwargs):
+        self.calls += 1
+        if streaming_callback is not None:
+            streaming_callback(self.name, "partial", False)
+        output = next(self.outputs)
+        if isinstance(output, Exception):
+            raise output
+        return output
+
+
+class StubFlatOrchestrator:
+    """Mimics an orchestrator whose ``run`` has no ``streaming_callback``
+    parameter at all (e.g. MixtureOfAgents)."""
+
+    def __init__(self, name: str, outputs: list):
+        self.name = name
+        self.description = f"{name} orchestrator"
+        self.outputs = iter(outputs)
+        self.calls = 0
+        self.output_type = "dict"
+
+    def run(self, task, img=None):
+        self.calls += 1
+        return next(self.outputs)
+
+
+def test_max_workers_defaults_to_cpu_heuristic():
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [StubAgent("Worker", ["done"])],
+    )
+    assert swarm.max_workers is None
+    assert swarm._resolve_max_workers() == max(
+        1, int((os.cpu_count() or 1) * 0.75)
+    )
+
+
+def test_max_workers_override_is_used():
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [StubAgent("Worker", ["done"])],
+        max_workers=2,
+    )
+    assert swarm.max_workers == 2
+    assert swarm._resolve_max_workers() == 2
+
+
+def test_max_workers_must_be_positive():
+    with pytest.raises(ValueError):
+        make_recovery_swarm(
+            StubAgent("Director", []),
+            [StubAgent("Worker", ["done"])],
+            max_workers=0,
+        )
+
+
+def test_nested_swarm_worker_is_called_and_streamed():
+    sub_team = StubNestedSwarm("SubTeam", ["sub-team result"])
+    director = StubAgent("Director", [])
+    swarm = make_recovery_swarm(
+        director,
+        [sub_team],
+        parallel_execution=False,
+    )
+
+    events = []
+    output = swarm.call_single_agent(
+        "SubTeam",
+        "handle part A",
+        streaming_callback=lambda name, chunk, is_final: events.append(
+            (name, chunk, is_final)
+        ),
+    )
+
+    assert output == "sub-team result"
+    assert sub_team.calls == 1
+    # nested (sub_agent_name, chunk, is_final=False) convention is normalized
+    # and re-emitted under the outer worker's own agent_name
+    assert ("SubTeam", "[SubTeam] partial", False) in events
+    assert ("SubTeam", "", True) in events
+
+
+def test_orchestrator_without_streaming_param_still_completes():
+    flat = StubFlatOrchestrator("FlatOrchestrator", ["moa result"])
+    director = StubAgent("Director", [])
+    swarm = make_recovery_swarm(
+        director,
+        [flat],
+        parallel_execution=False,
+    )
+
+    events = []
+    output = swarm.call_single_agent(
+        "FlatOrchestrator",
+        "handle part B",
+        streaming_callback=lambda name, chunk, is_final: events.append(
+            (name, chunk, is_final)
+        ),
+    )
+
+    assert output == "moa result"
+    assert flat.calls == 1
+    # no incremental chunks possible; a single final completion is emitted
+    assert events == [("FlatOrchestrator", "moa result", True)]
+
+
+def test_reassignment_targets_nested_swarm_worker_by_name():
+    failed_worker = StubAgent(
+        "Failed Worker",
+        [RuntimeError("offline"), RuntimeError("offline")],
+    )
+    healthy_sub_team = StubNestedSwarm(
+        "Healthy SubTeam", ["recovered by subteam"]
+    )
+    director = StubAgent(
+        "Director",
+        [
+            {
+                "plan": "Move the failed task to the healthy nested sub-team.",
+                "orders": [
+                    {
+                        "agent_name": "Healthy SubTeam",
+                        "task": "complete the task",
+                    }
+                ],
+            }
+        ],
+    )
+    swarm = make_recovery_swarm(
+        director,
+        [failed_worker, healthy_sub_team],
+        max_agent_retries=1,
+        max_reassignment_attempts=1,
+        parallel_execution=False,
+    )
+
+    outputs = swarm.execute_orders(
+        [
+            HierarchicalOrder(
+                agent_name="Failed Worker",
+                task="complete the task",
+            )
+        ]
+    )
+
+    assert healthy_sub_team.calls == 1
+    assert outputs[-1] == "recovered by subteam"
+    assert "[RECOVERY NOTICE]" not in swarm.conversation.get_str()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

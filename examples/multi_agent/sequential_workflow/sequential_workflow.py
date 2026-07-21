@@ -1,20 +1,7 @@
-import os
-from dotenv import load_dotenv
 from swarms import Agent, SequentialWorkflow
-from swarm_models import OpenAIChat
 
-load_dotenv()
-
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("GROQ_API_KEY")
-
-# Model
-model = OpenAIChat(
-    openai_api_base="https://api.groq.com/openai/v1",
-    openai_api_key=api_key,
-    model_name="llama-3.1-70b-versatile",
-    temperature=0.1,
-)
+# Model — any LiteLLM-compatible string. Set GROQ_API_KEY in your environment.
+MODEL_NAME = "groq/llama-3.3-70b-versatile"
 
 
 # Initialize specialized agents
@@ -26,7 +13,7 @@ data_extractor_agent = Agent(
     3. Structure extracted data in a clear, organized format
     4. Flag any inconsistencies or missing data
     5. Ensure accuracy in data extraction while maintaining context""",
-    llm=model,
+    model_name=MODEL_NAME,
     max_loops=1,
     autosave=True,
     verbose=True,
@@ -46,7 +33,7 @@ summarizer_agent = Agent(
     3. Maintain the essential meaning while reducing length
     4. Structure summaries in a logical, readable format
     5. Identify and emphasize critical insights""",
-    llm=model,
+    model_name=MODEL_NAME,
     max_loops=1,
     autosave=True,
     verbose=True,
@@ -66,7 +53,7 @@ financial_analyst_agent = Agent(
     3. Assess financial risks and opportunities
     4. Provide insights on financial performance and health
     5. Make recommendations based on financial analysis""",
-    llm=model,
+    model_name=MODEL_NAME,
     max_loops=1,
     autosave=True,
     verbose=True,
@@ -86,7 +73,7 @@ market_analyst_agent = Agent(
     3. Identify market opportunities and threats
     4. Assess market size and growth potential
     5. Provide strategic market insights and recommendations""",
-    llm=model,
+    model_name=MODEL_NAME,
     max_loops=1,
     autosave=True,
     verbose=True,
@@ -106,7 +93,7 @@ operational_analyst_agent = Agent(
     3. Identify operational risks and opportunities
     4. Assess scalability and growth potential
     5. Provide recommendations for operational improvements""",
-    llm=model,
+    model_name=MODEL_NAME,
     max_loops=2,
     autosave=True,
     verbose=True,
@@ -138,6 +125,5 @@ if __name__ == "__main__":
     # Run a comprehensive private equity document analysis task
     result = router.run(
         "Where is the best place to find template term sheets for series A startups. Provide links and references",
-        no_use_clusterops=True,
     )
     print(result)

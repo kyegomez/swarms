@@ -21,7 +21,6 @@ Main class for routing tasks to different swarm types.
 | `rearrange_flow` | str | The flow for the AgentRearrange swarm type |
 | `return_json` | bool | Flag to enable/disable returning the result in JSON format |
 | `auto_generate_prompts` | bool | Flag to enable/disable auto generation of prompts |
-| `shared_memory_system` | Any | Shared memory system for agents |
 | `rules` | str | Rules to inject into every agent |
 | `documents` | List[str] | List of document file paths |
 | `output_type` | OutputType | Output format type (e.g., "string", "dict", "list", "json", "yaml", "xml", "dict-all-except-first"). Defaults to "dict-all-except-first" |
@@ -36,7 +35,6 @@ Main class for routing tasks to different swarm types.
 | `heavy_swarm_question_agent_model_name` | str | Model name for the question agent in HeavySwarm (default: "gpt-5.4") |
 | `heavy_swarm_worker_model_name` | str | Model name for worker agents in HeavySwarm (default: "gpt-5.4") |
 | `heavy_swarm_swarm_show_output` | bool | Flag to show output for HeavySwarm (default: True) |
-| `telemetry_enabled` | bool | Flag to enable/disable telemetry logging (default: False) |
 | `council_judge_model_name` | str | Model name for the judge in CouncilAsAJudge (default: "gpt-5.4") |
 | `verbose` | bool | Flag to enable/disable verbose logging (default: False) |
 | `worker_tools` | List[Callable] | List of tools available to worker agents |
@@ -115,7 +113,6 @@ The `SwarmRouter` supports many various multi-agent architectures for various ap
 | `ConcurrentWorkflow` | Executes tasks in parallel |
 | `GroupChat` | Facilitates communication among agents in a group chat format |
 | `MultiAgentRouter` | Routes tasks between multiple agents |
-| `AutoSwarmBuilder` | Automatically builds swarm structure |
 | `HiearchicalSwarm` | Hierarchical organization of agents |
 | `MajorityVoting` | Uses majority voting for decision making |
 | `CouncilAsAJudge` | Council-based judgment system |
@@ -340,7 +337,6 @@ multi_agent_router = SwarmRouter(
     max_loops=1,
     agents=[financial_analyst, market_researcher, competitor_analyst],
     swarm_type="MultiAgentRouter",
-    shared_memory_system=memory_system
 )
 
 result = multi_agent_router.run("Analyze the competitive landscape for our new product")

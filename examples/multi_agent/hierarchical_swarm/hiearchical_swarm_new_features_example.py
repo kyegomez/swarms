@@ -1,3 +1,5 @@
+import json
+
 from swarms import Agent, HierarchicalSwarm
 
 agents = [
@@ -30,12 +32,15 @@ swarm = HierarchicalSwarm(
     max_loops=1,
     director_model_name="gpt-5.4",
     parallel_execution=False,  # agents run sequentially (one after the other)
-    agent_as_judge=True,  # judge agent scores each output
-    judge_agent_model_name="gpt-5.4",
+    # agent_as_judge=True,  # judge agent scores each output
+    # judge_agent_model_name="gpt-5.4",
+    output_type="dict",
 )
 
 
 result = swarm.run(
     task="Analyze AI infrastructure investment trends and recommend the top 3 opportunities for 2025."
 )
-print(result)
+
+
+print(json.dumps(result, indent=4))

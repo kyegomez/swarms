@@ -8,7 +8,7 @@ swarm = AutoSwarmBuilder(
     verbose=True,
     max_loops=1,
     model_name="claude-sonnet-4-20250514",
-    execution_type="return-agents",
+    swarm_type="return-agents",
 )
 
 out = swarm.run(

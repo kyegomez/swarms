@@ -59,7 +59,6 @@ def benchmark_swarm_creation(
                 name=f"test-router-{i}",
                 agents=agents,
                 swarm_type=swarm_type,
-                telemetry_enabled=False,
             )
 
             # Time the _create_swarm method
@@ -112,7 +111,6 @@ def benchmark_caching_performance(
         name="cache-test-router",
         agents=agents,
         swarm_type=swarm_type,
-        telemetry_enabled=False,
     )
 
     first_call_times = []

@@ -420,8 +420,10 @@ class Agent:
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
         show_tool_execution_output: bool = True,
-        reasoning_effort: Optional[str] = None,
-        thinking_tokens: int = None,
+        reasoning_effort: Optional[
+            Literal["low", "medium", "high", "xhigh", "ultra"]
+        ] = "medium",
+        thinking_tokens: int = 1024,
         reasoning_enabled: bool = False,
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
         capabilities: Optional[List[str]] = None,
@@ -432,7 +434,7 @@ class Agent:
         skills_dir: Optional[str] = None,
         selected_tools: Optional[Union[str, List[str]]] = "all",
         context_compression: bool = True,
-        persistent_memory: bool = True,
+        persistent_memory: bool = False,
         *args,
         **kwargs,
     ):

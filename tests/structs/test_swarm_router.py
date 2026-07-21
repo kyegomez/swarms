@@ -83,18 +83,6 @@ def test_initialization_with_agent_rearrange_config():
 # ============================================================================
 
 
-def test_initialization_with_shared_memory():
-    """Test SwarmRouter with shared memory system."""
-    sample_agents = create_sample_agents()
-
-    router = SwarmRouter(
-        agents=sample_agents,
-        shared_memory_system=None,  # Test with None for now
-    )
-
-    assert router.shared_memory_system is None
-
-
 def test_initialization_with_worker_tools():
     """Test SwarmRouter with worker tools."""
     sample_agents = create_sample_agents()
@@ -119,7 +107,6 @@ def test_swarm_router_config_creation():
         description="Test configuration",
         swarm_type="SequentialWorkflow",
         rearrange_flow=None,
-        rules=None,
         multi_agent_collab_prompt=True,
         task="Test task",
     )
@@ -138,7 +125,6 @@ def test_router_with_config():
         description="Router from config",
         swarm_type="SequentialWorkflow",
         rearrange_flow=None,
-        rules="Test rules",
         multi_agent_collab_prompt=False,
         task="Test task",
     )
@@ -147,7 +133,6 @@ def test_router_with_config():
     assert config.name == "config-router"
     assert config.description == "Router from config"
     assert config.swarm_type == "SequentialWorkflow"
-    assert config.rules == "Test rules"
 
     # Create router with matching parameters
     router = SwarmRouter(
@@ -155,13 +140,11 @@ def test_router_with_config():
         description=config.description,
         agents=sample_agents,
         swarm_type=config.swarm_type,
-        rules=config.rules,
     )
 
     assert router.name == config.name
     assert router.description == config.description
     assert router.swarm_type == config.swarm_type
-    assert router.rules == config.rules
 
 
 # ============================================================================
@@ -471,21 +454,6 @@ def test_run_with_multi_agent_router():
     router = SwarmRouter(
         agents=sample_agents,
         swarm_type="MultiAgentRouter",
-        max_loops=1,
-        verbose=False,
-    )
-
-    result = router.run("What is 1+1?")
-    assert result is not None
-
-
-def test_run_with_auto_swarm_builder():
-    """SwarmRouter dispatches to AutoSwarmBuilder."""
-    sample_agents = create_sample_agents()
-
-    router = SwarmRouter(
-        agents=sample_agents,
-        swarm_type="AutoSwarmBuilder",
         max_loops=1,
         verbose=False,
     )

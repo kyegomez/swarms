@@ -71,7 +71,7 @@ swarm_builder = AutoSwarmBuilder(
     description="Builds marketing teams automatically",
     model_name="gpt-4o",  # Boss agent model
     max_loops=1,
-    execution_type="return-agents",  # or "return-swarm-router-config", "return-agents-objects"
+    swarm_type="return-agents",  # or "return-swarm-router-config", "return-agents-objects"
     verbose=True
 )
 ```
@@ -104,7 +104,7 @@ print(result)
 | `description` | `str` | Required | Purpose/description of the builder |
 | `model_name` | `str` | `"gpt-4o"` | Model for boss agent |
 | `max_loops` | `int` | `1` | Loops for generation process |
-| `execution_type` | `str` | `"return-agents"` | Output format type |
+| `swarm_type` | `str` | `"return-agents"` | Output format type |
 | `verbose` | `bool` | `False` | Enable detailed logging |
 
 ### Execution Types
@@ -131,7 +131,7 @@ swarm = AutoSwarmBuilder(
     description="Builds content creation teams",
     model_name="gpt-4o",
     max_loops=1,
-    execution_type="return-agents",
+    swarm_type="return-agents",
     verbose=True
 )
 
@@ -160,7 +160,7 @@ swarm = AutoSwarmBuilder(
     name="Financial-Analysis-Builder",
     description="Creates specialized financial analysis teams",
     model_name="gpt-4o",
-    execution_type="return-agents",
+    swarm_type="return-agents",
     verbose=True
 )
 
@@ -199,7 +199,7 @@ for agent in team:
 swarm = AutoSwarmBuilder(
     name="Dev-Team-Builder",
     model_name="gpt-4o",
-    execution_type="return-swarm-router-config",  # Get complete swarm
+    swarm_type="return-swarm-router-config",  # Get complete swarm
 )
 
 task = """
@@ -228,7 +228,7 @@ swarm_config = swarm.run(task=task)
 swarm = AutoSwarmBuilder(
     name="Research-Team-Builder",
     model_name="gpt-4o",
-    execution_type="return-agents-objects",  # Get Agent objects
+    swarm_type="return-agents-objects",  # Get Agent objects
 )
 
 task = """
@@ -283,7 +283,7 @@ regulations, and methodologies for handling crypto transactions.
 swarm = AutoSwarmBuilder(
     name="Crypto-Accounting-Team",
     model_name="gpt-4o",
-    execution_type="return-agents"
+    swarm_type="return-agents"
 )
 
 team = swarm.run(task=task)

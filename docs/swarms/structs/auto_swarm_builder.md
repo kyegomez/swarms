@@ -9,13 +9,12 @@ The AutoSwarmBuilder is designed to:
 | **Automatic Agent Creation** | Automatically create and coordinate multiple AI agents with distinct personalities and capabilities |
 | **Intelligent Task Delegation** | Delegate tasks to specialized agents based on comprehensive task analysis and requirements |
 | **Advanced Agent Communication** | Manage sophisticated communication protocols between agents through a swarm router |
-| **Multiple Execution Types** | Support 6 different execution types for various use cases and workflows |
+| **Multiple Execution Types** | Support 3 different spec-return types for various use cases and workflows |
 | **Comprehensive Architecture Support** | Support 13+ different multi-agent architecture patterns and coordination strategies |
 | **Robust Error Handling** | Provide comprehensive error handling, logging, and recovery procedures |
 | **Dynamic Agent Specification** | Create agents with detailed specifications including roles, personalities, and capabilities |
 | **Flexible Configuration** | Support extensive configuration options for models, tokens, temperature, and behavior |
 | **Batch Processing** | Handle multiple tasks efficiently with batch processing capabilities |
-| **Interactive Mode** | Support real-time interactive collaboration and decision-making |
 
 ## Parameters
 
@@ -26,16 +25,15 @@ The AutoSwarmBuilder is designed to:
 | `verbose` | bool | True | Whether to output detailed logs |
 | `max_loops` | int | 1 | Maximum number of execution loops |
 | `model_name` | str | "gpt-5.4" | The LLM model to use for the boss agent |
-| `generate_router_config` | bool | False | Whether to generate router configuration |
-| `interactive` | bool | False | Whether to enable interactive mode |
 | `max_tokens` | int | 8000 | Maximum tokens for the LLM responses |
-| `execution_type` | str | "return-agents" | Type of execution to perform (see Execution Types) |
+| `swarm_type` | str | "return-agents" | Which spec-only result `run()` returns when not executing (see Execution Types) |
 | `system_prompt` | str | BOSS_SYSTEM_PROMPT | System prompt for the boss agent |
 | `additional_llm_args` | dict | {} | Additional arguments to pass to the LLM |
+| `auto_execute` | bool | False | When True, `run()` builds real agents and a `SwarmRouter` from the generated spec and executes it |
 
 ## Execution Types
 
-The `execution_type` parameter controls how the AutoSwarmBuilder operates:
+The `swarm_type` parameter controls how the AutoSwarmBuilder operates:
 
 | Execution Type                  | Description                                               |
 |----------------------------------|-----------------------------------------------------------|
@@ -59,7 +57,7 @@ Executes the swarm on a given task based on the configured execution type.
 
 **Returns:**
 
-- The result of the swarm execution (varies by execution_type)
+- The result of the swarm execution (varies by swarm_type)
 
 **Raises:**
 
@@ -374,7 +372,7 @@ swarm = AutoSwarmBuilder(
     model_name="gpt-5.4",
     max_tokens=12000,
     verbose=True,
-    execution_type="return-agents"
+    swarm_type="return-agents"
 )
 
 # Run the swarm on a data analysis task
@@ -393,7 +391,7 @@ from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 swarm = AutoSwarmBuilder(
     name="Marketing Swarm",
     description="A swarm for marketing strategy development",
-    execution_type="return-agents"
+    swarm_type="return-agents"
 )
 
 # Get agent configurations without executing
@@ -415,7 +413,7 @@ from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 swarm = AutoSwarmBuilder(
     name="Research Swarm",
     description="A swarm for research and analysis",
-    execution_type="return-swarm-router-config"
+    swarm_type="return-swarm-router-config"
 )
 
 # Get the complete swarm router configuration
@@ -437,7 +435,6 @@ swarm = AutoSwarmBuilder(
     name="Multi-Task Swarm",
     description="A swarm capable of handling multiple diverse tasks",
     max_loops=2,
-    interactive=True
 )
 
 # Define multiple tasks
@@ -455,23 +452,24 @@ for i, result in enumerate(results):
     print(f"Task {i+1} completed: {result}")
 ```
 
-### Example 6: Interactive Mode with Custom Parameters
+### Example 6: Auto-Executing the Generated Swarm
 
 ```python
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 
-# Initialize with interactive mode and custom settings
+# Initialize with custom settings and auto-execution enabled. When
+# auto_execute=True, run() builds real Agent objects and a SwarmRouter
+# from the generated spec and executes it, returning the run output.
 swarm = AutoSwarmBuilder(
-    name="Interactive Swarm",
-    description="An interactive swarm for real-time collaboration",
+    name="Design Swarm",
+    description="A swarm that designs and runs its own agent team",
     model_name="claude-3-sonnet-20240229",
     max_tokens=16000,
-    interactive=True,
-    generate_router_config=True,
+    auto_execute=True,
     verbose=True
 )
 
-# Run with interactive capabilities
+# Run and execute the generated swarm
 result = swarm.run(
     "Help me design a user interface for a mobile app that helps people track their fitness goals"
 )
@@ -486,7 +484,7 @@ from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 swarm = AutoSwarmBuilder(
     name="Specification Swarm",
     description="A swarm for generating agent specifications",
-    execution_type="return-agents-objects"
+    swarm_type="return-agents-objects"
 )
 
 # Get agent objects
@@ -508,7 +506,7 @@ from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 swarm = AutoSwarmBuilder(
     name="Dictionary Swarm",
     description="A swarm for generating agent dictionaries",
-    execution_type="return-agents"
+    swarm_type="return-agents"
 )
 
 # Get agent configurations as dictionary
@@ -565,7 +563,6 @@ swarm = AutoSwarmBuilder(
     max_tokens=16000,
     additional_llm_args={"temperature": 0.3},
     verbose=True,
-    interactive=False
 )
 
 # Create agents with detailed specifications
@@ -597,12 +594,12 @@ for agent in agents:
 !!! note "Configuration"
     - Set appropriate `max_loops` based on task complexity (typically 1)
     - Use `verbose=True` during development for debugging
-    - Choose the right `execution_type` for your use case:
+    - Choose the right `swarm_type` for your use case:
         - Use `"return-agents"` for getting agent specifications as dictionary (default)
         - Use `"return-swarm-router-config"` for analyzing swarm architecture
         - Use `"return-agents-objects"` for getting agent objects created from specifications
     - Set `max_tokens` appropriately based on expected response length
-    - Use `interactive=True` for real-time collaboration scenarios
+    - Set `auto_execute=True` to build and run the generated swarm instead of only returning its spec
     - Use `additional_llm_args` for passing custom parameters to the LLM
 
 !!! note "Model Selection"
@@ -638,7 +635,7 @@ for agent in agents:
 
 !!! info "Performance Optimization"
     - Use `batch_run()` for processing multiple similar tasks
-    - Consider using `generate_router_config=True` for complex workflows
+    - Use `swarm_type="return-swarm-router-config"` to inspect the full swarm architecture for complex workflows
     - Monitor token usage with `max_tokens` parameter
     - Use appropriate `swarm_type` for your specific use case
     - Implement caching for repeated operations

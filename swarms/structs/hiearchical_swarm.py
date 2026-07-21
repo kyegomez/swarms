@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import json
 import os
 import queue as _queue
@@ -140,7 +141,15 @@ class HierarchicalSwarm:
         director (Optional[Union[Agent, Callable, Any]]): The director agent that
                                                          coordinates the swarm.
         agents (List[Union[Agent, Callable, Any]]): List of worker agents available
-                                                   for task execution.
+                                                   for task execution. A worker may be
+                                                   a leaf ``Agent`` or a nested
+                                                   orchestrator (e.g. another
+                                                   ``HierarchicalSwarm``,
+                                                   ``ConcurrentWorkflow``, or
+                                                   ``MixtureOfAgents``) exposing
+                                                   ``run(task=...)``, letting the
+                                                   director delegate to sub-teams
+                                                   instead of only individual agents.
         max_loops (int): Maximum number of feedback loops the swarm can perform.
         output_type (OutputType): Format for the final output of the swarm.
         feedback_director_model_name (str): Model name for the feedback director.
@@ -161,6 +170,11 @@ class HierarchicalSwarm:
         planning_enabled (bool): Whether the director produces a plan before
                                 delegating tasks to workers.
         parallel_execution (bool): Whether to execute agent tasks in parallel (default: True).
+        max_workers (Optional[int]): Thread pool size used when
+                                    parallel_execution is True. Worker calls are
+                                    I/O-bound (LLM API calls), so this is exposed
+                                    independently of CPU count; defaults to
+                                    ``0.75 * cpu_count()`` when unset.
         max_agent_retries (int): Number of retries for a failed worker before it
                                 is reported as unavailable.
         max_reassignment_attempts (int): Number of times the director may
@@ -187,10 +201,11 @@ class HierarchicalSwarm:
         multi_agent_prompt_improvements: bool = False,
         director_temperature: float = 0.7,
         director_top_p: float = 0.9,
-        planning_enabled: bool = True,
-        autosave: bool = True,
+        planning_enabled: bool = False,
+        autosave: bool = False,
         verbose: bool = False,
         parallel_execution: bool = True,
+        max_workers: Optional[int] = None,
         agent_as_judge: bool = False,
         judge_agent_model_name: str = "gpt-5.4",
         director_settings: Optional[Dict[str, Any]] = None,
@@ -208,7 +223,12 @@ class HierarchicalSwarm:
             director (Optional[Union[Agent, Callable, Any]]): The director agent.
                                                              If None, a default director will be created.
             agents (List[Union[Agent, Callable, Any]]): List of worker agents.
-                                                       Must not be empty.
+                                                       Must not be empty. Workers may
+                                                       be leaf ``Agent`` instances or
+                                                       nested orchestrators (another
+                                                       ``HierarchicalSwarm``,
+                                                       ``ConcurrentWorkflow``, etc.)
+                                                       exposing ``run(task=...)``.
             max_loops (int): Maximum number of feedback loops (must be > 0).
             output_type (OutputType): Format for the final output.
             feedback_director_model_name (str): Model name for feedback director.
@@ -231,6 +251,11 @@ class HierarchicalSwarm:
             autosave (bool): Whether to enable autosaving of conversation history.
             verbose (bool): Whether to enable verbose logging.
             parallel_execution (bool): Whether to execute agent tasks in parallel (default: True).
+            max_workers (int, optional): Thread pool size for parallel worker
+                execution. Worker calls are I/O-bound (LLM API calls), so this
+                is exposed independently of CPU count rather than always
+                deriving from ``os.cpu_count()``. Defaults to
+                ``0.75 * cpu_count()`` when omitted.
             agent_as_judge (bool): Whether to score worker outputs with a judge
                 agent.
             judge_agent_model_name (str): Model name for the judge agent, used
@@ -292,6 +317,7 @@ class HierarchicalSwarm:
         self.autosave = autosave
         self.verbose = verbose
         self.parallel_execution = parallel_execution
+        self.max_workers = max_workers
         self.agent_as_judge = agent_as_judge
         self.judge_agent_model_name = judge_agent_model_name
         self.swarm_workspace_dir = None
@@ -551,7 +577,7 @@ class HierarchicalSwarm:
                 "max_loops": 1,
                 "base_model": SwarmSpec,
                 "tools_list_dictionary": [schema],
-                "output_type": "dict-all-except-first",
+                "output_type": "final",
             }
             settings.update(
                 {
@@ -631,6 +657,11 @@ class HierarchicalSwarm:
             if self.max_reassignment_attempts < 0:
                 raise ValueError(
                     "max_reassignment_attempts must be greater than or equal to 0."
+                )
+
+            if self.max_workers is not None and self.max_workers <= 0:
+                raise ValueError(
+                    "max_workers must be greater than 0 when provided."
                 )
 
             if self.director is None:
@@ -742,10 +773,11 @@ class HierarchicalSwarm:
             # Parse the orders
             plan, orders = self.parse_orders(output)
 
-            formatter.print_director_task_distribution(
-                director_name=self.director_name,
-                orders=orders,
-            )
+            if self.verbose:
+                formatter.print_director_task_distribution(
+                    director_name=self.director_name,
+                    orders=orders,
+                )
 
             # Update dashboard with plan and orders information
             if self.interactive and self.dashboard:
@@ -1047,7 +1079,11 @@ class HierarchicalSwarm:
 
         This method locates an agent by name and executes the given task with
         the current conversation context. The agent's output is added to the
-        conversation history for future reference.
+        conversation history for future reference. The agent may be a leaf
+        ``Agent`` or a nested orchestrator (another ``HierarchicalSwarm``,
+        ``ConcurrentWorkflow``, ``MixtureOfAgents``, etc.) exposing
+        ``run(task=...)``; streaming is only attempted if the worker's
+        ``run`` method actually accepts a ``streaming_callback`` kwarg.
 
         Args:
             agent_name (str): The name of the agent to call.
@@ -1074,13 +1110,37 @@ class HierarchicalSwarm:
                     agent_name, "RUNNING", task, "Executing task..."
                 )
 
-            # Handle streaming callback if provided
-            if streaming_callback is not None:
+            worker_task = f"History: {self.conversation.get_str()} \n\n Task: {task}"
 
-                def agent_streaming_callback(chunk: str):
-                    """Wrapper for agent streaming callback."""
+            # Handle streaming callback if provided and the worker's run()
+            # actually supports it. A worker may be a leaf Agent or a nested
+            # orchestrator (another HierarchicalSwarm, ConcurrentWorkflow,
+            # MixtureOfAgents, etc.), and not all of them accept a
+            # streaming_callback kwarg.
+            if (
+                streaming_callback is not None
+                and self._agent_supports_streaming_callback(agent)
+            ):
+
+                def agent_streaming_callback(*inner_args):
+                    """Wrapper that normalizes both streaming conventions
+                    used across the framework: a leaf Agent streams a single
+                    ``chunk`` per call, while a nested orchestrator streams
+                    ``(sub_agent_name, chunk, is_final)``.
+                    """
+                    if not inner_args:
+                        return
+                    if len(inner_args) == 1:
+                        chunk = inner_args[0]
+                    else:
+                        sub_agent_name, chunk = (
+                            inner_args[0],
+                            inner_args[1],
+                        )
+                        if chunk:
+                            chunk = f"[{sub_agent_name}] {chunk}"
                     try:
-                        if chunk is not None and chunk.strip():
+                        if chunk is not None and str(chunk).strip():
                             streaming_callback(
                                 agent_name, chunk, False
                             )
@@ -1090,20 +1150,25 @@ class HierarchicalSwarm:
                             f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}"
                         )
 
-                # Temporarily enable streaming so call_llm honours the callback
+                # Temporarily enable streaming so call_llm honours the
+                # callback. Nested orchestrators without a streaming_on
+                # toggle already stream purely via the callback param.
+                has_streaming_toggle = hasattr(agent, "streaming_on")
                 original_streaming_on = getattr(
-                    agent, "streaming_on", False
+                    agent, "streaming_on", None
                 )
-                agent.streaming_on = True
+                if has_streaming_toggle:
+                    agent.streaming_on = True
                 try:
                     output = agent.run(
-                        task=f"History: {self.conversation.get_str()} \n\n Task: {task}",
+                        task=worker_task,
                         streaming_callback=agent_streaming_callback,
                         *args,
                         **kwargs,
                     )
                 finally:
-                    agent.streaming_on = original_streaming_on
+                    if has_streaming_toggle:
+                        agent.streaming_on = original_streaming_on
 
                 # Call completion callback
                 try:
@@ -1115,10 +1180,23 @@ class HierarchicalSwarm:
                     )
             else:
                 output = agent.run(
-                    task=f"History: {self.conversation.get_str()} \n\n Task: {task}",
+                    task=worker_task,
                     *args,
                     **kwargs,
                 )
+                if streaming_callback is not None:
+                    # Worker doesn't support incremental streaming — still
+                    # surface its final output through the callback so
+                    # callers see a consistent stream of completions.
+                    try:
+                        streaming_callback(
+                            agent_name, str(output), True
+                        )
+                    except Exception as e:
+                        error_msg = f"[ERROR] Completion callback failed for agent {agent_name}: {str(e)}"
+                        logger.error(
+                            f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}"
+                        )
             if _add_to_conversation:
                 self.conversation.add(role=agent_name, content=output)
 
@@ -1206,6 +1284,60 @@ class HierarchicalSwarm:
         )
         return failure, failure
 
+    def _resolve_max_workers(self) -> int:
+        """Determine the thread pool size for parallel worker execution.
+
+        Worker calls are I/O-bound (network calls to LLM providers), so CPU
+        core count is rarely the right sizing signal. Uses ``self.max_workers``
+        when explicitly configured; otherwise falls back to the prior default
+        of ``0.75 * cpu_count()``.
+        """
+        if self.max_workers is not None:
+            return max(1, int(self.max_workers))
+        return max(1, int((os.cpu_count() or 1) * 0.75))
+
+    @staticmethod
+    def _agent_display_name(agent: Any) -> str:
+        """Resolve a human-readable name for a worker.
+
+        Workers may be leaf ``Agent`` instances (``agent_name``) or nested
+        orchestrators such as another ``HierarchicalSwarm``,
+        ``ConcurrentWorkflow``, or ``MixtureOfAgents`` (``name``). Mirrors the
+        fallback order used by ``find_agent_by_name`` so reassignment logic
+        stays consistent with lookup.
+        """
+        return (
+            getattr(agent, "agent_name", None)
+            or getattr(agent, "name", None)
+            or str(agent)
+        )
+
+    @staticmethod
+    def _agent_supports_streaming_callback(agent: Any) -> bool:
+        """Check whether ``agent.run`` accepts a ``streaming_callback`` kwarg.
+
+        Workers can be leaf agents or nested orchestrators, and not all of
+        them expose this parameter (e.g. ``MixtureOfAgents.run`` does not).
+        Passing an unsupported kwarg would raise a ``TypeError``, so this is
+        checked up front rather than caught reactively.
+        """
+        run_method = getattr(agent, "run", None)
+        if run_method is None:
+            return False
+        try:
+            signature = inspect.signature(run_method)
+        except (TypeError, ValueError):
+            # Signature introspection isn't always possible (e.g. some
+            # C-extension callables); fail open rather than silently
+            # dropping streaming support.
+            return True
+        for parameter in signature.parameters.values():
+            if parameter.name == "streaming_callback":
+                return True
+            if parameter.kind is inspect.Parameter.VAR_KEYWORD:
+                return True
+        return False
+
     def _execute_orders_once(
         self,
         orders: List[HierarchicalOrder],
@@ -1218,7 +1350,7 @@ class HierarchicalSwarm:
         failures = []
 
         if self.parallel_execution:
-            max_workers = max(1, int((os.cpu_count() or 1) * 0.75))
+            max_workers = self._resolve_max_workers()
             futures_map = {}
             with ThreadPoolExecutor(
                 max_workers=max_workers
@@ -1305,9 +1437,9 @@ class HierarchicalSwarm:
     ) -> List[HierarchicalOrder]:
         """Ask the director to move failed work to available workers."""
         available_agents = [
-            getattr(agent, "agent_name", str(agent))
+            self._agent_display_name(agent)
             for agent in self.agents
-            if getattr(agent, "agent_name", str(agent))
+            if self._agent_display_name(agent)
             not in unavailable_agents
         ]
         if not available_agents:
