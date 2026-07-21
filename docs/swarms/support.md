@@ -15,7 +15,7 @@ The Swarms team is committed to providing exceptional technical support to help 
 | **Support Type** | **Best For** | **Response Time** | **Channel** |
 |------------------|--------------|-------------------|-------------|
 | **Bug Reports** | Code issues, errors, unexpected behavior | < 24 hours | [GitHub Issues](https://github.com/kyegomez/swarms/issues) |
-| **Major Features (SIPs)** | New agent types, core changes, integrations | 1-2 weeks | [SIP Guidelines](protocol/sip.md) |
+| **Major Features (SIPs)** | New agent types, core changes, integrations | 1-2 weeks | [SIP Guidelines](../protocol/sip.md) |
 | **Minor Features** | Small enhancements, straightforward additions | < 48 hours | [GitHub Issues](https://github.com/kyegomez/swarms/issues) |
 | **Private Issues** | Security concerns, enterprise consulting | < 4 hours | [Book Support Call](https://cal.com/swarms/swarms-technical-support?overlayCalendar=true) |
 | **Real-time Help** | Quick questions, community discussions | Immediate | [Discord Community](https://discord.gg/EamjgSaEQf) |
@@ -239,7 +239,7 @@ The primary way to propose new features and significant enhancements to the Swar
 3. **Community Review**: Engage with feedback and iterate on the proposal
 4. **Implementation**: Once accepted, work on the implementation
 
-For detailed guidelines on creating and submitting SIPs, visit our [SIP Guidelines](protocol/sip.md).
+For detailed guidelines on creating and submitting SIPs, visit our [SIP Guidelines](../protocol/sip.md).
 
 ### **Other Feature Requests**
 
@@ -370,7 +370,7 @@ Help improve support for everyone:
 | **Emergency** | [Book Immediate Call](https://cal.com/swarms/swarms-technical-support?overlayCalendar=true) |
 | **Urgent** | [Discord #technical-support](https://discord.gg/EamjgSaEQf) |
 | **Standard** | [GitHub Issues](https://github.com/kyegomez/swarms/issues) |
-| **Major Features** | [SIP Guidelines](protocol/sip.md) |
+| **Major Features** | [SIP Guidelines](../protocol/sip.md) |
 | **Minor Features** | [GitHub Issues](https://github.com/kyegomez/swarms/issues) |
 
 **We're here to help you succeed with Swarms.**
