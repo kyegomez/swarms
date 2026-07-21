@@ -420,10 +420,6 @@ class ConcurrentWorkflow:
             for future in concurrent.futures.as_completed(
                 future_to_agent
             ):
-            if on_error not in ("store", "raise"):
-            raise ValueError(
-                f"on_error must be 'store' or 'raise', got '{on_error}'"
-            )
                 agent = future_to_agent[future]
                 try:
                     output = future.result()
