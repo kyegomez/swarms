@@ -224,15 +224,19 @@ def run_agents_concurrently_multiprocess(
         >>> print(f"Processed {len(results)} agents")
     """
     results = []
-    loop = asyncio.get_event_loop()
 
-    # Process agents in batches to avoid overwhelming system resources
-    for i in range(0, len(agents), batch_size):
-        batch = agents[i : i + batch_size]
-        batch_results = loop.run_until_complete(
-            run_agents_concurrently_async(batch, task)
-        )
-        results.extend(batch_results)
+    # Use a dedicated event loop to ensure compatibility across contexts.
+    loop = asyncio.new_event_loop()
+    try:
+        # Process agents in batches to avoid overwhelming system resources
+        for i in range(0, len(agents), batch_size):
+            batch = agents[i : i + batch_size]
+            batch_results = loop.run_until_complete(
+                run_agents_concurrently_async(batch, task)
+            )
+            results.extend(batch_results)
+    finally:
+        loop.close()
 
     return results
 
