@@ -864,6 +864,33 @@ class LiteLLM:
             )
             completion_params["extra_headers"] = headers
 
+    @staticmethod
+    def _vision_content(task: str, image_block: dict) -> list:
+        """
+        Build the content list for a vision user message.
+
+        The text block is included only when ``task`` is a non-empty string.
+        Anthropic rejects content blocks whose text is empty with
+        "text content blocks must be non-empty", so an image-only call
+        (empty or None task) must omit the text block rather than send
+        ``{"type": "text", "text": ""}``. This mirrors the empty-system-block
+        normalization already done in ``_prepare_messages``.
+
+        Args:
+            task (str): The text task/prompt. Omitted from the content when
+                empty, whitespace-only, or None.
+            image_block (dict): The image content block to include.
+
+        Returns:
+            list: ``[text_block, image_block]`` when task has text, else
+                ``[image_block]``.
+        """
+        content = []
+        if isinstance(task, str) and task.strip():
+            content.append({"type": "text", "text": task})
+        content.append(image_block)
+        return content
+
     def anthropic_vision_processing(
         self, task: str, image: str, messages: list
     ) -> list:
@@ -898,15 +925,15 @@ class LiteLLM:
             messages.append(
                 {
                     "role": "user",
-                    "content": [
-                        {"type": "text", "text": task},
+                    "content": self._vision_content(
+                        task,
                         {
                             "type": "image_url",
                             "image_url": {
                                 "url": image,
                             },
                         },
-                    ],
+                    ),
                 }
             )
         else:
@@ -936,8 +963,8 @@ class LiteLLM:
             messages.append(
                 {
                     "role": "user",
-                    "content": [
-                        {"type": "text", "text": task},
+                    "content": self._vision_content(
+                        task,
                         {
                             "type": "image_url",
                             "image_url": {
@@ -945,7 +972,7 @@ class LiteLLM:
                                 "format": mime_type,
                             },
                         },
-                    ],
+                    ),
                 }
             )
 
@@ -1033,10 +1060,7 @@ class LiteLLM:
         messages.append(
             {
                 "role": "user",
-                "content": [
-                    {"type": "text", "text": task},
-                    vision_message,
-                ],
+                "content": self._vision_content(task, vision_message),
             }
         )
 
