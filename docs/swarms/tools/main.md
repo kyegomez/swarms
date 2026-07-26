@@ -295,9 +295,7 @@ class AdvancedAccountingAgent(Agent):
         print("Executing custom behavior")
 
     def another_custom_method(self):
-        print("Another
-
- custom method")
+        print("Another custom method")
 
 # Initialize the advanced agent
 advanced_agent = AdvancedAccountingAgent(

@@ -39,7 +39,7 @@ agent = ReflexionAgent(
 
 Generates a response to the given task using the actor agent.
 
-```python
+```text
 response = agent.act(task: str, relevant_memories: List[Dict[str, Any]] = None) -> str
 ```
 
@@ -52,7 +52,7 @@ response = agent.act(task: str, relevant_memories: List[Dict[str, Any]] = None) 
 
 Evaluates the quality of a response to a task.
 
-```python
+```text
 evaluation, score = agent.evaluate(task: str, response: str) -> Tuple[str, float]
 ```
 
@@ -69,7 +69,7 @@ Returns:
 
 Generates a self-reflection based on the task, response, and evaluation.
 
-```python
+```text
 reflection = agent.reflect(task: str, response: str, evaluation: str) -> str
 ```
 
@@ -83,7 +83,7 @@ reflection = agent.reflect(task: str, response: str, evaluation: str) -> str
 
 Refines the original response based on evaluation and reflection.
 
-```python
+```text
 refined_response = agent.refine(
     task: str,
     original_response: str,
@@ -103,7 +103,7 @@ refined_response = agent.refine(
 
 Processes a single task through one iteration of the Reflexion process.
 
-```python
+```text
 result = agent.step(
     task: str,
     iteration: int = 0,
@@ -129,7 +129,7 @@ Returns a dictionary containing:
 
 Executes the Reflexion process for a list of tasks.
 
-```python
+```text
 results = agent.run(
     tasks: List[str],
     include_intermediates: bool = False

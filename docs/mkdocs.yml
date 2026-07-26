@@ -121,7 +121,6 @@ extra:
 
 theme:
   name: material
-  custom_dir: overrides
   logo: assets/img/swarms-logo.png
   palette:
     - scheme: default

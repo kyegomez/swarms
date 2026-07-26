@@ -1,0 +1,8 @@
+mkdocs<1.6
+mkdocs-material
+mkdocs-git-authors-plugin
+mkdocs-jupyter==0.16.0
+lxml_html_clean
+mkdocstrings[python]
+mkdocs-git-committers-plugin
+mkdocs-git-revision-date-localized-plugin
