@@ -193,8 +193,24 @@ class MCPFileTokenStorage:
     def _write(self, data: Dict[str, Any]) -> None:
         with self._lock:
             try:
-                self.path.parent.mkdir(parents=True, exist_ok=True)
-                self.path.write_text(json.dumps(data, indent=2))
+                self.path.parent.mkdir(
+                    parents=True, exist_ok=True, mode=0o700
+                )
+                # Create the file 0600 from the start. write_text() creates it
+                # honoring the umask (typically 0644), leaving a window in which
+                # another local user could read the OAuth token before a later
+                # chmod lands. os.open with an explicit mode closes that window.
+                fd = os.open(
+                    self.path,
+                    os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
+                    0o600,
+                )
+                try:
+                    os.write(fd, json.dumps(data, indent=2).encode())
+                finally:
+                    os.close(fd)
+                # os.open's mode only applies on creation; tighten a file that
+                # already existed with looser permissions.
                 os.chmod(self.path, 0o600)
             except Exception as e:
                 logger.warning(

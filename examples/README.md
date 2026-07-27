@@ -441,6 +441,56 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Research Agent](cli/research_agent_example.sh) | Research agent example |
 | [Run All Examples](cli/run_all_examples.sh) | Run all CLI examples |
 
+
+# MISC
+
+
+| Category | Example | Description | Link |
+|----------|---------|-------------|------|
+| **Basic Examples** | Basic Agent | Simple agent setup and usage | [Basic Agent](https://docs.swarms.world/examples/basic-agent) |
+| **Basic Examples** | Agent with Tools | Using agents with various tools | [Agent with Tools](https://docs.swarms.world/examples/agent-with-tools) |
+| **Basic Examples** | Agent with Structured Outputs | Working with structured data outputs | [Structured Outputs](https://docs.swarms.world/agents/structured-outputs) |
+| **Basic Examples** | Agent with MCP Integration | Model Context Protocol integration | [MCP Integration](https://docs.swarms.world/integrations/mcp) |
+| **Basic Examples** | Vision Processing | Agents with image processing capabilities | [Vision Processing](https://docs.swarms.world/examples/vision-agent) |
+| **Basic Examples** | Multiple Images | Working with multiple images | [Multiple Images](https://docs.swarms.world/examples/vision-agent) |
+| **Basic Examples** | Vision and Tools | Combining vision with tool usage | [Vision and Tools](https://docs.swarms.world/examples/vision-agent) |
+| **Basic Examples** | Agent Streaming | Real-time agent output streaming | [Agent Streaming](https://docs.swarms.world/examples/agents/agent-streaming) |
+| **Basic Examples** | Agent Output Types | Different output formats and types | [Output Types](https://docs.swarms.world/agents/structured-outputs) |
+| **Basic Examples** | Gradio Chat Interface | Building interactive chat interfaces | [Gradio UI](https://docs.swarms.world/examples/basic-agent) |
+| **Model Providers** | Model Providers Overview | Complete guide to supported models | [Model Providers](https://docs.swarms.world/integrations/model-providers) |
+| **Model Providers** | OpenAI | OpenAI model integration | [OpenAI Examples](https://docs.swarms.world/integrations/model-providers) |
+| **Model Providers** | Anthropic | Claude model integration | [Anthropic Examples](https://docs.swarms.world/integrations/model-providers) |
+| **Model Providers** | Groq | Groq model integration | [Groq Examples](https://docs.swarms.world/integrations/model-providers) |
+| **Model Providers** | Cohere | Cohere model integration | [Cohere Examples](https://docs.swarms.world/integrations/model-providers) |
+| **Model Providers** | DeepSeek | DeepSeek model integration | [DeepSeek Examples](https://docs.swarms.world/integrations/model-providers) |
+| **Model Providers** | Ollama | Local Ollama model integration | [Ollama Examples](https://docs.swarms.world/integrations/model-providers) |
+| **Model Providers** | OpenRouter | OpenRouter model integration | [OpenRouter Examples](https://docs.swarms.world/integrations/model-providers) |
+| **Model Providers** | XAI | XAI model integration | [XAI Examples](https://docs.swarms.world/integrations/model-providers) |
+| **Model Providers** | Llama4 | Llama4 model integration | [Llama4 Examples](https://docs.swarms.world/integrations/model-providers) |
+| **Multi-Agent Architecture** | HierarchicalSwarm | Hierarchical agent orchestration | [HierarchicalSwarm Examples](https://docs.swarms.world/examples/hierarchical-swarm-example) |
+| **Multi-Agent Architecture** | Hybrid Hierarchical-Cluster Swarm | Advanced hierarchical patterns | [HHCS Examples](https://docs.swarms.world/api/hhcs) |
+| **Multi-Agent Architecture** | GroupChat | Multi-agent conversations | [GroupChat Examples](https://docs.swarms.world/examples/group-chat-example) |
+| **Multi-Agent Architecture** | Sequential Workflow | Step-by-step agent workflows | [Sequential Examples](https://docs.swarms.world/examples/sequential-workflow-example) |
+| **Multi-Agent Architecture** | SwarmRouter | Universal swarm orchestration | [SwarmRouter Examples](https://docs.swarms.world/architectures/swarm-router) |
+| **Multi-Agent Architecture** | MultiAgentRouter | Minimal router example | [MultiAgentRouter Examples](https://docs.swarms.world/api/multi-agent-router) |
+| **Multi-Agent Architecture** | ConcurrentWorkflow | Parallel agent execution | [Concurrent Examples](https://docs.swarms.world/examples/concurrent-workflow-example) |
+| **Multi-Agent Architecture** | Mixture of Agents | Expert agent collaboration | [MoA Examples](https://docs.swarms.world/examples/mixture-of-agents-example) |
+| **Multi-Agent Architecture** | Unique Swarms | Specialized swarm patterns | [Unique Swarms](https://docs.swarms.world/architectures/overview) |
+| **Multi-Agent Architecture** | Agents as Tools | Using agents as tools in workflows | [Agents as Tools](https://docs.swarms.world/architectures/overview) |
+| **Multi-Agent Architecture** | Aggregate Responses | Combining multiple agent outputs | [Aggregate Examples](https://docs.swarms.world/architectures/mixture-of-agents) |
+| **Multi-Agent Architecture** | Interactive GroupChat | Real-time agent interactions | [Interactive GroupChat](https://docs.swarms.world/examples/group-chat-example) |
+| **Deployment Solutions** | Agent Orchestration Protocol (AOP) | Deploy agents as distributed services with discovery and management | [AOP Reference](https://docs.swarms.world/api/aop) |
+| **Applications** | Advanced Research System | Multi-agent research system inspired by Anthropic's research methodology | [AdvancedResearch](https://github.com/The-Swarm-Corporation/AdvancedResearch) |
+| **Applications** | Hospital Simulation | Healthcare simulation system using multi-agent architecture | [HospitalSim](https://github.com/The-Swarm-Corporation/HospitalSim) |
+| **Applications** | Browser Agents | Web automation with agents | [Browser Agents](https://docs.swarms.world/examples/integrations/browser-use) |
+| **Applications** | Medical Analysis | Healthcare applications | [Medical Examples](https://docs.swarms.world/examples/multi-agent/aop-medical) |
+| **Applications** | Finance Analysis | Financial applications | [Finance Examples](https://docs.swarms.world/examples/use-cases/financial-analysis) |
+| **Cookbook & Templates** | Examples Overview | Complete examples directory | [Examples Index](https://docs.swarms.world/examples/) |
+| **Cookbook & Templates** | Cookbook Index | Curated example collection | [Cookbook](https://docs.swarms.world/examples/overviews/cookbook) |
+| **Cookbook & Templates** | Paper Implementations | Research paper implementations | [Paper Implementations](https://docs.swarms.world/examples/overviews/paper-implementations) |
+| **Cookbook & Templates** | Templates & Applications | Reusable templates | [Templates](https://docs.swarms.world/examples/overviews/templates) |
+
+
 ## Documentation
 
 Each subdirectory contains its own README.md file with detailed descriptions and links to all available examples. Click on any folder above to explore its specific examples and use cases.
@@ -458,3 +508,5 @@ Found an interesting example or want to add your own? Check out our [contributin
 ---
 
 *This examples directory is continuously updated with new patterns, integrations, and use cases. Check back regularly for the latest examples!*
+
+
