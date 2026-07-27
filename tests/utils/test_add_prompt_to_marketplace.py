@@ -1,5 +1,5 @@
 """
-Pytest tests for swarms_marketplace_utils module.
+Pytest tests for AgentMarketplaceHandler.add_prompt.
 """
 
 import os
@@ -7,16 +7,18 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from swarms.utils.swarms_marketplace_utils import (
-    add_prompt_to_marketplace,
+from swarms.agents.agent_marketplace_handler import (
+    AgentMarketplaceHandler,
 )
+
+add_prompt_to_marketplace = AgentMarketplaceHandler.add_prompt
 
 
 class TestAddPromptToMarketplace:
     """Test cases for add_prompt_to_marketplace function."""
 
     @patch.dict(os.environ, {"SWARMS_API_KEY": "test_api_key_12345"})
-    @patch("swarms.utils.swarms_marketplace_utils.httpx.Client")
+    @patch("swarms.agents.agent_marketplace_handler.httpx.Client")
     def test_add_prompt_success(self, mock_client_class):
         """Test successful addition of prompt to marketplace."""
         # Mock response
@@ -69,7 +71,7 @@ class TestAddPromptToMarketplace:
         assert call_args[1]["json"]["category"] == "research"
 
     @patch.dict(os.environ, {"SWARMS_API_KEY": "test_api_key_12345"})
-    @patch("swarms.utils.swarms_marketplace_utils.httpx.Client")
+    @patch("swarms.agents.agent_marketplace_handler.httpx.Client")
     def test_add_prompt_with_all_parameters(self, mock_client_class):
         """Test adding prompt with all optional parameters."""
         # Mock response
@@ -213,7 +215,7 @@ class TestAddPromptToMarketplace:
                 )
 
     @patch.dict(os.environ, {"SWARMS_API_KEY": "test_api_key_12345"})
-    @patch("swarms.utils.swarms_marketplace_utils.httpx.Client")
+    @patch("swarms.agents.agent_marketplace_handler.httpx.Client")
     def test_add_prompt_http_error(self, mock_client_class):
         """Test handling of HTTP error responses."""
         # Mock response with error
@@ -244,7 +246,7 @@ class TestAddPromptToMarketplace:
             )
 
     @patch.dict(os.environ, {"SWARMS_API_KEY": "test_api_key_12345"})
-    @patch("swarms.utils.swarms_marketplace_utils.httpx.Client")
+    @patch("swarms.agents.agent_marketplace_handler.httpx.Client")
     def test_add_prompt_authentication_error(self, mock_client_class):
         """Test handling of authentication errors."""
         # Mock response with 401 error
@@ -277,7 +279,7 @@ class TestAddPromptToMarketplace:
             )
 
     @patch.dict(os.environ, {"SWARMS_API_KEY": "test_api_key_12345"})
-    @patch("swarms.utils.swarms_marketplace_utils.httpx.Client")
+    @patch("swarms.agents.agent_marketplace_handler.httpx.Client")
     def test_add_prompt_with_empty_tags(self, mock_client_class):
         """Test adding prompt with empty tags."""
         # Mock response
@@ -313,7 +315,7 @@ class TestAddPromptToMarketplace:
         assert call_args[1]["json"]["tags"] == ""
 
     @patch.dict(os.environ, {"SWARMS_API_KEY": "test_api_key_12345"})
-    @patch("swarms.utils.swarms_marketplace_utils.httpx.Client")
+    @patch("swarms.agents.agent_marketplace_handler.httpx.Client")
     def test_add_prompt_request_timeout(self, mock_client_class):
         """Test handling of request timeout."""
         # Mock client to raise timeout error

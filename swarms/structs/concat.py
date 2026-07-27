@@ -15,13 +15,8 @@ def concat_strings(string_list: List[str]) -> str:
         TypeError: If the input is not a list of strings.
 
     """
-    if not isinstance(string_list, list):
-        raise TypeError("Input must be a list of strings.")
-
-    if not all(isinstance(string, str) for string in string_list):
-        raise TypeError("All elements in the list must be strings.")
-
     try:
         return "".join(string_list)
-    except TypeError:
-        raise TypeError("All elements in the list must be strings.")
+    except Exception:
+        # In case of any unexpected input, fail gracefully and inform
+        raise TypeError("Input must be a list of strings.")

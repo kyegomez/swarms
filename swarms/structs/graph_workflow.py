@@ -42,6 +42,11 @@ from swarms.structs.agent import Agent  # noqa: F401
 from swarms.structs.conversation import Conversation
 from swarms.utils.get_cpu_cores import get_cpu_cores
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
 
 logger = initialize_logger(log_folder="graph_workflow")
 
@@ -906,6 +911,9 @@ class GraphWorkflow:
                 "GraphWorkflow initialization completed successfully"
             )
 
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
+
     def _invalidate_compilation(self) -> None:
         """
         Invalidate compiled optimizations when graph structure changes.
@@ -1078,7 +1086,7 @@ class GraphWorkflow:
         """
 
         try:
-            with concurrent.futures.ThreadPoolExecutor(
+            with ContextThreadPoolExecutor(
                 max_workers=self._max_workers
             ) as executor:
                 # Process agents in batches
@@ -1781,6 +1789,10 @@ class GraphWorkflow:
             logger.exception(f"Error in GraphWorkflow.arun: {e}")
             raise e
 
+    @trace_run(
+        "GraphWorkflow.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(
         self,
         task: Optional[str] = None,
@@ -1977,7 +1989,7 @@ class GraphWorkflow:
                             )
 
                     # Execute all agents in this layer in parallel
-                    with concurrent.futures.ThreadPoolExecutor(
+                    with ContextThreadPoolExecutor(
                         max_workers=min(self._max_workers, len(layer))
                     ) as executor:
 

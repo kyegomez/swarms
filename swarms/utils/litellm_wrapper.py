@@ -1557,6 +1557,16 @@ class LiteLLM:
             if self.stream:
                 return response  # Return the streaming generator directly
 
+            # Handle tool-based response. This is checked before the
+            # reasoning branch: reasoning models still emit tool_calls, and
+            # routing them to output_for_reasoning would drop the call and
+            # return the (usually empty) text content instead.
+            elif self.tools_list_dictionary is not None and getattr(
+                response.choices[0].message, "tool_calls", None
+            ):
+                result = self.output_for_tools(response)
+                return result
+
             # Handle reasoning model output
             elif (
                 self.reasoning_enabled
@@ -1565,7 +1575,6 @@ class LiteLLM:
             ):
                 return self.output_for_reasoning(response)
 
-            # Handle tool-based response
             elif self.tools_list_dictionary is not None:
                 result = self.output_for_tools(response)
                 return result

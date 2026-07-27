@@ -1,7 +1,7 @@
 import ast
 import json
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import as_completed
 from typing import Callable, List, Optional, Union
 
 from loguru import logger as loguru_logger
@@ -10,6 +10,11 @@ from swarms.prompts.multi_agent_collab_prompt import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 from swarms.utils.swarm_autosave import get_swarm_workspace_dir
@@ -163,6 +168,9 @@ class SequentialWorkflow:
         if self.autosave:
             self._setup_autosave()
 
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
+
     def reliability_check(self):
         """
         Validates the workflow configuration and prepares agents for execution.
@@ -256,6 +264,9 @@ class SequentialWorkflow:
             result = self.agent_rearrange.run(**run_kwargs)
         return result
 
+    @trace_run(
+        "SequentialWorkflow.run", input_params=("task", "img", "imgs")
+    )
     def run(
         self,
         task: str,
@@ -491,7 +502,7 @@ class SequentialWorkflow:
             )
 
         try:
-            with ThreadPoolExecutor(
+            with ContextThreadPoolExecutor(
                 max_workers=os.cpu_count()
             ) as executor:
                 results = [

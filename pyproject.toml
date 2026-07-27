@@ -73,6 +73,8 @@ httpx = "*"
 requests = "*"
 mcp = "*"
 schedule = "*"
+opentelemetry-sdk = "*"
+opentelemetry-exporter-otlp-proto-http = "*"
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"
@@ -94,6 +96,11 @@ pytest = ">=8.1.1,<10.0.0"
 black = "*"
 ruff = "*"
 pytest = "*"
+
+[tool.pytest.ini_options]
+markers = [
+    "remote: tests that hit a real remote MCP server over the network",
+]
 
 [tool.ruff]
 line-length = 70

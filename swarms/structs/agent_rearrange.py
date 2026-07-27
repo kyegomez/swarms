@@ -1,6 +1,5 @@
 import copy
 import os
-from concurrent.futures import ThreadPoolExecutor
 from typing import (
     Any,
     Callable,
@@ -12,7 +11,12 @@ from typing import (
 )
 import asyncio
 from swarms.structs.agent import Agent
-from swarms.telemetry.main import log_agent_data
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    log_agent_data,
+    trace_run,
+)
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.multi_agent_exec import run_agents_concurrently
@@ -182,6 +186,9 @@ class AgentRearrange(SerializableMixin):
             # self.conversation.add("system", agents_info)
 
         self.reliability_check()
+
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
 
     def reliability_check(self):
         """
@@ -807,6 +814,10 @@ class AgentRearrange(SerializableMixin):
 
         raise e
 
+    @trace_run(
+        "AgentRearrange.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(
         self,
         task: str = None,
@@ -964,7 +975,7 @@ class AgentRearrange(SerializableMixin):
             # would have choked on.
             max_workers = min(len(batch_tasks), os.cpu_count() or 4)
             futures_ordered = []
-            with ThreadPoolExecutor(
+            with ContextThreadPoolExecutor(
                 max_workers=max_workers
             ) as executor:
                 for task_item, img_path in zip(
@@ -1017,7 +1028,9 @@ class AgentRearrange(SerializableMixin):
             The number of concurrent executions is limited by max_workers parameter.
             Each task runs independently through the full agent workflow.
         """
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        with ContextThreadPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
             imgs = img if img else [None] * len(tasks)
             futures = [
                 executor.submit(

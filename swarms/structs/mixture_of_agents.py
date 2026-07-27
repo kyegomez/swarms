@@ -13,6 +13,11 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
 
 logger = initialize_logger(log_folder="mixture_of_agents")
 
@@ -113,6 +118,9 @@ class MixtureOfAgents:
 
         if self.aggregator_agent is None:
             self.aggregator_agent = self.aggregator_agent_setup()
+
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
 
     def reliability_check(self) -> None:
         """Validate required configuration before the workflow starts.
@@ -236,6 +244,10 @@ class MixtureOfAgents:
             conversation=self.conversation, type=self.output_type
         )
 
+    @trace_run(
+        "MixtureOfAgents.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(
         self,
         task: str,
@@ -277,7 +289,7 @@ class MixtureOfAgents:
         Returns:
             A list of formatted responses as each task completes.
         """
-        with concurrent.futures.ThreadPoolExecutor(
+        with ContextThreadPoolExecutor(
             max_workers=os.cpu_count()
         ) as executor:
             futures = [

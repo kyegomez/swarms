@@ -1,4 +1,8 @@
+from dotenv import load_dotenv
+
 from swarms import Agent
+
+load_dotenv()
 
 # Define an expanded system prompt
 system_prompt = (
@@ -17,12 +21,11 @@ agent = Agent(
     agent_name="Quantitative-Trading-Agent--new",
     agent_description="Advanced quantitative trading and algorithmic analysis agent",
     system_prompt=system_prompt,
-    model_name="claude-sonnet-4-6",
+    model_name="gpt-5.4",
     max_loops=1,
     top_p=None,
     temperature=None,
-    thinking_tokens=1024,
-    reasoning_effort="high",
+    reasoning_effort="medium",
     persistent_memory=False,
 )
 

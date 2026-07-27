@@ -71,6 +71,7 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.telemetry.otel import capture_init, trace_run
 
 logger = initialize_logger(log_folder="groupchat")
 
@@ -246,6 +247,9 @@ class GroupChat(SerializableMixin):
 
         if self.auto_equip:
             self._ensure_respond_tool()
+
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
 
     def _ensure_respond_tool(self) -> None:
         """Inject ``RESPOND_TOOL`` into agents that do not already carry it.
@@ -521,6 +525,9 @@ class GroupChat(SerializableMixin):
             conversation=self.conversation, type=self.output_type
         )
 
+    @trace_run(
+        "GroupChat.run", input_params=("task", "tasks", "img", "imgs")
+    )
     def run(
         self,
         task: str,

@@ -9,6 +9,7 @@ from swarms.structs.multi_agent_exec import (
 from swarms.structs.omni_agent_types import AgentType
 from swarms.structs.swarm_id import swarm_id
 from swarms.utils.output_types import OutputType
+from swarms.telemetry.otel import capture_init, trace_run
 
 
 class BatchedGridWorkflow:
@@ -72,6 +73,9 @@ class BatchedGridWorkflow:
         if not isinstance(max_loops, int) or max_loops < 1:
             raise ValueError("max_loops must be a positive integer")
 
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
+
     def step(self, tasks: List[str]):
         """
         Execute one step of the batched grid workflow.
@@ -105,6 +109,10 @@ class BatchedGridWorkflow:
 
         return results
 
+    @trace_run(
+        "BatchedGridWorkflow.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(self, tasks: List[str]):
         """
         Run the batched grid workflow with the given tasks.

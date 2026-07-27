@@ -1242,7 +1242,7 @@ class TestAgentToolUsage:
         mock_mcp_url = "http://localhost:8000/mcp"
 
         with patch(
-            "swarms.structs.agent.get_mcp_tools_sync"
+            "swarms.tools.mcp_manager.MCPManager.get_tools"
         ) as mock_get_tools:
             # Mock MCP tools response
             mock_tools = [
@@ -1320,7 +1320,7 @@ class TestAgentToolUsage:
         ]
 
         with patch(
-            "swarms.structs.agent.get_tools_for_multiple_mcp_servers"
+            "swarms.tools.mcp_manager.MCPManager.get_tools"
         ) as mock_get_tools:
             # Mock MCP tools response from multiple servers
             mock_tools = [

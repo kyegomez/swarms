@@ -1178,20 +1178,22 @@ def test_aop_cluster_get_tools():
     """Test AOPCluster getting tools from servers."""
     urls = ["http://localhost:8000"]
 
-    with patch(
-        "swarms.structs.aop.get_tools_for_multiple_mcp_servers"
-    ) as mock_get_tools:
-        mock_get_tools.return_value = [{"test": "data"}]
+    with patch("swarms.structs.aop.MCPManager") as mock_manager_cls:
+        mock_manager_cls.return_value.get_tools.return_value = [
+            {"test": "data"}
+        ]
 
         cluster = AOPCluster(urls)
         result = cluster.get_tools(output_type="dict")
 
         assert result == [{"test": "data"}]
-        mock_get_tools.assert_called_once_with(
-            urls=urls,
-            format="openai",
-            output_type="dict",
+        mock_manager_cls.assert_called_once_with(
+            mcp_urls=urls,
             transport="streamable-http",
+            agent_name="AOPCluster",
+        )
+        mock_manager_cls.return_value.get_tools.assert_called_once_with(
+            format="openai"
         )
 
 

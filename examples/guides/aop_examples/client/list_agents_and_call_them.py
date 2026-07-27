@@ -1,8 +1,5 @@
 import json
-from swarms.tools.mcp_client_tools import (
-    get_mcp_tools_sync,
-    execute_tool_call_simple,
-)
+from swarms.tools.mcp_manager import MCPManager
 
 
 def get_available_tools(
@@ -17,7 +14,7 @@ def get_available_tools(
     Returns:
         List of available tools
     """
-    tools = get_mcp_tools_sync(server_path=server_path)
+    tools = MCPManager(mcp_url=server_path).get_tools()
     return tools
 
 
@@ -48,8 +45,8 @@ def call_agent_tool(
         import asyncio
 
         result = asyncio.run(
-            execute_tool_call_simple(
-                response=call, server_path=server_path
+            MCPManager(mcp_url=server_path).aexecute_tool_calls(
+                tool_call_request,
             )
         )
         return result

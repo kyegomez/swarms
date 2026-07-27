@@ -6,7 +6,25 @@ Simple example showing how to call the discover_agents tool synchronously.
 import json
 import asyncio
 from swarms.structs.aop import AOPCluster
-from swarms.tools.mcp_client_tools import execute_tool_call_simple
+from swarms.tools.mcp_manager import MCPManager
+
+
+def unwrap_tool_result(result):
+    """Pull the tool's own payload out of an MCPManager result.
+
+    ``aexecute_tool_calls`` returns one envelope per call —
+    ``{"tool": ..., "server": ..., "is_error": ..., "result": <payload>}`` —
+    where AOP tools put their JSON dict in ``result`` as a string.
+    """
+    if not result:
+        return {}
+    payload = result[0].get("result", result[0])
+    if isinstance(payload, str):
+        try:
+            return json.loads(payload)
+        except json.JSONDecodeError:
+            return {"raw": payload}
+    return payload
 
 
 def call_discover_agents_sync(server_url="http://localhost:5932/mcp"):
@@ -31,9 +49,8 @@ def call_discover_agents_sync(server_url="http://localhost:5932/mcp"):
 
     # Run the async function
     return asyncio.run(
-        execute_tool_call_simple(
-            response=tool_call_request,
-            server_path=server_url,
+        MCPManager(mcp_url=server_url).aexecute_tool_calls(
+            tool_call_request,
             output_type="dict",
         )
     )
@@ -64,9 +81,8 @@ def call_discover_specific_agent_sync(
 
     # Run the async function
     return asyncio.run(
-        execute_tool_call_simple(
-            response=tool_call_request,
-            server_path=server_url,
+        MCPManager(mcp_url=server_url).aexecute_tool_calls(
+            tool_call_request,
             output_type="dict",
         )
     )
@@ -109,7 +125,7 @@ def main():
         result = call_discover_agents_sync()
 
         if isinstance(result, list) and len(result) > 0:
-            discovery_data = result[0]
+            discovery_data = unwrap_tool_result(result)
 
             if discovery_data.get("success"):
                 agents = discovery_data.get("agents", [])
@@ -152,7 +168,7 @@ def main():
     try:
         # Try to discover the first agent specifically
         if isinstance(result, list) and len(result) > 0:
-            discovery_data = result[0]
+            discovery_data = unwrap_tool_result(result)
             if discovery_data.get("success") and discovery_data.get(
                 "agents"
             ):
@@ -173,7 +189,9 @@ def main():
                         isinstance(specific_result, list)
                         and len(specific_result) > 0
                     ):
-                        specific_data = specific_result[0]
+                        specific_data = unwrap_tool_result(
+                            specific_result
+                        )
                         if specific_data.get("success"):
                             agent = specific_data.get("agents", [{}])[
                                 0

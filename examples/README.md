@@ -123,37 +123,34 @@ This directory contains comprehensive examples demonstrating various capabilitie
 
 | Example | Description |
 |---------|-------------|
-| [mcp/](mcp/) | Model Context Protocol (MCP) integration examples including agent implementations, multi-connection setups, server configurations, utility functions, and multi-MCP guides |
-| [README.md](mcp/README.md) | MCP examples documentation |
-| [multi_mcp_example.py](mcp/multi_mcp_example.py) | Multi-MCP connection example |
-| [agent_examples/](mcp/agent_examples/) | Agent-based MCP examples |
-| [agent_mcp_old.py](mcp/agent_examples/agent_mcp_old.py) | Legacy agent MCP example |
-| [agent_multi_mcp_connections.py](mcp/agent_examples/agent_multi_mcp_connections.py) | Agent with multiple MCP connections |
-| [agent_tools_dict_example.py](mcp/agent_examples/agent_tools_dict_example.py) | Agent tools dictionary example |
-| [mcp_exampler.py](mcp/agent_examples/mcp_exampler.py) | MCP example implementation |
-| [servers/](mcp/servers/) | MCP server implementations |
-| [mcp_agent_tool.py](mcp/servers/mcp_agent_tool.py) | MCP agent tool server |
-| [mcp_test.py](mcp/servers/mcp_test.py) | MCP server testing |
-| [okx_crypto_server.py](mcp/servers/okx_crypto_server.py) | OKX crypto MCP server |
-| [test.py](mcp/servers/test.py) | MCP server test |
-| [mcp_utils/](mcp/mcp_utils/) | MCP utility functions |
-| [client.py](mcp/mcp_utils/client.py) | MCP client utility |
-| [mcp_client_call.py](mcp/mcp_utils/mcp_client_call.py) | MCP client call example |
-| [mcp_multiple_servers_example.py](mcp/mcp_utils/mcp_multiple_servers_example.py) | Multiple MCP servers example |
-| [mcp_multiple_tool_test.py](mcp/mcp_utils/mcp_multiple_tool_test.py) | Multiple MCP tools test |
-| [multiagent_client.py](mcp/mcp_utils/multiagent_client.py) | Multi-agent MCP client |
-| [singleagent_client.py](mcp/mcp_utils/singleagent_client.py) | Single agent MCP client |
-| [test_multiple_mcp_servers.py](mcp/mcp_utils/test_multiple_mcp_servers.py) | Test multiple MCP servers |
-| [utils/](mcp/mcp_utils/utils/) | MCP utility subdirectory |
-| [find_tools_on_mcp.py](mcp/mcp_utils/utils/find_tools_on_mcp.py) | Find tools on MCP |
-| [mcp_execute_example.py](mcp/mcp_utils/utils/mcp_execute_example.py) | MCP execute example |
-| [mcp_load_tools_example.py](mcp/mcp_utils/utils/mcp_load_tools_example.py) | MCP load tools example |
-| [mcp_multiserver_tool_fetch.py](mcp/mcp_utils/utils/mcp_multiserver_tool_fetch.py) | Multi-server tool fetch |
-| [utils.py](mcp/mcp_utils/utils.py) | MCP utilities |
-| [multi_mcp_guide/](mcp/multi_mcp_guide/) | Multi-MCP setup guides |
-| [agent_mcp.py](mcp/multi_mcp_guide/agent_mcp.py) | Agent MCP guide |
-| [mcp_agent_tool.py](mcp/multi_mcp_guide/mcp_agent_tool.py) | MCP agent tool guide |
-| [okx_crypto_server.py](mcp/multi_mcp_guide/okx_crypto_server.py) | OKX crypto server guide |
+| [mcp/](mcp/) | Model Context Protocol (MCP) integration examples, split into agents / servers / client |
+| [README.md](mcp/README.md) | Start here — which folder to use and a 30-second example |
+| [agents/](mcp/agents/) | **Give an agent tools from an MCP server** |
+| [01_deepwiki_repo_qa.py](mcp/agents/01_deepwiki_repo_qa.py) | Quickstart: agent + DeepWiki, no API key needed |
+| [02_gitmcp_repo_docs.py](mcp/agents/02_gitmcp_repo_docs.py) | Agent + GitMCP for any public repo's docs/code |
+| [03_microsoft_learn_docs.py](mcp/agents/03_microsoft_learn_docs.py) | Agent + Microsoft Learn official docs |
+| [04_multi_server_agent.py](mcp/agents/04_multi_server_agent.py) | One agent, two MCP servers at once |
+| [05_exa_web_search.py](mcp/agents/05_exa_web_search.py) | Agent + Exa web search (free API key) |
+| [FREE_MCP_SERVERS.md](mcp/agents/FREE_MCP_SERVERS.md) | Catalog of real public MCP servers |
+| [deepwiki_minimal.py](mcp/agents/deepwiki_minimal.py) | Smallest possible `mcp_url` agent |
+| [mcp_connection_object.py](mcp/agents/mcp_connection_object.py) | `MCPConnection` with headers, auth, timeout |
+| [multi_mcp_urls.py](mcp/agents/multi_mcp_urls.py) | `mcp_urls=[...]` for several servers |
+| [multi_mcp_walkthrough.py](mcp/agents/multi_mcp_walkthrough.py) | Longer annotated multi-server walkthrough |
+| [mcp_with_local_tools.py](mcp/agents/mcp_with_local_tools.py) | MCP tools plus your own Python tool schemas |
+| [tools_list_dictionary.py](mcp/agents/tools_list_dictionary.py) | The raw tool-schema format MCP tools become |
+| [finance_agent_mcp.py](mcp/agents/finance_agent_mcp.py) | Realistic finance agent backed by MCP |
+| [servers/](mcp/servers/) | **Build an MCP server agents connect to** |
+| [crypto_price_server.py](mcp/servers/crypto_price_server.py) | FastMCP server exposing crypto prices |
+| [okx_crypto_server.py](mcp/servers/okx_crypto_server.py) | OKX price server (port 8001) |
+| [agent_as_tool_server.py](mcp/servers/agent_as_tool_server.py) | Expose a whole swarms Agent as one MCP tool |
+| [streamable_http_server.py](mcp/servers/streamable_http_server.py) | Stateful vs stateless streamable-HTTP config |
+| [client/](mcp/client/) | **Call MCP directly with `MCPManager`, no Agent** |
+| [01_list_tools.py](mcp/client/01_list_tools.py) | Discover a server's tools; OpenAI vs MCP schema format |
+| [02_call_tool.py](mcp/client/02_call_tool.py) | Call one tool by name, sync and async |
+| [03_execute_llm_tool_calls.py](mcp/client/03_execute_llm_tool_calls.py) | Execute the tool calls in an LLM response |
+| [04_multi_server.py](mcp/client/04_multi_server.py) | Several servers, automatic per-tool routing |
+| [05_auth_and_config.py](mcp/client/05_auth_and_config.py) | API keys, bearer tokens, headers, env secrets, OAuth |
+| [06_remote_agents.py](mcp/client/06_remote_agents.py) | Spawn and run agents on a remote MCP server |
 
 #### Agents over Protocol (AOP)
 

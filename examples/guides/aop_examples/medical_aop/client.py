@@ -4,7 +4,7 @@ from typing import Dict
 import requests
 
 from swarms.structs.aop import AOPCluster
-from swarms.tools.mcp_client_tools import execute_tool_call_simple
+from swarms.tools.mcp_manager import MCPManager
 
 
 def _select_tools_by_keyword(tools: list, keyword: str) -> list:
@@ -98,12 +98,13 @@ def main() -> None:
         }
     }
     result = asyncio.run(
-        execute_tool_call_simple(
-            response=request,
-            server_path="http://localhost:8000/mcp",
-            output_type="json",
+        MCPManager(
+            mcp_url="http://localhost:8000/mcp",
             transport="streamable-http",
             verbose=False,
+        ).aexecute_tool_calls(
+            request,
+            output_type="json",
         )
     )
     print("Response:")

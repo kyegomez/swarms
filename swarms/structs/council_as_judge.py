@@ -1,5 +1,5 @@
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import as_completed
 from functools import lru_cache
 from typing import Dict, Optional, Tuple
 
@@ -13,6 +13,11 @@ from swarms.utils.history_output_formatter import (
 )
 
 from swarms.structs.swarm_id import swarm_id
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
 
 
 class EvaluationError(Exception):
@@ -283,6 +288,9 @@ class CouncilAsAJudge:
         self.aggregator_agent = self._create_aggregator()
         self.conversation = Conversation()
 
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
+
     def reliability_check(self):
         logger.info(
             f"🧠 Running CouncilAsAJudge in parallel mode with {self.max_workers} workers...\n"
@@ -417,6 +425,10 @@ class CouncilAsAJudge:
                 f"Failed to evaluate dimension {dim}: {str(e)}"
             )
 
+    @trace_run(
+        "CouncilAsAJudge.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(self, task: str) -> None:
         """
         Run the evaluation process using ThreadPoolExecutor.
@@ -442,7 +454,7 @@ class CouncilAsAJudge:
             ]
 
             # Run evaluations in parallel using ThreadPoolExecutor
-            with ThreadPoolExecutor(
+            with ContextThreadPoolExecutor(
                 max_workers=self.max_workers
             ) as executor:
                 # Submit all tasks

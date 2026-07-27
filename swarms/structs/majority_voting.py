@@ -1,6 +1,5 @@
 import concurrent.futures
 import os
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, List, Optional
 
 from swarms.structs.agent import Agent
@@ -12,6 +11,11 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.output_types import OutputType
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
 
 CONSENSUS_AGENT_PROMPT = """
 You are the Consensus Agent, responsible for synthesizing and evaluating the responses from a panel of expert agents. Your task is to deliver a rigorous, insightful, and actionable consensus based on their outputs.
@@ -144,6 +148,9 @@ class MajorityVoting:
 
         self.reliability_check()
 
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
+
     def reliability_check(self):
 
         if self.agents is None:
@@ -163,6 +170,10 @@ class MajorityVoting:
             title="Majority Voting",
         )
 
+    @trace_run(
+        "MajorityVoting.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(
         self,
         task: str,
@@ -273,7 +284,7 @@ class MajorityVoting:
         Returns:
             List[Any]: List of majority votes for each task.
         """
-        with ThreadPoolExecutor(
+        with ContextThreadPoolExecutor(
             max_workers=os.cpu_count()
         ) as executor:
             futures = [
