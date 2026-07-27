@@ -10,7 +10,6 @@ from swarms.structs.conversation import Conversation
 from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.tools.base_tool import BaseTool
 from swarms.utils.formatter import formatter
-from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )

@@ -40,7 +40,6 @@ from swarms.telemetry.otel import (
     capture_init,
     trace_run,
 )
-from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.output_types import OutputType
 from swarms.utils.swarm_autosave import (
     autosave_swarm,

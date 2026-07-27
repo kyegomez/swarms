@@ -129,9 +129,11 @@ def test_id_default_is_none_not_a_frozen_string(name):
     string — which is exactly the bug. Reading it off the signature catches a
     regression without constructing anything.
     """
-    default = inspect.signature(
-        CLASSES[name].__init__
-    ).parameters["id"].default
+    default = (
+        inspect.signature(CLASSES[name].__init__)
+        .parameters["id"]
+        .default
+    )
 
     assert default is None, (
         f"{name}.__init__ has a pre-computed id default ({default!r}). "
@@ -306,7 +308,10 @@ def test_every_component_id_comes_from_generate_id():
     root = pathlib.Path(__file__).resolve().parents[2] / "swarms"
 
     for path in sorted(root.rglob("*.py")):
-        if "__pycache__" in str(path) or path.name == "generate_id.py":
+        if (
+            "__pycache__" in str(path)
+            or path.name == "generate_id.py"
+        ):
             continue
         try:
             tree = ast.parse(path.read_text())

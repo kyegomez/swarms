@@ -263,7 +263,6 @@ class TestSpanParentageInvariant:
             ), "Agent.run in a worker thread is not a child of the workflow run"
 
 
-
 # ===========================================================================
 # 2. Telemetry is off by default
 # ===========================================================================
