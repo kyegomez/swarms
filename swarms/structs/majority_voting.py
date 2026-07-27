@@ -5,7 +5,6 @@ from typing import Any, Callable, List, Optional
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
-from swarms.structs.swarm_id import swarm_id
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -16,6 +15,7 @@ from swarms.telemetry.otel import (
     capture_init,
     trace_run,
 )
+from swarms.utils.generate_id import generate_id
 
 CONSENSUS_AGENT_PROMPT = """
 You are the Consensus Agent, responsible for synthesizing and evaluating the responses from a panel of expert agents. Your task is to deliver a rigorous, insightful, and actionable consensus based on their outputs.
@@ -108,7 +108,7 @@ class MajorityVoting:
 
     def __init__(
         self,
-        id: str = swarm_id(),
+        id: Optional[str] = None,
         name: str = "MajorityVoting",
         description: str = "A multi-loop majority voting system for agents",
         agents: List[Agent] = None,
@@ -124,7 +124,7 @@ class MajorityVoting:
         *args,
         **kwargs,
     ):
-        self.id = id
+        self.id = id or generate_id("majority-voting")
         self.name = name
         self.description = description
         self.agents = agents

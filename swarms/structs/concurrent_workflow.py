@@ -7,7 +7,6 @@ from typing import Callable, List, Optional, Union
 from loguru import logger as loguru_logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from swarms.structs.swarm_id import swarm_id
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_error,
@@ -22,6 +21,7 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.swarm_autosave import get_swarm_workspace_dir
 from swarms.utils.workspace_utils import get_workspace_dir
+from swarms.utils.generate_id import generate_id
 
 logger = initialize_logger(log_folder="concurrent_workflow")
 
@@ -91,7 +91,7 @@ class ConcurrentWorkflow:
         verbose: bool = False,
         on_error: str = "store",
     ):
-        self.id = id if id is not None else swarm_id()
+        self.id = id or generate_id("concurrent-workflow")
         self.name = name
         self.description = description
         self.agents = agents

@@ -41,12 +41,12 @@ from swarms.prompts.planner_generator_evaluator_prompts import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from swarms.structs.swarm_id import swarm_id
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.utils.generate_id import generate_id
 
 logger = initialize_logger(log_folder="planner_generator_evaluator")
 
@@ -229,7 +229,7 @@ class PlannerGeneratorEvaluator:
         *args,
         **kwargs,
     ):
-        self.id = id or swarm_id()
+        self.id = id or generate_id("planner-generator-evaluator")
         self.name = name
         self.description = description
         self.model_name = model_name

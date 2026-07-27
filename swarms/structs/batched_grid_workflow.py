@@ -1,5 +1,5 @@
 import traceback
-from typing import List
+from typing import List, Optional
 
 from loguru import logger
 
@@ -7,9 +7,9 @@ from swarms.structs.multi_agent_exec import (
     batched_grid_agent_execution,
 )
 from swarms.structs.omni_agent_types import AgentType
-from swarms.structs.swarm_id import swarm_id
 from swarms.utils.output_types import OutputType
 from swarms.telemetry.otel import capture_init, trace_run
+from swarms.utils.generate_id import generate_id
 
 
 class BatchedGridWorkflow:
@@ -46,7 +46,7 @@ class BatchedGridWorkflow:
 
     def __init__(
         self,
-        id: str = swarm_id(),
+        id: Optional[str] = None,
         name: str = "BatchedGridWorkflow",
         description: str = "For every agent, run the task on a different task",
         agents: List[AgentType] = None,
@@ -63,7 +63,7 @@ class BatchedGridWorkflow:
             agents: List of agents to execute tasks.
             max_loops: Maximum number of execution loops to run (must be >= 1).
         """
-        self.id = id
+        self.id = id or generate_id("batched-grid-workflow")
         self.name = name
         self.description = description
         self.agents = agents

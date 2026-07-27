@@ -12,12 +12,12 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 
-from swarms.structs.swarm_id import swarm_id
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_init,
     trace_run,
 )
+from swarms.utils.generate_id import generate_id
 
 
 class EvaluationError(Exception):
@@ -244,7 +244,7 @@ class CouncilAsAJudge:
 
     def __init__(
         self,
-        id: str = swarm_id(),
+        id: Optional[str] = None,
         name: str = "CouncilAsAJudge",
         description: str = "Evaluates task responses across multiple dimensions",
         model_name: str = "gpt-5.4",
@@ -270,7 +270,7 @@ class CouncilAsAJudge:
             max_loops (int): Maximum number of loops for agents
             aggregation_model_name (str): Model name for the aggregator agent
         """
-        self.id = id
+        self.id = id or generate_id("council-as-judge")
         self.name = name
         self.description = description
         self.model_name = model_name

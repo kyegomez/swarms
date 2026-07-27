@@ -21,13 +21,13 @@ from swarms.structs.conversation import Conversation
 from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.multi_agent_exec import run_agents_concurrently
 from swarms.structs.serialization import SerializableMixin
-from swarms.structs.swarm_id import swarm_id
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.utils.generate_id import generate_id
 
 logger = initialize_logger(log_folder="rearrange")
 
@@ -99,7 +99,7 @@ class AgentRearrange(SerializableMixin):
 
     def __init__(
         self,
-        id: str = swarm_id(),
+        id: Optional[str] = None,
         name: str = "AgentRearrange",
         description: str = "A swarm of agents for rearranging tasks.",
         agents: List[Union[Agent, Callable]] = None,
@@ -156,7 +156,7 @@ class AgentRearrange(SerializableMixin):
         """
         self.name = name
         self.description = description
-        self.id = id
+        self.id = id or generate_id("agent-rearrange")
         self.agents = list(agents) if agents else []
         self.flow = flow if flow is not None else ""
         self.verbose = verbose

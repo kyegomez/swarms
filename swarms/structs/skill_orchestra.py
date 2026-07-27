@@ -19,7 +19,6 @@ Pipeline:
 import json
 import os
 import traceback
-import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
 
@@ -37,6 +36,7 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
 from swarms.utils.swarm_autosave import get_swarm_workspace_dir
+from swarms.utils.generate_id import generate_id
 
 
 # ─── Pydantic Models ─────────────────────────────────────────────
@@ -278,7 +278,7 @@ class SkillOrchestra:
         *args,
         **kwargs,
     ):
-        self.id = str(uuid.uuid4())
+        self.id = generate_id("skill-orchestra")
         self.name = name
         self.description = description
         self.agents = agents or []

@@ -168,18 +168,17 @@ def _attrs(span):
 
 
 # ===========================================================================
-# 1. Span parentage — document current (flat) behavior. Do NOT change source.
+# 1. Span parentage — spans nest into a single trace per run.
 # ===========================================================================
 class TestSpanParentageInvariant:
-    """capture_run/capture_init use tracer.start_span(...) and never activate
-    the span as current. Every span is therefore a root span in its own
-    trace — there is no swarm-run -> agent-run tree in a trace viewer, only
-    a flat list of independent traces correlated solely by wall-clock time
-    and shared attribute values (swarms.name, etc). This is current, tested
-    design, not a bug to fix here.
+    """capture_run activates its span as current (via trace.use_span) and
+    thread pools carry the context across worker threads, so a swarm run and
+    every agent run beneath it share one trace and form a parent/child tree a
+    viewer can reconstruct. Spans emitted outside a run — the ``*.init`` spans
+    from construction — remain independent roots.
     """
 
-    def test_two_agent_sequential_workflow_is_eight_flat_root_spans(
+    def test_two_agent_sequential_workflow_nests_into_one_trace(
         self, spans
     ):
         from swarms import SequentialWorkflow
@@ -194,28 +193,75 @@ class TestSpanParentageInvariant:
         # Agent.run x2, AgentRearrange.run, SequentialWorkflow.run.
         assert len(finished) == 8
 
-        # Every span is a root span: no parent.
-        for s in finished:
+        init_spans = [s for s in finished if s.name.endswith(".init")]
+        run_spans = [s for s in finished if s.name.endswith(".run")]
+        assert len(init_spans) == 4
+        assert len(run_spans) == 4
+
+        # init spans happen at construction, outside any run: still roots.
+        for s in init_spans:
             assert (
                 s.parent is None
-            ), f"{s.name} unexpectedly has a parent — flat-trace design changed"
+            ), f"{s.name} unexpectedly has a parent"
 
-        # Every span lives in its own, distinct trace.
-        trace_ids = [s.get_span_context().trace_id for s in finished]
-        assert len(set(trace_ids)) == len(
-            trace_ids
-        ), "two spans unexpectedly share a trace id"
+        # Every run span shares one trace.
+        run_trace_ids = {
+            s.get_span_context().trace_id for s in run_spans
+        }
+        assert (
+            len(run_trace_ids) == 1
+        ), f"run spans split across {len(run_trace_ids)} traces — nesting broke"
 
-        # In particular: the swarm-run span and its child Agent.run spans do
-        # NOT share a trace id — a viewer cannot reconstruct swarm->agent.
+        # SequentialWorkflow.run is the root of that trace.
         swarm_run = _by_name_all(spans, "SequentialWorkflow.run")[0]
+        assert swarm_run.parent is None
+
+        # SequentialWorkflow delegates to AgentRearrange, which runs the
+        # agents — so the real tree is workflow -> rearrange -> agents.
+        rearrange_run = _by_name_all(spans, "AgentRearrange.run")[0]
+        assert (
+            rearrange_run.parent is not None
+            and rearrange_run.parent.span_id
+            == swarm_run.get_span_context().span_id
+        ), "AgentRearrange.run is not a child of SequentialWorkflow.run"
+
         agent_runs = _by_name_all(spans, "Agent.run")
         assert len(agent_runs) == 2
-        swarm_trace_id = swarm_run.get_span_context().trace_id
         for ar in agent_runs:
             assert (
-                ar.get_span_context().trace_id != swarm_trace_id
-            ), "Agent.run unexpectedly shares a trace id with SequentialWorkflow.run"
+                ar.parent is not None
+                and ar.parent.span_id
+                == rearrange_run.get_span_context().span_id
+            ), "Agent.run is not a child of AgentRearrange.run"
+
+    def test_concurrent_workflow_nests_across_worker_threads(
+        self, spans
+    ):
+        """OTel context does not cross threads on its own; the pools use
+        ContextThreadPoolExecutor so concurrent agents still nest."""
+        from swarms import ConcurrentWorkflow
+
+        wf = ConcurrentWorkflow(
+            agents=[fake_agent("Conc-1"), fake_agent("Conc-2")]
+        )
+        wf.run("hello")
+
+        run_spans = [
+            s for s in _finished(spans) if s.name.endswith(".run")
+        ]
+        assert (
+            len({s.get_span_context().trace_id for s in run_spans})
+            == 1
+        ), "concurrent agent spans orphaned into separate traces"
+
+        parent = _by_name_all(spans, "ConcurrentWorkflow.run")[0]
+        for ar in _by_name_all(spans, "Agent.run"):
+            assert (
+                ar.parent is not None
+                and ar.parent.span_id
+                == parent.get_span_context().span_id
+            ), "Agent.run in a worker thread is not a child of the workflow run"
+
 
 
 # ===========================================================================

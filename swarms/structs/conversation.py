@@ -23,11 +23,12 @@ if TYPE_CHECKING:
     from swarms.structs.agent import Agent
 
 from loguru import logger
+from swarms.utils.generate_id import generate_id
 
 
-def generate_conversation_id():
-    """Generate a unique conversation ID."""
-    return str(uuid.uuid4())
+def generate_conversation_id() -> str:
+    """Deprecated: use ``generate_id()``."""
+    return generate_id()
 
 
 def get_conversation_dir():
@@ -75,7 +76,7 @@ class Conversation:
 
     def __init__(
         self,
-        id: str = generate_conversation_id(),
+        id: Optional[str] = None,
         name: str = "conversation-test",
         system_prompt: Optional[str] = None,
         time_enabled: bool = False,
@@ -100,7 +101,7 @@ class Conversation:
     ):
 
         # Initialize all attributes first
-        self.id = id
+        self.id = id or generate_id()
         self.name = name
         self.save_filepath = save_filepath
         self.system_prompt = system_prompt

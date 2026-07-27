@@ -46,6 +46,7 @@ from swarms.utils.swarm_autosave import (
     autosave_swarm,
     get_swarm_workspace_dir,
 )
+from swarms.utils.generate_id import generate_id
 
 _DOCS_URL = "https://docs.swarms.world/api/swarm-router"
 _REARRANGE_DOCS_URL = "https://docs.swarms.world/api/agent-rearrange"
@@ -310,7 +311,7 @@ class SwarmRouter(SerializableMixin):
 
     def __init__(
         self,
-        id: str = generate_api_key(prefix="swarm-router"),
+        id: Optional[str] = None,
         name: str = "swarm-router",
         description: str = "Routes your task to the desired swarm",
         max_loops: int = 1,
@@ -355,7 +356,7 @@ class SwarmRouter(SerializableMixin):
         Raises:
             SwarmRouterConfigError: If the configuration fails validation.
         """
-        self.id = id
+        self.id = id or generate_id("swarm-router")
         self.name = name
         self.description = description
         self.max_loops = max_loops
