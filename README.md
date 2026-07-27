@@ -170,6 +170,30 @@ print(result)
 - Latency-sensitive or cost-sensitive production pipelines
 - Tasks with a well-defined, bounded number of steps
 
+## MCP Integration
+
+The [Model Context Protocol (MCP)](https://modelcontextprotocol.io) lets agents easily access external tools and data by pointing to an MCP server URL, which automatically provides tools to the agent as needed. Agents become MCP-enabled by setting `mcp_url` or `mcp_urls`, and can use tools from one or many servers with no manual configuration. Free and public MCP servers like [DeepWiki](https://mcp.deepwiki.com/mcp) work out of the box, offering immediate access to useful agent tools.
+
+```python
+from swarms import Agent
+
+agent = Agent(
+    agent_name="MCP-Agent",
+    model_name="claude-sonnet-5",
+    mcp_url="https://mcp.deepwiki.com/mcp",
+    max_loops=1,
+    temperature=None,
+    max_tokens=16_000,
+    reasoning_effort=None,
+)
+
+print(
+    agent.run(
+        "Use your tools to explain what the kyegomez/swarms repository does."
+    )
+)
+```
+
 ### Your First Swarm: Multi-Agent Collaboration
 
 A **Swarm** consists of multiple agents working together. This simple example creates a two-agent workflow for researching and writing a blog post. [Learn More About SequentialWorkflow](https://docs.swarms.world/api/sequential-workflow)

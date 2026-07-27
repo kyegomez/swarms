@@ -1,7 +1,7 @@
 """
 API Key Validation System Example
 
-This example demonstrates the new check_swarms_api_key function that validates
+This example demonstrates the new AgentMarketplaceHandler.check_api_key method that validates
 API credentials before agents attempt to make requests. This proactive validation
 prevents runtime errors and provides clear, actionable feedback when configuration issues exist.
 
@@ -12,12 +12,14 @@ Key features:
 - Prevents runtime failures due to authentication issues
 """
 
-from swarms.utils.swarms_marketplace_utils import check_swarms_api_key
+from swarms.agents.agent_marketplace_handler import (
+    AgentMarketplaceHandler,
+)
 from swarms import Agent
 
 # Example 1: Demonstrate successful API key validation
 try:
-    api_key = check_swarms_api_key()
+    api_key = AgentMarketplaceHandler.check_api_key()
 
     # Create an agent that uses marketplace prompts
     agent = Agent(

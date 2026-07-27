@@ -19,9 +19,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
-from swarms.tools.mcp_client_tools import (
-    get_tools_for_multiple_mcp_servers,
-)
+from swarms.tools.mcp_manager import MCPManager
 from swarms.structs.ma_blocks import find_agent_by_name
 
 
@@ -2927,12 +2925,11 @@ class AOPCluster:
         Returns:
             List[Dict[str, Any]]: A list of tool information dictionaries.
         """
-        return get_tools_for_multiple_mcp_servers(
-            urls=self.urls,
-            format="openai",
-            output_type=output_type,
+        return MCPManager(
+            mcp_urls=self.urls,
             transport=self.transport,
-        )
+            agent_name="AOPCluster",
+        ).get_tools(format="openai")
 
     def find_tool_by_server_name(
         self, server_name: str

@@ -1,10 +1,10 @@
 import json
-from swarms.tools.mcp_client_tools import get_mcp_tools_sync
+from swarms.tools.mcp_manager import MCPManager
 
 
 print(
     json.dumps(
-        get_mcp_tools_sync(server_path="http://0.0.0.0:8000/mcp"),
+        MCPManager(mcp_url="http://0.0.0.0:8000/mcp").get_tools(),
         indent=4,
     )
 )

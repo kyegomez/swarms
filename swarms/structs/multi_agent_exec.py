@@ -7,6 +7,7 @@ from loguru import logger
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
+from swarms.telemetry.otel import ContextThreadPoolExecutor
 
 
 def run_single_agent(
@@ -146,7 +147,7 @@ def run_agents_concurrently(
         futures = []
         agent_id_map = {}
 
-        with concurrent.futures.ThreadPoolExecutor(
+        with ContextThreadPoolExecutor(
             max_workers=max_workers
         ) as executor:
             for agent in agents:
@@ -291,7 +292,7 @@ def batched_grid_agent_execution(
     max_workers = max_workers or int(os.cpu_count() * 0.9)
 
     results = [None] * len(agents)
-    with concurrent.futures.ThreadPoolExecutor(
+    with ContextThreadPoolExecutor(
         max_workers=max_workers
     ) as executor:
         future_to_index = {

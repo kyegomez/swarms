@@ -24,6 +24,7 @@ from swarms.utils.history_output_formatter import (
     HistoryOutputType,
     history_output_formatter,
 )
+from swarms.telemetry.otel import capture_init, trace_run
 
 
 def get_gpt_councilor_prompt() -> str:
@@ -325,6 +326,9 @@ class LLMCouncil:
                     f"   {i}. {member.agent_name} ({member.model_name})"
                 )
 
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
+
     def _create_default_council(self) -> List[Agent]:
         """
         Create default council members with specialized prompts and models.
@@ -382,6 +386,10 @@ class LLMCouncil:
 
         return members
 
+    @trace_run(
+        "LLMCouncil.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(self, task: str = None, query: str = None):
         """
         Execute the full LLM Council workflow.

@@ -1,7 +1,6 @@
 import concurrent.futures
 import json
 import traceback
-from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, List, Optional
 
 from loguru import logger
@@ -17,6 +16,11 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
 
 
 class HandOffsResponse(BaseModel):
@@ -196,6 +200,9 @@ class MultiAgentRouter:
             *args,
             **kwargs,
         )
+
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
 
     def __repr__(self):
         """
@@ -418,6 +425,10 @@ class MultiAgentRouter:
             )
             raise
 
+    @trace_run(
+        "MultiAgentRouter.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(self, task: str):
         """
         Route a single task through the boss agent and execute the selected
@@ -487,7 +498,7 @@ class MultiAgentRouter:
             completion order.
         """
         results = []
-        with ThreadPoolExecutor() as executor:
+        with ContextThreadPoolExecutor() as executor:
             futures = [
                 executor.submit(self.route_task, task)
                 for task in tasks

@@ -27,6 +27,11 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.output_types import OutputType
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
 
 
 class TaskQueue:
@@ -375,7 +380,7 @@ class WorkerPool:
         self._stop_event.clear()
         start_time = time.time()
 
-        with concurrent.futures.ThreadPoolExecutor(
+        with ContextThreadPoolExecutor(
             max_workers=self.max_workers
         ) as executor:
             futures = []
@@ -453,7 +458,7 @@ class WorkerPool:
 
                 # Run with per-task timeout to detect stuck workers
                 if self.task_timeout:
-                    with concurrent.futures.ThreadPoolExecutor(
+                    with ContextThreadPoolExecutor(
                         max_workers=1
                     ) as task_executor:
                         future = task_executor.submit(
@@ -572,6 +577,9 @@ class PlannerWorkerSwarm:
         self._original_task: Optional[str] = None
 
         self._reliability_checks()
+
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
 
     def _reliability_checks(self):
         if not self.agents or len(self.agents) == 0:
@@ -836,6 +844,7 @@ class PlannerWorkerSwarm:
             "queue": self.task_queue.get_status(),
         }
 
+    @trace_run("PlannerWorkerSwarm.run", input_params=("task", "img"))
     def run(
         self,
         task: Optional[str] = None,

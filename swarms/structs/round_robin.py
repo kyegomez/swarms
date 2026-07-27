@@ -9,6 +9,7 @@ from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 from swarms.structs.ma_blocks import return_all_agent_names
 from swarms.structs.serialization import SerializableMixin
+from swarms.telemetry.otel import capture_init, trace_run
 
 logger = initialize_logger("round-robin")
 
@@ -145,6 +146,9 @@ class RoundRobinSwarm(SerializableMixin):
             f"Successfully initialized {self.name} with {len(self.agents)} agents",
         )
 
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
+
     def _execute_agent(
         self, agent: Agent, task: str, *args, **kwargs
     ) -> str:
@@ -178,6 +182,10 @@ class RoundRobinSwarm(SerializableMixin):
             )
             raise
 
+    @trace_run(
+        "RoundRobinSwarm.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(
         self, task: str, *args, **kwargs
     ) -> Union[str, dict, list]:

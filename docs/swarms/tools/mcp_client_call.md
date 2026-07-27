@@ -1,244 +1,222 @@
-# MCP Client Call Reference Documentation
+# MCP Client Reference
 
-This document provides a comprehensive reference for the MCP (Model Control Protocol) client call functions, including detailed parameter descriptions, return types, and usage examples.
+`MCPManager` is the single entry point for MCP in swarms. Point it at one or more servers and it handles transport selection, authentication, tool discovery, caching, and routing each tool call to the server that owns it. An `Agent` uses this class internally whenever you set `mcp_url` or `mcp_urls`.
+
+> **Migration note.** The standalone functions in `swarms.tools.mcp_client_tools` — `aget_mcp_tools`, `get_mcp_tools_sync`, `get_tools_for_multiple_mcp_servers`, `execute_tool_call_simple`, and `execute_multiple_tools_on_multiple_mcp_servers` — have been removed. See [Migrating from mcp_client_tools](#migrating-from-mcp_client_tools) for direct replacements.
 
 ## Table of Contents
 
-- [aget_mcp_tools](#aget_mcp_tools)
+- [Construction](#construction)
+- [get_tools](#get_tools)
+- [list_tool_names](#list_tool_names)
+- [call_tool](#call_tool)
+- [execute_tool_calls](#execute_tool_calls)
+- [Authentication](#authentication)
+- [Managing servers and caches](#managing-servers-and-caches)
+- [Migrating from mcp_client_tools](#migrating-from-mcp_client_tools)
 
-- [get_mcp_tools_sync](#get_mcp_tools_sync)
-
-- [get_tools_for_multiple_mcp_servers](#get_tools_for_multiple_mcp_servers)
-
-- [execute_tool_call_simple](#execute_tool_call_simple)
-
-## Function Reference
-
-### aget_mcp_tools
-
-Asynchronously fetches available MCP tools from the server with retry logic.
-
-#### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| server_path | Optional[str] | No | Path to the MCP server script |
-| format | str | No | Format of the returned tools (default: "openai") |
-| connection | Optional[MCPConnection] | No | MCP connection object |
-| *args | Any | No | Additional positional arguments |
-| **kwargs | Any | No | Additional keyword arguments |
-
-#### Returns
-
-- `List[Dict[str, Any]]`: List of available MCP tools in OpenAI format
-
-#### Raises
-
-- `MCPValidationError`: If server_path is invalid
-
-- `MCPConnectionError`: If connection to server fails
-
-#### Example
+## Construction
 
 ```python
-import asyncio
-from swarms.tools.mcp_client_tools import aget_mcp_tools
-from swarms.tools.mcp_connection import MCPConnection
+from swarms.tools.mcp_manager import MCPManager
 
-async def main():
-    # Using server path
-    tools = await aget_mcp_tools(server_path="http://localhost:8000")
-    
-    # Using connection object
-    connection = MCPConnection(
-        host="localhost",
-        port=8000,
-        headers={"Authorization": "Bearer token"}
-    )
-    tools = await aget_mcp_tools(connection=connection)
-    
-    print(f"Found {len(tools)} tools")
+# One server
+manager = MCPManager(mcp_url="http://localhost:8000/mcp")
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# Several servers
+manager = MCPManager(mcp_urls=[
+    "http://localhost:8000/mcp",
+    "http://localhost:8001/mcp",
+])
 ```
 
-### get_mcp_tools_sync
-
-Synchronous version of get_mcp_tools that handles event loop management.
-
-#### Parameters
+### Parameters
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| server_path | Optional[str] | No | Path to the MCP server script |
-| format | str | No | Format of the returned tools (default: "openai") |
-| connection | Optional[MCPConnection] | No | MCP connection object |
-| *args | Any | No | Additional positional arguments |
-| **kwargs | Any | No | Additional keyword arguments |
+|---|---|---|---|
+| `mcp_url` | `str \| MCPConnection \| Dict` | No | A single server: URL, connection object, or dict |
+| `mcp_urls` | `List[str \| MCPConnection \| Dict]` | No | Several servers; entries may mix forms |
+| `mcp_config` | `MCPConnection \| Dict` | No | Full configuration for one server |
+| `mcp_configs` | `List[MCPConnection \| Dict]` | No | Full configuration for several servers |
+| `api_key` | `str` | No | API key applied to servers that do not define their own |
+| `authorization_token` | `str` | No | Bearer token applied to servers that do not define their own |
+| `oauth` | `MCPOAuthConfig \| Dict` | No | OAuth 2.1 configuration |
+| `headers` | `Dict[str, str]` | No | Extra headers merged into every request |
+| `transport` | `str` | No | Force `"streamable_http"`, `"sse"`, or `"stdio"`; auto-detected otherwise |
+| `timeout` | `int` | No | Request timeout in seconds (default: 30) |
+| `agent_name` | `str` | No | Name used in log messages (default: `"agent"`) |
+| `verbose` | `bool` | No | Verbose logging (default: `False`) |
+| `retry_attempts` | `int` | No | Retries per operation (default: 3) |
 
-#### Returns
+Hyphenated transports (`"streamable-http"`) are normalized automatically.
 
-- `List[Dict[str, Any]]`: List of available MCP tools in OpenAI format
+## get_tools
 
-#### Raises
-
-- `MCPValidationError`: If server_path is invalid
-
-- `MCPConnectionError`: If connection to server fails
-
-- `MCPExecutionError`: If event loop management fails
-
-#### Example
+Fetch tools from every configured server.
 
 ```python
-from swarms.tools.mcp_client_tools import get_mcp_tools_sync
-from swarms.tools.mcp_connection import MCPConnection
-
-# Using server path
-tools = get_mcp_tools_sync(server_path="http://localhost:8000")
-
-# Using connection object
-connection = MCPConnection(
-    host="localhost",
-    port=8000,
-    headers={"Authorization": "Bearer token"}
-)
-tools = get_mcp_tools_sync(connection=connection)
-
-print(f"Found {len(tools)} tools")
+tools = manager.get_tools()                      # OpenAI function-calling schemas
+raw = manager.get_tools(format="mcp")            # raw MCP schemas
+fresh = manager.get_tools(force_refresh=True)    # bypass the cache
 ```
 
-### get_tools_for_multiple_mcp_servers
-
-Get tools for multiple MCP servers concurrently using ThreadPoolExecutor.
-
-#### Parameters
-
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| urls | List[str] | Yes | List of server URLs to fetch tools from |
-| connections | List[MCPConnection] | No | Optional list of MCPConnection objects |
-| format | str | No | Format to return tools in (default: "openai") |
-| output_type | Literal["json", "dict", "str"] | No | Type of output format (default: "str") |
-| max_workers | Optional[int] | No | Maximum number of worker threads |
+|---|---|---|---|
+| `format` | `"openai" \| "mcp"` | No | Schema shape (default: `"openai"`) |
+| `force_refresh` | `bool` | No | Re-fetch instead of using cached schemas |
 
-#### Returns
+**Returns** `List[Dict[str, Any]]`. Async form: `await manager.aget_tools(...)`.
 
-- `List[Dict[str, Any]]`: Combined list of tools from all servers
-
-#### Raises
-
-- `MCPExecutionError`: If fetching tools from any server fails
-
-#### Example
+## list_tool_names
 
 ```python
-from swarms.tools.mcp_client_tools import get_tools_for_multiple_mcp_servers
-from swarms.tools.mcp_connection import MCPConnection
-
-# Define server URLs
-urls = [
-    "http://server1:8000",
-    "http://server2:8000"
-]
-
-# Optional: Define connections
-connections = [
-    MCPConnection(host="server1", port=8000),
-    MCPConnection(host="server2", port=8000)
-]
-
-# Get tools from all servers
-tools = get_tools_for_multiple_mcp_servers(
-    urls=urls,
-    connections=connections,
-    format="openai",
-    output_type="dict",
-    max_workers=4
-)
-
-print(f"Found {len(tools)} tools across all servers")
+manager.list_tool_names()
+# ['get_crypto_price', 'get_okx_crypto_price']
 ```
 
-### execute_tool_call_simple
+**Returns** `List[str]` — every tool name across all configured servers.
 
-Execute a tool call using the MCP client.
+## call_tool
 
-#### Parameters
+Call one tool directly, without an LLM.
+
+```python
+result = manager.call_tool("get_crypto_price", {"coin_id": "bitcoin"})
+```
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| response | Any | No | Tool call response object |
-| server_path | str | No | Path to the MCP server |
-| connection | Optional[MCPConnection] | No | MCP connection object |
-| output_type | Literal["json", "dict", "str", "formatted"] | No | Type of output format (default: "str") |
-| *args | Any | No | Additional positional arguments |
-| **kwargs | Any | No | Additional keyword arguments |
+|---|---|---|---|
+| `name` | `str` | Yes | Tool name |
+| `arguments` | `Dict[str, Any]` | No | Tool arguments |
 
-#### Returns
+**Returns** a result envelope:
 
-- `List[Dict[str, Any]]`: Result of the tool execution
-
-#### Raises
-
-- `MCPConnectionError`: If connection to server fails
-
-- `MCPExecutionError`: If tool execution fails
-
-#### Example
 ```python
-import asyncio
-from swarms.tools.mcp_client_tools import execute_tool_call_simple
-from swarms.tools.mcp_connection import MCPConnection
+{
+    "tool": "get_crypto_price",
+    "server": "http://localhost:8000/mcp",
+    "arguments": {"coin_id": "bitcoin"},
+    "is_error": False,
+    "result": "Current price of Bitcoin: $64,601.00",
+}
+```
 
-async def main():
-    # Example tool call response
-    response = {
-        "name": "example_tool",
-        "parameters": {"param1": "value1"}
+Async form: `await manager.acall_tool(...)`.
+
+## execute_tool_calls
+
+Run the tool calls contained in an LLM response. Each call is routed to the server that advertised the tool, and results come back in the order the calls appeared.
+
+```python
+response = {
+    "function": {
+        "name": "get_crypto_price",
+        "arguments": {"coin_id": "bitcoin"},
     }
-    
-    # Using server path
-    result = await execute_tool_call_simple(
-        response=response,
-        server_path="http://localhost:8000",
-        output_type="json"
-    )
-    
-    # Using connection object
-    connection = MCPConnection(
-        host="localhost",
-        port=8000,
-        headers={"Authorization": "Bearer token"}
-    )
-    result = await execute_tool_call_simple(
-        response=response,
-        connection=connection,
-        output_type="dict"
-    )
-    
-    print(f"Tool execution result: {result}")
+}
 
-if __name__ == "__main__":
-    asyncio.run(main())
+results = manager.execute_tool_calls(response)                     # list of dicts
+as_json = manager.execute_tool_calls(response, output_type="json") # JSON string
+as_text = manager.execute_tool_calls(response, output_type="str")  # plain text
 ```
 
-## Error Handling
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `response` | `Any` | Yes | An LLM response, a single call dict, or a list of calls |
+| `output_type` | `"dict" \| "json" \| "str"` | No | Result format (default: `"dict"`) |
 
-The MCP client functions use a retry mechanism with exponential backoff for failed requests. The following error types may be raised:
+**Returns** `List[Dict[str, Any]]`, or a string for `"json"` / `"str"`.
 
-- `MCPValidationError`: Raised when input validation fails
+Async form: `await manager.aexecute_tool_calls(...)`. To re-render results you already have, use the static `MCPManager.format_results(results, output_type)`.
 
-- `MCPConnectionError`: Raised when connection to the MCP server fails
+When a tool returns structured data, its payload arrives as a JSON string in the `result` field:
 
-- `MCPExecutionError`: Raised when tool execution fails
+```python
+import json
 
-## Best Practices
+payload = json.loads(results[0]["result"])
+```
 
-1. Always handle potential exceptions when using these functions
-2. Use connection objects for authenticated requests
-3. Consider using the async versions for better performance in async applications
-4. Use appropriate output types based on your needs
-5. When working with multiple servers, adjust max_workers based on your system's capabilities
+## Authentication
 
+```python
+from swarms.schemas.mcp_schemas import MCPConnection, MCPOAuthConfig
+
+# API key
+MCPManager(mcp_url="https://api.example.com/mcp", api_key="sk-...")
+
+# Bearer token
+MCPManager(mcp_url="https://api.example.com/mcp", authorization_token="ey...")
+
+# Full control, including custom headers and timeouts
+MCPManager(mcp_config=MCPConnection(
+    url="https://api.example.com/mcp",
+    headers={"X-Tenant": "acme"},
+    transport="streamable_http",
+    timeout=20,
+))
+
+# Secrets read from the environment at connection time
+MCPConnection(url="https://api.example.com/mcp", api_key="env:EXAMPLE_MCP_KEY")
+
+# OAuth 2.1
+MCPConnection(url="https://api.example.com/mcp", oauth=MCPOAuthConfig(
+    grant_type="client_credentials",
+    client_id="example-client",
+    client_secret="env:EXAMPLE_CLIENT_SECRET",
+    token_url="https://api.example.com/oauth/token",
+))
+```
+
+Different servers may use different authentication on the same manager — pass a mix of URLs and `MCPConnection` objects to `mcp_urls`.
+
+## Managing servers and caches
+
+| Method | Description |
+|---|---|
+| `enabled` | Property — `True` when at least one server is configured |
+| `add_server(server)` | Register another server and invalidate the tool cache |
+| `clear_cache()` | Drop cached tool schemas and routing information |
+| `clear_auth_cache()` | Forget in-process OAuth providers and cached tokens |
+| `to_dict()` | Serializable, secret-redacted view of the configuration |
+
+## Error handling
+
+Failures raise the agent MCP exceptions from `swarms.schemas.agent_mcp_errors`:
+
+| Exception | Raised when |
+|---|---|
+| `AgentMCPConnectionError` | The server cannot be reached, or authentication fails |
+| `AgentMCPToolError` | A tool call fails on the server |
+| `AgentMCPError` | Base class for both |
+
+Operations retry with backoff up to `retry_attempts` times before raising.
+
+## Migrating from mcp_client_tools
+
+| Removed function | Replacement |
+|---|---|
+| `aget_mcp_tools(server_path=URL)` | `await MCPManager(mcp_url=URL).aget_tools()` |
+| `get_mcp_tools_sync(server_path=URL)` | `MCPManager(mcp_url=URL).get_tools()` |
+| `get_tools_for_multiple_mcp_servers(urls=URLS)` | `MCPManager(mcp_urls=URLS).get_tools()` |
+| `execute_tool_call_simple(response=R, server_path=URL)` | `await MCPManager(mcp_url=URL).aexecute_tool_calls(R)` |
+| `execute_multiple_tools_on_multiple_mcp_servers(responses=R, urls=URLS)` | `await MCPManager(mcp_urls=URLS).aexecute_tool_calls(R)` |
+| `MCPError`, `MCPConnectionError`, `MCPToolError`, `MCPExecutionError` | `AgentMCPError`, `AgentMCPConnectionError`, `AgentMCPToolError` |
+
+Two behavioral differences worth noting:
+
+1. **`output_type` on tool fetching is gone.** `get_tools_for_multiple_mcp_servers` accepted the argument but never applied it. Use `format="openai"` or `format="mcp"` to choose the schema shape.
+2. **Execution results are wrapped.** The old functions returned the raw MCP `CallToolResult` dump. `execute_tool_calls` returns one envelope per call — `{"tool", "server", "arguments", "is_error", "result"}` — so results from several servers stay attributable. Read `result["result"]` for the tool's own payload.
+
+## Best practices
+
+1. Build one `MCPManager` and reuse it — tool schemas are cached per instance.
+2. Prefer `mcp_urls` over several managers when an agent needs multiple servers; routing is then automatic.
+3. Keep secrets out of source with `env:NAME` indirection in `MCPConnection`.
+4. Use the async methods inside an event loop; the sync ones are safe everywhere else, including from within a running loop.
+5. Check `is_error` on each result envelope rather than assuming success.
+
+## Related
+
+- [Examples](https://github.com/kyegomez/swarms/tree/master/examples/mcp) — runnable agent, server, and client examples
+- [MCP schemas](https://github.com/kyegomez/swarms/blob/master/swarms/schemas/mcp_schemas.py) — `MCPConnection`, `MCPOAuthConfig`

@@ -8,6 +8,12 @@ from loguru import logger as loguru_logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.swarm_id import swarm_id
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_error,
+    capture_init,
+    trace_run,
+)
 from swarms.utils.formatter import formatter
 from swarms.utils.get_cpu_cores import get_cpu_cores
 from swarms.utils.history_output_formatter import (
@@ -122,6 +128,9 @@ class ConcurrentWorkflow:
         # Setup autosave workspace if enabled
         if self.autosave:
             self._setup_autosave()
+
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
 
     def fix_agents(self):
         """
@@ -334,7 +343,7 @@ class ConcurrentWorkflow:
 
                     raise
 
-            with concurrent.futures.ThreadPoolExecutor(
+            with ContextThreadPoolExecutor(
                 max_workers=max_workers
             ) as executor:
                 futures = [
@@ -402,7 +411,7 @@ class ConcurrentWorkflow:
 
         max_workers = int(get_cpu_cores() * 0.95)
 
-        with concurrent.futures.ThreadPoolExecutor(
+        with ContextThreadPoolExecutor(
             max_workers=max_workers
         ) as executor:
             future_to_agent = {
@@ -429,6 +438,13 @@ class ConcurrentWorkflow:
                 except Exception as e:
                     if self.on_error == "raise":
                         raise
+                    # Track the swallowed per-agent failure so it isn't lost.
+                    capture_error(
+                        e,
+                        self,
+                        name="ConcurrentWorkflow.agent_error",
+                        agent=getattr(agent, "agent_name", None),
+                    )
                     logger.error(
                         f"Agent {agent.agent_name} failed: {str(e)}"
                     )
@@ -542,6 +558,9 @@ class ConcurrentWorkflow:
         except Exception as e:
             logger.error(f"Cleanup failed: {str(e)}")
 
+    @trace_run(
+        "ConcurrentWorkflow.run", input_params=("task", "img", "imgs")
+    )
     def run(
         self,
         task: str,

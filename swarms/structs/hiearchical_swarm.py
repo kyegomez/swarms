@@ -5,7 +5,7 @@ import os
 import queue as _queue
 import threading
 import traceback
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
@@ -37,6 +37,11 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.output_types import OutputType
 from swarms.utils.swarm_autosave import get_swarm_workspace_dir
 from swarms.utils.workspace_utils import get_workspace_dir
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
 
 
 class HierarchicalOrder(BaseModel):
@@ -327,6 +332,9 @@ class HierarchicalSwarm:
             self._setup_autosave()
 
         self.initialize_swarm()
+
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
 
     def initialize_swarm(self):
         if self.interactive:
@@ -813,6 +821,10 @@ class HierarchicalSwarm:
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
 
+    @trace_run(
+        "HierarchicalSwarm.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(
         self,
         task: Optional[str] = None,
@@ -1352,7 +1364,7 @@ class HierarchicalSwarm:
         if self.parallel_execution:
             max_workers = self._resolve_max_workers()
             futures_map = {}
-            with ThreadPoolExecutor(
+            with ContextThreadPoolExecutor(
                 max_workers=max_workers
             ) as executor:
                 for index, order in enumerate(orders):

@@ -7,6 +7,7 @@ from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
+from swarms.telemetry.otel import capture_init, trace_run
 
 
 # Pre-built system prompts for debate agents
@@ -189,6 +190,9 @@ class DebateWithJudge:
                 f"Judge Agent: {self.judge_agent.agent_name}"
             )
 
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
+
     def _configure_agents(
         self,
         pro_agent: Optional[Agent],
@@ -296,6 +300,10 @@ class DebateWithJudge:
             verbose=self.verbose,
         )
 
+    @trace_run(
+        "DebateWithJudge.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(self, task: str) -> Union[str, List, dict]:
         """
         Execute the debate with judge refinement process.

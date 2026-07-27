@@ -21,6 +21,11 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
 
 
 class HeavySwarm(SerializableMixin):
@@ -175,6 +180,9 @@ class HeavySwarm(SerializableMixin):
 
         self.reliability_check()
 
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
+
     def show_swarm_info(self):
         """
         Display comprehensive swarm configuration information in a rich dashboard format.
@@ -266,6 +274,10 @@ class HeavySwarm(SerializableMixin):
                 title="Reliability Check",
             )
 
+    @trace_run(
+        "HeavySwarm.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(self, task: str, img: Optional[str] = None) -> str:
         """
         Execute the complete HeavySwarm orchestration flow with multi-loop functionality.
@@ -674,7 +686,7 @@ class HeavySwarm(SerializableMixin):
 
         # Execute agents in parallel using ThreadPoolExecutor
         results = {}
-        with concurrent.futures.ThreadPoolExecutor(
+        with ContextThreadPoolExecutor(
             max_workers=self.max_workers
         ) as executor:
             # Submit all agent tasks
@@ -1021,7 +1033,7 @@ class HeavySwarm(SerializableMixin):
                 ]
 
             # Execute agents in parallel
-            with concurrent.futures.ThreadPoolExecutor(
+            with ContextThreadPoolExecutor(
                 max_workers=self.max_workers
             ) as executor:
                 # Submit all agent tasks

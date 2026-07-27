@@ -1,12 +1,10 @@
 import asyncio
 import json
 import os
-import random
 import threading
 import time
 import traceback
 import uuid
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
 from typing import (
     Any,
@@ -31,14 +29,27 @@ from litellm.exceptions import (
 from litellm.utils import (
     get_max_tokens,
     supports_function_calling,
-    supports_parallel_function_calling,
-    supports_vision,
 )
 from loguru import logger
 from pydantic import BaseModel
 
 from swarms.agents.ape_agent import auto_generate_prompt
+from swarms.agents.agent_marketplace_handler import (
+    AgentMarketplaceHandler,
+)
 from swarms.agents.context_compressor import ContextCompressor
+from swarms.agents.llm_manager import LLMManager
+from swarms.agents.skills_manager import SkillsManager
+from swarms.schemas.agent_errors import (  # noqa: F401 — re-exported for backwards compatibility
+    AgentError,
+    AgentInitializationError,
+    AgentLLMError,
+    AgentLLMInitializationError,
+    AgentMemoryError,
+    AgentRunError,
+    AgentToolError,
+    AgentToolExecutionError,
+)
 from swarms.utils.workspace_utils import get_workspace_dir
 from swarms.artifacts.main_artifact import Artifact
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
@@ -52,14 +63,13 @@ from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
 )
 from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
 from swarms.prompts.safety_prompt import SAFETY_PROMPT
-from swarms.schemas.agent_mcp_errors import (
-    AgentMCPConnectionError,
-    AgentMCPToolError,
-)
 from swarms.schemas.base_schemas import (
     AgentChatCompletionResponse,
 )
-from swarms.schemas.mcp_schemas import MCPConnection
+from swarms.schemas.mcp_schemas import (
+    MCPConnection,
+    MCPOAuthConfig,
+)
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.autonomous_loop_utils import (
     MAX_PLANNING_ATTEMPTS,
@@ -84,7 +94,6 @@ from swarms.structs.autonomous_loop_utils import (
     update_file_tool,
 )
 from swarms.structs.conversation import Conversation
-from swarms.structs.dynamic_skills_loader import DynamicSkillsLoader
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
@@ -95,21 +104,19 @@ from swarms.structs.transforms import (
     TransformConfig,
     handle_transforms,
 )
-from swarms.telemetry.main import log_agent_data
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_error,
+    capture_init,
+    log_agent_data,
+    trace_run,
+)
 from swarms.tools.base_tool import BaseTool
 from swarms.tools.handoffs_tool import handoff_task
 from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
-from swarms.tools.mcp_client_tools import (
-    execute_multiple_tools_on_multiple_mcp_servers_sync,
-    execute_tool_call_simple,
-    get_mcp_tools_sync,
-    get_tools_for_multiple_mcp_servers,
-)
+from swarms.tools.mcp_manager import MCPManager
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
-)
-from swarms.utils.fetch_prompts_marketplace import (
-    fetch_prompts_from_marketplace,
 )
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
@@ -124,9 +131,6 @@ from swarms.utils.index import (
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
-from swarms.utils.swarms_marketplace_utils import (
-    add_prompt_to_marketplace,
-)
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -148,55 +152,6 @@ def agent_id():
 
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
-
-
-# Agent Exceptions
-class AgentError(Exception):
-    """Base class for all agent-related exceptions."""
-
-    pass
-
-
-class AgentInitializationError(AgentError):
-    """Exception raised when the agent fails to initialize properly. Please check the configuration and parameters."""
-
-    pass
-
-
-class AgentRunError(AgentError):
-    """Exception raised when the agent encounters an error during execution. Ensure that the task and environment are set up correctly."""
-
-    pass
-
-
-class AgentLLMError(AgentError):
-    """Exception raised when there is an issue with the language model (LLM). Verify the model's availability and compatibility."""
-
-    pass
-
-
-class AgentToolError(AgentError):
-    """Exception raised when the agent fails to utilize a tool. Check the tool's configuration and availability."""
-
-    pass
-
-
-class AgentMemoryError(AgentError):
-    """Exception raised when the agent encounters a memory-related issue. Ensure that memory resources are properly allocated and accessible."""
-
-    pass
-
-
-class AgentLLMInitializationError(AgentError):
-    """Exception raised when the LLM fails to initialize properly. Please check the configuration and parameters."""
-
-    pass
-
-
-class AgentToolExecutionError(AgentError):
-    """Exception raised when the agent fails to execute a tool. Check the tool's configuration and availability."""
-
-    pass
 
 
 class Agent:
@@ -282,6 +237,27 @@ class Agent:
                 "prompt_cache_key" (str): OpenAI routing hint for higher cache hit rates.
                 "prompt_cache_retention" (str): OpenAI cache TTL ("in_memory" | "24h").
             Defaults to None.
+        mcp_url (Union[str, MCPConnection, dict]): A single MCP server. Pass a URL string for
+            an unauthenticated server, or an MCPConnection/dict to configure auth, transport,
+            headers and timeouts.
+        mcp_urls (List[Union[str, MCPConnection, dict]]): Several MCP servers. Tools from every
+            server are merged and each tool call is routed back to the server that owns it.
+        mcp_config (Union[MCPConnection, dict]): A single MCP server given as a connection object.
+        mcp_configs (List[Union[MCPConnection, dict]]): Several MCP servers given as connection objects.
+        mcp_api_key (str): API key applied to every MCP server that does not define its own.
+            Sent as "Authorization: Bearer <key>" by default; override the header or prefix
+            per-server with MCPConnection(api_key_header=..., api_key_prefix=...). Supports
+            "env:MY_VAR" / "${MY_VAR}" indirection so secrets stay out of code.
+        mcp_authorization_token (str): Bearer token applied to every MCP server that does not
+            define its own. Equivalent to mcp_api_key with the default header/prefix.
+        mcp_oauth (Union[MCPOAuthConfig, dict]): OAuth 2.1 settings applied to every MCP server
+            without its own. Supports the interactive authorization-code flow (PKCE + dynamic
+            client registration, tokens cached on disk), the headless client_credentials grant,
+            and pre-issued access tokens.
+        mcp_headers (Dict[str, str]): Extra headers merged into every MCP request.
+        mcp_transport (str): Force a transport for every MCP server: "streamable_http", "sse",
+            "stdio", or "auto". Defaults to auto-detection from the URL.
+        mcp_timeout (int): Request timeout in seconds for every MCP server. Defaults to 30.
 
     Methods:
         run: Run the agent
@@ -392,7 +368,7 @@ class Agent:
         list_base_models: Optional[List[BaseModel]] = None,
         rules: str = None,  # type: ignore
         planning_prompt: Optional[str] = None,
-        max_tokens: int = 4096,
+        max_tokens: int = 16000,
         temperature: float = 0.5,
         tags: Optional[List[str]] = None,
         auto_generate_prompt: bool = False,
@@ -405,12 +381,25 @@ class Agent:
         role: agent_roles = "worker",
         print_on: bool = True,
         tools_list_dictionary: Optional[List[Dict[str, Any]]] = [],
-        mcp_url: Optional[Union[str, MCPConnection]] = None,
-        mcp_urls: List[str] = None,
+        mcp_url: Optional[Union[str, MCPConnection, Dict]] = None,
+        mcp_urls: Optional[
+            List[Union[str, MCPConnection, Dict]]
+        ] = None,
         react_on: bool = False,
         safety_prompt_on: bool = False,
         random_models_on: bool = False,
-        mcp_config: Optional[MCPConnection] = None,
+        mcp_config: Optional[Union[MCPConnection, Dict]] = None,
+        mcp_configs: Optional[
+            List[Union[MCPConnection, Dict]]
+        ] = None,
+        mcp_api_key: Optional[str] = None,
+        mcp_authorization_token: Optional[str] = None,
+        mcp_oauth: Optional[Union[MCPOAuthConfig, Dict]] = None,
+        mcp_headers: Optional[Dict[str, str]] = None,
+        mcp_transport: Optional[
+            Literal["streamable_http", "sse", "stdio", "auto"]
+        ] = None,
+        mcp_timeout: Optional[int] = None,
         top_p: Optional[float] = None,
         llm_base_url: Optional[str] = None,
         llm_api_key: Optional[str] = None,
@@ -421,7 +410,14 @@ class Agent:
         dynamic_context_window: bool = True,
         show_tool_execution_output: bool = True,
         reasoning_effort: Optional[
-            Literal["low", "medium", "high", "xhigh", "ultra"]
+            Literal[
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "ultra",
+                "max",
+            ]
         ] = "medium",
         thinking_tokens: int = 1024,
         reasoning_enabled: bool = False,
@@ -440,8 +436,7 @@ class Agent:
     ):
         # super().__init__(*args, **kwargs)
         self.id = id
-        self.skills_dir = skills_dir
-        self.skills_metadata = []
+        self.skills = SkillsManager(skills_dir=skills_dir)
         self.selected_tools = selected_tools
         self.llm = llm
         self.max_loops = max_loops
@@ -510,6 +505,13 @@ class Agent:
         self.safety_prompt_on = safety_prompt_on
         self.random_models_on = random_models_on
         self.mcp_config = mcp_config
+        self.mcp_configs = mcp_configs
+        self.mcp_api_key = mcp_api_key
+        self.mcp_authorization_token = mcp_authorization_token
+        self.mcp_oauth = mcp_oauth
+        self.mcp_headers = mcp_headers
+        self.mcp_transport = mcp_transport
+        self.mcp_timeout = mcp_timeout
         self.top_p = top_p
         self.llm_base_url = llm_base_url
         self.llm_api_key = llm_api_key
@@ -528,6 +530,25 @@ class Agent:
         self.mode = mode
         self.publish_to_marketplace = publish_to_marketplace
         self.marketplace_prompt_id = marketplace_prompt_id
+
+        # All MCP (Model Context Protocol) behaviour — connection handling,
+        # API key / bearer token / OAuth authentication, transport selection,
+        # tool discovery and tool execution — lives in MCPManager.
+        self.mcp_manager = MCPManager(
+            mcp_url=self.mcp_url,
+            mcp_urls=self.mcp_urls,
+            mcp_config=self.mcp_config,
+            mcp_configs=self.mcp_configs,
+            api_key=self.mcp_api_key,
+            authorization_token=self.mcp_authorization_token,
+            oauth=self.mcp_oauth,
+            headers=self.mcp_headers,
+            transport=self.mcp_transport,
+            timeout=self.mcp_timeout,
+            agent_name=self.agent_name,
+            verbose=self.verbose,
+            retry_attempts=self.tool_retry_attempts,
+        )
 
         # self.context_length = (
         #     get_single_model_max_tokens(model_name)
@@ -571,6 +592,9 @@ class Agent:
         # Async subagent support
         self._subagent_registry = None
 
+        # Owns fetching prompts from, and publishing prompts to, the Swarms Marketplace
+        self.marketplace = AgentMarketplaceHandler(agent=self)
+
         # Load prompt from marketplace if marketplace_prompt_id is provided
         if self.marketplace_prompt_id:
             self._load_prompt_from_marketplace()
@@ -593,6 +617,10 @@ class Agent:
         # If fallback_models is provided, use the first model as the primary model
         if self.fallback_models and not self.model_name:
             self.model_name = self.fallback_models[0]
+
+        # Owns model rotation, LiteLLM construction, and LLM invocation.
+        # Reads config off this agent, so it must be built after config is set.
+        self.llm_manager = LLMManager(agent=self)
 
         # self.init_handling()
         self.setup_config()
@@ -664,106 +692,44 @@ class Agent:
         if self.publish_to_marketplace is True:
             self.handle_publish_to_marketplace()
 
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
+
     def handle_publish_to_marketplace(self):
-        # Join tags and capabilities into a single string
-        tags_and_capabilities = ", ".join(
-            self.tags + self.capabilities
-            if self.tags and self.capabilities
-            else None
-        )
+        """
+        Publish this agent's prompt and metadata to the Swarms Marketplace.
 
-        if self.use_cases is None:
-            raise AgentInitializationError(
-                "Use cases are required when publishing to the marketplace. The schema is a list of dictionaries with 'title' and 'description' keys."
-            )
+        Requires `use_cases` to be set and SWARMS_API_KEY to be present.
+        """
+        return self.marketplace.publish()
 
-        add_prompt_to_marketplace(
-            name=self.agent_name,
-            prompt=self.short_memory.get_str(),
-            description=self.agent_description,
-            tags=tags_and_capabilities,
-            category="research",
-            use_cases=(self.use_cases if self.use_cases else None),
-        )
+    @property
+    def skills_dir(self) -> Optional[str]:
+        """Directory the agent loads Agent Skills from."""
+        return self.skills.skills_dir
+
+    @skills_dir.setter
+    def skills_dir(self, skills_dir: Optional[str]) -> None:
+        self.skills.set_skills_dir(skills_dir)
+
+    @property
+    def skills_metadata(self) -> List[Dict[str, str]]:
+        """Metadata for the skills loaded so far."""
+        return self.skills.metadata
+
+    @skills_metadata.setter
+    def skills_metadata(self, metadata: List[Dict[str, str]]) -> None:
+        self.skills.metadata = metadata
 
     def handle_skills(self, task: Optional[str] = None):
         """
-        Handle skills loading based on task similarity.
+        Load Agent Skills into the system prompt.
 
         Args:
             task: Optional task description. If provided, loads skills dynamically
                   based on similarity to the task. If not provided, loads all skills statically.
         """
-        if task is not None:
-            # Dynamic skills loading based on task
-            self._load_dynamic_skills_for_task(task)
-        else:
-            # Static skills loading (original behavior)
-            self._load_static_skills()
-
-    def _load_static_skills(self):
-        """Load all skills statically (original behavior)."""
-        skills_prompt = (
-            "\n\n# Available Skills\n\n"
-            "You have access to the following specialized skills. "
-            "Follow their instructions when relevant:\n\n"
-        )
-
-        self.system_prompt += skills_prompt
-
-        self.skills_metadata = self.load_skills_metadata(
-            self.skills_dir
-        )
-
-        if self.skills_metadata:
-            self.system_prompt += self._build_skills_prompt(
-                self.skills_metadata
-            )
-            logger.info(
-                f"Loaded {len(self.skills_metadata)} skills from {self.skills_dir}"
-            )
-
-    def _load_dynamic_skills_for_task(self, task: str):
-        """
-        Load skills dynamically based on task similarity.
-
-        Args:
-            task: The task description to match skills against
-        """
-        # Initialize the dynamic skills loader if not already done
-        if (
-            not hasattr(self, "dynamic_skills_loader")
-            or self.dynamic_skills_loader is None
-        ):
-            self.dynamic_skills_loader = DynamicSkillsLoader(
-                self.skills_dir
-            )
-
-        logger.info(
-            f"Loading dynamic skills for task: {task[:100]}..."
-        )
-
-        relevant_skills = (
-            self.dynamic_skills_loader.load_relevant_skills(task)
-        )
-
-        if relevant_skills:
-            skills_prompt = (
-                "\n\n# Available Skills\n\n"
-                "You have access to the following specialized skills. "
-                "Follow their instructions when relevant:\n\n"
-            )
-            self.system_prompt += skills_prompt
-            self.system_prompt += self._build_skills_prompt(
-                relevant_skills
-            )
-            logger.info(
-                f"Dynamically loaded {len(relevant_skills)} relevant skills for task: {task[:100]}..."
-            )
-        else:
-            logger.info(
-                f"No relevant skills found for task: {task[:100]}..."
-            )
+        self.system_prompt += self.skills.prompt_for_task(task)
 
     def _get_agent_workspace_dir(self) -> str:
         """
@@ -1101,149 +1067,39 @@ class Agent:
         Returns:
             LiteLLM: The initialized LiteLLM instance
         """
+        self.llm = self.llm_manager.build(*args, **kwargs)
+        return self.llm
 
-        if self.model_name is None:
-            self.model_name = "gpt-5.4"
-
-        # Use current model (which may be a fallback) only if fallbacks are configured
-        if self.fallback_models:
-            current_model = self.get_current_model()
-        else:
-            current_model = self.model_name
-
-        # Determine if parallel tool calls should be enabled
-        if exists(self.tools) and len(self.tools) >= 2:
-            parallel_tool_calls = True
-        elif exists(self.mcp_url) or exists(self.mcp_urls):
-            parallel_tool_calls = True
-        elif exists(self.mcp_config):
-            parallel_tool_calls = True
-        else:
-            parallel_tool_calls = False
-
-        try:
-            # Base configuration that's always included
-            common_args = {
-                "model_name": current_model,
-                "temperature": self.temperature,
-                "max_tokens": self.max_tokens,
-                "system_prompt": self.system_prompt,
-                "stream": self.streaming_on,
-                "top_p": self.top_p,
-                "retries": self.retry_attempts,
-                "reasoning_effort": self.reasoning_effort,
-                "thinking_tokens": self.thinking_tokens,
-                "reasoning_enabled": self.reasoning_enabled,
-                "agent_name": self.agent_name,
-                "prompt_caching": self.prompt_caching,
-                "cache_config": self.cache_config,
-            }
-
-            # Initialize tools_list_dictionary, if applicable
-            tools_list = []
-
-            # Append tools from different sources
-            if self.tools_list_dictionary is not None:
-                tools_list.extend(self.tools_list_dictionary)
-
-            if exists(self.mcp_url) or exists(self.mcp_urls):
-                if self.verbose:
-                    logger.info(
-                        f"Adding MCP tools to memory for {self.agent_name}"
-                    )
-                # tools_list.extend(self.add_mcp_tools_to_memory())
-                mcp_tools = self.add_mcp_tools_to_memory()
-
-                if self.verbose:
-                    logger.info(f"MCP tools: {mcp_tools}")
-
-                tools_list.extend(mcp_tools)
-
-            # Additional arguments for LiteLLM initialization
-            additional_args = {}
-
-            if self.llm_args is not None:
-                additional_args.update(self.llm_args)
-
-            if tools_list:
-                additional_args.update(
-                    {
-                        "tools_list_dictionary": tools_list,
-                        "tool_choice": "auto",
-                        "parallel_tool_calls": parallel_tool_calls,
-                    }
-                )
-
-            if exists(self.mcp_url) or exists(self.mcp_urls):
-                additional_args.update({"mcp_call": True})
-
-            # if args or kwargs are provided, then update the additional_args
-            if args or kwargs:
-                # Handle keyword arguments first
-                if kwargs:
-                    additional_args.update(kwargs)
-
-                # Handle positional arguments (args)
-                # These could be additional configuration parameters
-                # that should be merged into the additional_args
-                if args:
-                    # If args contains a dictionary, merge it directly
-                    if len(args) == 1 and isinstance(args[0], dict):
-                        additional_args.update(args[0])
-                    else:
-                        # For other types of args, log them for debugging
-                        # and potentially handle them based on their type
-                        logger.debug(
-                            f"Received positional args in llm_handling: {args}"
-                        )
-                        # You can add specific handling for different arg types here
-                        # For now, we'll add them as additional configuration
-                        additional_args.update(
-                            {"additional_args": args}
-                        )
-
-            # Final LiteLLM initialization with combined arguments
-            self.llm = LiteLLM(**{**common_args, **additional_args})
-
-            return self.llm
-        except AgentLLMInitializationError as e:
-            logger.error(
-                f"AgentLLMInitializationError: Agent Name: {self.agent_name} Error in llm_handling: {e} Your current configuration is not supported. Please check the configuration and parameters. Traceback: {traceback.format_exc()}"
-            )
-            return None
-
-    def add_mcp_tools_to_memory(self):
+    @property
+    def mcp_enabled(self) -> bool:
         """
-        Adds MCP tools to the agent's short-term memory.
+        Whether this agent has at least one MCP server configured.
 
-        This function checks for either a single MCP URL or multiple MCP URLs and adds the available tools
-        to the agent's memory. The tools are listed in JSON format.
+        Backed by the agent's :class:`MCPManager`, which normalizes
+        ``mcp_url``, ``mcp_urls``, ``mcp_config`` and ``mcp_configs`` into a
+        single list of connections.
+        """
+        manager = getattr(self, "mcp_manager", None)
+        return manager is not None and manager.enabled
+
+    def add_mcp_tools_to_memory(self) -> List[Dict[str, Any]]:
+        """
+        Fetch the tool schemas exposed by the configured MCP servers.
+
+        Connection handling, authentication (API key, bearer token, or OAuth)
+        and transport selection are all delegated to :class:`MCPManager`. The
+        returned schemas are OpenAI function-calling definitions, ready to be
+        passed straight to the LLM.
+
+        Returns:
+            List[Dict[str, Any]]: OpenAI tool schemas from every MCP server.
 
         Raises:
-            Exception: If there's an error accessing the MCP tools
+            AgentMCPConnectionError: If no server could be reached.
         """
         try:
-            # Determine which MCP configuration to use
-            if exists(self.mcp_url):
-                tools = get_mcp_tools_sync(server_path=self.mcp_url)
-            elif exists(self.mcp_config):
-                tools = get_mcp_tools_sync(connection=self.mcp_config)
-            elif exists(self.mcp_urls):
-                logger.info(
-                    f"Getting MCP tools for multiple MCP servers for {self.agent_name}"
-                )
-                tools = get_tools_for_multiple_mcp_servers(
-                    urls=self.mcp_urls,
-                )
+            tools = self.mcp_manager.get_tools()
 
-                if self.verbose:
-                    logger.info(f"MCP tools: {tools}")
-            else:
-                raise AgentMCPConnectionError(
-                    "mcp_url must be either a string URL or MCPConnection object"
-                )
-
-            # Print success message if any MCP configuration exists
             if self.print_on:
                 self.pretty_print(
                     f"✨ [SYSTEM] Successfully integrated {len(tools)} MCP tools into agent: {self.agent_name} | Status: ONLINE | Time: {time.strftime('%H:%M:%S')} ✨",
@@ -1251,7 +1107,7 @@ class Agent:
                 )
 
             return tools
-        except AgentMCPConnectionError as e:
+        except Exception as e:
             logger.error(
                 f"Error Adding MCP Tools to Agent: {self.agent_name} Error: {e} Traceback: {traceback.format_exc()}"
             )
@@ -1261,12 +1117,9 @@ class Agent:
         """
         Load a prompt from the Swarms marketplace using the marketplace_prompt_id.
 
-        This method fetches the prompt content from the Swarms marketplace API
-        and sets it as the agent's system prompt. If the agent_name and agent_description
-        are not already set, they will be populated from the marketplace prompt data.
-
-        The method uses the fetch_prompts_from_marketplace utility function to retrieve
-        the prompt data, which includes the prompt name, description, and content.
+        Appends the marketplace prompt to this agent's system prompt and
+        back-fills `agent_name` / `agent_description` when they are still at
+        their defaults.
 
         Raises:
             ValueError: If the prompt cannot be found in the marketplace.
@@ -1276,51 +1129,7 @@ class Agent:
             Requires the SWARMS_API_KEY environment variable to be set for
             authenticated API access.
         """
-        try:
-            logger.info(
-                f"Loading prompt from marketplace with ID: {self.marketplace_prompt_id}"
-            )
-
-            result = fetch_prompts_from_marketplace(
-                prompt_id=self.marketplace_prompt_id,
-                return_params_on=True,
-            )
-
-            if result is None:
-                raise ValueError(
-                    f"Prompt with ID '{self.marketplace_prompt_id}' not found in the marketplace. "
-                    "Please verify the prompt ID is correct."
-                )
-
-            name, description, prompt = result
-
-            # Set the system prompt from the marketplace
-            if prompt:
-                self.system_prompt += prompt
-                logger.info(
-                    f"Successfully loaded prompt '{name}' from marketplace"
-                )
-
-            # Optionally set agent name and description if not already set
-            if name and self.agent_name == "swarm-worker-01":
-                self.agent_name = name
-                self.name = name
-
-            if description and self.agent_description is None:
-                self.agent_description = description
-                self.description = description
-
-            if self.print_on:
-                self.pretty_print(
-                    f"[Marketplace] Loaded prompt '{name}' from Swarms Marketplace",
-                    loop_count=0,
-                )
-
-        except Exception as e:
-            logger.error(
-                f"Error loading prompt from marketplace: {e} Traceback: {traceback.format_exc()}"
-            )
-            raise
+        self.marketplace.load_prompt()
 
     def setup_config(self):
         # The max_loops will be set dynamically if the dynamic_loop
@@ -1348,38 +1157,9 @@ class Agent:
         Returns:
             bool: True if model supports vision and image is provided, False otherwise.
         """
-
-        # Only check vision support if an image is provided
-        if img is not None:
-            out = supports_vision(self.model_name)
-            if out is False:
-                logger.error(
-                    f"[Agent: {self.agent_name}] Model '{self.model_name}' does not support vision capabilities. "
-                    f"Image input was provided: {img[:100]}{'...' if len(img) > 100 else ''}. "
-                    f"Please use a vision-enabled model."
-                )
-
-        if self.tools_list_dictionary is not None:
-            out = supports_function_calling(self.model_name)
-            if out is False:
-                logger.error(
-                    f"[Agent: {self.agent_name}] Model '{self.model_name}' does not support function calling capabilities. "
-                    f"tools_list_dictionary is set: {self.tools_list_dictionary}. "
-                    f"Please use a function calling-enabled model."
-                )
-
-        if self.tools is not None:
-            if len(self.tools) > 2:
-                out = supports_parallel_function_calling(
-                    self.model_name
-                )
-                if out is False:
-                    logger.error(
-                        f"[Agent: {self.agent_name}] Model '{self.model_name}' does not support parallel function calling capabilities. "
-                        f"Please use a parallel function calling-enabled model."
-                    )
-
-        return None
+        return self.llm_manager.check_model_supports_utilities(
+            img=img
+        )
 
     def check_if_no_prompt_then_autogenerate(self, task: str = None):
         """
@@ -1442,22 +1222,10 @@ class Agent:
 
     def dynamic_temperature(self):
         """
-        1. Check the self.llm object for the temperature
-        2. If the temperature is not present, then use the default temperature
-        3. If the temperature is present, then dynamically change the temperature
-        4. for every loop you can randomly change the temperature on a scale from 0.0 to 1.0
+        Randomly reset the LLM's temperature on a 0.0-1.0 scale between loops.
+        Falls back to 0.5 when the LLM exposes no temperature attribute.
         """
-        try:
-            if hasattr(self.llm, "temperature"):
-                # Randomly change the temperature attribute of self.llm object
-                self.llm.temperature = random.uniform(0.0, 1.0)
-            else:
-                # Use a default temperature
-                self.llm.temperature = 0.5
-        except Exception as error:
-            logger.error(
-                f"Error dynamically changing temperature: {error}"
-            )
+        self.llm_manager.randomize_temperature()
 
     def print_dashboard(self):
         """
@@ -1465,7 +1233,7 @@ class Agent:
         Uses square brackets instead of emojis for section headers and bullet points.
         """
         tools_activated = True if self.tools is not None else False
-        mcp_activated = True if self.mcp_url is not None else False
+        mcp_activated = self.mcp_enabled
         formatter.print_panel(
             f"""
             
@@ -1815,11 +1583,7 @@ class Agent:
                             )
 
                         # Handle MCP tools
-                        if (
-                            exists(self.mcp_url)
-                            or exists(self.mcp_config)
-                            or exists(self.mcp_urls)
-                        ):
+                        if self.mcp_enabled:
                             # Only handle MCP tools if response is not None
                             if response is not None:
                                 self.mcp_tool_handling(
@@ -1845,6 +1609,15 @@ class Agent:
                         AuthenticationError,
                         Exception,
                     ) as e:
+
+                        # Track the LLM/generation error via telemetry — the
+                        # retry loop swallows it, so capture_run never sees it.
+                        capture_error(
+                            e,
+                            self,
+                            name="Agent.llm_error",
+                            loop=loop_count,
+                        )
 
                         if self.autosave is True:
                             log_agent_data(self.to_dict())
@@ -3588,7 +3361,7 @@ Subtask Breakdown:
 
             # Reinitialize executor if needed
             # if not hasattr(self, "executor") or self.executor is None:
-            with ThreadPoolExecutor(
+            with ContextThreadPoolExecutor(
                 max_workers=os.cpu_count()
             ) as executor:
                 self.executor = executor
@@ -3701,7 +3474,7 @@ Subtask Breakdown:
             raise error
 
     def get_llm_parameters(self):
-        return str(vars(self.llm))
+        return self.llm_manager.get_parameters()
 
     def update_system_prompt(self, system_prompt: str):
         """Upddate the system message"""
@@ -4023,96 +3796,18 @@ Subtask Breakdown:
     ):
         """Yield every chunk unchanged while assembling delta.tool_calls fragments.
 
-        Chunks are always forwarded so callers (print_streaming_panel, callback loops,
-        etc.) can handle content deltas as normal.  Tool-call-only chunks carry no
-        delta.content so existing display code skips them harmlessly.
-
-        After the generator is fully consumed, tool_calls_out is populated with the
-        assembled tool call list in the same format returned by output_for_tools, so
-        the auto loop can handle it without any changes.
+        See :meth:`swarms.agents.llm_manager.LLMManager.stream_with_tool_collection`.
         """
-        accumulator: dict = {}
-        for chunk in stream:
-            if hasattr(chunk, "choices") and chunk.choices:
-                delta = chunk.choices[0].delta
-                for tc in getattr(delta, "tool_calls", None) or []:
-                    idx = tc.index
-                    if idx not in accumulator:
-                        accumulator[idx] = {
-                            "id": "",
-                            "type": "function",
-                            "function": {"name": "", "arguments": ""},
-                        }
-                    if tc.id:
-                        accumulator[idx]["id"] = tc.id
-                    if tc.function:
-                        if tc.function.name:
-                            accumulator[idx]["function"][
-                                "name"
-                            ] += tc.function.name
-                        if tc.function.arguments:
-                            accumulator[idx]["function"][
-                                "arguments"
-                            ] += tc.function.arguments
-            yield chunk  # always forward; callers filter on delta.content
-
-        # Populate the output list once the stream is exhausted
-        tool_calls_out.extend(
-            accumulator[i] for i in sorted(accumulator)
+        return self.llm_manager.stream_with_tool_collection(
+            stream, tool_calls_out
         )
 
     def _extract_thinking_from_stream(self, stream):
-        """Yield only content chunks from a stream, displaying thinking chunks as a panel first.
+        """Yield content chunks, flushing any reasoning chunks to a panel first.
 
-        Anthropic (and other reasoning providers) emit thinking deltas before content
-        deltas. This generator consumes all thinking chunks silently, then flushes a
-        single thinking panel to the console, and finally yields every subsequent
-        content chunk unchanged so callers can handle them normally.
+        See :meth:`swarms.agents.llm_manager.LLMManager.extract_thinking_from_stream`.
         """
-        thinking_parts = []
-        thinking_displayed = False
-
-        for chunk in stream:
-            if not hasattr(chunk, "choices") or not chunk.choices:
-                yield chunk
-                continue
-
-            delta = chunk.choices[0].delta
-            reasoning = getattr(delta, "reasoning_content", None)
-
-            if reasoning:
-                thinking_parts.append(reasoning)
-                continue  # swallow the thinking chunk; don't pass to content stream
-
-            # First non-thinking chunk — flush accumulated thinking
-            if thinking_parts and not thinking_displayed:
-                if self.print_on:
-                    title = (
-                        f"{self.agent_name} | Thinking"
-                        if self.agent_name
-                        else "Thinking"
-                    )
-                    formatter.print_thinking_panel(
-                        "".join(thinking_parts), title=title
-                    )
-                thinking_displayed = True
-
-            yield chunk
-
-        # Edge case: stream ended with only thinking and no content chunks
-        if (
-            thinking_parts
-            and not thinking_displayed
-            and self.print_on
-        ):
-            title = (
-                f"{self.agent_name} | Thinking"
-                if self.agent_name
-                else "Thinking"
-            )
-            formatter.print_thinking_panel(
-                "".join(thinking_parts), title=title
-            )
+        return self.llm_manager.extract_thinking_from_stream(stream)
 
     def call_llm(
         self,
@@ -4126,427 +3821,43 @@ Subtask Breakdown:
         """
         Calls the LLM with the given task, handling streaming and multimodal inputs.
 
-        This method is the primary interface for calling the language model. It handles
-        three modes of operation: detailed streaming, basic streaming, and non-streaming.
-        It also supports multimodal inputs (images) and provides comprehensive error handling.
-
-        **Streaming Modes:**
-
-        1. **Detailed Streaming (stream=True):**
-           - Streams tokens with full metadata (citations, tokens used, logprobs, etc.)
-           - Each token includes: token_index, model, id, created, object, token,
-             system_fingerprint, finish_reason, citations, provider_specific_fields,
-             service_tier, obfuscation, usage, logprobs, timestamp
-           - Calls streaming_callback with token_info dictionary for each token
-           - Prints final ModelResponseStream with usage statistics
-
-        2. **Basic Streaming (streaming_on=True):**
-           - Streams tokens with formatted panels
-           - Supports three behaviors:
-             - With streaming_callback: Real-time callback for dashboard integration
-             - With print_on=False: Silent streaming (collects chunks only)
-             - With print_on=True: Displays streaming panel with collected chunks
-           - Uses formatter.print_streaming_panel for visual display
-
-        3. **Non-Streaming:**
-           - Direct call to llm.run() with task and optional image
-           - Returns complete response string
-
-        **Multimodal Support:**
-        - If img is provided, passes it to llm.run() for vision-enabled models
-        - Automatically handles image paths, URLs, data URIs, or raw base64-encoded strings
-        - Supports formats: file paths, HTTP/HTTPS URLs, data URIs (data:image/...;base64,...), and raw base64 strings
-
-        **Error Handling:**
-        - Catches AgentLLMError, BadRequestError, InternalServerError, AuthenticationError
-        - Logs errors with model name, task, and full traceback
-        - Re-raises exceptions for upstream handling
+        Delegates to :meth:`swarms.agents.llm_manager.LLMManager.call`, which
+        handles detailed streaming, panel streaming, silent streaming, and
+        non-streaming calls, plus image input and tool-call collection.
 
         Args:
-            task (str): The task or prompt to send to the LLM. This is the main
-                input that the model will process.
-            img (Optional[str]): Optional image input for multimodal processing. Can be a file path, URL,
-                data URI (data:image/...;base64,...), or raw base64-encoded string. Only used with
-                vision-enabled models. Defaults to None.
-            current_loop (int): The current loop iteration number. Used for:
-                - Streaming panel titles
-                - Progress tracking
-                - Error logging context
-                Defaults to 0.
+            task (str): The task or prompt to send to the LLM.
+            img (Optional[str]): Optional image input for multimodal processing. Can be a
+                file path, URL, data URI, or raw base64-encoded string.
+            current_loop (int): The current loop iteration number, used for streaming
+                panel titles and error logging context. Defaults to 0.
             streaming_callback (Optional[Callable[[str], None]]): Optional callback
-                function to receive streaming tokens in real-time. For detailed streaming
-                (stream=True), receives token_info dictionaries. For basic streaming
-                (streaming_on=True), receives token strings. Defaults to None.
+                receiving streaming tokens in real time.
             *args: Additional positional arguments passed directly to llm.run().
             **kwargs: Additional keyword arguments passed directly to llm.run().
-                Note: 'is_last' is automatically filtered out if present.
 
         Returns:
-            str: The complete response from the LLM. For streaming modes, this is
-                the concatenated result of all streamed tokens. For non-streaming,
-                this is the direct response from llm.run().
+            str: The complete response from the LLM, or the assembled tool-call
+                list when the model made tool calls mid-stream.
 
         Raises:
             AgentLLMError: If there's an issue with the language model.
             BadRequestError: If the request is malformed or invalid.
             InternalServerError: If the LLM service encounters an internal error.
             AuthenticationError: If authentication fails with the LLM service.
-            Exception: For other unexpected errors during LLM calls.
-
-        Note:
-            - The method automatically restores original stream setting after execution
-            - Detailed streaming mode requires stream=True and llm.stream attribute
-            - Basic streaming mode requires streaming_on=True and llm.stream attribute
-            - Image processing requires a vision-enabled model
-            - The method uses self.get_current_model() for error logging
 
         Examples:
-            >>> # Non-streaming call
             >>> response = agent.call_llm("What is Python?", current_loop=1)
-            >>> print(response)
-
-            >>> # Streaming with callback
-            >>> def on_token(token):
-            ...     print(f"Received: {token}")
-            >>> response = agent.call_llm(
-            ...     "Tell me a story",
-            ...     streaming_callback=on_token,
-            ...     current_loop=1
-            ... )
-
-            >>> # Multimodal call with file path
-            >>> response = agent.call_llm(
-            ...     "Describe this image",
-            ...     img="path/to/image.jpg",
-            ...     current_loop=1
-            ... )
-
-            >>> # Multimodal call with base64 string
-            >>> import base64
-            >>> with open("image.jpg", "rb") as f:
-            ...     img_base64 = base64.b64encode(f.read()).decode("utf-8")
-            >>> response = agent.call_llm(
-            ...     "Describe this image",
-            ...     img=img_base64,
-            ...     current_loop=1
-            ... )
+            >>> response = agent.call_llm("Describe this image", img="chart.png")
         """
-
-        # Filter out is_last from kwargs if present
-        if "is_last" in kwargs:
-            del kwargs["is_last"]
-
-        try:
-            if self.stream and hasattr(self.llm, "stream"):
-                original_stream = self.llm.stream
-                self.llm.stream = True
-
-                if img is not None:
-                    streaming_response = self.llm.run(
-                        task=task, img=img, *args, **kwargs
-                    )
-                else:
-                    streaming_response = self.llm.run(
-                        task=task, *args, **kwargs
-                    )
-
-                if hasattr(
-                    streaming_response, "__iter__"
-                ) and not isinstance(streaming_response, str):
-                    complete_response = ""
-                    token_count = 0
-                    final_chunk = None
-                    first_chunk = None
-                    tool_calls_out: list = []
-
-                    for chunk in self._stream_with_tool_collection(
-                        self._extract_thinking_from_stream(
-                            streaming_response
-                        ),
-                        tool_calls_out,
-                    ):
-                        if first_chunk is None:
-                            first_chunk = chunk
-
-                        if (
-                            hasattr(chunk, "choices")
-                            and chunk.choices[0].delta.content
-                        ):
-                            content = chunk.choices[0].delta.content
-                            complete_response += content
-                            token_count += 1
-
-                            # Schema per token outputted
-                            token_info = {
-                                "token_index": token_count,
-                                "model": getattr(
-                                    chunk,
-                                    "model",
-                                    self.get_current_model(),
-                                ),
-                                "id": getattr(chunk, "id", ""),
-                                "created": getattr(
-                                    chunk, "created", int(time.time())
-                                ),
-                                "object": getattr(
-                                    chunk,
-                                    "object",
-                                    "chat.completion.chunk",
-                                ),
-                                "token": content,
-                                "system_fingerprint": getattr(
-                                    chunk, "system_fingerprint", ""
-                                ),
-                                "finish_reason": chunk.choices[
-                                    0
-                                ].finish_reason,
-                                "citations": getattr(
-                                    chunk, "citations", None
-                                ),
-                                "provider_specific_fields": getattr(
-                                    chunk,
-                                    "provider_specific_fields",
-                                    None,
-                                ),
-                                "service_tier": getattr(
-                                    chunk, "service_tier", "default"
-                                ),
-                                "obfuscation": getattr(
-                                    chunk, "obfuscation", None
-                                ),
-                                "usage": getattr(
-                                    chunk, "usage", None
-                                ),
-                                "logprobs": chunk.choices[0].logprobs,
-                                "timestamp": time.time(),
-                            }
-
-                            print(f"ResponseStream {token_info}")
-
-                            if streaming_callback is not None:
-                                streaming_callback(token_info)
-
-                        final_chunk = chunk
-
-                    # Final ModelResponse to stream
-                    if (
-                        final_chunk
-                        and hasattr(final_chunk, "usage")
-                        and final_chunk.usage
-                    ):
-                        usage = final_chunk.usage
-                        print(
-                            f"ModelResponseStream(id='{getattr(final_chunk, 'id', 'N/A')}', "
-                            f"created={getattr(final_chunk, 'created', 'N/A')}, "
-                            f"model='{getattr(final_chunk, 'model', self.get_current_model())}', "
-                            f"object='{getattr(final_chunk, 'object', 'chat.completion.chunk')}', "
-                            f"system_fingerprint='{getattr(final_chunk, 'system_fingerprint', 'N/A')}', "
-                            f"choices=[StreamingChoices(finish_reason='{final_chunk.choices[0].finish_reason}', "
-                            f"index=0, delta=Delta(provider_specific_fields=None, content=None, role=None, "
-                            f"function_call=None, tool_calls=None, audio=None), logprobs=None)], "
-                            f"provider_specific_fields=None, "
-                            f"usage=Usage(completion_tokens={usage.completion_tokens}, "
-                            f"prompt_tokens={usage.prompt_tokens}, "
-                            f"total_tokens={usage.total_tokens}, "
-                            f"completion_tokens_details=CompletionTokensDetailsWrapper("
-                            f"accepted_prediction_tokens={usage.completion_tokens_details.accepted_prediction_tokens}, "
-                            f"audio_tokens={usage.completion_tokens_details.audio_tokens}, "
-                            f"reasoning_tokens={usage.completion_tokens_details.reasoning_tokens}, "
-                            f"rejected_prediction_tokens={usage.completion_tokens_details.rejected_prediction_tokens}, "
-                            f"text_tokens={usage.completion_tokens_details.text_tokens}), "
-                            f"prompt_tokens_details=PromptTokensDetailsWrapper("
-                            f"audio_tokens={usage.prompt_tokens_details.audio_tokens}, "
-                            f"cached_tokens={usage.prompt_tokens_details.cached_tokens}, "
-                            f"text_tokens={usage.prompt_tokens_details.text_tokens}, "
-                            f"image_tokens={usage.prompt_tokens_details.image_tokens})))"
-                        )
-                    else:
-                        print(
-                            f"ModelResponseStream(id='{getattr(final_chunk, 'id', 'N/A')}', "
-                            f"created={getattr(final_chunk, 'created', 'N/A')}, "
-                            f"model='{getattr(final_chunk, 'model', self.get_current_model())}', "
-                            f"object='{getattr(final_chunk, 'object', 'chat.completion.chunk')}', "
-                            f"system_fingerprint='{getattr(final_chunk, 'system_fingerprint', 'N/A')}', "
-                            f"choices=[StreamingChoices(finish_reason='{final_chunk.choices[0].finish_reason}', "
-                            f"index=0, delta=Delta(provider_specific_fields=None, content=None, role=None, "
-                            f"function_call=None, tool_calls=None, audio=None), logprobs=None)], "
-                            f"provider_specific_fields=None)"
-                        )
-
-                    self.llm.stream = original_stream
-                    return (
-                        tool_calls_out
-                        if tool_calls_out
-                        else complete_response
-                    )
-                else:
-                    self.llm.stream = original_stream
-                    return streaming_response
-
-            elif self.streaming_on and hasattr(self.llm, "stream"):
-                original_stream = self.llm.stream
-                self.llm.stream = True
-
-                if img is not None:
-                    streaming_response = self.llm.run(
-                        task=task, img=img, *args, **kwargs
-                    )
-                else:
-                    streaming_response = self.llm.run(
-                        task=task, *args, **kwargs
-                    )
-
-                # If we get a streaming response, handle it with the new streaming panel
-                if hasattr(
-                    streaming_response, "__iter__"
-                ) and not isinstance(streaming_response, str):
-                    import itertools
-
-                    tool_calls_out: list = []
-
-                    # Check if streaming_callback is provided (for ConcurrentWorkflow dashboard integration)
-                    if streaming_callback is not None:
-                        # Real-time callback streaming — thinking panel is printed as a
-                        # side effect inside _extract_thinking_from_stream; no Live context
-                        # is active so there is no interleaving risk.
-                        streaming_response = (
-                            self._stream_with_tool_collection(
-                                self._extract_thinking_from_stream(
-                                    streaming_response
-                                ),
-                                tool_calls_out,
-                            )
-                        )
-                        chunks = []
-                        for chunk in streaming_response:
-                            if (
-                                hasattr(chunk, "choices")
-                                and chunk.choices[0].delta.content
-                            ):
-                                content = chunk.choices[
-                                    0
-                                ].delta.content
-                                chunks.append(content)
-                                streaming_callback(content)
-                        complete_response = "".join(chunks)
-                    # Check print_on parameter for different streaming behaviors
-                    elif self.print_on is False:
-                        # Silent streaming - no printing, just collect chunks
-                        streaming_response = (
-                            self._stream_with_tool_collection(
-                                streaming_response, tool_calls_out
-                            )
-                        )
-                        chunks = []
-                        for chunk in streaming_response:
-                            if (
-                                hasattr(chunk, "choices")
-                                and chunk.choices[0].delta.content
-                            ):
-                                content = chunk.choices[
-                                    0
-                                ].delta.content
-                                chunks.append(content)
-                        complete_response = "".join(chunks)
-                    else:
-                        # Print-streaming path uses Rich's Live display. We MUST print the
-                        # thinking panel BEFORE the Live context opens, otherwise the
-                        # console.print() call inside _extract_thinking_from_stream
-                        # interleaves with the Live display and corrupts the terminal.
-                        thinking_parts: list = []
-                        first_content_chunk = None
-                        for chunk in streaming_response:
-                            delta = (
-                                chunk.choices[0].delta
-                                if hasattr(chunk, "choices")
-                                and chunk.choices
-                                else None
-                            )
-                            reasoning = (
-                                getattr(
-                                    delta, "reasoning_content", None
-                                )
-                                if delta
-                                else None
-                            )
-                            if reasoning:
-                                thinking_parts.append(reasoning)
-                            else:
-                                first_content_chunk = chunk
-                                break
-
-                        if thinking_parts:
-                            title = (
-                                f"{self.agent_name} | Thinking"
-                                if self.agent_name
-                                else "Thinking"
-                            )
-                            formatter.print_thinking_panel(
-                                "".join(thinking_parts), title=title
-                            )
-
-                        # Chain the already-consumed first chunk with the remaining stream,
-                        # then wrap with tool-call collection.
-                        chained = itertools.chain(
-                            (
-                                [first_content_chunk]
-                                if first_content_chunk is not None
-                                else []
-                            ),
-                            streaming_response,
-                        )
-                        streaming_response = (
-                            self._stream_with_tool_collection(
-                                chained, tool_calls_out
-                            )
-                        )
-
-                        # Use the streaming panel to display and collect the response
-                        complete_response = formatter.print_streaming_panel(
-                            streaming_response,
-                            title=f"🤖 Agent: {self.agent_name} Loops: {current_loop}",
-                            style=None,  # Use random color like non-streaming approach
-                            collect_chunks=True,
-                        )
-
-                    # Restore original stream setting
-                    self.llm.stream = original_stream
-
-                    # If the model made tool calls during the stream, return them
-                    # so the auto loop executes them — same format as non-streaming.
-                    return (
-                        tool_calls_out
-                        if tool_calls_out
-                        else complete_response
-                    )
-                else:
-                    # Restore original stream setting
-                    self.llm.stream = original_stream
-                    return streaming_response
-            else:
-                args = {
-                    "task": task,
-                }
-
-                if img is not None:
-                    args["img"] = img
-
-                out = self.llm.run(**args, **kwargs)
-
-                return out
-
-        except (
-            AgentLLMError,
-            BadRequestError,
-            InternalServerError,
-            AuthenticationError,
-            Exception,
-        ) as e:
-            logger.error(
-                f"Error calling LLM with model '{self.get_current_model()}': {e}. "
-                f"Task: {task}, Args: {args}, Kwargs: {kwargs} Traceback: {traceback.format_exc()}"
-            )
-            raise e
+        return self.llm_manager.call(
+            task=task,
+            img=img,
+            current_loop=current_loop,
+            streaming_callback=streaming_callback,
+            *args,
+            **kwargs,
+        )
 
     def handle_sop_ops(self):
         # If the user inputs a list of strings for the sop then join them and set the sop
@@ -4564,7 +3875,7 @@ Subtask Breakdown:
         logger.info("SOP Uploaded into the memory")
 
     def load_skills_metadata(
-        self, skills_dir: str
+        self, skills_dir: str = None
     ) -> List[Dict[str, str]]:
         """
         Load skill metadata from SKILL.md files in the skills directory.
@@ -4573,8 +3884,8 @@ Subtask Breakdown:
         loads skill name and description into memory for context-aware activation.
 
         Args:
-            skills_dir: Path to directory containing skill folders.
-                Each folder should contain a SKILL.md file with YAML frontmatter.
+            skills_dir: Path to directory containing skill folders. Defaults to
+                the agent's configured `skills_dir`.
 
         Returns:
             List of skill metadata dicts with 'name', 'description', 'path', 'content'
@@ -4583,97 +3894,7 @@ Subtask Breakdown:
             >>> agent = Agent(skills_dir="./skills")
             >>> # Loads all skills from ./skills/*/SKILL.md
         """
-        skills = []
-
-        if not os.path.exists(skills_dir):
-            logger.warning(
-                f"Skills directory not found: {skills_dir}"
-            )
-            return skills
-
-        for skill_folder in os.listdir(skills_dir):
-            skill_path = os.path.join(skills_dir, skill_folder)
-
-            if not os.path.isdir(skill_path):
-                continue
-
-            skill_file = os.path.join(skill_path, "SKILL.md")
-
-            if not os.path.exists(skill_file):
-                continue
-
-            try:
-                with open(skill_file, "r", encoding="utf-8") as f:
-                    content = f.read()
-
-                # Parse YAML frontmatter
-                if content.startswith("---"):
-                    parts = content.split("---", 2)
-                    if len(parts) >= 3:
-                        frontmatter = yaml.safe_load(parts[1])
-                        skills.append(
-                            {
-                                "name": frontmatter.get(
-                                    "name", skill_folder
-                                ),
-                                "description": frontmatter.get(
-                                    "description", ""
-                                ),
-                                "path": skill_file,
-                                "content": (
-                                    parts[2].strip()
-                                    if len(parts) > 2
-                                    else ""
-                                ),
-                            }
-                        )
-                        logger.info(
-                            f"Loaded skill: {frontmatter.get('name')}"
-                        )
-            except Exception as e:
-                logger.warning(
-                    f"Failed to load skill from {skill_file}: {e}"
-                )
-                continue
-
-        return skills
-
-    def _build_skills_prompt(
-        self, skills: List[Dict[str, str]]
-    ) -> str:
-        """
-        Build the skills section to append to system prompt.
-
-        Loads full skill content (YAML frontmatter + markdown instructions)
-        into the system prompt for immediate availability.
-
-        Args:
-            skills: List of skill metadata dicts from load_skills_metadata()
-
-        Returns:
-            Formatted skills prompt section to append to system_prompt
-
-        Example:
-            >>> skills = [{"name": "financial-analysis", "description": "DCF modeling", "content": "..."}]
-            >>> prompt = agent._build_skills_prompt(skills)
-            >>> # Returns formatted skills section with full instructions
-        """
-        if not skills:
-            return ""
-
-        prompt = "\n\n# Available Skills\n\n"
-        prompt += (
-            "You have access to the following specialized skills. "
-        )
-        prompt += "Follow their instructions when relevant:\n\n"
-
-        for skill in skills:
-            prompt += f"## {skill['name']}\n\n"
-            prompt += f"**Description**: {skill['description']}\n\n"
-            prompt += skill["content"]
-            prompt += "\n\n---\n\n"
-
-        return prompt
+        return self.skills.load_metadata(skills_dir)
 
     def load_full_skill(self, skill_name: str) -> Optional[str]:
         """
@@ -4694,24 +3915,9 @@ Subtask Breakdown:
             >>> content = agent.load_full_skill("financial-analysis")
             >>> # Returns full markdown instructions for the skill
         """
-        for skill in self.skills_metadata:
-            if skill["name"] == skill_name:
-                try:
-                    with open(
-                        skill["path"], "r", encoding="utf-8"
-                    ) as f:
-                        content = f.read()
-                    # Return everything after frontmatter
-                    if content.startswith("---"):
-                        parts = content.split("---", 2)
-                        if len(parts) >= 3:
-                            return parts[2].strip()
-                except Exception as e:
-                    logger.error(
-                        f"Failed to load full skill {skill_name}: {e}"
-                    )
-        return None
+        return self.skills.load_full_skill(skill_name)
 
+    @trace_run("Agent.run", input_params=("task", "img", "imgs"))
     def run(
         self,
         task: Optional[Union[str, Any]] = None,
@@ -5059,9 +4265,9 @@ Subtask Breakdown:
         """
         Handles fallback execution when the primary model fails.
 
-        This method attempts to execute the task using fallback models when the primary
-        model encounters an error. It will try each available fallback model in sequence
-        until either the task succeeds or all fallback models are exhausted.
+        Delegates to :meth:`swarms.agents.llm_manager.LLMManager.handle_fallback_execution`,
+        which walks the fallback chain until the task succeeds or every model is
+        exhausted.
 
         Args:
             task (Optional[Union[str, Any]], optional): The task to be executed. Defaults to None.
@@ -5075,73 +4281,17 @@ Subtask Breakdown:
 
         Returns:
             Any: The result of the execution if successful.
-
-        Raises:
-            Exception: If all fallback models fail or no fallback models are available.
         """
-        # Check if fallback models are available
-        if not self.is_fallback_available():
-            if self.verbose:
-                logger.error(
-                    f"Agent Name: {self.agent_name} [NO FALLBACK] failed with model '{self.get_current_model()}' "
-                    f"and no fallback models are configured. Error: {str(original_error)[:100]}{'...' if len(str(original_error)) > 100 else ''}"
-                )
-            self._handle_run_error(original_error)
-            return None
-
-        # Try to switch to the next fallback model
-        if not self.switch_to_next_model():
-            if self.verbose:
-                logger.error(
-                    f"Agent Name: {self.agent_name} [FALLBACK EXHAUSTED] has exhausted all available models. "
-                    f"Tried {len(self.get_available_models())} models: {self.get_available_models()}"
-                )
-            self._handle_run_error(original_error)
-            return None
-
-        # Log fallback attempt
-        if self.verbose:
-            logger.warning(
-                f"Agent Name: {self.agent_name} [FALLBACK] failed with model '{self.get_current_model()}'. "
-                f"Switching to fallback model '{self.get_current_model()}' (attempt {self.current_model_index + 1}/{len(self.get_available_models())})"
-            )
-
-        try:
-            # Recursive call to run() with the new model
-            result = self.run(
-                task=task,
-                img=img,
-                imgs=imgs,
-                correct_answer=correct_answer,
-                streaming_callback=streaming_callback,
-                *args,
-                **kwargs,
-            )
-
-            if self.verbose:
-                # Log successful completion with fallback model
-                logger.info(
-                    f"Agent Name: {self.agent_name} [FALLBACK SUCCESS] successfully completed task "
-                    f"using fallback model '{self.get_current_model()}'"
-                )
-            return result
-
-        except Exception as fallback_error:
-            logger.error(
-                f"Agent Name: {self.agent_name} Fallback model '{self.get_current_model()}' also failed: {fallback_error}"
-            )
-
-            # Try the next fallback model recursively
-            return self._handle_fallback_execution(
-                task=task,
-                img=img,
-                imgs=imgs,
-                correct_answer=correct_answer,
-                streaming_callback=streaming_callback,
-                original_error=original_error,
-                *args,
-                **kwargs,
-            )
+        return self.llm_manager.handle_fallback_execution(
+            task=task,
+            img=img,
+            imgs=imgs,
+            correct_answer=correct_answer,
+            streaming_callback=streaming_callback,
+            original_error=original_error,
+            *args,
+            **kwargs,
+        )
 
     def run_batched(
         self,
@@ -5824,99 +4974,57 @@ Summary: {summary}
         self, response: any, current_loop: Optional[int] = 0
     ):
         """
-        Handle execution of MCP (Model Context Protocol) tools.
+        Execute the MCP tool calls contained in an LLM response.
 
-        This method processes tool calls from the LLM response and executes them
-        using MCP servers. It supports single MCP server (mcp_url or mcp_config)
-        and multiple MCP servers (mcp_urls or mcp_configs).
-
-        **MCP Tool Execution:**
-        - Single server: Uses execute_tool_call_simple with server_path or connection
-        - Multiple servers: Uses execute_multiple_tools_on_multiple_mcp_servers_sync
-        - Tool responses are formatted as JSON and added to conversation memory
-        - Results are displayed in formatted panels if print_on=True
+        All of the MCP mechanics — routing each tool call to the server that
+        owns it, authenticating (API key, bearer token, or OAuth), opening the
+        session and shaping the result — are handled by
+        :class:`swarms.tools.mcp_manager.MCPManager`. This method only wires
+        the result back into the agent's conversation.
 
         **Post-Execution Processing:**
-        After tool execution, the method:
-        1. Formats tool response as JSON
-        2. Adds response to conversation memory
-        3. Optionally generates a summary using a temporary LLM instance
-        4. Displays summary if print_on=True
-
-        **Error Handling:**
-        - AgentMCPConnectionError: Raised if MCP configuration is invalid
-        - AgentMCPToolError: Raised if tool execution fails
-        - Other exceptions: Logged with full traceback
+        1. Formats the tool results as JSON
+        2. Adds them to conversation memory under the "Tool Executor" role
+        3. Generates a natural-language summary with a tool-free LLM instance
+        4. Displays the summary if ``print_on=True``
 
         Args:
-            response (any): The LLM response containing MCP tool calls. Can be:
-                - List of tool call dictionaries
-                - Single tool call dictionary
-                - Tool call in OpenAI function calling format
-            current_loop (Optional[int]): The current loop iteration number.
-                Used for logging and progress display. Defaults to 0.
+            response (any): The LLM response containing MCP tool calls. Can be
+                a list of tool calls, a single tool call, a full assistant
+                message, or a JSON string of any of those.
+            current_loop (Optional[int]): The current loop iteration number,
+                used for logging and progress display. Defaults to 0.
 
         Returns:
-            None: This method modifies internal state (adds to memory, displays output)
-                but does not return a value.
+            None: Modifies internal state (memory, printed output) only.
 
         Raises:
-            AgentMCPConnectionError: If MCP configuration is missing or invalid.
-                Raised when neither mcp_url, mcp_config, mcp_urls, nor mcp_configs are set.
-            AgentMCPToolError: If MCP tool execution fails.
-            Exception: For other unexpected errors during tool execution.
-
-        Note:
-            - Requires MCP configuration (mcp_url, mcp_config, mcp_urls, or mcp_configs)
-            - Tool responses are automatically formatted as JSON
-            - Summary generation uses a temporary LLM instance without tools
-            - The method handles both single and multiple MCP server scenarios
+            AgentMCPConnectionError: If no MCP server could be reached.
+            AgentMCPToolError: If tool execution fails outright.
 
         Examples:
-            >>> # Single MCP server
-            >>> agent = Agent(mcp_url="path/to/mcp/server")
+            >>> # Single MCP server secured with an API key
+            >>> agent = Agent(mcp_url="https://api.example.com/mcp", mcp_api_key="sk-...")
             >>> response = [{"function": {"name": "mcp_tool", "arguments": "{}"}}]
             >>> agent.mcp_tool_handling(response, current_loop=1)
 
             >>> # Multiple MCP servers
-            >>> agent = Agent(mcp_urls=["server1", "server2"])
+            >>> agent = Agent(mcp_urls=["https://a/mcp", "https://b/mcp"])
             >>> agent.mcp_tool_handling(response, current_loop=2)
         """
         try:
+            tool_response = self.mcp_manager.execute_tool_calls(
+                response, output_type="dict"
+            )
 
-            if exists(self.mcp_url):
-                # Execute the tool call
-                tool_response = asyncio.run(
-                    execute_tool_call_simple(
-                        response=response,
-                        server_path=self.mcp_url,
+            if not tool_response:
+                if self.verbose:
+                    logger.info(
+                        f"No MCP tool calls found in the response for {self.agent_name}"
                     )
-                )
-            elif exists(self.mcp_config):
-                # Execute the tool call
-                tool_response = asyncio.run(
-                    execute_tool_call_simple(
-                        response=response,
-                        connection=self.mcp_config,
-                    )
-                )
-            elif exists(self.mcp_urls):
-                tool_response = execute_multiple_tools_on_multiple_mcp_servers_sync(
-                    responses=response,
-                    urls=self.mcp_urls,
-                    output_type="json",
-                )
-                # tool_response = format_data_structure(tool_response)
+                return
 
-                # print(f"Multiple MCP Tool Response: {tool_response}")
-            else:
-                raise AgentMCPConnectionError(
-                    "mcp_url must be either a string URL or MCPConnection object"
-                )
-
-            # Get the text content from the tool response
-            # execute_tool_call_simple returns a string directly, not an object with content attribute
-            text_content = f"MCP Tool Response: \n\n {json.dumps(tool_response, indent=2, sort_keys=True)}"
+            text_content = f"MCP Tool Response: \n\n {json.dumps(tool_response, indent=2, default=str)}"
 
             if self.print_on is True:
                 formatter.print_panel(
@@ -5952,8 +5060,10 @@ Summary: {summary}
             self.short_memory.add(
                 role=self.agent_name, content=summary
             )
-        except AgentMCPToolError as e:
-            logger.error(f"Error in MCP tool: {e}")
+        except Exception as e:
+            logger.error(
+                f"Error in MCP tool handling for {self.agent_name}: {e} Traceback: {traceback.format_exc()}"
+            )
             raise e
 
     def temp_llm_instance_for_tool_summary(self):
@@ -5977,22 +5087,7 @@ Summary: {summary}
         Returns:
             List[str]: List of model names in order of preference
         """
-        models = []
-
-        # If fallback_models is specified, use it as the primary list
-        if self.fallback_models:
-            models = self.fallback_models.copy()
-        else:
-            # Otherwise, build the list from individual parameters
-            if self.model_name:
-                models.append(self.model_name)
-            if (
-                self.fallback_model_name
-                and self.fallback_model_name not in models
-            ):
-                models.append(self.fallback_model_name)
-
-        return models
+        return self.llm_manager.get_available_models()
 
     def get_current_model(self) -> str:
         """
@@ -6001,10 +5096,7 @@ Summary: {summary}
         Returns:
             str: Current model name
         """
-        available_models = self.get_available_models()
-        if self.current_model_index < len(available_models):
-            return available_models[self.current_model_index]
-        return available_models[0] if available_models else "gpt-5.4"
+        return self.llm_manager.get_current_model()
 
     def switch_to_next_model(self) -> bool:
         """
@@ -6013,42 +5105,11 @@ Summary: {summary}
         Returns:
             bool: True if successfully switched to next model, False if no more models available
         """
-        available_models = self.get_available_models()
-
-        if self.current_model_index + 1 < len(available_models):
-            previous_model = (
-                available_models[self.current_model_index]
-                if self.current_model_index < len(available_models)
-                else "Unknown"
-            )
-            self.current_model_index += 1
-            new_model = available_models[self.current_model_index]
-
-            # always log model switches
-            logger.warning(
-                f"[Model Switch] agent '{self.agent_name}' switching from '{previous_model}' to fallback model: '{new_model}' "
-                f"(attempt {self.current_model_index + 1}/{len(available_models)})"
-            )
-
-            # Update the model name and reinitialize LLM
-            self.model_name = new_model
-            self.llm = self.llm_handling()
-
-            return True
-        else:
-            logger.error(
-                f"No more models: agent '{self.agent_name}' has exhausted all available models. "
-                f"Tried {len(available_models)} models: {available_models}"
-            )
-            return False
+        return self.llm_manager.switch_to_next_model()
 
     def reset_model_index(self) -> None:
         """Reset the model index to use the primary model."""
-        self.current_model_index = 0
-        available_models = self.get_available_models()
-        if available_models:
-            self.model_name = available_models[0]
-            self.llm = self.llm_handling()
+        self.llm_manager.reset_model_index()
 
     def is_fallback_available(self) -> bool:
         """
@@ -6057,8 +5118,7 @@ Summary: {summary}
         Returns:
             bool: True if fallback models are configured
         """
-        available_models = self.get_available_models()
-        return len(available_models) > 1
+        return self.llm_manager.is_fallback_available()
 
     def execute_tools(self, response: any, loop_count: int):
         """

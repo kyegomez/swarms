@@ -5,7 +5,7 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
 from swarms.structs.aop import AOPCluster
-from swarms.tools.mcp_client_tools import execute_tool_call_simple
+from swarms.tools.mcp_manager import MCPManager
 
 
 async def discover_agents_example():
@@ -29,11 +29,11 @@ async def discover_agents_example():
         },
     }
 
-    result = await execute_tool_call_simple(
-        response=tool_call_request,
-        server_path="http://localhost:5932/mcp",
+    result = await MCPManager(
+        mcp_url="http://localhost:5932/mcp", verbose=False
+    ).aexecute_tool_calls(
+        tool_call_request,
         output_type="dict",
-        verbose=False,
     )
     print(json.dumps(result, indent=2))
     return result

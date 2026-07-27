@@ -8,7 +8,25 @@ This example shows how to use the new MCP tools for getting agent information.
 import json
 import asyncio
 from swarms.structs.aop import AOPCluster
-from swarms.tools.mcp_client_tools import execute_tool_call_simple
+from swarms.tools.mcp_manager import MCPManager
+
+
+def unwrap_tool_result(result):
+    """Pull the tool's own payload out of an MCPManager result.
+
+    ``aexecute_tool_calls`` returns one envelope per call —
+    ``{"tool": ..., "server": ..., "is_error": ..., "result": <payload>}`` —
+    where AOP tools put their JSON dict in ``result`` as a string.
+    """
+    if not result:
+        return {}
+    payload = result[0].get("result", result[0])
+    if isinstance(payload, str):
+        try:
+            return json.loads(payload)
+        except json.JSONDecodeError:
+            return {"raw": payload}
+    return payload
 
 
 async def demonstrate_new_agent_tools():
@@ -32,15 +50,15 @@ async def demonstrate_new_agent_tools():
             "function": {"name": "list_agents", "arguments": "{}"},
         }
 
-        result = await execute_tool_call_simple(
-            response=tool_call,
-            server_path="http://localhost:5932/mcp",
+        result = await MCPManager(
+            mcp_url="http://localhost:5932/mcp", verbose=False
+        ).aexecute_tool_calls(
+            tool_call,
             output_type="dict",
-            verbose=False,
         )
 
         if isinstance(result, list) and len(result) > 0:
-            data = result[0]
+            data = unwrap_tool_result(result)
             if data.get("success"):
                 agent_names = data.get("agent_names", [])
                 print(
@@ -67,15 +85,15 @@ async def demonstrate_new_agent_tools():
             },
         }
 
-        result = await execute_tool_call_simple(
-            response=tool_call,
-            server_path="http://localhost:5932/mcp",
+        result = await MCPManager(
+            mcp_url="http://localhost:5932/mcp", verbose=False
+        ).aexecute_tool_calls(
+            tool_call,
             output_type="dict",
-            verbose=False,
         )
 
         if isinstance(result, list) and len(result) > 0:
-            data = result[0]
+            data = unwrap_tool_result(result)
             if data.get("success"):
                 data.get("agent_info", {})
                 discovery_info = data.get("discovery_info", {})
@@ -119,15 +137,15 @@ async def demonstrate_new_agent_tools():
             },
         }
 
-        result = await execute_tool_call_simple(
-            response=tool_call,
-            server_path="http://localhost:5932/mcp",
+        result = await MCPManager(
+            mcp_url="http://localhost:5932/mcp", verbose=False
+        ).aexecute_tool_calls(
+            tool_call,
             output_type="dict",
-            verbose=False,
         )
 
         if isinstance(result, list) and len(result) > 0:
-            data = result[0]
+            data = unwrap_tool_result(result)
             if data.get("success"):
                 agents_info = data.get("agents_info", [])
                 not_found = data.get("not_found", [])
@@ -170,15 +188,15 @@ async def demonstrate_new_agent_tools():
             },
         }
 
-        result = await execute_tool_call_simple(
-            response=tool_call,
-            server_path="http://localhost:5932/mcp",
+        result = await MCPManager(
+            mcp_url="http://localhost:5932/mcp", verbose=False
+        ).aexecute_tool_calls(
+            tool_call,
             output_type="dict",
-            verbose=False,
         )
 
         if isinstance(result, list) and len(result) > 0:
-            data = result[0]
+            data = unwrap_tool_result(result)
             if data.get("success"):
                 matching_agents = data.get("matching_agents", [])
                 print(

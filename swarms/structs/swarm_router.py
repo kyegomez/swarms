@@ -1,4 +1,3 @@
-import concurrent.futures
 import os
 import traceback
 from typing import (
@@ -36,6 +35,11 @@ from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.serialization import SerializableMixin
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
 from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.output_types import OutputType
 from swarms.utils.swarm_autosave import (
@@ -396,6 +400,9 @@ class SwarmRouter(SerializableMixin):
 
         # Reliability check
         self.reliability_check()
+
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
 
     def _setup_autosave(self):
         """Set up autosave storage and persist the initial router config.
@@ -886,6 +893,10 @@ class SwarmRouter(SerializableMixin):
 
         return result
 
+    @trace_run(
+        "SwarmRouter.run",
+        input_params=("task", "tasks", "img"),
+    )
     def run(
         self,
         task: Optional[str] = None,
@@ -1041,7 +1052,7 @@ class SwarmRouter(SerializableMixin):
         self._log("info", f"Executing task concurrently: {task}")
 
         try:
-            with concurrent.futures.ThreadPoolExecutor(
+            with ContextThreadPoolExecutor(
                 max_workers=os.cpu_count()
             ) as executor:
                 future = executor.submit(
