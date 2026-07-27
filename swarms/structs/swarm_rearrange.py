@@ -1,14 +1,13 @@
 import threading
-import uuid
 from typing import Any, Callable, Dict, List, Optional
 
 from swarms.structs.conversation import Conversation
-from swarms.structs.swarm_id import swarm_id
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.history_output_formatter import (
     HistoryOutputType,
 )
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.generate_id import generate_id
 
 logger = initialize_logger(log_folder="swarm_arange")
 
@@ -43,7 +42,7 @@ class SwarmRearrange:
 
     def __init__(
         self,
-        id: str = swarm_id(),
+        id: Optional[str] = None,
         name: str = "SwarmRearrange",
         description: str = "A swarm of swarms for rearranging tasks.",
         swarms: List[Any] = [],
@@ -74,7 +73,7 @@ class SwarmRearrange:
             custom_human_in_the_loop (Callable): Custom function for human intervention. Defaults to None.
             return_json (bool): Whether to return results as JSON. Defaults to False.
         """
-        self.id = id
+        self.id = id or generate_id("swarm-rearrange")
         self.name = name
         self.description = description
         self.swarms = {swarm.name: swarm for swarm in swarms}
@@ -88,7 +87,6 @@ class SwarmRearrange:
 
         self.swarm_history = {swarm.name: [] for swarm in swarms}
         self.lock = threading.Lock()
-        self.id = uuid.uuid4().hex if id is None else id
 
         # Run the reliability checks
         self.reliability_checks()

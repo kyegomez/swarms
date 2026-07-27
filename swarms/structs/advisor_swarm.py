@@ -32,12 +32,12 @@ from swarms.prompts.advisor_swarm_prompts import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from swarms.structs.swarm_id import swarm_id
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.utils.generate_id import generate_id
 
 logger = initialize_logger(log_folder="advisor_swarm")
 
@@ -99,7 +99,7 @@ class AdvisorSwarm:
         *args,
         **kwargs,
     ) -> None:
-        self.id = id or swarm_id()
+        self.id = id or generate_id("advisor-swarm")
         self.name = name
         self.description = description
         self.executor_model_name = executor_model_name

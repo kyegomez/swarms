@@ -1,5 +1,6 @@
-from uuid import uuid4
+from swarms.utils.generate_id import generate_id
 
 
-def swarm_id():
-    return f"swarm-{uuid4().hex}"
+def swarm_id() -> str:
+    """Deprecated: use ``generate_id("swarm")``."""
+    return generate_id("swarm")

@@ -10,7 +10,6 @@ from swarms.structs.conversation import Conversation
 from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.tools.base_tool import BaseTool
 from swarms.utils.formatter import formatter
-from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -21,6 +20,7 @@ from swarms.telemetry.otel import (
     capture_init,
     trace_run,
 )
+from swarms.utils.generate_id import generate_id
 
 
 class HandOffsResponse(BaseModel):
@@ -142,7 +142,7 @@ class MultiAgentRouter:
 
     def __init__(
         self,
-        id: str = generate_api_key(prefix="multi-agent-router"),
+        id: Optional[str] = None,
         name: str = "swarm-router",
         description: str = "Routes tasks to specialized agents based on their capabilities",
         agents: List[Callable] = None,
@@ -171,6 +171,7 @@ class MultiAgentRouter:
             system_prompt (str, optional): Custom system prompt for the router. Defaults to None.
             skip_null_tasks (bool, optional): Whether to skip executing agents when their assigned task is null or None. Defaults to True.
         """
+        self.id = id or generate_id("multi-agent-router")
         self.name = name
         self.description = description
         self.shared_memory_system = shared_memory_system

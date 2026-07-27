@@ -19,12 +19,12 @@ from swarms.structs.multi_agent_exec import (
     batched_grid_agent_execution,
     run_agents_concurrently,
 )
-from swarms.structs.swarm_id import swarm_id
 from swarms.utils.history_output_formatter import (
     HistoryOutputType,
     history_output_formatter,
 )
 from swarms.telemetry.otel import capture_init, trace_run
+from swarms.utils.generate_id import generate_id
 
 
 def get_gpt_councilor_prompt() -> str:
@@ -272,7 +272,7 @@ class LLMCouncil:
 
     def __init__(
         self,
-        id: str = swarm_id(),
+        id: Optional[str] = None,
         name: str = "LLM Council",
         description: str = "A collaborative council of LLM agents where each member independently answers a query, reviews and ranks anonymized peer responses, and a chairman synthesizes the best elements into a final answer.",
         council_members: Optional[List[Agent]] = None,
@@ -291,6 +291,7 @@ class LLMCouncil:
             verbose: Whether to print progress and intermediate results.
             output_type: Format for the output. Options: "list", "dict", "string", "final", "json", "yaml", etc.
         """
+        self.id = id or generate_id("llm-council")
         self.name = name
         self.description = description
         self.verbose = verbose

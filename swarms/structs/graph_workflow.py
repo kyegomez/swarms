@@ -47,6 +47,7 @@ from swarms.telemetry.otel import (
     capture_init,
     trace_run,
 )
+from swarms.utils.generate_id import generate_id
 
 logger = initialize_logger(log_folder="graph_workflow")
 
@@ -763,7 +764,7 @@ class GraphWorkflow:
 
     def __init__(
         self,
-        id: Optional[str] = str(uuid.uuid4()),
+        id: Optional[str] = None,
         name: Optional[str] = "Graph-Workflow-01",
         description: Optional[
             str
@@ -781,7 +782,7 @@ class GraphWorkflow:
         on_node_complete: Optional[Callable[[str, Any], None]] = None,
         max_parallel_nodes: Optional[int] = None,
     ):
-        self.id = id
+        self.id = id or generate_id("graph-workflow")
         self.verbose = verbose
         self.on_node_complete = on_node_complete
 

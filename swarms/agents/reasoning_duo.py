@@ -9,7 +9,7 @@ from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
-import uuid
+from swarms.utils.generate_id import generate_id
 
 
 class ReasoningDuo:
@@ -27,7 +27,7 @@ class ReasoningDuo:
 
     def __init__(
         self,
-        id: str = str(uuid.uuid4()),
+        id: Optional[str] = None,
         agent_name: str = "reasoning-agent-01",
         agent_description: str = "A highly intelligent and thoughtful AI designed to provide accurate and well-reasoned answers to the user's questions.",
         model_name: str = "gpt-5.4",
@@ -40,7 +40,7 @@ class ReasoningDuo:
         *args,
         **kwargs,
     ):
-        self.id = id
+        self.id = id or generate_id("reasoning-duo")
         self.agent_name = agent_name
         self.agent_description = agent_description
         self.model_name = model_name

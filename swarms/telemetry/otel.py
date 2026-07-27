@@ -87,13 +87,120 @@ def _truncate(value: Any, limit: int = MAX_PAYLOAD_CHARS) -> str:
     return text
 
 
+class _CyclicReference(Exception):
+    """Raised internally when a container is found to contain itself."""
+
+
+def _describe(value: Any) -> str:
+    """Render a non-JSON value as a stable, address-free string.
+
+    Memory addresses make otherwise-identical configs differ between runs,
+    which defeats grouping in a telemetry backend, so nothing here may fall
+    through to the default ``object.__repr__``.
+
+    Args:
+        value (Any): The value to describe.
+
+    Returns:
+        str: A deterministic description — a qualified name for callables and
+        classes, the object's own ``__str__`` when it defines one, otherwise
+        ``"ClassName(name)"``. Degrades to ``"<unserializable ClassName>"``
+        rather than raising.
+    """
+    import functools
+    import inspect
+
+    cls = type(value)
+
+    try:
+        if isinstance(value, functools.partial):
+            return f"partial({_describe(value.func)})"
+
+        if (
+            inspect.isfunction(value)
+            or inspect.ismethod(value)
+            or inspect.isbuiltin(value)
+            or inspect.isclass(value)
+        ):
+            module = getattr(value, "__module__", "") or ""
+            qualname = getattr(
+                value,
+                "__qualname__",
+                getattr(value, "__name__", cls.__name__),
+            )
+            return f"{module}.{qualname}" if module else qualname
+
+        # Objects defining their own __str__ know best how to render.
+        if cls.__str__ is not object.__str__:
+            text = str(value)
+            if "0x" not in text:
+                return text
+
+        # Otherwise identify it by class and whatever name it carries, so an
+        # Agent reads as "Agent(Researcher)" rather than an address.
+        name = getattr(value, "agent_name", None) or getattr(
+            value, "name", None
+        )
+        return f"{cls.__name__}({name})" if name else cls.__name__
+    except Exception:
+        return f"<unserializable {cls.__name__}>"
+
+
+def _sanitize(value: Any, seen: frozenset = frozenset()) -> Any:
+    """Convert a value into something JSON can encode, without ever raising.
+
+    Args:
+        value (Any): The value to convert.
+        seen (frozenset): Ids of containers already being walked, used to catch
+            self-referential structures.
+
+    Returns:
+        Any: A JSON-encodable structure. Containers that reference themselves
+        collapse to ``"<unserializable ClassName>"``.
+
+    Raises:
+        _CyclicReference: Internally only, to unwind to the outermost container
+            of a cycle. Never escapes :func:`init_config`.
+    """
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+
+    if isinstance(value, (list, tuple, set, frozenset)):
+        if id(value) in seen:
+            raise _CyclicReference
+        nested = seen | {id(value)}
+        try:
+            return [_sanitize(item, nested) for item in value]
+        except _CyclicReference:
+            return f"<unserializable {type(value).__name__}>"
+
+    if isinstance(value, dict):
+        if id(value) in seen:
+            raise _CyclicReference
+        nested = seen | {id(value)}
+        try:
+            return {
+                str(key): _sanitize(item, nested)
+                for key, item in value.items()
+            }
+        except _CyclicReference:
+            return f"<unserializable {type(value).__name__}>"
+
+    return _describe(value)
+
+
 def init_config(obj: Any) -> str:
     """Serialize an object's ``__init__`` parameters to a bounded JSON string.
 
     Introspects the constructor signature and reads the matching attributes off
     the instance, so the captured config is exactly the input configuration —
-    not internal runtime state. Non-JSON values (nested objects, callables) fall
-    back to :func:`str` via ``default``. Works for any class.
+    not internal runtime state. Works for any class.
+
+    Values that JSON cannot encode are rendered by :func:`_describe`, which
+    never emits a memory address and never raises: a broken ``__repr__`` or a
+    self-referential container degrades to ``"<unserializable ClassName>"``
+    while its siblings survive. Two identical constructions therefore produce
+    byte-identical config strings.
 
     Args:
         obj (Any): The instance whose constructor configuration to serialize.
@@ -107,15 +214,25 @@ def init_config(obj: Any) -> str:
     import inspect
     import json
 
-    params = inspect.signature(type(obj).__init__).parameters
+    try:
+        params = inspect.signature(type(obj).__init__).parameters
+    except (TypeError, ValueError):
+        params = {}
+
     config = {
-        name: getattr(obj, name, None)
+        name: _sanitize(getattr(obj, name, None))
         for name in params
         if name not in ("self", "args", "kwargs")
     }
-    return _truncate(
-        json.dumps(config, default=str), limit=MAX_CONFIG_CHARS
-    )
+
+    try:
+        rendered = json.dumps(config, default=_describe)
+    except Exception:
+        rendered = json.dumps(
+            {"error": f"<unserializable {type(obj).__name__} config>"}
+        )
+
+    return _truncate(rendered, limit=MAX_CONFIG_CHARS)
 
 
 class _SpanHandle:

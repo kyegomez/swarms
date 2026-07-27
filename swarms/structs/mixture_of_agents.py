@@ -1,6 +1,5 @@
 import concurrent.futures
 import os
-import uuid
 from typing import List, Optional
 
 from swarms.prompts.ag_prompt import AGGREGATOR_SYSTEM_PROMPT_MAIN
@@ -18,6 +17,7 @@ from swarms.telemetry.otel import (
     capture_init,
     trace_run,
 )
+from swarms.utils.generate_id import generate_id
 
 logger = initialize_logger(log_folder="mixture_of_agents")
 
@@ -64,7 +64,7 @@ class MixtureOfAgents:
 
     def __init__(
         self,
-        id: str = str(uuid.uuid4()),
+        id: Optional[str] = None,
         name: str = "MixtureOfAgents",
         description: str = "A class to run a mixture of agents and aggregate their responses.",
         agents: List[Agent] = None,
@@ -94,6 +94,7 @@ class MixtureOfAgents:
             ValueError: If no agents, aggregator system prompt, or layers
                 are provided.
         """
+        self.id = id or generate_id("mixture-of-agents")
         self.name = name
         self.description = description
         self.agents = agents

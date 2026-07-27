@@ -4,7 +4,6 @@ import os
 import threading
 import time
 import traceback
-import uuid
 from contextlib import nullcontext
 from typing import (
     Any,
@@ -131,6 +130,7 @@ from swarms.utils.index import (
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
+from swarms.utils.generate_id import generate_id
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -145,9 +145,9 @@ def parse_done_token(response: str) -> bool:
 
 
 # Agent ID generator
-def agent_id():
-    """Generate an agent id"""
-    return f"agent-{uuid.uuid4().hex}"
+def agent_id() -> str:
+    """Deprecated: use ``generate_id("agent")``."""
+    return generate_id("agent")
 
 
 # Agent output types
@@ -323,7 +323,7 @@ class Agent:
 
     def __init__(
         self,
-        id: Optional[str] = agent_id(),
+        id: Optional[str] = None,
         agent_name: Optional[str] = "swarm-worker-01",
         agent_description: Optional[
             str
@@ -435,7 +435,7 @@ class Agent:
         **kwargs,
     ):
         # super().__init__(*args, **kwargs)
-        self.id = id
+        self.id = id or generate_id("agent")
         self.skills = SkillsManager(skills_dir=skills_dir)
         self.selected_tools = selected_tools
         self.llm = llm
