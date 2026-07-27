@@ -38,6 +38,11 @@ MAX_CONFIG_CHARS = int(
 )
 
 
+TELEMETRY_OFF_VALUES = frozenset(
+    {"false", "0", "no", "off", "disable", "disabled"}
+)
+
+
 def telemetry_on() -> bool:
     """Return whether outbound telemetry is enabled.
 
@@ -45,11 +50,22 @@ def telemetry_on() -> bool:
     :func:`swarms.telemetry.main.log_agent_data`, so the whole framework has one
     on/off gate.
 
+    Telemetry is **on by default** — it must be switched off explicitly. Set
+    ``SWARMS_TELEMETRY_ON`` to any of ``"false"``, ``"0"``, ``"no"``, ``"off"``,
+    ``"disable"`` or ``"disabled"`` (case-insensitive) to opt out. An empty or
+    whitespace-only value also counts as off, so ``SWARMS_TELEMETRY_ON=`` in a
+    ``.env`` file disables it rather than silently enabling it.
+
     Returns:
-        bool: ``True`` only when ``SWARMS_TELEMETRY_ON`` is ``"True"``, ``"true"``
-        or ``"1"``; ``False`` otherwise.
+        bool: ``False`` only when the variable is set to a recognized off value;
+        ``True`` otherwise, including when the variable is unset.
     """
-    return os.getenv("SWARMS_TELEMETRY_ON") in ("True", "true", "1")
+    value = os.getenv("SWARMS_TELEMETRY_ON")
+
+    if value is None:
+        return True
+
+    return value.strip().lower() not in TELEMETRY_OFF_VALUES | {""}
 
 
 def _truncate(value: Any, limit: int = MAX_PAYLOAD_CHARS) -> str:
@@ -564,7 +580,8 @@ def capture_init(obj: Any, **extra_attributes: Any) -> None:
         from swarms.telemetry.otel import capture_init
         capture_init(self)
 
-    Completely safe and free when ``SWARMS_TELEMETRY_ON`` is off.
+    Completely safe and free when telemetry is switched off with
+    ``SWARMS_TELEMETRY_ON=false``.
 
     Args:
         obj (Any): The just-constructed component instance.
@@ -649,8 +666,8 @@ def log_agent_data(data: Any) -> None:
 
     Drop-in OpenTelemetry replacement for the legacy ``swarms.world`` telemetry
     POST. Accepts a component's ``to_dict()`` payload and emits it as a
-    ``swarms.state`` span. Gated on ``SWARMS_TELEMETRY_ON`` and fully fail-safe;
-    a no-op when telemetry is off.
+    ``swarms.state`` span. Gated on ``SWARMS_TELEMETRY_ON`` (on by default) and
+    fully fail-safe; a no-op when telemetry is switched off.
 
     Args:
         data (Any): The component state to record — typically ``self.to_dict()``.

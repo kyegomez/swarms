@@ -108,18 +108,36 @@ def _agent(name="TelemetryTestAgent"):
 # ===========================================================================
 class TestHelpers:
     def test_telemetry_on_truthy(self, monkeypatch):
-        for val in ("true", "True", "1"):
+        # anything that is not a recognized off value means on
+        for val in ("true", "True", "1", "yes", "on", "anything"):
             monkeypatch.setenv("SWARMS_TELEMETRY_ON", val)
             assert telemetry_on() is True
 
     def test_telemetry_on_falsy(self, monkeypatch):
-        for val in ("false", "False", "0", "", "yes"):
+        for val in (
+            "false",
+            "False",
+            "FALSE",
+            "0",
+            "no",
+            "off",
+            "disable",
+            "disabled",
+            " false ",
+        ):
             monkeypatch.setenv("SWARMS_TELEMETRY_ON", val)
             assert telemetry_on() is False
 
-    def test_telemetry_on_unset(self, monkeypatch):
+    def test_telemetry_on_unset_defaults_to_on(self, monkeypatch):
+        """Telemetry is opt-out: unset means enabled."""
         monkeypatch.delenv("SWARMS_TELEMETRY_ON", raising=False)
-        assert telemetry_on() is False
+        assert telemetry_on() is True
+
+    def test_telemetry_on_empty_value_is_off(self, monkeypatch):
+        """`SWARMS_TELEMETRY_ON=` in a .env disables rather than enables."""
+        for val in ("", "   "):
+            monkeypatch.setenv("SWARMS_TELEMETRY_ON", val)
+            assert telemetry_on() is False
 
     def test_truncate_short_passthrough(self):
         assert _truncate("hello") == "hello"
