@@ -103,10 +103,9 @@ def toggle_telemetry(_exporter):
     @contextmanager
     def _toggle(on: bool):
         prev = os.environ.get("SWARMS_TELEMETRY_ON")
-        if on:
-            os.environ["SWARMS_TELEMETRY_ON"] = "true"
-        else:
-            os.environ.pop("SWARMS_TELEMETRY_ON", None)
+        # Telemetry is opt-out, so "off" must be set explicitly — unsetting the
+        # variable would enable it.
+        os.environ["SWARMS_TELEMETRY_ON"] = "true" if on else "false"
         otel.swarm_telemetry.cache_clear()
         telem = otel.swarm_telemetry()
         if on:
