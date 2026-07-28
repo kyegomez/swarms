@@ -74,6 +74,7 @@ class MixtureOfAgents:
         max_loops: int = 1,
         output_type: OutputType = "final",
         aggregator_model_name: str = "claude-sonnet-4-20250514",
+        max_workers: Optional[int] = None,
     ) -> None:
         """Initialize the mixture with worker and aggregator configuration.
 
@@ -104,6 +105,7 @@ class MixtureOfAgents:
         self.max_loops = max_loops
         self.output_type = output_type
         self.aggregator_model_name = aggregator_model_name
+        self.max_workers = max_workers
 
         self.reliability_check()
 
@@ -185,6 +187,7 @@ class MixtureOfAgents:
             task=task,
             img=img,
             return_agent_output_dict=True,
+            max_workers=self.max_workers,
         )
 
         return agent_outputs

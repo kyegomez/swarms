@@ -49,6 +49,7 @@ from swarms.schemas.agent_errors import (  # noqa: F401 — re-exported for back
     AgentToolError,
     AgentToolExecutionError,
 )
+from swarms.utils.get_reasoning_efforts import get_reasoning_efforts
 from swarms.utils.workspace_utils import get_workspace_dir
 from swarms.artifacts.main_artifact import Artifact
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
@@ -409,16 +410,7 @@ class Agent:
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
         show_tool_execution_output: bool = True,
-        reasoning_effort: Optional[
-            Literal[
-                "low",
-                "medium",
-                "high",
-                "xhigh",
-                "ultra",
-                "max",
-            ]
-        ] = "medium",
+        reasoning_effort: Literal[get_reasoning_efforts()] = "medium",
         thinking_tokens: int = 1024,
         reasoning_enabled: bool = False,
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
