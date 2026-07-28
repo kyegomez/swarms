@@ -48,6 +48,8 @@ class ConcurrentWorkflow:
         agent_statuses (dict): Dictionary tracking status and output of each agent
         metadata_output_path (str): Path for saving workflow metadata
         conversation (Conversation): Conversation object for storing agent interactions
+        max_workers (Optional[int]): Thread pool size for concurrent agent
+            execution. Defaults to a CPU-core heuristic when not set.
 
     Methods:
         run: Execute all agents concurrently on a given task
@@ -90,6 +92,7 @@ class ConcurrentWorkflow:
         autosave: bool = True,
         verbose: bool = False,
         on_error: str = "store",
+        max_workers: Optional[int] = None,
     ):
         self.id = id or generate_id("concurrent-workflow")
         self.name = name
@@ -103,6 +106,7 @@ class ConcurrentWorkflow:
         self.autosave = autosave
         self.verbose = verbose
         self.on_error = on_error
+        self.max_workers = max_workers
         self.swarm_workspace_dir = None
         self.metadata_output_path = (
             f"concurrent_workflow_name_{name}_id_{self.id}.json"
@@ -147,6 +151,18 @@ class ConcurrentWorkflow:
                 agent.print_on = False
         return self.agents
 
+    def _resolve_max_workers(self) -> int:
+        """Determine the thread pool size for concurrent agent execution.
+
+        Agent calls are I/O-bound (network calls to LLM providers), so CPU core
+        count is rarely the right sizing signal. Uses ``self.max_workers`` when
+        explicitly configured; otherwise falls back to the prior default of
+        ``0.95 * cpu_count()``.
+        """
+        if self.max_workers is not None:
+            return max(1, int(self.max_workers))
+        return max(1, int((get_cpu_cores() or 1) * 0.95))
+
     def reliability_check(self):
         """
         Validate workflow configuration.
@@ -155,9 +171,11 @@ class ConcurrentWorkflow:
         - Checks that agents are provided
         - Validates that agents list is not empty
         - Warns if only one agent is provided (concurrent execution not beneficial)
+        - Validates max_workers is positive when provided
 
         Raises:
-            ValueError: If no agents are provided or agents list is empty.
+            ValueError: If no agents are provided, agents list is empty, or
+                max_workers is not positive.
             Exception: If any other validation error occurs.
         """
         try:
@@ -169,6 +187,11 @@ class ConcurrentWorkflow:
             if len(self.agents) == 0:
                 raise ValueError(
                     "ConcurrentWorkflow: No agents provided"
+                )
+
+            if self.max_workers is not None and self.max_workers <= 0:
+                raise ValueError(
+                    "ConcurrentWorkflow: max_workers must be greater than 0 when provided."
                 )
 
             if len(self.agents) == 1:
@@ -261,7 +284,7 @@ class ConcurrentWorkflow:
             if self.show_dashboard:
                 self.display_agent_dashboard()
 
-            max_workers = int(get_cpu_cores() * 0.95)
+            max_workers = self._resolve_max_workers()
             futures = []
             results = []
 
@@ -409,7 +432,7 @@ class ConcurrentWorkflow:
         """
         self.conversation.add(role="User", content=task)
 
-        max_workers = int(get_cpu_cores() * 0.95)
+        max_workers = self._resolve_max_workers()
 
         with ContextThreadPoolExecutor(
             max_workers=max_workers

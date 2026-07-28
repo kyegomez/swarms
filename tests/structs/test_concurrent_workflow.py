@@ -490,5 +490,40 @@ def test_concurrent_workflow_autosave_saves_conversation_after_run(
     get_workspace_dir.cache_clear()
 
 
+def _worker_stub(name: str) -> Agent:
+    return Agent(
+        agent_name=name,
+        agent_description=f"{name} test agent",
+        model_name="gpt-5.4",
+        max_loops=1,
+        verbose=False,
+        print_on=False,
+    )
+
+
+def test_max_workers_defaults_to_cpu_heuristic():
+    workflow = ConcurrentWorkflow(agents=[_worker_stub("A")])
+
+    assert workflow.max_workers is None
+    assert workflow._resolve_max_workers() == max(
+        1, int((os.cpu_count() or 1) * 0.95)
+    )
+
+
+def test_max_workers_override_is_used():
+    """Agent calls are network-bound, so the pool must be sizeable above cores."""
+    workflow = ConcurrentWorkflow(
+        agents=[_worker_stub("A")],
+        max_workers=64,
+    )
+
+    assert workflow._resolve_max_workers() == 64
+
+
+def test_non_positive_max_workers_is_rejected():
+    with pytest.raises(ValueError, match="max_workers"):
+        ConcurrentWorkflow(agents=[_worker_stub("A")], max_workers=0)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
