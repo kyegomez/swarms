@@ -18,7 +18,7 @@ system_prompt = (
 
 # Initialize the agent
 agent = Agent(
-    agent_name="Quantitative-Trading-Agent--new",
+    agent_name="Quantitative-Trading-Agent",
     agent_description="Advanced quantitative trading and algorithmic analysis agent",
     system_prompt=system_prompt,
     model_name="gpt-5.4",

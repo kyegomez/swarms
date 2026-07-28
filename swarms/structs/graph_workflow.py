@@ -154,6 +154,34 @@ class GraphBackend:
         """
         raise NotImplementedError
 
+    def is_dag(self) -> bool:
+        """
+        Report whether the graph is acyclic.
+
+        Cheap O(V+E) alternative to enumerating every simple cycle, which is
+        exponential in the number of cycles.
+
+        Returns:
+            bool: True when the graph contains no directed cycle.
+        """
+        raise NotImplementedError
+
+    def adjacency(
+        self,
+    ) -> Tuple[Dict[str, List[str]], Dict[str, List[str]]]:
+        """
+        Materialise successor and predecessor maps in a single pass.
+
+        Callers that need repeated neighbour lookups (validation, prompt
+        building) use this instead of paying per-node backend calls.
+
+        Returns:
+            Tuple[Dict[str, List[str]], Dict[str, List[str]]]: ``(successors,
+            predecessors)`` keyed by node ID. Every node is present, including
+            isolated ones.
+        """
+        raise NotImplementedError
+
 
 class NetworkXBackend(GraphBackend):
     """
@@ -241,9 +269,35 @@ class NetworkXBackend(GraphBackend):
         Get topological generations (layers) of the graph.
 
         Returns:
-            List[List[str]]: List of layers, where each layer is a list of node IDs.
+            List[List[str]]: List of layers, where each layer is a list of node
+            IDs. A cyclic remainder, if any, is appended as a final layer
+            rather than raising.
         """
-        return list(nx.topological_generations(self.graph))
+        try:
+            return list(nx.topological_generations(self.graph))
+        except nx.NetworkXUnfeasible:
+            # Cyclic graph: layer what we can with Kahn's algorithm and append
+            # the cyclic remainder so callers still get an execution order.
+            graph = self.graph
+            indegree = dict(graph.in_degree())
+            frontier = [n for n, d in indegree.items() if d == 0]
+            layers: List[List[str]] = []
+            placed = 0
+            while frontier:
+                layers.append(frontier)
+                placed += len(frontier)
+                nxt = []
+                for node_id in frontier:
+                    for succ_id in graph.successors(node_id):
+                        indegree[succ_id] -= 1
+                        if indegree[succ_id] == 0:
+                            nxt.append(succ_id)
+                frontier = nxt
+            if placed < graph.number_of_nodes():
+                layers.append(
+                    [n for n, d in indegree.items() if d > 0]
+                )
+            return layers
 
     def simple_cycles(self) -> List[List[str]]:
         """
@@ -252,6 +306,10 @@ class NetworkXBackend(GraphBackend):
         Returns:
             List[List[str]]: List of cycles, where each cycle is a list of node IDs.
         """
+        # Enumerating simple cycles is exponential in the number of cycles, so
+        # short-circuit on the overwhelmingly common acyclic case first.
+        if nx.is_directed_acyclic_graph(self.graph):
+            return []
         return list(nx.simple_cycles(self.graph))
 
     def descendants(self, node_id: str) -> Set[str]:
@@ -265,6 +323,33 @@ class NetworkXBackend(GraphBackend):
             Set[str]: Set of descendant node IDs.
         """
         return nx.descendants(self.graph, node_id)
+
+    def is_dag(self) -> bool:
+        """
+        Report whether the graph is acyclic.
+
+        Returns:
+            bool: True when the graph contains no directed cycle.
+        """
+        return nx.is_directed_acyclic_graph(self.graph)
+
+    def adjacency(
+        self,
+    ) -> Tuple[Dict[str, List[str]], Dict[str, List[str]]]:
+        """
+        Materialise successor and predecessor maps in a single pass.
+
+        Returns:
+            Tuple[Dict[str, List[str]], Dict[str, List[str]]]: ``(successors,
+            predecessors)`` keyed by node ID.
+        """
+        graph = self.graph
+        succ: Dict[str, List[str]] = {n: [] for n in graph}
+        pred: Dict[str, List[str]] = {n: [] for n in graph}
+        for source, target in graph.edges():
+            succ[source].append(target)
+            pred[target].append(source)
+        return succ, pred
 
 
 class RustworkxBackend(GraphBackend):
@@ -383,13 +468,17 @@ class RustworkxBackend(GraphBackend):
         if node_id not in self._node_id_to_index:
             return iter([])
         target_index = self._node_id_to_index[node_id]
-        # Use edge list to find predecessors (more reliable than predecessors() method)
-        result = []
-        for edge in self.graph.edge_list():
-            source_idx, target_idx = edge
-            if target_idx == target_index:
-                result.append(self._index_to_node_id[source_idx])
-        return iter(result)
+        index_to_id = self._index_to_node_id
+        # predecessor_indices is O(in-degree); scanning the full edge list
+        # would make this O(E) per node.
+        return iter(
+            [
+                index_to_id[idx]
+                for idx in self.graph.predecessor_indices(
+                    target_index
+                )
+            ]
+        )
 
     def reverse(self) -> "RustworkxBackend":
         """
@@ -419,82 +508,86 @@ class RustworkxBackend(GraphBackend):
         Returns:
             List[List[str]]: List of layers, where each layer is a list of node IDs.
         """
+        all_indices = list(self._node_id_to_index.values())
+        if not all_indices:
+            return []
+
+        index_to_id = self._index_to_node_id
+
         try:
-            # Get all node indices
-            all_indices = list(self._node_id_to_index.values())
-            if not all_indices:
-                return []
-
-            # Use layer-by-layer approach similar to NetworkX topological_generations
-            layers = []
-            remaining = set(all_indices)
-            processed = set()
-
-            while remaining:
-                # Find all nodes with in-degree 0 considering only edges from processed nodes
-                # In rustworkx, we need to check if all predecessors are in processed set
-                layer = []
-                # First pass: identify nodes that can be added to this layer
-                # (without modifying remaining/processed during iteration)
-                nodes_to_add = []
-                for idx in list(remaining):
-                    # Get all predecessors using edge list
-                    pred_indices = []
-                    for edge in self.graph.edge_list():
-                        source_idx, target_idx = edge
-                        if target_idx == idx:
-                            pred_indices.append(source_idx)
-                    # Check if all predecessors have been processed (or node has no predecessors)
-                    # A node can be added to the layer if:
-                    # 1. It has no predecessors (entry node), OR
-                    # 2. All its predecessors have already been processed (from previous layers)
-                    if not pred_indices:
-                        # No predecessors - this is an entry node
-                        nodes_to_add.append(idx)
-                    elif all(
-                        pred_idx in processed
-                        for pred_idx in pred_indices
-                    ):
-                        # All predecessors have been processed in previous layers
-                        nodes_to_add.append(idx)
-
-                # Second pass: add identified nodes to the layer and update sets
-                for idx in nodes_to_add:
-                    layer.append(self._index_to_node_id[idx])
-                    remaining.remove(idx)
-                    processed.add(idx)
-
-                if not layer:
-                    # Cycle detected or error, break
-                    break
-
-                layers.append(layer)
-
-            # If there are remaining nodes, they form a cycle - add them as a final layer
-            if remaining:
-                cycle_layer = [
-                    self._index_to_node_id[idx] for idx in remaining
-                ]
-                layers.append(cycle_layer)
-
-            return (
-                layers
-                if layers
-                else [
-                    [
-                        self._index_to_node_id[idx]
-                        for idx in all_indices
-                    ]
-                ]
-            )
-        except Exception as e:
-            logger.warning(
-                f"Error in rustworkx topological_generations: {e}, falling back to simple approach"
-            )
-            # Fallback: return all nodes in one layer
-            return [
-                [node_id for node_id in self._node_id_to_index.keys()]
+            # rustworkx computes generations natively in Rust — O(V+E).
+            layers = [
+                [index_to_id[idx] for idx in generation]
+                for generation in rx.topological_generations(
+                    self.graph
+                )
             ]
+        except Exception as e:
+            # Raised when the graph contains a cycle. Fall back to Kahn's
+            # algorithm so the cyclic remainder is still surfaced as a final
+            # layer, matching the previous behaviour.
+            logger.warning(
+                f"rustworkx topological_generations failed ({e}); "
+                "falling back to Kahn's algorithm"
+            )
+            return self._kahn_generations(all_indices)
+
+        placed = sum(len(layer) for layer in layers)
+        if placed < len(all_indices):
+            # Cyclic remainder: append the unplaced nodes as a final layer.
+            seen = {nid for layer in layers for nid in layer}
+            layers.append(
+                [
+                    index_to_id[idx]
+                    for idx in all_indices
+                    if index_to_id[idx] not in seen
+                ]
+            )
+
+        return layers or [[index_to_id[idx] for idx in all_indices]]
+
+    def _kahn_generations(
+        self, all_indices: List[int]
+    ) -> List[List[str]]:
+        """
+        Layer the graph with Kahn's algorithm, tolerating cycles.
+
+        Args:
+            all_indices (List[int]): Every node index in the graph.
+
+        Returns:
+            List[List[str]]: Layers of node IDs; any cyclic remainder is
+            appended as a final layer.
+        """
+        index_to_id = self._index_to_node_id
+        graph = self.graph
+
+        indegree = {idx: graph.in_degree(idx) for idx in all_indices}
+        frontier = [idx for idx in all_indices if indegree[idx] == 0]
+        layers: List[List[str]] = []
+        placed = 0
+
+        while frontier:
+            layers.append([index_to_id[idx] for idx in frontier])
+            placed += len(frontier)
+            nxt = []
+            for idx in frontier:
+                for succ_idx in graph.successor_indices(idx):
+                    indegree[succ_idx] -= 1
+                    if indegree[succ_idx] == 0:
+                        nxt.append(succ_idx)
+            frontier = nxt
+
+        if placed < len(all_indices):
+            layers.append(
+                [
+                    index_to_id[idx]
+                    for idx in all_indices
+                    if indegree[idx] > 0
+                ]
+            )
+
+        return layers or [[index_to_id[idx] for idx in all_indices]]
 
     def simple_cycles(self) -> List[List[str]]:
         """
@@ -504,22 +597,15 @@ class RustworkxBackend(GraphBackend):
             List[List[str]]: List of cycles, where each cycle is a list of node IDs.
         """
         try:
-            # Convert to NetworkX temporarily for cycle detection
-            # This is a limitation of rustworkx - it doesn't have simple_cycles
-            # We'll use a workaround by converting temporarily
-            import networkx as nx
-
-            nx_graph = nx.DiGraph()
-            for node_id in self._node_id_to_index.keys():
-                nx_graph.add_node(node_id)
-            for edge in self.graph.edge_list():
-                source_idx, target_idx = edge
-                source_id = self._index_to_node_id[source_idx]
-                target_id = self._index_to_node_id[target_idx]
-                nx_graph.add_edge(source_id, target_id)
-
-            cycles = list(nx.simple_cycles(nx_graph))
-            return cycles
+            # Enumerating cycles is exponential in their count; the acyclic
+            # check is O(V+E) and covers the common case.
+            if rx.is_directed_acyclic_graph(self.graph):
+                return []
+            index_to_id = self._index_to_node_id
+            return [
+                [index_to_id[idx] for idx in cycle]
+                for cycle in rx.simple_cycles(self.graph)
+            ]
         except Exception as e:
             logger.warning(
                 f"Error in rustworkx simple_cycles: {e}, returning empty list"
@@ -539,38 +625,46 @@ class RustworkxBackend(GraphBackend):
         if node_id not in self._node_id_to_index:
             return set()
         node_index = self._node_id_to_index[node_id]
-        # Use BFS to find all descendants
-        descendants = set()
-        queue = [node_index]
-        visited = {node_index}
+        index_to_id = self._index_to_node_id
+        # Native Rust traversal; the previous hand-rolled BFS also used
+        # list.pop(0), which is O(n) per dequeue.
+        return {
+            index_to_id[idx]
+            for idx in rx.descendants(self.graph, node_index)
+        }
 
-        while queue:
-            current_idx = queue.pop(0)
-            succ_data = self.graph.successors(current_idx)
-            for succ in succ_data:
-                # Handle both dict (node data) and int (index) returns
-                if isinstance(succ, dict):
-                    succ_node_id = succ.get("node_id")
-                    if (
-                        succ_node_id
-                        and succ_node_id in self._node_id_to_index
-                    ):
-                        succ_idx = self._node_id_to_index[
-                            succ_node_id
-                        ]
-                    else:
-                        continue
-                elif isinstance(succ, int):
-                    succ_idx = succ
-                else:
-                    continue
+    def is_dag(self) -> bool:
+        """
+        Report whether the graph is acyclic.
 
-                if succ_idx not in visited:
-                    visited.add(succ_idx)
-                    descendants.add(self._index_to_node_id[succ_idx])
-                    queue.append(succ_idx)
+        Returns:
+            bool: True when the graph contains no directed cycle.
+        """
+        return rx.is_directed_acyclic_graph(self.graph)
 
-        return descendants
+    def adjacency(
+        self,
+    ) -> Tuple[Dict[str, List[str]], Dict[str, List[str]]]:
+        """
+        Materialise successor and predecessor maps in a single pass.
+
+        Returns:
+            Tuple[Dict[str, List[str]], Dict[str, List[str]]]: ``(successors,
+            predecessors)`` keyed by node ID.
+        """
+        index_to_id = self._index_to_node_id
+        succ: Dict[str, List[str]] = {
+            nid: [] for nid in self._node_id_to_index
+        }
+        pred: Dict[str, List[str]] = {
+            nid: [] for nid in self._node_id_to_index
+        }
+        for source_idx, target_idx in self.graph.edge_list():
+            source_id = index_to_id[source_idx]
+            target_id = index_to_id[target_idx]
+            succ[source_id].append(target_id)
+            pred[target_id].append(source_id)
+        return succ, pred
 
 
 class NodeType(str, Enum):
@@ -825,6 +919,9 @@ class GraphWorkflow:
         # Private optimization attributes
         self._compiled = False
         self._sorted_layers = []
+        self._execution_plan = []
+        self._successors_map = {}
+        self._predecessors_cache = {}
         self.max_parallel_nodes = max_parallel_nodes
         self._max_workers = (
             max(1, max_parallel_nodes)
@@ -927,13 +1024,14 @@ class GraphWorkflow:
 
         self._compiled = False
         self._sorted_layers = []
+        self._execution_plan = []
+        self._successors_map = {}
         self._compilation_timestamp = None
 
         # Clear predecessors cache when graph structure changes
-        if hasattr(self, "_predecessors_cache"):
-            self._predecessors_cache = {}
-            if self.verbose:
-                logger.debug("Cleared predecessors cache")
+        self._predecessors_cache = {}
+        if self.verbose:
+            logger.debug("Cleared predecessors cache")
 
     def compile(self) -> None:
         """
@@ -969,28 +1067,6 @@ class GraphWorkflow:
                 logger.debug(f"Entry points: {self.entry_points}")
                 logger.debug(f"End points: {self.end_points}")
 
-            # Run structural validation so misconfiguration is surfaced at
-            # build time rather than mid-execution.  We never raise here so
-            # that compile() stays backward-compatible; callers that want
-            # strict enforcement should call validate(raise_on_error=True)
-            # explicitly.
-            if self.nodes:
-                _vr = self.validate(
-                    auto_fix=False, raise_on_error=False
-                )
-                if _vr["errors"]:
-                    logger.warning(
-                        f"GraphWorkflow compile: validation found "
-                        f"{len(_vr['errors'])} error(s) — "
-                        + "; ".join(_vr["errors"])
-                    )
-                if _vr["warnings"] and self.verbose:
-                    logger.warning(
-                        f"GraphWorkflow compile: validation found "
-                        f"{len(_vr['warnings'])} warning(s) — "
-                        + "; ".join(_vr["warnings"])
-                    )
-
             # Pre-compute topological layers for efficient execution
             if self.verbose:
                 logger.debug("Computing topological layers")
@@ -999,6 +1075,54 @@ class GraphWorkflow:
                 self.graph_backend.topological_generations()
             )
             self._sorted_layers = sorted_layers
+
+            # Build the adjacency maps once and reuse them for validation and
+            # for per-node predecessor lookups during execution.
+            succ, pred = self.graph_backend.adjacency()
+            self._successors_map = succ
+            self._predecessors_cache = {
+                node_id: tuple(parents)
+                for node_id, parents in pred.items()
+            }
+
+            # Structural validation, surfaced at build time rather than
+            # mid-execution.  We never raise here so that compile() stays
+            # backward-compatible; callers that want strict enforcement
+            # should call validate(raise_on_error=True) explicitly.
+            if self.nodes:
+                errors, warnings = self._fast_validate(succ, pred)
+                if errors:
+                    logger.warning(
+                        f"GraphWorkflow compile: validation found "
+                        f"{len(errors)} error(s) — "
+                        + "; ".join(errors)
+                    )
+                if warnings and self.verbose:
+                    logger.warning(
+                        f"GraphWorkflow compile: validation found "
+                        f"{len(warnings)} warning(s) — "
+                        + "; ".join(warnings)
+                    )
+
+            # Freeze the per-layer execution plan so run() does no dictionary
+            # lookups or attribute resolution in its hot loop.
+            self._execution_plan = [
+                [
+                    (
+                        node_id,
+                        self.nodes[node_id].agent,
+                        self.nodes[node_id].type,
+                        getattr(
+                            self.nodes[node_id].agent,
+                            "agent_name",
+                            node_id,
+                        ),
+                    )
+                    for node_id in layer
+                    if node_id in self.nodes
+                ]
+                for layer in sorted_layers
+            ]
 
             # Cache compilation timestamp for debugging
             self._compilation_timestamp = time.time()
@@ -1024,6 +1148,112 @@ class GraphWorkflow:
                 f"Error in GraphWorkflow compilation: {e}"
             )
             raise e
+
+    @staticmethod
+    def _multi_source_reachable(
+        sources: List[str], adjacency: Dict[str, List[str]]
+    ) -> Set[str]:
+        """
+        Nodes reachable from any of ``sources`` in one traversal.
+
+        A single multi-source BFS replaces one traversal per source, which is
+        what the per-entry-point/per-end-point loops used to cost.
+
+        Args:
+            sources (List[str]): Starting node IDs.
+            adjacency (Dict[str, List[str]]): Neighbour map to walk.
+
+        Returns:
+            Set[str]: All reachable node IDs, including the sources themselves.
+        """
+        seen = set(sources)
+        frontier = list(sources)
+        while frontier:
+            node_id = frontier.pop()
+            for neighbour in adjacency.get(node_id, ()):
+                if neighbour not in seen:
+                    seen.add(neighbour)
+                    frontier.append(neighbour)
+        return seen
+
+    def _fast_validate(
+        self,
+        succ: Dict[str, List[str]],
+        pred: Dict[str, List[str]],
+    ) -> Tuple[List[str], List[str]]:
+        """
+        Structural checks driven off pre-built adjacency maps.
+
+        Equivalent in coverage to the checks :meth:`validate` performs at
+        compile time, but computed from the maps already materialised by
+        :meth:`compile` — no per-node backend calls, no reversed graph copy,
+        and no cycle enumeration.
+
+        Args:
+            succ (Dict[str, List[str]]): Successor map from ``adjacency()``.
+            pred (Dict[str, List[str]]): Predecessor map from ``adjacency()``.
+
+        Returns:
+            Tuple[List[str], List[str]]: ``(errors, warnings)``.
+        """
+        errors: List[str] = []
+        warnings: List[str] = []
+
+        invalid_agents = [
+            node_id
+            for node_id, node in self.nodes.items()
+            if node.agent is None
+        ]
+        if invalid_agents:
+            errors.append(
+                f"Found {len(invalid_agents)} nodes with invalid agent "
+                f"instances: {invalid_agents}"
+            )
+
+        if not self.edges:
+            warnings.append("Workflow has no edges between nodes")
+
+        isolated = [
+            node_id
+            for node_id in self.nodes
+            if not succ.get(node_id) and not pred.get(node_id)
+        ]
+        if isolated:
+            warnings.append(
+                f"Found {len(isolated)} isolated nodes: {isolated}"
+            )
+
+        # O(V+E) acyclicity test instead of enumerating every simple cycle,
+        # which is exponential in the number of cycles.
+        try:
+            if not self.graph_backend.is_dag():
+                warnings.append("Found cycles in workflow")
+        except Exception as e:
+            warnings.append(f"Could not check for cycles: {e}")
+
+        all_ids = set(self.nodes.keys())
+
+        if self.entry_points:
+            unreachable = all_ids - self._multi_source_reachable(
+                self.entry_points, succ
+            )
+            if unreachable:
+                warnings.append(
+                    f"Found {len(unreachable)} nodes unreachable from "
+                    f"entry points: {unreachable}"
+                )
+
+        if self.end_points:
+            dead_ends = all_ids - self._multi_source_reachable(
+                self.end_points, pred
+            )
+            if dead_ends:
+                warnings.append(
+                    f"Found {len(dead_ends)} nodes that cannot reach any "
+                    f"exit point: {dead_ends}"
+                )
+
+        return errors, warnings
 
     def add_node(
         self,
@@ -1652,16 +1882,15 @@ class GraphWorkflow:
         Returns:
             Tuple[str, ...]: Tuple of predecessor node IDs.
         """
-        # Use instance-level caching instead of @lru_cache to avoid hashing issues
-        if not hasattr(self, "_predecessors_cache"):
-            self._predecessors_cache = {}
-
-        if node_id not in self._predecessors_cache:
-            self._predecessors_cache[node_id] = tuple(
-                self.graph_backend.predecessors(node_id)
-            )
-
-        return self._predecessors_cache[node_id]
+        # Instance-level caching instead of @lru_cache to avoid hashing issues.
+        # compile() populates this map wholesale from a single adjacency pass;
+        # this path only fills gaps for nodes queried before compilation.
+        cache = self._predecessors_cache
+        preds = cache.get(node_id)
+        if preds is None:
+            preds = tuple(self.graph_backend.predecessors(node_id))
+            cache[node_id] = preds
+        return preds
 
     def _build_prompt(
         self,
@@ -1865,6 +2094,31 @@ class GraphWorkflow:
                 f"Using cached compilation for {self.max_loops} loops (compiled at {getattr(self, '_compilation_timestamp', 'unknown time')})"
             )
 
+        # One executor for the whole run instead of one per layer per loop.
+        # Thread creation and pool shutdown dominated execution time on graphs
+        # with many layers.  Sized to the widest layer, capped at _max_workers,
+        # and created lazily so purely sequential graphs spawn no threads.
+        widest_layer = max(
+            (len(layer) for layer in self._execution_plan), default=1
+        )
+        executor: Optional[ContextThreadPoolExecutor] = None
+
+        def _get_executor() -> ContextThreadPoolExecutor:
+            nonlocal executor
+            if executor is None:
+                executor = ContextThreadPoolExecutor(
+                    max_workers=max(
+                        1, min(self._max_workers, widest_layer)
+                    ),
+                    thread_name_prefix=f"graph-{self.name}",
+                )
+                if self.verbose:
+                    logger.debug(
+                        f"Created shared thread pool with "
+                        f"{max(1, min(self._max_workers, widest_layer))} workers"
+                    )
+            return executor
+
         try:
             loop = 0
             # Accumulated results across all loops
@@ -1890,10 +2144,14 @@ class GraphWorkflow:
 
                 # Derive a deterministic key for this task so checkpoints
                 # survive process restarts (Python's hash() is salted and
-                # is NOT stable across runs).
-                task_key = hashlib.sha256(
-                    task.encode("utf-8")
-                ).hexdigest()[:16]
+                # is NOT stable across runs).  Only needed when checkpointing.
+                task_key = (
+                    hashlib.sha256(task.encode("utf-8")).hexdigest()[
+                        :16
+                    ]
+                    if self.checkpoint_dir
+                    else None
+                )
 
                 # Seed entry-point nodes with end-point outputs from the
                 # previous loop so agents can refine iteratively.
@@ -1901,7 +2159,7 @@ class GraphWorkflow:
                     prev_outputs.update(prior_loop_end_outputs)
 
                 for layer_idx, layer in enumerate(
-                    self._sorted_layers
+                    self._execution_plan
                 ):
                     layer_start_time = time.time()
 
@@ -1955,12 +2213,18 @@ class GraphWorkflow:
 
                     if self.verbose:
                         logger.info(
-                            f"Executing layer {layer_idx + 1}/{len(self._sorted_layers)} with {len(layer)} nodes: {layer}"
+                            f"Executing layer {layer_idx + 1}/{len(self._execution_plan)} "
+                            f"with {len(layer)} nodes: {[n[0] for n in layer]}"
                         )
 
                     # Pre-build all prompts for this layer
                     layer_data = []
-                    for node_id in layer:
+                    for (
+                        node_id,
+                        agent,
+                        node_type,
+                        agent_name,
+                    ) in layer:
                         try:
                             prompt = self._build_prompt(
                                 node_id,
@@ -1969,198 +2233,206 @@ class GraphWorkflow:
                                 layer_idx,
                                 loop,
                             )
-                            layer_data.append(
-                                (
-                                    node_id,
-                                    self.nodes[node_id].agent,
-                                    prompt,
-                                )
-                            )
                         except Exception as e:
                             logger.exception(
                                 f"Error building prompt for node {node_id}: {e}"
                             )
-                            # Continue with empty prompt as fallback
-                            layer_data.append(
-                                (
-                                    node_id,
-                                    self.nodes[node_id].agent,
-                                    f"Error building prompt: {e}",
+                            # Continue with an error prompt as fallback
+                            prompt = f"Error building prompt: {e}"
+                        layer_data.append(
+                            (
+                                node_id,
+                                agent,
+                                node_type,
+                                agent_name,
+                                prompt,
+                            )
+                        )
+
+                    def _make_call(node_id, agent, node_type, prompt):
+                        """Bind one node's invocation into a zero-arg callable."""
+                        if node_type == NodeType.SUBGRAPH:
+                            # Subgraphs receive the prompt as their task and
+                            # run in isolation.  Checkpoint state is stored
+                            # under a sub-directory keyed by the parent node.
+                            inner: GraphWorkflow = agent
+                            _prev_cp = inner.checkpoint_dir
+                            if (
+                                self.checkpoint_dir
+                                and not inner.checkpoint_dir
+                            ):
+                                inner.checkpoint_dir = str(
+                                    Path(self.checkpoint_dir)
+                                    / node_id
                                 )
-                            )
 
-                    # Execute all agents in this layer in parallel
-                    with ContextThreadPoolExecutor(
-                        max_workers=min(self._max_workers, len(layer))
-                    ) as executor:
-
-                        if self.verbose:
-                            logger.debug(
-                                f"Created thread pool with {min(self._max_workers, len(layer))} workers for layer {layer_idx + 1}"
-                            )
-
-                        future_to_data = {}
-
-                        # Submit all tasks
-                        for node_id, agent, prompt in layer_data:
-                            try:
-                                node = self.nodes[node_id]
-                                if node.type == NodeType.SUBGRAPH:
-                                    # Subgraphs receive the prompt as their
-                                    # task and run in isolation.  Checkpoint
-                                    # state is stored under a sub-directory
-                                    # keyed by the parent node ID.
-                                    inner: GraphWorkflow = agent
-                                    _prev_cp = inner.checkpoint_dir
-                                    if (
-                                        self.checkpoint_dir
-                                        and not inner.checkpoint_dir
-                                    ):
-                                        inner.checkpoint_dir = str(
-                                            Path(self.checkpoint_dir)
-                                            / node_id
-                                        )
-
-                                    def _run_inner(
-                                        _inner=inner,
-                                        _prompt=prompt,
-                                        _prev=_prev_cp,
-                                        _img=img,
-                                        _args=args,
-                                        _kwargs=kwargs,
-                                    ):
-                                        try:
-                                            return _inner.run(
-                                                _prompt,
-                                                img=_img,
-                                                *_args,
-                                                **_kwargs,
-                                            )
-                                        finally:
-                                            _inner.checkpoint_dir = (
-                                                _prev
-                                            )
-
-                                    future = executor.submit(
-                                        _run_inner
-                                    )
-                                else:
-                                    # Build per-agent kwargs, injecting
-                                    # streaming_callback if provided.
-                                    submit_kwargs = dict(kwargs)
-                                    if (
-                                        _streaming_callback
-                                        is not None
-                                    ):
-                                        _nid = node_id
-                                        submit_kwargs[
-                                            "streaming_callback"
-                                        ] = lambda token, _nid=_nid: _streaming_callback(
-                                            _nid, token
-                                        )
-
-                                    future = executor.submit(
-                                        agent.run,
-                                        prompt,
-                                        img,
+                            def _run_inner(
+                                _inner=inner,
+                                _prompt=prompt,
+                                _prev=_prev_cp,
+                            ):
+                                try:
+                                    return _inner.run(
+                                        _prompt,
+                                        img=img,
                                         *args,
-                                        **submit_kwargs,
+                                        **kwargs,
                                     )
-                                future_to_data[future] = (
-                                    node_id,
-                                    agent,
+                                finally:
+                                    _inner.checkpoint_dir = _prev
+
+                            return _run_inner
+
+                        if _streaming_callback is None:
+                            # Common path: no per-node kwargs copy needed.
+                            def _run_agent(
+                                _agent=agent, _prompt=prompt
+                            ):
+                                return _agent.run(
+                                    _prompt, img, *args, **kwargs
                                 )
 
-                                if self.verbose:
-                                    logger.debug(
-                                        f"Submitted execution task for agent: {getattr(agent, 'agent_name', node_id)}"
-                                    )
+                            return _run_agent
 
+                        def _run_agent_streaming(
+                            _agent=agent,
+                            _prompt=prompt,
+                            _nid=node_id,
+                        ):
+                            call_kwargs = dict(kwargs)
+                            call_kwargs["streaming_callback"] = (
+                                lambda token: _streaming_callback(
+                                    _nid, token
+                                )
+                            )
+                            return _agent.run(
+                                _prompt, img, *args, **call_kwargs
+                            )
+
+                        return _run_agent_streaming
+
+                    def _record(
+                        node_id, agent_name, node_type, output
+                    ):
+                        """Persist one node's output into the run's state."""
+                        # Subgraph nodes return a dict; flatten to a readable
+                        # string for downstream agents.  Only applied to
+                        # SUBGRAPH nodes so that agent nodes returning
+                        # structured dicts are not silently coerced.
+                        if (
+                            node_type == NodeType.SUBGRAPH
+                            and isinstance(output, dict)
+                        ):
+                            output = "\n\n".join(
+                                f"[{k}]: {v}"
+                                for k, v in output.items()
+                                if v is not None
+                            )
+
+                        prev_outputs[node_id] = output
+                        execution_results[node_id] = output
+
+                        try:
+                            self.conversation.add(
+                                role=agent_name, content=output
+                            )
+                        except Exception as e:
+                            logger.exception(
+                                f"Error adding output to conversation for agent {agent_name}: {e}"
+                            )
+
+                        if _on_node_complete is not None:
+                            try:
+                                _on_node_complete(node_id, output)
                             except Exception as e:
                                 logger.exception(
-                                    f"Error submitting task for agent {getattr(agent, 'agent_name', node_id)}: {e}"
+                                    f"Error in on_node_complete callback for {agent_name}: {e}"
                                 )
-                                # Add error result directly
+
+                    if len(layer_data) == 1:
+                        # Single-node layer: run inline. Dispatching to a
+                        # worker thread would only add handoff latency.
+                        (
+                            node_id,
+                            agent,
+                            node_type,
+                            agent_name,
+                            prompt,
+                        ) = layer_data[0]
+                        try:
+                            output = _make_call(
+                                node_id, agent, node_type, prompt
+                            )()
+                        except Exception as e:
+                            output = f"[ERROR] Agent {agent_name} failed: {e}"
+                            logger.exception(
+                                f"Error in GraphWorkflow agent execution for {agent_name}: {e}"
+                            )
+                        _record(
+                            node_id, agent_name, node_type, output
+                        )
+                    else:
+                        # Parallel layer: dispatch onto the run-wide pool.
+                        pool = _get_executor()
+                        future_to_data = {}
+
+                        for (
+                            node_id,
+                            agent,
+                            node_type,
+                            agent_name,
+                            prompt,
+                        ) in layer_data:
+                            try:
+                                future = pool.submit(
+                                    _make_call(
+                                        node_id,
+                                        agent,
+                                        node_type,
+                                        prompt,
+                                    )
+                                )
+                                future_to_data[future] = (
+                                    node_id,
+                                    agent_name,
+                                    node_type,
+                                )
+                            except Exception as e:
+                                logger.exception(
+                                    f"Error submitting task for agent {agent_name}: {e}"
+                                )
                                 error_output = f"[ERROR] Failed to submit task: {e}"
                                 prev_outputs[node_id] = error_output
                                 execution_results[node_id] = (
                                     error_output
                                 )
 
-                        # Collect results as they complete
                         completed_count = 0
                         for future in concurrent.futures.as_completed(
                             future_to_data
                         ):
-                            node_id, agent = future_to_data[future]
-                            agent_name = getattr(
-                                agent, "agent_name", node_id
-                            )
-
+                            (
+                                node_id,
+                                agent_name,
+                                node_type,
+                            ) = future_to_data[future]
                             try:
-                                agent_start_time = time.time()
                                 output = future.result()
-                                agent_execution_time = (
-                                    time.time() - agent_start_time
-                                )
-
-                                # Subgraph nodes return a dict; flatten to
-                                # a readable string for downstream agents.
-                                # Only apply to SUBGRAPH nodes so that agent
-                                # nodes returning structured dicts are not
-                                # silently coerced.
-                                if (
-                                    isinstance(output, dict)
-                                    and self.nodes[node_id].type
-                                    == NodeType.SUBGRAPH
-                                ):
-                                    output = "\n\n".join(
-                                        f"[{k}]: {v}"
-                                        for k, v in output.items()
-                                        if v is not None
-                                    )
-
                                 completed_count += 1
-
                                 if self.verbose:
                                     logger.success(
-                                        f"Agent {agent_name} completed successfully ({completed_count}/{len(layer_data)}) in {agent_execution_time:.3f}s"
+                                        f"Agent {agent_name} completed successfully "
+                                        f"({completed_count}/{len(layer_data)})"
                                     )
-
                             except Exception as e:
                                 output = f"[ERROR] Agent {agent_name} failed: {e}"
                                 logger.exception(
                                     f"Error in GraphWorkflow agent execution for {agent_name}: {e}"
                                 )
 
-                            prev_outputs[node_id] = output
-                            execution_results[node_id] = output
-
-                            # Add to conversation (this could be optimized further by batching)
-                            try:
-                                self.conversation.add(
-                                    role=agent_name,
-                                    content=output,
-                                )
-
-                                if self.verbose:
-                                    logger.debug(
-                                        f"Added output to conversation for agent: {agent_name}"
-                                    )
-
-                            except Exception as e:
-                                logger.exception(
-                                    f"Error adding output to conversation for agent {agent_name}: {e}"
-                                )
-
-                            # Fire the on_node_complete callback
-                            if _on_node_complete is not None:
-                                try:
-                                    _on_node_complete(node_id, output)
-                                except Exception as e:
-                                    logger.exception(
-                                        f"Error in on_node_complete callback for {agent_name}: {e}"
-                                    )
+                            _record(
+                                node_id, agent_name, node_type, output
+                            )
 
                     layer_execution_time = (
                         time.time() - layer_start_time
@@ -2179,9 +2451,9 @@ class GraphWorkflow:
                                 / f"{task_key}_layer_{layer_idx}.json"
                             )
                             layer_outputs = {
-                                nid: prev_outputs[nid]
-                                for nid in layer
-                                if nid in prev_outputs
+                                entry[0]: prev_outputs[entry[0]]
+                                for entry in layer
+                                if entry[0] in prev_outputs
                             }
                             checkpoint_path.write_text(
                                 json.dumps(
@@ -2254,6 +2526,10 @@ class GraphWorkflow:
                 f"Error in GraphWorkflow.run after {total_time:.3f}s: {e}"
             )
             raise e
+
+        finally:
+            if executor is not None:
+                executor.shutdown(wait=True)
 
     def visualize(
         self,
@@ -3501,12 +3777,16 @@ class GraphWorkflow:
                 )
                 result["is_valid"] = False
 
+            # One adjacency pass feeds the isolation and reachability checks
+            # below, replacing per-node backend calls and a reversed copy of
+            # the whole graph.
+            succ, pred = self.graph_backend.adjacency()
+
             # Check for isolated nodes (no incoming or outgoing edges)
             isolated = [
                 n
                 for n in self.nodes
-                if self.graph_backend.in_degree(n) == 0
-                and self.graph_backend.out_degree(n) == 0
+                if not succ.get(n) and not pred.get(n)
             ]
             if isolated:
                 result["warnings"].append(
@@ -3542,13 +3822,9 @@ class GraphWorkflow:
 
             # Check for unreachable nodes (not reachable from entry points)
             if self.entry_points:
-                reachable = set()
-                for entry in self.entry_points:
-                    reachable.update(
-                        self.graph_backend.descendants(entry)
-                    )
-                    reachable.add(entry)
-
+                reachable = self._multi_source_reachable(
+                    self.entry_points, succ
+                )
                 unreachable = set(self.nodes.keys()) - reachable
                 if unreachable:
                     result["warnings"].append(
@@ -3566,14 +3842,9 @@ class GraphWorkflow:
 
             # Check for dead-end nodes (cannot reach any exit point)
             if self.end_points:
-                reverse_graph = self.graph_backend.reverse()
-                reachable_to_exit = set()
-                for exit_point in self.end_points:
-                    reachable_to_exit.update(
-                        reverse_graph.descendants(exit_point)
-                    )
-                    reachable_to_exit.add(exit_point)
-
+                reachable_to_exit = self._multi_source_reachable(
+                    self.end_points, pred
+                )
                 dead_ends = set(self.nodes.keys()) - reachable_to_exit
                 if dead_ends:
                     result["warnings"].append(
