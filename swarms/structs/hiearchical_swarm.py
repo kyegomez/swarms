@@ -43,6 +43,8 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 
+from swarms.utils.get_cpu_cores import max_workers_95_percent
+
 
 class HierarchicalOrder(BaseModel):
     """
@@ -322,7 +324,11 @@ class HierarchicalSwarm:
         self.autosave = autosave
         self.verbose = verbose
         self.parallel_execution = parallel_execution
-        self.max_workers = max_workers
+        self.max_workers = (
+            max_workers
+            if max_workers is not None
+            else max_workers_95_percent()
+        )
         self.agent_as_judge = agent_as_judge
         self.judge_agent_model_name = judge_agent_model_name
         self.swarm_workspace_dir = None
@@ -665,11 +671,6 @@ class HierarchicalSwarm:
             if self.max_reassignment_attempts < 0:
                 raise ValueError(
                     "max_reassignment_attempts must be greater than or equal to 0."
-                )
-
-            if self.max_workers is not None and self.max_workers <= 0:
-                raise ValueError(
-                    "max_workers must be greater than 0 when provided."
                 )
 
             if self.director is None:
@@ -1296,18 +1297,6 @@ class HierarchicalSwarm:
         )
         return failure, failure
 
-    def _resolve_max_workers(self) -> int:
-        """Determine the thread pool size for parallel worker execution.
-
-        Worker calls are I/O-bound (network calls to LLM providers), so CPU
-        core count is rarely the right sizing signal. Uses ``self.max_workers``
-        when explicitly configured; otherwise falls back to the prior default
-        of ``0.75 * cpu_count()``.
-        """
-        if self.max_workers is not None:
-            return max(1, int(self.max_workers))
-        return max(1, int((os.cpu_count() or 1) * 0.75))
-
     @staticmethod
     def _agent_display_name(agent: Any) -> str:
         """Resolve a human-readable name for a worker.
@@ -1362,10 +1351,9 @@ class HierarchicalSwarm:
         failures = []
 
         if self.parallel_execution:
-            max_workers = self._resolve_max_workers()
             futures_map = {}
             with ContextThreadPoolExecutor(
-                max_workers=max_workers
+                max_workers=self.max_workers
             ) as executor:
                 for index, order in enumerate(orders):
                     if self.interactive and self.dashboard:

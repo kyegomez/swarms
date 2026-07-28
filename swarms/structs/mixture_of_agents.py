@@ -1,5 +1,4 @@
 import concurrent.futures
-import os
 from typing import List, Optional
 
 from swarms.prompts.ag_prompt import AGGREGATOR_SYSTEM_PROMPT_MAIN
@@ -18,6 +17,7 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 from swarms.utils.generate_id import generate_id
+from swarms.utils.get_cpu_cores import max_workers_95_percent
 
 logger = initialize_logger(log_folder="mixture_of_agents")
 
@@ -291,7 +291,7 @@ class MixtureOfAgents:
             A list of formatted responses as each task completes.
         """
         with ContextThreadPoolExecutor(
-            max_workers=os.cpu_count()
+            max_workers=max_workers_95_percent()
         ) as executor:
             futures = [
                 executor.submit(self.run, task) for task in tasks

@@ -4,7 +4,6 @@ import os
 import time
 from typing import Callable, List, Optional, Union
 
-from loguru import logger as loguru_logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.telemetry.otel import (
@@ -14,14 +13,16 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 from swarms.utils.formatter import formatter
-from swarms.utils.get_cpu_cores import get_cpu_cores
+from swarms.utils.generate_id import generate_id
+from swarms.utils.get_cpu_cores import (
+    max_workers_95_percent,
+)
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.swarm_autosave import get_swarm_workspace_dir
 from swarms.utils.workspace_utils import get_workspace_dir
-from swarms.utils.generate_id import generate_id
 
 logger = initialize_logger(log_folder="concurrent_workflow")
 
@@ -90,6 +91,7 @@ class ConcurrentWorkflow:
         autosave: bool = True,
         verbose: bool = False,
         on_error: str = "store",
+        max_workers: Optional[int] = None,
     ):
         self.id = id or generate_id("concurrent-workflow")
         self.name = name
@@ -106,6 +108,11 @@ class ConcurrentWorkflow:
         self.swarm_workspace_dir = None
         self.metadata_output_path = (
             f"concurrent_workflow_name_{name}_id_{self.id}.json"
+        )
+        self.max_workers = (
+            max_workers
+            if max_workers is not None
+            else max_workers_95_percent()
         )
 
         # Initialize agent statuses if agents are provided
@@ -261,7 +268,6 @@ class ConcurrentWorkflow:
             if self.show_dashboard:
                 self.display_agent_dashboard()
 
-            max_workers = int(get_cpu_cores() * 0.95)
             futures = []
             results = []
 
@@ -344,7 +350,7 @@ class ConcurrentWorkflow:
                     raise
 
             with ContextThreadPoolExecutor(
-                max_workers=max_workers
+                max_workers=self.max_workers
             ) as executor:
                 futures = [
                     executor.submit(
@@ -409,10 +415,8 @@ class ConcurrentWorkflow:
         """
         self.conversation.add(role="User", content=task)
 
-        max_workers = int(get_cpu_cores() * 0.95)
-
         with ContextThreadPoolExecutor(
-            max_workers=max_workers
+            max_workers=self.max_workers
         ) as executor:
             future_to_agent = {
                 executor.submit(
@@ -683,7 +687,7 @@ class ConcurrentWorkflow:
                 # Clear the cache so get_workspace_dir() picks up the new value
                 get_workspace_dir.cache_clear()
                 if self.verbose:
-                    loguru_logger.info(
+                    logger.info(
                         f"WORKSPACE_DIR not set, using default: {default_workspace}"
                     )
 
@@ -695,11 +699,11 @@ class ConcurrentWorkflow:
 
             if self.swarm_workspace_dir:
                 if self.verbose:
-                    loguru_logger.info(
+                    logger.info(
                         f"Autosave enabled. Conversation history will be saved to: {self.swarm_workspace_dir}"
                     )
         except Exception as e:
-            loguru_logger.warning(
+            logger.warning(
                 f"Failed to setup autosave for ConcurrentWorkflow: {e}"
             )
             # Don't raise - autosave failures shouldn't break initialization
@@ -746,10 +750,10 @@ class ConcurrentWorkflow:
                     )
 
                 if self.verbose:
-                    loguru_logger.debug(
+                    logger.debug(
                         f"Saved conversation history to {conversation_path}"
                     )
         except Exception as e:
-            loguru_logger.warning(
+            logger.warning(
                 f"Failed to save conversation history: {e}"
             )

@@ -47,6 +47,7 @@ from typing import Any, Callable, Dict, List, Tuple
 
 os.environ.setdefault("SWARMS_TELEMETRY_ON", "false")
 
+
 def _find_repo_root() -> str:
     """
     Walk up from this file until the directory containing the `swarms` package.
@@ -649,9 +650,7 @@ def main() -> None:
     ap.add_argument("--skip-imports", action="store_true")
     ap.add_argument(
         "--out",
-        default=os.path.join(
-            _RESULTS_DIR, "latest.json"
-        ),
+        default=os.path.join(_RESULTS_DIR, "latest.json"),
         help="where to write raw results JSON (a .md report goes beside it)",
     )
     args = ap.parse_args()
