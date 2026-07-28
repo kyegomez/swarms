@@ -674,6 +674,33 @@ class HierarchicalSwarm:
 
             if self.director is None:
                 self.director = self.setup_director()
+            elif not getattr(
+                self.director, "tools_list_dictionary", None
+            ):
+                # A caller-supplied director carries no SwarmSpec schema, so it
+                # replies in prose and parse_orders can never read a plan out of
+                # it. Attach the same schema setup_director() would have used.
+                self.director.tools_list_dictionary = [
+                    BaseTool().base_model_to_dict(SwarmSpec)
+                ]
+                # Agent bakes its tool schemas into the LiteLLM instance during
+                # __init__, so the schema above only reaches the model once that
+                # instance is rebuilt -- the same step Agent takes when it adds
+                # planning tools after construction.
+                if getattr(self.director, "llm", None) is not None:
+                    self.director.llm = self.director.llm_handling()
+
+                # The schema alone is not enough: without the director prompt the
+                # model invents field names (e.g. "agent" for "agent_name") and
+                # HierarchicalOrder rejects the order. Append to short_memory
+                # rather than system_prompt, which Agent already copied into its
+                # conversation during __init__.
+                memory = getattr(self.director, "short_memory", None)
+                if memory is not None:
+                    memory.add(
+                        role="system",
+                        content=self.director_system_prompt,
+                    )
 
         except Exception as e:
             error_msg = f"[ERROR] Reliability checks failed: {str(e)}"
@@ -820,6 +847,7 @@ class HierarchicalSwarm:
             logger.error(
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
+            raise
 
     @trace_run(
         "HierarchicalSwarm.run",
@@ -869,6 +897,7 @@ class HierarchicalSwarm:
 
             current_loop = 0
             last_output = None
+            failed_loops = 0
 
             # Start dashboard if in interactive mode
             if self.interactive and self.dashboard:
@@ -906,6 +935,7 @@ class HierarchicalSwarm:
                     )
 
                 except Exception as e:
+                    failed_loops += 1
                     error_msg = (
                         f"[ERROR] Loop execution failed: {str(e)}"
                     )
@@ -919,6 +949,14 @@ class HierarchicalSwarm:
                 self.conversation.add(
                     role="System",
                     content=f"--- Loop {current_loop}/{self.max_loops} completed ---",
+                )
+
+            # Every loop failed, so the conversation holds no agent work. Returning
+            # it would look like a successful run that simply produced nothing.
+            if failed_loops == self.max_loops:
+                raise RuntimeError(
+                    f"Hierarchical swarm produced no output: all {self.max_loops} "
+                    "loop(s) failed. See the logged errors above for the cause."
                 )
 
             # Stop dashboard if in interactive mode
