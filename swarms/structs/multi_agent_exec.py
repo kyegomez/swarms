@@ -8,6 +8,7 @@ from loguru import logger
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
 from swarms.telemetry.otel import ContextThreadPoolExecutor
+from swarms.utils.get_cpu_cores import max_workers_95_percent
 
 
 def run_single_agent(
@@ -141,8 +142,7 @@ def run_agents_concurrently(
     """
     try:
         if max_workers is None:
-            num_cores = os.cpu_count()
-            max_workers = int(num_cores * 0.95) if num_cores else 1
+            max_workers = max_workers_95_percent()
 
         futures = []
         agent_id_map = {}
@@ -279,6 +279,10 @@ def batched_grid_agent_execution(
         >>> for i, result in enumerate(results):
         ...     print(f"Agent {i+1} with {tasks[i]}: {result}")
     """
+
+    if max_workers is None:
+        max_workers = max_workers_95_percent()
+
     logger.info(
         f"Batch Grid Execution with {len(agents)} agents and number of tasks: {len(tasks)}"
     )
@@ -287,9 +291,6 @@ def batched_grid_agent_execution(
         raise ValueError(
             "The number of agents must match the number of tasks."
         )
-
-    # 90% of the available CPU cores
-    max_workers = max_workers or int(os.cpu_count() * 0.9)
 
     results = [None] * len(agents)
     with ContextThreadPoolExecutor(
@@ -348,6 +349,9 @@ def run_agents_with_different_tasks(
         ...     agent, task = pairs[i]
         ...     print(f"Agent {agent.agent_name} with {task}: {result}")
     """
+    if max_workers is None:
+        max_workers = max_workers_95_percent()
+
     if not agent_task_pairs:
         return []
 

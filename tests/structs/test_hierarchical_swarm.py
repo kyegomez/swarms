@@ -939,9 +939,8 @@ def test_max_workers_defaults_to_cpu_heuristic():
         StubAgent("Director", []),
         [StubAgent("Worker", ["done"])],
     )
-    assert swarm.max_workers is None
-    assert swarm._resolve_max_workers() == max(
-        1, int((os.cpu_count() or 1) * 0.75)
+    assert swarm.max_workers == max(
+        1, int((os.cpu_count() or 1) * 0.95)
     )
 
 
@@ -952,7 +951,6 @@ def test_max_workers_override_is_used():
         max_workers=2,
     )
     assert swarm.max_workers == 2
-    assert swarm._resolve_max_workers() == 2
 
 
 def test_max_workers_must_be_positive():
