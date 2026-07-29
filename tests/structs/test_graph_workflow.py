@@ -1308,5 +1308,76 @@ def test_compile_calls_validate_and_reports_errors():
     assert len(result["errors"]) > 0
 
 
+def _cyclic_workflow():
+    """a -> b -> c -> a, plus standalone d -> e so a DAG part exists."""
+    wf = GraphWorkflow(name="V-Cycle", auto_compile=False)
+    for name in ("Cyc-A", "Cyc-B", "Cyc-C", "Dag-D", "Dag-E"):
+        wf.add_node(create_test_agent(name))
+    wf.add_edge("Cyc-A", "Cyc-B")
+    wf.add_edge("Cyc-B", "Cyc-C")
+    wf.add_edge("Cyc-C", "Cyc-A")
+    wf.add_edge("Dag-D", "Dag-E")
+    return wf
+
+
+def test_validate_reports_cycle_as_error_not_warning():
+    """A cyclic graph is invalid: cycles land in errors and name the flattening."""
+    wf = _cyclic_workflow()
+
+    result = wf.validate(raise_on_error=False)
+
+    assert result["is_valid"] is False
+    error_text = " ".join(result["errors"])
+    assert "cycle" in error_text.lower()
+    assert "flattened" in error_text.lower()
+    assert result.get("cycles"), "detected cycles must be returned"
+    # cycles must not also appear as the old generic warning
+    assert not any(
+        w == "Found cycles in workflow" for w in result["warnings"]
+    )
+
+
+def test_validate_raise_on_error_raises_for_cycle():
+    """validate(raise_on_error=True) refuses a cyclic graph."""
+    wf = _cyclic_workflow()
+
+    with pytest.raises(ValueError, match="[Cc]ycle"):
+        wf.validate(raise_on_error=True)
+
+
+def test_compile_time_validation_names_cyclic_nodes():
+    """_fast_validate flags exactly the nodes on the cycle, not the DAG part."""
+    wf = _cyclic_workflow()
+    wf.set_entry_points(["Dag-D"])
+    wf.set_end_points(["Dag-E"])
+    wf.compile()
+
+    succ, pred = wf.graph_backend.adjacency()
+    errors, _ = wf._fast_validate(succ, pred)
+
+    error_text = " ".join(errors)
+    for node in ("Cyc-A", "Cyc-B", "Cyc-C"):
+        assert node in error_text
+    for node in ("Dag-D", "Dag-E"):
+        assert node not in error_text
+
+
+def test_nodes_on_cycles_empty_for_dag():
+    """The Kahn peel finds nothing on an acyclic graph."""
+    wf = GraphWorkflow(name="V-NoCycle", auto_compile=False)
+    for name in ("Lin-A", "Lin-B", "Lin-C"):
+        wf.add_node(create_test_agent(name))
+    wf.add_edge("Lin-A", "Lin-B")
+    wf.add_edge("Lin-B", "Lin-C")
+    wf.compile()
+
+    succ, pred = wf.graph_backend.adjacency()
+    assert wf._nodes_on_cycles(succ, pred) == []
+
+    result = wf.validate()
+    assert result["is_valid"] is True
+    assert result["errors"] == []
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
