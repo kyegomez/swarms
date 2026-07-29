@@ -17,15 +17,15 @@ The script should be well-structured and production-ready. DO NOT use placeholde
 copy/paste to vscode and run it without issue. Here are some tips to consider:
 
 1. **Import Statements**:
-   - Begin with necessary Python imports. Import the 'Agent' class from the 'swarms.structs' module.
-   - Import the language or vision model from 'swarms.models', depending on the nature of the swarm (text-based or image-based tasks).
+   - Begin with necessary Python imports. Import the 'Agent' class from the 'swarms' package.
+   - Select the model with the 'model_name' argument on each Agent, e.g. model_name="gpt-4o" for text or a vision-capable model for image tasks. There is no separate model class to import.
    - Import the SOPs for each agent type from swarms.prompts.(insert swarm team name here). All the SOPs should be together in a separate Python file and contain the prompts for each agent's task.
-   - Use os.getenv for the OpenAI API key.
+   - Read the provider API key from the environment; the model layer picks it up automatically.
 
-2. **Initialize the AI Model**:
-   - If the swarm involves text processing, initialize 'OpenAIChat' with the appropriate API key.
-   - For image processing tasks, initialize 'GPT4VisionAPI' similarly.
-   - Ensure the model is set up with necessary parameters like 'max_tokens' for language tasks.
+2. **Select the AI Model**:
+   - For text processing, pass a text model name to each Agent, e.g. model_name="gpt-4o".
+   - For image processing tasks, pass a vision-capable model name the same way.
+   - Set any generation parameters directly on the Agent, e.g. max_tokens and temperature.
 
 3. **Agent Initialization**:
    - Create instances of the 'Agent' class for each role identified in the SOPs. Pass the corresponding SOP and the initialized AI model to each agent.
@@ -47,25 +47,23 @@ copy/paste to vscode and run it without issue. Here are some tips to consider:
 
 Output Format: A complete Python script that is ready for copy/paste to GitHub and demo execution. It should be formatted with complete logic, proper indentation, clear variable names, and comments.
 Here is an example of a a working swarm script that you can use as a rough template for the logic:
-import os
 from dotenv import load_dotenv
-from swarm_models import OpenAIChat
-from swarms.structs import Agent
+from swarms import Agent
 import swarms.prompts.swarm_daddy as sdsp
 
-# Load environment variables and initialize the OpenAI Chat model
+# Load environment variables so the model layer can read the provider API key
 load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
-llm = OpenAIChat(model_name = "gpt-4", openai_api_key=api_key)
+
+MODEL_NAME = "gpt-4o"
 
 user_idea = "screenplay writing"
 
 
-#idea_analysis_agent = Agent(llm=llm, sop=sdsp.IDEA_ANALYSIS_AGENT_PROMPT, max_loops=1)
-role_identification_agent = Agent(llm=llm, sop=sdsp.AGENT_ROLE_IDENTIFICATION_AGENT_PROMPT, max_loops=1)
-agent_configuration_agent = Agent(llm=llm, sop=sdsp.AGENT_CONFIGURATION_AGENT_PROMPT, max_loops=1)
-swarm_assembly_agent = Agent(llm=llm, sop=sdsp.SWARM_ASSEMBLY_AGENT_PROMPT, max_loops=1)
-testing_optimization_agent = Agent(llm=llm, sop=sdsp.TESTING_OPTIMIZATION_AGENT_PROMPT, max_loops=1)
+#idea_analysis_agent = Agent(model_name=MODEL_NAME, sop=sdsp.IDEA_ANALYSIS_AGENT_PROMPT, max_loops=1)
+role_identification_agent = Agent(model_name=MODEL_NAME, sop=sdsp.AGENT_ROLE_IDENTIFICATION_AGENT_PROMPT, max_loops=1)
+agent_configuration_agent = Agent(model_name=MODEL_NAME, sop=sdsp.AGENT_CONFIGURATION_AGENT_PROMPT, max_loops=1)
+swarm_assembly_agent = Agent(model_name=MODEL_NAME, sop=sdsp.SWARM_ASSEMBLY_AGENT_PROMPT, max_loops=1)
+testing_optimization_agent = Agent(model_name=MODEL_NAME, sop=sdsp.TESTING_OPTIMIZATION_AGENT_PROMPT, max_loops=1)
 
 # Process the user idea through each agent
 # idea_analysis_output = idea_analysis_agent.run(user_idea)

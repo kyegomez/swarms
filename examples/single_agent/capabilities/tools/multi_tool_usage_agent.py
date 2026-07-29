@@ -7,7 +7,6 @@ import inspect
 import typing
 from typing import Union
 from swarms import Agent
-from swarm_models import OpenAIChat
 
 
 @dataclass
@@ -129,17 +128,13 @@ class ToolAgent:
         self.functions = {func.__name__: func for func in functions}
         self.function_specs = self._analyze_functions(functions)
 
-        self.model = OpenAIChat(
-            openai_api_key=openai_api_key,
-            model_name=model_name,
-            temperature=temperature,
-        )
-
         self.system_prompt = self._create_system_prompt()
         self.agent = Agent(
             agent_name="Tool-Agent",
             system_prompt=self.system_prompt,
-            llm=self.model,
+            model_name=model_name,
+            temperature=temperature,
+            llm_api_key=openai_api_key,
             max_loops=1,
             verbose=True,
         )

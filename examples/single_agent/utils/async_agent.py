@@ -3,7 +3,7 @@ from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
 
-# Initialize the agent (no swarm_models import needed)
+# Initialize the agent
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
     agent_description="Personal finance advisor agent",

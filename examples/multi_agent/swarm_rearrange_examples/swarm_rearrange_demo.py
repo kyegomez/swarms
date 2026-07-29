@@ -1,21 +1,10 @@
-import os
-
-from swarm_models import OpenAIChat
-
 from swarms import Agent, AgentRearrange, SwarmRearrange
 
 company = "NVDA"
 
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("GROQ_API_KEY")
-
-# Model
-model = OpenAIChat(
-    openai_api_base="https://api.groq.com/openai/v1",
-    openai_api_key=api_key,
-    model_name="llama-3.1-70b-versatile",
-    temperature=0.1,
-)
+# LiteLLM routes on the "groq/" prefix and reads GROQ_API_KEY from the
+# environment, so no client object or base_url is needed.
+MODEL_NAME = "groq/llama-3.3-70b-versatile"
 
 
 # Initialize the Managing Director agent
@@ -31,7 +20,8 @@ managing_director = Agent(
     
     For the current potential acquisition of {company}, direct the tasks for the team to thoroughly analyze all aspects of the company, including its financials, industry position, technology, market potential, and regulatory compliance. Provide guidance and feedback as needed to ensure a rigorous and unbiased assessment.
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.1,
     max_loops=1,
     dashboard=False,
     streaming_on=True,
@@ -55,7 +45,8 @@ vp_finance = Agent(
 
     Be sure to consider factors such as the sustainability of {company}' business model, the strength of its customer base, and its ability to generate consistent cash flows. Your analysis should be data-driven, objective, and aligned with Blackstone's investment criteria.
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.1,
     max_loops=1,
     dashboard=False,
     streaming_on=True,
@@ -79,7 +70,8 @@ industry_analyst = Agent(
     
     Your analysis should provide a clear and objective assessment of the attractiveness and future potential of the industrial robotics industry, as well as {company}' positioning within it. Consider both short-term and long-term factors, and provide evidence-based insights to inform the investment decision.
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.1,
     max_loops=1,
     dashboard=False,
     streaming_on=True,
@@ -103,7 +95,8 @@ tech_expert = Agent(
     
     Your analysis should provide a comprehensive assessment of {company}' technological strengths and weaknesses, as well as the sustainability of its competitive advantages. Consider both the current state of its technology and its future potential in light of industry trends and advancements.
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.1,
     max_loops=1,
     dashboard=False,
     streaming_on=True,
@@ -127,7 +120,8 @@ market_researcher = Agent(
     
     Your analysis should provide a data-driven assessment of the market opportunity for {company} and the feasibility of achieving our investment return targets. Consider both bottom-up and top-down market perspectives, and identify any key sensitivities or assumptions in your projections.
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.1,
     max_loops=1,
     dashboard=False,
     streaming_on=True,
@@ -151,7 +145,8 @@ regulatory_specialist = Agent(
     
     Your analysis should provide a comprehensive assessment of the regulatory and legal landscape surrounding {company}, and identify any material risks or potential deal-breakers. Consider both the current state and future outlook, and provide practical recommendations to mitigate identified risks.
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.1,
     max_loops=1,
     dashboard=False,
     streaming_on=True,

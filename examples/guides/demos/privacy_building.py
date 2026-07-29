@@ -1,14 +1,6 @@
-import os
 from swarms import Agent, AgentRearrange
-from swarm_models import OpenAIChat
 
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Create an instance of the OpenAIChat class
-model = OpenAIChat(
-    api_key=api_key, model_name="gpt-5.4", temperature=0.1
-)
+MODEL_NAME = "gpt-5.4"
 
 # Initialize the matchmaker agent (Director)
 matchmaker_agent = Agent(
@@ -72,7 +64,8 @@ matchmaker_agent = Agent(
         <description>Be clear about what information is being shared and why</description>
     </ethical_guidelines>
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.1,
     max_loops=1,
     dashboard=False,
     streaming_on=True,
@@ -138,7 +131,8 @@ profile_analyzer = Agent(
         </privacy_filters>
     </output_guidelines>
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.1,
     max_loops=1,
     dashboard=False,
     streaming_on=True,
@@ -208,7 +202,8 @@ connection_facilitator = Agent(
         </improvement_loop>
     </feedback_system>
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.1,
     max_loops=1,
     dashboard=False,
     streaming_on=True,
