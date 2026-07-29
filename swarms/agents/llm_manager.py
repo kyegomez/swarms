@@ -228,6 +228,11 @@ class LLMManager:
                 "agent_name": agent.agent_name,
                 "prompt_caching": agent.prompt_caching,
                 "cache_config": agent.cache_config,
+                # Omitting these sends custom-endpoint traffic to the default
+                # provider instead. temp_llm_instance_for_tool_summary
+                # already forwards both.
+                "base_url": agent.llm_base_url,
+                "api_key": agent.llm_api_key,
             }
 
             # Initialize tools_list_dictionary, if applicable

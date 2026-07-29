@@ -5,6 +5,7 @@ import tempfile
 import time
 import unittest
 from statistics import mean, median, stdev, variance
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import psutil
@@ -14,6 +15,7 @@ from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 
+import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import (
     Agent,
     create_agents_from_yaml,
@@ -2370,6 +2372,99 @@ class TestLLMArgsAndHandling:
             raise
 
         print("✓ LLM handling args and kwargs test passed")
+
+    def _capture_completion_params(self, llm):
+        """Run llm with completion stubbed, returning the kwargs it got."""
+        captured = {}
+        response = SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        content="ok", tool_calls=None
+                    )
+                )
+            ]
+        )
+
+        def fake_completion(**kwargs):
+            captured.update(kwargs)
+            return response
+
+        with patch.object(
+            litellm_wrapper, "completion", side_effect=fake_completion
+        ):
+            llm.run("hello")
+
+        return captured
+
+    def test_llm_base_url_and_api_key_reach_the_provider_call(self):
+        """A custom endpoint and key must survive Agent -> completion().
+
+        Both values cross two layers and each dropped them
+        independently, so requests silently went to the default
+        provider instead.
+        """
+        print("\nTesting llm_base_url / llm_api_key forwarding...")
+
+        base_url = "https://api.together.xyz/v1"
+        api_key = "sk-test-not-a-real-key"
+
+        agent = Agent(
+            agent_name="credential-forwarding-probe",
+            model_name="gpt-4o-mini",
+            llm_base_url=base_url,
+            llm_api_key=api_key,
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+        )
+
+        # Layer 1: Agent -> its LiteLLM instance
+        assert (
+            agent.llm.base_url == base_url
+        ), "llm_base_url did not reach the LiteLLM instance"
+        assert (
+            agent.llm.api_key == api_key
+        ), "llm_api_key did not reach the LiteLLM instance"
+        print("✓ Agent forwards both to its LiteLLM instance")
+
+        # Layer 2: LiteLLM -> litellm.completion
+        params = self._capture_completion_params(agent.llm)
+        assert (
+            params.get("base_url") == base_url
+        ), "base_url did not reach completion()"
+        assert (
+            params.get("api_key") == api_key
+        ), "api_key did not reach completion()"
+        print("✓ Both reach the provider call")
+
+    def test_unset_credentials_are_omitted_from_the_provider_call(
+        self,
+    ):
+        """An unset key must be absent, not passed as None.
+
+        litellm falls back to the provider env var only when the
+        kwarg is absent; an explicit None would override that and
+        break every caller not using a custom endpoint.
+        """
+        print("\nTesting that unset credentials stay absent...")
+
+        agent = Agent(
+            agent_name="credential-default-probe",
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+        )
+
+        params = self._capture_completion_params(agent.llm)
+        assert (
+            "api_key" not in params
+        ), "api_key must be omitted so the env-var fallback applies"
+        assert (
+            "base_url" not in params
+        ), "base_url must be omitted when no endpoint is configured"
+        print("✓ Default path leaves both out")
 
 
 # ============================================================================

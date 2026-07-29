@@ -1479,6 +1479,11 @@ class LiteLLM:
             if self.base_url is not None:
                 completion_params["base_url"] = self.base_url
 
+            # Only when present: litellm falls back to the provider env var
+            # on absence, and an explicit None would override that.
+            if self.api_key is not None:
+                completion_params["api_key"] = self.api_key
+
             if self.response_format is not None:
                 completion_params["response_format"] = (
                     self.response_format
