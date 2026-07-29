@@ -2157,6 +2157,90 @@ class TestAgentToolUsage:
 
         print("✓ Tools with mathematical operations test passed")
 
+    def _readonly_probe_agent(self):
+        return Agent(
+            agent_name="readonly-batch-probe",
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+        )
+
+    def _tool_executor_entries(self, agent):
+        return [
+            m["content"]
+            for m in agent.short_memory.conversation_history
+            if m["role"] == "Tool Executor"
+        ]
+
+    def test_readonly_planning_tools_run_concurrently_in_order(
+        self,
+    ):
+        """Batched read-only built-ins run in parallel, results in call order."""
+        print("\nTesting read-only planning tool batch...")
+
+        agent = self._readonly_probe_agent()
+        delay = 0.2
+
+        def slow_handler(tag):
+            def handler(**kwargs):
+                time.sleep(delay)
+                return f"{tag}-result"
+
+            return handler
+
+        handlers = {
+            "read_file": slow_handler("read"),
+            "grep": slow_handler("grep"),
+            "list_directory": slow_handler("ls"),
+        }
+        # grep first and slowest-equal: order must come from the call
+        # list, not from completion order.
+        batch = [
+            ("grep", {"pattern": "x"}),
+            ("read_file", {"file_path": "a.txt"}),
+            ("list_directory", {"path": "."}),
+        ]
+
+        start = time.time()
+        agent._run_readonly_planning_tools(batch, handlers)
+        elapsed = time.time() - start
+
+        assert (
+            elapsed < delay * 2.2
+        ), f"3 calls took {elapsed:.2f}s — executed serially?"
+        assert batch == [], "batch must be cleared after the flush"
+
+        entries = self._tool_executor_entries(agent)
+        assert entries == [
+            "grep result: grep-result",
+            "read_file result: read-result",
+            "list_directory result: ls-result",
+        ], "results must be recorded in original call order"
+        print(
+            f"✓ 3 read-only tools in {elapsed:.2f}s, order preserved"
+        )
+
+    def test_readonly_planning_tools_single_call_and_empty_batch(
+        self,
+    ):
+        """A single buffered call executes; an empty batch writes nothing."""
+        print("\nTesting read-only batch edge cases...")
+
+        agent = self._readonly_probe_agent()
+        handlers = {"read_file": lambda **kw: "solo-result"}
+
+        agent._run_readonly_planning_tools([], handlers)
+        assert self._tool_executor_entries(agent) == []
+
+        batch = [("read_file", {"file_path": "a.txt"})]
+        agent._run_readonly_planning_tools(batch, handlers)
+        assert self._tool_executor_entries(agent) == [
+            "read_file result: solo-result"
+        ]
+        assert batch == []
+        print("✓ single-call and empty-batch paths work")
+
 
 # ============================================================================
 # LLM ARGS AND HANDLING TESTS

@@ -75,6 +75,7 @@ from swarms.structs.autonomous_loop_utils import (
     MAX_PLANNING_ATTEMPTS,
     MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
+    READONLY_PLANNING_TOOLS,
     assign_task_tool,
     check_sub_agent_status_tool,
     cancel_sub_agent_tasks_tool,
@@ -1892,6 +1893,54 @@ class Agent:
         """
         return get_autonomous_loop_tool_names()
 
+    def _run_readonly_planning_tools(
+        self,
+        batch: List[Tuple[str, Dict[str, Any]]],
+        handlers: Dict[str, Callable],
+    ) -> None:
+        """Execute buffered read-only built-in tool calls concurrently.
+
+        ``read_file``, ``grep`` and ``list_directory`` are I/O-bound and
+        mutate nothing, so when one model response fires several of them
+        they run in a thread pool instead of one at a time — the same
+        treatment user tools already get via
+        ``execute_function_calls_from_api_response``. Results are recorded
+        into memory in the original call order, and the batch only ever
+        holds *consecutive* read-only calls, so a read is never reordered
+        past a write.
+
+        Args:
+            batch: ``(function_name, arguments)`` pairs, in call order.
+                Cleared in place after execution.
+            handlers: The planning-tool handler map to dispatch through.
+        """
+        if not batch:
+            return
+
+        for name, args in batch:
+            self._visualize_function_call(name, args)
+
+        if len(batch) == 1:
+            name, args = batch[0]
+            results = [handlers[name](**args)]
+        else:
+            with ContextThreadPoolExecutor(
+                max_workers=min(len(batch), 4)
+            ) as pool:
+                futures = [
+                    pool.submit(handlers[name], **args)
+                    for name, args in batch
+                ]
+                results = [f.result() for f in futures]
+
+        for (name, args), result in zip(batch, results):
+            self.short_memory.add(
+                role="Tool Executor",
+                content=f"{name} result: {result}",
+            )
+
+        batch.clear()
+
     def _run_autonomous_loop(
         self,
         task: Optional[Union[str, Any]] = None,
@@ -2391,6 +2440,9 @@ class Agent:
                         # Handle tool calls
                         if isinstance(response, list):
                             regular_tool_calls = []
+                            # Consecutive read-only built-ins, executed
+                            # concurrently when flushed.
+                            readonly_batch = []
 
                             for tool_call in response:
                                 if isinstance(
@@ -2414,6 +2466,26 @@ class Agent:
                                         function_name
                                         in planning_tool_handlers
                                     ):
+                                        if (
+                                            function_name
+                                            in READONLY_PLANNING_TOOLS
+                                        ):
+                                            readonly_batch.append(
+                                                (
+                                                    function_name,
+                                                    arguments,
+                                                )
+                                            )
+                                            continue
+
+                                        # A mutating or control-flow tool:
+                                        # run buffered reads first so their
+                                        # ordering relative to writes holds.
+                                        self._run_readonly_planning_tools(
+                                            readonly_batch,
+                                            planning_tool_handlers,
+                                        )
+
                                         # Special handling for handoff_task tool
                                         if (
                                             function_name
@@ -2511,6 +2583,13 @@ class Agent:
                                         regular_tool_calls.append(
                                             tool_call
                                         )
+
+                            # Flush any read-only calls buffered at the
+                            # tail of the response.
+                            self._run_readonly_planning_tools(
+                                readonly_batch,
+                                planning_tool_handlers,
+                            )
 
                             # Handle all regular tools together
                             if regular_tool_calls and exists(
