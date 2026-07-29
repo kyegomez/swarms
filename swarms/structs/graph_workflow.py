@@ -2004,8 +2004,8 @@ class GraphWorkflow:
             logger.info("Starting async GraphWorkflow execution")
 
         try:
-            result = await asyncio.get_event_loop().run_in_executor(
-                None, self.run, task, *args, **kwargs
+            result = await asyncio.to_thread(
+                self.run, task, *args, **kwargs
             )
 
             if self.verbose:

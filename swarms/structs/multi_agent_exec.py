@@ -59,10 +59,7 @@ async def run_agent_async(agent: AgentType, task: str) -> Any:
         ...     result = await run_agent_async(agent, "Process data")
         ...     return result
     """
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(
-        None, run_single_agent, agent, task
-    )
+    return await asyncio.to_thread(run_single_agent, agent, task)
 
 
 async def run_agents_concurrently_async(
