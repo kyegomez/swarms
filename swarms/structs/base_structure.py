@@ -202,10 +202,7 @@ class BaseStructure:
 
     async def run_async(self, *args, **kwargs):
         """Run the structure asynchronously."""
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None, self.run, *args, **kwargs
-        )
+        return await asyncio.to_thread(self.run, *args, **kwargs)
 
     async def save_metadata_async(self, metadata: Dict[str, Any]):
         """Save metadata to file asynchronously.
@@ -213,10 +210,7 @@ class BaseStructure:
         Args:
             metadata (Dict[str, Any]): _description_
         """
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None, self.save_metadata, metadata
-        )
+        return await asyncio.to_thread(self.save_metadata, metadata)
 
     async def load_metadata_async(self) -> Dict[str, Any]:
         """Load metadata from file asynchronously.
@@ -224,8 +218,7 @@ class BaseStructure:
         Returns:
             Dict[str, Any]: _description_
         """
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self.load_metadata)
+        return await asyncio.to_thread(self.load_metadata)
 
     async def log_error_async(self, error_message: str):
         """Log error to file asynchronously.
@@ -233,10 +226,7 @@ class BaseStructure:
         Args:
             error_message (str): _description_
         """
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None, self.log_error, error_message
-        )
+        return await asyncio.to_thread(self.log_error, error_message)
 
     async def save_artifact_async(
         self, artifact: Any, artifact_name: str
@@ -247,9 +237,8 @@ class BaseStructure:
             artifact (Any): _description_
             artifact_name (str): _description_
         """
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None, self.save_artifact, artifact, artifact_name
+        return await asyncio.to_thread(
+            self.save_artifact, artifact, artifact_name
         )
 
     async def load_artifact_async(self, artifact_name: str) -> Any:
@@ -261,9 +250,8 @@ class BaseStructure:
         Returns:
             Any: _description_
         """
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None, self.load_artifact, artifact_name
+        return await asyncio.to_thread(
+            self.load_artifact, artifact_name
         )
 
     async def log_event_async(
@@ -277,9 +265,8 @@ class BaseStructure:
             event (str): _description_
             event_type (str, optional): _description_. Defaults to "INFO".
         """
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None, self.log_event, event, event_type
+        return await asyncio.to_thread(
+            self.log_event, event, event_type
         )
 
     async def asave_to_file(

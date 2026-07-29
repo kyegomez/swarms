@@ -481,6 +481,33 @@ def test_run_async():
         raise
 
 
+def test_run_async_forwards_keyword_arguments():
+    """run_async must accept **kwargs.
+
+    loop.run_in_executor() takes no keyword arguments, so the previous
+    implementation raised TypeError for any keyword passed through.
+    """
+    try:
+        structure = TestStructure(name="TestAsyncKwargs")
+
+        async def run_test():
+            return await structure.run_async(task="kwarg_task")
+
+        result = asyncio.run(run_test())
+
+        assert (
+            result == "Processed: kwarg_task"
+        ), f"Expected keyword to reach run(), got {result!r}"
+
+        logger.info("✓ Run async kwargs test passed")
+
+    except Exception as e:
+        logger.error(
+            f"Error in test_run_async_forwards_keyword_arguments: {str(e)}"
+        )
+        raise
+
+
 def test_save_metadata_async():
     """Test async save metadata."""
     try:

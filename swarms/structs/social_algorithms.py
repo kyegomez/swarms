@@ -605,9 +605,8 @@ class SocialAlgorithms:
         import asyncio
 
         async def async_execution():
-            loop = asyncio.get_event_loop()
-            return await loop.run_in_executor(
-                None, self.run, task, algorithm_args, **kwargs
+            return await asyncio.to_thread(
+                self.run, task, algorithm_args, **kwargs
             )
 
         return asyncio.run(async_execution())

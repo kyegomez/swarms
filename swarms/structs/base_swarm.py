@@ -371,9 +371,8 @@ class BaseSwarm(ABC):
         Args:
             task (Optional[str], optional): _description_. Defaults to None.
         """
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            None, self.run, task, *args, **kwargs
+        result = await asyncio.to_thread(
+            self.run, task, *args, **kwargs
         )
         return result
 
@@ -404,9 +403,8 @@ class BaseSwarm(ABC):
             task (Optional[str], optional): _description_. Defaults to None.
         """
         # Async Loop through the self.max_loops
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            None, self.loop, task, *args, **kwargs
+        result = await asyncio.to_thread(
+            self.loop, task, *args, **kwargs
         )
         return result
 
