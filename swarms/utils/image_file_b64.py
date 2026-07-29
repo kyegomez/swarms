@@ -10,6 +10,7 @@ import ipaddress
 import re
 import socket
 import uuid
+from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -97,6 +98,25 @@ def _is_safe_url(url: str) -> bool:
         return False
 
 
+@lru_cache(maxsize=32)
+def _fetch_image_url(url: str) -> bytes:
+    """Fetch an image URL once per process; an agent re-sends the same img
+    every loop.
+
+    URLs only: file paths stay uncached so a mutated file is still re-read.
+    The guard sits inside the cache on purpose -- a hit makes no request, and
+    lru_cache does not memoize the raise, so a blocked URL fails every call.
+    Entries are bounded by count, not bytes: 32 images retained at most.
+    """
+    if not _is_safe_url(url):
+        raise ValueError(
+            f"Blocked URL '{url}': only external HTTP/HTTPS URLs are permitted."
+        )
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+    return response.content
+
+
 def is_base64_encoded(image_source: str) -> bool:
     """
     Check if a string is already base64 encoded (either as data URI or raw base64).
@@ -175,13 +195,7 @@ def get_image_base64(image_source: str) -> str:
 
     # Handle URLs
     if image_source.startswith(("http://", "https://")):
-        if not _is_safe_url(image_source):
-            raise ValueError(
-                f"Blocked URL '{image_source}': only external HTTP/HTTPS URLs are permitted."
-            )
-        response = requests.get(image_source, timeout=30)
-        response.raise_for_status()
-        image_data = response.content
+        image_data = _fetch_image_url(image_source)
     else:
         # Assume it's a file path
         with open(image_source, "rb") as file:
