@@ -1,33 +1,19 @@
-import os
-
 from dotenv import load_dotenv
 from loguru import logger
-from swarm_models import OpenAIChat
 
-from swarms.agents.create_agents_from_yaml import (
-    create_agents_from_yaml,
-)
+from swarms import create_agents_from_yaml
 
 # Load environment variables
 load_dotenv()
 
-# Path to your YAML file
+# Path to your YAML file. Each agent's model is chosen by the model_name
+# field inside the YAML, so no model object is built here.
 yaml_file = "agents.yaml"
 
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Create an instance of the OpenAIChat class
-model = OpenAIChat(
-    openai_api_key=api_key, model_name="gpt-5.4", temperature=0.1
-)
-
-print(model)
-
 try:
-    # Create agents and run tasks (using 'both' to return agents and task results)
+    # Create agents and return them without running any task
     task_results = create_agents_from_yaml(
-        model=model, yaml_file=yaml_file, return_type="agents"
+        yaml_file=yaml_file, return_type="agents"
     )
 
     print(task_results)

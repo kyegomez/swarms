@@ -1,16 +1,6 @@
-import os
 from swarms import Agent, AgentRearrange
-from swarm_models import OpenAIChat
 
-# Initialize OpenAI model
-api_key = os.getenv(
-    "OPENAI_API_KEY"
-)  # ANTHROPIC_API_KEY, COHERE_API_KEY
-model = OpenAIChat(
-    api_key=api_key,
-    model_name="gpt-5.4",
-    temperature=0.7,  # Higher temperature for more creative responses
-)
+MODEL_NAME = "gpt-5.4"
 
 # Patient Agent - Holds and protects private information
 patient_agent = Agent(
@@ -63,7 +53,8 @@ patient_agent = Agent(
         </responses>
     </interaction_protocols>
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.7,
     max_loops=1,
     verbose=True,
     stopping_token="<DONE>",
@@ -118,7 +109,8 @@ doctor_agent = Agent(
         </patient_interaction>
     </protocols>
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.7,
     max_loops=1,
     verbose=True,
     stopping_token="<DONE>",
@@ -171,7 +163,8 @@ nurse_agent = Agent(
         </assistance>
     </protocols>
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.7,
     max_loops=1,
     verbose=True,
     stopping_token="<DONE>",
@@ -217,7 +210,8 @@ records_agent = Agent(
         </data_handling>
     </protocols>
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.7,
     max_loops=1,
     verbose=True,
     stopping_token="<DONE>",

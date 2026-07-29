@@ -1,17 +1,8 @@
-import os
 from swarms import Agent
 from dotenv import load_dotenv
 
-from swarm_models import OpenAIChat
-
 load_dotenv()
 
-
-model = OpenAIChat(
-    model_name="deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free",
-    openai_api_key=os.getenv("TOGETHER_API_KEY"),
-    base_url="https://api.together.xyz/v1",
-)
 
 # Define system prompts for reasoning agents
 THINKING_AGENT_PROMPT = """You are a sophisticated analytical and strategic thinking agent focused on deep problem analysis and solution design.
@@ -126,7 +117,9 @@ thinking_agent = Agent(
     agent_description="Deep analysis and strategic planning agent",
     system_prompt=THINKING_AGENT_PROMPT,
     max_loops=1,
-    llm=model,
+    # The "together_ai/" prefix routes to Together and picks up
+    # TOGETHER_API_KEY.
+    model_name="together_ai/deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free",
     dynamic_temperature_enabled=True,
 )
 

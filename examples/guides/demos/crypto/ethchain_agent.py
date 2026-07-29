@@ -1,6 +1,5 @@
 import os
 from swarms import Agent
-from swarm_models import OpenAIChat
 from web3 import Web3
 from typing import Dict, Optional, Any
 from datetime import datetime
@@ -75,16 +74,11 @@ class EthereumAnalyzer:
                 "OpenAI API key not found in environment variables"
             )
 
-        model = OpenAIChat(
-            openai_api_key=api_key,
-            model_name="gpt-4",
-            temperature=0.1,
-        )
-
         self.agent = Agent(
             agent_name="Ethereum-Analysis-Agent",
             system_prompt=BLOCKCHAIN_AGENT_PROMPT,
-            llm=model,
+            model_name="gpt-4",
+            temperature=0.1,
             max_loops=1,
             autosave=True,
             dashboard=False,
