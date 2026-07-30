@@ -15,7 +15,6 @@ from typing import (
 )
 
 import yaml
-from litellm import model_list
 from tqdm import tqdm
 
 from swarms.agents.create_agents_from_yaml import (
@@ -110,7 +109,11 @@ class AgentValidator:
             if isinstance(config, AgentSpec):
                 config = config.model_dump()
 
-            # Validate model name using litellm model list
+            # Validate model name using litellm model list.
+            # Deferred import: litellm must not load at `import swarms`
+            # time (#1754).
+            from litellm import model_list
+
             model_name = str(config["model_name"])
             # model_list from litellm is a list of strings, not dicts
             if isinstance(model_list, list) and len(model_list) > 0:

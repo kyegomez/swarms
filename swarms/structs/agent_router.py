@@ -1,7 +1,6 @@
 import math
 from typing import Any, Callable, List, Optional, Union
 
-from litellm import embedding
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from swarms.structs.ma_blocks import find_agent_by_name
@@ -57,6 +56,9 @@ class AgentRouter:
             List[float]: The embedding vector as a list of floats.
         """
         try:
+            # Deferred: litellm must not load at `import swarms` time (#1754).
+            from litellm import embedding
+
             # Prepare parameters for the embedding call
             params = {"model": self.embedding_model, "input": [text]}
 

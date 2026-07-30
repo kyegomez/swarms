@@ -31,16 +31,6 @@ import time
 import traceback
 from typing import Any, Callable, List, Optional, Union
 
-from litellm.exceptions import (
-    AuthenticationError,
-    BadRequestError,
-    InternalServerError,
-)
-from litellm.utils import (
-    supports_function_calling,
-    supports_parallel_function_calling,
-    supports_vision,
-)
 from loguru import logger
 
 from swarms.schemas.agent_errors import AgentLLMInitializationError
@@ -325,6 +315,13 @@ class LLMManager:
         """
         agent = self.agent
 
+        # Deferred: litellm must not load at `import swarms` time (#1754).
+        from litellm.utils import (
+            supports_function_calling,
+            supports_parallel_function_calling,
+            supports_vision,
+        )
+
         # Only check vision support if an image is provided
         if img is not None:
             out = supports_vision(agent.model_name)
@@ -549,12 +546,7 @@ class LLMManager:
 
             return agent.llm.run(**run_args, **kwargs)
 
-        except (
-            BadRequestError,
-            InternalServerError,
-            AuthenticationError,
-            Exception,
-        ) as e:
+        except Exception as e:
             logger.error(
                 f"Error calling LLM with model '{self.get_current_model()}': {e}. "
                 f"Task: {task}, Args: {args}, Kwargs: {kwargs} Traceback: {traceback.format_exc()}"
