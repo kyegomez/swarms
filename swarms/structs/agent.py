@@ -18,17 +18,6 @@ from typing import (
 
 import toml
 import yaml
-from litellm import model_list
-from litellm.exceptions import (
-    AuthenticationError,
-    BadRequestError,
-    InternalServerError,
-)
-from litellm.utils import (
-    get_max_tokens,
-    get_model_info,
-    supports_function_calling,
-)
 from loguru import logger
 from pydantic import BaseModel
 
@@ -98,7 +87,7 @@ from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
 from swarms.utils.generate_id import generate_id
 from swarms.utils.generate_keys import generate_api_key
-from swarms.utils.get_reasoning_efforts import get_reasoning_efforts
+from swarms.utils.get_reasoning_efforts import REASONING_EFFORTS
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -385,7 +374,7 @@ class Agent:
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
         show_tool_execution_output: bool = True,
-        reasoning_effort: Literal[get_reasoning_efforts()] = "medium",
+        reasoning_effort: Literal[REASONING_EFFORTS] = "medium",
         thinking_tokens: int = 1024,
         reasoning_enabled: bool = False,
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
@@ -1563,12 +1552,7 @@ class Agent:
                                 loop_count=loop_count
                             )
 
-                    except (
-                        BadRequestError,
-                        InternalServerError,
-                        AuthenticationError,
-                        Exception,
-                    ) as e:
+                    except Exception as e:
 
                         # Track the LLM/generation error via telemetry — the
                         # retry loop swallows it, so capture_run never sees it.
@@ -2194,6 +2178,8 @@ Subtask Breakdown:
               which may not correspond to available context for input (e.g., 32768 for gpt-4.1 output, but
               over a million for certain input windows).
         """
+        from litellm.utils import get_model_info
+
         try:
             return (
                 get_model_info(self.model_name).get(
@@ -2215,6 +2201,8 @@ Subtask Breakdown:
         Returns:
             int: The maximum number of output tokens for the model. Returns 16000 if undetermined.
         """
+        from litellm.utils import get_model_info
+
         # get_model_info raises for an unmapped model id rather than
         # returning an empty mapping, so an unknown, custom or self-hosted
         # model would otherwise take down Agent.__init__. The sibling
@@ -2245,6 +2233,14 @@ Subtask Breakdown:
             raise AgentInitializationError(
                 "Max loops is not provided or is set to 0. Please set max loops to 1 or more."
             )
+
+        # Deferred: litellm costs >1s to import and fetches its model-cost
+        # map, so it must not load at `import swarms` time (#1754, #1739).
+        from litellm import model_list
+        from litellm.utils import (
+            get_max_tokens,
+            supports_function_calling,
+        )
 
         # Ensure max_tokens is set to a valid value based on the model, with a robust fallback.
         if self.max_tokens is None or self.max_tokens <= 0:
@@ -3093,9 +3089,6 @@ Subtask Breakdown:
         except (
             AgentRunError,
             AgentLLMError,
-            BadRequestError,
-            InternalServerError,
-            AuthenticationError,
             Exception,
         ) as e:
 

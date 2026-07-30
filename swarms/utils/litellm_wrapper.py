@@ -22,9 +22,7 @@ import traceback
 from functools import lru_cache
 from typing import List, Optional, Union
 
-import litellm
 import requests
-from litellm import acompletion, completion, supports_vision
 from loguru import logger
 from pydantic import BaseModel
 
@@ -37,6 +35,44 @@ from swarms.utils.image_file_b64 import (
 )
 
 
+# Bound by _bind_litellm() on first LiteLLM construction.
+litellm = None
+completion = None
+acompletion = None
+supports_vision = None
+
+
+def _bind_litellm() -> None:
+    """Import litellm on first LiteLLM construction, not at module import.
+
+    Importing litellm costs >1s and fetches its model-cost map from the
+    network, so it must not run at `import swarms` time (#1754, #1739).
+    The callables are bound into this module's globals so every existing
+    call site — and every test that patches ``litellm_wrapper.completion``
+    as a module attribute — keeps working unchanged. Each name binds only
+    while None, so an active patch is never overwritten.
+    """
+    global litellm, completion, acompletion, supports_vision
+    if litellm is None:
+        import litellm as _litellm
+
+        litellm = _litellm
+    if completion is None:
+        from litellm import completion as _completion
+
+        completion = _completion
+    if acompletion is None:
+        from litellm import acompletion as _acompletion
+
+        acompletion = _acompletion
+    if supports_vision is None:
+        from litellm import supports_vision as _supports_vision
+
+        supports_vision = _supports_vision
+
+
+# Both read the module globals bound above, so they are only ever reached
+# from LiteLLM methods — i.e. after __init__ has called _bind_litellm().
 @lru_cache(maxsize=None)
 def _model_supports_vision(model: str) -> bool:
     """Cached litellm.supports_vision lookup (pure function of model name)."""
@@ -314,6 +350,10 @@ class LiteLLM:
         self.agent_name = agent_name
         self.modalities = []
         self.messages = []  # Initialize messages list
+
+        # First construction pays the litellm import; `import swarms` no
+        # longer does.
+        _bind_litellm()
 
         # Configure litellm settings
         litellm.set_verbose = (
