@@ -8,6 +8,9 @@ from swarms.structs.async_subagent import (
     SubagentTask,
     TaskStatus,
 )
+from swarms.structs.auto_agent_builder import (
+    AutoAgentBuilder,
+)
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
@@ -123,6 +126,7 @@ __all__ = [
     "HybridHierarchicalClusterSwarm",
     "get_agents_info",
     "get_swarms_info",
+    "AutoAgentBuilder",
     "AutoSwarmBuilder",
     "CouncilAsAJudge",
     "LLMCouncil",
