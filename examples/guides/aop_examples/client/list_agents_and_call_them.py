@@ -46,7 +46,7 @@ def call_agent_tool(
 
         result = asyncio.run(
             MCPManager(mcp_url=server_path).aexecute_tool_calls(
-                tool_call_request,
+                call,
             )
         )
         return result
