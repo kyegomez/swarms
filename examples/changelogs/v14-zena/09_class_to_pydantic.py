@@ -11,7 +11,9 @@ Returns a model CLASS, not an instance.
 import json
 
 from swarms import Agent
-from swarms.utils.class_to_pydantic import class_init_to_pydantic_model
+from swarms.utils.class_to_pydantic import (
+    class_init_to_pydantic_model,
+)
 
 AgentSchema = class_init_to_pydantic_model(
     Agent,

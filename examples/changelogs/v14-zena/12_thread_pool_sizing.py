@@ -8,9 +8,7 @@ to the workload. max_workers is now exposed across the concurrent harnesses.
 from swarms import Agent, ConcurrentWorkflow, MixtureOfAgents
 
 workers = [
-    Agent(
-        agent_name=f"Worker-{i}", model_name="gpt-5.4", max_loops=1
-    )
+    Agent(agent_name=f"Worker-{i}", model_name="gpt-5.4", max_loops=1)
     for i in range(4)
 ]
 aggregator = Agent(
@@ -20,7 +18,9 @@ aggregator = Agent(
     max_loops=1,
 )
 
-TASK = "What are the best practices for securing a Kubernetes cluster?"
+TASK = (
+    "What are the best practices for securing a Kubernetes cluster?"
+)
 
 print(ConcurrentWorkflow(agents=workers, max_workers=16).run(TASK))
 

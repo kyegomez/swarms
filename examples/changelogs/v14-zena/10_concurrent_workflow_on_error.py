@@ -14,9 +14,7 @@ defaults to len(agents) capped at 32.
 from swarms import Agent, ConcurrentWorkflow
 
 agents = [
-    Agent(
-        agent_name=f"Worker-{i}", model_name="gpt-5.4", max_loops=1
-    )
+    Agent(agent_name=f"Worker-{i}", model_name="gpt-5.4", max_loops=1)
     for i in range(5)
 ]
 

@@ -15,9 +15,7 @@ wf = GraphWorkflow(auto_compile=True)
 
 for name in ["research", "summarize", "critique", "editor"]:
     wf.add_node(
-        Agent(
-            agent_name=name, model_name="gpt-5.4-mini", max_loops=1
-        )
+        Agent(agent_name=name, model_name="gpt-5.4-mini", max_loops=1)
     )
 
 wf.add_edge("research", "summarize")
