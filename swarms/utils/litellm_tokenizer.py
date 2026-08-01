@@ -7,6 +7,11 @@ from functools import lru_cache
 DEFAULT_MODEL = "gpt-5.4"
 
 
+# Memoized because count_tokens is called from ~22 sites, several of them on
+# the same (large, unchanged) history string within a single turn. encode is
+# deterministic per model, so identical (text, model, encoder) always yields
+# the same count. maxsize bounds the retained strings; the values are ints.
+@lru_cache(maxsize=128)
 def count_tokens(
     text: str,
     model: str = DEFAULT_MODEL,
