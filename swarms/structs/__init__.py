@@ -2,7 +2,6 @@ from swarms.structs.advisor_swarm import AdvisorSwarm
 from swarms.structs.agent import Agent
 from swarms.structs.agent_loader import AgentLoader
 from swarms.structs.agent_rearrange import AgentRearrange, rearrange
-from swarms.structs.aop import AOP
 from swarms.structs.async_subagent import (
     SubagentRegistry,
     SubagentTask,
@@ -139,7 +138,6 @@ __all__ = [
     "CronJob",
     "AgentLoader",
     "BatchedGridWorkflow",
-    "AOP",
     "SelfMoASeq",
     "SkillOrchestra",
     "DebateWithJudge",
