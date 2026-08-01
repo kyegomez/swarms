@@ -27,6 +27,7 @@ from litellm.exceptions import (
 )
 from litellm.utils import (
     get_max_tokens,
+    get_model_info,
     supports_function_calling,
 )
 from loguru import logger
@@ -542,12 +543,8 @@ class Agent:
             retry_attempts=self.tool_retry_attempts,
         )
 
-        # self.context_length = (
-        #     get_single_model_max_tokens(model_name)
-        #     if model_name
-        #     else 16000
-        # )
-        self.context_length = 16000
+        if self.context_length is None:
+            self.context_length = self._default_context_length()
 
         if self.max_loops == "auto":
             self.system_prompt += (
@@ -3052,6 +3049,22 @@ Subtask Breakdown:
             return [self.run(**input_data) for input_data in inputs]
         except Exception as error:
             logger.info(f"Error running bulk run: {error}", "red")
+
+    def _default_context_length(self) -> int:
+        """The model's input window, or 16000 when it can't be determined.
+
+        ``get_max_tokens`` is the wrong source here — it reports max *output*
+        tokens (32768 for gpt-4.1, against a 1047576 input window).
+        """
+        try:
+            return (
+                get_model_info(self.model_name).get(
+                    "max_input_tokens"
+                )
+                or 16000
+            )
+        except Exception:
+            return 16000
 
     def reliability_check(self):
 

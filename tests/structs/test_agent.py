@@ -2468,6 +2468,51 @@ class TestLLMArgsAndHandling:
 
 
 # ============================================================================
+# CONTEXT LENGTH
+# ============================================================================
+
+
+class TestContextLength:
+    """context_length must survive __init__ and reach the Conversation."""
+
+    @staticmethod
+    def _agent(**kwargs):
+        with patch("swarms.structs.agent.LiteLLM"):
+            return Agent(
+                agent_name="ctx_agent",
+                max_loops=1,
+                print_on=False,
+                verbose=False,
+                persistent_memory=False,
+                **kwargs,
+            )
+
+    def test_explicit_value_is_honoured(self):
+        """The constructor argument used to be overwritten with 16000."""
+        agent = self._agent(
+            model_name="gpt-4.1", context_length=200000
+        )
+
+        assert agent.context_length == 200000
+        assert agent.short_memory.context_length == 200000
+
+    def test_default_uses_the_model_input_window(self):
+        """Omitting it should size to the model, not a flat 16000."""
+        agent = self._agent(model_name="gpt-4o")
+
+        # gpt-4o's input window is far above the old hardcoded default;
+        # asserting the relation rather than the literal keeps this from
+        # breaking when litellm refreshes its model table.
+        assert agent.context_length > 16000
+
+    def test_unknown_model_falls_back(self):
+        """An unrecognised model must not raise out of __init__."""
+        agent = self._agent(model_name="totally-made-up-model-xyz")
+
+        assert agent.context_length == 16000
+
+
+# ============================================================================
 # MAIN TEST RUNNER
 # ============================================================================
 
