@@ -563,6 +563,9 @@ class Agent:
         # Async subagent support
         self._subagent_registry = None
 
+        # Backs the lazy `executor` property below
+        self._executor = None
+
         # Owns fetching prompts from, and publishing prompts to, the Swarms Marketplace
         self.marketplace = AgentMarketplaceHandler(agent=self)
 
@@ -2138,6 +2141,20 @@ Subtask Breakdown:
             )
             raise error
 
+    @property
+    def executor(self) -> ContextThreadPoolExecutor:
+        """Thread pool backing the concurrent run paths.
+
+        Built on first use so agents that never run concurrently don't
+        allocate threads, and so it is always live — the pool used to be
+        created inside a ``with`` block, which shut it down on exit.
+        """
+        if self._executor is None:
+            self._executor = ContextThreadPoolExecutor(
+                max_workers=os.cpu_count()
+            )
+        return self._executor
+
     def run_concurrent_tasks(self, tasks: List[str], *args, **kwargs):
         """
         Run multiple tasks concurrently.
@@ -2480,12 +2497,9 @@ Subtask Breakdown:
                     rules=self.rules,
                 )
 
-            # Reinitialize executor if needed
-            # if not hasattr(self, "executor") or self.executor is None:
-            with ContextThreadPoolExecutor(
-                max_workers=os.cpu_count()
-            ) as executor:
-                self.executor = executor
+            # Drop any pool carried over from the saved state; the property
+            # below builds a fresh one on next use.
+            self._executor = None
 
         except Exception as e:
             logger.error(f"Error reinitializing components: {e}")
