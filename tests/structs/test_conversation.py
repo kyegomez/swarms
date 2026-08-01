@@ -6,6 +6,7 @@ from pathlib import Path
 from loguru import logger
 
 from swarms.structs.conversation import Conversation
+from swarms.utils.litellm_tokenizer import count_tokens
 
 
 def setup_temp_conversations_dir():
@@ -896,6 +897,107 @@ def test_time_enabled_end_to_end(tmp_path):
         ts = line.split("]")[0][1:]
         # Must parse as valid ISO-8601
         datetime.fromisoformat(ts)
+
+
+def _overflowing_conversation(context_length=512, messages=60):
+    """A conversation whose history is well past ``context_length``."""
+    conv = Conversation(
+        context_length=context_length, time_enabled=True
+    )
+    for index in range(messages):
+        conv.add("user", f"message {index} " + "word " * 100)
+    return conv
+
+
+def test_dynamic_chunking_stays_within_context_length():
+    """The trimmed history must fit the window it was trimmed for.
+
+    Swept across window and message sizes because the per-message budget
+    has to account for the separators the join adds back; mis-attributing
+    even one of them shows up as an overflow at some ratio.
+    """
+    for context_length in (64, 200, 512, 2048):
+        for words in (5, 40, 100):
+            conv = Conversation(
+                context_length=context_length, time_enabled=True
+            )
+            for index in range(40):
+                conv.add("user", f"m{index} " + "word " * words)
+
+            result = conv.return_history_as_string()
+
+            assert (
+                count_tokens(result) <= context_length
+            ), f"overflow at context_length={context_length}, words={words}"
+
+
+def test_dynamic_chunking_keeps_whole_messages():
+    """Trimming happens on message boundaries, not mid-message."""
+    conv = _overflowing_conversation(messages=60)
+    result = conv.return_history_as_string()
+
+    # time_enabled prefixes every complete message with its [timestamp],
+    # so a fragment at the front means the cut landed mid-message.
+    for line in result.split("\n\n"):
+        assert line.startswith("[")
+
+    assert "message 59 " in result
+
+
+def test_dynamic_chunking_work_is_bounded_by_the_window(monkeypatch):
+    """Trimming must not re-tokenize the whole transcript on every read."""
+    import swarms.structs.conversation as conversation_module
+
+    tokenized = []
+    original = conversation_module.count_tokens
+
+    def recording(text, *args, **kwargs):
+        tokenized.append(len(text))
+        return original(text, *args, **kwargs)
+
+    monkeypatch.setattr(
+        conversation_module, "count_tokens", recording
+    )
+
+    _overflowing_conversation(messages=30).return_history_as_string()
+    small = sum(tokenized)
+
+    tokenized.clear()
+    _overflowing_conversation(messages=240).return_history_as_string()
+    large = sum(tokenized)
+
+    # An 8x longer transcript trims into the same size window, so the
+    # characters tokenized should stay flat rather than scale with it.
+    assert large < small * 2
+
+
+def test_dynamic_chunking_leaves_a_short_history_alone():
+    """Under the limit, the full history is returned verbatim."""
+    conv = Conversation(context_length=8192, time_enabled=True)
+    conv.add("user", "hello there")
+    conv.add("assistant", "general kenobi")
+
+    assert (
+        conv.return_history_as_string()
+        == conv._return_history_as_string_worker()
+    )
+
+
+def test_dynamic_chunking_handles_a_single_oversized_message():
+    """One message bigger than the window is trimmed, not dropped."""
+    conv = Conversation(context_length=40, time_enabled=False)
+    conv.add("user", "word " * 4000)
+    result = conv.return_history_as_string()
+
+    assert result
+    assert count_tokens(result) <= conv.context_length
+
+
+def test_dynamic_chunking_handles_an_empty_history():
+    """No messages must not raise on the newest-message fallback."""
+    conv = Conversation(context_length=40)
+
+    assert conv.return_history_as_string() == ""
 
 
 def run_all_tests():
