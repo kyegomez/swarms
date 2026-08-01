@@ -20,6 +20,11 @@ from swarms import (
     Agent,
     create_agents_from_yaml,
 )
+from swarms.structs.autonomous_loop_utils import (
+    MAX_PLANNING_ATTEMPTS,
+    MAX_SUBTASK_ITERATIONS,
+    MAX_SUBTASK_LOOPS,
+)
 
 # Load environment variables
 load_dotenv()
@@ -2465,6 +2470,48 @@ class TestLLMArgsAndHandling:
             "base_url" not in params
         ), "base_url must be omitted when no endpoint is configured"
         print("✓ Default path leaves both out")
+
+
+# ============================================================================
+# AUTONOMOUS LOOP LIMITS
+# ============================================================================
+
+
+class TestAutonomousLoopLimits:
+    """The max_loops="auto" iteration caps are per-agent, not module-wide."""
+
+    @staticmethod
+    def _agent(**kwargs):
+        with patch("swarms.structs.agent.LiteLLM"):
+            return Agent(
+                agent_name="limits_agent",
+                model_name="gpt-5.4",
+                max_loops="auto",
+                print_on=False,
+                verbose=False,
+                persistent_memory=False,
+                **kwargs,
+            )
+
+    def test_defaults_match_the_module_constants(self):
+        """Omitting the params must not change existing behaviour."""
+        agent = self._agent()
+
+        assert agent.max_planning_attempts == MAX_PLANNING_ATTEMPTS
+        assert agent.max_subtask_iterations == MAX_SUBTASK_ITERATIONS
+        assert agent.max_subtask_loops == MAX_SUBTASK_LOOPS
+
+    def test_planning_stops_at_the_configured_attempt_count(self):
+        """A lowered cap must actually shorten the planning retry loop."""
+        agent = self._agent(max_planning_attempts=2)
+
+        with patch.object(
+            agent, "call_llm", return_value="not a plan"
+        ) as call_llm:
+            with pytest.raises(Exception):
+                agent.run("task")
+
+        assert call_llm.call_count == 2
 
 
 # ============================================================================

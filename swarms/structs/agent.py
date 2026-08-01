@@ -167,6 +167,9 @@ class Agent:
         loop_interval (int): The loop interval
         retry_attempts (int): The number of retry attempts
         retry_interval (int): The retry interval
+        max_planning_attempts (int): max_loops="auto" — attempts allowed to produce a plan
+        max_subtask_iterations (int): max_loops="auto" — total iterations across all subtasks
+        max_subtask_loops (int): max_loops="auto" — iterations allowed per subtask
         stopping_token (str): The stopping token
         dynamic_loops (bool): Enable dynamic loops
         interactive (bool): Enable interactive mode
@@ -423,6 +426,9 @@ class Agent:
         selected_tools: Optional[Union[str, List[str]]] = "all",
         context_compression: bool = True,
         persistent_memory: bool = False,
+        max_planning_attempts: int = MAX_PLANNING_ATTEMPTS,
+        max_subtask_iterations: int = MAX_SUBTASK_ITERATIONS,
+        max_subtask_loops: int = MAX_SUBTASK_LOOPS,
         *args,
         **kwargs,
     ):
@@ -580,6 +586,9 @@ class Agent:
         self.max_consecutive_thinks = (
             2  # Maximum consecutive think calls
         )
+        self.max_planning_attempts = max_planning_attempts
+        self.max_subtask_iterations = max_subtask_iterations
+        self.max_subtask_loops = max_subtask_loops
 
         # Async subagent support
         self._subagent_registry = None
@@ -1910,15 +1919,15 @@ class Agent:
         - Creates a detailed plan using the `create_plan` tool
         - Breaks down the task into subtasks with dependencies, priorities, and step IDs
         - Supports handoff delegation during planning if handoffs are configured
-        - Maximum planning attempts are controlled by MAX_PLANNING_ATTEMPTS
+        - Maximum planning attempts are controlled by max_planning_attempts
 
         **Phase 2: Execution**
         - Executes each subtask in dependency order
         - For each subtask, runs a thinking -> tool actions -> observation loop
         - Supports both planning tools (think, subtask_done, complete_task) and user-defined tools
         - Prevents infinite thinking loops with max_consecutive_thinks limit
-        - Each subtask has a maximum iteration limit (MAX_SUBTASK_LOOPS)
-        - Overall execution has a maximum iteration limit (MAX_SUBTASK_ITERATIONS)
+        - Each subtask has a maximum iteration limit (max_subtask_loops)
+        - Overall execution has a maximum iteration limit (max_subtask_iterations)
 
         **Phase 3: Summary**
         - Generates a comprehensive final summary when all subtasks are complete
@@ -2124,7 +2133,7 @@ class Agent:
 
             plan_created = False
             planning_attempts = 0
-            max_planning_attempts = MAX_PLANNING_ATTEMPTS
+            max_planning_attempts = self.max_planning_attempts
 
             while (
                 not plan_created
@@ -2299,7 +2308,7 @@ class Agent:
                     title="Autonomous Loop: Execution Phase",
                 )
 
-            max_subtask_iterations = MAX_SUBTASK_ITERATIONS
+            max_subtask_iterations = self.max_subtask_iterations
             total_iterations = 0
 
             while not self._all_subtasks_complete():
@@ -2345,7 +2354,7 @@ class Agent:
 
                 # Subtask execution loop: thinking -> tool actions -> observation
                 subtask_iterations = 0
-                max_subtask_loops = MAX_SUBTASK_LOOPS
+                max_subtask_loops = self.max_subtask_loops
                 subtask_done = False
 
                 # Add the execution prompt ONCE before the inner loop so the model
