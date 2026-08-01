@@ -1919,15 +1919,15 @@ class Agent:
         - Creates a detailed plan using the `create_plan` tool
         - Breaks down the task into subtasks with dependencies, priorities, and step IDs
         - Supports handoff delegation during planning if handoffs are configured
-        - Maximum planning attempts are controlled by max_planning_attempts
+        - Maximum planning attempts are controlled by self.max_planning_attempts
 
         **Phase 2: Execution**
         - Executes each subtask in dependency order
         - For each subtask, runs a thinking -> tool actions -> observation loop
         - Supports both planning tools (think, subtask_done, complete_task) and user-defined tools
         - Prevents infinite thinking loops with max_consecutive_thinks limit
-        - Each subtask has a maximum iteration limit (max_subtask_loops)
-        - Overall execution has a maximum iteration limit (max_subtask_iterations)
+        - Each subtask has a maximum iteration limit (self.max_subtask_loops)
+        - Overall execution has a maximum iteration limit (self.max_subtask_iterations)
 
         **Phase 3: Summary**
         - Generates a comprehensive final summary when all subtasks are complete

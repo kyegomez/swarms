@@ -2508,7 +2508,9 @@ class TestAutonomousLoopLimits:
         with patch.object(
             agent, "call_llm", return_value="not a plan"
         ) as call_llm:
-            with pytest.raises(Exception):
+            with pytest.raises(
+                Exception, match="Failed to create plan"
+            ):
                 agent.run("task")
 
         assert call_llm.call_count == 2
