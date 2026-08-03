@@ -545,7 +545,7 @@ class Agent:
 
         if self.context_length is None:
             self.context_length = self._default_context_length()
-        
+
         self.max_tokens = self._default_max_tokens() or 16000
 
         if self.max_loops == "auto":
@@ -3077,7 +3077,7 @@ Subtask Breakdown:
             )
         except Exception:
             return 16000
-    
+
     def _default_max_tokens(self) -> int:
         """
         Returns the maximum output token count for the agent's underlying model.
@@ -3089,8 +3089,10 @@ Subtask Breakdown:
         Returns:
             int: The maximum number of output tokens for the model. Returns 16000 if undetermined.
         """
-        return get_model_info(self.model_name).get("max_output_tokens") or 16000
-   
+        return (
+            get_model_info(self.model_name).get("max_output_tokens")
+            or 16000
+        )
 
     def reliability_check(self):
 
