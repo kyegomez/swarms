@@ -1362,57 +1362,26 @@ def test_get_queue_stats_all_agents_comprehensive(
         assert result["stats"]["second_agent"]["total_tasks"] == 5
 
 
-def test_persistence_stops_after_max_restart_attempts():
-    """A deterministically failing server must hit the restart failsafe.
+def test_persistence_restart_count_bounds_a_failing_server():
+    """max_restart_attempts has to stop a server that keeps failing.
 
-    Bad bind address, port in use, missing credentials: whatever the cause,
-    the loop has to give up after max_restart_attempts instead of retrying
-    forever.
+    Two failures, a clean run that clears the streak, then failures until
+    the failsafe trips: 6 starts. The trailing SystemExit is a
+    BaseException, so run()'s `except Exception` cannot swallow it and a
+    regression fails here instead of looping forever.
     """
-    aop = AOP(
-        persistence=True, max_restart_attempts=3, restart_delay=0
-    )
-    attempts = []
-
-    def always_fail(*args, **kwargs):
-        attempts.append(1)
-        if len(attempts) > 10:
-            # Bounds the loop so a regression fails the test instead of
-            # hanging it. SystemExit is a BaseException, so run()'s
-            # `except Exception` handler cannot swallow it.
-            raise SystemExit("restart loop never terminated")
-        raise RuntimeError("bad bind address")
-
-    with patch.object(aop, "start_server", side_effect=always_fail):
-        aop.run()
-
-    # One initial attempt plus three restarts, then the failsafe fires.
-    assert len(attempts) == 4
-    assert aop._restart_count == 4
-    assert aop.get_persistence_status()["remaining_restarts"] == 0
-
-
-def test_persistence_restart_count_resets_after_a_clean_run():
-    """A server that ran and stopped on its own is not a failed attempt."""
     aop = AOP(
         persistence=True, max_restart_attempts=2, restart_delay=0
     )
-    attempts = []
-
-    def clean_then_fail(*args, **kwargs):
-        attempts.append(1)
-        if len(attempts) == 1:
-            return None
-        if len(attempts) > 10:
-            raise SystemExit("restart loop never terminated")
-        raise RuntimeError("bad bind address")
+    boom = RuntimeError("bad bind address")
 
     with patch.object(
-        aop, "start_server", side_effect=clean_then_fail
-    ):
+        aop,
+        "start_server",
+        side_effect=[boom, boom, None, boom, boom, boom, SystemExit],
+    ) as start:
         aop.run()
 
-    # The clean run zeroes the count, so the three failures after it get
-    # the full budget: 1 clean + 3 failing attempts.
-    assert len(attempts) == 4
+    assert start.call_count == 6
     assert aop._restart_count == 3
+    assert aop.get_persistence_status()["remaining_restarts"] == 0
