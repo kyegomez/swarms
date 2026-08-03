@@ -545,6 +545,8 @@ class Agent:
 
         if self.context_length is None:
             self.context_length = self._default_context_length()
+        
+        self.max_tokens = self._default_max_tokens() or 16000
 
         if self.max_loops == "auto":
             self.system_prompt += (
@@ -3051,10 +3053,20 @@ Subtask Breakdown:
             logger.info(f"Error running bulk run: {error}", "red")
 
     def _default_context_length(self) -> int:
-        """The model's input window, or 16000 when it can't be determined.
+        """
+        Returns the maximum input token window for the agent's underlying model.
 
-        ``get_max_tokens`` is the wrong source here — it reports max *output*
-        tokens (32768 for gpt-4.1, against a 1047576 input window).
+        Attempts to determine the input (context) window based on the current model name by checking
+        for the "max_input_tokens" property. If the value can't be determined (e.g., unknown model or
+        missing field), defaults to 16000.
+
+        Returns:
+            int: The maximum number of input tokens for the model. Returns 16000 if undetermined.
+
+        Notes:
+            - Do NOT use ``get_max_tokens`` for context (input window). That reports max *output* tokens,
+              which may not correspond to available context for input (e.g., 32768 for gpt-4.1 output, but
+              over a million for certain input windows).
         """
         try:
             return (
@@ -3065,6 +3077,20 @@ Subtask Breakdown:
             )
         except Exception:
             return 16000
+    
+    def _default_max_tokens(self) -> int:
+        """
+        Returns the maximum output token count for the agent's underlying model.
+
+        Determines the model's output window (number of output tokens) by checking for
+        the "max_output_tokens" property in the model info. Returns 16000 as default if the
+        property does not exist or can't be determined.
+
+        Returns:
+            int: The maximum number of output tokens for the model. Returns 16000 if undetermined.
+        """
+        return get_model_info(self.model_name).get("max_output_tokens") or 16000
+   
 
     def reliability_check(self):
 
