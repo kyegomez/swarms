@@ -2445,9 +2445,13 @@ class AOP:
                     # Wait before restarting
                     time.sleep(self.restart_delay)
 
-                # Reset restart count on successful start
-                self._restart_count = 0
                 self.start_server()
+
+                # Reset restart count on successful start. This has to
+                # happen after start_server() returns, otherwise a failed
+                # attempt clears the count it just incremented and the
+                # max_restart_attempts failsafe below can never fire.
+                self._restart_count = 0
 
             except KeyboardInterrupt:
                 if (
