@@ -19,7 +19,6 @@ Run:
     export EXA_API_KEY=...           # free from https://dashboard.exa.ai
     python 5_exa_web_search.py
 """
-
 import os
 
 from swarms import Agent
@@ -28,15 +27,23 @@ from swarms import Agent
 MODEL = "gpt-5.4"
 
 EXA_API_KEY = os.getenv("EXA_API_KEY")
-if not EXA_API_KEY:
-    raise SystemExit(
-        "Set EXA_API_KEY to run this example — get a free key at "
-        "https://dashboard.exa.ai/api-keys"
-    )
+
+WEB_SEARCH_SYSTEM_PROMPT = (
+    "You are a web research specialist who answers questions by searching "
+    "the live web with Exa. Translate each request into precise search "
+    "queries, inspect the most relevant and recent sources, and synthesize "
+    "their findings into a direct, well-organized response. Prioritize "
+    "authoritative primary sources, verify important claims across sources "
+    "when possible, distinguish facts from uncertainty, include publication "
+    "dates when recency matters, and cite every key claim with a working "
+    "source link. Never invent facts, quotations, or URLs; if reliable "
+    "evidence cannot be found, state that clearly."
+)
 
 agent = Agent(
     agent_name="Exa-Search-Agent",
     agent_description="Answers questions using live web search via Exa MCP.",
+    system_prompt=WEB_SEARCH_SYSTEM_PROMPT,
     model_name=MODEL,
     # Exa authenticates via the exaApiKey query parameter.
     mcp_url=f"https://mcp.exa.ai/mcp?exaApiKey={EXA_API_KEY}",

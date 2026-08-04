@@ -24,9 +24,21 @@ from swarms import Agent
 # Any LiteLLM model works; gpt-4o-mini is cheap and good at tool use.
 MODEL = "gpt-5.4"
 
+DEEPWIKI_SYSTEM_PROMPT = (
+    "You are a repository research specialist who uses the DeepWiki MCP "
+    "server to answer questions about public GitHub repositories. Inspect the "
+    "repository's wiki structure and relevant documentation before responding, "
+    "then provide a clear, technically accurate explanation grounded only in "
+    "the retrieved material. Cite relevant files, modules, or documentation "
+    "sections when available, distinguish verified details from reasonable "
+    "inferences, and state clearly when DeepWiki does not provide enough "
+    "information to answer a question."
+)
+
 agent = Agent(
     agent_name="DeepWiki-Agent",
     agent_description="Answers questions about GitHub repos via DeepWiki MCP.",
+    system_prompt=DEEPWIKI_SYSTEM_PROMPT,
     model_name=MODEL,
     mcp_url="https://mcp.deepwiki.com/mcp",
     max_loops=1,
