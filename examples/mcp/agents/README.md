@@ -5,7 +5,8 @@ Giving an agent tools from an MCP server. Set `mcp_url` (one server) or `mcp_url
 
 ## Start here — numbered, in order
 
-Each runs against a real public server. The first four need **no MCP API key**.
+Each runs against a real server. The first four need **no MCP API key**; 07 is the
+one case where the server is not hosted for you and you start it yourself.
 
 | # | File | Server | Auth |
 |---|---|---|---|
@@ -14,6 +15,8 @@ Each runs against a real public server. The first four need **no MCP API key**.
 | 03 | [`03_microsoft_learn_docs.py`](03_microsoft_learn_docs.py) | Microsoft Learn — official Azure/.NET docs | none |
 | 04 | [`04_multi_server_agent.py`](04_multi_server_agent.py) | Two servers on one agent | none |
 | 05 | [`05_exa_web_search.py`](05_exa_web_search.py) | Exa — web search | free API key |
+| 06 | [`06_firecrawl_web_scraping.py`](06_firecrawl_web_scraping.py) | Firecrawl — scrape/crawl pages to markdown | none (key unlocks more tools) |
+| 07 | [`07_brave_web_search.py`](07_brave_web_search.py) | Brave Search — web/news/local search | free API key, local server |
 
 See [`FREE_MCP_SERVERS.md`](FREE_MCP_SERVERS.md) for the full catalog of public servers.
 
