@@ -4,6 +4,7 @@ from datetime import datetime
 from unittest.mock import mock_open, patch
 
 import pytest
+from pydantic import ValidationError
 
 from swarms.artifacts.main_artifact import Artifact, FileVersion
 
@@ -196,6 +197,21 @@ def test_export_import_json(saved_artifact):
 
     imported = Artifact(**data)
     assert imported.contents == content
+
+
+def test_file_type_validator_runs():
+    """The pydantic.v1 decorator was dead on this v2 model, so this never ran."""
+    base = dict(file_path="/tmp/x.py", contents="", edit_count=0)
+
+    # derived from the path when omitted
+    assert Artifact(**base).file_type == ".py"
+    # and the derived extension is checked against the allowlist
+    with pytest.raises(
+        ValidationError, match="Unsupported file type"
+    ):
+        Artifact(**{**base, "file_path": "/tmp/x.exe"})
+    # an explicit value is still passed through untouched
+    assert Artifact(**base, file_type=".py").file_type == ".py"
 
 
 if __name__ == "__main__":

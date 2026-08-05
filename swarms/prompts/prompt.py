@@ -8,8 +8,8 @@ from pydantic import (
     BaseModel,
     Field,
     constr,
+    model_validator,
 )
-from pydantic.v1 import validator
 
 from swarms.tools.base_tool import BaseTool
 from swarms.utils.loguru_logger import initialize_logger
@@ -83,16 +83,14 @@ class Prompt(BaseModel):
     )
     llm: Any = None
 
-    @validator("edit_history", pre=True, always=True)
-    def initialize_history(cls, v, values):
+    @model_validator(mode="after")
+    def initialize_history(self):
         """
         Initializes the edit history by storing the first version of the prompt.
         """
-        if not v:
-            return [
-                values["content"]
-            ]  # Store initial version in history
-        return v
+        if not self.edit_history:
+            self.edit_history = [self.content]
+        return self
 
     def __init__(self, **data):
         super().__init__(**data)
