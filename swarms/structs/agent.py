@@ -3096,10 +3096,19 @@ Subtask Breakdown:
         Returns:
             int: The maximum number of output tokens for the model. Returns 16000 if undetermined.
         """
-        return (
-            get_model_info(self.model_name).get("max_output_tokens")
-            or 16000
-        )
+        # get_model_info raises for an unmapped model id rather than
+        # returning an empty mapping, so an unknown, custom or self-hosted
+        # model would otherwise take down Agent.__init__. The sibling
+        # _default_context_length guards the same call the same way.
+        try:
+            return (
+                get_model_info(self.model_name).get(
+                    "max_output_tokens"
+                )
+                or 16000
+            )
+        except Exception:
+            return 16000
 
     def reliability_check(self):
 
