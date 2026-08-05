@@ -98,6 +98,7 @@ ruff = "*"
 pytest = "*"
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 markers = [
     "remote: tests that hit a real remote MCP server over the network",
 ]
