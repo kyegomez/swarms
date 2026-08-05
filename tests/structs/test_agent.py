@@ -2513,6 +2513,47 @@ class TestContextLength:
 
 
 # ============================================================================
+# TOOLS LIST ISOLATION
+# ============================================================================
+
+
+class TestToolsListIsolation:
+    """tools_list_dictionary must not be shared between Agent instances."""
+
+    @staticmethod
+    def _agent(name, **kwargs):
+        with patch("swarms.structs.agent.LiteLLM"):
+            return Agent(
+                agent_name=name,
+                model_name="gpt-5.4",
+                max_loops=1,
+                print_on=False,
+                verbose=False,
+                persistent_memory=False,
+                **kwargs,
+            )
+
+    def test_default_is_per_instance(self):
+        """One agent's tools must not reach another, or the next one."""
+        first = self._agent("First")
+        second = self._agent("Second")
+        first.tools_list_dictionary.append(
+            {"function": {"name": "x"}}
+        )
+
+        assert second.tools_list_dictionary == []
+        # a fresh agent too: the old pollution outlived agents on __defaults__
+        assert self._agent("Third").tools_list_dictionary == []
+        given = [{"function": {"name": "given"}}]
+        assert (
+            self._agent(
+                "Fourth", tools_list_dictionary=given
+            ).tools_list_dictionary
+            == given
+        )
+
+
+# ============================================================================
 # MAIN TEST RUNNER
 # ============================================================================
 

@@ -382,7 +382,7 @@ class Agent:
         load_state_path: str = None,
         role: agent_roles = "worker",
         print_on: bool = True,
-        tools_list_dictionary: Optional[List[Dict[str, Any]]] = [],
+        tools_list_dictionary: Optional[List[Dict[str, Any]]] = None,
         mcp_url: Optional[Union[str, MCPConnection, Dict]] = None,
         mcp_urls: Optional[
             List[Union[str, MCPConnection, Dict]]
@@ -491,7 +491,14 @@ class Agent:
         self.load_state_path = load_state_path
         self.role = role
         self.print_on = print_on
-        self.tools_list_dictionary = tools_list_dictionary
+        # Own list per agent. The default used to be a literal [], so every
+        # agent that skipped this argument shared one object and inherited
+        # the tool schemas any other agent appended to it.
+        self.tools_list_dictionary = (
+            tools_list_dictionary
+            if tools_list_dictionary is not None
+            else []
+        )
         self.mcp_url = mcp_url
         self.mcp_urls = mcp_urls
         self.react_on = react_on
