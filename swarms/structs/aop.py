@@ -2573,7 +2573,6 @@ class AOP:
             ConnectionError,
             TimeoutError,
             socket.gaierror,
-            socket.timeout,
         )
 
         # Check if it's a direct network error
