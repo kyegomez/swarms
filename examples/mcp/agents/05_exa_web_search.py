@@ -19,6 +19,7 @@ Run:
     export EXA_API_KEY=...           # free from https://dashboard.exa.ai
     python 5_exa_web_search.py
 """
+
 import os
 
 from swarms import Agent
