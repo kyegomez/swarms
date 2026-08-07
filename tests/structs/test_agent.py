@@ -2513,6 +2513,44 @@ class TestContextLength:
 
 
 # ============================================================================
+# RELIABILITY CHECK WARNINGS
+# ============================================================================
+
+
+class TestFunctionCallingWarning:
+    """The function-calling warning is for agents that actually have tools."""
+
+    @staticmethod
+    def _warnings_for(**kwargs):
+        with patch("swarms.structs.agent.LiteLLM"), patch(
+            "swarms.structs.agent.supports_function_calling",
+            return_value=False,
+        ), patch("swarms.structs.agent.logger") as log:
+            Agent(
+                agent_name="warn_agent",
+                model_name="gpt-5.4",
+                max_loops=1,
+                print_on=False,
+                verbose=False,
+                persistent_memory=False,
+                **kwargs,
+            )
+        return " ".join(str(c) for c in log.warning.call_args_list)
+
+    def test_no_tools_no_function_calling_warning(self):
+        assert (
+            "does not support function calling"
+            not in self._warnings_for()
+        )
+
+    def test_with_tools_the_warning_still_fires(self):
+        warnings = self._warnings_for(
+            tools_list_dictionary=[{"function": {"name": "x"}}]
+        )
+        assert "does not support function calling" in warnings
+
+
+# ============================================================================
 # TOOLS LIST ISOLATION
 # ============================================================================
 

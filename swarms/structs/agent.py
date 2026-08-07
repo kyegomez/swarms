@@ -3143,7 +3143,10 @@ Subtask Breakdown:
                 "Context length is not provided. Please set a valid context length."
             )
 
-        if self.tools_list_dictionary is not None:
+        # Truthiness, not "is not None": the attribute is normalised to an
+        # empty list for every agent built without tools, so the None check
+        # warned about function calling for agents that never use it.
+        if self.tools_list_dictionary:
             if not supports_function_calling(self.model_name):
                 logger.warning(
                     f"The model '{self.model_name}' does not support function calling. Please use a model that supports function calling."
