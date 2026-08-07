@@ -95,6 +95,7 @@ class SequentialWorkflow:
         drift_detection: bool = False,
         drift_threshold: float = 0.75,
         drift_model: str = "claude-sonnet-4-5",
+        drift_max_retries: int = 3,
         *args,
         **kwargs,
     ):
@@ -118,6 +119,10 @@ class SequentialWorkflow:
                 A warning is logged when the score falls below this value. Defaults to 0.75.
             drift_model (str, optional): Model used by the drift detection judge agent.
                 Defaults to "claude-sonnet-4-5".
+            drift_max_retries (int, optional): Maximum number of pipeline reruns when the
+                drift score stays below drift_threshold. Once exhausted the last output is
+                returned with a warning instead of rerunning forever. 0 disables reruns, so
+                the output is scored and reported but never regenerated. Defaults to 3.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -136,6 +141,7 @@ class SequentialWorkflow:
         self.autosave = autosave
         self.verbose = verbose
         self.drift_threshold = drift_threshold
+        self.drift_max_retries = drift_max_retries
         self.drift_agent = (
             Agent(
                 agent_name="DriftDetector",
@@ -183,6 +189,11 @@ class SequentialWorkflow:
 
         if self.max_loops == 0:
             raise ValueError("max_loops cannot be 0")
+
+        if self.drift_max_retries < 0:
+            raise ValueError(
+                "drift_max_retries must be greater than or equal to 0"
+            )
 
         if self.multi_agent_collab_prompt is True:
             for agent in self.agents:
@@ -239,7 +250,15 @@ class SequentialWorkflow:
     def _run_drift_detection(
         self, task: str, result: str, run_kwargs: dict
     ) -> str:
-        while True:
+        """Score the final output and rerun the pipeline while it drifts.
+
+        Bounded by ``drift_max_retries``. An output that never reaches
+        ``drift_threshold`` -- an impossible task, a threshold set too high, a
+        judge that always scores low -- would otherwise rerun every agent
+        forever, so the last attempt is returned with a warning once the retry
+        budget is spent.
+        """
+        for attempt in range(self.drift_max_retries + 1):
             try:
                 raw = self.drift_agent.run(
                     f"Original task: {task}\n\nFinal output: {result}"
@@ -254,10 +273,18 @@ class SequentialWorkflow:
                 logger.warning(
                     f"Drift detection failed ({e}); skipping"
                 )
-                break
+                return result
             if score >= self.drift_threshold:
                 logger.info(f"Drift check passed: score={score:.2f}")
-                break
+                return result
+            if attempt == self.drift_max_retries:
+                logger.warning(
+                    f"Drift detected: score={score:.2f} below threshold="
+                    f"{self.drift_threshold}, but drift_max_retries="
+                    f"{self.drift_max_retries} is exhausted; returning the "
+                    "last output as-is"
+                )
+                return result
             logger.warning(
                 f"Drift detected: score={score:.2f} below threshold={self.drift_threshold}, rerunning pipeline"
             )
@@ -280,9 +307,9 @@ class SequentialWorkflow:
 
         If drift_detection is configured, a judge agent scores the final output's semantic
         alignment with the original task after the pipeline completes. If the score falls
-        below drift_threshold, the pipeline reruns and the cycle repeats until the score
-        meets the threshold. If the judge output cannot be parsed, drift checking is skipped
-        and the last result is returned as-is.
+        below drift_threshold, the pipeline reruns, for at most drift_max_retries attempts,
+        after which the last output is returned with a warning. If the judge output cannot
+        be parsed, drift checking is skipped and the last result is returned as-is.
 
         Args:
             task (str): The task for the agents to execute.

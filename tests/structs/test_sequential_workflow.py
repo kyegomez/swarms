@@ -557,3 +557,58 @@ def test_workflow_run_drift_retries_until_threshold_met():
     assert result == "good output"
     assert pipeline_call_count == 3
     assert drift_call_count == 3
+
+
+def test_workflow_run_drift_stops_at_max_retries():
+    """A score that never clears the threshold must not rerun forever.
+
+    Without a retry cap this test does not fail, it hangs: the judge always
+    scores below threshold, so the pipeline is rerun in an unbounded loop.
+    """
+    wf = _make_workflow(
+        drift_detection=True,
+        drift_threshold=0.75,
+        drift_max_retries=2,
+    )
+
+    pipeline_call_count = 0
+
+    def pipeline_side_effect(**kwargs):
+        nonlocal pipeline_call_count
+        pipeline_call_count += 1
+        return f"output {pipeline_call_count}"
+
+    with patch.object(
+        wf.agent_rearrange, "run", side_effect=pipeline_side_effect
+    ), patch.object(
+        wf.drift_agent, "run", return_value=_tool_call_response(0.1)
+    ):
+        result = wf.run("task")
+
+    # one initial run plus drift_max_retries reruns
+    assert pipeline_call_count == 3
+    assert result == "output 3"
+
+
+def test_workflow_drift_max_retries_zero_never_reruns():
+    """drift_max_retries=0 scores the output but never regenerates it."""
+    wf = _make_workflow(
+        drift_detection=True,
+        drift_threshold=0.75,
+        drift_max_retries=0,
+    )
+
+    with patch.object(
+        wf.agent_rearrange, "run", return_value="only output"
+    ) as pipeline, patch.object(
+        wf.drift_agent, "run", return_value=_tool_call_response(0.1)
+    ):
+        result = wf.run("task")
+
+    assert pipeline.call_count == 1
+    assert result == "only output"
+
+
+def test_negative_drift_max_retries_is_rejected():
+    with pytest.raises(ValueError, match="drift_max_retries"):
+        _make_workflow(drift_detection=True, drift_max_retries=-1)
