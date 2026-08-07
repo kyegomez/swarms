@@ -1362,6 +1362,36 @@ def test_get_queue_stats_all_agents_comprehensive(
         assert result["stats"]["second_agent"]["total_tasks"] == 5
 
 
+def test_local_failures_are_not_classified_as_network_errors():
+    """A bare OSError catch swept up every local failure.
+
+    EADDRINUSE, EACCES and ENOENT were routed to _handle_network_error,
+    which retries the network and can never resolve any of them.
+    """
+    aop = AOP(persistence=True)
+
+    for exc in (
+        OSError(48, "Address already in use"),
+        PermissionError(13, "Permission denied"),
+        FileNotFoundError(2, "No such file or directory"),
+    ):
+        assert not aop._is_network_error(
+            exc
+        ), f"{exc!r} must not be treated as a network error"
+
+    # genuine network failures still are, including the plain-OSError ones
+    # that only the keyword check catches
+    for exc in (
+        ConnectionRefusedError(61, "Connection refused"),
+        OSError(51, "Network is unreachable"),
+        socket.gaierror("name resolution failed"),
+        TimeoutError("timed out"),
+    ):
+        assert aop._is_network_error(
+            exc
+        ), f"{exc!r} must still be treated as a network error"
+
+
 def test_persistence_restart_count_bounds_a_failing_server():
     """max_restart_attempts has to stop a server that keeps failing.
 

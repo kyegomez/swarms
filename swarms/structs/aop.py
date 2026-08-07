@@ -2562,15 +2562,17 @@ class AOP:
         Returns:
             bool: True if the error is network-related
         """
+        # Not bare OSError: almost every local failure is one, including
+        # EADDRINUSE from a port already in use, EACCES from a privileged
+        # port and ENOENT from a bad path. Those were classified as network
+        # errors and sent to _handle_network_error, which retries the
+        # network, something that can never resolve them. The keyword check
+        # below still catches the genuinely network-ish plain OSErrors such
+        # as "Network is unreachable" and "No route to host".
         network_errors = (
             ConnectionError,
-            ConnectionRefusedError,
-            ConnectionResetError,
-            ConnectionAbortedError,
             TimeoutError,
             socket.gaierror,
-            socket.timeout,
-            OSError,
         )
 
         # Check if it's a direct network error
