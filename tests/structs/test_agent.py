@@ -2160,6 +2160,39 @@ class TestAgentToolUsage:
 
 
 # ============================================================================
+# TOOL EXECUTION RETRY
+# ============================================================================
+
+
+class TestToolExecutionRetry:
+    """tool_execution_retry must actually retry, then surface the failure."""
+
+    def test_retries_then_raises(self):
+        with patch("swarms.structs.agent.LiteLLM"):
+            agent = Agent(
+                agent_name="retry_agent",
+                model_name="gpt-5.4",
+                max_loops=1,
+                print_on=False,
+                verbose=False,
+                persistent_memory=False,
+                tool_retry_attempts=3,
+            )
+
+        with patch.object(
+            agent,
+            "execute_tools",
+            side_effect=AgentToolExecutionError("tool blew up"),
+        ) as execute:
+            with pytest.raises(AgentToolExecutionError):
+                agent.tool_execution_retry(
+                    [{"function": {"name": "x"}}], loop_count=1
+                )
+
+        assert execute.call_count == 3
+
+
+# ============================================================================
 # LLM ARGS AND HANDLING TESTS
 # ============================================================================
 
@@ -2552,39 +2585,6 @@ class TestToolsListIsolation:
             ).tools_list_dictionary
             == given
         )
-
-
-# ============================================================================
-# TOOL EXECUTION RETRY
-# ============================================================================
-
-
-class TestToolExecutionRetry:
-    """tool_execution_retry must actually retry, then surface the failure."""
-
-    def test_retries_then_raises(self):
-        with patch("swarms.structs.agent.LiteLLM"):
-            agent = Agent(
-                agent_name="retry_agent",
-                model_name="gpt-5.4",
-                max_loops=1,
-                print_on=False,
-                verbose=False,
-                persistent_memory=False,
-                tool_retry_attempts=3,
-            )
-
-        with patch.object(
-            agent,
-            "execute_tools",
-            side_effect=AgentToolExecutionError("tool blew up"),
-        ) as execute:
-            with pytest.raises(AgentToolExecutionError):
-                agent.tool_execution_retry(
-                    [{"function": {"name": "x"}}], loop_count=1
-                )
-
-        assert execute.call_count == 3
 
 
 # ============================================================================
