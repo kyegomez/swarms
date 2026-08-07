@@ -410,6 +410,16 @@ class ConcurrentWorkflow:
                         output = future.result()
                         results.append((agent.agent_name, output))
                     except Exception as e:
+                        if self.on_error == "raise":
+                            raise
+                        # Track the swallowed per-agent failure so it
+                        # isn't lost, same as the non-dashboard path.
+                        capture_error(
+                            e,
+                            self,
+                            name="ConcurrentWorkflow.agent_error",
+                            agent=getattr(agent, "agent_name", None),
+                        )
                         logger.error(
                             f"Agent {agent.agent_name} failed: {str(e)}"
                         )
