@@ -612,3 +612,30 @@ def test_workflow_drift_max_retries_zero_never_reruns():
 def test_negative_drift_max_retries_is_rejected():
     with pytest.raises(ValueError, match="drift_max_retries"):
         _make_workflow(drift_detection=True, drift_max_retries=-1)
+
+
+def test_run_forwards_imgs_to_the_pipeline():
+    """run(imgs=[...]) must reach the agents, not be dropped.
+
+    imgs is an accepted, documented parameter, but it was never put
+    into the kwargs handed to AgentRearrange, so multi-image runs
+    silently became text-only runs.
+    """
+    wf = _make_workflow()
+    with patch.object(
+        wf.agent_rearrange, "run", return_value="out"
+    ) as pipeline:
+        wf.run("describe these", imgs=["a.png", "b.png"])
+
+    assert pipeline.call_args.kwargs["imgs"] == ["a.png", "b.png"]
+
+
+def test_run_omits_imgs_when_not_supplied():
+    """No imgs key when the caller didn't pass one."""
+    wf = _make_workflow()
+    with patch.object(
+        wf.agent_rearrange, "run", return_value="out"
+    ) as pipeline:
+        wf.run("plain task")
+
+    assert "imgs" not in pipeline.call_args.kwargs

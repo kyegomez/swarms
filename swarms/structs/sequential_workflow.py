@@ -329,6 +329,8 @@ class SequentialWorkflow:
             run_kwargs = {"task": task}
             if img is not None:
                 run_kwargs["img"] = img
+            if imgs is not None:
+                run_kwargs["imgs"] = imgs
             result = self.agent_rearrange.run(**run_kwargs)
 
             # Run drift detection if configured
