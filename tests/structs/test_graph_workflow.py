@@ -1713,3 +1713,183 @@ def test_conditions_are_flagged_when_serialized():
         e for e in payload["edges"] if e.get("has_condition")
     ]
     assert len(conditional) == 2
+
+
+# ---------------------------------------------------------------------------
+# Per-node retry policy and failure semantics (#1758)
+# ---------------------------------------------------------------------------
+
+
+class _FlakyAgent:
+    """Fails the first ``failures`` calls, then succeeds."""
+
+    def __init__(self, name, failures, exc=RuntimeError("transient")):
+        self.agent_name = name
+        self.agent_description = f"flaky {name}"
+        self.failures = failures
+        self.exc = exc
+        self.calls = 0
+
+    def run(self, task, img=None, *args, **kwargs):
+        self.calls += 1
+        if self.calls <= self.failures:
+            raise self.exc
+        return "recovered"
+
+
+def _retry_graph(agent, downstream=None, **wf_kwargs):
+    from swarms.structs.graph_workflow import Edge
+
+    wf = GraphWorkflow(max_loops=1, verbose=False, **wf_kwargs)
+    wf.add_node(agent)
+    entry = [agent.agent_name]
+    if downstream is not None:
+        wf.add_node(downstream)
+        wf.add_edge(
+            Edge(
+                source=agent.agent_name, target=downstream.agent_name
+            )
+        )
+        wf.set_end_points([downstream.agent_name])
+    else:
+        wf.set_end_points(entry)
+    wf.set_entry_points(entry)
+    return wf
+
+
+def test_retry_policy_backoff_schedule():
+    from swarms.structs.graph_workflow import RetryPolicy
+
+    exponential = RetryPolicy(base_delay=1.0, max_delay=10.0)
+    # attempt 2 is the first retry
+    assert exponential.delay_for(2) == 1.0
+    assert exponential.delay_for(3) == 2.0
+    assert exponential.delay_for(4) == 4.0
+    assert exponential.delay_for(9) == 10.0  # capped
+
+    linear = RetryPolicy(backoff="linear", base_delay=2.0)
+    assert linear.delay_for(2) == 2.0
+    assert linear.delay_for(3) == 4.0
+
+    assert RetryPolicy(backoff="none").delay_for(5) == 0.0
+
+
+def test_retry_policy_rejects_bad_arguments():
+    from swarms.structs.graph_workflow import RetryPolicy
+
+    with pytest.raises(ValueError, match="max_attempts"):
+        RetryPolicy(max_attempts=0)
+    with pytest.raises(ValueError, match="backoff"):
+        RetryPolicy(backoff="fibonacci")
+
+
+def test_transient_failure_is_retried_then_succeeds():
+    from swarms.structs.graph_workflow import RetryPolicy
+
+    agent = _FlakyAgent("flaky", failures=2)
+    wf = _retry_graph(
+        agent,
+        retry_policy=RetryPolicy(max_attempts=3, backoff="none"),
+    )
+
+    results = wf.run(task="go")
+
+    assert agent.calls == 3
+    assert results["flaky"] == "recovered"
+    assert wf.failed_nodes == {}
+
+
+def test_exhausted_retries_skip_downstream_by_default():
+    from swarms.structs.graph_workflow import RetryPolicy
+
+    agent = _FlakyAgent("flaky", failures=99)
+    downstream = _StubAgent("downstream")
+    wf = _retry_graph(
+        agent,
+        downstream,
+        retry_policy=RetryPolicy(max_attempts=2, backoff="none"),
+    )
+
+    results = wf.run(task="go")
+
+    assert agent.calls == 2
+    # The poisoned "[ERROR] ..." string never reaches the next agent.
+    assert downstream.calls == 0
+    assert "flaky" not in results
+    assert "downstream" not in results
+    # ...and the failure is inspectable without substring matching.
+    assert "flaky" in wf.failed_nodes
+    assert "transient" in wf.failed_nodes["flaky"]
+
+
+def test_fail_fast_raises():
+    agent = _FlakyAgent("flaky", failures=99)
+    wf = _retry_graph(agent, on_node_failure="fail_fast")
+
+    with pytest.raises(RuntimeError, match="flaky"):
+        wf.run(task="go")
+
+    assert "flaky" in wf.failed_nodes
+
+
+def test_propagate_error_keeps_the_legacy_behaviour():
+    agent = _FlakyAgent("flaky", failures=99)
+    downstream = _StubAgent("downstream")
+    wf = _retry_graph(
+        agent, downstream, on_node_failure="propagate_error"
+    )
+
+    results = wf.run(task="go")
+
+    assert results["flaky"].startswith("[ERROR] Agent flaky failed")
+    assert downstream.calls == 1
+    assert "flaky" in wf.failed_nodes
+
+
+def test_retry_on_filters_which_exceptions_retry():
+    from swarms.structs.graph_workflow import RetryPolicy
+
+    agent = _FlakyAgent("flaky", failures=99, exc=ValueError("nope"))
+    wf = _retry_graph(
+        agent,
+        retry_policy=RetryPolicy(
+            max_attempts=5, backoff="none", retry_on=(TimeoutError,)
+        ),
+    )
+
+    wf.run(task="go")
+
+    # ValueError is not in retry_on, so it is raised on the first attempt.
+    assert agent.calls == 1
+    assert "flaky" in wf.failed_nodes
+
+
+def test_per_node_policy_overrides_the_workflow_default():
+    from swarms.structs.graph_workflow import Edge, RetryPolicy
+
+    patient = _FlakyAgent("patient", failures=2)
+    impatient = _FlakyAgent("impatient", failures=2)
+
+    wf = GraphWorkflow(
+        max_loops=1,
+        verbose=False,
+        retry_policy=RetryPolicy(max_attempts=1),
+        on_node_failure="propagate_error",
+    )
+    wf.add_node(
+        patient, retry=RetryPolicy(max_attempts=3, backoff="none")
+    )
+    wf.add_node(impatient)
+    wf.add_edge(Edge(source="patient", target="impatient"))
+    wf.set_entry_points(["patient"])
+    wf.set_end_points(["impatient"])
+
+    wf.run(task="go")
+
+    assert patient.calls == 3  # node policy won
+    assert impatient.calls == 1  # workflow default won
+
+
+def test_workflow_rejects_an_unknown_failure_mode():
+    with pytest.raises(ValueError, match="on_node_failure"):
+        GraphWorkflow(on_node_failure="explode")
