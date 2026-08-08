@@ -5551,20 +5551,26 @@ Summary: {summary}
             >>> agent.tool_execution_retry(None, loop_count=2)
             >>> # Logs warning but does not raise exception
         """
-        try:
-            if response is not None:
+        if response is None:
+            logger.warning(
+                f"Agent '{self.agent_name}' received None response from LLM in loop {loop_count}. "
+                f"This may indicate an issue with the model or prompt. Skipping tool execution."
+            )
+            return
+
+        attempts = max(1, self.tool_retry_attempts or 1)
+        for attempt in range(1, attempts + 1):
+            try:
                 self.execute_tools(
                     response=response,
                     loop_count=loop_count,
                 )
-            else:
-                logger.warning(
-                    f"Agent '{self.agent_name}' received None response from LLM in loop {loop_count}. "
-                    f"This may indicate an issue with the model or prompt. Skipping tool execution."
+                return
+            except AgentToolExecutionError as e:
+                logger.error(
+                    f"Agent '{self.agent_name}' encountered error during tool execution in loop {loop_count}: {str(e)}. "
+                    f"Full traceback: {traceback.format_exc()}. "
+                    f"Attempt {attempt} of {attempts}"
                 )
-        except AgentToolExecutionError as e:
-            logger.error(
-                f"Agent '{self.agent_name}' encountered error during tool execution in loop {loop_count}: {str(e)}. "
-                f"Full traceback: {traceback.format_exc()}. "
-                f"Attempting to retry tool execution with 3 attempts"
-            )
+                if attempt == attempts:
+                    raise
