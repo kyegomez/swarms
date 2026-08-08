@@ -16,6 +16,7 @@ from rich.console import Console
 from rich.table import Table
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
+from swarms.structs.conversation import Conversation
 from swarms import (
     Agent,
     create_agents_from_yaml,
@@ -2465,6 +2466,94 @@ class TestLLMArgsAndHandling:
             "base_url" not in params
         ), "base_url must be omitted when no endpoint is configured"
         print("✓ Default path leaves both out")
+
+
+# ============================================================================
+# RETRY MEMORY ROLLBACK
+# ============================================================================
+
+
+class TestRetryMemoryRollback:
+    """A retried loop must not leave the failed attempt's messages behind."""
+
+    MALFORMED_HANDOFF = [
+        {
+            "function": {
+                "name": "handoff_task",
+                "arguments": "{not valid json",
+            }
+        }
+    ]
+
+    @staticmethod
+    def _agent():
+        with patch("swarms.structs.agent.LiteLLM"):
+            return Agent(
+                agent_name="rollback_agent",
+                model_name="gpt-5.4",
+                max_loops=1,
+                retry_attempts=3,
+                print_on=False,
+                verbose=False,
+                persistent_memory=False,
+            )
+
+    @staticmethod
+    def _assistant_turns(agent):
+        return [
+            message["content"]
+            for message in agent.short_memory.conversation_history
+            if message["role"] == agent.agent_name
+        ]
+
+    def test_retry_does_not_duplicate_the_response(self):
+        """Malformed handoff arguments raise after the response is stored."""
+        agent = self._agent()
+
+        with patch.object(
+            agent,
+            "call_llm",
+            side_effect=[self.MALFORMED_HANDOFF, "final answer"],
+        ):
+            agent.run("task")
+
+        assert self._assistant_turns(agent) == ["final answer"]
+        # also pins the cache invalidation: a stale _str_cache would still
+        # feed the dropped turn into the next prompt
+        assert "not valid json" not in (
+            agent.short_memory.return_history_as_string()
+        )
+
+    def test_exhausted_retries_leave_no_partial_turns(self):
+        """Every attempt failing must leave the history as it was found."""
+        agent = self._agent()
+
+        with patch.object(
+            agent, "call_llm", return_value=self.MALFORMED_HANDOFF
+        ):
+            agent.run("task")
+
+        assert self._assistant_turns(agent) == []
+
+    def test_rollback_also_rewinds_memory_md(self, tmp_path):
+        """A rolled-back message must not survive on disk.
+
+        MEMORY.md is append-only and is replayed into the next process by
+        _preload_memory_md, so leaving the block there would reintroduce
+        the duplicate turn across restarts.
+        """
+        memory_md = tmp_path / "MEMORY.md"
+        conversation = Conversation(memory_md_path=str(memory_md))
+        conversation.add("user", "keep me")
+        checkpoint = conversation.checkpoint()
+        conversation.add("assistant", "drop me")
+        assert "drop me" in memory_md.read_text()
+
+        conversation.rollback(checkpoint)
+
+        contents = memory_md.read_text()
+        assert "drop me" not in contents
+        assert "keep me" in contents
 
 
 # ============================================================================
