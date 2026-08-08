@@ -2,7 +2,7 @@ import ast
 import json
 import os
 from concurrent.futures import as_completed
-from typing import Callable, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger as loguru_logger
 from swarms.prompts.multi_agent_collab_prompt import (
@@ -326,7 +326,9 @@ class SequentialWorkflow:
         """
         try:
             # prompt = f"{MULTI_AGENT_COLLAB_PROMPT}\n\n{task}"
-            run_kwargs = {"task": task}
+            # Annotated because imgs is a list: without it the dict is
+            # inferred as Dict[str, str] from the task entry alone.
+            run_kwargs: Dict[str, Any] = {"task": task}
             if img is not None:
                 run_kwargs["img"] = img
             if imgs is not None:
