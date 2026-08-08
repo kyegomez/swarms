@@ -1056,5 +1056,41 @@ def test_reassignment_targets_nested_swarm_worker_by_name():
     assert "[RECOVERY NOTICE]" not in swarm.conversation.get_str()
 
 
+def test_planning_keeps_the_director_tool_schema(monkeypatch):
+    """The planning sub-step must not disarm the real director.
+
+    setup_director_with_planning builds its own throwaway agent, so
+    clearing the director's tools_list_dictionary bought nothing and
+    cost the SwarmSpec schema the very next call depends on.
+    """
+    schema = [{"type": "function", "function": {"name": "SwarmSpec"}}]
+    director = StubAgent(
+        "Director",
+        [
+            {
+                "plan": "Hand the task to the worker.",
+                "orders": [
+                    {"agent_name": "Worker", "task": "do the thing"}
+                ],
+            }
+        ],
+    )
+    director.tools_list_dictionary = schema
+
+    swarm = make_recovery_swarm(
+        director, [StubAgent("Worker", ["done"])]
+    )
+    swarm.planning_enabled = True
+    monkeypatch.setattr(
+        swarm,
+        "setup_director_with_planning",
+        lambda task, img=None: "a plan",
+    )
+
+    swarm.run_director(task="ship it")
+
+    assert director.tools_list_dictionary == schema
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

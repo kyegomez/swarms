@@ -762,7 +762,6 @@ class HierarchicalSwarm:
         """
         try:
             if self.planning_enabled is True:
-                self.director.tools_list_dictionary = None
                 out = self.setup_director_with_planning(
                     task=f"History: {self.conversation.get_str()} \n\n Task: {task}",
                     img=img,
@@ -2000,7 +1999,6 @@ class HierarchicalSwarm:
             # Optional planning sub-step (non-streaming — creates a
             # throwaway agent with modified tools)
             if self.planning_enabled:
-                self.director.tools_list_dictionary = None
                 plan_out = await asyncio.to_thread(
                     self.setup_director_with_planning,
                     task=director_task_str,
