@@ -3,7 +3,6 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Any, List, Optional
 
-from litellm import embedding
 from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
@@ -194,6 +193,9 @@ class TreeAgent(Agent):
             List[float]: Embedding vector
         """
         try:
+            # Deferred: litellm must not load at `import swarms` time (#1754).
+            from litellm import embedding
+
             response = embedding(
                 model=self.embedding_model_name, input=[text]
             )

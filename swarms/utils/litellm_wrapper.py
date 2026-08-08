@@ -24,9 +24,7 @@ import traceback
 from pathlib import Path
 from typing import List, Optional
 
-import litellm
 import requests
-from litellm import completion, supports_vision
 from loguru import logger
 from pydantic import BaseModel
 
@@ -36,6 +34,37 @@ from swarms.utils.image_file_b64 import (
     is_base64_encoded,
     save_base64_as_image,
 )
+
+
+# Bound by _bind_litellm() on first LiteLLM construction.
+litellm = None
+completion = None
+supports_vision = None
+
+
+def _bind_litellm() -> None:
+    """Import litellm on first LiteLLM construction, not at module import.
+
+    Importing litellm costs >1s and fetches its model-cost map from the
+    network, so it must not run at `import swarms` time (#1754, #1739).
+    The callables are bound into this module's globals so every existing
+    call site — and every test that patches ``litellm_wrapper.completion``
+    as a module attribute — keeps working unchanged. Each name binds only
+    while None, so an active patch is never overwritten.
+    """
+    global litellm, completion, supports_vision
+    if litellm is None:
+        import litellm as _litellm
+
+        litellm = _litellm
+    if completion is None:
+        from litellm import completion as _completion
+
+        completion = _completion
+    if supports_vision is None:
+        from litellm import supports_vision as _supports_vision
+
+        supports_vision = _supports_vision
 
 
 class LiteLLMException(Exception):
@@ -338,6 +367,10 @@ class LiteLLM:
         self.agent_name = agent_name
         self.modalities = []
         self.messages = []  # Initialize messages list
+
+        # First construction pays the litellm import; `import swarms` no
+        # longer does.
+        _bind_litellm()
 
         # Configure litellm settings
         litellm.set_verbose = (

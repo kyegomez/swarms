@@ -1,4 +1,3 @@
-from litellm import encode, model_list
 from loguru import logger
 from typing import Optional
 from functools import lru_cache
@@ -29,6 +28,9 @@ def count_tokens(
     if not text or not text.strip():
         logger.warning("Empty or whitespace-only text provided")
         return 0
+
+    # Deferred: litellm must not load at `import swarms` time (#1754).
+    from litellm import encode
 
     # Set fallback encoder
     fallback_model = default_encoder or DEFAULT_MODEL
@@ -74,6 +76,8 @@ def count_tokens(
 def get_supported_models() -> list:
     """Get list of supported models from litellm."""
     try:
+        from litellm import model_list
+
         return model_list
     except Exception as e:
         logger.warning(f"Could not retrieve model list: {e}")
