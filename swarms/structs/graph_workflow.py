@@ -3331,18 +3331,7 @@ class GraphWorkflow:
                 }
 
             # Serialize to JSON
-            if fast:
-                result = json.dumps(data, indent=2, default=str)
-            else:
-                try:
-                    from swarms.tools.json_utils import str_to_json
-
-                    result = str_to_json(data, indent=2)
-                except ImportError:
-                    logger.warning(
-                        "json_utils not available, falling back to standard json"
-                    )
-                    result = json.dumps(data, indent=2, default=str)
+            result = json.dumps(data, indent=2, default=str)
 
             if self.verbose:
                 logger.success(

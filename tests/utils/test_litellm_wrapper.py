@@ -203,7 +203,7 @@ def run_test_suite():
     try:
         logger.info("Testing direct URL processing")
         llm = LiteLLM(model_name="gpt-5.4")
-        test_url = "https://github.com/kyegomez/swarms/blob/master/swarms_logo_new.png?raw=true"
+        test_url = "https://raw.githubusercontent.com/kyegomez/swarms/master/images/new_logo.png"
         should_use_direct = llm._should_use_direct_url(test_url)
         assert isinstance(should_use_direct, bool)
         log_test_result("Direct URL Processing", True)
@@ -215,7 +215,7 @@ def run_test_suite():
         logger.info("Testing message preparation with image")
         llm = LiteLLM(model_name="gpt-5.4")
         # Mock image URL to test message structure
-        test_img = "https://github.com/kyegomez/swarms/blob/master/swarms_logo_new.png?raw=true"
+        test_img = "https://raw.githubusercontent.com/kyegomez/swarms/master/images/new_logo.png"
         messages = llm._prepare_messages(
             "Describe this image", img=test_img
         )
@@ -241,7 +241,7 @@ def run_test_suite():
         # Test OpenAI vision processing
         processed_messages = llm.openai_vision_processing(
             "Describe this image",
-            "https://github.com/kyegomez/swarms/blob/master/swarms_logo_new.png?raw=true",
+            "https://raw.githubusercontent.com/kyegomez/swarms/master/images/new_logo.png",
             messages.copy(),
         )
         assert isinstance(processed_messages, list)
@@ -253,7 +253,7 @@ def run_test_suite():
         )
         processed_messages_anthropic = llm_anthropic.anthropic_vision_processing(
             "Describe this image",
-            "https://github.com/kyegomez/swarms/blob/master/swarms_logo_new.png?raw=true",
+            "https://raw.githubusercontent.com/kyegomez/swarms/master/images/new_logo.png",
             messages.copy(),
         )
         assert isinstance(processed_messages_anthropic, list)
@@ -269,7 +269,7 @@ def run_test_suite():
         llm = LiteLLM(model_name="gpt-5.4")
 
         # Test URL detection
-        url_test = "https://github.com/kyegomez/swarms/blob/master/swarms_logo_new.png?raw=true"
+        url_test = "https://raw.githubusercontent.com/kyegomez/swarms/master/images/new_logo.png"
         is_url_direct = llm._should_use_direct_url(url_test)
 
         # Test local file detection
@@ -296,7 +296,7 @@ def run_test_suite():
         # Test message structure for image input
         result = llm.vision_processing(
             task="What do you see?",
-            image="https://github.com/kyegomez/swarms/blob/master/swarms_logo_new.png?raw=true",
+            image="https://raw.githubusercontent.com/kyegomez/swarms/master/images/new_logo.png",
             messages=messages,
         )
 

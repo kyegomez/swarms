@@ -15,7 +15,6 @@ from swarms.schemas.agent_mcp_errors import (
     AgentMCPToolInvalidError,
     AgentMCPToolNotFoundError,
 )
-from swarms.schemas.agent_step_schemas import Step, ManySteps
 from swarms.schemas.mcp_schemas import (
     MCPConnection,
     MCPOAuthConfig,
@@ -31,8 +30,6 @@ from swarms.schemas.planner_worker_schemas import (
 )
 
 __all__ = [
-    "Step",
-    "ManySteps",
     "MCPConnection",
     "MCPOAuthConfig",
     "MultipleMCPConnections",
