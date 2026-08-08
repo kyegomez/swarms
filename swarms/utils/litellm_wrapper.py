@@ -17,25 +17,36 @@ The main class `LiteLLM` provides a simple interface for running LLM tasks with 
 for various input modalities and output formats.
 """
 
-import asyncio
-import base64
 import socket
 import traceback
-from pathlib import Path
+from functools import lru_cache
 from typing import List, Optional
 
 import litellm
 import requests
-from litellm import completion, supports_vision
+from litellm import acompletion, completion, supports_vision
 from loguru import logger
 from pydantic import BaseModel
 
 from swarms.utils.formatter import formatter
 from swarms.utils.image_file_b64 import (
     get_image_base64,
+    get_media_base64,
     is_base64_encoded,
     save_base64_as_image,
 )
+
+
+@lru_cache(maxsize=None)
+def _model_supports_vision(model: str) -> bool:
+    """Cached litellm.supports_vision lookup (pure function of model name)."""
+    return supports_vision(model=model)
+
+
+@lru_cache(maxsize=None)
+def _model_supports_reasoning(model: str) -> bool:
+    """Cached litellm.supports_reasoning lookup (pure function of model name)."""
+    return litellm.supports_reasoning(model=model)
 
 
 class LiteLLMException(Exception):
@@ -56,41 +67,6 @@ class NetworkConnectionError(Exception):
     or connectivity failures. It provides detailed troubleshooting information
     to help resolve the issue.
     """
-
-
-def get_audio_base64(audio_source: str) -> str:
-    """
-    Convert audio data from a URL or local file path to a base64-encoded string.
-
-    This function supports both remote (HTTP/HTTPS) and local audio sources. If the source is a URL,
-    it fetches the audio data via HTTP. If the source is a local file path, it reads the file directly.
-
-    Args:
-        audio_source (str): The path or URL to the audio file.
-
-    Returns:
-        str: The base64-encoded string of the audio data.
-
-    Raises:
-        requests.HTTPError: If fetching audio from a URL fails.
-        FileNotFoundError: If the local audio file does not exist.
-    """
-    if audio_source.startswith(("http://", "https://")):
-        from swarms.utils.image_file_b64 import _is_safe_url
-
-        if not _is_safe_url(audio_source):
-            raise ValueError(
-                f"Blocked URL '{audio_source}': only external HTTP/HTTPS URLs are permitted."
-            )
-        response = requests.get(audio_source, timeout=30)
-        response.raise_for_status()
-        audio_data = response.content
-    else:
-        with open(audio_source, "rb") as file:
-            audio_data = file.read()
-
-    encoded_string = base64.b64encode(audio_data).decode("utf-8")
-    return encoded_string
 
 
 def gemini_output_img_handler(response: any):
@@ -393,8 +369,8 @@ class LiteLLM:
             it will be automatically set to max_tokens / 4.
         """
         if self.reasoning_enabled:
-            supports_reasoning = litellm.supports_reasoning(
-                model=self.model_name
+            supports_reasoning = _model_supports_reasoning(
+                self.model_name
             )
             uses_anthropic = self.check_if_model_name_uses_anthropic(
                 model_name=self.model_name
@@ -720,9 +696,15 @@ class LiteLLM:
         override = self._cache_opt("override", None)
         if override is not None:
             return bool(override)
+        return self._is_anthropic_model()
+
+    def _is_anthropic_model(self) -> bool:
+        """
+        Whether the configured model is in the Anthropic Claude family, incl.
+        "bedrock/anthropic.claude-*" and "vertex_ai/claude-*". Excludes
+        Gemini/Vertex-Gemini and OpenAI.
+        """
         name = (self.model_name or "").lower()
-        # Anthropic Claude, incl. "bedrock/anthropic.claude-*" and
-        # "vertex_ai/claude-*". Excludes Gemini/Vertex-Gemini and OpenAI.
         return "claude" in name or "anthropic" in name
 
     def _cache_control_value(self) -> dict:
@@ -864,183 +846,50 @@ class LiteLLM:
             )
             completion_params["extra_headers"] = headers
 
-    def anthropic_vision_processing(
-        self, task: str, image: str, messages: list
-    ) -> list:
+    # Anthropic accepts only these image formats; others fall back to JPEG.
+    ANTHROPIC_IMAGE_FORMATS = frozenset(
+        ["image/jpeg", "image/png", "image/gif", "image/webp"]
+    )
+
+    def _build_vision_message(self, task: str, image: str) -> dict:
         """
-        Process vision input specifically for Anthropic models.
+        Build a single user message containing the task text and the image.
 
-        This method handles Anthropic's specific image format requirements for vision-capable
-        models like Claude. It supports multiple image input formats and intelligently chooses
-        between direct URL passing and base64 conversion based on the image source and model
-        capabilities.
-
-        Args:
-            task (str): The text task/prompt associated with the image.
-            image (str): The image source. Can be:
-                - A file path to a local image file
-                - An HTTP/HTTPS URL to a remote image
-                - A data URI (data:image/...;base64,...)
-                - A raw base64-encoded string
-            messages (list): The current message list to append the vision message to.
-
-        Returns:
-            list: The updated messages list with the vision message appended.
-
-        Note:
-            Anthropic models support specific image formats (JPEG, PNG, GIF, WebP).
-            Unsupported formats will be converted to JPEG. The method automatically
-            extracts MIME types from data URIs or determines them from file extensions.
+        Uses direct URL passing when the model supports it; otherwise converts
+        the image (file path, URL, data URI, or raw base64) to a base64 data
+        URI via `get_image_base64` and annotates it with its MIME type.
         """
-        # Check if we can use direct URL
         if self._should_use_direct_url(image):
-            # Use direct URL without base64 conversion
-            messages.append(
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": task},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": image,
-                            },
-                        },
-                    ],
-                }
-            )
-        else:
-            # Convert to base64 data URI format (handles file paths, URLs, data URIs, and raw base64)
-            image_url = get_image_base64(image)
-
-            # Extract mime type from the data URI or use default
-            mime_type = "image/jpeg"  # default
-            if "data:" in image_url and ";base64," in image_url:
-                mime_type = image_url.split(";base64,")[0].split(
-                    "data:"
-                )[1]
-
-            # Ensure mime type is one of the supported formats
-            supported_formats = [
-                "image/jpeg",
-                "image/png",
-                "image/gif",
-                "image/webp",
-            ]
-            if mime_type not in supported_formats:
-                mime_type = (
-                    "image/jpeg"  # fallback to jpeg if unsupported
-                )
-
-            # Construct Anthropic vision message with base64
-            messages.append(
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": task},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": image_url,
-                                "format": mime_type,
-                            },
-                        },
-                    ],
-                }
-            )
-
-        return messages
-
-    def openai_vision_processing(
-        self, task: str, image: str, messages: list
-    ) -> list:
-        """
-        Process vision input specifically for OpenAI models.
-
-        This method handles OpenAI's specific image format requirements for vision-capable
-        models like GPT-4 Vision. It supports multiple image input formats and intelligently
-        chooses between direct URL passing and base64 conversion based on the image source
-        and model capabilities.
-
-        Args:
-            task (str): The text task/prompt associated with the image.
-            image (str): The image source. Can be:
-                - A file path to a local image file
-                - An HTTP/HTTPS URL to a remote image
-                - A data URI (data:image/...;base64,...)
-                - A raw base64-encoded string
-            messages (list): The current message list to append the vision message to.
-
-        Returns:
-            list: The updated messages list with the vision message appended.
-
-        Note:
-            OpenAI models support a wide range of image formats. The method automatically
-            extracts MIME types from data URIs or determines them from file extensions.
-            If the model supports direct URLs and the image is a URL, it will be passed
-            directly without base64 conversion for better performance.
-        """
-        # Check if we can use direct URL
-        if self._should_use_direct_url(image):
-            # Use direct URL without base64 conversion
-            vision_message = {
+            image_block = {
                 "type": "image_url",
                 "image_url": {"url": image},
             }
         else:
-            # Convert to base64 data URI format (handles file paths, URLs, data URIs, and raw base64)
+            # get_image_base64 always returns a data URI, so the MIME type
+            # can be extracted from it directly.
             image_url = get_image_base64(image)
-
-            # Prepare vision message with base64
-            vision_message = {
-                "type": "image_url",
-                "image_url": {"url": image_url},
-            }
-
-            # Extract MIME type from data URI or determine from file extension
-            mime_type = "image/jpeg"  # default
+            mime_type = "image/jpeg"
             if "data:" in image_url and ";base64," in image_url:
-                # Extract from data URI
                 mime_type = image_url.split(";base64,")[0].split(
                     "data:"
                 )[1]
-            else:
-                # Try to determine from file extension (if it's a file path)
-                try:
-                    extension = Path(image).suffix.lower()
-                    # Map common image extensions to proper MIME types
-                    mime_type_mapping = {
-                        ".jpg": "image/jpeg",
-                        ".jpeg": "image/jpeg",
-                        ".png": "image/png",
-                        ".gif": "image/gif",
-                        ".webp": "image/webp",
-                        ".bmp": "image/bmp",
-                        ".tiff": "image/tiff",
-                        ".svg": "image/svg+xml",
-                    }
-                    mime_type = mime_type_mapping.get(
-                        extension, "image/jpeg"
-                    )
-                except Exception as e:
-                    logger.debug(
-                        f"Could not determine MIME type for '{extension}': {e}"
-                    )
-
-            vision_message["image_url"]["format"] = mime_type
-
-        # Append vision message
-        messages.append(
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": task},
-                    vision_message,
-                ],
+            if (
+                self._is_anthropic_model()
+                and mime_type not in self.ANTHROPIC_IMAGE_FORMATS
+            ):
+                mime_type = "image/jpeg"
+            image_block = {
+                "type": "image_url",
+                "image_url": {"url": image_url, "format": mime_type},
             }
-        )
 
-        return messages
+        return {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": task},
+                image_block,
+            ],
+        }
 
     def _should_use_direct_url(self, image: str) -> bool:
         """
@@ -1097,7 +946,7 @@ class LiteLLM:
 
         # Use LiteLLM's supports_vision to check if model supports vision and direct URLs
         try:
-            return supports_vision(model=self.model_name)
+            return _model_supports_vision(self.model_name)
         except Exception as e:
             logger.debug(
                 f"Could not determine vision support for '{self.model_name}': {e}"
@@ -1106,68 +955,34 @@ class LiteLLM:
 
     def vision_processing(
         self, task: str, image: str, messages: Optional[list] = None
-    ):
+    ) -> list:
         """
-        Process the image for the given task with intelligent format handling.
+        Append a vision message for the given task and image to `messages`.
 
-        This method processes vision inputs for LLM models, automatically handling different
-        image formats and model-specific requirements. It intelligently chooses between
-        direct URL passing and base64 conversion based on the image source and model capabilities.
-
-        The method supports multiple image input formats:
-        - File paths: Local image files (e.g., "/path/to/image.jpg")
-        - HTTP/HTTPS URLs: Remote image URLs (e.g., "https://example.com/image.png")
-        - Data URIs: Base64-encoded images with MIME type (e.g., "data:image/jpeg;base64,...")
-        - Raw base64 strings: Base64-encoded image data without data URI prefix
+        Supports file paths, HTTP/HTTPS URLs, data URIs, and raw base64
+        strings. Chooses between direct URL passing and base64 conversion
+        based on the image source and model capabilities; Anthropic models
+        get their MIME type clamped to the formats Claude accepts.
 
         Args:
             task (str): The text task/prompt associated with the image.
             image (str): The image source in any supported format.
-            messages (Optional[list]): The current message list. If None, an empty list is used.
+            messages (Optional[list]): The current message list. If None, an
+                empty list is used.
 
         Returns:
             list: The updated messages list with the vision message appended.
-
-        Note:
-            The method automatically routes to model-specific processing:
-            - Anthropic models (Claude) use `anthropic_vision_processing`
-            - Other models (OpenAI, etc.) use `openai_vision_processing`
-
-            This approach reduces server load and improves performance by avoiding
-            unnecessary image downloads and base64 conversions when possible.
         """
-        # Ensure messages is a list
         if messages is None:
             messages = []
 
         logger.info(f"Processing image for model: {self.model_name}")
+        messages.append(self._build_vision_message(task, image))
+        return messages
 
-        # Log whether we're using direct URL or base64 conversion
-        if self._should_use_direct_url(image):
-            logger.info(
-                f"Using direct URL passing for image: {image[:100]}..."
-            )
-        else:
-            if image.startswith(("http://", "https://")):
-                logger.info(
-                    "Converting URL image to base64 (model doesn't support direct URLs)"
-                )
-            else:
-                logger.info("Converting local file to base64")
-
-        if (
-            "anthropic" in self.model_name.lower()
-            or "claude" in self.model_name.lower()
-        ):
-            messages = self.anthropic_vision_processing(
-                task, image, messages
-            )
-            return messages
-        else:
-            messages = self.openai_vision_processing(
-                task, image, messages
-            )
-            return messages
+    # Backwards-compatible aliases: both providers now share one code path.
+    anthropic_vision_processing = vision_processing
+    openai_vision_processing = vision_processing
 
     def audio_processing(self, task: str, audio: str):
         """
@@ -1191,7 +1006,7 @@ class LiteLLM:
             requests.HTTPError: If fetching audio from a URL fails.
             FileNotFoundError: If the local audio file does not exist.
         """
-        encoded_string = get_audio_base64(audio)
+        encoded_string = get_media_base64(audio)
 
         # Append audio message
         self.messages.append(
@@ -1234,7 +1049,7 @@ class LiteLLM:
             and other vision-capable models.
         """
         if img is not None:
-            out = supports_vision(model=self.model_name)
+            out = _model_supports_vision(self.model_name)
 
             if out is False:
                 raise ValueError(
@@ -1242,18 +1057,9 @@ class LiteLLM:
                 )
 
     @staticmethod
-    def check_if_model_name_uses_anthropic(model_name: str):
+    def check_if_model_name_uses_anthropic(model_name: str) -> bool:
         """
-        Check if the model name indicates an Anthropic model.
-
-        This method checks if the model name contains "anthropic" (case-insensitive),
-        which typically indicates it's a Claude model from Anthropic.
-
-        Args:
-            model_name (str): The name of the model to check.
-
-        Returns:
-            bool: True if the model appears to be an Anthropic model, False otherwise.
+        Check if the model name indicates an Anthropic (Claude) model.
 
         Example:
             >>> LiteLLM.check_if_model_name_uses_anthropic("claude-3-opus")
@@ -1261,35 +1067,8 @@ class LiteLLM:
             >>> LiteLLM.check_if_model_name_uses_anthropic("gpt-4")
             False
         """
-        if "anthropic" in model_name.lower():
-            return True
-        else:
-            return False
-
-    @staticmethod
-    def check_if_model_name_uses_openai(model_name: str):
-        """
-        Check if the model name indicates an OpenAI model.
-
-        This method checks if the model name contains "openai" (case-insensitive),
-        which typically indicates it's a model from OpenAI.
-
-        Args:
-            model_name (str): The name of the model to check.
-
-        Returns:
-            bool: True if the model appears to be an OpenAI model, False otherwise.
-
-        Example:
-            >>> LiteLLM.check_if_model_name_uses_openai("gpt-4")
-            True
-            >>> LiteLLM.check_if_model_name_uses_openai("claude-3-opus")
-            False
-        """
-        if "openai" in model_name.lower():
-            return True
-        else:
-            return False
+        name = (model_name or "").lower()
+        return "claude" in name or "anthropic" in name
 
     @staticmethod
     def check_internet_connection(
@@ -1311,48 +1090,203 @@ class LiteLLM:
             bool: True if internet connection is available, False otherwise.
         """
         try:
-            socket.setdefaulttimeout(timeout)
-            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(
-                (host, port)
-            )
-            return True
-        except (socket.error, socket.timeout):
+            with socket.create_connection(
+                (host, port), timeout=timeout
+            ):
+                return True
+        except OSError:
             return False
 
-    @staticmethod
-    def is_local_model(
-        model_name: str, base_url: Optional[str] = None
-    ) -> bool:
+    def _build_completion_params(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        runtime_args: tuple = (),
+        runtime_kwargs: Optional[dict] = None,
+    ) -> dict:
         """
-        Determine if the model is a local model (e.g., Ollama, LlamaCPP).
+        Assemble the full parameter dict for a litellm completion call.
 
-        Args:
-            model_name (str): The name of the model to check.
-            base_url (str, optional): The base URL if specified. Defaults to None.
+        Handles message preparation (including vision), parameter merging,
+        tool/function config, reasoning/thinking constraints, and caching.
 
-        Returns:
-            bool: True if the model is a local model, False otherwise.
+        Parameter priority order (highest to lowest):
+            1. Runtime args (if a single dictionary)
+            2. Runtime kwargs
+            3. Init kwargs
+            4. Init args (if a single dictionary)
+            5. Defaults from __init__
         """
-        local_indicators = [
-            "ollama",
-            "llama-cpp",
-            "local",
-            "localhost",
-            "127.0.0.1",
-            "custom",
-        ]
+        completion_params = {
+            "model": self.model_name,
+            "messages": self._prepare_messages(task=task, img=img),
+            "stream": self.stream,
+            "max_tokens": self.max_tokens,
+            "caching": self.caching,
+            "temperature": self.temperature,
+        }
 
-        model_lower = model_name.lower()
-        is_local_model = any(
-            indicator in model_lower for indicator in local_indicators
-        )
+        # Only include top_p if explicitly set (not None)
+        if self.top_p is not None:
+            completion_params["top_p"] = self.top_p
 
-        is_local_url = base_url is not None and any(
-            indicator in base_url.lower()
-            for indicator in local_indicators
-        )
+        # Merge initialization kwargs first (lower priority), then runtime
+        # kwargs (higher priority).
+        if self.init_kwargs:
+            completion_params.update(self.init_kwargs)
+        if runtime_kwargs:
+            completion_params.update(runtime_kwargs)
 
-        return is_local_model or is_local_url
+        if self.api_version is not None:
+            completion_params["api_version"] = self.api_version
+
+        if self.tools_list_dictionary is not None:
+            completion_params.update(
+                {
+                    "tools": self._maybe_cache_tools(
+                        self.tools_list_dictionary
+                    ),
+                    "tool_choice": self.tool_choice,
+                    "parallel_tool_calls": self.parallel_tool_calls,
+                }
+            )
+
+        if self.functions is not None:
+            completion_params["functions"] = self.functions
+
+        if self.base_url is not None:
+            completion_params["base_url"] = self.base_url
+
+        # Only when present: litellm falls back to the provider env var
+        # on absence, and an explicit None would override that.
+        if self.api_key is not None:
+            completion_params["api_key"] = self.api_key
+
+        if self.response_format is not None:
+            completion_params["response_format"] = (
+                self.response_format
+            )
+
+        if self.modalities and len(self.modalities) >= 2:
+            completion_params["modalities"] = self.modalities
+
+        if (
+            self.reasoning_effort is not None
+            and _model_supports_reasoning(self.model_name)
+        ):
+            completion_params["reasoning_effort"] = (
+                self.reasoning_effort
+            )
+            # litellm maps reasoning_effort to thinking budget_tokens
+            # (low=5000, medium=10000, high=15000) and max_tokens must
+            # exceed that budget.
+            self._apply_anthropic_thinking_constraints(
+                completion_params, threshold=16000, target=16000
+            )
+
+        if (
+            self.reasoning_enabled is True
+            and self.thinking_tokens is not None
+        ):
+            completion_params["thinking"] = {
+                "type": "enabled",
+                "budget_tokens": self.thinking_tokens,
+            }
+            # max_tokens must be greater than thinking budget_tokens.
+            self._apply_anthropic_thinking_constraints(
+                completion_params,
+                threshold=self.thinking_tokens + 1,
+                target=self.thinking_tokens + 1024,
+            )
+
+        # Apply request-level caching params (OpenAI keys, 1h TTL header)
+        self._apply_cache_request_params(completion_params)
+
+        # Merge init/runtime positional-dict args (highest priority)
+        self._process_additional_args(completion_params, runtime_args)
+
+        return completion_params
+
+    def _apply_anthropic_thinking_constraints(
+        self, completion_params: dict, threshold: int, target: int
+    ) -> None:
+        """
+        Anthropic requires temperature=1, no top_p, and sufficient max_tokens
+        when reasoning/thinking is enabled. No-op for other providers.
+        """
+        if not self._is_anthropic_model():
+            return
+        completion_params["temperature"] = 1
+        completion_params.pop("top_p", None)
+        if completion_params.get("max_tokens", 0) < threshold:
+            completion_params["max_tokens"] = target
+
+    def _process_response(self, response: any):
+        """
+        Route a completion response to the right output handler based on
+        streaming, tools, reasoning, return_all, and model type.
+        """
+        if not response:
+            logger.error(
+                "Received empty response from completion call"
+            )
+            return None
+
+        # Streaming: return the generator directly.
+        if self.stream:
+            return response
+
+        # Tool calls are checked before the reasoning branch: reasoning
+        # models still emit tool_calls, and routing them to
+        # output_for_reasoning would drop the call.
+        if self.tools_list_dictionary is not None and getattr(
+            response.choices[0].message, "tool_calls", None
+        ):
+            return self.output_for_tools(response)
+
+        if (
+            self.reasoning_enabled
+            or self.reasoning_effort is not None
+            or self.thinking_tokens is not None
+        ):
+            return self.output_for_reasoning(response)
+
+        if self.tools_list_dictionary is not None:
+            return self.output_for_tools(response)
+        if self.return_all is True:
+            return response.model_dump()
+        if "gemini" in self.model_name.lower():
+            return gemini_output_img_handler(response)
+        return response.choices[0].message.content
+
+    def _raise_network_error(self, network_error: Exception):
+        """
+        Convert a low-level network exception into a NetworkConnectionError
+        with a troubleshooting message tailored to the failure mode.
+        """
+        if not self.check_internet_connection():
+            error_msg = (
+                f"No internet connection detected while trying to use model '{self.model_name}'.\n\n"
+                "Check your connection, or use a local model instead (e.g., Ollama):\n"
+                "  model = LiteLLM(model_name='ollama/llama2')\n"
+            )
+        else:
+            error_msg = (
+                f"Network error occurred while connecting to '{self.model_name}': {network_error}\n\n"
+                "The endpoint may be temporarily unavailable, the connection timed out,\n"
+                "or a firewall/proxy is blocking it. Consider a local model as a fallback:\n"
+                "  model = LiteLLM(model_name='ollama/llama2')\n"
+            )
+        logger.error(error_msg)
+        raise NetworkConnectionError(error_msg) from network_error
+
+    _NETWORK_ERRORS = (
+        requests.exceptions.ConnectionError,
+        requests.exceptions.Timeout,
+        requests.exceptions.RequestException,
+        ConnectionError,
+        TimeoutError,
+    )
 
     def run(
         self,
@@ -1365,297 +1299,91 @@ class LiteLLM:
         """
         Run the LLM model for the given task with optional multimodal inputs.
 
-        This is the main method for executing LLM tasks. It supports text-only tasks as well
-        as multimodal inputs (images and audio). The method handles message preparation,
-        parameter merging, API calls, and response processing.
-
         Args:
-            task (str): The text task or prompt to send to the model. This is the main
-                instruction or question for the LLM.
-            audio (Optional[str]): Path to an audio file or URL for audio input.
-                Supported for models with audio capabilities. Defaults to None.
-            img (Optional[str]): Path to an image file, image URL, data URI, or base64
-                string for vision input. Supported for vision-capable models. Defaults to None.
-            *args: Additional positional arguments. If a single dictionary is passed,
-                it will be merged into completion parameters with highest priority.
-            **kwargs: Additional keyword arguments that will be merged into completion
-                parameters with highest priority (overrides init kwargs). Useful for
-                runtime parameter overrides.
+            task (str): The text task or prompt to send to the model.
+            audio (Optional[str]): Path or URL of an audio input, for
+                audio-capable models.
+            img (Optional[str]): Image file path, URL, data URI, or base64
+                string, for vision-capable models.
+            *args: If a single dictionary is passed, it is merged into the
+                completion parameters with highest priority.
+            **kwargs: Runtime parameter overrides (e.g. temperature,
+                max_tokens); they override init kwargs.
 
         Returns:
-            The return type depends on the configuration:
-            - str: Text content for standard text responses
-            - Generator: Streaming response generator if stream=True
-            - dict or list: Tool calls if tools are enabled
-            - str: Formatted reasoning output if reasoning is enabled
-            - dict: Full response object if return_all=True
-            - str: Image file path for Gemini image generation
+            str | Generator | dict | list: Text content for standard
+            responses; a generator when stream=True; tool-call structures
+            when tools are configured; the full response dict when
+            return_all=True; a file path for Gemini image generation.
 
         Raises:
-            NetworkConnectionError: If there are network connectivity issues or the
-                API endpoint is unreachable. Includes detailed troubleshooting information.
-            LiteLLMException: If there are LiteLLM-specific errors during processing.
-            ValueError: If the model doesn't support vision and an image is provided.
-            Exception: For other unexpected errors during processing.
-
-        Note:
-            Parameter priority order (highest to lowest):
-            1. Runtime kwargs (passed to run method)
-            2. Runtime args (if dictionary, passed to run method)
-            3. Init kwargs (passed to __init__)
-            4. Init args (if dictionary, passed to __init__)
-            5. Default parameters
+            NetworkConnectionError: On connectivity failures, with
+                troubleshooting guidance.
+            ValueError: If an image is provided to a non-vision model.
 
         Example:
-            Basic text generation:
             ```python
             llm = LiteLLM(model_name="gpt-4")
-            response = llm.run("Explain quantum computing")
-            ```
-
-            With image:
-            ```python
-            response = llm.run("Describe this image", img="photo.jpg")
-            ```
-
-            With runtime parameter override:
-            ```python
-            response = llm.run("Write a story", temperature=0.9, max_tokens=2000)
+            llm.run("Explain quantum computing")
+            llm.run("Describe this image", img="photo.jpg")
+            llm.run("Write a story", temperature=0.9, max_tokens=2000)
             ```
         """
         try:
-            # Prepare messages properly - this handles both task and image together
-            messages = self._prepare_messages(task=task, img=img)
-
-            # Base completion parameters
-            completion_params = {
-                "model": self.model_name,
-                "messages": messages,
-                "stream": self.stream,
-                "max_tokens": self.max_tokens,
-                "caching": self.caching,
-                "temperature": self.temperature,
-            }
-
-            # Only include top_p if explicitly set (not None)
-            if self.top_p is not None:
-                completion_params["top_p"] = self.top_p
-
-            # Merge initialization kwargs first (lower priority)
-            if self.init_kwargs:
-                completion_params.update(self.init_kwargs)
-
-            # Merge runtime kwargs (higher priority - overrides init kwargs)
-            if kwargs:
-                completion_params.update(kwargs)
-
-            if self.api_version is not None:
-                completion_params["api_version"] = self.api_version
-
-            # Add temperature for non-o4/o3 models
-            if self.model_name not in [
-                "openai/o4-mini",
-                "openai/o3-2025-04-16",
-            ]:
-                completion_params["temperature"] = self.temperature
-
-            # Add tools if specified
-            if self.tools_list_dictionary is not None:
-                completion_params.update(
-                    {
-                        "tools": self._maybe_cache_tools(
-                            self.tools_list_dictionary
-                        ),
-                        "tool_choice": self.tool_choice,
-                        "parallel_tool_calls": self.parallel_tool_calls,
-                    }
-                )
-
-            if self.functions is not None:
-                completion_params.update(
-                    {"functions": self.functions}
-                )
-
-            if self.base_url is not None:
-                completion_params["base_url"] = self.base_url
-
-            # Only when present: litellm falls back to the provider env var
-            # on absence, and an explicit None would override that.
-            if self.api_key is not None:
-                completion_params["api_key"] = self.api_key
-
-            if self.response_format is not None:
-                completion_params["response_format"] = (
-                    self.response_format
-                )
-
-            # Add modalities if needed
-            if self.modalities and len(self.modalities) >= 2:
-                completion_params["modalities"] = self.modalities
-
-            is_anthropic = (
-                "anthropic" in self.model_name.lower()
-                or "claude" in self.model_name.lower()
+            completion_params = self._build_completion_params(
+                task,
+                img=img,
+                runtime_args=args,
+                runtime_kwargs=kwargs,
             )
-
-            if (
-                self.reasoning_effort is not None
-                and litellm.supports_reasoning(model=self.model_name)
-                is True
-            ):
-                completion_params["reasoning_effort"] = (
-                    self.reasoning_effort
-                )
-
-                # Anthropic requires temperature=1 and sufficient max_tokens
-                # when reasoning/thinking is enabled.
-                # litellm maps reasoning_effort to thinking budget_tokens
-                # (low=5000, medium=10000, high=15000) and max_tokens must
-                # exceed that budget.
-                if is_anthropic:
-                    completion_params["temperature"] = 1
-                    completion_params.pop("top_p", None)
-                    if completion_params.get("max_tokens", 0) < 16000:
-                        completion_params["max_tokens"] = 16000
-
-            if (
-                self.reasoning_enabled is True
-                and self.thinking_tokens is not None
-            ):
-                thinking = {
-                    "type": "enabled",
-                    "budget_tokens": self.thinking_tokens,
-                }
-                completion_params["thinking"] = thinking
-
-                # Anthropic requires temperature=1 when thinking is enabled
-                if is_anthropic:
-                    completion_params["temperature"] = 1
-                    completion_params.pop("top_p", None)
-                    # max_tokens must be greater than thinking budget_tokens
-                    if (
-                        completion_params.get("max_tokens", 0)
-                        <= self.thinking_tokens
-                    ):
-                        completion_params["max_tokens"] = (
-                            self.thinking_tokens + 1024
-                        )
-
-            # Apply request-level caching params (OpenAI keys, 1h TTL header)
-            self._apply_cache_request_params(completion_params)
-
-            # Process additional args if any
-            self._process_additional_args(completion_params, args)
-
-            # Make the completion call
             response = completion(**completion_params)
-            # print(response)
-
-            # Validate response
-            if not response:
-                logger.error(
-                    "Received empty response from completion call"
-                )
-                return None
-
-            # Handle streaming response
-            if self.stream:
-                return response  # Return the streaming generator directly
-
-            # Handle tool-based response. This is checked before the
-            # reasoning branch: reasoning models still emit tool_calls, and
-            # routing them to output_for_reasoning would drop the call and
-            # return the (usually empty) text content instead.
-            elif self.tools_list_dictionary is not None and getattr(
-                response.choices[0].message, "tool_calls", None
-            ):
-                result = self.output_for_tools(response)
-                return result
-
-            # Handle reasoning model output
-            elif (
-                self.reasoning_enabled
-                or self.reasoning_effort is not None
-                or self.thinking_tokens is not None
-            ):
-                return self.output_for_reasoning(response)
-
-            elif self.tools_list_dictionary is not None:
-                result = self.output_for_tools(response)
-                return result
-            elif self.return_all is True:
-                return response.model_dump()
-            elif "gemini" in self.model_name.lower():
-                return gemini_output_img_handler(response)
-            else:
-                return response.choices[0].message.content
-
-        except (
-            requests.exceptions.ConnectionError,
-            requests.exceptions.Timeout,
-            requests.exceptions.RequestException,
-            ConnectionError,
-            TimeoutError,
-        ) as network_error:
-            # Check if this is a local model
-            if self.is_local_model(self.model_name, self.base_url):
-                error_msg = (
-                    f"Network error connecting to local model '{self.model_name}': {str(network_error)}\n\n"
-                    "Troubleshooting steps:\n"
-                    "1. Ensure your local model server (e.g., Ollama, LlamaCPP) is running\n"
-                    "2. Verify the base_url is correct and accessible\n"
-                    "3. Check that the model is properly loaded and available\n"
-                )
-                logger.error(error_msg)
-                raise NetworkConnectionError(
-                    error_msg
-                ) from network_error
-
-            # Check internet connectivity
-            has_internet = self.check_internet_connection()
-
-            if not has_internet:
-                error_msg = (
-                    f"No internet connection detected while trying to use model '{self.model_name}'.\n\n"
-                    "Possible solutions:\n"
-                    "1. Check your internet connection and try again\n"
-                    "2. Reconnect to your network\n"
-                    "3. Use a local model instead (e.g., Ollama):\n"
-                    "   - Install Ollama from https://ollama.ai\n"
-                    "   - Run: ollama pull llama2\n"
-                    "   - Use model_name='ollama/llama2' in your LiteLLM configuration\n"
-                    "\nExample:\n"
-                    "  model = LiteLLM(model_name='ollama/llama2')\n"
-                )
-                logger.error(error_msg)
-                raise NetworkConnectionError(
-                    error_msg
-                ) from network_error
-            else:
-                # Internet is available but request failed
-                error_msg = (
-                    f"Network error occurred while connecting to '{self.model_name}': {str(network_error)}\n\n"
-                    "Possible causes:\n"
-                    "1. The API endpoint may be temporarily unavailable\n"
-                    "2. Connection timeout or slow network\n"
-                    "3. Firewall or proxy blocking the connection\n"
-                    "\nConsider using a local model as a fallback:\n"
-                    "  model = LiteLLM(model_name='ollama/llama2')\n"
-                )
-                logger.error(error_msg)
-                raise NetworkConnectionError(
-                    error_msg
-                ) from network_error
-
+            return self._process_response(response)
+        except self._NETWORK_ERRORS as network_error:
+            self._raise_network_error(network_error)
         except LiteLLMException as error:
             logger.error(
-                f"Error in LiteLLM run: {str(error)} Traceback: {traceback.format_exc()}"
+                f"Error in LiteLLM run: {error} Traceback: {traceback.format_exc()}"
+            )
+            raise
+        except Exception as error:
+            logger.error(
+                f"Unexpected error in LiteLLM run: {error} Traceback: {traceback.format_exc()}"
             )
             raise
 
+    async def arun(
+        self,
+        task: str,
+        audio: Optional[str] = None,
+        img: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
+        """
+        Async version of `run`, using litellm's acompletion.
+
+        Accepts the same arguments and returns the same output types as
+        `run` (see its docstring).
+        """
+        try:
+            completion_params = self._build_completion_params(
+                task,
+                img=img,
+                runtime_args=args,
+                runtime_kwargs=kwargs,
+            )
+            response = await acompletion(**completion_params)
+            return self._process_response(response)
+        except self._NETWORK_ERRORS as network_error:
+            self._raise_network_error(network_error)
+        except LiteLLMException as error:
+            logger.error(
+                f"Error in LiteLLM arun: {error} Traceback: {traceback.format_exc()}"
+            )
+            raise
         except Exception as error:
             logger.error(
-                f"Unexpected error in LiteLLM run: {str(error)} Traceback: {traceback.format_exc()}"
+                f"Unexpected error in LiteLLM arun: {error} Traceback: {traceback.format_exc()}"
             )
             raise
 
@@ -1686,35 +1414,39 @@ class LiteLLM:
         """
         Run multiple tasks in batches synchronously.
 
-        This method processes multiple tasks efficiently by batching them together.
-        Tasks are divided into batches of the specified size and processed sequentially.
-        This is useful for processing large numbers of tasks while managing API rate
-        limits and resource usage.
+        Tasks are processed concurrently within each batch (via a thread pool), and
+        batches run one after another — useful for managing API rate limits.
 
         Args:
-            tasks (List[str]): List of text tasks/prompts to process. Each task will
-                be sent to the model independently.
-            batch_size (int): The number of tasks to process in each batch. Defaults to 10.
-                Adjust based on your API rate limits and processing requirements.
+            tasks (List[str]): List of text tasks/prompts to process.
+            batch_size (int): Number of tasks to process concurrently per batch. Defaults to 10.
 
         Returns:
-            List[str]: List of responses corresponding to each input task. The order
-                of responses matches the order of input tasks.
-
-        Note:
-            This method uses asyncio internally for batch processing. The `_process_batch`
-            method must be implemented for this to work. Currently, this method references
-            `_process_batch` which may need to be implemented separately.
+            List[str]: Responses in the same order as the input tasks.
 
         Example:
             ```python
             llm = LiteLLM(model_name="gpt-4")
-            tasks = ["Task 1", "Task 2", "Task 3", "Task 4", "Task 5"]
-            responses = llm.batched_run(tasks, batch_size=2)
-            # Processes in batches: [Task 1, Task 2], [Task 3, Task 4], [Task 5]
+            responses = llm.batched_run(["Task 1", "Task 2", "Task 3"], batch_size=2)
             ```
         """
-        logger.info(
-            f"Running {len(tasks)} tasks in batches of {batch_size}"
-        )
-        return asyncio.run(self._process_batch(tasks, batch_size))
+        import concurrent.futures
+
+        results = []
+        for i in range(0, len(tasks), batch_size):
+            batch = tasks[i : i + batch_size]
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=batch_size
+            ) as executor:
+                futures = [
+                    executor.submit(self.run, t) for t in batch
+                ]
+                for future in concurrent.futures.as_completed(
+                    futures
+                ):
+                    # as_completed does not guarantee original order, so collect all and reorder
+                    pass
+                # Ensure order in results matches the order of tasks
+                batch_results = [f.result() for f in futures]
+                results.extend(batch_results)
+        return results
