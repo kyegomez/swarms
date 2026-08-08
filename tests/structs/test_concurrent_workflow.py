@@ -490,5 +490,53 @@ def test_concurrent_workflow_autosave_saves_conversation_after_run(
     get_workspace_dir.cache_clear()
 
 
+class _ExplodingAgent:
+    """Minimal agent stand-in whose run() always raises."""
+
+    def __init__(self, agent_name: str):
+        self.agent_name = agent_name
+        self.print_on = True
+
+    def run(self, *args, **kwargs):
+        raise RuntimeError("agent exploded")
+
+
+def test_dashboard_path_honors_on_error_raise(monkeypatch):
+    """show_dashboard must not downgrade on_error='raise'.
+
+    The dashboard path used to swallow every agent exception, so the
+    documented "propagates the exception and aborts the run" policy
+    only held while the dashboard was switched off.
+    """
+    workflow = ConcurrentWorkflow(
+        name="On-Error-Raise-Dashboard",
+        agents=[_ExplodingAgent("Boom")],
+        show_dashboard=True,
+        on_error="raise",
+    )
+    monkeypatch.setattr(
+        workflow, "display_agent_dashboard", lambda *a, **k: None
+    )
+
+    with pytest.raises(RuntimeError, match="agent exploded"):
+        workflow.run("anything")
+
+
+def test_dashboard_path_stores_errors_by_default(monkeypatch):
+    """on_error='store' still lets the run finish and records the error."""
+    workflow = ConcurrentWorkflow(
+        name="On-Error-Store-Dashboard",
+        agents=[_ExplodingAgent("Boom")],
+        show_dashboard=True,
+    )
+    monkeypatch.setattr(
+        workflow, "display_agent_dashboard", lambda *a, **k: None
+    )
+
+    workflow.run("anything")
+
+    assert "agent exploded" in workflow.conversation.get_str()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
