@@ -563,13 +563,15 @@ class TestCLIUtils:
     def test_colors_dict_has_required_keys(self):
         from swarms.cli.utils import COLORS
 
+        assert isinstance(COLORS, dict)
         for key in ("primary", "secondary", "error", "success"):
             assert key in COLORS
 
     def test_console_is_importable(self):
+        from rich.console import Console
         from swarms.cli.utils import console
 
-        assert console is not None
+        assert isinstance(console, Console)
 
     def test_show_error_does_not_raise(self):
         from swarms.cli.utils import show_error
@@ -591,6 +593,7 @@ class TestCLIUtils:
         ):
             monkeypatch.delenv(key, raising=False)
         result = _detect_active_provider()
+        assert isinstance(result, str)
         assert "No API key" in result
 
     def test_detect_active_provider_with_openai(self, monkeypatch):
@@ -598,6 +601,7 @@ class TestCLIUtils:
 
         monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
         result = _detect_active_provider()
+        assert isinstance(result, str)
         assert "OpenAI" in result
 
     def test_detect_active_provider_multiple(self, monkeypatch):
@@ -617,6 +621,7 @@ class TestCLIUtils:
         monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
         monkeypatch.setenv("ANTHROPIC_API_KEY", "ant-test")
         result = _detect_active_provider()
+        assert isinstance(result, str)
         assert "+1 more" in result
 
 
