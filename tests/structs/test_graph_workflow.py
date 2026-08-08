@@ -1,4 +1,5 @@
 import hashlib
+import json
 
 import pytest
 
@@ -1480,3 +1481,243 @@ def test_save_spec_round_trips_through_from_topology_spec(tmp_path):
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+# ---------------------------------------------------------------------------
+# Conditional edges (#1756)
+# ---------------------------------------------------------------------------
+
+
+class _StubAgent:
+    """Agent stand-in that records calls and returns a canned string."""
+
+    def __init__(self, name: str, output: str = "ok"):
+        self.agent_name = name
+        self.agent_description = f"stub {name}"
+        self.output = output
+        self.calls = 0
+
+    def run(self, task, img=None, *args, **kwargs):
+        self.calls += 1
+        return self.output
+
+
+def _conditional_workflow(classifier_output: str):
+    """classifier -> {escalate, routine}, routed on the classifier's output."""
+    from swarms.structs.graph_workflow import Edge
+
+    classifier = _StubAgent("classifier", classifier_output)
+    escalate = _StubAgent("escalate", "paged oncall")
+    routine = _StubAgent("routine", "filed ticket")
+
+    wf = GraphWorkflow(max_loops=1, verbose=False)
+    for agent in (classifier, escalate, routine):
+        wf.add_node(agent)
+    wf.add_edge(
+        Edge(
+            source="classifier",
+            target="escalate",
+            condition=lambda out: "urgent" in out.lower(),
+        )
+    )
+    wf.add_edge(
+        Edge(
+            source="classifier",
+            target="routine",
+            condition=lambda out: "urgent" not in out.lower(),
+        )
+    )
+    wf.set_entry_points(["classifier"])
+    wf.set_end_points(["escalate", "routine"])
+    return wf, classifier, escalate, routine
+
+
+def test_conditional_edge_runs_only_the_matching_branch():
+    wf, _, escalate, routine = _conditional_workflow(
+        "URGENT: the server is on fire"
+    )
+
+    results = wf.run(task="triage")
+
+    assert escalate.calls == 1
+    assert routine.calls == 0
+    # A skipped node is absent from results, not present with empty output.
+    assert "routine" not in results
+    assert results["escalate"] == "paged oncall"
+
+
+def test_conditional_edge_takes_the_other_branch():
+    wf, _, escalate, routine = _conditional_workflow("all quiet")
+
+    results = wf.run(task="triage")
+
+    assert routine.calls == 1
+    assert escalate.calls == 0
+    assert "escalate" not in results
+
+
+def test_skipped_branch_prunes_its_descendants():
+    """A declined branch must not be restarted by the next layer."""
+    from swarms.structs.graph_workflow import Edge
+
+    start = _StubAgent("start", "quiet")
+    branch = _StubAgent("branch")
+    downstream = _StubAgent("downstream")
+
+    wf = GraphWorkflow(max_loops=1, verbose=False)
+    for agent in (start, branch, downstream):
+        wf.add_node(agent)
+    wf.add_edge(
+        Edge(
+            source="start", target="branch", condition=lambda o: False
+        )
+    )
+    wf.add_edge(Edge(source="branch", target="downstream"))
+    wf.set_entry_points(["start"])
+    wf.set_end_points(["downstream"])
+
+    results = wf.run(task="go")
+
+    assert branch.calls == 0
+    assert downstream.calls == 0
+    assert set(results) == {"start"}
+
+
+def test_any_inbound_edge_firing_is_enough():
+    """Diamond: one branch declines, the join still runs."""
+    from swarms.structs.graph_workflow import Edge
+
+    start = _StubAgent("start", "go")
+    yes = _StubAgent("yes")
+    no = _StubAgent("no")
+    join = _StubAgent("join")
+
+    wf = GraphWorkflow(max_loops=1, verbose=False)
+    for agent in (start, yes, no, join):
+        wf.add_node(agent)
+    wf.add_edge(
+        Edge(source="start", target="yes", condition=lambda o: True)
+    )
+    wf.add_edge(
+        Edge(source="start", target="no", condition=lambda o: False)
+    )
+    wf.add_edge(Edge(source="yes", target="join"))
+    wf.add_edge(Edge(source="no", target="join"))
+    wf.set_entry_points(["start"])
+    wf.set_end_points(["join"])
+
+    results = wf.run(task="go")
+
+    assert yes.calls == 1
+    assert no.calls == 0
+    assert join.calls == 1
+    assert "no" not in results
+
+
+def test_two_argument_predicate_receives_all_outputs():
+    from swarms.structs.graph_workflow import Edge
+
+    start = _StubAgent("start", "hello")
+    target = _StubAgent("target")
+    seen = {}
+
+    def condition(output, outputs):
+        seen["output"] = output
+        seen["outputs"] = dict(outputs)
+        return True
+
+    wf = GraphWorkflow(max_loops=1, verbose=False)
+    for agent in (start, target):
+        wf.add_node(agent)
+    wf.add_edge(
+        Edge(source="start", target="target", condition=condition)
+    )
+    wf.set_entry_points(["start"])
+    wf.set_end_points(["target"])
+
+    wf.run(task="go")
+
+    assert seen["output"] == "hello"
+    assert seen["outputs"]["start"] == "hello"
+    assert target.calls == 1
+
+
+def test_raising_predicate_does_not_fire_and_does_not_crash_the_run():
+    from swarms.structs.graph_workflow import Edge
+
+    def boom(output):
+        raise TypeError("predicate is broken")
+
+    start = _StubAgent("start", "hello")
+    target = _StubAgent("target")
+
+    wf = GraphWorkflow(max_loops=1, verbose=False)
+    for agent in (start, target):
+        wf.add_node(agent)
+    wf.add_edge(Edge(source="start", target="target", condition=boom))
+    wf.set_entry_points(["start"])
+    wf.set_end_points(["target"])
+
+    results = wf.run(task="go")
+
+    # The run completes; the unproven edge simply does not route.
+    assert target.calls == 0
+    assert set(results) == {"start"}
+
+
+def test_unconditional_graph_is_untouched():
+    from swarms.structs.graph_workflow import Edge
+
+    first = _StubAgent("first", "a")
+    second = _StubAgent("second", "b")
+
+    wf = GraphWorkflow(max_loops=1, verbose=False)
+    for agent in (first, second):
+        wf.add_node(agent)
+    wf.add_edge(Edge(source="first", target="second"))
+    wf.set_entry_points(["first"])
+    wf.set_end_points(["second"])
+
+    results = wf.run(task="go")
+
+    assert wf._has_conditions is False
+    assert second.calls == 1
+    assert set(results) == {"first", "second"}
+
+
+def test_prompt_labels_stay_aligned_when_a_predecessor_is_missing():
+    """Regression: outputs were zipped against the unfiltered pred tuple."""
+    from swarms.structs.graph_workflow import Edge
+
+    a = _StubAgent("a")
+    b = _StubAgent("b")
+    c = _StubAgent("c")
+
+    wf = GraphWorkflow(max_loops=1, verbose=False)
+    for agent in (a, b, c):
+        wf.add_node(agent)
+    wf.add_edge(Edge(source="a", target="c"))
+    wf.add_edge(Edge(source="b", target="c"))
+    wf.set_entry_points(["a", "b"])
+    wf.set_end_points(["c"])
+    wf.compile()
+
+    # Only the second predecessor produced output.
+    prompt = wf._build_prompt(
+        "c", "task", {"b": "B-OUTPUT"}, layer_idx=1
+    )
+
+    assert "Output from b:\nB-OUTPUT" in prompt
+    assert "Output from a" not in prompt
+
+
+def test_conditions_are_flagged_when_serialized():
+    from swarms.structs.graph_workflow import Edge
+
+    wf, _, _, _ = _conditional_workflow("URGENT")
+    payload = json.loads(wf.to_json())
+
+    conditional = [
+        e for e in payload["edges"] if e.get("has_condition")
+    ]
+    assert len(conditional) == 2

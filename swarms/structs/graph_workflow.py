@@ -1,6 +1,7 @@
 import asyncio
 import concurrent.futures
 import hashlib
+import inspect
 import json
 import os
 import time
@@ -578,6 +579,42 @@ class RustworkxBackend(GraphBackend):
         return succ, pred
 
 
+def _accepts_two_args(fn: Optional[Callable[..., Any]]) -> bool:
+    """
+    Whether an edge predicate takes ``(output, outputs)`` rather than ``(output)``.
+
+    Resolved once per edge so the hot path never has to probe the callable.
+    Anything we cannot introspect (a builtin, a C callable) is assumed to be
+    single-argument, which is the documented default shape.
+
+    Args:
+        fn (Optional[Callable]): The predicate to inspect.
+
+    Returns:
+        bool: True when the predicate can be called with two positional args.
+    """
+    if fn is None:
+        return False
+    try:
+        params = [
+            p
+            for p in inspect.signature(fn).parameters.values()
+            if p.kind
+            in (
+                inspect.Parameter.POSITIONAL_ONLY,
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            )
+        ]
+        if any(
+            p.kind is inspect.Parameter.VAR_POSITIONAL
+            for p in inspect.signature(fn).parameters.values()
+        ):
+            return True
+        return len(params) >= 2
+    except (TypeError, ValueError):
+        return False
+
+
 class NodeType(str, Enum):
     AGENT = "agent"
     SUBGRAPH = "subgraph"
@@ -679,6 +716,8 @@ class Edge:
         source (str): The ID of the source node.
         target (str): The ID of the target node.
         metadata (Dict[str, Any], optional): Additional metadata for the edge.
+        condition (Callable, optional): Predicate deciding whether this edge
+            fires. Evaluated after the source node produces output.
     """
 
     def __init__(
@@ -686,6 +725,7 @@ class Edge:
         source: str = None,
         target: str = None,
         metadata: Dict[str, Any] = None,
+        condition: Optional[Callable[..., bool]] = None,
     ):
         """
         Initialize an Edge.
@@ -694,10 +734,56 @@ class Edge:
             source (str, optional): The ID of the source node.
             target (str, optional): The ID of the target node.
             metadata (Dict[str, Any], optional): Additional metadata for the edge.
+            condition (Callable, optional): Predicate gating this edge. Called
+                with the source node's output, and optionally a second
+                argument holding every output produced so far::
+
+                    Edge(source="classifier", target="escalate",
+                         condition=lambda out: "urgent" in out.lower())
+
+                    Edge(source="classifier", target="escalate",
+                         condition=lambda out, ctx: ctx["triage"] == "p0")
+
+                A target runs when at least one inbound edge fires. An edge
+                with no condition always fires, so graphs that don't use this
+                behave exactly as before.
         """
         self.source = source
         self.target = target
         self.metadata = metadata or {}
+        self.condition = condition
+        # Resolved once, so fires() never has to probe by catching TypeError —
+        # a predicate that raises TypeError internally would otherwise be
+        # called a second time with a different signature.
+        self._condition_wants_context = _accepts_two_args(condition)
+
+    def fires(self, output: Any, outputs: Dict[str, Any]) -> bool:
+        """
+        Whether this edge passes control to its target.
+
+        A predicate that raises is treated as not firing: a broken condition
+        must not take the whole run down, and refusing to route is the safe
+        reading of "we could not establish that this edge should fire".
+
+        Args:
+            output (Any): The source node's output.
+            outputs (Dict[str, Any]): Every output produced so far this loop.
+
+        Returns:
+            bool: True when the target should be considered runnable.
+        """
+        if self.condition is None:
+            return True
+        try:
+            if self._condition_wants_context:
+                return bool(self.condition(output, outputs))
+            return bool(self.condition(output))
+        except Exception as e:
+            logger.exception(
+                f"Edge condition {self.source} -> {self.target} raised "
+                f"({e}); treating the edge as not fired"
+            )
+            return False
 
     @classmethod
     def from_nodes(
@@ -746,8 +832,17 @@ class Edge:
             tgt = target_node
 
         # Put all kwargs into metadata dict
+        # condition is a real constructor argument, not free-form metadata —
+        # leaving it in kwargs would bury the predicate in the visualization
+        # labels and silently drop the routing behaviour.
+        condition = kwargs.pop("condition", None)
         metadata = kwargs if kwargs else None
-        return cls(source=src, target=tgt, metadata=metadata)
+        return cls(
+            source=src,
+            target=tgt,
+            metadata=metadata,
+            condition=condition,
+        )
 
 
 class GraphWorkflow:
@@ -833,6 +928,8 @@ class GraphWorkflow:
         self._execution_plan = []
         self._successors_map = {}
         self._predecessors_cache = {}
+        self._inbound_edges = {}
+        self._has_conditions = False
         self.max_parallel_nodes = max_parallel_nodes
         self._max_workers = (
             max(1, max_parallel_nodes)
@@ -941,6 +1038,8 @@ class GraphWorkflow:
 
         # Clear predecessors cache when graph structure changes
         self._predecessors_cache = {}
+        self._inbound_edges = {}
+        self._has_conditions = False
         if self.verbose:
             logger.debug("Cleared predecessors cache")
 
@@ -995,6 +1094,19 @@ class GraphWorkflow:
                 node_id: tuple(parents)
                 for node_id, parents in pred.items()
             }
+
+            # Index inbound edges per target so the run loop can evaluate
+            # routing without scanning self.edges once per node. _has_conditions
+            # lets a graph with no conditions skip the gating pass entirely,
+            # keeping the existing execution path free of added work.
+            inbound: Dict[str, List["Edge"]] = {}
+            has_conditions = False
+            for edge in self.edges:
+                inbound.setdefault(edge.target, []).append(edge)
+                if edge.condition is not None:
+                    has_conditions = True
+            self._inbound_edges = inbound
+            self._has_conditions = has_conditions
 
             # Structural validation, surfaced at build time rather than
             # mid-execution.  We never raise here so that compile() stays
@@ -1753,6 +1865,48 @@ class GraphWorkflow:
             cache[node_id] = preds
         return preds
 
+    def _node_is_eligible(
+        self,
+        node_id: str,
+        prev_outputs: Dict[str, Any],
+        skipped: Set[str],
+    ) -> bool:
+        """
+        Whether a node should run, given how its inbound edges resolved.
+
+        A node runs when at least one inbound edge fires — the "any" rule,
+        which is what makes a diamond with one conditional branch behave the
+        way people expect. A node with no inbound edges is an entry point and
+        always runs.
+
+        A node whose predecessors were themselves all skipped is skipped too,
+        so a declined branch prunes everything behind it rather than letting
+        the next layer restart it with empty input.
+
+        Args:
+            node_id (str): Node under consideration.
+            prev_outputs (Dict[str, Any]): Outputs produced so far this loop.
+            skipped (Set[str]): Nodes already skipped this loop.
+
+        Returns:
+            bool: True when the node should execute.
+        """
+        inbound = self._inbound_edges.get(node_id)
+        if not inbound:
+            return True
+
+        for edge in inbound:
+            if edge.source in skipped:
+                continue
+            if edge.source not in prev_outputs:
+                # Predecessor hasn't run yet (first layer of a later loop, or
+                # a cycle edge). Don't let an unevaluated edge prune the node.
+                return True
+            if edge.fires(prev_outputs[edge.source], prev_outputs):
+                return True
+
+        return False
+
     def _build_prompt(
         self,
         node_id: str,
@@ -1783,8 +1937,12 @@ class GraphWorkflow:
 
         try:
             preds = self._get_predecessors(node_id)
+            # Keep the id paired with its own output. Filtering the outputs
+            # while zipping against the unfiltered predecessor tuple shifted
+            # the labels, so a node with a skipped or missing predecessor
+            # attributed each output to the wrong agent.
             pred_outputs = [
-                prev_outputs.get(pred)
+                (pred, prev_outputs[pred])
                 for pred in preds
                 if pred in prev_outputs
             ]
@@ -1793,7 +1951,7 @@ class GraphWorkflow:
                 # Use list comprehension and join for faster string building
                 predecessor_parts = [
                     f"Output from {pred}:\n{out}"
-                    for pred, out in zip(preds, pred_outputs)
+                    for pred, out in pred_outputs
                     if out is not None
                 ]
                 predecessor_context = "\n\n".join(predecessor_parts)
@@ -2034,6 +2192,9 @@ class GraphWorkflow:
 
                 execution_results = {}
                 prev_outputs = {}
+                # Reset per loop: a node skipped on one iteration may well be
+                # the one that runs on the next, once upstream output changes.
+                skipped_nodes: Set[str] = set()
 
                 # Derive a deterministic key for this task so checkpoints
                 # survive process restarts (Python's hash() is salted and
@@ -2106,6 +2267,28 @@ class GraphWorkflow:
                             f"Executing layer {layer_idx + 1}/{len(self._execution_plan)} "
                             f"with {len(layer)} nodes: {[n[0] for n in layer]}"
                         )
+
+                    # Conditional routing: drop nodes this layer whose inbound
+                    # edges all declined to fire. Entry points and nodes in
+                    # graphs without conditions are never gated, so an
+                    # unconditional graph takes the same path it always did.
+                    if self._has_conditions:
+                        eligible_layer = []
+                        for entry in layer:
+                            if self._node_is_eligible(
+                                entry[0], prev_outputs, skipped_nodes
+                            ):
+                                eligible_layer.append(entry)
+                            else:
+                                skipped_nodes.add(entry[0])
+                                if self.verbose:
+                                    logger.info(
+                                        f"Skipping node {entry[0]}: no inbound "
+                                        f"edge fired"
+                                    )
+                        layer = eligible_layer
+                        if not layer:
+                            continue
 
                     # Pre-build all prompts for this layer
                     layer_data = []
@@ -2833,11 +3016,24 @@ class GraphWorkflow:
     @staticmethod
     def _edge_payload(edge: "Edge") -> Dict[str, Any]:
         """Serialize one edge. Identical in both shapes."""
-        return {
+        payload = {
             "source": edge.source,
             "target": edge.target,
             "metadata": edge.metadata,
         }
+        # A predicate is a Python callable and cannot round-trip through
+        # JSON. Flag it and warn, so a deserialized graph is never silently
+        # missing its routing: loading this payload gives an unconditional
+        # graph, where every branch fires.
+        if edge.condition is not None:
+            payload["has_condition"] = True
+            logger.warning(
+                f"Edge {edge.source} -> {edge.target} has a condition, "
+                "which cannot be serialized. The exported graph will "
+                "route unconditionally when reloaded; re-attach the "
+                "predicate after loading."
+            )
+        return payload
 
     @staticmethod
     def _agent_payload(node: "Node") -> Dict[str, Any]:
