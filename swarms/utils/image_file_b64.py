@@ -117,6 +117,32 @@ def _fetch_image_url(url: str) -> bytes:
     return response.content
 
 
+def get_media_base64(source: str) -> str:
+    """
+    Fetch any media file (URL or local path) and return its raw base64 encoding.
+
+    Unlike `get_image_base64`, this returns the bare base64 string with no data
+    URI prefix, so it works for audio and other non-image media.
+
+    Args:
+        source (str): HTTP/HTTPS URL or local file path.
+
+    Returns:
+        str: The base64-encoded file contents.
+
+    Raises:
+        ValueError: If the URL targets a blocked (non-public) address.
+        requests.HTTPError: If fetching from a URL fails.
+        FileNotFoundError: If the local file does not exist.
+    """
+    if source.startswith(("http://", "https://")):
+        data = _fetch_image_url(source)
+    else:
+        with open(source, "rb") as file:
+            data = file.read()
+    return base64.b64encode(data).decode("utf-8")
+
+
 def is_base64_encoded(image_source: str) -> bool:
     """
     Check if a string is already base64 encoded (either as data URI or raw base64).
