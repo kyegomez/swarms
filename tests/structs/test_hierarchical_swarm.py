@@ -1056,5 +1056,36 @@ def test_reassignment_targets_nested_swarm_worker_by_name():
     assert "[RECOVERY NOTICE]" not in swarm.conversation.get_str()
 
 
+def test_custom_director_receives_swarmspec_schema():
+    """A caller-supplied director must be given the SwarmSpec schema.
+
+    Without it the director answers in prose, parse_orders can never read a
+    plan out of it, and the swarm produces no agent output at all.
+    """
+    director = StubAgent("Director", [])
+    swarm = make_recovery_swarm(director, [StubAgent("Worker", [])])
+
+    schema = swarm.director.tools_list_dictionary
+    assert schema, "director was left without a tool schema"
+    assert (
+        schema[0]["function"]["parameters"]["properties"].keys()
+        >= {"plan", "orders"}
+    )
+
+
+def test_run_raises_when_every_loop_fails():
+    """A run where no loop succeeds must raise, not return an empty history.
+
+    The director returns prose, so parse_orders raises and the loop fails. The
+    conversation then holds only the loop marker, so returning it would report
+    success for a run that did no work.
+    """
+    director = StubAgent("Director", ["not json, just prose"])
+    swarm = make_recovery_swarm(director, [StubAgent("Worker", [])])
+
+    with pytest.raises(RuntimeError, match="produced no output"):
+        swarm.run(task="do the thing")
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
