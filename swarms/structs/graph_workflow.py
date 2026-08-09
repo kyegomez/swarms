@@ -2554,7 +2554,15 @@ class GraphWorkflow:
             ImportError: If graphviz is not installed.
             Exception: If visualization generation fails.
         """
-        output_path = f"{self.name}_visualization_{str(uuid.uuid4())}"
+        # Sanitize here, in the path that is actually used. graphviz treats
+        # the argument as a filesystem path, so a name containing "/" (or
+        # any other separator) renders into a directory that does not exist
+        # instead of producing a file.
+        safe_name = "".join(
+            c if c.isalnum() or c in "-_" else "_"
+            for c in (self.name or "GraphWorkflow")
+        )
+        output_path = f"{safe_name}_visualization_{str(uuid.uuid4())}"
 
         if not GRAPHVIZ_AVAILABLE:
             error_msg = "Graphviz is not installed. Install it with: pip install graphviz"
@@ -2745,14 +2753,6 @@ class GraphWorkflow:
                         # Add invisible nodes to maintain layer structure
                         for node_id in layer:
                             layer_graph.node(node_id)
-
-            # Generate output path
-            if output_path is None:
-                safe_name = "".join(
-                    c if c.isalnum() or c in "-_" else "_"
-                    for c in (self.name or "GraphWorkflow")
-                )
-                output_path = f"{safe_name}_visualization"
 
             # Render the graph
             output_file = dot.render(
