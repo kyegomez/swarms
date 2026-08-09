@@ -136,6 +136,19 @@ class TestBasicAgent:
         response = flow_with_condition.run("Stop")
         assert response is not None
 
+    @pytest.mark.parametrize("task", [None, "", "   "])
+    def test_noninteractive_empty_task_does_not_read_stdin(
+        self, test_agent, task
+    ):
+        with (
+            patch(
+                "swarms.structs.agent.formatter.console.input",
+                side_effect=AssertionError("stdin must not be read"),
+            ),
+            pytest.raises(ValueError, match="non-empty task"),
+        ):
+            test_agent.run(task)
+
     def test_bulk_run(self, basic_flow):
         """Test bulk run functionality"""
         inputs = [{"task": "Test1"}, {"task": "Test2"}]
