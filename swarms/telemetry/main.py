@@ -31,6 +31,11 @@ def get_machine_id():
 
 @lru_cache(maxsize=1)
 def get_comprehensive_system_info() -> Dict[str, Any]:
+    """Get comprehensive system information
+
+    Returns:
+        Dict[str, Any]: System information
+    """
     # Basic platform and hardware information
     system_data = {
         "platform": platform.system(),
