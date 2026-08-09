@@ -1303,7 +1303,7 @@ class Conversation:
         Returns:
             list: List of messages except the first one.
         """
-        return self.conversation_history[2:]
+        return self.conversation_history[1:]
 
     def return_all_except_first_string(self):
         """Return all messages except the first one as a string.
@@ -1314,7 +1314,7 @@ class Conversation:
         return "\n".join(
             [
                 f"{msg['content']}"
-                for msg in self.conversation_history[2:]
+                for msg in self.conversation_history[1:]
             ]
         )
 

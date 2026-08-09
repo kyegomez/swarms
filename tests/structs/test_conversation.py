@@ -442,16 +442,10 @@ def test_return_all_except_first():
     conv.add("system", "System")
     conv.add("user", "Hello")
     conv.add("assistant", "Hi")
-    try:
-        result = conv.return_all_except_first()
-        assert len(result) == 2
-        assert result[0]["role"] == "user"
-        assert result[1]["role"] == "assistant"
-        logger.success("test_return_all_except_first passed")
-        return True
-    except AssertionError as e:
-        logger.error(f"test_return_all_except_first failed: {str(e)}")
-        return False
+    result = conv.return_all_except_first()
+    assert len(result) == 2
+    assert result[0]["role"] == "user"
+    assert result[1]["role"] == "assistant"
 
 
 def test_return_all_except_first_string():
@@ -460,18 +454,10 @@ def test_return_all_except_first_string():
     conv.add("system", "System")
     conv.add("user", "Hello")
     conv.add("assistant", "Hi")
-    try:
-        result = conv.return_all_except_first_string()
-        assert "Hello" in result
-        assert "Hi" in result
-        assert "System" not in result
-        logger.success("test_return_all_except_first_string passed")
-        return True
-    except AssertionError as e:
-        logger.error(
-            f"test_return_all_except_first_string failed: {str(e)}"
-        )
-        return False
+    result = conv.return_all_except_first_string()
+    assert "Hello" in result
+    assert "Hi" in result
+    assert "System" not in result
 
 
 def test_batch_add():
