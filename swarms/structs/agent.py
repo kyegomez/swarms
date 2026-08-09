@@ -52,7 +52,6 @@ from swarms.schemas.agent_errors import (  # noqa: F401 — re-exported for back
 )
 from swarms.utils.get_reasoning_efforts import get_reasoning_efforts
 from swarms.utils.workspace_utils import get_workspace_dir
-from swarms.artifacts.main_artifact import Artifact
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
 from swarms.prompts.autonomous_agent_prompt import (
     get_autonomous_agent_prompt,
@@ -289,8 +288,6 @@ class Agent:
         run_async_concurrent: Run the agent asynchronously and concurrently
         run_async_concurrent: Run the agent asynchronously and concurrently
         construct_dynamic_prompt: Construct the dynamic prompt
-        handle_artifacts: Handle artifacts
-
 
     Examples:
     >>> from swarms import Agent
@@ -4368,83 +4365,6 @@ Subtask Breakdown:
             self.run(task=task, imgs=imgs, *args, **kwargs)
             for task, imgs in zip(tasks, imgs)
         ]
-
-    def handle_artifacts(
-        self, text: str, file_output_path: str, file_extension: str
-    ) -> None:
-        """
-        Handle creating and saving artifacts with error handling.
-        Artifacts are saved in the agent-specific workspace directory if the path is relative.
-
-        Args:
-            text (str): The content to save as an artifact.
-            file_output_path (str): The path where the artifact should be saved. If relative,
-                                  will be saved in the agent-specific workspace directory.
-            file_extension (str): The file extension for the artifact (e.g., '.md', '.txt', '.pdf').
-        """
-        try:
-            # Ensure file_extension starts with a dot
-            if not file_extension.startswith("."):
-                file_extension = "." + file_extension
-
-            # Get agent-specific workspace directory
-            agent_workspace = self._get_agent_workspace_dir()
-
-            # If file_output_path doesn't have an extension, treat it as a directory
-            # and create a default filename based on timestamp
-            if not os.path.splitext(file_output_path)[1]:
-                timestamp = time.strftime("%Y%m%d_%H%M%S")
-                filename = f"artifact_{timestamp}{file_extension}"
-                # If path is relative, use agent workspace; otherwise use as-is
-                if os.path.isabs(file_output_path):
-                    full_path = os.path.join(
-                        file_output_path, filename
-                    )
-                else:
-                    full_path = os.path.join(
-                        agent_workspace, file_output_path, filename
-                    )
-            else:
-                # If path is absolute, use as-is; otherwise use agent workspace
-                if os.path.isabs(file_output_path):
-                    full_path = file_output_path
-                else:
-                    full_path = os.path.join(
-                        agent_workspace, file_output_path
-                    )
-
-            # Create the directory if it doesn't exist
-            os.makedirs(os.path.dirname(full_path), exist_ok=True)
-
-            logger.info(f"Creating artifact for file: {full_path}")
-            artifact = Artifact(
-                file_path=full_path,
-                file_type=file_extension,
-                contents=text,
-                edit_count=0,
-            )
-
-            logger.info(
-                f"Saving artifact with extension: {file_extension}"
-            )
-            artifact.save_as(file_extension)
-            logger.success(
-                f"Successfully saved artifact to {full_path}"
-            )
-
-        except ValueError as e:
-            logger.error(
-                f"Invalid input values for artifact: {str(e)}"
-            )
-            raise
-        except IOError as e:
-            logger.error(f"Error saving artifact to file: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(
-                f"Unexpected error handling artifact: {str(e)}"
-            )
-            raise
 
     def showcase_config(self):
 
