@@ -10,53 +10,28 @@ def exists(val):
     return val is not None
 
 
-def format_dict_to_string(data: dict, indent_level=0, use_colon=True):
-    """
-    Recursively format a dictionary into a multi-line string.
-
-    Args:
-        data (dict): The dictionary to format.
-        indent_level (int, optional): The current indentation level for nested structures.
-        use_colon (bool, optional): If True, use "key: value" formatting;
-            if False, use "key value" formatting.
-
-    Returns:
-        str: Multi-line readable string representing the structure of the input dictionary.
-    """
-    if not isinstance(data, dict):
-        return str(data)
-
-    lines = []
-    indent = "  " * indent_level
-    separator = ": " if use_colon else " "
-
-    for key, value in data.items():
-        if isinstance(value, dict):
-            lines.append(f"{indent}{key}:")
-            nested_string = format_dict_to_string(
-                value, indent_level + 1, use_colon
-            )
-            lines.append(nested_string)
-        else:
-            lines.append(f"{indent}{key}{separator}{value}")
-
-    return "\n".join(lines)
-
-
 def format_data_structure(
-    data: any, indent_level: int = 0, max_depth: int = 10
+    data: any,
+    indent_level: int = 0,
+    max_depth: int = 10,
+    style: str = "indented",
 ) -> str:
     """
-    Format any Python data structure into a readable, indented, multi-line string.
+    Format any Python data structure into a readable, multi-line string.
 
     Args:
         data: The data structure to format.
         indent_level (int, optional): The current indentation level. Default is 0.
         max_depth (int, optional): The maximum depth to recurse. Defaults to 10.
+        style (str, optional): Output style. "indented" (default) for indented
+            multi-line format, "compact" for a flat format matching any_to_str.
 
     Returns:
-        str: Readable multi-line string representation of the input structure.
+        str: Readable string representation of the input structure.
     """
+    if style == "compact":
+        return _compact_format(data, max_depth)
+
     if indent_level >= max_depth:
         return f"{'  ' * indent_level}... (max depth reached)"
 
@@ -72,7 +47,7 @@ def format_data_structure(
                 lines.append(f"{indent}{key}:")
                 lines.append(
                     format_data_structure(
-                        value, indent_level + 1, max_depth
+                        value, indent_level + 1, max_depth, style
                     )
                 )
             else:
@@ -88,7 +63,7 @@ def format_data_structure(
                 lines.append(f"{indent}[{i}]:")
                 lines.append(
                     format_data_structure(
-                        item, indent_level + 1, max_depth
+                        item, indent_level + 1, max_depth, style
                     )
                 )
             else:
@@ -104,7 +79,7 @@ def format_data_structure(
                 lines.append(f"{indent}({i}):")
                 lines.append(
                     format_data_structure(
-                        item, indent_level + 1, max_depth
+                        item, indent_level + 1, max_depth, style
                     )
                 )
             else:
@@ -120,7 +95,7 @@ def format_data_structure(
                 lines.append(f"{indent}set item:")
                 lines.append(
                     format_data_structure(
-                        item, indent_level + 1, max_depth
+                        item, indent_level + 1, max_depth, style
                     )
                 )
             else:
@@ -145,7 +120,7 @@ def format_data_structure(
                         lines.append(f"{indent}  {attr}:")
                         lines.append(
                             format_data_structure(
-                                value, indent_level + 2, max_depth
+                                value, indent_level + 2, max_depth, style
                             )
                         )
                     else:
@@ -153,3 +128,32 @@ def format_data_structure(
             return "\n".join(lines)
         else:
             return f"{indent}{data} ({data_type.__name__})"
+
+
+def _compact_format(data: any, max_depth: int = 10) -> str:
+    try:
+        if isinstance(data, dict):
+            items = []
+            for k, v in data.items():
+                value = _compact_format(v, max_depth)
+                items.append(f"{k}: {value}")
+            return "\n".join(items)
+
+        elif isinstance(data, (list, tuple)):
+            items = [_compact_format(x, max_depth) for x in data]
+            if len(items) == 0:
+                return "[]" if isinstance(data, list) else "()"
+            if isinstance(data, list):
+                return f"[{', '.join(items)}]"
+            return f"({', '.join(items)})"
+
+        elif data is None:
+            return "None"
+
+        else:
+            if isinstance(data, str):
+                return f'"{data}"'
+            return str(data)
+
+    except Exception as e:
+        return f"Error converting data: {str(e)}"
