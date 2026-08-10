@@ -1,5 +1,12 @@
 from swarms import Agent
-from swarms.structs.multi_agent_debates import PeerReviewProcess
+import sys
+from pathlib import Path
+
+sys.path.insert(
+    0, str(Path(__file__).resolve().parents[1] / "alternate_debates")
+)
+
+from peer_review_process import PeerReviewProcess  # noqa: E402
 
 # Initialize the insurance claim reviewers and author
 claims_adjuster = Agent(

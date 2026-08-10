@@ -1,5 +1,12 @@
 from swarms import Agent
-from swarms.structs.multi_agent_debates import MediationSession
+import sys
+from pathlib import Path
+
+sys.path.insert(
+    0, str(Path(__file__).resolve().parents[1] / "alternate_debates")
+)
+
+from mediation_session import MediationSession  # noqa: E402
 
 # Initialize the mediation participants
 tech_mediator = Agent(
