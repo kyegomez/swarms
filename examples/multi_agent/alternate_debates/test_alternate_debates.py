@@ -48,8 +48,12 @@ def create_function_agent(name: str, system_prompt: str = None):
 @pytest.fixture
 def sample_two_agents():
     return [
-        create_function_agent("Agent1", "You are Agent1. Provide concise responses."),
-        create_function_agent("Agent2", "You are Agent2. Provide concise responses."),
+        create_function_agent(
+            "Agent1", "You are Agent1. Provide concise responses."
+        ),
+        create_function_agent(
+            "Agent2", "You are Agent2. Provide concise responses."
+        ),
     ]
 
 
@@ -90,6 +94,7 @@ def test_interview_series_initialization():
         )
         raise
 
+
 def test_interview_series_run(sample_task):
     try:
         interviewer = create_function_agent("Interviewer")
@@ -115,6 +120,7 @@ def test_interview_series_run(sample_task):
         logger.error(f"Failed to test InterviewSeries run: {e}")
         raise
 
+
 def test_interview_series_no_interviewer(sample_task):
     try:
         interviewee = create_function_agent("Interviewee")
@@ -136,6 +142,7 @@ def test_interview_series_no_interviewer(sample_task):
         )
         raise
 
+
 def test_interview_series_no_interviewee(sample_task):
     try:
         interviewer = create_function_agent("Interviewer")
@@ -156,6 +163,7 @@ def test_interview_series_no_interviewee(sample_task):
             f"Failed to test InterviewSeries no interviewee: {e}"
         )
         raise
+
 
 def test_interview_series_default_questions(sample_task):
     try:
@@ -182,6 +190,7 @@ def test_interview_series_default_questions(sample_task):
             f"Failed to test InterviewSeries default questions: {e}"
         )
         raise
+
 
 def test_peer_review_process_initialization():
     try:
@@ -212,6 +221,7 @@ def test_peer_review_process_initialization():
         )
         raise
 
+
 def test_peer_review_process_run(sample_task):
     try:
         reviewers = [
@@ -238,6 +248,7 @@ def test_peer_review_process_run(sample_task):
         logger.error(f"Failed to test PeerReviewProcess run: {e}")
         raise
 
+
 def test_peer_review_process_no_reviewers(sample_task):
     try:
         author = create_function_agent("Author")
@@ -255,6 +266,7 @@ def test_peer_review_process_no_reviewers(sample_task):
             f"Failed to test PeerReviewProcess no reviewers: {e}"
         )
         raise
+
 
 def test_peer_review_process_no_author(sample_task):
     try:
@@ -275,6 +287,7 @@ def test_peer_review_process_no_author(sample_task):
             f"Failed to test PeerReviewProcess no author: {e}"
         )
         raise
+
 
 def test_mediation_session_initialization(sample_two_agents):
     try:
@@ -298,6 +311,7 @@ def test_mediation_session_initialization(sample_two_agents):
         )
         raise
 
+
 def test_mediation_session_run(sample_two_agents, sample_task):
     try:
         mediator = create_function_agent("Mediator")
@@ -318,6 +332,7 @@ def test_mediation_session_run(sample_two_agents, sample_task):
     except Exception as e:
         logger.error(f"Failed to test MediationSession run: {e}")
         raise
+
 
 def test_mediation_session_insufficient_parties(sample_task):
     try:
@@ -340,6 +355,7 @@ def test_mediation_session_insufficient_parties(sample_task):
         )
         raise
 
+
 def test_mediation_session_no_mediator(
     sample_two_agents, sample_task
 ):
@@ -360,6 +376,7 @@ def test_mediation_session_no_mediator(
             f"Failed to test MediationSession no mediator: {e}"
         )
         raise
+
 
 def test_brainstorming_session_initialization(sample_three_agents):
     try:
@@ -385,6 +402,7 @@ def test_brainstorming_session_initialization(sample_three_agents):
         )
         raise
 
+
 def test_brainstorming_session_run(sample_three_agents, sample_task):
     try:
         facilitator = create_function_agent("Facilitator")
@@ -406,6 +424,7 @@ def test_brainstorming_session_run(sample_three_agents, sample_task):
     except Exception as e:
         logger.error(f"Failed to test BrainstormingSession run: {e}")
         raise
+
 
 def test_brainstorming_session_insufficient_participants(sample_task):
     try:
@@ -431,6 +450,7 @@ def test_brainstorming_session_insufficient_participants(sample_task):
         )
         raise
 
+
 def test_brainstorming_session_no_facilitator(
     sample_three_agents, sample_task
 ):
@@ -452,6 +472,7 @@ def test_brainstorming_session_no_facilitator(
             f"Failed to test BrainstormingSession no facilitator: {e}"
         )
         raise
+
 
 def test_trial_simulation_initialization():
     try:
@@ -486,6 +507,7 @@ def test_trial_simulation_initialization():
         )
         raise
 
+
 def test_trial_simulation_run(sample_task):
     try:
         prosecution = create_function_agent("Prosecution")
@@ -512,6 +534,7 @@ def test_trial_simulation_run(sample_task):
         logger.error(f"Failed to test TrialSimulation run: {e}")
         raise
 
+
 def test_trial_simulation_no_prosecution(sample_task):
     try:
         defense = create_function_agent("Defense")
@@ -532,6 +555,7 @@ def test_trial_simulation_no_prosecution(sample_task):
             f"Failed to test TrialSimulation no prosecution: {e}"
         )
         raise
+
 
 def test_trial_simulation_default_phases(sample_task):
     try:
@@ -562,6 +586,7 @@ def test_trial_simulation_default_phases(sample_task):
         )
         raise
 
+
 def test_council_meeting_initialization(sample_three_agents):
     try:
         chairperson = create_function_agent("Chairperson")
@@ -586,6 +611,7 @@ def test_council_meeting_initialization(sample_three_agents):
         )
         raise
 
+
 def test_council_meeting_run(sample_three_agents, sample_task):
     try:
         chairperson = create_function_agent("Chairperson")
@@ -607,6 +633,7 @@ def test_council_meeting_run(sample_three_agents, sample_task):
     except Exception as e:
         logger.error(f"Failed to test CouncilMeeting run: {e}")
         raise
+
 
 def test_council_meeting_insufficient_members(sample_task):
     try:
@@ -630,6 +657,7 @@ def test_council_meeting_insufficient_members(sample_task):
         )
         raise
 
+
 def test_council_meeting_no_chairperson(
     sample_three_agents, sample_task
 ):
@@ -651,6 +679,7 @@ def test_council_meeting_no_chairperson(
             f"Failed to test CouncilMeeting no chairperson: {e}"
         )
         raise
+
 
 def test_mentorship_session_initialization():
     try:
@@ -677,6 +706,7 @@ def test_mentorship_session_initialization():
         )
         raise
 
+
 def test_mentorship_session_run(sample_task):
     try:
         mentor = create_function_agent("Mentor")
@@ -700,6 +730,7 @@ def test_mentorship_session_run(sample_task):
         logger.error(f"Failed to test MentorshipSession run: {e}")
         raise
 
+
 def test_mentorship_session_no_mentor(sample_task):
     try:
         mentee = create_function_agent("Mentee")
@@ -721,6 +752,7 @@ def test_mentorship_session_no_mentor(sample_task):
         )
         raise
 
+
 def test_mentorship_session_no_mentee(sample_task):
     try:
         mentor = create_function_agent("Mentor")
@@ -741,6 +773,7 @@ def test_mentorship_session_no_mentee(sample_task):
             f"Failed to test MentorshipSession no mentee: {e}"
         )
         raise
+
 
 def test_negotiation_session_initialization(sample_two_agents):
     try:
@@ -766,6 +799,7 @@ def test_negotiation_session_initialization(sample_two_agents):
         )
         raise
 
+
 def test_negotiation_session_run(sample_two_agents, sample_task):
     try:
         mediator = create_function_agent("Mediator")
@@ -787,6 +821,7 @@ def test_negotiation_session_run(sample_two_agents, sample_task):
     except Exception as e:
         logger.error(f"Failed to test NegotiationSession run: {e}")
         raise
+
 
 def test_negotiation_session_insufficient_parties(sample_task):
     try:
@@ -810,6 +845,7 @@ def test_negotiation_session_insufficient_parties(sample_task):
         )
         raise
 
+
 def test_negotiation_session_no_mediator(
     sample_two_agents, sample_task
 ):
@@ -831,6 +867,7 @@ def test_negotiation_session_no_mediator(
             f"Failed to test NegotiationSession no mediator: {e}"
         )
         raise
+
 
 def test_negotiation_session_without_concessions(
     sample_two_agents, sample_task

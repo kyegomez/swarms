@@ -221,7 +221,9 @@ if __name__ == "__main__":
         phases=["opening", "testimony", "cross", "closing"],
     )
 
-    print(trial.run(
-        "Contract dispute: a vendor delivered a system that failed load testing at "
-        "60% of the contractually specified throughput."
-    ))
+    print(
+        trial.run(
+            "Contract dispute: a vendor delivered a system that failed load testing at "
+            "60% of the contractually specified throughput."
+        )
+    )

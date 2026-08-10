@@ -148,4 +148,8 @@ if __name__ == "__main__":
         include_feedback=True,
     )
 
-    print(mentorship.run("Finding product-market fit for a B2B healthcare AI platform"))
+    print(
+        mentorship.run(
+            "Finding product-market fit for a B2B healthcare AI platform"
+        )
+    )

@@ -134,9 +134,13 @@ if __name__ == "__main__":
         max_loops=1,
     )
 
-    review = PeerReviewProcess(reviewers=reviewers, author=author, review_rounds=2)
+    review = PeerReviewProcess(
+        reviewers=reviewers, author=author, review_rounds=2
+    )
 
-    print(review.run(
-        "Paper: 'Sparse Mixture-of-Experts Routing for Long-Context Retrieval'. "
-        "Claims a 30% latency reduction with no quality loss on three benchmarks."
-    ))
+    print(
+        review.run(
+            "Paper: 'Sparse Mixture-of-Experts Routing for Long-Context Retrieval'. "
+            "Claims a 30% latency reduction with no quality loss on three benchmarks."
+        )
+    )

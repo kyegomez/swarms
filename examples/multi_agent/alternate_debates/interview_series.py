@@ -146,4 +146,8 @@ if __name__ == "__main__":
         follow_up_depth=2,
     )
 
-    print(interview.run("Founder interview on building AI infrastructure"))
+    print(
+        interview.run(
+            "Founder interview on building AI infrastructure"
+        )
+    )

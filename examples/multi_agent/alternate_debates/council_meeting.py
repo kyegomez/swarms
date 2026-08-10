@@ -168,7 +168,9 @@ if __name__ == "__main__":
         require_consensus=False,
     )
 
-    print(council.run(
-        "Proposal: allocate $5M to a Series A round in an autonomous-logistics startup "
-        "at a $40M pre-money valuation."
-    ))
+    print(
+        council.run(
+            "Proposal: allocate $5M to a Series A round in an autonomous-logistics startup "
+            "at a $40M pre-money valuation."
+        )
+    )

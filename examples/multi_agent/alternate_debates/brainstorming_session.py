@@ -167,4 +167,8 @@ if __name__ == "__main__":
         build_on_ideas=True,
     )
 
-    print(brainstorm.run("How can we cut new-user time-to-first-value from 30 minutes to under 5?"))
+    print(
+        brainstorm.run(
+            "How can we cut new-user time-to-first-value from 30 minutes to under 5?"
+        )
+    )

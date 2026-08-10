@@ -1,12 +1,12 @@
 import inspect
 import json
-import logging
 import os
 from datetime import datetime
 from typing import Any, Dict, Set
 from uuid import UUID
+from swarms.utils.loguru_logger import initialize_logger
 
-logger = logging.getLogger(__name__)
+logger = initialize_logger()
 
 
 class SafeLoaderUtils:

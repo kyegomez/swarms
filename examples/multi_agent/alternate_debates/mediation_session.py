@@ -147,9 +147,13 @@ if __name__ == "__main__":
         max_loops=1,
     )
 
-    mediation = MediationSession(parties=parties, mediator=mediator, max_sessions=2)
+    mediation = MediationSession(
+        parties=parties, mediator=mediator, max_sessions=2
+    )
 
-    print(mediation.run(
-        "Engineering says the Q3 launch needs two more engineers or a four-week slip. "
-        "Product says the date is committed to a customer contract."
-    ))
+    print(
+        mediation.run(
+            "Engineering says the Q3 launch needs two more engineers or a four-week slip. "
+            "Product says the date is committed to a customer contract."
+        )
+    )

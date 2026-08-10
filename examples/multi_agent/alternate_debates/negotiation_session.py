@@ -174,7 +174,9 @@ if __name__ == "__main__":
         include_concessions=True,
     )
 
-    print(negotiation.run(
-        "Acquisition terms: purchase price, earnout structure, and retention packages "
-        "for the 40-person engineering team."
-    ))
+    print(
+        negotiation.run(
+            "Acquisition terms: purchase price, earnout structure, and retention packages "
+            "for the 40-person engineering team."
+        )
+    )
