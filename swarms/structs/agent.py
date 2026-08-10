@@ -600,7 +600,6 @@ class Agent:
 
         self.fallback_models = fallback_models or []
         self.current_model_index = 0
-        self.model_attempts = {}
 
         # If fallback_models is provided, use the first model as the primary model
         if self.fallback_models and not self.model_name:
@@ -1192,10 +1191,6 @@ class Agent:
                 )
 
             logger.info("Auto-generated prompt successfully.")
-
-    def set_system_prompt(self, system_prompt: str):
-        """Set the system prompt"""
-        self.system_prompt = system_prompt
 
     def _check_stopping_condition(self, response: str) -> bool:
         """Check if the stopping condition is met."""
@@ -3414,14 +3409,6 @@ Subtask Breakdown:
     def update_loop_interval(self, loop_interval: int):
         """Update the loop interval"""
         self.loop_interval = loop_interval
-
-    def update_retry_attempts(self, retry_attempts: int):
-        """Update the retry attempts"""
-        self.retry_attempts = retry_attempts
-
-    def update_retry_interval(self, retry_interval: int):
-        """Update the retry interval"""
-        self.retry_interval = retry_interval
 
     def reset(self):
         """Reset the agent"""
