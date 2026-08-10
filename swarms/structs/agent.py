@@ -398,7 +398,6 @@ class Agent:
         llm_base_url: Optional[str] = None,
         llm_api_key: Optional[str] = None,
         tool_call_summary: bool = True,
-        summarize_multiple_images: bool = False,
         tool_retry_attempts: int = 3,
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
@@ -508,7 +507,6 @@ class Agent:
         self.llm_base_url = llm_base_url
         self.llm_api_key = llm_api_key
         self.tool_call_summary = tool_call_summary
-        self.summarize_multiple_images = summarize_multiple_images
         self.tool_retry_attempts = tool_retry_attempts
         self.reasoning_prompt_on = reasoning_prompt_on
         self.dynamic_context_window = dynamic_context_window
@@ -1259,6 +1257,7 @@ class Agent:
         self,
         task: Optional[Union[str, Any]] = None,
         img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
         *args,
         **kwargs,
@@ -1471,23 +1470,15 @@ class Agent:
                         )
 
                         with loading_ctx:
-                            if img is not None:
-                                response = self.call_llm(
-                                    task=task_prompt,
-                                    img=img,
-                                    current_loop=loop_count,
-                                    streaming_callback=streaming_callback,
-                                    *args,
-                                    **kwargs,
-                                )
-                            else:
-                                response = self.call_llm(
-                                    task=task_prompt,
-                                    current_loop=loop_count,
-                                    streaming_callback=streaming_callback,
-                                    *args,
-                                    **kwargs,
-                                )
+                            response = self.call_llm(
+                                task=task_prompt,
+                                img=img,
+                                imgs=imgs,
+                                current_loop=loop_count,
+                                streaming_callback=streaming_callback,
+                                *args,
+                                **kwargs,
+                            )
 
                         # If streaming is enabled, then don't print the response
 
@@ -3710,6 +3701,7 @@ Subtask Breakdown:
         self,
         task: str,
         img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
         current_loop: int = 0,
         streaming_callback: Optional[Callable[[str], None]] = None,
         *args,
@@ -3750,6 +3742,7 @@ Subtask Breakdown:
         return self.llm_manager.call(
             task=task,
             img=img,
+            imgs=imgs,
             current_loop=current_loop,
             streaming_callback=streaming_callback,
             *args,
@@ -3934,16 +3927,13 @@ Subtask Breakdown:
                     *args,
                     **kwargs,
                 )
-            elif imgs is not None:
-                output = self.run_multiple_images(
-                    task=task, imgs=imgs, *args, **kwargs
-                )
             elif n > 1:
                 output = [self.run(task=task) for _ in range(n)]
             else:
                 output = self._run(
                     task=task,
                     img=img,
+                    imgs=imgs,
                     streaming_callback=streaming_callback,
                     *args,
                     **kwargs,
@@ -5180,76 +5170,6 @@ Summary: {summary}
 
     def list_output_types(self):
         return OutputType
-
-    def run_multiple_images(
-        self, task: str, imgs: List[str], *args, **kwargs
-    ):
-        """
-        Run the agent with multiple images using concurrent processing.
-
-        Args:
-            task (str): The task to be performed on each image.
-            imgs (List[str]): List of image paths or URLs to process.
-            *args: Additional positional arguments to pass to the agent's run method.
-            **kwargs: Additional keyword arguments to pass to the agent's run method.
-
-        Returns:
-            List[Any]: A list of outputs generated for each image in the same order as the input images.
-
-        Examples:
-            >>> agent = Agent()
-            >>> outputs = agent.run_multiple_images(
-            ...     task="Describe what you see in this image",
-            ...     imgs=["image1.jpg", "image2.png", "image3.jpeg"]
-            ... )
-            >>> print(f"Processed {len(outputs)} images")
-            Processed 3 images
-
-        Raises:
-            Exception: If an error occurs while processing any of the images.
-        """
-        # Submit all image processing tasks
-        future_to_img = {
-            self.executor.submit(
-                self.run, task=task, img=img, *args, **kwargs
-            ): img
-            for img in imgs
-        }
-
-        # Collect results in order
-        outputs = []
-        for future in future_to_img:
-            try:
-                output = future.result()
-                outputs.append(output)
-            except Exception as e:
-                logger.error(f"Error processing image: {e}")
-                outputs.append(
-                    None
-                )  # or raise the exception based on your preference
-
-        # Combine the outputs into a single string if summarization is enabled
-        if self.summarize_multiple_images is True:
-            output = "\n".join(outputs)
-
-            prompt = f"""
-            You have already analyzed {len(outputs)} images and provided detailed descriptions for each one. 
-            Now, based on your previous analysis of these images, create a comprehensive report that:
-
-            1. Synthesizes the key findings across all images
-            2. Identifies common themes, patterns, or relationships between the images
-            3. Provides an overall summary that captures the most important insights
-            4. Highlights any notable differences or contrasts between the images
-
-            Here are your previous analyses of the images:
-            {output}
-
-            Please create a well-structured report that brings together your insights from all {len(outputs)} images.
-            """
-
-            outputs = self.run(task=prompt, *args, **kwargs)
-
-        return outputs
 
     def tool_execution_retry(self, response: any, loop_count: int):
         """

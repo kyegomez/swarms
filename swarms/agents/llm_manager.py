@@ -484,6 +484,7 @@ class LLMManager:
         self,
         task: str,
         img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
         current_loop: int = 0,
         streaming_callback: Optional[Callable[[str], None]] = None,
         *args,
@@ -546,6 +547,8 @@ class LLMManager:
 
             if img is not None:
                 run_args["img"] = img
+            if imgs:
+                run_args["imgs"] = imgs
 
             return agent.llm.run(**run_args, **kwargs)
 

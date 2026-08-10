@@ -20,7 +20,7 @@ for various input modalities and output formats.
 import socket
 import traceback
 from functools import lru_cache
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import litellm
 import requests
@@ -572,6 +572,7 @@ class LiteLLM:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
     ):
         """
         Prepare the messages list for the LLM API call.
@@ -645,12 +646,15 @@ class LiteLLM:
                 continue
             messages.append(m)
 
-        # Check if model supports vision if image is provided
-        if img is not None:
-            self.check_if_model_supports_vision(img=img)
-            # Handle vision case - this already includes both task and image
+        # Check if model supports vision if any image is provided
+        images = [
+            i for i in ([img] if img else []) + (imgs or []) if i
+        ]
+        if images:
+            self.check_if_model_supports_vision(img=images[0])
+            # Handle vision case - this includes the task and every image
             messages = self.vision_processing(
-                task=task, image=img, messages=messages
+                task=task, image=images, messages=messages
             )
         elif task is not None:
             # Only add task message if no image (since vision_processing handles both)
@@ -851,9 +855,9 @@ class LiteLLM:
         ["image/jpeg", "image/png", "image/gif", "image/webp"]
     )
 
-    def _build_vision_message(self, task: str, image: str) -> dict:
+    def _build_image_block(self, image: str) -> dict:
         """
-        Build a single user message containing the task text and the image.
+        Build one `image_url` content block for the given image.
 
         Uses direct URL passing when the model supports it; otherwise converts
         the image (file path, URL, data URI, or raw base64) to a base64 data
@@ -883,12 +887,25 @@ class LiteLLM:
                 "image_url": {"url": image_url, "format": mime_type},
             }
 
+        return image_block
+
+    def _build_vision_message(
+        self, task: str, images: Union[str, List[str]]
+    ) -> dict:
+        """
+        Build one user message carrying the task text plus every image.
+
+        All images ride in a single request rather than one request per image,
+        which is what every vision-capable provider expects and what lets the
+        model reason across the images together.
+        """
+        if isinstance(images, str):
+            images = [images]
+
         return {
             "role": "user",
-            "content": [
-                {"type": "text", "text": task},
-                image_block,
-            ],
+            "content": [{"type": "text", "text": task}]
+            + [self._build_image_block(i) for i in images],
         }
 
     def _should_use_direct_url(self, image: str) -> bool:
@@ -954,7 +971,10 @@ class LiteLLM:
             return False
 
     def vision_processing(
-        self, task: str, image: str, messages: Optional[list] = None
+        self,
+        task: str,
+        image: Union[str, List[str]],
+        messages: Optional[list] = None,
     ) -> list:
         """
         Append a vision message for the given task and image to `messages`.
@@ -1101,6 +1121,7 @@ class LiteLLM:
         self,
         task: str,
         img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
         runtime_args: tuple = (),
         runtime_kwargs: Optional[dict] = None,
     ) -> dict:
@@ -1119,7 +1140,9 @@ class LiteLLM:
         """
         completion_params = {
             "model": self.model_name,
-            "messages": self._prepare_messages(task=task, img=img),
+            "messages": self._prepare_messages(
+                task=task, img=img, imgs=imgs
+            ),
             "stream": self.stream,
             "max_tokens": self.max_tokens,
             "caching": self.caching,
@@ -1293,6 +1316,7 @@ class LiteLLM:
         task: str,
         audio: Optional[str] = None,
         img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
         *args,
         **kwargs,
     ):
@@ -1333,6 +1357,7 @@ class LiteLLM:
             completion_params = self._build_completion_params(
                 task,
                 img=img,
+                imgs=imgs,
                 runtime_args=args,
                 runtime_kwargs=kwargs,
             )
@@ -1356,6 +1381,7 @@ class LiteLLM:
         task: str,
         audio: Optional[str] = None,
         img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
         *args,
         **kwargs,
     ):
@@ -1369,6 +1395,7 @@ class LiteLLM:
             completion_params = self._build_completion_params(
                 task,
                 img=img,
+                imgs=imgs,
                 runtime_args=args,
                 runtime_kwargs=kwargs,
             )
