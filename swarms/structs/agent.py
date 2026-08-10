@@ -13,7 +13,6 @@ from typing import (
     Literal,
     Optional,
     Sequence,
-    Tuple,
     Union,
 )
 
@@ -33,26 +32,13 @@ from litellm.utils import (
 from loguru import logger
 from pydantic import BaseModel
 
-from swarms.agents.ape_agent import auto_generate_prompt
 from swarms.agents.agent_marketplace_handler import (
     AgentMarketplaceHandler,
 )
+from swarms.agents.ape_agent import auto_generate_prompt
 from swarms.agents.context_compressor import ContextCompressor
 from swarms.agents.llm_manager import LLMManager
 from swarms.agents.skills_manager import SkillsManager
-from swarms.schemas.agent_errors import (  # noqa: F401 — re-exported for backwards compatibility
-    AgentError,
-    AgentInitializationError,
-    AgentLLMError,
-    AgentLLMInitializationError,
-    AgentMemoryError,
-    AgentRunError,
-    AgentToolError,
-    AgentToolExecutionError,
-)
-from swarms.utils.get_reasoning_efforts import get_reasoning_efforts
-from swarms.utils.workspace_utils import get_workspace_dir
-from swarms.artifacts.main_artifact import Artifact
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
 from swarms.prompts.autonomous_agent_prompt import (
     get_autonomous_agent_prompt,
@@ -64,6 +50,12 @@ from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
 )
 from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
 from swarms.prompts.safety_prompt import SAFETY_PROMPT
+from swarms.schemas.agent_errors import ( 
+    AgentInitializationError,
+    AgentLLMError,
+    AgentRunError,
+    AgentToolExecutionError,
+)
 from swarms.schemas.base_schemas import (
     AgentChatCompletionResponse,
 )
@@ -77,8 +69,8 @@ from swarms.structs.autonomous_loop_utils import (
     MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
     assign_task_tool,
-    check_sub_agent_status_tool,
     cancel_sub_agent_tasks_tool,
+    check_sub_agent_status_tool,
     create_file_tool,
     create_sub_agent_tool,
     delete_file_tool,
@@ -121,7 +113,9 @@ from swarms.tools.py_func_to_openai_func_str import (
 )
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
+from swarms.utils.generate_id import generate_id
 from swarms.utils.generate_keys import generate_api_key
+from swarms.utils.get_reasoning_efforts import get_reasoning_efforts
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -132,7 +126,7 @@ from swarms.utils.index import (
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
-from swarms.utils.generate_id import generate_id
+from swarms.utils.workspace_utils import get_workspace_dir
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -274,7 +268,6 @@ class Agent:
         load_skills_metadata: Load Agent Skills metadata from directory
         load_full_skill: Load complete skill content (Tier 2 loading)
         analyze_feedback: Analyze the feedback
-        undo_last: Undo the last response
         interactive_run: Run the agent in interactive mode
         streamed_generation: Stream the generation of the response
         save_state: Save the state
@@ -289,7 +282,6 @@ class Agent:
         run_async_concurrent: Run the agent asynchronously and concurrently
         run_async_concurrent: Run the agent asynchronously and concurrently
         construct_dynamic_prompt: Construct the dynamic prompt
-        handle_artifacts: Handle artifacts
 
 
     Examples:
@@ -406,7 +398,6 @@ class Agent:
         llm_base_url: Optional[str] = None,
         llm_api_key: Optional[str] = None,
         tool_call_summary: bool = True,
-        summarize_multiple_images: bool = False,
         tool_retry_attempts: int = 3,
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
@@ -516,7 +507,6 @@ class Agent:
         self.llm_base_url = llm_base_url
         self.llm_api_key = llm_api_key
         self.tool_call_summary = tool_call_summary
-        self.summarize_multiple_images = summarize_multiple_images
         self.tool_retry_attempts = tool_retry_attempts
         self.reasoning_prompt_on = reasoning_prompt_on
         self.dynamic_context_window = dynamic_context_window
@@ -1267,6 +1257,7 @@ class Agent:
         self,
         task: Optional[Union[str, Any]] = None,
         img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
         *args,
         **kwargs,
@@ -1479,23 +1470,15 @@ class Agent:
                         )
 
                         with loading_ctx:
-                            if img is not None:
-                                response = self.call_llm(
-                                    task=task_prompt,
-                                    img=img,
-                                    current_loop=loop_count,
-                                    streaming_callback=streaming_callback,
-                                    *args,
-                                    **kwargs,
-                                )
-                            else:
-                                response = self.call_llm(
-                                    task=task_prompt,
-                                    current_loop=loop_count,
-                                    streaming_callback=streaming_callback,
-                                    *args,
-                                    **kwargs,
-                                )
+                            response = self.call_llm(
+                                task=task_prompt,
+                                img=img,
+                                imgs=imgs,
+                                current_loop=loop_count,
+                                streaming_callback=streaming_callback,
+                                *args,
+                                **kwargs,
+                            )
 
                         # If streaming is enabled, then don't print the response
 
@@ -2999,26 +2982,6 @@ Subtask Breakdown:
             )
             raise error
 
-    async def run_concurrent(self, task: str, *args, **kwargs):
-        """
-        Run a task concurrently.
-
-        Args:
-            task (str): The task to run.
-        """
-        try:
-            logger.info(f"Running concurrent task: {task}")
-            future = self.executor.submit(
-                self.run, task, *args, **kwargs
-            )
-            result = await asyncio.wrap_future(future)
-            logger.info(f"Completed task: {result}")
-            return result
-        except Exception as error:
-            logger.error(
-                f"Error running agent: {error} while running concurrently"
-            )
-
     def run_concurrent_tasks(self, tasks: List[str], *args, **kwargs):
         """
         Run multiple tasks concurrently.
@@ -3234,7 +3197,7 @@ Subtask Breakdown:
 
             # Log saved state information if verbose
             if self.verbose:
-                self._log_saved_state_info(full_path)
+                self._log_state_info(full_path, saved=True)
 
             logger.info(
                 f"Successfully saved agent state to: {full_path}"
@@ -3294,56 +3257,6 @@ Subtask Breakdown:
         except Exception as e:
             logger.warning(f"Error saving additional components: {e}")
 
-    def enable_autosave(self, interval: int = 300) -> None:
-        """
-        Enable automatic saving of agent state using SafeStateManager at specified intervals.
-
-        Args:
-            interval (int): Time between saves in seconds. Defaults to 300 (5 minutes).
-        """
-
-        def autosave_loop():
-            while self.autosave:
-                try:
-                    self.save()
-                    if self.verbose:
-                        logger.debug(
-                            f"Autosaved agent state (interval: {interval}s)"
-                        )
-                except Exception as e:
-                    logger.error(f"Autosave failed: {e}")
-                time.sleep(interval)
-
-        self.autosave = True
-        self.autosave_thread = threading.Thread(
-            target=autosave_loop,
-            daemon=True,
-            name=f"{self.agent_name}_autosave",
-        )
-        self.autosave_thread.start()
-        logger.info(f"Enabled autosave with {interval}s interval")
-
-    def disable_autosave(self) -> None:
-        """Disable automatic saving of agent state."""
-        if hasattr(self, "autosave"):
-            self.autosave = False
-            if hasattr(self, "autosave_thread"):
-                self.autosave_thread.join(timeout=1)
-                delattr(self, "autosave_thread")
-            logger.info("Disabled autosave")
-
-    def cleanup(self) -> None:
-        """Cleanup method to be called on exit. Ensures final state is saved."""
-        try:
-            if getattr(self, "autosave", False):
-                logger.info(
-                    "Performing final autosave before exit..."
-                )
-                self.disable_autosave()
-                self.save()
-        except Exception as e:
-            logger.error(f"Error during cleanup: {e}")
-
     def load(self, file_path: str = None) -> None:
         """
         Load agent state from a file using SafeStateManager.
@@ -3384,7 +3297,7 @@ Subtask Breakdown:
             self._reinitialize_after_load()
 
             if self.verbose:
-                self._log_loaded_state_info(resolved_path)
+                self._log_state_info(resolved_path, saved=False)
 
         except FileNotFoundError:
             logger.error(f"State file not found: {resolved_path}")
@@ -3422,45 +3335,29 @@ Subtask Breakdown:
             logger.error(f"Error reinitializing components: {e}")
             raise
 
-    def _log_saved_state_info(self, file_path: str) -> None:
-        """Log information about saved state for debugging"""
+    def _log_state_info(self, file_path: str, *, saved: bool) -> None:
+        """Log information about saved or loaded state for debugging."""
         try:
             state_dict = SafeLoaderUtils.create_state_dict(self)
             preserved = SafeLoaderUtils.preserve_instances(self)
 
-            logger.info(f"Saved agent state to: {file_path}")
+            verb = "Saved" if saved else "Loaded"
+            logger.info(
+                f"{verb} agent state {'to' if saved else 'from'}: {file_path}"
+            )
             logger.debug(
-                f"Saved {len(state_dict)} configuration values"
+                f"{verb} {len(state_dict)} configuration values"
             )
             logger.debug(
                 f"Preserved {len(preserved)} class instances"
             )
 
             if self.verbose:
-                logger.debug("Preserved instances:")
-                for name, instance in preserved.items():
-                    logger.debug(
-                        f"  - {name}: {type(instance).__name__}"
-                    )
-        except Exception as e:
-            logger.error(f"Error logging state info: {e}")
-
-    def _log_loaded_state_info(self, file_path: str) -> None:
-        """Log information about loaded state for debugging"""
-        try:
-            state_dict = SafeLoaderUtils.create_state_dict(self)
-            preserved = SafeLoaderUtils.preserve_instances(self)
-
-            logger.info(f"Loaded agent state from: {file_path}")
-            logger.debug(
-                f"Loaded {len(state_dict)} configuration values"
-            )
-            logger.debug(
-                f"Preserved {len(preserved)} class instances"
-            )
-
-            if self.verbose:
-                logger.debug("Current class instances:")
+                logger.debug(
+                    "Preserved instances:"
+                    if saved
+                    else "Current class instances:"
+                )
                 for name, instance in preserved.items():
                     logger.debug(
                         f"  - {name}: {type(instance).__name__}"
@@ -3487,28 +3384,6 @@ Subtask Breakdown:
             Dict[str, Any]: Dictionary of preserved instances
         """
         return SafeLoaderUtils.preserve_instances(self)
-
-    def undo_last(self) -> Tuple[str, str]:
-        """
-        Response the last response and return the previous state
-
-        Example:
-        # Feature 2: Undo functionality
-        response = agent.run("Another task")
-        print(f"Response: {response}")
-        previous_state, message = agent.undo_last()
-        print(message)
-
-        """
-        if len(self.short_memory) < 2:
-            return None, None
-
-        # Remove the last response but keep the last state, short_memory is a dict
-        self.short_memory.delete(-1)
-
-        # Get the previous state
-        previous_state = self.short_memory[-1]
-        return previous_state, f"Restored to {previous_state}"
 
     def save_to_yaml(self, file_path: str) -> None:
         """
@@ -3551,15 +3426,6 @@ Subtask Breakdown:
     def reset(self):
         """Reset the agent"""
         self.short_memory = None
-
-    def receieve_message(self, name: str, message: str):
-        """Receieve a message"""
-        try:
-            message = f"{name}: {message}"
-            return self.short_memory.add(role=name, content=message)
-        except Exception as error:
-            logger.info(f"Error receiving message: {error}")
-            raise error
 
     def send_agent_message(
         self, agent_name: str, message: str, *args, **kwargs
@@ -3649,48 +3515,18 @@ Subtask Breakdown:
             pass
 
     def check_available_tokens(self):
-        # Log the amount of tokens left in the memory and in the task
-        if self.tokenizer is not None:
-            tokens_used = count_tokens(
-                self.short_memory.return_history_as_string()
-            )
-            logger.info(
-                f"Tokens available: {self.context_length - tokens_used}"
-            )
-
-        return tokens_used
-
-    def tokens_checks(self):
-        # Check the tokens available
         tokens_used = count_tokens(
-            self.short_memory.return_history_as_string()
-        )
-        out = self.check_available_tokens()
-
-        logger.info(
-            f"Tokens available: {out} Context Length: {self.context_length} Tokens in memory: {tokens_used}"
+            self.short_memory.return_history_as_string(),
+            model=self.model_name,
         )
 
-        return out
+        limit = self.context_length - tokens_used
 
-    def update_tool_usage(
-        self,
-        step_id: str,
-        tool_name: str,
-        tool_args: dict,
-        tool_response: Any,
-    ):
-        """Update tool usage information for a specific step."""
-        for step in self.agent_output.steps:
-            if step.step_id == step_id:
-                step.response.tool_calls.append(
-                    {
-                        "tool": tool_name,
-                        "arguments": tool_args,
-                        "response": str(tool_response),
-                    }
-                )
-                break
+        if self.verbose:
+            logger.info(
+                f"Tokens available: {limit} You have {tokens_used} tokens used"
+            )
+        return limit
 
     def _serialize_callable(
         self, attr_value: Callable
@@ -3865,6 +3701,7 @@ Subtask Breakdown:
         self,
         task: str,
         img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
         current_loop: int = 0,
         streaming_callback: Optional[Callable[[str], None]] = None,
         *args,
@@ -3905,6 +3742,7 @@ Subtask Breakdown:
         return self.llm_manager.call(
             task=task,
             img=img,
+            imgs=imgs,
             current_loop=current_loop,
             streaming_callback=streaming_callback,
             *args,
@@ -4089,16 +3927,13 @@ Subtask Breakdown:
                     *args,
                     **kwargs,
                 )
-            elif imgs is not None:
-                output = self.run_multiple_images(
-                    task=task, imgs=imgs, *args, **kwargs
-                )
             elif n > 1:
                 output = [self.run(task=task) for _ in range(n)]
             else:
                 output = self._run(
                     task=task,
                     img=img,
+                    imgs=imgs,
                     streaming_callback=streaming_callback,
                     *args,
                     **kwargs,
@@ -4182,7 +4017,6 @@ Subtask Breakdown:
                 print(token, end="", flush=True)
         """
         import queue
-        import threading
 
         token_queue: queue.Queue = queue.Queue()
         _DONE = object()
@@ -4253,7 +4087,6 @@ Subtask Breakdown:
                 print(token, end="", flush=True)
         """
         import asyncio
-        import threading
 
         loop = asyncio.get_running_loop()
         token_queue: asyncio.Queue = asyncio.Queue()
@@ -4369,83 +4202,6 @@ Subtask Breakdown:
             for task, imgs in zip(tasks, imgs)
         ]
 
-    def handle_artifacts(
-        self, text: str, file_output_path: str, file_extension: str
-    ) -> None:
-        """
-        Handle creating and saving artifacts with error handling.
-        Artifacts are saved in the agent-specific workspace directory if the path is relative.
-
-        Args:
-            text (str): The content to save as an artifact.
-            file_output_path (str): The path where the artifact should be saved. If relative,
-                                  will be saved in the agent-specific workspace directory.
-            file_extension (str): The file extension for the artifact (e.g., '.md', '.txt', '.pdf').
-        """
-        try:
-            # Ensure file_extension starts with a dot
-            if not file_extension.startswith("."):
-                file_extension = "." + file_extension
-
-            # Get agent-specific workspace directory
-            agent_workspace = self._get_agent_workspace_dir()
-
-            # If file_output_path doesn't have an extension, treat it as a directory
-            # and create a default filename based on timestamp
-            if not os.path.splitext(file_output_path)[1]:
-                timestamp = time.strftime("%Y%m%d_%H%M%S")
-                filename = f"artifact_{timestamp}{file_extension}"
-                # If path is relative, use agent workspace; otherwise use as-is
-                if os.path.isabs(file_output_path):
-                    full_path = os.path.join(
-                        file_output_path, filename
-                    )
-                else:
-                    full_path = os.path.join(
-                        agent_workspace, file_output_path, filename
-                    )
-            else:
-                # If path is absolute, use as-is; otherwise use agent workspace
-                if os.path.isabs(file_output_path):
-                    full_path = file_output_path
-                else:
-                    full_path = os.path.join(
-                        agent_workspace, file_output_path
-                    )
-
-            # Create the directory if it doesn't exist
-            os.makedirs(os.path.dirname(full_path), exist_ok=True)
-
-            logger.info(f"Creating artifact for file: {full_path}")
-            artifact = Artifact(
-                file_path=full_path,
-                file_type=file_extension,
-                contents=text,
-                edit_count=0,
-            )
-
-            logger.info(
-                f"Saving artifact with extension: {file_extension}"
-            )
-            artifact.save_as(file_extension)
-            logger.success(
-                f"Successfully saved artifact to {full_path}"
-            )
-
-        except ValueError as e:
-            logger.error(
-                f"Invalid input values for artifact: {str(e)}"
-            )
-            raise
-        except IOError as e:
-            logger.error(f"Error saving artifact to file: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(
-                f"Unexpected error handling artifact: {str(e)}"
-            )
-            raise
-
     def showcase_config(self):
 
         # Convert all values in config_dict to concise string representations
@@ -4516,12 +4272,6 @@ Subtask Breakdown:
                 outputs.append(None)  # or handle error case as needed
 
         return outputs
-
-    def get_agent_role(self) -> str:
-        """
-        Get the role of the agent.
-        """
-        return self.role
 
     def pretty_print(self, response: str, loop_count: int):
         """Print the response in a formatted panel"""
@@ -5420,76 +5170,6 @@ Summary: {summary}
 
     def list_output_types(self):
         return OutputType
-
-    def run_multiple_images(
-        self, task: str, imgs: List[str], *args, **kwargs
-    ):
-        """
-        Run the agent with multiple images using concurrent processing.
-
-        Args:
-            task (str): The task to be performed on each image.
-            imgs (List[str]): List of image paths or URLs to process.
-            *args: Additional positional arguments to pass to the agent's run method.
-            **kwargs: Additional keyword arguments to pass to the agent's run method.
-
-        Returns:
-            List[Any]: A list of outputs generated for each image in the same order as the input images.
-
-        Examples:
-            >>> agent = Agent()
-            >>> outputs = agent.run_multiple_images(
-            ...     task="Describe what you see in this image",
-            ...     imgs=["image1.jpg", "image2.png", "image3.jpeg"]
-            ... )
-            >>> print(f"Processed {len(outputs)} images")
-            Processed 3 images
-
-        Raises:
-            Exception: If an error occurs while processing any of the images.
-        """
-        # Submit all image processing tasks
-        future_to_img = {
-            self.executor.submit(
-                self.run, task=task, img=img, *args, **kwargs
-            ): img
-            for img in imgs
-        }
-
-        # Collect results in order
-        outputs = []
-        for future in future_to_img:
-            try:
-                output = future.result()
-                outputs.append(output)
-            except Exception as e:
-                logger.error(f"Error processing image: {e}")
-                outputs.append(
-                    None
-                )  # or raise the exception based on your preference
-
-        # Combine the outputs into a single string if summarization is enabled
-        if self.summarize_multiple_images is True:
-            output = "\n".join(outputs)
-
-            prompt = f"""
-            You have already analyzed {len(outputs)} images and provided detailed descriptions for each one. 
-            Now, based on your previous analysis of these images, create a comprehensive report that:
-
-            1. Synthesizes the key findings across all images
-            2. Identifies common themes, patterns, or relationships between the images
-            3. Provides an overall summary that captures the most important insights
-            4. Highlights any notable differences or contrasts between the images
-
-            Here are your previous analyses of the images:
-            {output}
-
-            Please create a well-structured report that brings together your insights from all {len(outputs)} images.
-            """
-
-            outputs = self.run(task=prompt, *args, **kwargs)
-
-        return outputs
 
     def tool_execution_retry(self, response: any, loop_count: int):
         """

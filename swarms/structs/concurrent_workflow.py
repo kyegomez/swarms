@@ -577,36 +577,6 @@ class ConcurrentWorkflow:
                 )
             raise
 
-    def cleanup(self):
-        """
-        Clean up resources and connections.
-
-        Performs cleanup operations including:
-        - Calling cleanup methods on all agents if available
-        - Resetting agent statuses
-        - Preserving conversation history for result formatting
-
-        This method is called automatically after each run to ensure proper resource management.
-        """
-        try:
-            # Reset agent statuses
-            for agent in self.agents:
-                if hasattr(agent, "cleanup"):
-                    try:
-                        agent.cleanup()
-                    except Exception as e:
-                        logger.warning(
-                            f"Failed to cleanup agent {agent.agent_name}: {str(e)}"
-                        )
-
-            # Clear conversation if needed
-            if hasattr(self, "conversation"):
-                # Keep the conversation for result formatting but reset for next run
-                pass
-
-        except Exception as e:
-            logger.error(f"Cleanup failed: {str(e)}")
-
     @trace_run(
         "ConcurrentWorkflow.run", input_params=("task", "img", "imgs")
     )
@@ -670,9 +640,6 @@ class ConcurrentWorkflow:
                         f"Failed to save conversation history on error: {save_error}"
                     )
             raise
-        finally:
-            # Always cleanup resources
-            self.cleanup()
 
     def batch_run(
         self,
