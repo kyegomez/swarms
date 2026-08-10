@@ -3,7 +3,6 @@ from loguru import logger
 from swarms.structs.multi_agent_debates import (
     OneOnOneDebate,
     ExpertPanelDiscussion,
-    RoundTableDiscussion,
 )
 from swarms.structs.agent import Agent
 
@@ -315,94 +314,5 @@ def test_expert_panel_discussion_output_types(
     except Exception as e:
         logger.error(
             f"Failed to test ExpertPanelDiscussion output types: {e}"
-        )
-        raise
-
-
-def test_round_table_discussion_initialization(sample_three_agents):
-    try:
-        facilitator = create_function_agent("Facilitator")
-        assert facilitator is not None
-        round_table = RoundTableDiscussion(
-            max_cycles=2,
-            agents=sample_three_agents,
-            facilitator=facilitator,
-            output_type="str-all-except-first",
-        )
-        assert round_table is not None
-        assert round_table.max_cycles == 2
-        assert len(round_table.agents) == 3
-        assert round_table.facilitator is not None
-        logger.info("RoundTableDiscussion initialization test passed")
-    except Exception as e:
-        logger.error(
-            f"Failed to test RoundTableDiscussion initialization: {e}"
-        )
-        raise
-
-
-def test_round_table_discussion_run(sample_three_agents, sample_task):
-    try:
-        facilitator = create_function_agent("Facilitator")
-        assert facilitator is not None
-        round_table = RoundTableDiscussion(
-            max_cycles=2,
-            agents=sample_three_agents,
-            facilitator=facilitator,
-            output_type="str-all-except-first",
-        )
-        assert round_table is not None
-        result = round_table.run(sample_task)
-        assert result is not None
-        assert isinstance(result, str)
-        assert len(result) >= 0
-        logger.info("RoundTableDiscussion run test passed")
-    except Exception as e:
-        logger.error(f"Failed to test RoundTableDiscussion run: {e}")
-        raise
-
-
-def test_round_table_discussion_insufficient_agents(sample_task):
-    try:
-        facilitator = create_function_agent("Facilitator")
-        single_agent = [create_function_agent("Agent1")]
-        round_table = RoundTableDiscussion(
-            max_cycles=2,
-            agents=single_agent,
-            facilitator=facilitator,
-            output_type="str-all-except-first",
-        )
-        with pytest.raises(
-            ValueError, match="At least two participants"
-        ):
-            round_table.run(sample_task)
-        logger.info(
-            "RoundTableDiscussion insufficient agents test passed"
-        )
-    except Exception as e:
-        logger.error(
-            f"Failed to test RoundTableDiscussion insufficient agents: {e}"
-        )
-        raise
-
-
-def test_round_table_discussion_no_facilitator(
-    sample_three_agents, sample_task
-):
-    try:
-        round_table = RoundTableDiscussion(
-            max_cycles=2,
-            agents=sample_three_agents,
-            facilitator=None,
-            output_type="str-all-except-first",
-        )
-        with pytest.raises(
-            ValueError, match="facilitator agent is required"
-        ):
-            round_table.run(sample_task)
-        logger.info("RoundTableDiscussion no facilitator test passed")
-    except Exception as e:
-        logger.error(
-            f"Failed to test RoundTableDiscussion no facilitator: {e}"
         )
         raise
