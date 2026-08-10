@@ -20,6 +20,7 @@ from swarms import (
     Agent,
     create_agents_from_yaml,
 )
+from swarms.agents.autonomous_loop import AutonomousAgentLoop
 
 # Load environment variables
 load_dotenv()
@@ -2589,6 +2590,206 @@ class TestToolsListIsolation:
             ).tools_list_dictionary
             == given
         )
+
+
+# ============================================================================
+# AUTONOMOUS AGENT LOOP
+# ============================================================================
+
+
+class TestAutonomousAgentLoop:
+    """
+    The ``max_loops="auto"`` plan-execute-summarize loop lives in
+    ``swarms.agents.autonomous_loop.AutonomousAgentLoop`` rather than on
+    ``Agent``. These tests pin the seam between the two: that the loop is
+    wired up, that it reads and writes agent state through its back-reference,
+    and that ``Agent.run`` still routes to it.
+    """
+
+    @staticmethod
+    def _agent(max_loops="auto", **kwargs):
+        with patch("swarms.structs.agent.LiteLLM"):
+            return Agent(
+                agent_name="AutoLoopAgent",
+                model_name="gpt-5.4",
+                max_loops=max_loops,
+                print_on=False,
+                verbose=False,
+                persistent_memory=False,
+                **kwargs,
+            )
+
+    # -- wiring ------------------------------------------------------------
+
+    def test_loop_is_constructed_and_back_references_agent(self):
+        """Every agent owns a loop, and the loop can reach its agent."""
+        agent = self._agent()
+        assert isinstance(agent.autonomous_loop, AutonomousAgentLoop)
+        assert agent.autonomous_loop.agent is agent
+
+    def test_loop_owns_the_tool_methods_not_the_agent(self):
+        """The moved methods live on the loop; Agent must not regrow them."""
+        agent = self._agent()
+        for name in (
+            "_create_plan_tool",
+            "_think_tool",
+            "_subtask_done_tool",
+            "_get_next_executable_subtask",
+            "_all_subtasks_complete",
+        ):
+            assert hasattr(agent.autonomous_loop, name)
+            assert not hasattr(agent, name)
+
+    def test_agent_entry_point_delegates_to_the_loop(self):
+        """Agent._run_autonomous_loop is a passthrough, not a reimplementation."""
+        agent = self._agent()
+        with patch.object(
+            agent.autonomous_loop,
+            "_run_autonomous_loop",
+            return_value="delegated",
+        ) as loop_run:
+            result = agent._run_autonomous_loop(task="do it")
+
+        assert result == "delegated"
+        loop_run.assert_called_once()
+        assert loop_run.call_args.kwargs["task"] == "do it"
+
+    def test_run_routes_auto_mode_to_the_loop(self):
+        """max_loops="auto" reaches the loop; a fixed count does not."""
+        agent = self._agent()
+        with patch.object(
+            agent.autonomous_loop,
+            "_run_autonomous_loop",
+            return_value="auto-path",
+        ) as loop_run:
+            assert agent.run("go") == "auto-path"
+        loop_run.assert_called_once()
+
+        fixed = self._agent(max_loops=1)
+        with patch.object(
+            fixed.autonomous_loop, "_run_autonomous_loop"
+        ) as loop_run, patch.object(
+            fixed, "_run", return_value="fixed-path"
+        ):
+            assert fixed.run("go") == "fixed-path"
+        loop_run.assert_not_called()
+
+    # -- state crosses the seam -------------------------------------------
+
+    def test_all_subtasks_complete_reads_agent_state(self):
+        """The loop's view of completion comes from the agent, not itself."""
+        agent = self._agent()
+        loop = agent.autonomous_loop
+
+        agent.autonomous_subtasks = []
+        assert loop._all_subtasks_complete() is False
+
+        agent.autonomous_subtasks = [
+            {"id": 1, "status": "completed"},
+            {"id": 2, "status": "pending"},
+        ]
+        assert loop._all_subtasks_complete() is False
+
+        # "failed" counts as finished -- the loop must not spin on it
+        agent.autonomous_subtasks = [
+            {"id": 1, "status": "completed"},
+            {"id": 2, "status": "failed"},
+        ]
+        assert loop._all_subtasks_complete() is True
+
+    def test_next_executable_subtask_respects_dependencies(self):
+        """A pending subtask is only returned once its dependencies finish."""
+        agent = self._agent()
+        loop = agent.autonomous_loop
+
+        agent.autonomous_subtasks = []
+        agent.subtask_status = {}
+        assert loop._get_next_executable_subtask() is None
+
+        agent.autonomous_subtasks = [
+            {"id": 1, "status": "pending", "dependencies": []},
+            {"id": 2, "status": "pending", "dependencies": [1]},
+        ]
+        agent.subtask_status = {1: "pending"}
+        assert loop._get_next_executable_subtask()["id"] == 1
+
+        # once 1 is done, 2 unblocks
+        agent.autonomous_subtasks[0]["status"] = "completed"
+        agent.subtask_status = {1: "completed"}
+        assert loop._get_next_executable_subtask()["id"] == 2
+
+        # nothing pending -> nothing to run
+        agent.autonomous_subtasks[1]["status"] = "completed"
+        assert loop._get_next_executable_subtask() is None
+
+    # -- end to end --------------------------------------------------------
+
+    def test_loop_drives_plan_then_execution_against_a_stub_llm(self):
+        """A canned LLM should carry the loop from planning through completion."""
+        prompts = []
+
+        def fake_call_llm(
+            self,
+            task=None,
+            img=None,
+            imgs=None,
+            current_loop=0,
+            streaming_callback=None,
+            *args,
+            **kwargs,
+        ):
+            prompts.append(task)
+            if len(prompts) == 1:
+                return [
+                    {
+                        "function": {
+                            "name": "create_plan",
+                            "arguments": json.dumps(
+                                {
+                                    "task_description": "exercise the loop",
+                                    "steps": [
+                                        {
+                                            "step_id": "s1",
+                                            "description": "step one",
+                                            "priority": "high",
+                                            "dependencies": [],
+                                        }
+                                    ],
+                                }
+                            ),
+                        }
+                    }
+                ]
+            if len(prompts) <= 3:
+                return [
+                    {
+                        "function": {
+                            "name": "subtask_done",
+                            "arguments": json.dumps(
+                                {
+                                    "task_id": "s1",
+                                    "summary": "step one is done",
+                                    "success": True,
+                                }
+                            ),
+                        }
+                    }
+                ]
+            return "FINAL"
+
+        agent = self._agent()
+        with patch.object(Agent, "call_llm", fake_call_llm):
+            output = agent.run("exercise the loop")
+
+        assert prompts, "the loop never called the LLM"
+        assert output is not None
+        # the plan the loop built lands on the agent, reached via self.agent
+        assert agent.plan_created is True
+        assert [s["step_id"] for s in agent.autonomous_subtasks] == [
+            "s1"
+        ]
+        # and executing it marked the subtask finished
+        assert agent.subtask_status["s1"] == "completed"
 
 
 # ============================================================================
