@@ -2864,3 +2864,69 @@ if __name__ == "__main__":
     results = run_all_tests()
 
     print(results)
+
+
+# ============================================================================
+# arun forwarding and error path (#1853 item 3)
+# ============================================================================
+
+
+class TestArunForwarding:
+    """arun() must forward its arguments to run() and not await a sync method."""
+
+    def _bare_agent(self):
+        # No LLM/model setup — these tests only exercise arun's plumbing.
+        agent = Agent.__new__(Agent)
+        agent.autosave = False
+        agent.agent_name = "arun-test"
+        agent.to_dict = lambda: {}
+        return agent
+
+    def test_extra_positional_args_reach_run(self):
+        """`task=`/`img=` as keywords alongside *args made every extra
+        positional collide with `task`, so arun(task, img, extra) raised
+        `TypeError: run() got multiple values for argument 'task'`.
+        """
+        import asyncio
+
+        agent = self._bare_agent()
+        seen = {}
+
+        def fake_run(*args, **kwargs):
+            seen["args"] = args
+            seen["kwargs"] = kwargs
+            return "ok"
+
+        agent.run = fake_run
+
+        result = asyncio.run(Agent.arun(agent, "T", "I", "EXTRA"))
+
+        assert result == "ok"
+        assert seen["args"] == ("T", "I", "EXTRA")
+
+    def test_error_path_does_not_await_a_sync_handler(self):
+        """`_handle_run_error` is sync and re-raises; seven other call sites
+        do not await it. The await was harmless only because the method
+        always raises before returning.
+        """
+        import asyncio
+        import inspect
+
+        assert not inspect.iscoroutinefunction(
+            Agent._handle_run_error
+        )
+        assert (
+            "await self._handle_run_error"
+            not in inspect.getsource(Agent.arun)
+        )
+
+        agent = self._bare_agent()
+
+        def boom(*args, **kwargs):
+            raise ValueError("boom")
+
+        agent.run = boom
+
+        # The original error surfaces — not a TypeError from awaiting None.
+        with pytest.raises(ValueError, match="boom"):
+            asyncio.run(Agent.arun(agent, "T"))

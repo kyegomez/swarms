@@ -2024,17 +2024,24 @@ Subtask Breakdown:
             Exception: If an error occurs during the asynchronous operation.
         """
         try:
+            # Forward positionally, in run()'s own parameter order. Passing
+            # task/img as keywords while also splatting *args made every
+            # extra positional collide with `task`:
+            #   TypeError: run() got multiple values for argument 'task'
+            # so arun(task, img, extra) raised instead of running.
             return await asyncio.to_thread(
                 self.run,
-                task=task,
-                img=img,
+                task,
+                img,
                 *args,
                 **kwargs,
             )
         except Exception as error:
-            await self._handle_run_error(
-                error
-            )  # Ensure this is also async if needed
+            # _handle_run_error is sync and re-raises; the other seven call
+            # sites do not await it. The await was only harmless because the
+            # method always raises before returning — the day it stops, this
+            # becomes `await None`.
+            self._handle_run_error(error)
 
     def __call__(
         self,
