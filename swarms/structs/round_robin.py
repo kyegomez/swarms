@@ -119,6 +119,7 @@ class RoundRobinSwarm(SerializableMixin):
         verbose: bool = False,
         max_loops: int = 1,
         output_type: OutputType = "final",
+        persist_rotation: bool = False,
     ):
 
         self.name = name
@@ -128,6 +129,7 @@ class RoundRobinSwarm(SerializableMixin):
         self.max_loops = max_loops
         self.index = 0
         self.output_type = output_type
+        self.persist_rotation = persist_rotation
 
         # Initialize conversation for tracking agent interactions
         self.conversation = Conversation(
@@ -215,6 +217,15 @@ class RoundRobinSwarm(SerializableMixin):
             n = len(self.agents)
             agent_names = return_all_agent_names(self.agents)
 
+            # Start this run where the last one left off. `self.index` used to
+            # be written every turn and read by nothing, so each run() restarted
+            # at agents[0] and run_batch handed the opening turn — the one that
+            # frames the transcript every later agent builds on — to the same
+            # agent for every task. Off by default: a run is turn-for-turn
+            # reproducible unless the caller opts in.
+            start = self.index % n
+            rotation = self.agents[start:] + self.agents[:start]
+
             self._log(
                 "info",
                 f"Starting round-robin execution with task on {n} agents: {agent_names}",
@@ -226,23 +237,21 @@ class RoundRobinSwarm(SerializableMixin):
                     f"Starting loop {loop + 1}/{self.max_loops}",
                 )
 
-                for i, current_agent in enumerate(self.agents):
-                    self.index = (loop * n) + i
-
+                for i, current_agent in enumerate(rotation):
                     prev_name = (
-                        self.agents[i - 1].agent_name
+                        rotation[i - 1].agent_name
                         if i > 0
                         else (
-                            self.agents[-1].agent_name
+                            rotation[-1].agent_name
                             if loop > 0
                             else None
                         )
                     )
                     next_name = (
-                        self.agents[i + 1].agent_name
+                        rotation[i + 1].agent_name
                         if i + 1 < n
                         else (
-                            self.agents[0].agent_name
+                            rotation[0].agent_name
                             if loop + 1 < self.max_loops
                             else None
                         )
@@ -281,6 +290,13 @@ class RoundRobinSwarm(SerializableMixin):
                             f"Agent {current_agent.agent_name} failed: {str(e)}",
                         )
                         raise
+
+            # max_loops * n turns is a whole number of cycles, so it returns the
+            # offset to where it started — advancing the opener needs this
+            # explicit +1. Without it, resuming would still seat agents[start]
+            # first on every task.
+            if self.persist_rotation:
+                self.index = (start + 1) % n
 
             self._log(
                 "success",
