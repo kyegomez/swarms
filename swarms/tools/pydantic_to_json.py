@@ -17,26 +17,6 @@ def _remove_a_key(d: dict, remove_key: str) -> None:
                 _remove_a_key(d[key], remove_key)
 
 
-def check_pydantic_name(pydantic_type: type[BaseModel]) -> str:
-    """
-    Check the name of the Pydantic model.
-
-    Args:
-        pydantic_type (type[BaseModel]): The Pydantic model type to check.
-
-    Returns:
-        str: The name of the Pydantic model.
-
-    """
-    try:
-        return type(pydantic_type).__name__
-    except AttributeError as error:
-        logger.error(
-            f"The Pydantic model does not have a name. {error}"
-        )
-        raise error
-
-
 def base_model_to_openai_function(
     pydantic_type: type[BaseModel],
     output_str: bool = False,
@@ -54,8 +34,10 @@ def base_model_to_openai_function(
     """
     schema = pydantic_type.model_json_schema()
 
-    # Fetch the name of the class
-    name = type(pydantic_type).__name__
+    # The model's own name. `type(pydantic_type).__name__` read the
+    # metaclass instead, because pydantic_type is the class, not an
+    # instance — every schema through this path was named "ModelMetaclass".
+    name = pydantic_type.__name__
 
     docstring = parse(pydantic_type.__doc__ or "")
     parameters = {
@@ -64,12 +46,17 @@ def base_model_to_openai_function(
         if k not in ("title", "description")
     }
 
+    # `prop_name`, not `name`: this walrus used to rebind `name`, so the
+    # emitted function name became whichever docstring param matched last.
     for param in docstring.params:
-        if (name := param.arg_name) in parameters["properties"] and (
-            description := param.description
-        ):
-            if "description" not in parameters["properties"][name]:
-                parameters["properties"][name][
+        if (prop_name := param.arg_name) in parameters[
+            "properties"
+        ] and (description := param.description):
+            if (
+                "description"
+                not in parameters["properties"][prop_name]
+            ):
+                parameters["properties"][prop_name][
                     "description"
                 ] = description
 
