@@ -148,3 +148,42 @@ if __name__ == "__main__":
         import traceback
 
         traceback.print_exc()
+
+
+def test_function_name_is_the_model_name():
+    """The emitted schema must name the model, not the metaclass or a field.
+
+    Two bugs compounded here. `type(pydantic_type).__name__` read the
+    metaclass — pydantic_type is the class, not an instance — so the name
+    was "ModelMetaclass". And the docstring loop's walrus bound `name`,
+    so whenever a docstring param matched a property the name became
+    whichever param matched last. Either way the LLM was told the tool had
+    a name it does not have.
+    """
+    from pydantic import BaseModel, Field
+
+    from swarms.tools.pydantic_to_json import (
+        base_model_to_openai_function,
+    )
+
+    class WeatherQuery(BaseModel):
+        """Look up the weather.
+
+        Args:
+            city: The city to look up.
+            units: Temperature units.
+        """
+
+        city: str = Field(...)
+        units: str = Field("celsius")
+
+    result = base_model_to_openai_function(WeatherQuery)
+
+    assert result["function_call"]["name"] == "WeatherQuery"
+    assert result["functions"][0]["name"] == "WeatherQuery"
+
+    # The rename must not cost the per-parameter descriptions the loop
+    # exists to attach.
+    props = result["functions"][0]["parameters"]["properties"]
+    assert props["city"]["description"] == "The city to look up."
+    assert props["units"]["description"] == "Temperature units."
