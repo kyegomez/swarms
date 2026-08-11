@@ -2,13 +2,19 @@ from typing import Any, List
 
 from swarms.utils.docstring_parser import parse
 from pydantic import BaseModel
-from swarms.utils.loguru_logger import initialize_logger
-
-logger = initialize_logger("pydantic_to_json")
 
 
 def _remove_a_key(d: dict, remove_key: str) -> None:
-    """Remove a key from a dictionary recursively"""
+    """
+    Recursively remove a specified key from a nested dictionary.
+
+    Args:
+        d (dict): The dictionary from which to remove the key.
+        remove_key (str): The key to remove from the dictionary.
+    
+    Returns:
+        None: The provided dictionary is modified in-place.
+    """
     if isinstance(d, dict):
         for key in list(d.keys()):
             if key == remove_key and "type" in d.keys():
@@ -22,15 +28,18 @@ def base_model_to_openai_function(
     output_str: bool = False,
 ) -> dict[str, Any]:
     """
-    Convert a Pydantic model to a dictionary representation of functions.
+    Convert a Pydantic model class to an OpenAI-compatible function specification dictionary.
+
+    This function takes a Pydantic model type, extracts its schema, properties, and docstring,
+    and returns a dictionary representation suitable for use with OpenAI's function-calling API.
+    Optionally, it can output the result as a formatted JSON string.
 
     Args:
-        pydantic_type (type[BaseModel]): The Pydantic model type to convert.
-        output_str (bool): Whether to return string output format. Defaults to False.
+        pydantic_type (type[BaseModel]): The Pydantic model class to convert.
+        output_str (bool, optional): If True, returns a pretty-printed JSON string. Defaults to False.
 
     Returns:
-        dict[str, Any]: A dictionary representation of the functions.
-
+        dict[str, Any]: The OpenAI-compatible function specification, or a JSON string if output_str is True.
     """
     schema = pydantic_type.model_json_schema()
 
@@ -101,14 +110,19 @@ def multi_base_model_to_openai_function(
     output_str: bool = False,
 ) -> dict[str, Any]:
     """
-    Converts multiple Pydantic types to a dictionary of functions.
+    Convert multiple Pydantic model classes to a combined OpenAI function specification.
+
+    This function takes a list of Pydantic types and returns a dictionary containing
+    all their OpenAI-compatible function specifications, with a default "auto" function_call.
+    Optionally returns the output as a pretty-printed JSON string.
 
     Args:
-        pydantic_types (List[BaseModel]]): A list of Pydantic types to convert.
+        pydantic_types (List[BaseModel]): A list of Pydantic model classes to convert.
+        output_str (bool, optional): If True, outputs a formatted JSON string. Defaults to False.
 
     Returns:
-        dict[str, Any]: A dictionary containing the converted functions.
-
+        dict[str, Any]: Dictionary with combined OpenAI function specifications,
+            or a JSON string if output_str is True.
     """
     functions: list[dict[str, Any]] = [
         base_model_to_openai_function(
