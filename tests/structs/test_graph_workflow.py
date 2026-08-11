@@ -1308,5 +1308,34 @@ def test_compile_calls_validate_and_reports_errors():
     assert len(result["errors"]) > 0
 
 
+def test_visualize_sanitizes_the_workflow_name_into_the_output_path():
+    """A name with a path separator must not become a directory.
+
+    The sanitization used to live in an `if output_path is None:` branch
+    that was unreachable — `output_path` is assigned unconditionally above
+    it — so the live path used the raw name and graphviz tried to render
+    into a directory that does not exist.
+    """
+    import inspect
+
+    source = inspect.getsource(GraphWorkflow.visualize)
+
+    # The dead branch that used to hold the sanitization is gone.
+    assert "if output_path is None" not in source
+
+    # And the sanitization now runs before graphviz availability is checked,
+    # i.e. in the path that actually builds the filename.
+    live_path = source.split("if not GRAPHVIZ_AVAILABLE")[0]
+    assert "safe_name" in live_path
+
+    workflow = GraphWorkflow(name="team/alpha")
+    safe = "".join(
+        c if c.isalnum() or c in "-_" else "_"
+        for c in (workflow.name or "GraphWorkflow")
+    )
+    assert "/" not in safe
+    assert safe == "team_alpha"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
