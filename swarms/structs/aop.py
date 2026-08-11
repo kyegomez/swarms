@@ -411,19 +411,26 @@ class TaskQueue:
             try:
                 # Check if we should process tasks
                 with self._lock:
-                    if (
+                    idle = (
                         self._status != QueueStatus.RUNNING
                         or not self._queue
-                    ):
-                        self._stop_event.wait(0.1)
-                        continue
+                    )
+                    if not idle:
+                        # Get next task
+                        task = self._queue.popleft()
+                        self._processing_tasks.add(task.task_id)
+                        task.status = TaskStatus.PROCESSING
+                        self._stats.pending_tasks -= 1
+                        self._stats.processing_tasks += 1
 
-                    # Get next task
-                    task = self._queue.popleft()
-                    self._processing_tasks.add(task.task_id)
-                    task.status = TaskStatus.PROCESSING
-                    self._stats.pending_tasks -= 1
-                    self._stats.processing_tasks += 1
+                # Idle-wait outside the lock. Holding it across the wait let
+                # idle workers own the lock ~100% of the time, so any caller
+                # needing it — get_stats, get_queue_status, add_task, and
+                # AOP.get_server_info through them — could block for tens of
+                # seconds waiting on workers that were doing nothing.
+                if idle:
+                    self._stop_event.wait(0.1)
+                    continue
 
                 # Process the task
                 self._process_task(task)
@@ -2445,13 +2452,20 @@ class AOP:
                     # Wait before restarting
                     time.sleep(self.restart_delay)
 
+                started_at = time.time()
                 self.start_server()
 
-                # Reset restart count on successful start. This has to
-                # happen after start_server() returns, otherwise a failed
-                # attempt clears the count it just incremented and the
-                # max_restart_attempts failsafe below can never fire.
-                self._restart_count = 0
+                # start_server() returning means the server stopped. Only
+                # treat that as a success if it actually stayed up; a server
+                # that exits immediately is restarting, not running.
+                # Resetting unconditionally (as this did) pinned the count at
+                # 0 forever, so max_restart_attempts never fired and the
+                # delay below was never reached — a server that died on
+                # startup respawned in a hot loop instead.
+                if time.time() - started_at >= self.restart_delay:
+                    self._restart_count = 0
+                else:
+                    self._restart_count += 1
 
             except KeyboardInterrupt:
                 if (

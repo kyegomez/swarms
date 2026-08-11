@@ -1,4 +1,5 @@
 import socket
+import time
 from unittest.mock import Mock, patch
 
 import pytest
@@ -8,6 +9,7 @@ from swarms.structs.aop import (
     AOP,
     AOPCluster,
     QueueStatus,
+    TaskQueue,
     TaskStatus,
 )
 
@@ -18,7 +20,7 @@ def real_agent():
     from swarms import Agent
 
     agent = Agent(
-        agent_name="Test-Agent",
+        agent_name="test_agent",
         agent_description="Test agent for AOP testing",
         model_name="gpt-3.5-turbo",
         max_loops=1,
@@ -359,12 +361,18 @@ def test_add_agent_duplicate_tool_name(
     with patch.object(aop_instance, "_register_tool"), patch.object(
         aop_instance, "_register_agent_discovery_tool"
     ):
-        aop_instance.add_agent(new_agent, tool_name="test_agent")
+        # Not "test_agent": that is the fixture agent's own name, so the
+        # first add would collide and the duplicate this test is about
+        # would never be reached.
+        aop_instance.add_agent(new_agent, tool_name="duplicate_agent")
 
         with pytest.raises(
-            ValueError, match="Tool name 'test_agent' already exists"
+            ValueError,
+            match="Tool name 'duplicate_agent' already exists",
         ):
-            aop_instance.add_agent(new_agent, tool_name="test_agent")
+            aop_instance.add_agent(
+                new_agent, tool_name="duplicate_agent"
+            )
 
 
 def test_add_agents_batch_basic(
@@ -1075,10 +1083,23 @@ def test_run_without_persistence(aop_instance, mock_fastmcp):
 
 
 def test_run_with_persistence_success(aop_instance, mock_fastmcp):
-    """Test running server with persistence on successful execution."""
-    aop_instance._persistence_enabled = True
+    """Test running server with persistence on successful execution.
 
-    with patch.object(aop_instance, "start_server") as mock_start:
+    A real start_server() blocks until the server stops, so the mock has to
+    end the loop the way a served-then-shut-down server does. Without that
+    this test never returns: run()'s whole job is to restart the server when
+    it stops, so a mock that returns instantly and leaves the loop condition
+    true is an infinite restart, not a success.
+    """
+    aop_instance._persistence_enabled = True
+    aop_instance.restart_delay = 0
+
+    def serve():
+        aop_instance._shutdown_requested = True
+
+    with patch.object(
+        aop_instance, "start_server", side_effect=serve
+    ) as mock_start:
         aop_instance.run()
 
         mock_start.assert_called_once()
@@ -1415,3 +1436,46 @@ def test_persistence_restart_count_bounds_a_failing_server():
     assert start.call_count == 6
     assert aop._restart_count == 3
     assert aop.get_persistence_status()["remaining_restarts"] == 0
+
+
+def test_persistence_bounds_a_server_that_exits_immediately():
+    """A clean return is a restart, not a success.
+
+    start_server() returning means the server stopped. Resetting the count
+    on every clean return pinned it at 0, so max_restart_attempts could
+    never fire and the restart delay was never reached — a server that dies
+    on startup respawned in a hot loop. Bounded, this is 1 start + 2
+    restarts.
+    """
+    aop = AOP(
+        persistence=True, max_restart_attempts=2, restart_delay=0.05
+    )
+
+    with patch.object(aop, "start_server") as start:
+        aop.run()
+
+    assert start.call_count == 3
+    assert aop.get_persistence_status()["remaining_restarts"] == 0
+
+
+def test_queue_stats_not_starved_by_idle_workers():
+    """Idle workers must not hold the queue lock while they wait.
+
+    The worker loop waited on its stop event inside `with self._lock`, so
+    idle workers owned the lock nearly all the time and any caller needing
+    it — get_stats, and AOP.get_server_info through it — could block for
+    tens of seconds. Measured at over 20s before the fix; the 2s bound here
+    is loose enough not to be flaky on a loaded CI box.
+    """
+    queue = TaskQueue(agent_name="idle", agent=Mock(), max_workers=4)
+    queue.start_workers()
+    try:
+        time.sleep(0.2)  # let every worker reach the idle wait
+        started = time.perf_counter()
+        for _ in range(20):
+            queue.get_stats()
+        elapsed = time.perf_counter() - started
+    finally:
+        queue.stop_workers()
+
+    assert elapsed < 2.0, f"20 get_stats() calls took {elapsed:.1f}s"
