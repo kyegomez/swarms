@@ -11,7 +11,7 @@ def _remove_a_key(d: dict, remove_key: str) -> None:
     Args:
         d (dict): The dictionary from which to remove the key.
         remove_key (str): The key to remove from the dictionary.
-    
+
     Returns:
         None: The provided dictionary is modified in-place.
     """
