@@ -3016,15 +3016,16 @@ Subtask Breakdown:
             >>> agent.run("Describe this image", img=img_base64)
         """
 
-        # # If interactive mode is enabled and no task is provided, prompt the user
-        # if self.interactive and (
-        #     task is None
-        #     or (isinstance(task, str) and task.strip() == "")
-        if (
-            task is None
-            or isinstance(task, str)
-            and task.strip() == ""
+        # If no task is provided, prompt for one only in interactive mode.
+        # Outside interactive mode, fail fast instead of blocking on stdin.
+        if task is None or (
+            isinstance(task, str) and task.strip() == ""
         ):
+            if not self.interactive:
+                raise ValueError(
+                    "No task provided. Pass a non-empty `task`, or set "
+                    "interactive=True to be prompted for one."
+                )
             # Always show prompt when asking for initial task, even if print_on is False
             self.pretty_print(
                 "Interactive mode enabled. Please enter your initial task:",
