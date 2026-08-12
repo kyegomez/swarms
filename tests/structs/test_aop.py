@@ -1488,9 +1488,13 @@ def test_queue_stats_not_starved_by_idle_workers():
 
 def test_is_network_error_matches_typed_network_errors(aop_instance):
     """Typed network errors are classified by isinstance, not keywords."""
-    assert aop_instance._is_network_error(ConnectionError("x")) is True
+    assert (
+        aop_instance._is_network_error(ConnectionError("x")) is True
+    )
     assert aop_instance._is_network_error(TimeoutError("x")) is True
-    assert aop_instance._is_network_error(socket.gaierror("x")) is True
+    assert (
+        aop_instance._is_network_error(socket.gaierror("x")) is True
+    )
 
 
 def test_is_network_error_matches_network_messages(aop_instance):
