@@ -2308,7 +2308,6 @@ Subtask Breakdown:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        *args,
         **kwargs,
     ) -> Any:
         """
@@ -2317,9 +2316,7 @@ Subtask Breakdown:
         Args:
             task (Optional[str]): The task to be performed. Defaults to None.
             img (Optional[str]): The image to be processed. Defaults to None.
-            is_last (bool): Indicates if this is the last task. Defaults to False.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
+            **kwargs: Additional keyword arguments, forwarded to run().
 
         Returns:
             Any: The result of the asynchronous operation.
@@ -2328,16 +2325,14 @@ Subtask Breakdown:
             Exception: If an error occurs during the asynchronous operation.
         """
         try:
-            # Forward positionally, in run()'s own parameter order. Passing
-            # task/img as keywords while also splatting *args made every
-            # extra positional collide with `task`:
-            #   TypeError: run() got multiple values for argument 'task'
-            # so arun(task, img, extra) raised instead of running.
+            # Forward by keyword. run()'s positionals after `img` are
+            # imgs/correct_answer/streaming_callback/n, so a splatted
+            # extra silently became one of those rather than reaching
+            # run()'s own *args.
             return await asyncio.to_thread(
                 self.run,
-                task,
-                img,
-                *args,
+                task=task,
+                img=img,
                 **kwargs,
             )
         except Exception as error:
@@ -2351,7 +2346,6 @@ Subtask Breakdown:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        *args,
         **kwargs,
     ) -> Any:
         """Call the agent
@@ -2359,12 +2353,12 @@ Subtask Breakdown:
         Args:
             task (Optional[str]): The task to be performed. Defaults to None.
             img (Optional[str]): The image to be processed. Defaults to None.
+            **kwargs: Additional keyword arguments, forwarded to run().
         """
         try:
             return self.run(
                 task=task,
                 img=img,
-                *args,
                 **kwargs,
             )
         except Exception as error:

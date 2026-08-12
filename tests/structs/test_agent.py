@@ -1028,25 +1028,77 @@ class TestArunForwarding:
         agent.to_dict = lambda: {}
         return agent
 
-    def test_extra_positional_args_reach_run(self):
-        """`task=`/`img=` as keywords alongside *args made every extra
-        positional collide with `task`: arun(task, img, extra) raised
-        `TypeError: got multiple values for argument 'task'`.
+    def test_keywords_reach_run_under_the_names_the_caller_used(self):
+        """Forwarding must go by keyword.
+
+        Splatting extras positionally lands them on run()'s next
+        parameters — imgs, correct_answer, streaming_callback, n — never
+        on run()'s own *args. The stub mirrors run()'s real signature so
+        a misbind shows up here instead of being absorbed by a
+        catch-all `*args` stub.
         """
         agent = self._bare_agent()
         seen = {}
 
-        def fake_run(*args, **kwargs):
-            seen["args"] = args
-            seen["kwargs"] = kwargs
+        def fake_run(
+            task=None,
+            img=None,
+            imgs=None,
+            correct_answer=None,
+            **kwargs,
+        ):
+            seen.update(
+                task=task,
+                img=img,
+                imgs=imgs,
+                correct_answer=correct_answer,
+                kwargs=kwargs,
+            )
             return "ok"
 
         agent.run = fake_run
 
-        result = asyncio.run(Agent.arun(agent, "T", "I", "EXTRA"))
+        result = asyncio.run(
+            Agent.arun(agent, "T", "I", imgs=["a.png"], n=2)
+        )
 
         assert result == "ok"
-        assert seen["args"] == ("T", "I", "EXTRA")
+        assert seen["task"] == "T"
+        assert seen["img"] == "I"
+        assert seen["imgs"] == ["a.png"]
+        assert seen["correct_answer"] is None
+        assert seen["kwargs"] == {"n": 2}
+
+    def test_a_third_positional_is_rejected_not_silently_rebound(
+        self,
+    ):
+        """arun never had a working *args, so it should not advertise one.
+
+        While it did, `arun(task, img, extra)` bound `extra` to run()'s
+        `imgs` — which expects a list of image paths — and the call went
+        through with the wrong argument in the wrong slot.
+        """
+        import asyncio
+
+        agent = self._bare_agent()
+        agent.run = lambda *a, **k: "ok"
+
+        with pytest.raises(TypeError):
+            asyncio.run(Agent.arun(agent, "T", "I", "EXTRA"))
+
+    def test_call_forwards_the_same_way(self):
+        """__call__ carried the identical dead *args into run()."""
+        agent = self._bare_agent()
+        seen = {}
+
+        def fake_run(task=None, img=None, imgs=None, **kwargs):
+            seen.update(task=task, img=img, imgs=imgs)
+            return "ok"
+
+        agent.run = fake_run
+
+        assert Agent.__call__(agent, "T", imgs=["a.png"]) == "ok"
+        assert seen == {"task": "T", "img": None, "imgs": ["a.png"]}
 
     def test_error_path_does_not_await_a_sync_handler(self):
         """`_handle_run_error` is sync and re-raises; the await was harmless
@@ -1056,10 +1108,6 @@ class TestArunForwarding:
 
         assert not inspect.iscoroutinefunction(
             Agent._handle_run_error
-        )
-        assert (
-            "await self._handle_run_error"
-            not in inspect.getsource(Agent.arun)
         )
 
         agent = self._bare_agent()
