@@ -112,10 +112,10 @@ def run_agents_concurrently(
         img (Optional[str]): Optional image data to pass to agent run() if supported.
         max_workers (Optional[int]): Maximum threads for the executor (default: 95% of CPU cores).
         return_agent_output_dict (bool): If True, returns a dict mapping agent names to outputs.
-                                         Otherwise returns a list of results in completion order.
+                                         Otherwise returns a list of results in input order.
 
     Returns:
-        List[Any] or Dict[str, Any]: List of results from each agent's run() method in completion order,
+        List[Any] or Dict[str, Any]: List of results from each agent's run() method in input order,
                                      or a dict of agent names to results (preserving agent order)
                                      if return_agent_output_dict is True.
                                      If an agent fails, the corresponding result is the Exception.
@@ -125,7 +125,7 @@ def run_agents_concurrently(
         - By default, utilizes nearly all available CPU cores for optimal performance.
         - Any Exception during agent execution is caught and included in the results.
         - If return_agent_output_dict is True, the results dict preserves agent input order.
-        - Otherwise, the results list is in order of completion (not input order).
+        - Otherwise, the results list is in input order, so results[i] is agents[i]'s.
 
     Example:
         >>> agents = [Agent1(), Agent2()]
@@ -142,7 +142,6 @@ def run_agents_concurrently(
             max_workers = max_workers_95_percent()
 
         futures = []
-        agent_id_map = {}
 
         with ContextThreadPoolExecutor(
             max_workers=max_workers
@@ -155,7 +154,6 @@ def run_agents_concurrently(
                     agent_kwargs["img"] = img
                 future = executor.submit(agent.run, **agent_kwargs)
                 futures.append(future)
-                agent_id_map[future] = agent
 
             if return_agent_output_dict:
                 # Use agent name as key, preserve input order
@@ -174,13 +172,15 @@ def run_agents_concurrently(
                     output_dict[name] = result
                 return output_dict
             else:
+                # Input order, not completion order: every caller pairs
+                # this list positionally with `agents`, so yielding it by
+                # finish time filed each answer under another agent's name.
+                # future.result() blocks, but all the work was submitted
+                # above, so this waits no longer than as_completed did.
                 results = []
-                for future in concurrent.futures.as_completed(
-                    futures
-                ):
+                for future in futures:
                     try:
-                        result = future.result()
-                        results.append(result)
+                        results.append(future.result())
                     except Exception as e:
                         results.append(e)
                 return results
