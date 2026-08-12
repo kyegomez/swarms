@@ -2930,3 +2930,25 @@ class TestArunForwarding:
         # The original error surfaces — not a TypeError from awaiting None.
         with pytest.raises(ValueError, match="boom"):
             asyncio.run(Agent.arun(agent, "T"))
+
+
+# ============================================================================
+# Empty-task handling in run() (#1852)
+# ============================================================================
+
+
+class TestEmptyTaskGuard:
+    """run() must not read from stdin for an empty task when interactive=False."""
+
+    @pytest.mark.parametrize("empty_task", ["", "   ", "\n\t ", None])
+    def test_non_interactive_empty_task_raises(self, empty_task):
+        """A commented-out `self.interactive and ...` left the guard
+        unconditional, so a non-interactive run of an empty task blocked on
+        console input instead of failing. Raising here proves the prompt —
+        which comes after this branch — is never reached.
+        """
+        agent = Agent.__new__(Agent)
+        agent.interactive = False
+
+        with pytest.raises(ValueError, match="No task provided"):
+            Agent.run(agent, empty_task)
