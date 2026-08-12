@@ -1479,3 +1479,45 @@ def test_queue_stats_not_starved_by_idle_workers():
         queue.stop_workers()
 
     assert elapsed < 2.0, f"20 get_stats() calls took {elapsed:.1f}s"
+
+
+# ---------------------------------------------------------------------------
+# _is_network_error keyword classification (#1853 item 6)
+# ---------------------------------------------------------------------------
+
+
+def test_is_network_error_matches_typed_network_errors(aop_instance):
+    """Typed network errors are classified by isinstance, not keywords."""
+    assert aop_instance._is_network_error(ConnectionError("x")) is True
+    assert aop_instance._is_network_error(TimeoutError("x")) is True
+    assert aop_instance._is_network_error(socket.gaierror("x")) is True
+
+
+def test_is_network_error_matches_network_messages(aop_instance):
+    """Genuinely network-ish plain errors still match via keywords."""
+    for msg in [
+        "Connection refused",
+        "Connection reset by peer",
+        "Network is unreachable",
+        "No route to host",
+        "Read timeout while waiting for response",
+    ]:
+        assert (
+            aop_instance._is_network_error(RuntimeError(msg)) is True
+        ), msg
+
+
+def test_is_network_error_ignores_non_network_messages(aop_instance):
+    """Ordinary failures whose text merely contains a bare token like
+    'reset', 'socket', 'aborted' or 'connection' must not be misclassified
+    as network errors and sent to the network-retry loop."""
+    for msg in [
+        "reset the counter to zero",
+        "socket_id must be an integer",
+        "operation aborted by user",
+        "connection pool exhausted: too many rows",
+        "invalid network_config key",
+    ]:
+        assert (
+            aop_instance._is_network_error(ValueError(msg)) is False
+        ), msg

@@ -2593,7 +2593,12 @@ class AOP:
         if isinstance(error, network_errors):
             return True
 
-        # Check error message for network-related keywords
+        # Check error message for network-related keywords. Keep these
+        # specific: bare tokens like "socket", "network", "connection",
+        # "reset" or "aborted" match ordinary non-network messages (e.g.
+        # "reset the counter", "socket_id must be an int") and would route
+        # them into the network-retry loop, which can never resolve them.
+        # The isinstance check above already covers the typed network errors.
         error_msg = str(error).lower()
         network_keywords = [
             "connection refused",
@@ -2601,14 +2606,6 @@ class AOP:
             "connection aborted",
             "network is unreachable",
             "no route to host",
-            "timeout",
-            "socket",
-            "network",
-            "connection",
-            "refused",
-            "reset",
-            "aborted",
-            "unreachable",
             "timeout",
         ]
 
