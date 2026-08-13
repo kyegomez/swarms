@@ -124,10 +124,6 @@ def run_agent(
         raise RuntimeError(f"Error running agent: {str(e)}")
 
 
-_FIND_AGENT_INDEX_CACHE: dict = {}
-_FIND_AGENT_INDEX_CACHE_MAX = 256
-
-
 def _build_agent_name_index(agents):
     index = {}
     for agent in agents:
@@ -146,9 +142,11 @@ def find_agent_by_name(
     """
     Find an agent by its name in a list of agents.
 
-    Builds a name -> agent index on first call for a given list and
-    reuses it on subsequent calls, turning repeated lookups from O(n)
-    into O(1).
+    Builds a name -> agent index per call. A previous version memoised the
+    index under ``id(agents)``, which is unsound: the cache held no
+    reference to the list, so once the list was freed CPython reused the
+    address and an unrelated roster of the same length got the dead
+    swarm's agents.
 
     Args:
         agents (List[Union[Agent, Callable]]): List of agents to search through
@@ -170,27 +168,7 @@ def find_agent_by_name(
     if not agent_name.strip():
         raise ValueError("Agent name cannot be empty or whitespace")
 
-    key = id(agents)
-    length = len(agents)
-    cached = _FIND_AGENT_INDEX_CACHE.get(key)
-    if cached is None or cached[0] != length:
-        if (
-            len(_FIND_AGENT_INDEX_CACHE)
-            >= _FIND_AGENT_INDEX_CACHE_MAX
-        ):
-            _FIND_AGENT_INDEX_CACHE.clear()
-        index = _build_agent_name_index(agents)
-        _FIND_AGENT_INDEX_CACHE[key] = (length, index)
-    else:
-        index = cached[1]
-
-    agent = index.get(agent_name)
-    if agent is not None:
-        return agent
-
-    index = _build_agent_name_index(agents)
-    _FIND_AGENT_INDEX_CACHE[key] = (length, index)
-    agent = index.get(agent_name)
+    agent = _build_agent_name_index(agents).get(agent_name)
     if agent is None:
         raise ValueError(f"Agent with name '{agent_name}' not found")
     return agent
