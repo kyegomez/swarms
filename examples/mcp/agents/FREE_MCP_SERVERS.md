@@ -2,11 +2,14 @@
 
 A catalog of real, public [MCP](https://modelcontextprotocol.io) servers you can
 plug straight into the Swarms `Agent` class — most require **no authentication**,
-a few use a **free-tier API key**. Runnable examples live in
-this folder, numbered `01`–`05`.
+a few use a **free-tier API key**. Runnable examples live in this folder.
 
-> Availability and URLs change over time — verify a server before depending on it.
-> Last reviewed against known-public servers as of early 2026.
+> Availability, URLs, and **auth requirements** change over time — verify a
+> server before depending on it. Servers that were once open can start
+> requiring a token: Semgrep and Globalping both did.
+>
+> Last verified by live probe on **2026-08-12**. Reachable without auth at
+> that time: DeepWiki, Microsoft Learn, Context7, Hugging Face, AWS Knowledge.
 
 ---
 
@@ -57,8 +60,6 @@ streamable-HTTP endpoint; prefer it when available.
 | **Cloudflare Docs** | `https://docs.mcp.cloudflare.com/mcp` | Cloudflare product documentation |
 | **Hugging Face** | `https://huggingface.co/mcp` | Search models / datasets / Spaces (optional HF token unlocks more) |
 | **Context7** | `https://mcp.context7.com/mcp` | Up-to-date docs for thousands of libraries (rate-limited without a free key) |
-| **Globalping** | `https://mcp.globalping.dev/sse` | Run ping / traceroute / DNS / MTR from a global probe network |
-| **Semgrep** | `https://mcp.semgrep.ai/mcp` | Static-analysis security scanning of code |
 
 ```python
 # Example: repo-scoped documentation assistant via GitMCP
@@ -78,6 +79,8 @@ These are free to use but require a key. How the key is passed differs per serve
 | Server | Endpoint / auth | What it does |
 |---|---|---|
 | **Exa** | `https://mcp.exa.ai/mcp?exaApiKey=…` (query param) | Web search + content retrieval |
+| **Semgrep** | `https://mcp.semgrep.ai/mcp` + Bearer token | Static-analysis security scanning (was open, now 401 without a token) |
+| **Globalping** | `https://mcp.globalping.dev/sse` + Bearer token | ping / traceroute / DNS / MTR from a global probe network (was open, now 401) |
 | **Tavily** | `https://mcp.tavily.com/mcp/?tavilyApiKey=…` (query param) | Web search built for agents |
 | **Firecrawl** | hosted MCP + `FIRECRAWL_API_KEY` | Scrape/crawl sites into clean markdown |
 | **Ref** (ref.tools) | hosted + key | Fast documentation search across frameworks |
@@ -176,6 +179,10 @@ The numbered examples in this folder:
 | [`03_microsoft_learn_docs.py`](03_microsoft_learn_docs.py) | Microsoft Learn | none |
 | [`04_multi_server_agent.py`](04_multi_server_agent.py) | DeepWiki + Microsoft Learn | none |
 | [`05_exa_web_search.py`](05_exa_web_search.py) | Exa | free API key |
+| [`07_huggingface_model_search.py`](07_huggingface_model_search.py) | Hugging Face | none (optional token) |
+| [`10_firecrawl_web_scraping.py`](10_firecrawl_web_scraping.py) | Firecrawl | API key in URL path |
+| [`12_semgrep_security_scan.py`](12_semgrep_security_scan.py) | Semgrep | free token |
+| [`13_mcp_sequential_workflow.py`](13_mcp_sequential_workflow.py) | DeepWiki + Context7 (multi-agent) | none |
 
 ```bash
 export OPENAI_API_KEY=...        # or ANTHROPIC_API_KEY, etc.
