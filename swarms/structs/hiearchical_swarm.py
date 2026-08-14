@@ -872,6 +872,10 @@ class HierarchicalSwarm:
             logger.error(
                 f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
+            # Re-raise. Returning None here made run()'s own per-loop handler
+            # unreachable, so a failed step was indistinguishable from a
+            # successful one to everything upstream.
+            raise
 
     @trace_run(
         "HierarchicalSwarm.run",
@@ -921,6 +925,8 @@ class HierarchicalSwarm:
 
             current_loop = 0
             last_output = None
+            last_error = None
+            any_loop_succeeded = False
 
             # Start dashboard if in interactive mode
             if self.interactive and self.dashboard:
@@ -956,6 +962,7 @@ class HierarchicalSwarm:
                         *args,
                         **kwargs,
                     )
+                    any_loop_succeeded = True
 
                 except Exception as e:
                     error_msg = (
@@ -964,14 +971,29 @@ class HierarchicalSwarm:
                     logger.error(
                         f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
                     )
+                    last_error = e
+                    # Drop the previous loop's output rather than feeding it
+                    # forward as though this loop had produced it.
+                    last_output = None
 
                 current_loop += 1
 
-                # Add loop completion marker to conversation
+                # Record what actually happened. Marking a loop that raised as
+                # "completed" made a total outage read as a successful run.
                 self.conversation.add(
                     role="System",
-                    content=f"--- Loop {current_loop}/{self.max_loops} completed ---",
+                    content=(
+                        f"--- Loop {current_loop}/{self.max_loops} failed: {last_error} ---"
+                        if last_output is None
+                        and last_error is not None
+                        else f"--- Loop {current_loop}/{self.max_loops} completed ---"
+                    ),
                 )
+
+            # Every loop raised, so the swarm produced nothing. Returning the
+            # transcript here reported a total outage as a successful run.
+            if not any_loop_succeeded and last_error is not None:
+                raise last_error
 
             # Stop dashboard if in interactive mode
             if self.interactive and self.dashboard:
