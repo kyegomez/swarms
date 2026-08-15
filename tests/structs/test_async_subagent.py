@@ -22,7 +22,6 @@ from swarms.structs.autonomous_loop_utils import (
     cancel_sub_agent_tasks_tool,
 )
 
-
 load_dotenv()
 
 MODEL = "gpt-5.4"
@@ -1282,3 +1281,132 @@ if __name__ == "__main__":
         f"RESULTS: {passed} passed, {failed} failed out of {len(tests)}"
     )
     print("=" * 60)
+
+
+# ============================================================================
+# Lazy autonomous tool loading (#1753)
+# ============================================================================
+
+
+class _ToolAgentStub:
+    """Minimal stand-in exposing what search_tools_tool touches."""
+
+    def __init__(self, tools):
+        self.tools_list_dictionary = list(tools)
+        self.rebuilds = 0
+
+    def llm_handling(self):
+        self.rebuilds += 1
+        return "llm"
+
+    def names(self):
+        return [
+            t.get("function", {}).get("name")
+            for t in self.tools_list_dictionary
+        ]
+
+
+def test_lazy_core_is_a_strict_subset_and_much_smaller():
+    import json
+
+    from swarms.structs.autonomous_loop_utils import (
+        LAZY_CORE_TOOL_NAMES,
+        get_autonomous_planning_tools,
+        get_lazy_autonomous_tools,
+    )
+
+    full = get_autonomous_planning_tools()
+    lazy = get_lazy_autonomous_tools()
+
+    lazy_names = {t["function"]["name"] for t in lazy}
+    assert lazy_names == set(LAZY_CORE_TOOL_NAMES)
+    assert len(lazy) < len(full)
+
+    full_size = len(json.dumps(full))
+    lazy_size = len(json.dumps(lazy))
+    # The whole point is a large reduction, not a marginal one.
+    assert lazy_size < full_size * 0.5
+
+
+def test_search_matches_by_intent_not_just_exact_name():
+    from swarms.structs.autonomous_loop_utils import (
+        search_autonomous_tools,
+    )
+
+    assert (
+        search_autonomous_tools("run a shell command")[0]["function"][
+            "name"
+        ]
+        == "run_bash"
+    )
+    assert (
+        search_autonomous_tools("read a file")[0]["function"]["name"]
+        == "read_file"
+    )
+    assert (
+        search_autonomous_tools("search text in files")[0][
+            "function"
+        ]["name"]
+        == "grep"
+    )
+
+
+def test_search_never_returns_core_tools():
+    from swarms.structs.autonomous_loop_utils import (
+        LAZY_CORE_TOOL_NAMES,
+        search_autonomous_tools,
+    )
+
+    for tool in search_autonomous_tools(""):
+        assert tool["function"]["name"] not in LAZY_CORE_TOOL_NAMES
+
+
+def test_search_tools_loads_schemas_and_rebuilds_the_client():
+    from swarms.structs.autonomous_loop_utils import (
+        get_lazy_autonomous_tools,
+        search_tools_tool,
+    )
+
+    agent = _ToolAgentStub(get_lazy_autonomous_tools())
+    before = len(agent.tools_list_dictionary)
+
+    message = search_tools_tool(agent, query="run a shell command")
+
+    assert "run_bash" in agent.names()
+    assert len(agent.tools_list_dictionary) > before
+    # Without the rebuild the model is told about tools it cannot call.
+    assert agent.rebuilds == 1
+    assert "run_bash" in message
+
+
+def test_repeating_a_search_does_not_reload_or_dump_the_catalogue():
+    from swarms.structs.autonomous_loop_utils import (
+        get_lazy_autonomous_tools,
+        search_tools_tool,
+    )
+
+    agent = _ToolAgentStub(get_lazy_autonomous_tools())
+    search_tools_tool(agent, query="run a shell command")
+    count = len(agent.tools_list_dictionary)
+
+    message = search_tools_tool(agent, query="run a shell command")
+
+    assert len(agent.tools_list_dictionary) == count
+    assert "No tool matched" in message
+    # The fallback lists names, which is cheap, rather than loading schemas.
+    assert "think" in message
+
+
+def test_unmatched_query_reports_remaining_names():
+    from swarms.structs.autonomous_loop_utils import (
+        get_lazy_autonomous_tools,
+        search_tools_tool,
+    )
+
+    agent = _ToolAgentStub(get_lazy_autonomous_tools())
+    message = search_tools_tool(agent, query="zzzz nonexistent")
+
+    assert "No tool matched" in message
+    assert len(agent.tools_list_dictionary) == len(
+        get_lazy_autonomous_tools()
+    )

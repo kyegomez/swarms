@@ -39,12 +39,14 @@ from swarms.structs.autonomous_loop_utils import (
     delete_file_tool,
     get_autonomous_planning_tools,
     get_execution_prompt,
+    get_lazy_autonomous_tools,
     get_planning_prompt,
     grep_tool,
     list_directory_tool,
     read_file_tool,
     respond_to_user_tool,
     run_bash_tool,
+    search_tools_tool,
     update_file_tool,
 )
 from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
@@ -211,12 +213,24 @@ class AutonomousAgentLoop:
 
             self._say_user(task)
 
-            # Add planning tools to tools_list_dictionary
-            planning_tools = get_autonomous_planning_tools()
+            # Add planning tools to tools_list_dictionary.
+            # "lazy" ships a small always-on core plus the search_tools
+            # meta-tool; the rest are fetched on demand, which keeps the
+            # resident schema block from being re-sent on every iteration.
+            if self.agent.selected_tools == "lazy":
+                planning_tools = get_lazy_autonomous_tools()
+                logger.info(
+                    f"Autonomous looper using lazy tool loading: "
+                    f"{len(planning_tools)} core tools, the rest available "
+                    f"via search_tools"
+                )
+            else:
+                planning_tools = get_autonomous_planning_tools()
 
             # Filter planning tools if selected_tools is not "all"
             if (
                 self.agent.selected_tools != "all"
+                and self.agent.selected_tools != "lazy"
                 and self.agent.selected_tools is not None
             ):
                 logger.info(
@@ -344,9 +358,18 @@ class AutonomousAgentLoop:
                 ),
             }
 
-            # Filter tool handlers if selected_tools is not "all"
+            all_planning_tool_handlers["search_tools"] = (
+                lambda **kwargs: search_tools_tool(
+                    self.agent, **kwargs
+                )
+            )
+
+            # Filter tool handlers if selected_tools is not "all".
+            # "lazy" keeps every handler: the model can load any schema at
+            # run time, so the handler has to be there when it does.
             if (
                 self.agent.selected_tools != "all"
+                and self.agent.selected_tools != "lazy"
                 and self.agent.selected_tools is not None
             ):
                 planning_tool_handlers = {

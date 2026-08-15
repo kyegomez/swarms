@@ -30,7 +30,7 @@ import os
 import re as _re
 import subprocess
 import uuid
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -594,6 +594,124 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
     ]
 
 
+# The always-resident set under selected_tools="lazy". Everything the loop
+# structurally depends on (planning, subtask bookkeeping, termination, and the
+# user-facing reply), plus the meta-tool used to fetch the rest. Keeping this
+# small is the point: the resident schema cost stays flat as tools are added.
+LAZY_CORE_TOOL_NAMES = (
+    "create_plan",
+    "subtask_done",
+    "complete_task",
+    "respond_to_user",
+    "search_tools",
+)
+
+
+def get_search_tools_schema() -> Dict[str, Any]:
+    """
+    Schema for the ``search_tools`` meta-tool.
+
+    Returns:
+        Dict[str, Any]: An OpenAI function-calling definition.
+    """
+    return {
+        "type": "function",
+        "function": {
+            "name": "search_tools",
+            "description": (
+                "Look up additional tools you can use. Only a small core set "
+                "is loaded up front; call this with a short description of "
+                "what you need (for example 'read a file', 'run a shell "
+                "command', 'delegate to a sub agent') to load the matching "
+                "tools, after which you can call them directly."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": (
+                            "What you are trying to do, or a tool name."
+                        ),
+                    }
+                },
+                "required": ["query"],
+            },
+        },
+    }
+
+
+def search_autonomous_tools(
+    query: str, exclude: Optional[List[str]] = None
+) -> List[Dict[str, Any]]:
+    """
+    Find built-in tool schemas matching a free-text query.
+
+    Scores each non-core tool on whether the query's words appear in its name
+    or description, so "read a file" surfaces read_file and list_directory
+    without needing the caller to know the exact names.
+
+    Args:
+        query (str): Free-text description of the capability wanted.
+        exclude (Optional[List[str]]): Tool names already loaded.
+
+    Returns:
+        List[Dict[str, Any]]: Matching schemas, best match first. An empty
+        query returns every unloaded tool; a query that matches nothing
+        returns an empty list, so a repeated search cannot quietly load the
+        whole catalogue and undo the saving. The caller surfaces the
+        available names instead, which costs a few tokens rather than a few
+        hundred.
+    """
+    exclude_set = set(exclude or ()) | set(LAZY_CORE_TOOL_NAMES)
+    candidates = [
+        t
+        for t in get_autonomous_planning_tools()
+        if t.get("function", {}).get("name") not in exclude_set
+    ]
+
+    words = [
+        w
+        for w in _re.findall(r"[a-z0-9]+", query.lower())
+        if len(w) > 2
+    ]
+    if not words:
+        return candidates
+
+    scored = []
+    for tool in candidates:
+        fn = tool.get("function", {})
+        name = fn.get("name", "").lower()
+        haystack = f"{name} {fn.get('description', '').lower()}"
+        score = sum(
+            (3 if w in name else 0) + (1 if w in haystack else 0)
+            for w in words
+        )
+        if score:
+            scored.append((score, name, tool))
+
+    if not scored:
+        return []
+
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    return [tool for _, _, tool in scored]
+
+
+def get_lazy_autonomous_tools() -> List[Dict[str, Any]]:
+    """
+    The core tool set for ``selected_tools="lazy"``.
+
+    Returns:
+        List[Dict[str, Any]]: Core schemas plus the ``search_tools`` meta-tool.
+    """
+    core = [
+        t
+        for t in get_autonomous_planning_tools()
+        if t.get("function", {}).get("name") in LAZY_CORE_TOOL_NAMES
+    ]
+    return core + [get_search_tools_schema()]
+
+
 def get_autonomous_loop_tool_names() -> List[str]:
     """
     Return a list of all autonomous loop tool names.
@@ -611,6 +729,61 @@ def get_autonomous_loop_tool_names() -> List[str]:
 # ============================================================================
 # TOOL HANDLERS
 # ============================================================================
+
+
+def search_tools_tool(agent: Any, query: str = "", **kwargs) -> str:
+    """
+    Handler for the ``search_tools`` meta-tool: load matching schemas on demand.
+
+    Appends the matched definitions to the agent's ``tools_list_dictionary``
+    and rebuilds the LLM client, so the tools are callable from the next
+    iteration onward. Already-loaded tools are excluded, so repeated searches
+    do not duplicate schemas.
+
+    Args:
+        agent (Any): The agent making the call.
+        query (str): What the agent is trying to do.
+
+    Returns:
+        str: A human-readable summary of what was loaded.
+    """
+    loaded = [
+        t.get("function", {}).get("name")
+        for t in (agent.tools_list_dictionary or [])
+    ]
+    matches = search_autonomous_tools(query, exclude=loaded)
+    if not matches:
+        remaining = [
+            t.get("function", {}).get("name")
+            for t in get_autonomous_planning_tools()
+            if t.get("function", {}).get("name") not in loaded
+        ]
+        if not remaining:
+            return "Every available tool is already loaded."
+        return (
+            f"No tool matched '{query}'. Still available, by name: "
+            f"{', '.join(remaining)}. Search again using one of these names."
+        )
+
+    if agent.tools_list_dictionary is None:
+        agent.tools_list_dictionary = []
+    agent.tools_list_dictionary.extend(matches)
+
+    # Rebuild so the newly added schemas reach the provider. Without this the
+    # client keeps the tool list it was constructed with and the model would
+    # be told about tools it cannot actually call.
+    try:
+        agent.llm = agent.llm_handling()
+    except Exception as e:
+        logger.error(
+            f"search_tools could not rebuild the LLM client: {e}"
+        )
+
+    names = [t.get("function", {}).get("name") for t in matches]
+    return (
+        f"Loaded {len(names)} tool(s) for '{query}': {', '.join(names)}. "
+        f"You can now call them directly."
+    )
 
 
 def respond_to_user_tool(
