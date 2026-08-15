@@ -1016,6 +1016,79 @@ class TestAutonomousAgentLoop:
         ]
         assert agent.subtask_status["s1"] == "completed"
 
+    # -- read-only tool batching -------------------------------------------
+
+    @staticmethod
+    def _tool_executor_entries(agent):
+        return [
+            m["content"]
+            for m in agent.short_memory.conversation_history
+            if m["role"] == "Tool Executor"
+        ]
+
+    def test_readonly_planning_tools_run_concurrently_in_order(self):
+        """Batched read-only built-ins run in parallel, results in call order."""
+        agent = self._agent()
+        delay = 0.2
+
+        def slow_handler(tag):
+            def handler(**kwargs):
+                time.sleep(delay)
+                return f"{tag}-result"
+
+            return handler
+
+        handlers = {
+            "read_file": slow_handler("read"),
+            "grep": slow_handler("grep"),
+            "list_directory": slow_handler("ls"),
+        }
+        # grep first and slowest-equal: order must come from the call
+        # list, not from completion order.
+        batch = [
+            ("grep", {"pattern": "x"}),
+            ("read_file", {"file_path": "a.txt"}),
+            ("list_directory", {"path": "."}),
+        ]
+
+        start = time.time()
+        agent.autonomous_loop._run_readonly_planning_tools(
+            batch, handlers
+        )
+        elapsed = time.time() - start
+
+        assert (
+            elapsed < delay * 2.2
+        ), f"3 calls took {elapsed:.2f}s, executed serially?"
+        assert batch == [], "batch must be cleared after the flush"
+
+        assert self._tool_executor_entries(agent) == [
+            "grep result: grep-result",
+            "read_file result: read-result",
+            "list_directory result: ls-result",
+        ], "results must be recorded in original call order"
+
+    def test_readonly_planning_tools_single_call_and_empty_batch(
+        self,
+    ):
+        """A single buffered call executes; an empty batch writes nothing."""
+        agent = self._agent()
+        handlers = {"read_file": lambda **kw: "solo-result"}
+
+        agent.autonomous_loop._run_readonly_planning_tools(
+            [], handlers
+        )
+        assert self._tool_executor_entries(agent) == []
+
+        batch = [("read_file", {"file_path": "a.txt"})]
+        agent.autonomous_loop._run_readonly_planning_tools(
+            batch, handlers
+        )
+        assert self._tool_executor_entries(agent) == [
+            "read_file result: solo-result"
+        ]
+        assert batch == []
+
 
 class TestArunForwarding:
     """arun() must forward its arguments to run(), not await a sync method."""

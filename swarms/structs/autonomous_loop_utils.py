@@ -47,6 +47,14 @@ MAX_SUBTASK_ITERATIONS = 100
 MAX_SUBTASK_LOOPS = 20
 MAX_CONSECUTIVE_THINKS = 2
 
+# Built-in tools that only read state. Consecutive calls to these in one
+# model response are executed concurrently; anything mutating
+# (create_file, run_bash, ...) or control-flow (subtask_done, ...) never
+# joins the batch, so a read is never reordered past a write.
+READONLY_PLANNING_TOOLS = frozenset(
+    {"read_file", "grep", "list_directory"}
+)
+
 
 # ============================================================================
 # PROMPTS
