@@ -89,7 +89,6 @@ def run_agent(
     agent: Agent,
     task: str,
     type: HistoryOutputType = "all",
-    *args,
     **kwargs,
 ):
     """
@@ -99,7 +98,6 @@ def run_agent(
         agent (Agent): The agent to run
         task (str): The task to run the agent on
         type (HistoryOutputType, optional): The type of history output. Defaults to "all".
-        *args: Variable length argument list
         **kwargs: Arbitrary keyword arguments
 
     Returns:
@@ -119,7 +117,7 @@ def run_agent(
         raise TypeError("Agent must be an instance of Agent")
 
     try:
-        return agent.run(task=task, *args, **kwargs)
+        return agent.run(task=task, **kwargs)
     except Exception as e:
         raise RuntimeError(f"Error running agent: {str(e)}")
 

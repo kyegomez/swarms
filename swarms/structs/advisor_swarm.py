@@ -253,9 +253,7 @@ class AdvisorSwarm:
             type=self.output_type,
         )
 
-    def batched_run(
-        self, tasks: List[str], *args, **kwargs
-    ) -> List[Any]:
+    def batched_run(self, tasks: List[str], **kwargs) -> List[Any]:
         """Run multiple tasks sequentially.
 
         Args:
@@ -264,8 +262,8 @@ class AdvisorSwarm:
         Returns:
             List of results, one per task.
         """
-        return batched_run(self.run, tasks, *args, **kwargs)
+        return batched_run(self.run, tasks, **kwargs)
 
-    def __call__(self, task: str, *args, **kwargs) -> Any:
+    def __call__(self, task: str, **kwargs) -> Any:
         """Make the swarm callable."""
-        return self.run(task=task, *args, **kwargs)
+        return self.run(task=task, **kwargs)

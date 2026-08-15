@@ -577,19 +577,17 @@ class LLMManager:
             )
             raise e
 
-    def _run_stream(
-        self, task: str, img: Optional[str], *args, **kwargs
-    ):
+    def _run_stream(self, task: str, img: Optional[str], **kwargs):
         """Invoke ``llm.run`` with streaming forced on, returning (response, original_stream)."""
         original_stream = self.agent.llm.stream
         self.agent.llm.stream = True
 
         if img is not None:
             response = self.agent.llm.run(
-                task=task, img=img, *args, **kwargs
+                task=task, img=img, **kwargs
             )
         else:
-            response = self.agent.llm.run(task=task, *args, **kwargs)
+            response = self.agent.llm.run(task=task, **kwargs)
 
         return response, original_stream
 
@@ -867,7 +865,6 @@ class LLMManager:
         correct_answer: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
         original_error: Exception = None,
-        *args,
         **kwargs,
     ) -> Any:
         """
@@ -884,7 +881,6 @@ class LLMManager:
             correct_answer: The correct answer for continuous run mode.
             streaming_callback: Callback receiving streaming tokens in real time.
             original_error (Exception): The error that triggered the fallback.
-            *args: Passed through to the agent's ``run``.
             **kwargs: Passed through to the agent's ``run``.
 
         Returns:
@@ -927,7 +923,6 @@ class LLMManager:
                 imgs=imgs,
                 correct_answer=correct_answer,
                 streaming_callback=streaming_callback,
-                *args,
                 **kwargs,
             )
 
@@ -953,6 +948,5 @@ class LLMManager:
                 correct_answer=correct_answer,
                 streaming_callback=streaming_callback,
                 original_error=original_error,
-                *args,
                 **kwargs,
             )

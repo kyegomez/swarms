@@ -11,9 +11,7 @@ from swarms.telemetry.otel import ContextThreadPoolExecutor
 from swarms.utils.get_cpu_cores import max_workers_95_percent
 
 
-def run_single_agent(
-    agent: AgentType, task: str, *args, **kwargs
-) -> Any:
+def run_single_agent(agent: AgentType, task: str, **kwargs) -> Any:
     """
     Run a single agent synchronously with the given task.
 
@@ -24,7 +22,6 @@ def run_single_agent(
     Args:
         agent (AgentType): The agent instance to execute
         task (str): The task string to be executed by the agent
-        *args: Variable length argument list passed to agent.run()
         **kwargs: Arbitrary keyword arguments passed to agent.run()
 
     Returns:
@@ -35,7 +32,7 @@ def run_single_agent(
         >>> result = run_single_agent(agent, "Analyze this data")
         >>> print(result)
     """
-    return agent.run(task=task, *args, **kwargs)
+    return agent.run(task=task, **kwargs)
 
 
 async def run_agent_async(agent: AgentType, task: str) -> Any:

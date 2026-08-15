@@ -270,13 +270,12 @@ class ReasoningAgentRouter:
                 f"ReasoningAgentRouter Error: {e} Traceback: {traceback.format_exc()} If the error persists, please check the agent's configuration and try again. If you would like support book a call with our team at https://cal.com/swarms"
             )
 
-    def run(self, task: str, *args, **kwargs):
+    def run(self, task: str, **kwargs):
         """
         Execute the reasoning process of the selected swarm on a given task.
 
         Args:
             task (str): The task or question to be processed by the reasoning agent.
-            *args: Additional positional arguments for the agent's run method.
             **kwargs: Additional keyword arguments for the agent's run method.
 
         Returns:
@@ -286,9 +285,9 @@ class ReasoningAgentRouter:
             swarm = self.select_swarm()
 
             if self.swarm_type == "ReflexionAgent":
-                return swarm.run(tasks=[task], *args, **kwargs)
+                return swarm.run(tasks=[task], **kwargs)
             else:
-                return swarm.run(task=task, *args, **kwargs)
+                return swarm.run(task=task, **kwargs)
         except Exception as e:
             raise ReasoningAgentExecutorError(
                 f"ReasoningAgentRouter Error: {e} Traceback: {traceback.format_exc()} If the error persists, please check the agent's configuration and try again. If you would like support book a call with our team at https://cal.com/swarms"
@@ -300,7 +299,6 @@ class ReasoningAgentRouter:
 
         Args:
             tasks (List[str]): The list of tasks to process.
-            *args: Additional positional arguments for the agent's run method.
             **kwargs: Additional keyword arguments for the agent's run method.
 
         Returns:
