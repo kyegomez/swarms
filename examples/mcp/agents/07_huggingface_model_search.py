@@ -56,7 +56,9 @@ agent = Agent(
 
 if __name__ == "__main__":
     if not HF_TOKEN:
-        print("No HF_TOKEN set - running anonymously (lower rate limits).\n")
+        print(
+            "No HF_TOKEN set - running anonymously (lower rate limits).\n"
+        )
 
     result = agent.run(
         "Find three open-weight embedding models under 500M parameters that "

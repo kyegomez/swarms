@@ -43,7 +43,7 @@ SECURITY_SYSTEM_PROMPT = (
     "it is clean and note what the scan does not cover."
 )
 
-VULNERABLE_SAMPLE = '''
+VULNERABLE_SAMPLE = """
 import os
 import sqlite3
 import subprocess
@@ -70,7 +70,7 @@ def load_config(blob):
 # Deliberately not shaped like any real provider's key: a realistic
 # prefix here would trip secret scanners in every fork of this repo.
 API_TOKEN = "hardcoded-credential-placeholder-do-not-use"
-'''
+"""
 
 agent = Agent(
     agent_name="Semgrep-Security-Agent",
