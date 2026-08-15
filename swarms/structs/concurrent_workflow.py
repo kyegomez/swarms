@@ -410,6 +410,19 @@ class ConcurrentWorkflow:
                         output = future.result()
                         results.append((agent.agent_name, output))
                     except Exception as e:
+                        # Same failure policy as `_run`. This path used to
+                        # convert every failure into an "Error: ..." string
+                        # regardless, so `on_error="raise"` was silently
+                        # revoked by turning the dashboard on, and the
+                        # failure never reached telemetry either.
+                        if self.on_error == "raise":
+                            raise
+                        capture_error(
+                            e,
+                            self,
+                            name="ConcurrentWorkflow.agent_error",
+                            agent=getattr(agent, "agent_name", None),
+                        )
                         logger.error(
                             f"Agent {agent.agent_name} failed: {str(e)}"
                         )
