@@ -240,38 +240,40 @@ class AutonomousAgentLoop:
                 "subtask_done": self._subtask_done_tool,
                 "complete_task": self.agent._complete_task_tool,
                 "respond_to_user": lambda **kwargs: respond_to_user_tool(
-                    self, **kwargs
+                    self.agent, **kwargs
                 ),
                 "create_file": lambda **kwargs: create_file_tool(
-                    self, **kwargs
+                    self.agent, **kwargs
                 ),
                 "update_file": lambda **kwargs: update_file_tool(
-                    self, **kwargs
+                    self.agent, **kwargs
                 ),
                 "read_file": lambda **kwargs: read_file_tool(
-                    self, **kwargs
+                    self.agent, **kwargs
                 ),
                 "list_directory": lambda **kwargs: list_directory_tool(
-                    self, **kwargs
+                    self.agent, **kwargs
                 ),
                 "delete_file": lambda **kwargs: delete_file_tool(
-                    self, **kwargs
+                    self.agent, **kwargs
                 ),
                 "run_bash": lambda **kwargs: run_bash_tool(
-                    self, **kwargs
+                    self.agent, **kwargs
                 ),
-                "grep": lambda **kwargs: grep_tool(self, **kwargs),
+                "grep": lambda **kwargs: grep_tool(
+                    self.agent, **kwargs
+                ),
                 "create_sub_agent": lambda **kwargs: create_sub_agent_tool(
-                    self, **kwargs
+                    self.agent, **kwargs
                 ),
                 "assign_task": lambda **kwargs: assign_task_tool(
-                    self, **kwargs
+                    self.agent, **kwargs
                 ),
                 "check_sub_agent_status": lambda **kwargs: check_sub_agent_status_tool(
-                    self, **kwargs
+                    self.agent, **kwargs
                 ),
                 "cancel_sub_agent_tasks": lambda **kwargs: cancel_sub_agent_tasks_tool(
-                    self, **kwargs
+                    self.agent, **kwargs
                 ),
             }
 
