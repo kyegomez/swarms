@@ -862,7 +862,6 @@ class SwarmRouter(SerializableMixin):
         task: Optional[str] = None,
         img: Optional[str] = None,
         tasks: Optional[List[str]] = None,
-        *args,
         **kwargs,
     ) -> Any:
         """Execute work on the configured swarm type.
@@ -877,7 +876,6 @@ class SwarmRouter(SerializableMixin):
                 to the underlying swarm.
             tasks (List[str], optional): Task list to pass to swarm types that
                 accept ``tasks``.
-            *args: Positional arguments forwarded while creating the swarm.
             **kwargs: Keyword arguments forwarded to the underlying
                 ``swarm.run`` call.
 
@@ -897,7 +895,6 @@ class SwarmRouter(SerializableMixin):
                 task=task,
                 img=img,
                 tasks=tasks,
-                *args,
                 **kwargs,
             )
         except SwarmRouterRunError as e:
@@ -923,7 +920,6 @@ class SwarmRouter(SerializableMixin):
                 to :meth:`run`.
             imgs (List[str], optional): Additional image payload forwarded via
                 ``kwargs`` to swarm implementations that support it.
-            *args: Positional arguments forwarded to :meth:`run`.
             **kwargs: Keyword arguments forwarded to :meth:`run`.
 
         Returns:

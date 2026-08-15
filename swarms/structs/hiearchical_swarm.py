@@ -1752,7 +1752,6 @@ class HierarchicalSwarm:
         streaming_callback: Optional[
             Callable[[str, str, bool], None]
         ] = None,
-        *args,
         **kwargs,
     ) -> Any:
         """
@@ -1763,7 +1762,6 @@ class HierarchicalSwarm:
             img (str, optional): Optional image input for the agents.
             streaming_callback (Callable[[str, str, bool], None], optional):
                 Callback for streaming agent outputs.
-            *args: Additional positional arguments passed to run().
             **kwargs: Additional keyword arguments passed to run().
 
         Returns:
@@ -1774,7 +1772,6 @@ class HierarchicalSwarm:
             task=task,
             img=img,
             streaming_callback=streaming_callback,
-            *args,
             **kwargs,
         )
 

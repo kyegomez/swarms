@@ -1968,7 +1968,6 @@ class Agent:
         task: str,
         img: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
-        *args,
         **kwargs,
     ):
         """
@@ -1982,7 +1981,6 @@ class Agent:
             img (Optional[str]): Optional image input for multimodal models.
             streaming_callback (Optional[Callable[[str], None]]): Callback
                 receiving streaming tokens in real time.
-            *args: Passed through to the loop.
             **kwargs: Passed through to the loop.
 
         Returns:
@@ -1992,7 +1990,6 @@ class Agent:
             task=task,
             img=img,
             streaming_callback=streaming_callback,
-            *args,
             **kwargs,
         )
 
@@ -2380,15 +2377,13 @@ Subtask Breakdown:
         except Exception as error:
             self._handle_run_error(error)
 
-    def receive_message(
-        self, agent_name: str, task: str, *args, **kwargs
-    ):
+    def receive_message(self, agent_name: str, task: str, **kwargs):
         improved_prompt = (
             f"You have received a message from agent '{agent_name}':\n\n"
             f'"{task}"\n\n'
             "Please process this message and respond appropriately."
         )
-        return self.run(task=improved_prompt, *args, **kwargs)
+        return self.run(task=improved_prompt, **kwargs)
 
     def add_memory(self, message: str):
         """Add a memory to the agent
@@ -2415,7 +2410,6 @@ Subtask Breakdown:
 
         Args:
             task (str): The task to create a plan for
-            *args: Additional positional arguments passed to the LLM
             **kwargs: Additional keyword arguments passed to the LLM
 
         Returns:
@@ -2452,7 +2446,7 @@ Subtask Breakdown:
             )
             raise error
 
-    def run_concurrent_tasks(self, tasks: List[str], *args, **kwargs):
+    def run_concurrent_tasks(self, tasks: List[str], **kwargs):
         """
         Run multiple tasks concurrently.
 
@@ -2474,9 +2468,7 @@ Subtask Breakdown:
                 max_workers=os.cpu_count()
             ) as executor:
                 futures = [
-                    executor.submit(
-                        self.run, *args, task=task, **kwargs
-                    )
+                    executor.submit(self.run, task=task, **kwargs)
                     for task in tasks
                 ]
                 results = [future.result() for future in futures]
@@ -3289,7 +3281,6 @@ Subtask Breakdown:
         correct_answer: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
         n: int = 1,
-        *args,
         **kwargs,
     ) -> Any:
         """
@@ -3316,7 +3307,6 @@ Subtask Breakdown:
             correct_answer (Optional[str]): Ground truth answer for evaluation comparisons. Defaults to None.
             streaming_callback (Optional[Callable[[str], None]]): Function to receive streamed tokens as output is generated (real-time). If not given, uses self.streaming_callback if available. Defaults to None.
             n (int): How many outputs to generate (number of runs). Defaults to 1.
-            *args: Additional positional arguments for extensibility.
             **kwargs: Additional keyword arguments passed to LLM/tool execution.
 
         Returns:
@@ -3398,7 +3388,6 @@ Subtask Breakdown:
                     task=task,
                     img=img,
                     streaming_callback=streaming_callback,
-                    *args,
                     **kwargs,
                 )
             elif n > 1:
@@ -3409,7 +3398,6 @@ Subtask Breakdown:
                     img=img,
                     imgs=imgs,
                     streaming_callback=streaming_callback,
-                    *args,
                     **kwargs,
                 )
 
@@ -3433,7 +3421,6 @@ Subtask Breakdown:
                     correct_answer=correct_answer,
                     streaming_callback=streaming_callback,
                     original_error=e,
-                    *args,
                     **kwargs,
                 )
             else:

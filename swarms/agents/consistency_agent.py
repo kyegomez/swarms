@@ -220,7 +220,6 @@ class SelfConsistencyAgent:
         task: str,
         img: Optional[str] = None,
         answer: Optional[str] = None,
-        *args,
         **kwargs,
     ) -> Union[str, Dict[str, Any]]:
         """
@@ -236,7 +235,6 @@ class SelfConsistencyAgent:
             task (str): The input prompt or task to be solved
             answer (Optional[str], optional): Expected answer for validation (if eval=True).
                                             Defaults to None.
-            *args: Additional positional arguments passed to the base agent's run method
             **kwargs: Additional keyword arguments passed to the base agent's run method
 
         Returns:
@@ -267,7 +265,6 @@ class SelfConsistencyAgent:
                     reasoning_agent.run,
                     task=task,
                     img=img,
-                    *args,
                     **kwargs,
                 ): i
                 for i in range(self.num_samples)

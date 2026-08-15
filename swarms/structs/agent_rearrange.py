@@ -870,7 +870,6 @@ class AgentRearrange(SerializableMixin):
         self,
         task: str = None,
         img: str = None,
-        *args,
         **kwargs,
     ):
         """
@@ -885,7 +884,6 @@ class AgentRearrange(SerializableMixin):
                 Defaults to None.
             img (str, optional): Path to input image if required by any agents.
                 Defaults to None.
-            *args: Additional positional arguments passed to the internal _run() method.
             **kwargs: Additional keyword arguments passed to the internal _run() method.
 
         Returns:
@@ -901,7 +899,6 @@ class AgentRearrange(SerializableMixin):
             out = self._run(
                 task=task,
                 img=img,
-                *args,
                 **kwargs,
             )
 
@@ -919,7 +916,6 @@ class AgentRearrange(SerializableMixin):
 
         Args:
             task (str): The task to execute through the agent workflow.
-            *args: Additional positional arguments passed to run().
             **kwargs: Additional keyword arguments passed to run().
 
         Returns:
@@ -1048,7 +1044,6 @@ class AgentRearrange(SerializableMixin):
         tasks: List[str],
         img: Optional[List[str]] = None,
         max_workers: Optional[int] = None,
-        *args,
         **kwargs,
     ) -> List[str]:
         """
@@ -1065,7 +1060,6 @@ class AgentRearrange(SerializableMixin):
                 Must be the same length as tasks list. Defaults to None.
             max_workers (Optional[int]): Maximum number of worker threads to use.
                 If None, uses the default ThreadPoolExecutor behavior. Defaults to None.
-            *args: Additional positional arguments passed to individual task execution.
             **kwargs: Additional keyword arguments passed to individual task execution.
 
         Returns:
@@ -1079,7 +1073,6 @@ class AgentRearrange(SerializableMixin):
         return run_concurrently(
             self.run,
             tasks,
-            *args,
             img=img,
             max_workers=max_workers,
             **kwargs,
@@ -1103,7 +1096,6 @@ class AgentRearrange(SerializableMixin):
         Args:
             task (str): The task to be executed through the agent workflow.
             img (Optional[str]): Optional image input for the task. Defaults to None.
-            *args: Additional positional arguments passed to the run method.
             **kwargs: Additional keyword arguments passed to the run method.
 
         Returns:
