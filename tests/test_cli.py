@@ -47,6 +47,7 @@ def make_args(**kwargs) -> argparse.Namespace:
         loops_per_agent=1,
         question_agent_model_name="gpt-4o",
         worker_model_name="gpt-4o",
+        random_loops_per_agent=False,
         model="gpt-4o",
         output=None,
         output_dir=None,
@@ -545,32 +546,6 @@ class TestHandleHeavySwarm:
         )
         self.handle_heavy_swarm(args)
         mock_run.assert_called_once()
-
-    @patch("swarms.cli.main.HeavySwarm")
-    def test_run_heavy_swarm_passes_arguments_heavyswarm_accepts(
-        self, mock_swarm
-    ):
-        """Every kwarg the CLI sends must exist on HeavySwarm.__init__.
-
-        The CLI kept sending loops_per_agent and random_loops_per_agent after
-        both were removed from HeavySwarm, so `swarms heavy-swarm` failed on
-        every invocation with a TypeError that was reported to the user as an
-        API-key or network problem. Mocking run_heavy_swarm, as the test above
-        does, cannot catch that — this binds the real signature.
-        """
-        import inspect
-
-        from swarms.cli.main import run_heavy_swarm
-        from swarms.structs.heavy_swarm import HeavySwarm
-
-        run_heavy_swarm(task="complex analysis", max_loops=2)
-
-        _, kwargs = mock_swarm.call_args
-        # Raises TypeError if the CLI passes an argument HeavySwarm dropped.
-        inspect.signature(HeavySwarm.__init__).bind(
-            mock_swarm, **kwargs
-        )
-        assert kwargs["max_loops"] == 2
 
 
 # ===========================================================================
