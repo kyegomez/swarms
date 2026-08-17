@@ -258,9 +258,13 @@ class CronJob:
         try:
             logger.debug(f"Executing task for job {self.job_id}")
 
-            # Execute the agent
-            if isinstance(self.agent, Callable):
-                original_output = self.agent.run(task=task, **kwargs)
+            # Execute the agent. Discriminate on having a run() method, not
+            # on isinstance(Callable): a plain function is Callable too, so
+            # that test sent every function down the .run() path and left the
+            # branch below unreachable.
+            runner = getattr(self.agent, "run", None)
+            if callable(runner):
+                original_output = runner(task=task, **kwargs)
             else:
                 original_output = self.agent(task, **kwargs)
 
