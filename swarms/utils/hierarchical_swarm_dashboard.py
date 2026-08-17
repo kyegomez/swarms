@@ -228,11 +228,16 @@ class HierarchicalSwarmDashboard:
             show_lines=True,
         )
 
+        # Fixed columns consume 25+8+15+40 = 88 chars plus borders/padding (~12).
+        # Give the OUTPUT column whatever remains, with a sensible floor/ceiling.
+        _fixed_cols = 88 + 12
+        _output_width = max(40, min(self.console.width - _fixed_cols, 120))
+
         table.add_column("AGENT ID", style="bold cyan", width=25)
         table.add_column("LOOP", style="bold white", width=8)
         table.add_column("STATUS", style="bold white", width=15)
         table.add_column("TASK", style="white", width=40)
-        table.add_column("OUTPUT", style="white", width=150)
+        table.add_column("OUTPUT", style="white", width=_output_width)
 
         # Display agents with their history across loops
         for agent_name, history in self.agent_history.items():
