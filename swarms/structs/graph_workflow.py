@@ -722,9 +722,9 @@ class Edge:
 
     def __init__(
         self,
-        source: str = None,
-        target: str = None,
-        metadata: Dict[str, Any] = None,
+        source: Optional[str] = None,
+        target: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
         condition: Optional[Callable[..., bool]] = None,
     ):
         """
