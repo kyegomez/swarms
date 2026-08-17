@@ -1,4 +1,3 @@
-import concurrent.futures
 import os
 from typing import List, Optional
 
@@ -291,7 +290,8 @@ class MixtureOfAgents:
             tasks: Tasks to submit to the mixture in parallel.
 
         Returns:
-            A list of formatted responses as each task completes.
+            A list of formatted responses, one per task, in the order the
+            tasks were given.
         """
         with ContextThreadPoolExecutor(
             max_workers=os.cpu_count()
@@ -299,7 +299,6 @@ class MixtureOfAgents:
             futures = [
                 executor.submit(self.run, task) for task in tasks
             ]
-            return [
-                future.result()
-                for future in concurrent.futures.as_completed(futures)
-            ]
+            # Results are read in submission order, not completion order, so
+            # element i is always the response to tasks[i].
+            return [future.result() for future in futures]

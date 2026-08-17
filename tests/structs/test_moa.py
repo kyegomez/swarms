@@ -264,3 +264,36 @@ def test_mixture_of_agents_real_world_scenario():
     )
 
     assert result is not None
+
+
+def test_run_concurrently_preserves_task_order():
+    """Results must line up with the tasks that produced them.
+
+    run_concurrently collected futures with as_completed, so a task that
+    finished early took an earlier slot in the returned list than the task
+    it belonged to.
+    """
+    import time
+
+    moa = MixtureOfAgents(
+        agents=[
+            Agent(
+                agent_name="Worker-1",
+                model_name="gpt-4o",
+                max_loops=1,
+            )
+        ]
+    )
+
+    delays = {"slow": 0.3, "medium": 0.15, "fast": 0.0}
+
+    def fake_run(task, *args, **kwargs):
+        time.sleep(delays[task])
+        return f"answer for {task}"
+
+    moa.run = fake_run
+
+    tasks = ["slow", "medium", "fast"]
+    results = moa.run_concurrently(tasks)
+
+    assert results == [f"answer for {task}" for task in tasks]

@@ -266,3 +266,38 @@ def test_streaming_majority_voting():
         print("Error in test_streaming_majority_voting:", e)
         print("Logs so far:", logs)
         raise
+
+
+def test_run_concurrently_preserves_task_order():
+    """Results must line up with the tasks that produced them.
+
+    run_concurrently collected futures with as_completed, so the returned
+    list was in completion order: a fast task's vote landed at the index of
+    a slow one, and callers zipping tasks with results filed every answer
+    under the wrong task.
+    """
+    import time
+
+    voting = MajorityVoting(
+        agents=[
+            Agent(
+                agent_name="Voter-1",
+                model_name="gpt-4o",
+                max_loops=1,
+            )
+        ]
+    )
+
+    # Reverse-ordered delays: without the fix the last task finishes first.
+    delays = {"slow": 0.3, "medium": 0.15, "fast": 0.0}
+
+    def fake_run(task, *args, **kwargs):
+        time.sleep(delays[task])
+        return f"vote for {task}"
+
+    voting.run = fake_run
+
+    tasks = ["slow", "medium", "fast"]
+    results = voting.run_concurrently(tasks)
+
+    assert results == [f"vote for {task}" for task in tasks]
