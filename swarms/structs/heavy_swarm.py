@@ -600,7 +600,7 @@ class HeavySwarm(SerializableMixin):
         def execute_agent(agent_info):
             agent_type, agent, question = agent_info
             try:
-                result = agent.run(question)
+                result = agent.run(question, img=img)
 
                 self.conversation.add(
                     role=agent.agent_name,
@@ -927,7 +927,7 @@ class HeavySwarm(SerializableMixin):
                     tracker.processing(agent_key, agent_type)
                     tracker.executing(agent_key, agent_type)
 
-                    result = agent.run(question)
+                    result = agent.run(question, img=img)
 
                     tracker.responding(agent_key, agent_type)
 
