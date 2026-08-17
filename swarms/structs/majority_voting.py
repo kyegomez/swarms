@@ -1,4 +1,3 @@
-import concurrent.futures
 import os
 from typing import Any, Callable, List, Optional
 
@@ -291,7 +290,6 @@ class MajorityVoting:
                 executor.submit(self.run, task, *args, **kwargs)
                 for task in tasks
             ]
-            return [
-                future.result()
-                for future in concurrent.futures.as_completed(futures)
-            ]
+            # Results are read in submission order, not completion order, so
+            # element i is always the vote for tasks[i].
+            return [future.result() for future in futures]
