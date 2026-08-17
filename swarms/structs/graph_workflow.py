@@ -672,6 +672,20 @@ class NodeType(str, Enum):
     SUBGRAPH = "subgraph"
 
 
+def _parse_node_type(value: Any) -> "NodeType":
+    """Parse a serialized node type back into a `NodeType`.
+
+    Accepts the canonical value ("agent"), a `NodeType` instance, and the
+    legacy `str(NodeType.AGENT)` form ("NodeType.AGENT") that older exports
+    wrote, so workflows saved before the serialization fix still load.
+    """
+    if isinstance(value, NodeType):
+        return value
+    if isinstance(value, str) and value.startswith("NodeType."):
+        return NodeType[value.split(".", 1)[1]]
+    return NodeType(value)
+
+
 class Node:
     """
     Represents a node in a graph workflow.  A node can be either an Agent or
@@ -3207,7 +3221,12 @@ class GraphWorkflow:
             def node_to_dict(node: Node) -> Dict[str, Any]:
                 node_data = {
                     "id": node.id,
-                    "type": str(node.type),
+                    # `str(NodeType.AGENT)` renders as "NodeType.AGENT", which
+                    # `from_json` cannot parse back (`NodeType("NodeType.AGENT")`
+                    # raises ValueError). Emit the enum *value* ("agent") so the
+                    # round trip works. `Node.type` is not coerced in
+                    # `__init__`, so tolerate a plain string too.
+                    "type": getattr(node.type, "value", node.type),
                     "metadata": node.metadata,
                 }
 
@@ -3410,7 +3429,7 @@ class GraphWorkflow:
 
                     node = Node(
                         id=n["id"],
-                        type=NodeType(n["type"]),
+                        type=_parse_node_type(n["type"]),
                         agent=agent,
                         metadata=n.get("metadata", {}),
                     )

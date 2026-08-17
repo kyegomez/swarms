@@ -1,4 +1,5 @@
 import hashlib
+import json
 
 import pytest
 
@@ -7,6 +8,7 @@ from swarms.structs.graph_workflow import (
     GraphWorkflow,
     Node,
     NodeType,
+    _parse_node_type,
 )
 
 try:
@@ -1335,6 +1337,77 @@ def test_visualize_sanitizes_the_workflow_name_into_the_output_path():
     )
     assert "/" not in safe
     assert safe == "team_alpha"
+
+
+def test_to_json_node_type_round_trips():
+    """`to_json` must emit a node type that `from_json` can parse back.
+
+    Regression test: `to_json` wrote `str(node.type)`, which renders as
+    "NodeType.AGENT", but the loader parses it with `NodeType(...)`, which
+    only accepts the enum *value* ("agent"). Every node hit
+    `'NodeType.AGENT' is not a valid NodeType`, was skipped by the
+    deserialize loop, and `from_json` then failed on the first edge with
+    "Source node ... does not exist in GraphWorkflow".
+    """
+    workflow = GraphWorkflow(name="RoundTrip", auto_compile=False)
+    workflow.add_node(create_test_agent("alpha"))
+    workflow.add_node(create_test_agent("beta"))
+    workflow.add_edge("alpha", "beta")
+
+    payload = json.loads(workflow.to_json())
+
+    # Serialized form is the enum value, not its repr.
+    assert [n["type"] for n in payload["nodes"]] == ["agent", "agent"]
+
+    # And it survives the parse the loader actually performs.
+    for node in payload["nodes"]:
+        assert _parse_node_type(node["type"]) is NodeType.AGENT
+
+
+def test_parse_node_type_accepts_legacy_and_canonical_forms():
+    """Workflows exported before the fix must still load."""
+    # canonical
+    assert _parse_node_type("agent") is NodeType.AGENT
+    assert _parse_node_type("subgraph") is NodeType.SUBGRAPH
+    # legacy `str(NodeType.X)` written by the old to_json
+    assert _parse_node_type("NodeType.AGENT") is NodeType.AGENT
+    assert _parse_node_type("NodeType.SUBGRAPH") is NodeType.SUBGRAPH
+    # already an enum
+    assert _parse_node_type(NodeType.AGENT) is NodeType.AGENT
+
+    with pytest.raises((ValueError, KeyError)):
+        _parse_node_type("not-a-node-type")
+
+
+def test_from_json_reconstructs_nodes_and_edges():
+    """A to_json -> from_json round trip preserves the graph topology.
+
+    Agent objects themselves are still not rebuilt (`Agent` has no
+    `from_dict` inverse) â€” that is the separate half of the report. What
+    this asserts is that the round trip no longer collapses to zero nodes.
+    """
+    workflow = GraphWorkflow(name="RoundTrip", auto_compile=False)
+    workflow.add_node(create_test_agent("alpha"))
+    workflow.add_node(create_test_agent("beta"))
+    workflow.add_edge("alpha", "beta")
+
+    payload = json.loads(workflow.to_json())
+
+    rebuilt = [
+        Node(
+            id=n["id"],
+            type=_parse_node_type(n["type"]),
+            agent=None,
+            metadata=n.get("metadata", {}),
+        )
+        for n in payload["nodes"]
+    ]
+
+    assert [n.id for n in rebuilt] == ["alpha", "beta"]
+    assert all(n.type is NodeType.AGENT for n in rebuilt)
+    assert [(e["source"], e["target"]) for e in payload["edges"]] == [
+        ("alpha", "beta")
+    ]
 
 
 if __name__ == "__main__":
