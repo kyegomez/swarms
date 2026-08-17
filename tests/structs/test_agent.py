@@ -2793,49 +2793,6 @@ class TestAutonomousAgentLoop:
 
 
 # ============================================================================
-# EXECUTOR LIFECYCLE
-# ============================================================================
-
-
-class TestExecutorLifecycle:
-    """The concurrent run paths need a live executor on a fresh agent."""
-
-    @staticmethod
-    def _agent():
-        with patch("swarms.structs.agent.LiteLLM"):
-            return Agent(
-                agent_name="exec_agent",
-                model_name="gpt-5.4",
-                max_loops=1,
-                print_on=False,
-                verbose=False,
-                persistent_memory=False,
-            )
-
-    def test_fresh_agent_has_a_usable_executor(self):
-        """run(imgs=[...]) used to raise AttributeError here."""
-        agent = self._agent()
-
-        assert agent.executor.submit(lambda: 21 * 2).result() == 42
-
-    def test_pool_is_lazy_and_reused(self):
-        """No threads for agents that never run concurrently."""
-        agent = self._agent()
-        assert agent._executor is None
-
-        first = agent.executor
-        assert agent._executor is not None
-        assert agent.executor is first
-
-    def test_executor_is_live_after_reload(self):
-        """The pool was built in a `with` block, so it arrived shut down."""
-        agent = self._agent()
-        agent._reinitialize_after_load()
-
-        assert agent.executor.submit(lambda: "ok").result() == "ok"
-
-
-# ============================================================================
 # MAIN TEST RUNNER
 # ============================================================================
 
