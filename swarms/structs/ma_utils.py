@@ -2,8 +2,6 @@ import random
 from functools import lru_cache
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from loguru import logger
-
 from swarms.prompts.collaborative_prompts import (
     get_multi_agent_collaboration_prompt_one,
 )
@@ -145,18 +143,26 @@ def _create_agent_map_cached(
     agent_tuple: tuple,
 ) -> Dict[str, Union[Callable, Any]]:
     """Internal cached version of create_agent_map that takes a tuple for hashability."""
-    try:
-        return {
-            (
-                agent.agent_name
-                if isinstance(agent, Callable)
-                else agent.__name__
-            ): agent
-            for agent in agent_tuple
-        }
-    except (AttributeError, TypeError) as e:
-        logger.error(f"Error creating agent map: {e}")
-        return {}
+    # An Agent instance and a plain function are both `Callable`, so branching
+    # on isinstance sent functions down the `agent_name` path and raised. Ask
+    # for the attributes in preference order instead.
+    agent_map: Dict[str, Union[Callable, Any]] = {}
+
+    for agent in agent_tuple:
+        name = getattr(agent, "agent_name", None) or getattr(
+            agent, "__name__", None
+        )
+        if name is None:
+            # Raise rather than return an empty map: lru_cache memoises a
+            # returned value, so one unusable agent would keep serving an
+            # empty map for this roster for the life of the process.
+            raise TypeError(
+                f"Cannot key {agent!r} in the agent map: it has neither "
+                "an agent_name attribute nor a __name__."
+            )
+        agent_map[name] = agent
+
+    return agent_map
 
 
 def create_agent_map(
