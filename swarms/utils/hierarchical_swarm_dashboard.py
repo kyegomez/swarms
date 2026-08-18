@@ -537,7 +537,6 @@ class HierarchicalSwarmDashboard:
                 title=f"[bold white]FULL OUTPUT - {agent_name}[/bold white]",
                 border_style="red",
                 padding=(1, 2),
-                width=120,
             )
 
             # Temporarily show the full output
