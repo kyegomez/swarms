@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import tempfile
+import threading
 import time
 import unittest
 from statistics import mean, median, stdev, variance
@@ -3069,3 +3070,103 @@ class TestToolExecutionRetry:
             assert (
                 len(calls) == 1
             ), f"attempts={attempts!r} should still run once"
+
+
+class TestConcurrentExecutionPool:
+    """#1793: Agent's concurrent entry points referenced self.executor, which
+    __init__ never assigned. run_concurrent_tasks caught the resulting
+    AttributeError and returned None; talk_to_multiple_agents raised it. Both
+    now build a call-scoped pool, so neither depends on an Agent attribute.
+    """
+
+    @staticmethod
+    def _agent(name="A"):
+        """A bare Agent carrying only what the concurrent paths touch — no
+        __init__, so no model client, memory files or provider calls.
+        """
+        agent = Agent.__new__(Agent)
+        agent.agent_name = name
+        return agent
+
+    def test_no_executor_attribute_is_required(self):
+        """The regression itself: the concurrent paths must not depend on an
+        instance attribute that __init__ does not set."""
+        agent = self._agent()
+        assert not hasattr(agent, "executor")
+
+    def test_run_concurrent_tasks_returns_one_result_per_task_in_order(
+        self,
+    ):
+        agent = self._agent()
+        with patch.object(
+            Agent,
+            "run",
+            side_effect=lambda task, *a, **kw: f"ran:{task}",
+        ):
+            results = Agent.run_concurrent_tasks(
+                agent, ["t1", "t2", "t3"]
+            )
+
+        # Order matters: results are zipped against the caller's task list.
+        assert results == ["ran:t1", "ran:t2", "ran:t3"]
+
+    def test_run_concurrent_tasks_propagates_failure(self):
+        """Previously the except branch logged and fell through, so a failed
+        batch returned None and the caller saw no error at all."""
+        agent = self._agent()
+        with patch.object(
+            Agent, "run", side_effect=RuntimeError("boom")
+        ):
+            with pytest.raises(RuntimeError, match="boom"):
+                Agent.run_concurrent_tasks(agent, ["t1"])
+
+    def test_talk_to_multiple_agents_returns_one_entry_per_agent(
+        self,
+    ):
+        agent = self._agent()
+        others = [self._agent("B"), self._agent("C")]
+        with patch.object(
+            Agent,
+            "talk_to",
+            side_effect=lambda other, task, *a, **kw: f"to:{other.agent_name}",
+        ):
+            outputs = Agent.talk_to_multiple_agents(
+                agent, others, "hi"
+            )
+
+        assert outputs == ["to:B", "to:C"]
+
+    def test_talk_to_multiple_agents_isolates_a_failing_agent(self):
+        """One bad conversation contributes None; the others still return."""
+        agent = self._agent()
+        others = [self._agent("B"), self._agent("C")]
+
+        def talk(other, task, *a, **kw):
+            if other.agent_name == "B":
+                raise RuntimeError("dead")
+            return f"to:{other.agent_name}"
+
+        with patch.object(Agent, "talk_to", side_effect=talk):
+            outputs = Agent.talk_to_multiple_agents(
+                agent, others, "hi"
+            )
+
+        assert outputs == [None, "to:C"]
+
+    def test_pool_is_shut_down_after_each_call(self):
+        """The pool is call-scoped, so an agent used repeatedly must not leak a
+        thread pool per call."""
+        agent = self._agent()
+        before = threading.active_count()
+        with patch.object(
+            Agent, "run", side_effect=lambda task, *a, **kw: task
+        ):
+            for _ in range(3):
+                Agent.run_concurrent_tasks(agent, ["t1", "t2"])
+
+        # Worker threads are joined on __exit__; allow a moment for teardown.
+        for _ in range(50):
+            if threading.active_count() <= before:
+                break
+            time.sleep(0.02)
+        assert threading.active_count() <= before
