@@ -163,8 +163,14 @@ class Conversation:
             extension = (
                 ".json" if self.export_method == "json" else ".yaml"
             )
-            self.save_filepath = (
-                f"conversation_{self.name}{extension}"
+            # Under conversations_dir, not the process's working directory:
+            # a bare relative name dropped conversation_<name>.json wherever
+            # the program happened to run from, and two conversations sharing
+            # a name in different directories silently loaded each other's
+            # history.
+            self.save_filepath = os.path.join(
+                self.conversations_dir or get_conversation_dir(),
+                f"conversation_{self.name}{extension}",
             )
             logger.debug(
                 f"Setting default save filepath to: {self.save_filepath}"
