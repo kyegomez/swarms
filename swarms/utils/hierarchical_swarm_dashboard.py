@@ -334,7 +334,7 @@ class HierarchicalSwarmDashboard:
         director_text.append("CURRENT ORDERS:\n", style="bold white")
         if self.director_orders:
             for i, order in enumerate(
-                self.director_orders
+                self.director_orders[:5]
             ):  # Show first 5 orders
                 director_text.append(f"{i + 1}. ", style="bold cyan")
                 director_text.append(
