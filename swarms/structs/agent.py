@@ -4025,12 +4025,13 @@ Summary: {summary}
         - If tool execution fails, the method automatically retries
         - Maximum retry attempts are controlled by self.tool_retry_attempts (default: 3)
         - Each retry is logged with detailed error information
-        - After all retries are exhausted, the exception is re-raised
+        - After all retries are exhausted, AgentToolExecutionError is raised,
+          chained from the last underlying error via `raise ... from`
 
         **Error Handling:**
         - None responses: Logs warning and skips execution (does not raise)
-        - AgentToolExecutionError: Logs error with full traceback and retries
-        - Other exceptions: Logs error and retries
+        - Any exception from execute_tools: Logs error with full traceback and
+          retries, since execute_tools re-raises the tool's own exception type
 
         **Logging:**
         All errors are logged with:
@@ -4073,20 +4074,40 @@ Summary: {summary}
             >>> agent.tool_execution_retry(None, loop_count=2)
             >>> # Logs warning but does not raise exception
         """
-        try:
-            if response is not None:
+        if response is None:
+            logger.warning(
+                f"Agent '{self.agent_name}' received None response from LLM in loop {loop_count}. "
+                f"This may indicate an issue with the model or prompt. Skipping tool execution."
+            )
+            return
+
+        # execute_tools re-raises whatever the tool raised, and nothing in the
+        # framework raises AgentToolExecutionError, so catching only that type
+        # caught nothing. Catch broadly here, which is also what the docstring
+        # promises ("Other exceptions: Logs error and retries").
+        attempts = max(1, int(self.tool_retry_attempts or 1))
+        last_error: Optional[Exception] = None
+
+        for attempt in range(1, attempts + 1):
+            try:
                 self.execute_tools(
                     response=response,
                     loop_count=loop_count,
                 )
-            else:
-                logger.warning(
-                    f"Agent '{self.agent_name}' received None response from LLM in loop {loop_count}. "
-                    f"This may indicate an issue with the model or prompt. Skipping tool execution."
+                return
+            except Exception as e:
+                last_error = e
+                logger.error(
+                    f"Agent '{self.agent_name}' tool execution failed on attempt "
+                    f"{attempt}/{attempts} in loop {loop_count}: {str(e)}. "
+                    f"Full traceback: {traceback.format_exc()}"
                 )
-        except AgentToolExecutionError as e:
-            logger.error(
-                f"Agent '{self.agent_name}' encountered error during tool execution in loop {loop_count}: {str(e)}. "
-                f"Full traceback: {traceback.format_exc()}. "
-                f"Attempting to retry tool execution with 3 attempts"
-            )
+
+        # Attempts exhausted. Raising is what the docstring specifies, and it is
+        # the only way the caller learns the tools did not run — returning here
+        # left `short_memory` with no Tool Executor entry, so the model saw the
+        # call as having produced nothing and carried on as if it had succeeded.
+        raise AgentToolExecutionError(
+            f"Agent '{self.agent_name}' failed to execute tools in loop "
+            f"{loop_count} after {attempts} attempt(s): {last_error}"
+        ) from last_error

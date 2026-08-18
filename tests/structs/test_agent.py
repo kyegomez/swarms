@@ -21,6 +21,7 @@ from swarms import (
     create_agents_from_yaml,
 )
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
+from swarms.schemas.agent_errors import AgentToolExecutionError
 
 # Load environment variables
 load_dotenv()
@@ -2952,3 +2953,119 @@ class TestEmptyTaskGuard:
 
         with pytest.raises(ValueError, match="No task provided"):
             Agent.run(agent, empty_task)
+
+
+class TestToolExecutionRetry:
+    """#1794: tool_execution_retry promised `tool_retry_attempts` retries and a
+    re-raise once exhausted. It called execute_tools exactly once, caught only
+    AgentToolExecutionError — a type nothing in the framework raises — and
+    returned, so a failed tool run left no Tool Executor entry in short_memory
+    and the model carried on as though the call had succeeded.
+    """
+
+    @staticmethod
+    def _agent(attempts=3, name="A"):
+        """A bare Agent carrying only what tool_execution_retry reads."""
+        agent = Agent.__new__(Agent)
+        agent.agent_name = name
+        agent.tool_retry_attempts = attempts
+        return agent
+
+    def test_retries_up_to_the_configured_attempts(self):
+        agent = self._agent(attempts=5)
+        calls = []
+
+        def failing(response, loop_count):
+            calls.append(loop_count)
+            raise RuntimeError("simulated tool failure")
+
+        agent.execute_tools = failing
+        with pytest.raises(AgentToolExecutionError):
+            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+
+        # The regression: this was 1 regardless of tool_retry_attempts.
+        assert len(calls) == 5
+
+    def test_default_attempts_are_honoured(self):
+        agent = self._agent(attempts=3)
+        calls = []
+        agent.execute_tools = lambda response, loop_count: (
+            calls.append(1),
+            (_ for _ in ()).throw(RuntimeError("boom")),
+        )
+        with pytest.raises(AgentToolExecutionError):
+            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+        assert len(calls) == 3
+
+    def test_failure_is_raised_not_swallowed(self):
+        """Returning None here is what hid tool failures: the caller saw no
+        error and short_memory carried no Tool Executor entry."""
+        agent = self._agent(attempts=1)
+
+        def failing(response, loop_count):
+            raise RuntimeError("simulated tool failure")
+
+        agent.execute_tools = failing
+        with pytest.raises(AgentToolExecutionError) as excinfo:
+            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+
+        # The underlying error is chained, not discarded.
+        assert isinstance(excinfo.value.__cause__, RuntimeError)
+        assert "simulated tool failure" in str(
+            excinfo.value.__cause__
+        )
+
+    def test_catches_the_exception_types_actually_raised(self):
+        """execute_tools re-raises the tool's own exception verbatim and nothing
+        raises AgentToolExecutionError, so catching only that type caught
+        nothing. A plain ValueError must be retried like any other failure.
+        """
+        agent = self._agent(attempts=2)
+        calls = []
+
+        def failing(response, loop_count):
+            calls.append(1)
+            raise ValueError("a tool's own error type")
+
+        agent.execute_tools = failing
+        with pytest.raises(AgentToolExecutionError):
+            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+        assert len(calls) == 2
+
+    def test_stops_retrying_once_a_attempt_succeeds(self):
+        agent = self._agent(attempts=4)
+        calls = []
+
+        def flaky(response, loop_count):
+            calls.append(1)
+            if len(calls) < 3:
+                raise RuntimeError("transient")
+
+        agent.execute_tools = flaky
+        Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+
+        # Third attempt succeeded, so the fourth must not run.
+        assert len(calls) == 3
+
+    def test_none_response_does_not_execute_or_raise(self):
+        agent = self._agent()
+        called = []
+        agent.execute_tools = lambda **kw: called.append(1)
+
+        Agent.tool_execution_retry(agent, None, 1)
+        assert called == []
+
+    def test_a_zero_or_none_attempt_count_still_runs_once(self):
+        """tool_retry_attempts is caller-supplied; 0 must not mean 'never run
+        the tools', which would silently disable tool execution entirely.
+        """
+        for attempts in (0, None):
+            agent = self._agent(attempts=attempts)
+            calls = []
+            agent.execute_tools = (
+                lambda response, loop_count: calls.append(1)
+            )
+            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            assert (
+                len(calls) == 1
+            ), f"attempts={attempts!r} should still run once"
