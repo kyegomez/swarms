@@ -229,11 +229,13 @@ class HierarchicalSwarmDashboard:
             expand=True,
         )
 
-        table.add_column("AGENT ID", style="bold cyan",  no_wrap=True, ratio=2)
-        table.add_column("LOOP",     style="bold white", no_wrap=True, ratio=1)
-        table.add_column("STATUS",   style="bold white", no_wrap=True, ratio=2)
-        table.add_column("TASK",     style="white",                    ratio=3)
-        table.add_column("OUTPUT",   style="white",                    ratio=4)
+        # Identity columns: fixed minimum widths, no wrapping.
+        # Content columns: share remaining space by ratio.
+        table.add_column("AGENT ID", style="bold cyan",  no_wrap=True, min_width=15)
+        table.add_column("LOOP",     style="bold white", no_wrap=True, min_width=7)
+        table.add_column("STATUS",   style="bold white", no_wrap=True, min_width=13)
+        table.add_column("TASK",     style="white",      ratio=2)
+        table.add_column("OUTPUT",   style="white",      ratio=3)
 
         # Display agents with their history across loops
         for agent_name, history in self.agent_history.items():
@@ -367,34 +369,19 @@ class HierarchicalSwarmDashboard:
         """Create the complete dashboard layout."""
         layout = Layout()
 
-        # Split into operations status, director operations, and agents
         layout.split_column(
-            Layout(name="operations_status", size=12),
-            Layout(name="director_operations", size=12),
+            Layout(name="operations_status", size=13),
+            Layout(name="director_operations", size=11),
             Layout(name="agents", ratio=1),
         )
 
-        # Add content to each section
-        layout["operations_status"].update(
-            self._create_status_panel()
-        )
-        layout["director_operations"].update(
-            self._create_director_panel()
-        )
+        layout["operations_status"].update(self._create_status_panel())
+        layout["director_operations"].update(self._create_director_panel())
 
-        # Choose between table view and detailed view
         if self.detailed_view:
-            layout["agents"].update(
-                self._create_detailed_agents_view()
-            )
+            layout["agents"].update(self._create_detailed_agents_view())
         else:
-            layout["agents"].update(
-                Panel(
-                    self._create_agents_table(),
-                    border_style="red",
-                    padding=(1, 1),
-                )
-            )
+            layout["agents"].update(self._create_agents_table())
 
         return layout
 
@@ -421,11 +408,7 @@ class HierarchicalSwarmDashboard:
                 )
             else:
                 self._layout["agents"].update(
-                    Panel(
-                        self._create_agents_table(),
-                        border_style="red",
-                        padding=(1, 1),
-                    )
+                    self._create_agents_table()
                 )
         else:
             return
