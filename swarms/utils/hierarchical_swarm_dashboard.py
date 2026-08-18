@@ -80,6 +80,9 @@ class HierarchicalSwarmDashboard:
         self.agent_history = {}  # Track agent outputs across loops
         self.current_loop = 0
 
+        # Tracks loops that have fully completed (drives the PROGRESS display)
+        self.completed_loops = 0
+
         # Cached layout — rebuilt once in start(), sections updated in-place
         self._layout: Optional[Layout] = None
 
@@ -199,10 +202,12 @@ class HierarchicalSwarmDashboard:
             status_text.append("RUNTIME: ", style="bold white")
             status_text.append(f"{runtime:.2f}s", style="bold green")
 
-            # Add completion percentage if loops are running
+            # Add completion percentage based on fully-finished loops.
+            # current_loop is set at loop START, so using it would show 100%
+            # before the last loop's agents have executed.
             if self.max_loops > 0:
                 completion_percent = (
-                    self.current_loop / self.max_loops
+                    self.completed_loops / self.max_loops
                 ) * 100
                 status_text.append("  |  ", style="white")
                 status_text.append("PROGRESS: ", style="bold white")
@@ -337,7 +342,7 @@ class HierarchicalSwarmDashboard:
         director_text.append("CURRENT ORDERS:\n", style="bold white")
         if self.director_orders:
             for i, order in enumerate(
-                self.director_orders
+                self.director_orders[:5]
             ):  # Show first 5 orders
                 director_text.append(f"{i + 1}. ", style="bold cyan")
                 director_text.append(
@@ -487,6 +492,11 @@ class HierarchicalSwarmDashboard:
             self.live_display.stop()
             self.console.print()
 
+    def mark_loop_complete(self):
+        """Increment the completed-loops counter and refresh progress display."""
+        self.completed_loops += 1
+        self._refresh_section("operations_status")
+
     def update_swarm_info(
         self,
         name: str,
@@ -521,7 +531,6 @@ class HierarchicalSwarmDashboard:
                 title=f"[bold white]FULL OUTPUT - {agent_name}[/bold white]",
                 border_style="red",
                 padding=(1, 2),
-                width=120,
             )
 
             # Temporarily show the full output

@@ -974,6 +974,9 @@ class HierarchicalSwarm:
                     content=f"--- Loop {current_loop}/{self.max_loops} completed ---",
                 )
 
+                if self.interactive and self.dashboard:
+                    self.dashboard.mark_loop_complete()
+
             # Stop dashboard if in interactive mode
             if self.interactive and self.dashboard:
                 self.dashboard.update_director_status("COMPLETED")
