@@ -38,7 +38,6 @@ from swarms.utils.output_types import OutputType
 from swarms.utils.swarm_autosave import get_swarm_workspace_dir
 from swarms.utils.generate_id import generate_id
 
-
 # ─── Pydantic Models ─────────────────────────────────────────────
 
 
@@ -246,7 +245,8 @@ class SkillOrchestra:
         print_on: Whether to print panels to console.
 
     Example:
-        >>> from swarms import Agent, SkillOrchestra
+        >>> from swarms import Agent
+        >>> from examples.multi_agent.skill_orchestra_examples.skill_orchestra import SkillOrchestra
         >>> agents = [
         ...     Agent(agent_name="CodeExpert", description="Expert Python developer"),
         ...     Agent(agent_name="Writer", description="Technical writing specialist"),
@@ -580,9 +580,10 @@ class SkillOrchestra:
         selected: List[AgentSelectionResult],
         task: str,
         img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
         **kwargs,
     ) -> List[Dict[str, Any]]:
-        """Run selected agents on the task."""
+        """Run selected agents on the task, forwarding img, imgs, and kwargs directly."""
         results = []
 
         if len(selected) == 1:
@@ -597,7 +598,18 @@ class SkillOrchestra:
                     f"Executing agent '{sel.agent_name}' on task"
                 )
 
-            response = agent.run(task=agent_task, img=img)
+            target = (
+                agent.run
+                if hasattr(agent, "run")
+                and callable(getattr(agent, "run"))
+                else agent
+            )
+            response = target(
+                task=agent_task,
+                img=img,
+                imgs=imgs,
+                **kwargs,
+            )
 
             self.conversation.add(
                 role=sel.agent_name, content=str(response)
@@ -620,8 +632,18 @@ class SkillOrchestra:
                         self.agents, sel.agent_name
                     )
                     agent_task = sel.assigned_task or task
+                    target = (
+                        agent.run
+                        if hasattr(agent, "run")
+                        and callable(getattr(agent, "run"))
+                        else agent
+                    )
                     future = executor.submit(
-                        agent.run, task=agent_task, img=img
+                        target,
+                        task=agent_task,
+                        img=img,
+                        imgs=imgs,
+                        **kwargs,
                     )
                     future_to_agent[future] = sel.agent_name
 
@@ -859,7 +881,11 @@ class SkillOrchestra:
 
                 # Step 4: Execute
                 results = self._execute_agents(
-                    selected, current_task, img=img, **kwargs
+                    selected,
+                    current_task,
+                    img=img,
+                    imgs=imgs,
+                    **kwargs,
                 )
 
                 # Step 5: Learn
