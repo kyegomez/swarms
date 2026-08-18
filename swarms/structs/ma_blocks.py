@@ -128,18 +128,6 @@ _FIND_AGENT_INDEX_CACHE: dict = {}
 _FIND_AGENT_INDEX_CACHE_MAX = 256
 
 
-def _build_agent_name_index(agents):
-    index = {}
-    for agent in agents:
-        name = getattr(agent, "agent_name", None)
-        if name is not None:
-            index[name] = agent
-        alt = getattr(agent, "name", None)
-        if alt is not None and alt != name:
-            index[alt] = agent
-    return index
-
-
 def find_agent_by_name(
     agents: List[Union[Agent, Callable]], agent_name: str
 ) -> Agent:
@@ -164,36 +152,23 @@ def find_agent_by_name(
     if not agents:
         raise ValueError("Agents list cannot be empty")
 
-    if not isinstance(agent_name, str):
-        raise TypeError("Agent name must be a string")
+    if not isinstance(agent_name, str) or not agent_name.strip():
+        raise (
+            TypeError("Agent name must be a string")
+            if not isinstance(agent_name, str)
+            else ValueError(
+                "Agent name cannot be empty or whitespace"
+            )
+        )
 
-    if not agent_name.strip():
-        raise ValueError("Agent name cannot be empty or whitespace")
-
-    key = id(agents)
-    length = len(agents)
-    cached = _FIND_AGENT_INDEX_CACHE.get(key)
-    if cached is None or cached[0] != length:
-        if (
-            len(_FIND_AGENT_INDEX_CACHE)
-            >= _FIND_AGENT_INDEX_CACHE_MAX
-        ):
-            _FIND_AGENT_INDEX_CACHE.clear()
-        index = _build_agent_name_index(agents)
-        _FIND_AGENT_INDEX_CACHE[key] = (length, index)
-    else:
-        index = cached[1]
-
-    agent = index.get(agent_name)
-    if agent is not None:
-        return agent
-
-    index = _build_agent_name_index(agents)
-    _FIND_AGENT_INDEX_CACHE[key] = (length, index)
-    agent = index.get(agent_name)
-    if agent is None:
+    try:
+        return next(
+            agent
+            for agent in agents
+            if agent.agent_name == agent_name
+        )
+    except StopIteration:
         raise ValueError(f"Agent with name '{agent_name}' not found")
-    return agent
 
 
 def find_agent_by_id(
