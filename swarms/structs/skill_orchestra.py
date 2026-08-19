@@ -580,9 +580,16 @@ class SkillOrchestra:
         selected: List[AgentSelectionResult],
         task: str,
         img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
         **kwargs,
     ) -> List[Dict[str, Any]]:
-        """Run selected agents on the task."""
+        """Run selected agents on the task.
+
+        ``imgs`` and any extra ``kwargs`` are forwarded to every selected
+        agent. They used to stop here: the agents were invoked with only
+        ``task`` and ``img``, so a caller passing multiple images or e.g.
+        ``streaming_callback`` got silence rather than an error.
+        """
         results = []
 
         if len(selected) == 1:
@@ -597,7 +604,9 @@ class SkillOrchestra:
                     f"Executing agent '{sel.agent_name}' on task"
                 )
 
-            response = agent.run(task=agent_task, img=img)
+            response = agent.run(
+                task=agent_task, img=img, imgs=imgs, **kwargs
+            )
 
             self.conversation.add(
                 role=sel.agent_name, content=str(response)
@@ -621,7 +630,11 @@ class SkillOrchestra:
                     )
                     agent_task = sel.assigned_task or task
                     future = executor.submit(
-                        agent.run, task=agent_task, img=img
+                        agent.run,
+                        task=agent_task,
+                        img=img,
+                        imgs=imgs,
+                        **kwargs,
                     )
                     future_to_agent[future] = sel.agent_name
 
@@ -859,7 +872,11 @@ class SkillOrchestra:
 
                 # Step 4: Execute
                 results = self._execute_agents(
-                    selected, current_task, img=img, **kwargs
+                    selected,
+                    current_task,
+                    img=img,
+                    imgs=imgs,
+                    **kwargs,
                 )
 
                 # Step 5: Learn
