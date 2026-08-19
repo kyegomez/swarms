@@ -64,7 +64,6 @@ from swarms.structs.planner_generator_evaluator import (
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.self_moa_seq import SelfMoASeq
 from swarms.structs.sequential_workflow import SequentialWorkflow
-from swarms.structs.skill_orchestra import SkillOrchestra
 from swarms.structs.social_algorithms import SocialAlgorithms
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.swarm_rearrange import SwarmRearrange
@@ -139,7 +138,6 @@ __all__ = [
     "AgentLoader",
     "BatchedGridWorkflow",
     "SelfMoASeq",
-    "SkillOrchestra",
     "DebateWithJudge",
     "PlannerGeneratorEvaluator",
     "StepContract",
