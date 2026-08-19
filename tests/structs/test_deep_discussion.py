@@ -1,3 +1,4 @@
+import os
 import pytest
 from loguru import logger
 from swarms.structs.deep_discussion import one_on_one_debate
@@ -38,6 +39,24 @@ def sample_agents():
 def sample_task():
     return "Should artificial intelligence be regulated?"
 
+
+
+# Live-LLM tests: they call agent.run() against a real model and can only
+# pass with an API key. Without one, Agent.run now honestly raises
+# AgentLLMError after retry exhaustion, so these tests are skipped instead
+# of failing (same convention as tests/telemetry/test_telemetry.py).
+_LLM_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GROQ_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENROUTER_API_KEY",
+)
+_HAS_LLM_KEY = any(os.getenv(k) for k in _LLM_KEYS)
+requires_llm = pytest.mark.skipif(
+    not _HAS_LLM_KEY,
+    reason="no LLM API key set (OPENAI_API_KEY etc.) - live-LLM test skipped",
+)
 
 def test_one_on_one_debate_basic(sample_agents, sample_task):
     try:
@@ -143,6 +162,7 @@ def test_one_on_one_debate_with_image(sample_agents):
         raise
 
 
+@requires_llm
 def test_one_on_one_debate_custom_output_types(
     sample_agents, sample_task
 ):
@@ -281,6 +301,7 @@ def test_one_on_one_debate_none_task(sample_agents):
         raise
 
 
+@requires_llm
 def test_one_on_one_debate_invalid_output_type(
     sample_agents, sample_task
 ):
@@ -409,6 +430,7 @@ def test_one_on_one_debate_different_agent_personalities():
         raise
 
 
+@requires_llm
 def test_one_on_one_debate_conversation_length_matches_loops(
     sample_agents, sample_task
 ):

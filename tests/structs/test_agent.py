@@ -29,6 +29,23 @@ load_dotenv()
 # Global test configuration
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
+# Live-LLM tests: they call agent.run() against a real model and can only
+# pass with an API key. Without one, Agent.run now honestly raises
+# AgentLLMError after retry exhaustion, so these tests are skipped instead
+# of failing (same convention as tests/telemetry/test_telemetry.py).
+_LLM_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GROQ_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENROUTER_API_KEY",
+)
+_HAS_LLM_KEY = any(os.getenv(k) for k in _LLM_KEYS)
+requires_llm = pytest.mark.skipif(
+    not _HAS_LLM_KEY,
+    reason="no LLM API key set (OPENAI_API_KEY etc.) — live-LLM test skipped",
+)
+
 
 # ============================================================================
 # FIXTURES AND UTILITIES
@@ -175,6 +192,7 @@ class TestBasicAgent:
 class TestAgentFeatures:
     """Test advanced agent features"""
 
+    @requires_llm
     def test_basic_agent_functionality(self):
         """Test basic agent initialization and task execution"""
         print("\nTesting basic agent functionality...")
@@ -337,6 +355,7 @@ class TestAgentFeatures:
 
         print("✓ State management test passed")
 
+    @requires_llm
     def test_agent_tools_and_execution(self):
         """Test agent tool handling and execution"""
         print("\nTesting tools and execution...")
@@ -399,6 +418,7 @@ class TestAgentFeatures:
 
         print("✓ Concurrent execution test passed")
 
+    @requires_llm
     def test_agent_error_handling(self):
         """Test agent error handling and recovery"""
         print("\nTesting error handling...")
@@ -460,6 +480,7 @@ class TestAgentFeatures:
 
         print("✓ Configuration test passed")
 
+    @requires_llm
     def test_agent_with_stopping_condition(self):
         """Test agent with custom stopping condition"""
         print("\nTesting agent with stopping condition...")
@@ -478,6 +499,7 @@ class TestAgentFeatures:
         assert response is not None, "Stopping condition test failed"
         print("✓ Stopping condition test passed")
 
+    @requires_llm
     def test_agent_with_retry_mechanism(self):
         """Test agent retry mechanism"""
         print("\nTesting agent retry mechanism...")
@@ -494,6 +516,7 @@ class TestAgentFeatures:
         assert response is not None, "Retry mechanism test failed"
         print("✓ Retry mechanism test passed")
 
+    @requires_llm
     def test_bulk_and_filtered_operations(self):
         """Test bulk operations and response filtering"""
         print("\nTesting bulk and filtered operations...")
@@ -584,6 +607,7 @@ class TestAgentFeatures:
 
             print("✓ Memory and state persistence test passed")
 
+    @requires_llm
     def test_sentiment_and_evaluation(self):
         """Test sentiment analysis and response evaluation"""
         print("\nTesting sentiment analysis and evaluation...")
@@ -680,6 +704,7 @@ class TestAgentFeatures:
 
         print("✓ System prompt and configuration test passed")
 
+    @requires_llm
     def test_agent_with_dynamic_temperature(self):
         """Test agent with dynamic temperature"""
         print("\nTesting agent with dynamic temperature...")
@@ -1132,6 +1157,7 @@ class TestAgentBenchmark:
 class TestAgentToolUsage:
     """Test comprehensive tool usage functionality for agents"""
 
+    @requires_llm
     def test_normal_callable_tools(self):
         """Test normal callable tools (functions, lambdas, methods)"""
         print("\nTesting normal callable tools...")
@@ -1436,6 +1462,7 @@ class TestAgentToolUsage:
 
         print("✓ BaseTool class tools test passed")
 
+    @requires_llm
     def test_tool_execution_and_error_handling(self):
         """Test tool execution and error handling"""
         print("\nTesting tool execution and error handling...")
@@ -1473,6 +1500,7 @@ class TestAgentToolUsage:
 
         print("✓ Tool execution and error handling test passed")
 
+    @requires_llm
     def test_tool_schema_generation(self):
         """Test tool schema generation and validation"""
         print("\nTesting tool schema generation...")
@@ -1560,6 +1588,7 @@ class TestAgentToolUsage:
 
         print("✓ AOP tools test passed")
 
+    @requires_llm
     def test_tool_choice_and_execution_modes(self):
         """Test different tool choice and execution modes"""
         print("\nTesting tool choice and execution modes...")
@@ -1653,6 +1682,7 @@ class TestAgentToolUsage:
 
         print("✓ Tool system prompts test passed")
 
+    @requires_llm
     def test_tool_parallel_execution(self):
         """Test parallel tool execution capabilities"""
         print("\nTesting parallel tool execution...")
@@ -1688,6 +1718,7 @@ class TestAgentToolUsage:
 
         print("✓ Parallel tool execution test passed")
 
+    @requires_llm
     def test_tool_validation_and_type_checking(self):
         """Test tool validation and type checking"""
         print("\nTesting tool validation and type checking...")
@@ -1746,6 +1777,7 @@ class TestAgentToolUsage:
 
         print("✓ Tool caching and performance test passed")
 
+    @requires_llm
     def test_tool_error_recovery(self):
         """Test tool error recovery and fallback mechanisms"""
         print("\nTesting tool error recovery...")
@@ -1776,6 +1808,7 @@ class TestAgentToolUsage:
 
         print("✓ Tool error recovery test passed")
 
+    @requires_llm
     def test_tool_with_different_output_types(self):
         """Test tools with different output types"""
         print("\nTesting tools with different output types...")
@@ -1821,6 +1854,7 @@ class TestAgentToolUsage:
 
         print("✓ Tools with different output types test passed")
 
+    @requires_llm
     def test_tool_with_async_execution(self):
         """Test tools with async execution"""
         print("\nTesting tools with async execution...")
@@ -1851,6 +1885,7 @@ class TestAgentToolUsage:
 
         print("✓ Tools with async execution test passed")
 
+    @requires_llm
     def test_tool_with_file_operations(self):
         """Test tools that perform file operations"""
         print("\nTesting tools with file operations...")
@@ -1900,6 +1935,7 @@ class TestAgentToolUsage:
 
         print("✓ Tools with file operations test passed")
 
+    @requires_llm
     def test_tool_with_network_operations(self):
         """Test tools that perform network operations"""
         print("\nTesting tools with network operations...")
@@ -1933,6 +1969,7 @@ class TestAgentToolUsage:
 
         print("✓ Tools with network operations test passed")
 
+    @requires_llm
     def test_tool_with_database_operations(self):
         """Test tools that perform database operations"""
         print("\nTesting tools with database operations...")
@@ -1970,6 +2007,7 @@ class TestAgentToolUsage:
 
         print("✓ Tools with database operations test passed")
 
+    @requires_llm
     def test_tool_with_machine_learning_operations(self):
         """Test tools that perform ML operations"""
         print("\nTesting tools with ML operations...")
@@ -2007,6 +2045,7 @@ class TestAgentToolUsage:
 
         print("✓ Tools with ML operations test passed")
 
+    @requires_llm
     def test_tool_with_image_processing(self):
         """Test tools that perform image processing"""
         print("\nTesting tools with image processing...")
@@ -2046,6 +2085,7 @@ class TestAgentToolUsage:
 
         print("✓ Tools with image processing test passed")
 
+    @requires_llm
     def test_tool_with_text_processing(self):
         """Test tools that perform text processing"""
         print("\nTesting tools with text processing...")
@@ -2095,6 +2135,7 @@ class TestAgentToolUsage:
 
         print("✓ Tools with text processing test passed")
 
+    @requires_llm
     def test_tool_with_mathematical_operations(self):
         """Test tools that perform mathematical operations"""
         print("\nTesting tools with mathematical operations...")

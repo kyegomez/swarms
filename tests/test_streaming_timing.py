@@ -10,6 +10,8 @@ Checks
 4. SequentialWorkflow.arun_stream(with_events=True) propagates the events.
 """
 
+import os
+import pytest
 import asyncio
 import statistics
 import time
@@ -385,6 +387,25 @@ async def test_mixed_flow():
 # Test 8: sync run_stream — same pipeline, sync iterator
 # Verifies the threaded-queue bridge in AgentRearrange.run_stream.
 # ---------------------------------------------------------------------------
+
+# Live-LLM tests: they call agent.run() against a real model and can only
+# pass with an API key. Without one, Agent.run now honestly raises
+# AgentLLMError after retry exhaustion, so these tests are skipped instead
+# of failing (same convention as tests/telemetry/test_telemetry.py).
+_LLM_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GROQ_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENROUTER_API_KEY",
+)
+_HAS_LLM_KEY = any(os.getenv(k) for k in _LLM_KEYS)
+requires_llm = pytest.mark.skipif(
+    not _HAS_LLM_KEY,
+    reason="no LLM API key set (OPENAI_API_KEY etc.) - live-LLM test skipped",
+)
+
+@requires_llm
 def test_sync_run_stream():
     workflow = SequentialWorkflow(
         agents=[

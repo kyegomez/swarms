@@ -10,6 +10,7 @@ Covers:
   and batch_size validation (mock-based unit tests)
 """
 
+import os
 import threading
 import time
 from typing import List, Optional
@@ -97,6 +98,24 @@ def _make_pipeline(
 # Initialization Tests
 # ============================================================================
 
+
+
+# Live-LLM tests: they call agent.run() against a real model and can only
+# pass with an API key. Without one, Agent.run now honestly raises
+# AgentLLMError after retry exhaustion, so these tests are skipped instead
+# of failing (same convention as tests/telemetry/test_telemetry.py).
+_LLM_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GROQ_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENROUTER_API_KEY",
+)
+_HAS_LLM_KEY = any(os.getenv(k) for k in _LLM_KEYS)
+requires_llm = pytest.mark.skipif(
+    not _HAS_LLM_KEY,
+    reason="no LLM API key set (OPENAI_API_KEY etc.) - live-LLM test skipped",
+)
 
 def test_initialization():
     """Test AgentRearrange initialization."""
@@ -376,6 +395,7 @@ def test_set_custom_flow():
     assert agent_rearrange.flow == new_flow
 
 
+@requires_llm
 def test_sequential_flow():
     """Test sequential flow execution."""
     agents = create_sample_agents()
@@ -391,6 +411,7 @@ def test_sequential_flow():
     assert result is not None
 
 
+@requires_llm
 def test_concurrent_flow():
     """Test concurrent flow execution with comma syntax."""
     agents = create_sample_agents()
@@ -448,6 +469,7 @@ def test_get_agent_sequential_awareness():
 # ============================================================================
 
 
+@requires_llm
 def test_run_basic():
     """Test basic run execution."""
     agents = create_sample_agents()
@@ -463,6 +485,7 @@ def test_run_basic():
     assert result is not None
 
 
+@requires_llm
 def test_run_with_different_output_types():
     """Test run with different output types."""
     agents = create_sample_agents()
@@ -480,6 +503,7 @@ def test_run_with_different_output_types():
         assert result is not None
 
 
+@requires_llm
 def test_callable_execution():
     """Test __call__ method."""
     agents = create_sample_agents()
@@ -495,6 +519,7 @@ def test_callable_execution():
     assert result is not None
 
 
+@requires_llm
 def test_concurrent_run():
     """Test concurrent execution."""
     agents = create_sample_agents()
@@ -540,6 +565,7 @@ def test_to_dict():
 # ============================================================================
 
 
+@requires_llm
 def test_complete_workflow():
     """Test complete workflow with all features."""
     agents = create_sample_agents()
@@ -654,6 +680,7 @@ def test_error_logged_once():
     ), f"_catch_error called {call_count} times, expected 1"
 
 
+@requires_llm
 def test_successful_run_returns_result():
     """A successful run must return a non-None result."""
     agents = create_sample_agents()
@@ -665,6 +692,7 @@ def test_successful_run_returns_result():
     assert len(result) > 0
 
 
+@requires_llm
 def test_successful_callable_returns_result():
     """__call__ on success must return a result."""
     agents = create_sample_agents()
@@ -820,6 +848,7 @@ def test_repeated_agent_three_occurrences():
     assert "Agent behind" not in a4
 
 
+@requires_llm
 def test_repeated_agent_run():
     """Test that a repeated agent flow runs end-to-end."""
     agents = create_repeated_flow_agents()
@@ -842,6 +871,7 @@ def test_repeated_agent_run():
     ), f"Expected 2 Writer messages, got {len(writer_msgs)}"
 
 
+@requires_llm
 def test_awareness_not_in_shared_conversation():
     """Per-agent sequential awareness must NOT leak into the shared transcript.
 

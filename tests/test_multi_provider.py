@@ -13,6 +13,7 @@ For providers without API keys (Groq, Grok, Gemini), tests verify that:
     (proving the request payload is well-formed)
 """
 
+import os
 import pytest
 from dotenv import load_dotenv
 
@@ -72,6 +73,24 @@ def _assert_not_param_error(exc: Exception):
 # LiteLLM wrapper — direct calls (OpenAI + Anthropic with keys)
 # ===================================================================
 
+
+
+# Live-LLM tests: they call agent.run() against a real model and can only
+# pass with an API key. Without one, Agent.run now honestly raises
+# AgentLLMError after retry exhaustion, so these tests are skipped instead
+# of failing (same convention as tests/telemetry/test_telemetry.py).
+_LLM_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GROQ_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENROUTER_API_KEY",
+)
+_HAS_LLM_KEY = any(os.getenv(k) for k in _LLM_KEYS)
+requires_llm = pytest.mark.skipif(
+    not _HAS_LLM_KEY,
+    reason="no LLM API key set (OPENAI_API_KEY etc.) - live-LLM test skipped",
+)
 
 class TestLiteLLMProviders:
     """Direct LiteLLM wrapper tests for providers with API keys."""
@@ -270,6 +289,7 @@ class TestReasoningEffortDefaults:
 class TestSwarmStructuresMultiProvider:
     """Swarm structures should work with non-OpenAI agents."""
 
+    @requires_llm
     def test_sequential_workflow_anthropic(self):
         agent1 = Agent(
             agent_name="Anthropic-Researcher",
@@ -297,6 +317,7 @@ class TestSwarmStructuresMultiProvider:
         result = workflow.run("What is 2+2? Explain briefly.")
         assert result is not None
 
+    @requires_llm
     def test_sequential_workflow_mixed_providers(self):
         """Workflow with OpenAI and Anthropic agents in sequence."""
         openai_agent = Agent(
@@ -423,6 +444,7 @@ class TestGroqProvider:
             llm.run(SIMPLE_TASK)
         _assert_not_param_error(exc_info.value)
 
+    @requires_llm
     def test_groq_agent_rejects_on_auth_not_params(self):
         """Agent-level: same verification through the full Agent code path."""
         agent = Agent(
@@ -491,6 +513,7 @@ class TestGrokProvider:
             llm.run(SIMPLE_TASK)
         _assert_not_param_error(exc_info.value)
 
+    @requires_llm
     def test_grok_agent_rejects_on_auth_not_params(self):
         """Agent-level: same verification through the full Agent code path."""
         agent = Agent(
@@ -555,6 +578,7 @@ class TestGeminiProvider:
             llm.run(SIMPLE_TASK)
         _assert_not_param_error(exc_info.value)
 
+    @requires_llm
     def test_gemini_agent_rejects_on_auth_not_params(self):
         """Agent-level: same verification through the full Agent code path."""
         agent = Agent(

@@ -1,3 +1,4 @@
+import os
 import pytest
 
 from swarms.structs.agent import Agent
@@ -29,6 +30,25 @@ def create_test_agents(num_agents: int) -> list[Agent]:
     ]
 
 
+
+# Live-LLM tests: they call agent.run() against a real model and can only
+# pass with an API key. Without one, Agent.run now honestly raises
+# AgentLLMError after retry exhaustion, so these tests are skipped instead
+# of failing (same convention as tests/telemetry/test_telemetry.py).
+_LLM_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GROQ_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENROUTER_API_KEY",
+)
+_HAS_LLM_KEY = any(os.getenv(k) for k in _LLM_KEYS)
+requires_llm = pytest.mark.skipif(
+    not _HAS_LLM_KEY,
+    reason="no LLM API key set (OPENAI_API_KEY etc.) - live-LLM test skipped",
+)
+
+@requires_llm
 def test_circular_swarm():
     """Test circular swarm outputs"""
     agents = create_test_agents(3)
@@ -48,6 +68,7 @@ def test_circular_swarm():
         assert "content" in log
 
 
+@requires_llm
 def test_grid_swarm():
     """Test grid swarm with 2x2 grid"""
     agents = create_test_agents(4)
@@ -59,6 +80,7 @@ def test_grid_swarm():
     assert len(result) > 0
 
 
+@requires_llm
 def test_star_swarm():
     """Test star swarm with central and peripheral agents"""
     agents = create_test_agents(4)
@@ -74,6 +96,7 @@ def test_star_swarm():
         assert "content" in log
 
 
+@requires_llm
 def test_mesh_swarm():
     """Test mesh swarm interconnected processing"""
     agents = create_test_agents(3)
@@ -93,6 +116,7 @@ def test_mesh_swarm():
         assert "content" in log
 
 
+@requires_llm
 def test_pyramid_swarm():
     """Test pyramid swarm hierarchical structure"""
     agents = create_test_agents(6)
@@ -115,6 +139,7 @@ def test_pyramid_swarm():
         assert "content" in log
 
 
+@requires_llm
 def test_one_to_one():
     """Test one-to-one communication pattern"""
     sender = create_test_agent("Sender")

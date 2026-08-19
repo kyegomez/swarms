@@ -1,7 +1,28 @@
+import os
+import pytest
 from swarms.structs.agent import Agent
 from swarms.structs.majority_voting import MajorityVoting
 
 
+
+# Live-LLM tests: they call agent.run() against a real model and can only
+# pass with an API key. Without one, Agent.run now honestly raises
+# AgentLLMError after retry exhaustion, so these tests are skipped instead
+# of failing (same convention as tests/telemetry/test_telemetry.py).
+_LLM_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GROQ_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENROUTER_API_KEY",
+)
+_HAS_LLM_KEY = any(os.getenv(k) for k in _LLM_KEYS)
+requires_llm = pytest.mark.skipif(
+    not _HAS_LLM_KEY,
+    reason="no LLM API key set (OPENAI_API_KEY etc.) - live-LLM test skipped",
+)
+
+@requires_llm
 def test_majority_voting_basic_execution():
     """Test basic MajorityVoting execution with multiple agents"""
     # Create specialized agents with different perspectives
@@ -40,6 +61,7 @@ def test_majority_voting_basic_execution():
     assert result is not None
 
 
+@requires_llm
 def test_majority_voting_multiple_loops():
     """Test MajorityVoting with multiple loops for consensus refinement"""
     # Create agents with different knowledge bases
@@ -84,6 +106,7 @@ def test_majority_voting_multiple_loops():
     assert result is not None
 
 
+@requires_llm
 def test_majority_voting_business_scenario():
     """Test MajorityVoting in a realistic business scenario"""
     # Create agents representing different business perspectives
@@ -203,6 +226,7 @@ def test_majority_voting_different_output_types():
     assert True
 
 
+@requires_llm
 def test_streaming_majority_voting():
     """
     Test the streaming_majority_voting with logging/try-except and assertion.

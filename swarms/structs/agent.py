@@ -52,9 +52,13 @@ from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
 from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
 from swarms.prompts.safety_prompt import SAFETY_PROMPT
 from swarms.schemas.agent_errors import (
+    AgentError,
     AgentInitializationError,
     AgentLLMError,
+    AgentLLMInitializationError,
+    AgentMemoryError,
     AgentRunError,
+    AgentToolError,
     AgentToolExecutionError,
 )
 from swarms.schemas.base_schemas import (
@@ -1567,7 +1571,6 @@ class Agent:
                         BadRequestError,
                         InternalServerError,
                         AuthenticationError,
-                        Exception,
                     ) as e:
 
                         # Track the LLM/generation error via telemetry — the
@@ -1600,11 +1603,16 @@ class Agent:
                             loop_count=loop_count
                         )
 
-                    logger.error(
-                        "Failed to generate a valid response after"
-                        " retry attempts."
+                    # Surface the failure instead of returning the raw
+                    # conversation transcript as if it were the answer: the
+                    # docstring promises AgentLLMError on LLM failure, and a
+                    # silent transcript return lets callers act on garbage
+                    # output with no signal that the model never responded.
+                    raise AgentLLMError(
+                        f"Agent '{self.agent_name}' failed to generate a "
+                        f"valid response after {self.retry_attempts} retry "
+                        f"attempt(s) in loop {loop_count}."
                     )
-                    break  # Exit the loop if all retry attempts fail
 
                 # Check stopping conditions
                 if (
@@ -3096,7 +3104,6 @@ Subtask Breakdown:
             BadRequestError,
             InternalServerError,
             AuthenticationError,
-            Exception,
         ) as e:
 
             # Try fallback models if available
