@@ -133,11 +133,11 @@ class CronJob:
                 "seconds": self.every_seconds,
                 "minute": self.every_minutes,
                 "minutes": self.every_minutes,
-                "hour": lambda x: self.schedule.every(x).hours.do(
-                    self._run_job
+                "hour": lambda x, task, **kwargs: self.schedule.every(x).hours.do(
+                    self._run_job, task, **kwargs
                 ),
-                "hours": lambda x: self.schedule.every(x).hours.do(
-                    self._run_job
+                "hours": lambda x, task, **kwargs: self.schedule.every(x).hours.do(
+                    self._run_job, task, **kwargs
                 ),
             }
 
@@ -147,8 +147,8 @@ class CronJob:
                     f"Unsupported time unit: {unit}. Supported units are: {supported_units}"
                 )
 
-            self._interval_method = lambda task: unit_map[unit](
-                number, task
+            self._interval_method = lambda task, **kwargs: unit_map[unit](
+                number, task, **kwargs
             )
             logger.debug(f"Configured {number} {unit} interval")
 
@@ -169,6 +169,9 @@ class CronJob:
             **kwargs: Additional parameters to pass to the agent's run method
                      (e.g., img=image_path, streaming_callback=callback_func)
 
+        Returns:
+            The scheduled job instance
+
         Raises:
             CronJobConfigError: If agent or interval is not configured
             CronJobExecutionError: If task execution fails
@@ -186,11 +189,12 @@ class CronJob:
 
             logger.info(f"Scheduling task for job {self.job_id}")
             # Schedule the task with additional parameters
-            self._interval_method(task, **kwargs)
+            job = self._interval_method(task, **kwargs)
 
             # Start the job
             self.start()
             logger.info(f"Successfully started job {self.job_id}")
+            return job
 
         except Exception as e:
             logger.error(
@@ -200,14 +204,11 @@ class CronJob:
                 f"Failed to run job: {str(e)} Traceback: {traceback.format_exc()}"
             )
 
-    def run(self, task: str, **kwargs):
+    def _block_forever(self):
+        """Block until interrupted or stopped."""
         try:
-            job = self._run(task, **kwargs)
-
-            while True:
+            while self.is_running:
                 time.sleep(1)
-
-            return job
         except KeyboardInterrupt:
             logger.info(
                 f"CronJob: {self.job_id} received keyboard interrupt, stopping cron jobs..."
@@ -219,17 +220,37 @@ class CronJob:
             )
             raise
 
+    def run(self, task: str, **kwargs):
+        """Schedule a single task and block for the life of the process until KeyboardInterrupt,
+        at which point stop() is called.
+
+        Args:
+            task: The task string to be executed by the agent
+            **kwargs: Additional parameters to pass to the agent's run method
+
+        Returns:
+            The scheduled job instance
+        """
+        job = self._run(task, **kwargs)
+        self._block_forever()
+        return job
+
     def batched_run(self, tasks: List[str], **kwargs):
-        """Run the scheduled job with the given tasks and additional parameters.
+        """Schedule every task in tasks before blocking for the life of the process until
+        KeyboardInterrupt, at which point stop() is called.
 
         Args:
             tasks: The list of task strings to be executed by the agent
             **kwargs: Additional parameters to pass to the agent's run method
+
+        Returns:
+            List of scheduled job instances
         """
         outputs = []
         for task in tasks:
-            output = self.run(task, **kwargs)
+            output = self._run(task, **kwargs)
             outputs.append(output)
+        self._block_forever()
         return outputs
 
     def __call__(self, task: str, **kwargs):
@@ -316,7 +337,7 @@ class CronJob:
         logger.debug(
             f"Scheduling job {self.job_id} every {seconds} seconds"
         )
-        self.schedule.every(seconds).seconds.do(
+        return self.schedule.every(seconds).seconds.do(
             self._run_job, task, **kwargs
         )
 
@@ -331,7 +352,7 @@ class CronJob:
         logger.debug(
             f"Scheduling job {self.job_id} every {minutes} minutes"
         )
-        self.schedule.every(minutes).minutes.do(
+        return self.schedule.every(minutes).minutes.do(
             self._run_job, task, **kwargs
         )
 
