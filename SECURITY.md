@@ -5,7 +5,7 @@
 | Security Feature              | Benefit                                  | Description                                                                 |
 |-------------------------------|------------------------------------------|-----------------------------------------------------------------------------|
 | Environment Variables         | Secure Configuration                     | Uses environment variables to manage sensitive configurations securely.     |
-| No Telemetry                  | Enhanced Privacy                         | Prioritizes user privacy by not collecting telemetry data.                  |
+| No Telemetry by Default       | Enhanced Privacy                         | Outbound telemetry is **off by default**; it is only sent when explicitly enabled via `SWARMS_TELEMETRY_ON=true`. Credential-bearing configuration (API keys, tokens, secrets) is redacted before serialization in all cases. |
 | Data Encryption               | Data Protection                          | Encrypts sensitive data to protect it from unauthorized access.             |
 | Authentication                | Access Control                           | Ensures that only authorized users can access the system.                   |
 | Authorization                 | Fine-grained Access                      | Provides specific access rights to users based on roles and permissions.    |

@@ -2735,6 +2735,12 @@ Subtask Breakdown:
         dict_copy = self.__dict__.copy()
         dict_copy.pop("llm", None)
 
+        # Never serialize credentials: to_dict() feeds autosave state and
+        # telemetry payloads, both of which can leave the process.
+        for secret_attr in ("llm_api_key", "mcp_api_key"):
+            if secret_attr in dict_copy and dict_copy[secret_attr] is not None:
+                dict_copy[secret_attr] = "***REDACTED***"
+
         return {
             attr_name: self._serialize_attr(attr_name, attr_value)
             for attr_name, attr_value in dict_copy.items()

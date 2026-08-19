@@ -60,6 +60,9 @@ def _exporter():
     import swarms.telemetry.otel as _otel
 
     _otel.TELEMETRY_BASE_URL = "http://127.0.0.1:9/telemetry-test"
+    # Telemetry is opt-in: these tests exercise the emission path, so they
+    # explicitly enable it (the disabled path is covered by TestDisabledPath).
+    os.environ["SWARMS_TELEMETRY_ON"] = "true"
     swarm_telemetry.cache_clear()
     telem = swarm_telemetry()
     assert (
@@ -108,10 +111,15 @@ def _agent(name="TelemetryTestAgent"):
 # ===========================================================================
 class TestHelpers:
     def test_telemetry_on_truthy(self, monkeypatch):
-        # anything that is not a recognized off value means on
-        for val in ("true", "True", "1", "yes", "on", "anything"):
+        # only explicit allowlisted values enable telemetry
+        for val in ("true", "True", "1", "yes", "on", "enable", "enabled"):
             monkeypatch.setenv("SWARMS_TELEMETRY_ON", val)
             assert telemetry_on() is True
+
+    def test_telemetry_on_unknown_value_is_off(self, monkeypatch):
+        # opt-in: anything not allowlisted stays off
+        monkeypatch.setenv("SWARMS_TELEMETRY_ON", "anything")
+        assert telemetry_on() is False
 
     def test_telemetry_on_falsy(self, monkeypatch):
         for val in (
@@ -128,10 +136,10 @@ class TestHelpers:
             monkeypatch.setenv("SWARMS_TELEMETRY_ON", val)
             assert telemetry_on() is False
 
-    def test_telemetry_on_unset_defaults_to_on(self, monkeypatch):
-        """Telemetry is opt-out: unset means enabled."""
+    def test_telemetry_on_unset_defaults_to_off(self, monkeypatch):
+        """Telemetry is opt-in: unset means disabled."""
         monkeypatch.delenv("SWARMS_TELEMETRY_ON", raising=False)
-        assert telemetry_on() is True
+        assert telemetry_on() is False
 
     def test_telemetry_on_empty_value_is_off(self, monkeypatch):
         """`SWARMS_TELEMETRY_ON=` in a .env disables rather than enables."""

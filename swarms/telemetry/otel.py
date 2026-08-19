@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from functools import lru_cache
@@ -42,6 +43,25 @@ TELEMETRY_OFF_VALUES = frozenset(
     {"false", "0", "no", "off", "disable", "disabled"}
 )
 
+TELEMETRY_ON_VALUES = frozenset(
+    {"true", "1", "yes", "on", "enable", "enabled"}
+)
+
+# Attribute/parameter names whose values must never leave the process. Applied
+# by key name in ``init_config`` and ``_sanitize`` so secrets are masked before
+# any payload is serialized, regardless of where they appear in a config.
+_SECRET_KEY_PATTERN = re.compile(
+    r"(api[_-]?key|auth[_-]?key|token|secret|password|authorization)",
+    re.IGNORECASE,
+)
+
+REDACTED = "***REDACTED***"
+
+
+def _is_secret_key(name: str) -> bool:
+    """Return whether ``name`` looks like a credential-bearing key."""
+    return _SECRET_KEY_PATTERN.search(name) is not None
+
 
 def telemetry_on() -> bool:
     """Return whether outbound telemetry is enabled.
@@ -50,22 +70,22 @@ def telemetry_on() -> bool:
     :func:`swarms.telemetry.main.log_agent_data`, so the whole framework has one
     on/off gate.
 
-    Telemetry is **on by default** — it must be switched off explicitly. Set
-    ``SWARMS_TELEMETRY_ON`` to any of ``"false"``, ``"0"``, ``"no"``, ``"off"``,
-    ``"disable"`` or ``"disabled"`` (case-insensitive) to opt out. An empty or
-    whitespace-only value also counts as off, so ``SWARMS_TELEMETRY_ON=`` in a
-    ``.env`` file disables it rather than silently enabling it.
+    Telemetry is **off by default** — it must be switched on explicitly. Set
+    ``SWARMS_TELEMETRY_ON`` to any of ``"true"``, ``"1"``, ``"yes"``, ``"on"``,
+    ``"enable"`` or ``"enabled"`` (case-insensitive) to opt in. An empty or
+    whitespace-only value counts as off, so ``SWARMS_TELEMETRY_ON=`` in a
+    ``.env`` file keeps it disabled rather than silently enabling it.
 
     Returns:
-        bool: ``False`` only when the variable is set to a recognized off value;
-        ``True`` otherwise, including when the variable is unset.
+        bool: ``True`` only when the variable is set to a recognized on value;
+        ``False`` otherwise, including when the variable is unset.
     """
     value = os.getenv("SWARMS_TELEMETRY_ON")
 
     if value is None:
-        return True
+        return False
 
-    return value.strip().lower() not in TELEMETRY_OFF_VALUES | {""}
+    return value.strip().lower() in TELEMETRY_ON_VALUES
 
 
 def _truncate(value: Any, limit: int = MAX_PAYLOAD_CHARS) -> str:
@@ -180,7 +200,11 @@ def _sanitize(value: Any, seen: frozenset = frozenset()) -> Any:
         nested = seen | {id(value)}
         try:
             return {
-                str(key): _sanitize(item, nested)
+                str(key): (
+                    REDACTED
+                    if _is_secret_key(str(key))
+                    else _sanitize(item, nested)
+                )
                 for key, item in value.items()
             }
         except _CyclicReference:
@@ -220,7 +244,11 @@ def init_config(obj: Any) -> str:
         params = {}
 
     config = {
-        name: _sanitize(getattr(obj, name, None))
+        name: (
+            REDACTED
+            if _is_secret_key(name)
+            else _sanitize(getattr(obj, name, None))
+        )
         for name in params
         if name not in ("self", "args", "kwargs")
     }
