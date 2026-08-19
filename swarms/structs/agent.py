@@ -87,7 +87,7 @@ from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
 from swarms.utils.generate_id import generate_id
 from swarms.utils.generate_keys import generate_api_key
-from swarms.utils.get_reasoning_efforts import REASONING_EFFORTS
+from swarms.utils.get_reasoning_efforts import ReasoningEffort
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -374,7 +374,7 @@ class Agent:
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
         show_tool_execution_output: bool = True,
-        reasoning_effort: Literal[REASONING_EFFORTS] = "medium",
+        reasoning_effort: ReasoningEffort = "medium",
         thinking_tokens: int = 1024,
         reasoning_enabled: bool = False,
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
