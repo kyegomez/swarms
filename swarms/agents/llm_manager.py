@@ -235,6 +235,12 @@ class LLMManager:
                 "api_key": agent.llm_api_key,
             }
 
+            # Structured output: ask the provider for JSON conforming to the
+            # agent's output_schema. Only set when present so a user-supplied
+            # llm_args["response_format"] keeps working.
+            if agent.output_schema is not None:
+                common_args["response_format"] = agent.output_schema
+
             # Initialize tools_list_dictionary, if applicable
             tools_list = []
 
