@@ -28,6 +28,7 @@ Available Tools:
 
 import os
 import re as _re
+import shlex
 import subprocess
 import uuid
 from typing import Any, Dict, List
@@ -933,6 +934,11 @@ _BASH_BLOCKLIST = [
     ("rm", "-rf"),
     ("rm", "-fr"),
     ("rm", "-r"),
+    # Bypass forms: flags split across tokens ("rm -r -f /") or long-form
+    # flags ("rm --recursive --force /") evade the substring checks above.
+    ("rm", "-r", "-f"),
+    ("rm", "--recursive", "--force"),
+    ("rm", "-rf", "/"),
     # Pipe command output into a shell interpreter
     ("| sh",),
     ("| bash",),
@@ -959,6 +965,7 @@ _BASH_BLOCKLIST = [
     ("poweroff",),
     # Privilege escalation
     ("chmod 777 /",),
+    ("chmod", "777"),
     ("chown", "/etc"),
     ("chown", "/bin"),
     ("sudo",),
@@ -1011,6 +1018,27 @@ def _check_bash_command(command: str) -> str | None:
     return None
 
 
+def _check_bash_argv(argv: List[str]) -> str | None:
+    """Return a rejection reason if *argv* matches a dangerous pattern, else None.
+
+    Operates on the parsed argument list (post-``shlex.split``), so shell
+    quoting/escape tricks that hide a pattern from the raw-string check
+    (``r""m -rf /``, ``r\\m -rf /``) are seen for what they are: the tokens
+    ``rm`` and ``-rf`` sitting next to each other in the argument list.
+    """
+    if not argv:
+        return "Command is empty."
+    for token in argv:
+        if "\x00" in token:
+            return "Command contains NUL bytes."
+    argv_lower = [token.lower() for token in argv]
+    for pattern in _BASH_BLOCKLIST:
+        pattern_tokens = [token.lower() for token in pattern]
+        if all(pt in argv_lower for pt in pattern_tokens):
+            return f"Command blocked: matches dangerous pattern {pattern!r}."
+    return None
+
+
 def run_bash_tool(
     agent: Any, command: str, timeout_seconds: int = 60, **kwargs
 ) -> str:
@@ -1037,14 +1065,43 @@ def run_bash_tool(
             content=f"Blocked (security): {command[:100]}{'...' if len(command) > 100 else ''}",
         )
         return f"Error: {rejection}"
+
+    # Parse into argv and re-check at token level: shell quoting/escape tricks
+    # (e.g. r""m -rf /) hide patterns from the raw-string check above, but
+    # shlex.split sees the real tokens.
+    try:
+        argv = shlex.split(command, posix=True)
+    except ValueError as e:
+        logger.warning(
+            f"run_bash_tool could not parse command: {command!r} — {e}"
+        )
+        agent.short_memory.add(
+            role="Terminal",
+            content=f"Blocked (security): {command[:100]}{'...' if len(command) > 100 else ''}",
+        )
+        return f"Error: could not parse command: {e}"
+
+    rejection = _check_bash_argv(argv)
+    if rejection:
+        logger.warning(
+            f"run_bash_tool blocked command: {command!r} — {rejection}"
+        )
+        agent.short_memory.add(
+            role="Terminal",
+            content=f"Blocked (security): {command[:100]}{'...' if len(command) > 100 else ''}",
+        )
+        return f"Error: {rejection}"
     # -------------------------------------------------------------------------
 
     try:
-        # Run in process cwd (where the user started the script) so commands like
-        # ls -la and python script.py see the project directory, not the agent workspace.
+        # Run the parsed argv directly — no shell, so shell metacharacters
+        # (|, >, $(), ;, backticks) are inert literal arguments and cannot be
+        # used to smuggle commands past the blocklist. Run in process cwd (where
+        # the user started the script) so commands like ls -la and python
+        # script.py see the project directory, not the agent workspace.
         result = subprocess.run(
-            command,
-            shell=True,
+            argv,
+            shell=False,
             capture_output=True,
             text=True,
             timeout=timeout_seconds,
