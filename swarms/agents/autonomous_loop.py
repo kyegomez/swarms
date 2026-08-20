@@ -213,10 +213,8 @@ class AutonomousAgentLoop:
 
             self._say_user(task)
 
-            # Add planning tools to tools_list_dictionary.
-            # "lazy" ships a small always-on core plus the search_tools
-            # meta-tool; the rest are fetched on demand, which keeps the
-            # resident schema block from being re-sent on every iteration.
+            # "lazy" ships a small core plus search_tools; the rest are
+            # fetched on demand, so the resident block stays flat.
             if self.agent.selected_tools == "lazy":
                 planning_tools = get_lazy_autonomous_tools()
                 logger.info(
@@ -364,9 +362,7 @@ class AutonomousAgentLoop:
                 )
             )
 
-            # Filter tool handlers if selected_tools is not "all".
-            # "lazy" keeps every handler: the model can load any schema at
-            # run time, so the handler has to be there when it does.
+            # "lazy" keeps every handler: any schema can be loaded at run time.
             if (
                 self.agent.selected_tools != "all"
                 and self.agent.selected_tools != "lazy"

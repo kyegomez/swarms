@@ -594,10 +594,8 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
     ]
 
 
-# The always-resident set under selected_tools="lazy". Everything the loop
-# structurally depends on (planning, subtask bookkeeping, termination, and the
-# user-facing reply), plus the meta-tool used to fetch the rest. Keeping this
-# small is the point: the resident schema cost stays flat as tools are added.
+# Always resident under selected_tools="lazy": what the loop structurally
+# depends on, plus the meta-tool that fetches the rest.
 LAZY_CORE_TOOL_NAMES = (
     "create_plan",
     "subtask_done",
@@ -769,9 +767,7 @@ def search_tools_tool(agent: Any, query: str = "", **kwargs) -> str:
         agent.tools_list_dictionary = []
     agent.tools_list_dictionary.extend(matches)
 
-    # Rebuild so the newly added schemas reach the provider. Without this the
-    # client keeps the tool list it was constructed with and the model would
-    # be told about tools it cannot actually call.
+    # Rebuild, or the client keeps the tool list it was constructed with.
     try:
         agent.llm = agent.llm_handling()
     except Exception as e:

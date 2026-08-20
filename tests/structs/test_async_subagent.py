@@ -1283,11 +1283,6 @@ if __name__ == "__main__":
     print("=" * 60)
 
 
-# ============================================================================
-# Lazy autonomous tool loading (#1753)
-# ============================================================================
-
-
 class _ToolAgentStub:
     """Minimal stand-in exposing what search_tools_tool touches."""
 
@@ -1324,7 +1319,6 @@ def test_lazy_core_is_a_strict_subset_and_much_smaller():
 
     full_size = len(json.dumps(full))
     lazy_size = len(json.dumps(lazy))
-    # The whole point is a large reduction, not a marginal one.
     assert lazy_size < full_size * 0.5
 
 
@@ -1393,7 +1387,6 @@ def test_repeating_a_search_does_not_reload_or_dump_the_catalogue():
 
     assert len(agent.tools_list_dictionary) == count
     assert "No tool matched" in message
-    # The fallback lists names, which is cheap, rather than loading schemas.
     assert "think" in message
 
 
