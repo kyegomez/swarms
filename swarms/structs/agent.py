@@ -2144,20 +2144,36 @@ Subtask Breakdown:
 
         Args:
             tasks (List[str]): A list of tasks to run.
+
+        Returns:
+            List[Any]: One result per task, in the order the tasks were given.
+
+        Raises:
+            Exception: Whatever the underlying runs raise. Failures are logged
+                and re-raised rather than swallowed, so a caller never receives
+                None in place of results.
         """
         try:
             logger.info(f"Running concurrent tasks: {tasks}")
-            futures = [
-                self.executor.submit(
-                    self.run, task=task, *args, **kwargs
-                )
-                for task in tasks
-            ]
-            results = [future.result() for future in futures]
+            # Pool is scoped to the call, matching how the rest of the codebase
+            # runs concurrent work (heavy_swarm, majority_voting,
+            # multi_agent_router). An Agent-level pool would keep idle threads
+            # alive for the process lifetime of every agent a swarm builds.
+            with ContextThreadPoolExecutor(
+                max_workers=os.cpu_count()
+            ) as executor:
+                futures = [
+                    executor.submit(
+                        self.run, *args, task=task, **kwargs
+                    )
+                    for task in tasks
+                ]
+                results = [future.result() for future in futures]
             logger.info(f"Completed tasks: {results}")
             return results
         except Exception as error:
             logger.error(f"Error running concurrent tasks: {error}")
+            raise
 
     def bulk_run(self, inputs: List[Dict[str, Any]]) -> List[str]:
         """
@@ -2480,12 +2496,10 @@ Subtask Breakdown:
                     rules=self.rules,
                 )
 
-            # Reinitialize executor if needed
-            # if not hasattr(self, "executor") or self.executor is None:
-            with ContextThreadPoolExecutor(
-                max_workers=os.cpu_count()
-            ) as executor:
-                self.executor = executor
+            # No executor to reinitialize: concurrent work creates its own
+            # call-scoped pool. The assignment that used to live here stored an
+            # executor the enclosing `with` had already shut down, so anything
+            # reading it back would have submitted to a dead pool.
 
         except Exception as e:
             logger.error(f"Error reinitializing components: {e}")
@@ -3401,24 +3415,39 @@ Subtask Breakdown:
     ) -> Any:
         """
         Talk to multiple agents.
-        """
-        # Create futures for each agent conversation
-        futures = [
-            self.executor.submit(
-                self.talk_to, agent, task, *args, **kwargs
-            )
-            for agent in agents
-        ]
 
-        # Wait for all futures to complete and collect results
-        outputs = []
-        for future in futures:
-            try:
-                result = future.result()
-                outputs.append(result)
-            except Exception as e:
-                logger.error(f"Error in agent communication: {e}")
-                outputs.append(None)  # or handle error case as needed
+        Args:
+            agents (List[Union[Any, Callable]]): The agents to talk to.
+            task (str): The message to send to each agent.
+
+        Returns:
+            List[Any]: One entry per agent, in the order the agents were given.
+                An agent whose conversation raised contributes None.
+        """
+        # Pool is scoped to the call — see run_concurrent_tasks for why this is
+        # not an Agent-level executor.
+        with ContextThreadPoolExecutor(
+            max_workers=os.cpu_count()
+        ) as executor:
+            # Create futures for each agent conversation
+            futures = [
+                executor.submit(
+                    self.talk_to, agent, task, *args, **kwargs
+                )
+                for agent in agents
+            ]
+
+            # Wait for all futures to complete and collect results
+            outputs = []
+            for future in futures:
+                try:
+                    result = future.result()
+                    outputs.append(result)
+                except Exception as e:
+                    logger.error(f"Error in agent communication: {e}")
+                    outputs.append(
+                        None
+                    )  # or handle error case as needed
 
         return outputs
 
@@ -4025,12 +4054,13 @@ Summary: {summary}
         - If tool execution fails, the method automatically retries
         - Maximum retry attempts are controlled by self.tool_retry_attempts (default: 3)
         - Each retry is logged with detailed error information
-        - After all retries are exhausted, the exception is re-raised
+        - After all retries are exhausted, AgentToolExecutionError is raised,
+          chained from the last underlying error via `raise ... from`
 
         **Error Handling:**
         - None responses: Logs warning and skips execution (does not raise)
-        - AgentToolExecutionError: Logs error with full traceback and retries
-        - Other exceptions: Logs error and retries
+        - Any exception from execute_tools: Logs error with full traceback and
+          retries, since execute_tools re-raises the tool's own exception type
 
         **Logging:**
         All errors are logged with:
@@ -4073,20 +4103,40 @@ Summary: {summary}
             >>> agent.tool_execution_retry(None, loop_count=2)
             >>> # Logs warning but does not raise exception
         """
-        try:
-            if response is not None:
+        if response is None:
+            logger.warning(
+                f"Agent '{self.agent_name}' received None response from LLM in loop {loop_count}. "
+                f"This may indicate an issue with the model or prompt. Skipping tool execution."
+            )
+            return
+
+        # execute_tools re-raises whatever the tool raised, and nothing in the
+        # framework raises AgentToolExecutionError, so catching only that type
+        # caught nothing. Catch broadly here, which is also what the docstring
+        # promises ("Other exceptions: Logs error and retries").
+        attempts = max(1, int(self.tool_retry_attempts or 1))
+        last_error: Optional[Exception] = None
+
+        for attempt in range(1, attempts + 1):
+            try:
                 self.execute_tools(
                     response=response,
                     loop_count=loop_count,
                 )
-            else:
-                logger.warning(
-                    f"Agent '{self.agent_name}' received None response from LLM in loop {loop_count}. "
-                    f"This may indicate an issue with the model or prompt. Skipping tool execution."
+                return
+            except Exception as e:
+                last_error = e
+                logger.error(
+                    f"Agent '{self.agent_name}' tool execution failed on attempt "
+                    f"{attempt}/{attempts} in loop {loop_count}: {str(e)}. "
+                    f"Full traceback: {traceback.format_exc()}"
                 )
-        except AgentToolExecutionError as e:
-            logger.error(
-                f"Agent '{self.agent_name}' encountered error during tool execution in loop {loop_count}: {str(e)}. "
-                f"Full traceback: {traceback.format_exc()}. "
-                f"Attempting to retry tool execution with 3 attempts"
-            )
+
+        # Attempts exhausted. Raising is what the docstring specifies, and it is
+        # the only way the caller learns the tools did not run — returning here
+        # left `short_memory` with no Tool Executor entry, so the model saw the
+        # call as having produced nothing and carried on as if it had succeeded.
+        raise AgentToolExecutionError(
+            f"Agent '{self.agent_name}' failed to execute tools in loop "
+            f"{loop_count} after {attempts} attempt(s): {last_error}"
+        ) from last_error

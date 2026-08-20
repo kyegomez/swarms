@@ -1,5 +1,4 @@
 import random
-from functools import lru_cache
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
@@ -140,37 +139,15 @@ def set_random_models_for_agents(
         return agents
 
 
-@lru_cache(maxsize=128)
-def _create_agent_map_cached(
-    agent_tuple: tuple,
-) -> Dict[str, Union[Callable, Any]]:
-    """Internal cached version of create_agent_map that takes a tuple for hashability."""
-    try:
-        return {
-            (
-                agent.agent_name
-                if isinstance(agent, Callable)
-                else agent.__name__
-            ): agent
-            for agent in agent_tuple
-        }
-    except (AttributeError, TypeError) as e:
-        logger.error(f"Error creating agent map: {e}")
-        return {}
-
-
 def create_agent_map(
     agents: List[Union[Callable, Any]],
 ) -> Dict[str, Union[Callable, Any]]:
     """Creates a map of agent names to agents for fast lookup.
 
-    This function is optimized with LRU caching to avoid recreating maps for identical agent lists.
-    The cache stores up to 128 different agent map configurations.
-
     Args:
         agents (List[Union[Callable, Any]]): List of agents to create a map of. Each agent should either be:
             - A callable with a __name__ attribute
-            - An object with an agent_name attribute
+            - An object with an agent_name or name attribute
 
     Returns:
         Dict[str, Union[Callable, Any]]: Map of agent names to agents
@@ -192,11 +169,30 @@ def create_agent_map(
         dict_keys(['bot1', 'bot2'])
 
     Raises:
-        ValueError: If agents list is empty
+        ValueError: If agents list is empty or contains duplicate agent names
         TypeError: If any agent lacks required name attributes
     """
     if not agents:
         raise ValueError("Agents list cannot be empty")
 
-    # Convert list to tuple for hashability
-    return _create_agent_map_cached(tuple(agents))
+    agent_map: Dict[str, Union[Callable, Any]] = {}
+    for agent in agents:
+        name = (
+            getattr(agent, "agent_name", None)
+            or getattr(agent, "name", None)
+            or getattr(agent, "__name__", None)
+        )
+        if not name or not isinstance(name, str):
+            raise TypeError(
+                f"Agent {agent!r} lacks required name attribute (agent_name, name, or __name__)"
+            )
+
+        if name in agent_map:
+            raise ValueError(
+                f"Duplicate agent name {name!r}: agent map requires unique "
+                f"agent_name values, but at least two agents share this name."
+            )
+        agent_map[name] = agent
+
+    return agent_map
+
