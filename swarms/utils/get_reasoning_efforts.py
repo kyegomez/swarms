@@ -2,12 +2,8 @@ import inspect
 from functools import lru_cache
 from typing import Literal, Tuple, get_args
 
-# Accepted levels, spelled out so they can be used inside `Literal[...]`.
-#
-# A Literal needs literal members: `Literal[SOME_TUPLE]` and
-# `Literal[some_call()]` are both rejected by type checkers ("Expression ... is
-# not a literal value"), even though they work at runtime. Declaring the alias
-# here keeps Agent's signature checkable *and* keeps litellm out of import time.
+# Spelled out because a Literal needs literal members: `Literal[SOME_TUPLE]`
+# is rejected by type checkers even though it works at runtime.
 ReasoningEffort = Literal[
     "none",
     "minimal",
@@ -19,9 +15,8 @@ ReasoningEffort = Literal[
     "max",
 ]
 
-# Same values as a tuple, for the runtime union in get_reasoning_efforts below.
-# Also unioned with whatever the installed litellm advertises so a downgrade
-# never narrows the values Agent already accepts.
+# Unioned with whatever the installed litellm advertises, so a downgrade never
+# narrows the values Agent already accepts.
 REASONING_EFFORTS: Tuple[str, ...] = get_args(ReasoningEffort)
 
 

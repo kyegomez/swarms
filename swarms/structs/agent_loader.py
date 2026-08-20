@@ -109,9 +109,7 @@ class AgentValidator:
             if isinstance(config, AgentSpec):
                 config = config.model_dump()
 
-            # Validate model name using litellm model list.
-            # Deferred import: litellm must not load at `import swarms`
-            # time (#1754).
+            # Deferred: litellm must not load at `import swarms` time (#1754).
             from litellm import model_list
 
             model_name = str(config["model_name"])

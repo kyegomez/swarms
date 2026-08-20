@@ -21,8 +21,7 @@ def _probe(code: str) -> dict:
         timeout=120,
         env={
             "SWARMS_TELEMETRY_ON": "false",
-            # Keep the probe offline: litellm must not fetch its
-            # model-cost map from the network inside a unit test.
+            # Offline: litellm must not fetch its model-cost map in a test.
             "LITELLM_LOCAL_MODEL_COST_MAP": "True",
             "PATH": "",
         },

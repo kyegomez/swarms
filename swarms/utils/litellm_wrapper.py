@@ -71,8 +71,7 @@ def _bind_litellm() -> None:
         supports_vision = _supports_vision
 
 
-# Both read the module globals bound above, so they are only ever reached
-# from LiteLLM methods — i.e. after __init__ has called _bind_litellm().
+# Only reached from LiteLLM methods, i.e. after __init__ bound the globals.
 @lru_cache(maxsize=None)
 def _model_supports_vision(model: str) -> bool:
     """Cached litellm.supports_vision lookup (pure function of model name)."""
@@ -351,8 +350,7 @@ class LiteLLM:
         self.modalities = []
         self.messages = []  # Initialize messages list
 
-        # First construction pays the litellm import; `import swarms` no
-        # longer does.
+        # First construction pays the import; `import swarms` no longer does.
         _bind_litellm()
 
         # Configure litellm settings

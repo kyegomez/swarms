@@ -100,10 +100,8 @@ class ContextCompressor:
             raise ValueError(
                 "No summarizer_model configured and agent has no model_name"
             )
-        # Deferred: litellm must not load at `import swarms` time
-        # (#1754). Bound into the module global so tests can keep patching
-        # ``swarms.agents.context_compressor.completion``; an active patch
-        # is non-None and is never overwritten.
+        # Deferred: litellm must not load at `import swarms` time (#1754).
+        # Bound into the module global so an active test patch survives.
         global completion
         if completion is None:
             from litellm import completion as _completion
