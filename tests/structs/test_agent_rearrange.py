@@ -1371,5 +1371,45 @@ class TestAgentContextManagement:
         ), f"the second task never reached the agent: {messages}"
 
 
+# ============================================================================
+# concurrent_run — task isolation
+# ============================================================================
+
+
+class TestConcurrentRunIsolation:
+    def test_each_task_gets_own_clone_conversation(self):
+        """concurrent_run tasks should not share the parent conversation."""
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        tasks = ["alpha", "beta", "gamma"]
+        original_conversation = pipeline.conversation
+        original_msg_count = len(
+            original_conversation.conversation_history
+        )
+        seen_conversations: List[object] = []
+
+        def _mock_run(self_inner, task=None, img=None, *a, **kw):
+            seen_conversations.append(self_inner.conversation)
+            self_inner.conversation.add("user", task)
+            return f"result:{task}"
+
+        with patch.object(AgentRearrange, "_run", _mock_run):
+            results = pipeline.concurrent_run(
+                tasks=tasks,
+                max_workers=1,
+            )
+
+        assert results == [f"result:{task}" for task in tasks]
+        assert len(seen_conversations) == len(tasks)
+        assert all(
+            conversation is not original_conversation
+            for conversation in seen_conversations
+        )
+        assert len(set(map(id, seen_conversations))) == len(tasks)
+        assert (
+            len(original_conversation.conversation_history)
+            == original_msg_count
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
