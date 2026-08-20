@@ -133,10 +133,12 @@ class CronJob:
                 "seconds": self.every_seconds,
                 "minute": self.every_minutes,
                 "minutes": self.every_minutes,
-                "hour": lambda x, task, **kwargs: self.schedule.every(x).hours.do(
-                    self._run_job, task, **kwargs
-                ),
-                "hours": lambda x, task, **kwargs: self.schedule.every(x).hours.do(
+                "hour": lambda x, task, **kwargs: self.schedule.every(
+                    x
+                ).hours.do(self._run_job, task, **kwargs),
+                "hours": lambda x, task, **kwargs: self.schedule.every(
+                    x
+                ).hours.do(
                     self._run_job, task, **kwargs
                 ),
             }
@@ -147,9 +149,9 @@ class CronJob:
                     f"Unsupported time unit: {unit}. Supported units are: {supported_units}"
                 )
 
-            self._interval_method = lambda task, **kwargs: unit_map[unit](
-                number, task, **kwargs
-            )
+            self._interval_method = lambda task, **kwargs: unit_map[
+                unit
+            ](number, task, **kwargs)
             logger.debug(f"Configured {number} {unit} interval")
 
         except ValueError as e:
