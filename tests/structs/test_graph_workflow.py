@@ -1483,9 +1483,6 @@ if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 
 
-# ---------------------------------------------------------------------------
-# Conditional edges (#1756)
-# ---------------------------------------------------------------------------
 
 
 class _StubAgent:
@@ -1541,7 +1538,6 @@ def test_conditional_edge_runs_only_the_matching_branch():
 
     assert escalate.calls == 1
     assert routine.calls == 0
-    # A skipped node is absent from results, not present with empty output.
     assert "routine" not in results
     assert results["escalate"] == "paged oncall"
 
@@ -1660,7 +1656,6 @@ def test_raising_predicate_does_not_fire_and_does_not_crash_the_run():
 
     results = wf.run(task="go")
 
-    # The run completes; the unproven edge simply does not route.
     assert target.calls == 0
     assert set(results) == {"start"}
 
@@ -1702,7 +1697,6 @@ def test_prompt_labels_stay_aligned_when_a_predecessor_is_missing():
     wf.set_end_points(["c"])
     wf.compile()
 
-    # Only the second predecessor produced output.
     prompt = wf._build_prompt(
         "c", "task", {"b": "B-OUTPUT"}, layer_idx=1
     )

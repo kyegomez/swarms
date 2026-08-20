@@ -752,9 +752,8 @@ class Edge:
         self.target = target
         self.metadata = metadata or {}
         self.condition = condition
-        # Resolved once, so fires() never has to probe by catching TypeError —
-        # a predicate that raises TypeError internally would otherwise be
-        # called a second time with a different signature.
+        # Resolved once: probing by catching TypeError would call a predicate
+        # that raises TypeError internally a second time.
         self._condition_wants_context = _accepts_two_args(condition)
 
     def fires(self, output: Any, outputs: Dict[str, Any]) -> bool:
@@ -832,9 +831,8 @@ class Edge:
             tgt = target_node
 
         # Put all kwargs into metadata dict
-        # condition is a real constructor argument, not free-form metadata —
-        # leaving it in kwargs would bury the predicate in the visualization
-        # labels and silently drop the routing behaviour.
+        # A real argument, not metadata: left in kwargs it lands in the
+        # visualization labels and the routing is dropped.
         condition = kwargs.pop("condition", None)
         metadata = kwargs if kwargs else None
         return cls(
@@ -1095,10 +1093,8 @@ class GraphWorkflow:
                 for node_id, parents in pred.items()
             }
 
-            # Index inbound edges per target so the run loop can evaluate
-            # routing without scanning self.edges once per node. _has_conditions
-            # lets a graph with no conditions skip the gating pass entirely,
-            # keeping the existing execution path free of added work.
+            # Indexed so the run loop does not scan self.edges per node;
+            # _has_conditions lets an unconditional graph skip gating entirely.
             inbound: Dict[str, List["Edge"]] = {}
             has_conditions = False
             for edge in self.edges:
@@ -1899,8 +1895,7 @@ class GraphWorkflow:
             if edge.source in skipped:
                 continue
             if edge.source not in prev_outputs:
-                # Predecessor hasn't run yet (first layer of a later loop, or
-                # a cycle edge). Don't let an unevaluated edge prune the node.
+                # Unevaluated edge (later loop, cycle): must not prune.
                 return True
             if edge.fires(prev_outputs[edge.source], prev_outputs):
                 return True
@@ -1937,10 +1932,8 @@ class GraphWorkflow:
 
         try:
             preds = self._get_predecessors(node_id)
-            # Keep the id paired with its own output. Filtering the outputs
-            # while zipping against the unfiltered predecessor tuple shifted
-            # the labels, so a node with a skipped or missing predecessor
-            # attributed each output to the wrong agent.
+            # Filtering outputs while zipping against the unfiltered
+            # predecessor tuple shifted every label by one.
             pred_outputs = [
                 (pred, prev_outputs[pred])
                 for pred in preds
@@ -2192,8 +2185,7 @@ class GraphWorkflow:
 
                 execution_results = {}
                 prev_outputs = {}
-                # Reset per loop: a node skipped on one iteration may well be
-                # the one that runs on the next, once upstream output changes.
+                # Reset per loop: a skipped node may run on the next one.
                 skipped_nodes: Set[str] = set()
 
                 # Derive a deterministic key for this task so checkpoints
@@ -2268,10 +2260,8 @@ class GraphWorkflow:
                             f"with {len(layer)} nodes: {[n[0] for n in layer]}"
                         )
 
-                    # Conditional routing: drop nodes this layer whose inbound
-                    # edges all declined to fire. Entry points and nodes in
-                    # graphs without conditions are never gated, so an
-                    # unconditional graph takes the same path it always did.
+                    # Drop nodes whose inbound edges all declined to fire.
+                    # Entry points and unconditional graphs are never gated.
                     if self._has_conditions:
                         eligible_layer = []
                         for entry in layer:
