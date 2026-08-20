@@ -724,9 +724,8 @@ class Node:
         self.type = type
         self.agent = agent
         self.metadata = metadata or {}
-        # Per-node retry policy. None means "use the workflow default",
-        # resolved at run time so a workflow-level policy can be set after
-        # the nodes were added.
+        # None means "use the workflow default", resolved at run time so the
+        # default can be set after the nodes were added.
         self.retry = retry
 
         if not self.id:
@@ -997,8 +996,7 @@ class GraphWorkflow:
 
         # Checkpoint configuration
         self.checkpoint_dir = checkpoint_dir
-        # Default policy for nodes that don't carry their own. None means no
-        # retrying, which is the historical behaviour.
+        # None means no retrying, the historical behaviour.
         self.retry_policy = retry_policy
         if on_node_failure not in (
             "skip_downstream",
@@ -1010,8 +1008,7 @@ class GraphWorkflow:
                 f"'propagate_error', got {on_node_failure!r}"
             )
         self.on_node_failure = on_node_failure
-        # node_id -> error string, populated per run. Lets a caller inspect
-        # failures without substring-matching every output for '[ERROR]'.
+        # node_id -> error, so callers need not grep outputs for '[ERROR]'.
         self.failed_nodes: Dict[str, str] = {}
 
         # Private optimization attributes
@@ -2045,9 +2042,8 @@ class GraphWorkflow:
         if self.on_node_failure == "propagate_error":
             return f"[ERROR] Agent {agent_name} failed: {exc}"
 
-        # skip_downstream: the node produced nothing, so dependents are
-        # pruned rather than being handed an error string that reads like an
-        # answer.
+        # skip_downstream: dependents are pruned rather than handed an error
+        # string that reads like an answer.
         skipped.add(node_id)
         logger.warning(
             f"Node {node_id} failed; skipping its dependents "
@@ -2455,10 +2451,8 @@ class GraphWorkflow:
                             f"with {len(layer)} nodes: {[n[0] for n in layer]}"
                         )
 
-                    # Conditional routing: drop nodes this layer whose inbound
-                    # edges all declined to fire. Entry points and nodes in
-                    # graphs without conditions are never gated, so an
-                    # unconditional graph takes the same path it always did.
+                    # Drop nodes whose inbound edges all declined to fire.
+                    # Entry points and unconditional graphs are never gated.
                     if self._has_conditions or skipped_nodes:
                         eligible_layer = []
                         for entry in layer:
