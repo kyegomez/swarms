@@ -3349,20 +3349,36 @@ Subtask Breakdown:
         **kwargs,
     ):
         """
-        Run a batch of tasks concurrently.
+        Run a batch of tasks, one after another.
 
         Args:
             tasks (List[str]): List of tasks to run.
-            imgs (List[str], optional): List of images to run. Defaults to None.
+            imgs (List[str], optional): One image per task, paired by position.
+                Omit to run the tasks without images. Defaults to None.
             *args: Additional positional arguments to be passed to the execution method.
             **kwargs: Additional keyword arguments to be passed to the execution method.
 
         Returns:
             List[Any]: List of results from each task execution.
         """
+        # `for task, imgs in zip(...)` rebound the parameter to one image per
+        # iteration, so a List[str] field received a bare str -- and with the
+        # documented default of imgs=None the zip raised before any task ran.
+        if imgs is None:
+            return [
+                self.run(task=task, *args, **kwargs) for task in tasks
+            ]
+
+        if len(imgs) != len(tasks):
+            raise ValueError(
+                f"run_batched got {len(tasks)} tasks and {len(imgs)} images; "
+                "pass one image per task, or omit imgs entirely. Zipping them "
+                "would silently drop the extras."
+            )
+
         return [
-            self.run(task=task, imgs=imgs, *args, **kwargs)
-            for task, imgs in zip(tasks, imgs)
+            self.run(task=task, img=img, *args, **kwargs)
+            for task, img in zip(tasks, imgs)
         ]
 
     def showcase_config(self):
