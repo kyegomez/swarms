@@ -293,7 +293,7 @@ class ReasoningAgentRouter:
                 f"ReasoningAgentRouter Error: {e} Traceback: {traceback.format_exc()} If the error persists, please check the agent's configuration and try again. If you would like support book a call with our team at https://cal.com/swarms"
             )
 
-    def batched_run(self, tasks: List[str], *args, **kwargs):
+    def batched_run(self, tasks: List[str], **kwargs):
         """
         Execute the reasoning process on a batch of tasks.
 
@@ -304,4 +304,4 @@ class ReasoningAgentRouter:
         Returns:
             A list of reasoning process results for each task.
         """
-        return batched_run(self.run, tasks)
+        return batched_run(self.run, tasks, **kwargs)

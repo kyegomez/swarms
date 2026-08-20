@@ -334,8 +334,13 @@ def test_run_calls_reflexion_with_tasks_list():
     assert out == "reflex_result"
 
 
-def test_run_passes_args_kwargs():
-    """run forwards *args and **kwargs to swarm.run."""
+def test_run_forwards_kwargs_and_rejects_stray_positionals():
+    """run forwards **kwargs to swarm.run.
+
+    A stray positional used to be accepted and then dropped on the floor: the
+    forwarder splatted *args after task=, where they could never bind. It is a
+    TypeError now, so a caller passing one is told rather than ignored.
+    """
     router = ReasoningAgentRouter(swarm_type="ire")
     mock_swarm = MagicMock()
     mock_swarm.run.return_value = "ok"
@@ -343,8 +348,11 @@ def test_run_passes_args_kwargs():
     with patch.object(
         router, "select_swarm", return_value=mock_swarm
     ):
-        router.run("task", "extra_arg", key="value")
-    mock_swarm.run.assert_called_once_with(task="task", key="value")
+        router.run("task", key="value")
+        mock_swarm.run.assert_called_once_with(task="task", key="value")
+
+        with pytest.raises(TypeError):
+            router.run("task", "extra_arg")
 
 
 def test_run_raises_executor_error_on_swarm_failure():
@@ -404,14 +412,15 @@ def test_batched_run_empty_list():
     assert results == []
 
 
-def test_batched_run_passes_args_kwargs():
-    """batched_run passes *args and **kwargs to each run call."""
+def test_batched_run_forwards_kwargs_to_every_task():
+    """batched_run reached self.run(task) with no kwargs, so img,
+    streaming_callback and everything else were dropped for batched callers."""
     router = ReasoningAgentRouter(swarm_type="reasoning-duo")
     with patch.object(router, "run", return_value="x") as mock_run:
-        router.batched_run(["a", "b"], "arg", kw="val")
+        router.batched_run(["a", "b"], kw="val")
     assert mock_run.call_count == 2
-    mock_run.assert_any_call("a", "arg", kw="val")
-    mock_run.assert_any_call("b", "arg", kw="val")
+    mock_run.assert_any_call("a", kw="val")
+    mock_run.assert_any_call("b", kw="val")
 
 
 # ---------------------------------------------------------------------------
