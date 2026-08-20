@@ -730,24 +730,19 @@ class HierarchicalSwarm:
             elif not getattr(
                 self.director, "tools_list_dictionary", None
             ):
-                # A caller-supplied director carries no SwarmSpec schema, so it
-                # replies in prose and parse_orders can never read a plan out of
-                # it. Attach the same schema setup_director() would have used.
+                # Without the SwarmSpec schema a caller-supplied director
+                # replies in prose and parse_orders never finds a plan.
                 self.director.tools_list_dictionary = [
                     BaseTool().base_model_to_dict(SwarmSpec)
                 ]
-                # Agent bakes its tool schemas into the LiteLLM instance during
-                # __init__, so the schema above only reaches the model once that
-                # instance is rebuilt -- the same step Agent takes when it adds
-                # planning tools after construction.
+                # Agent bakes tool schemas into LiteLLM at __init__, so the
+                # schema only reaches the model once that instance is rebuilt.
                 if getattr(self.director, "llm", None) is not None:
                     self.director.llm = self.director.llm_handling()
 
-                # The schema alone is not enough: without the director prompt the
-                # model invents field names (e.g. "agent" for "agent_name") and
-                # HierarchicalOrder rejects the order. Append to short_memory
-                # rather than system_prompt, which Agent already copied into its
-                # conversation during __init__.
+                # Without the prompt the model invents field names ("agent"
+                # for "agent_name"). short_memory, not system_prompt: Agent
+                # already copied that into its conversation at __init__.
                 memory = getattr(self.director, "short_memory", None)
                 if memory is not None:
                     memory.add(
@@ -1003,8 +998,8 @@ class HierarchicalSwarm:
                     content=f"--- Loop {current_loop}/{self.max_loops} completed ---",
                 )
 
-            # Every loop failed, so the conversation holds no agent work. Returning
-            # it would look like a successful run that simply produced nothing.
+            # No agent work in the conversation; returning it would read as a
+            # successful run that produced nothing.
             if failed_loops == self.max_loops:
                 raise RuntimeError(
                     f"Hierarchical swarm produced no output: all {self.max_loops} "
