@@ -3,6 +3,7 @@
 Uses real agents and API calls — no mocks.
 """
 
+import os
 import pytest
 
 from swarms.structs.advisor_swarm import AdvisorSwarm
@@ -13,6 +14,24 @@ from swarms.structs.agent import Agent
 # Construction tests
 # ---------------------------------------------------------------------------
 
+
+
+# Live-LLM tests: they call agent.run() against a real model and can only
+# pass with an API key. Without one, Agent.run now honestly raises
+# AgentLLMError after retry exhaustion, so these tests are skipped instead
+# of failing (same convention as tests/telemetry/test_telemetry.py).
+_LLM_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GROQ_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENROUTER_API_KEY",
+)
+_HAS_LLM_KEY = any(os.getenv(k) for k in _LLM_KEYS)
+requires_llm = pytest.mark.skipif(
+    not _HAS_LLM_KEY,
+    reason="no LLM API key set (OPENAI_API_KEY etc.) - live-LLM test skipped",
+)
 
 class TestAdvisorSwarmInit:
     def test_default_construction(self):
@@ -121,6 +140,7 @@ class TestAdvisorSwarmExecution:
     Skip with: pytest -k 'not Execution'
     """
 
+    @requires_llm
     def test_single_turn_with_advisor(self):
         swarm = AdvisorSwarm(
             executor_model_name="gpt-5.4-mini",
@@ -138,6 +158,7 @@ class TestAdvisorSwarmExecution:
         assert "Advisor" in roles
         assert "Executor" in roles
 
+    @requires_llm
     def test_executor_only_no_advisor(self):
         """With max_advisor_uses=0, executor runs alone."""
         swarm = AdvisorSwarm(
@@ -154,6 +175,7 @@ class TestAdvisorSwarmExecution:
         assert "Advisor" not in roles
         assert "Executor" in roles
 
+    @requires_llm
     def test_multi_turn(self):
         """With max_loops=2, executor runs twice."""
         swarm = AdvisorSwarm(
@@ -171,6 +193,7 @@ class TestAdvisorSwarmExecution:
         ]
         assert len(executor_entries) == 2
 
+    @requires_llm
     def test_batched_run(self):
         swarm = AdvisorSwarm(
             executor_model_name="gpt-5.4-mini",
@@ -182,6 +205,7 @@ class TestAdvisorSwarmExecution:
         assert isinstance(results, list)
         assert len(results) == 2
 
+    @requires_llm
     def test_callable_invocation(self):
         swarm = AdvisorSwarm(
             executor_model_name="gpt-5.4-mini",

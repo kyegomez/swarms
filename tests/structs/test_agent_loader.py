@@ -1,4 +1,6 @@
 import os
+import pytest
+import os
 import tempfile
 
 try:
@@ -95,6 +97,24 @@ Test-CSV-Agent-2,"You are another test agent loaded from CSV.",gpt-4o-mini,1,tru
         f.write(content)
     return file_path
 
+
+
+# Live-LLM tests: they call agent.run() against a real model and can only
+# pass with an API key. Without one, Agent.run now honestly raises
+# AgentLLMError after retry exhaustion, so these tests are skipped instead
+# of failing (same convention as tests/telemetry/test_telemetry.py).
+_LLM_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GROQ_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENROUTER_API_KEY",
+)
+_HAS_LLM_KEY = any(os.getenv(k) for k in _LLM_KEYS)
+requires_llm = pytest.mark.skipif(
+    not _HAS_LLM_KEY,
+    reason="no LLM API key set (OPENAI_API_KEY etc.) - live-LLM test skipped",
+)
 
 def test_agent_loader_initialization():
     """Test AgentLoader initialization."""
@@ -584,6 +604,7 @@ def test_parse_markdown_file():
         raise
 
 
+@requires_llm
 def test_loaded_agents_can_run():
     """Test that loaded agents can actually run tasks."""
     try:

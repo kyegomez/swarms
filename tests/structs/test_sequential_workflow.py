@@ -8,6 +8,24 @@ from swarms.structs.sequential_workflow import DRIFT_DETECTION_PROMPT
 from swarms.utils.workspace_utils import get_workspace_dir
 
 
+
+# Live-LLM tests: they call agent.run() against a real model and can only
+# pass with an API key. Without one, Agent.run now honestly raises
+# AgentLLMError after retry exhaustion, so these tests are skipped instead
+# of failing (same convention as tests/telemetry/test_telemetry.py).
+_LLM_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GROQ_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENROUTER_API_KEY",
+)
+_HAS_LLM_KEY = any(os.getenv(k) for k in _LLM_KEYS)
+requires_llm = pytest.mark.skipif(
+    not _HAS_LLM_KEY,
+    reason="no LLM API key set (OPENAI_API_KEY etc.) - live-LLM test skipped",
+)
+
 def test_sequential_workflow_initialization_with_agents():
     """Test SequentialWorkflow initialization with agents"""
     agent1 = Agent(
@@ -41,6 +59,7 @@ def test_sequential_workflow_initialization_with_agents():
     assert workflow.max_loops == 1
 
 
+@requires_llm
 def test_sequential_workflow_multi_agent_execution():
     """Test SequentialWorkflow execution with multiple agents"""
     agent1 = Agent(
@@ -77,6 +96,7 @@ def test_sequential_workflow_multi_agent_execution():
     # SequentialWorkflow may return different types based on output_type, just ensure it's not None
 
 
+@requires_llm
 def test_sequential_workflow_batched_execution():
     """Test batched execution of SequentialWorkflow"""
     agent1 = Agent(
@@ -179,6 +199,7 @@ async def test_sequential_workflow_concurrent_execution():
     assert len(results) == 3
 
 
+@requires_llm
 def test_sequential_workflow_with_multi_agent_collaboration():
     """Test SequentialWorkflow with multi-agent collaboration prompts"""
     agent1 = Agent(
@@ -340,6 +361,7 @@ def test_sequential_workflow_autosave_creates_workspace_dir(
     get_workspace_dir.cache_clear()
 
 
+@requires_llm
 def test_sequential_workflow_autosave_saves_conversation_after_run(
     monkeypatch, tmp_path
 ):

@@ -8,6 +8,7 @@ Tests core functionalities of the LLM Council including:
 - Output formatting
 """
 
+import os
 import pytest
 from loguru import logger
 from dotenv import load_dotenv
@@ -16,6 +17,24 @@ from swarms.structs.agent import Agent
 
 load_dotenv()
 
+
+
+# Live-LLM tests: they call agent.run() against a real model and can only
+# pass with an API key. Without one, Agent.run now honestly raises
+# AgentLLMError after retry exhaustion, so these tests are skipped instead
+# of failing (same convention as tests/telemetry/test_telemetry.py).
+_LLM_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GROQ_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENROUTER_API_KEY",
+)
+_HAS_LLM_KEY = any(os.getenv(k) for k in _LLM_KEYS)
+requires_llm = pytest.mark.skipif(
+    not _HAS_LLM_KEY,
+    reason="no LLM API key set (OPENAI_API_KEY etc.) - live-LLM test skipped",
+)
 
 def test_llm_council_default_initialization():
     """Test LLM Council initialization with default council members."""
@@ -107,6 +126,7 @@ def test_llm_council_custom_initialization():
         raise
 
 
+@requires_llm
 def test_llm_council_run():
     """Test LLM Council run method with a simple query."""
     try:
@@ -200,6 +220,7 @@ def test_llm_council_run():
         raise
 
 
+@requires_llm
 def test_llm_council_batched_run():
     """Test LLM Council batched_run method with multiple tasks."""
     try:
@@ -256,6 +277,7 @@ def test_llm_council_batched_run():
         raise
 
 
+@requires_llm
 def test_llm_council_output_types():
     """Test LLM Council with different output types."""
     try:
