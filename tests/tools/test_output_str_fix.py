@@ -41,11 +41,12 @@ def test_multi_base_model_to_openai_function():
     print(
         "\nTesting multi_base_model_to_openai_function with output_str=False..."
     )
-    result_dict = multi_base_model_to_openai_function(
+    result_list = multi_base_model_to_openai_function(
         [TestModel], output_str=False
     )
-    print(f"✓ Dict result type: {type(result_dict)}")
-    print(f"✓ Dict result keys: {list(result_dict.keys())}")
+    print(f"✓ List result type: {type(result_list)}")
+    print(f"✓ List result length: {len(result_list)}")
+    print(f"✓ First schema keys: {list(result_list[0].keys())}")
 
     print(
         "\nTesting multi_base_model_to_openai_function with output_str=True..."
@@ -179,11 +180,37 @@ def test_function_name_is_the_model_name():
 
     result = base_model_to_openai_function(WeatherQuery)
 
-    assert result["function_call"]["name"] == "WeatherQuery"
-    assert result["functions"][0]["name"] == "WeatherQuery"
+    assert result["type"] == "function"
+    assert result["function"]["name"] == "WeatherQuery"
 
     # The rename must not cost the per-parameter descriptions the loop
     # exists to attach.
-    props = result["functions"][0]["parameters"]["properties"]
+    props = result["function"]["parameters"]["properties"]
     assert props["city"]["description"] == "The city to look up."
     assert props["units"]["description"] == "Temperature units."
+
+
+def test_no_legacy_envelope_round_trip():
+    """Emit modern tools shape directly; BaseTool must not unwrap/rewrap.
+
+    #1848: base_model_to_openai_function used to build
+    {function_call, functions:[…]} only for base_model_to_dict to peel
+    functions[0] and re-wrap as {type, function}. Both paths must now
+    share one modern schema with no envelope keys.
+    """
+    from swarms.tools.base_tool import BaseTool
+
+    helper = base_model_to_openai_function(TestModel)
+    via_tool = BaseTool().base_model_to_dict(TestModel)
+
+    assert helper == via_tool
+    assert "function_call" not in helper
+    assert "functions" not in helper
+    assert helper["type"] == "function"
+    assert helper["function"]["name"] == "TestModel"
+
+    multi = multi_base_model_to_openai_function([TestModel])
+    assert isinstance(multi, list)
+    assert multi[0] == helper
+    assert "function_call" not in multi[0]
+    assert "functions" not in multi[0]
