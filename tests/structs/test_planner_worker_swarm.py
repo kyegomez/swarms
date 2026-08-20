@@ -492,6 +492,38 @@ class TestWorkerPoolMocked:
         ).run(timeout=10)
         assert q.is_all_done() and a.run.call_count == 3
 
+    def test_img_reaches_every_worker(self):
+        q = TaskQueue()
+        q.add_tasks(
+            [
+                PlannerTask(title=f"T{i}", description=f"D{i}")
+                for i in range(2)
+            ]
+        )
+        a = _mock_agent("W1")
+        WorkerPool(
+            agents=[a],
+            task_queue=q,
+            conversation=Conversation(time_enabled=False),
+            max_workers=1,
+            img="chart.png",
+        ).run(timeout=10)
+        assert a.run.call_count == 2
+        for call in a.run.call_args_list:
+            assert call.kwargs["img"] == "chart.png"
+
+    def test_no_img_still_passes_none(self):
+        q = TaskQueue()
+        q.add_task(PlannerTask(title="T", description="D"))
+        a = _mock_agent("W1")
+        WorkerPool(
+            agents=[a],
+            task_queue=q,
+            conversation=Conversation(time_enabled=False),
+            max_workers=1,
+        ).run(timeout=10)
+        assert a.run.call_args.kwargs["img"] is None
+
     def test_worker_prompt_injected(self):
         q = TaskQueue()
         q.add_task(PlannerTask(title="MyTask", description="Do it"))
