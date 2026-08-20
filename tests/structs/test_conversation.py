@@ -937,8 +937,7 @@ def test_dynamic_chunking_keeps_whole_messages():
     conv = _overflowing_conversation(messages=60)
     result = conv.return_history_as_string()
 
-    # time_enabled prefixes every complete message with its [timestamp],
-    # so a fragment at the front means the cut landed mid-message.
+    # Every complete message starts with its [timestamp] under time_enabled.
     for line in result.split("\n\n"):
         assert line.startswith("[")
 
@@ -967,8 +966,7 @@ def test_dynamic_chunking_work_is_bounded_by_the_window(monkeypatch):
     _overflowing_conversation(messages=240).return_history_as_string()
     large = sum(tokenized)
 
-    # An 8x longer transcript trims into the same size window, so the
-    # characters tokenized should stay flat rather than scale with it.
+    # 8x the transcript, same window: tokenized characters should stay flat.
     assert large < small * 2
 
 
