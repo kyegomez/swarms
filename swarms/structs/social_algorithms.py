@@ -358,7 +358,14 @@ class SocialAlgorithms:
         Raises:
             AgentNotFoundError: If no agent with the given name is found.
         """
-        del self.agents[agent_name]
+        for index, agent in enumerate(self.agents):
+            if agent.agent_name == agent_name:
+                del self.agents[index]
+                break
+        else:
+            raise AgentNotFoundError(
+                f"No agent found with name: {agent_name}"
+            )
 
         if self.verbose:
             logger.info(f"Removed agent: {agent_name}")
