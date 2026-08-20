@@ -4,6 +4,14 @@ from swarms.structs.cron_job import CronJob
 
 
 class MockAgent:
+    """Mock agent for testing CronJob.
+
+    Note: Defines both run() and __call__() to sidestep the inverted
+    isinstance(self.agent, Callable) check in CronJob._run_job.
+    Standard Swarms Agent objects define __call__, so they work cleanly.
+    Agents with only run() will be supported once PR #1904 lands.
+    """
+
     def __init__(self, calls_list=None):
         self.calls_list = calls_list if calls_list is not None else []
 
@@ -21,7 +29,9 @@ def test_cron_job_batched_run_schedules_all_tasks():
     job = CronJob(agent=agent, interval="1second")
 
     t = threading.Thread(
-        target=lambda: job.batched_run(["task-A", "task-B", "task-C"]),
+        target=lambda: job.batched_run(
+            ["task-A", "task-B", "task-C"]
+        ),
         daemon=True,
     )
     t.start()
@@ -74,3 +84,24 @@ def test_cron_job_single_run_blocks_and_returns_job():
 
     assert len(results) == 1
     assert results[0] is not None
+
+
+def test_cron_job_hourly_interval_no_typeerror():
+    calls = []
+    agent = MockAgent(calls)
+    job = CronJob(agent=agent, interval="1hour")
+
+    # _run invokes _interval_method; should not raise TypeError
+    scheduled_job = job._run("task-hourly")
+    assert scheduled_job is not None
+    job.stop()
+
+
+def test_cron_job_plural_hours_interval_no_typeerror():
+    calls = []
+    agent = MockAgent(calls)
+    job = CronJob(agent=agent, interval="2hours")
+
+    scheduled_job = job._run("task-plural-hours")
+    assert scheduled_job is not None
+    job.stop()
