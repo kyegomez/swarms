@@ -1,7 +1,6 @@
 import random
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from loguru import logger
 
 from swarms.prompts.collaborative_prompts import (
     get_multi_agent_collaboration_prompt_one,
@@ -195,4 +194,3 @@ def create_agent_map(
         agent_map[name] = agent
 
     return agent_map
-

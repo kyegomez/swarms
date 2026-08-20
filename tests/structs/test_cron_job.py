@@ -21,7 +21,9 @@ def test_cron_job_batched_run_schedules_all_tasks():
     job = CronJob(agent=agent, interval="1second")
 
     t = threading.Thread(
-        target=lambda: job.batched_run(["task-A", "task-B", "task-C"]),
+        target=lambda: job.batched_run(
+            ["task-A", "task-B", "task-C"]
+        ),
         daemon=True,
     )
     t.start()

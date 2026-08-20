@@ -45,12 +45,15 @@ def test_create_agent_map_duplicate_names_raises():
     with pytest.raises(ValueError) as exc_info:
         create_agent_map([agent1, agent2])
 
-    assert "Duplicate agent name 'DuplicateName'" in str(exc_info.value)
+    assert "Duplicate agent name 'DuplicateName'" in str(
+        exc_info.value
+    )
     assert "requires unique agent_name values" in str(exc_info.value)
 
 
 def test_create_agent_map_plain_callables_and_fallbacks():
     """Test callables without agent_name and objects using name fallback interact correctly with duplicate detection."""
+
     def func_agent_a():
         pass
 
@@ -67,7 +70,9 @@ def test_create_agent_map_plain_callables_and_fallbacks():
     dup_agent = MockAgent("func_agent_a")
     with pytest.raises(ValueError) as exc_info:
         create_agent_map([func_agent_a, dup_agent])
-    assert "Duplicate agent name 'func_agent_a'" in str(exc_info.value)
+    assert "Duplicate agent name 'func_agent_a'" in str(
+        exc_info.value
+    )
 
 
 def test_create_agent_map_empty_list_raises():
@@ -79,6 +84,7 @@ def test_create_agent_map_empty_list_raises():
 
 def test_create_agent_map_missing_name_raises():
     """Test that objects lacking a valid name attribute raise TypeError."""
+
     class InvalidAgent:
         pass
 
