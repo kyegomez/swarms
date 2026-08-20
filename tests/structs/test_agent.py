@@ -3207,5 +3207,9 @@ class TestRunBatchedImagePairing:
         """zip() would have run one task and discarded the rest in silence."""
         agent = self._agent()
         with patch.object(Agent, "run", side_effect=lambda **kw: kw):
-            with pytest.raises(ValueError, match="one image per task"):
-                Agent.run_batched(agent, ["t1", "t2", "t3"], imgs=["a.png"])
+            with pytest.raises(
+                ValueError, match="one image per task"
+            ):
+                Agent.run_batched(
+                    agent, ["t1", "t2", "t3"], imgs=["a.png"]
+                )
