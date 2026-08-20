@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Union
 
 from swarms.utils.docstring_parser import parse
 from pydantic import BaseModel
@@ -26,7 +26,7 @@ def _remove_a_key(d: dict, remove_key: str) -> None:
 def base_model_to_openai_function(
     pydantic_type: type[BaseModel],
     output_str: bool = False,
-) -> dict[str, Any]:
+) -> Union[dict[str, Any], str]:
     """
     Convert a Pydantic model class to an OpenAI tool/function schema.
 
@@ -39,7 +39,7 @@ def base_model_to_openai_function(
             string. Defaults to False.
 
     Returns:
-        dict[str, Any]: The OpenAI tool schema, or a JSON string if
+        dict[str, Any] | str: The OpenAI tool schema, or a JSON string if
             output_str is True.
     """
     schema = pydantic_type.model_json_schema()
@@ -104,7 +104,7 @@ def base_model_to_openai_function(
 def multi_base_model_to_openai_function(
     pydantic_types: List[BaseModel] = None,
     output_str: bool = False,
-) -> list[dict[str, Any]]:
+) -> Union[list[dict[str, Any]], str]:
     """
     Convert multiple Pydantic model classes to OpenAI tool schemas.
 
@@ -119,7 +119,7 @@ def multi_base_model_to_openai_function(
             string. Defaults to False.
 
     Returns:
-        list[dict[str, Any]]: OpenAI tool schemas, or a JSON string if
+        list[dict[str, Any]] | str: OpenAI tool schemas, or a JSON string if
             output_str is True.
     """
     results: list[dict[str, Any]] = [

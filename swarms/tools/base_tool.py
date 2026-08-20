@@ -232,8 +232,6 @@ class BaseTool(BaseModel):
         self,
         pydantic_type: type[BaseModel],
         output_str: bool = False,
-        *args: Any,
-        **kwargs: Any,
     ) -> Union[dict[str, Any], str]:
         """
         Convert a Pydantic BaseModel to OpenAI function calling schema dictionary.
@@ -245,8 +243,6 @@ class BaseTool(BaseModel):
         Args:
             pydantic_type (type[BaseModel]): The Pydantic model class to convert
             output_str (bool): Whether to return string output format
-            *args: Additional positional arguments (unused; kept for API compat)
-            **kwargs: Additional keyword arguments (unused; kept for API compat)
 
         Returns:
             Union[dict[str, Any], str]: OpenAI function calling schema dictionary or JSON string
