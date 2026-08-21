@@ -69,8 +69,10 @@ def test_single_agent_imgs_and_kwargs_forwarding(monkeypatch):
         orchestra, "_infer_task_skills", lambda task: fake_inference
     )
 
-    custom_cb = lambda x: None
-    result = orchestra.run(
+    def custom_cb(x):
+        return None
+
+    orchestra.run(
         "Write python code",
         imgs=["img1.png", "img2.png"],
         custom_param="custom_val",
@@ -117,7 +119,7 @@ def test_multi_agent_imgs_and_kwargs_forwarding(monkeypatch):
         orchestra, "_infer_task_skills", lambda task: fake_inference
     )
 
-    result = orchestra.run(
+    orchestra.run(
         "Parallel task",
         imgs=["imgA.png", "imgB.png"],
         extra_flag=True,
