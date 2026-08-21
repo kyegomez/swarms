@@ -216,6 +216,19 @@ Evaluate:
 # ─── SkillOrchestra Class ────────────────────────────────────────
 
 
+def _run_agent_task(
+    agent: Any,
+    task: str,
+    img: Optional[str] = None,
+    imgs: Optional[List[str]] = None,
+    **kwargs,
+) -> Any:
+    """Execute an agent's run method or call the agent directly."""
+    if hasattr(agent, "run") and callable(getattr(agent, "run")):
+        return agent.run(task=task, img=img, imgs=imgs, **kwargs)
+    return agent(task=task, img=img, imgs=imgs, **kwargs)
+
+
 class SkillOrchestra:
     """
     Skill-aware agent orchestration based on the SkillOrchestra paper.
@@ -598,13 +611,8 @@ class SkillOrchestra:
                     f"Executing agent '{sel.agent_name}' on task"
                 )
 
-            target = (
-                agent.run
-                if hasattr(agent, "run")
-                and callable(getattr(agent, "run"))
-                else agent
-            )
-            response = target(
+            response = _run_agent_task(
+                agent,
                 task=agent_task,
                 img=img,
                 imgs=imgs,
@@ -632,14 +640,9 @@ class SkillOrchestra:
                         self.agents, sel.agent_name
                     )
                     agent_task = sel.assigned_task or task
-                    target = (
-                        agent.run
-                        if hasattr(agent, "run")
-                        and callable(getattr(agent, "run"))
-                        else agent
-                    )
                     future = executor.submit(
-                        target,
+                        _run_agent_task,
+                        agent,
                         task=agent_task,
                         img=img,
                         imgs=imgs,

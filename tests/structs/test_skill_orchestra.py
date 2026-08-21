@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import MagicMock
 from examples.multi_agent.skill_orchestra_examples.skill_orchestra import (
     SkillOrchestra,
