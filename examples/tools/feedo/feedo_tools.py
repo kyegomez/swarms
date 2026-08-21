@@ -14,12 +14,15 @@ class FeedoMemoryTools:
     Provides tool functions for Swarms agents to interact with the 
     Feedo decentralized E2EE memory network.
     
-    https://feedo.ai
+    https://feedo.ink
     """
     def __init__(self, usage_key: str = None, private: bool = True):
         usage_key = usage_key or os.getenv("FEEDO_USAGE_KEY")
         if not usage_key:
-            raise ValueError("FEEDO_USAGE_KEY is required to initialize Feedo memory.")
+            raise ValueError(
+                "FEEDO_USAGE_KEY is required to initialize Feedo memory.\n"
+                "You can generate a free testnet usage key at: https://feedo.ink"
+            )
             
         self.memory = FeedoMemory(usage_key=usage_key, private=private)
 

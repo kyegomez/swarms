@@ -8,7 +8,7 @@ from feedo_tools import FeedoMemoryTools
 
 def main():
     # 1. Initialize Feedo Tools 
-    # (Requires FEEDO_USAGE_KEY environment variable. You can get a free testnet key at feedo.ai)
+    # (Requires FEEDO_USAGE_KEY environment variable. You can get a free testnet key at feedo.ink)
     try:
         feedo_tools = FeedoMemoryTools()
     except Exception as e:
