@@ -232,20 +232,17 @@ class BaseTool(BaseModel):
         self,
         pydantic_type: type[BaseModel],
         output_str: bool = False,
-        *args: Any,
-        **kwargs: Any,
     ) -> Union[dict[str, Any], str]:
         """
         Convert a Pydantic BaseModel to OpenAI function calling schema dictionary.
 
-        This method transforms a Pydantic model into a dictionary format compatible
-        with OpenAI's function calling API. Results are cached for performance.
+        Thin validated wrapper around ``base_model_to_openai_function``, which
+        already emits the modern ``{"type": "function", "function": …}`` shape.
+        No legacy envelope unwrap/rewrap.
 
         Args:
             pydantic_type (type[BaseModel]): The Pydantic model class to convert
             output_str (bool): Whether to return string output format
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
 
         Returns:
             Union[dict[str, Any], str]: OpenAI function calling schema dictionary or JSON string
@@ -277,31 +274,9 @@ class BaseTool(BaseModel):
                 f"Converting Pydantic model {pydantic_type.__name__} to schema",
             )
 
-            # Get the base function schema
-            base_result = base_model_to_openai_function(
-                pydantic_type, output_str=output_str, *args, **kwargs
+            result = base_model_to_openai_function(
+                pydantic_type, output_str=output_str
             )
-
-            # If output_str is True, return the string directly
-            if output_str and isinstance(base_result, str):
-                return base_result
-
-            # Extract the function definition from the functions array
-            if (
-                "functions" in base_result
-                and len(base_result["functions"]) > 0
-            ):
-                function_def = base_result["functions"][0]
-
-                # Return in proper OpenAI function calling format
-                result = {
-                    "type": "function",
-                    "function": function_def,
-                }
-            else:
-                raise FunctionSchemaError(
-                    "Failed to extract function definition from base_model_to_openai_function result"
-                )
 
             self._log_if_verbose(
                 "info",

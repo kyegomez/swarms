@@ -39,9 +39,10 @@ def test_base_model_to_dict():
 
     result = tool.base_model_to_dict(TestModel)
 
-    assert "type" in result
-    assert "properties" in result["properties"]
-    assert "name" in result["properties"]["properties"]
+    assert result["type"] == "function"
+    assert result["function"]["name"] == "TestModel"
+    assert "name" in result["function"]["parameters"]["properties"]
+    assert "age" in result["function"]["parameters"]["properties"]
     print("base_model_to_dict test passed")
 
 
