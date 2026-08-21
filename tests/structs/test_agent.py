@@ -2557,6 +2557,41 @@ class TestMaxTokens:
         assert agent.max_tokens == 16000
 
 
+class TestSavedStatePath:
+    """saved_state_path must survive __init__ instead of being overwritten."""
+
+    @staticmethod
+    def _agent(**kwargs):
+        with patch("swarms.structs.agent.LiteLLM"):
+            return Agent(
+                agent_name="state_agent",
+                model_name="gpt-4o-mini",
+                max_loops=1,
+                print_on=False,
+                verbose=False,
+                persistent_memory=False,
+                **kwargs,
+            )
+
+    def test_explicit_path_is_honoured(self):
+        """The constructor argument was replaced with a generated filename."""
+        agent = self._agent(saved_state_path="my_agent_state.json")
+
+        assert agent.saved_state_path == "my_agent_state.json"
+
+    def test_unset_path_still_gets_a_generated_one(self):
+        agent = self._agent()
+
+        assert agent.saved_state_path.startswith("agent-")
+        assert agent.saved_state_path.endswith("_state.json")
+
+    def test_two_agents_without_a_path_do_not_collide(self):
+        first = self._agent().saved_state_path
+        second = self._agent().saved_state_path
+
+        assert first != second
+
+
 # ============================================================================
 # RELIABILITY CHECK WARNINGS
 # ============================================================================

@@ -434,10 +434,10 @@ class Agent:
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
         self.agent_description = agent_description
-        # self.saved_state_path = f"{self.agent_name}_{generate_api_key(prefix='agent-')}_state.json"
-        self.saved_state_path = (
-            f"{generate_api_key(prefix='agent-')}_state.json"
-        )
+        if not self.saved_state_path:
+            self.saved_state_path = (
+                f"{generate_api_key(prefix='agent-')}_state.json"
+            )
         self.autosave = autosave
         self.multi_modal = multi_modal
         self.tokenizer = tokenizer
