@@ -2515,6 +2515,43 @@ class TestContextLength:
         assert agent.context_length == 16000
 
 
+class TestMaxTokens:
+    """max_tokens must survive __init__, the way context_length already does."""
+
+    @staticmethod
+    def _agent(**kwargs):
+        with patch("swarms.structs.agent.LiteLLM"):
+            return Agent(
+                agent_name="tok_agent",
+                max_loops=1,
+                print_on=False,
+                verbose=False,
+                persistent_memory=False,
+                **kwargs,
+            )
+
+    def test_explicit_value_is_honoured(self):
+        """A caller capping output was overwritten with the model's own limit."""
+        agent = self._agent(model_name="gpt-4o-mini", max_tokens=500)
+
+        assert agent.max_tokens == 500
+
+    def test_default_uses_the_model_output_window(self):
+        agent = self._agent(model_name="gpt-4o-mini")
+
+        assert agent.max_tokens > 500
+
+    def test_non_positive_falls_back_to_the_model(self):
+        for bad in (0, -1, None):
+            agent = self._agent(model_name="gpt-4o-mini", max_tokens=bad)
+            assert agent.max_tokens > 0
+
+    def test_unknown_model_falls_back(self):
+        agent = self._agent(model_name="totally-made-up-model-xyz")
+
+        assert agent.max_tokens == 16000
+
+
 # ============================================================================
 # RELIABILITY CHECK WARNINGS
 # ============================================================================
