@@ -1,6 +1,6 @@
-# Feedo Memory Network Integration
+# Feedo Protocol Integration
 
-This directory provides an integration for the **Feedo Memory Network**, a decentralized, end-to-end encrypted vector database designed specifically for AI agents.
+This directory provides an integration for the **Feedo Protocol**, a decentralized, end-to-end encrypted vector database designed specifically for AI agents.
 
 By using `FeedoMemoryTools`, you can give your Swarms agents permanent, autonomous memory.
 
