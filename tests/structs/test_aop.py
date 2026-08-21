@@ -1,3 +1,4 @@
+import json
 import socket
 import time
 from unittest.mock import Mock, patch
@@ -1216,6 +1217,25 @@ def test_aop_cluster_get_tools():
         mock_manager_cls.return_value.get_tools.assert_called_once_with(
             format="openai"
         )
+
+
+def test_aop_cluster_get_tools_output_types():
+    """json and str were documented but the dict list came back regardless."""
+    urls = ["http://localhost:8000"]
+    tools = [{"function": {"name": "agent-a"}}]
+
+    with patch("swarms.structs.aop.MCPManager") as mock_manager_cls:
+        mock_manager_cls.return_value.get_tools.return_value = tools
+        cluster = AOPCluster(urls)
+
+        assert cluster.get_tools() == tools
+        assert cluster.get_tools(output_type="dict") == tools
+
+        as_json = cluster.get_tools(output_type="json")
+        assert isinstance(as_json, str)
+        assert json.loads(as_json) == tools
+
+        assert cluster.get_tools(output_type="str") == str(tools)
 
 
 def test_aop_cluster_find_tool_by_server_name():

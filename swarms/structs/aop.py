@@ -1,4 +1,5 @@
 import asyncio
+import json
 from contextlib import AbstractAsyncContextManager
 import socket
 import sys
@@ -8,7 +9,7 @@ import traceback
 from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Literal, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional, Union
 from uuid import uuid4
 
 from loguru import logger
@@ -2931,22 +2932,30 @@ class AOPCluster:
 
     def get_tools(
         self, output_type: Literal["json", "dict", "str"] = "dict"
-    ) -> List[Dict[str, Any]]:
+    ) -> Union[List[Dict[str, Any]], str]:
         """
         Retrieve the list of tools (agents) from all MCP servers in the cluster.
 
         Args:
             output_type (Literal["json", "dict", "str"], optional): The format of the output.
-                Can be "json", "dict", or "str". Defaults to "dict".
+                "dict" returns the tool dictionaries, "json" returns them as a
+                JSON string, and "str" returns their string representation.
+                Defaults to "dict".
 
         Returns:
-            List[Dict[str, Any]]: A list of tool information dictionaries.
+            Union[List[Dict[str, Any]], str]: The tools, in the requested format.
         """
-        return MCPManager(
+        tools = MCPManager(
             mcp_urls=self.urls,
             transport=self.transport,
             agent_name="AOPCluster",
         ).get_tools(format="openai")
+
+        if output_type == "json":
+            return json.dumps(tools, indent=2)
+        if output_type == "str":
+            return str(tools)
+        return tools
 
     def find_tool_by_server_name(
         self, server_name: str

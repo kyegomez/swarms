@@ -1,7 +1,7 @@
 import threading
 import time
 import traceback
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import schedule
 from loguru import logger
@@ -32,18 +32,52 @@ class CronJobExecutionError(CronJobError):
 
 
 class CronJob:
-    """A wrapper class that turns any callable (including Swarms agents) into a scheduled cron job.
+    """Turn any callable, including a Swarms ``Agent``, into a scheduled job.
 
-    This class provides functionality to schedule and run tasks at specified intervals using
-    the schedule library with cron-style scheduling.
+    One ``CronJob`` binds **one** agent to **one** interval. It schedules the
+    task, runs it on its own background thread, and keeps running it until you
+    stop it. For a fleet of agents on different cadences, see :meth:`run_many`.
+
+    **Failure behaviour.** A task that raises is logged and retried on the next
+    tick, the way cron behaves. It does not take the schedule down. Set
+    ``max_consecutive_errors`` to stop a job that is failing every single time;
+    when that budget is exhausted the job stops *and* :meth:`run` raises, so a
+    dead schedule is never mistaken for a healthy one.
+
+    Args:
+        agent: The Swarms ``Agent`` instance or plain callable to schedule.
+            Anything exposing ``run(task=...)`` is called through it; anything
+            else is called directly as ``agent(task)``.
+        interval: How often to run, as ``"<number><unit>"`` where unit is one of
+            ``second(s)``, ``minute(s)``, ``hour(s)``. For example ``"30seconds"``,
+            ``"10minutes"``, ``"1hour"``. Must be greater than zero.
+        job_id: Unique identifier. Generated if omitted.
+        callback: Optional post-processor, called as
+            ``callback(output, task, metadata)`` and returning the value the job
+            should yield. A callback that raises is logged and the original
+            output is used.
+        max_consecutive_errors: Stop after this many back-to-back failures.
+            ``None`` (default) retries forever.
 
     Attributes:
-        agent: The Swarms Agent instance or callable to be scheduled
-        interval: The interval string (e.g., "5seconds", "10minutes", "1hour")
-        job_id: Unique identifier for the job
-        is_running: Flag indicating if the job is currently running
-        thread: Thread object for running the job
-        callback: Optional callback function to customize output processing
+        is_running (bool): Whether the scheduler thread is live.
+        execution_count (int): Successful executions so far.
+        error_count (int): Total failed executions.
+        consecutive_errors (int): Failures since the last success. Reset to 0
+            on any successful tick.
+        last_error (Optional[Exception]): The most recent failure, if any.
+        start_time (Optional[float]): Epoch seconds when the job started.
+
+    Raises:
+        CronJobConfigError: If ``agent`` is missing, or ``interval`` is empty,
+            zero, or malformed.
+
+    Example:
+        >>> from swarms import Agent
+        >>> from swarms.structs.cron_job import CronJob
+        >>> agent = Agent(agent_name="Reporter", model_name="gpt-5.4", max_loops=1)
+        >>> job = CronJob(agent=agent, interval="10minutes")
+        >>> job.run("Summarise anything new since the last check")  # blocks
     """
 
     def __init__(
@@ -52,12 +86,17 @@ class CronJob:
         interval: Optional[str] = None,
         job_id: Optional[str] = None,
         callback: Optional[Callable[[Any, str, dict], Any]] = None,
+        max_consecutive_errors: Optional[int] = None,
     ):
         """Initialize the CronJob wrapper.
 
         Args:
             agent: The Swarms Agent instance or callable to be scheduled
             interval: The interval string (e.g., "5seconds", "10minutes", "1hour")
+            max_consecutive_errors: Give up after this many back-to-back failed
+                executions. ``None`` (the default) never gives up, which is what
+                cron does: a task that fails is logged and retried on the next
+                tick. Set an integer to stop a job that is failing every time.
             job_id: Optional unique identifier for the job. If not provided, one will be generated.
             callback: Optional callback function to customize output processing.
                      Signature: callback(output: Any, task: str, metadata: dict) -> Any
@@ -79,6 +118,17 @@ class CronJob:
         self.execution_count = 0
         self.start_time = None
 
+        # Failure accounting. A task that raises must not take the schedule
+        # down with it, but the failures still have to be visible: the loop
+        # used to set is_running=False and re-raise, which killed the
+        # scheduler thread on the first error while run() returned normally,
+        # so a dead job was indistinguishable from a healthy one.
+        self.error_count = 0
+        self.consecutive_errors = 0
+        self.last_error = None
+        self.max_consecutive_errors = max_consecutive_errors
+        self._stopped_due_to_error = False
+
         logger.info(f"Initializing CronJob with ID: {self.job_id}")
 
         self.reliability_check()
@@ -87,6 +137,19 @@ class CronJob:
         if self.agent is None:
             raise CronJobConfigError(
                 "Agent must be provided during initialization"
+            )
+
+        # An empty string is not "no interval given", it is a bad interval.
+        # It used to fall through this guard and only surface much later, from
+        # _run(), as "Interval must be provided during initialization" -- which
+        # is confusing, because it was provided.
+        if (
+            self.interval is not None
+            and not str(self.interval).strip()
+        ):
+            raise CronJobConfigError(
+                f"Interval cannot be empty, got {self.interval!r}. "
+                'Use a value like "5seconds", "10minutes" or "1hour".'
             )
 
         # Parse interval if provided
@@ -127,16 +190,26 @@ class CronJob:
             number = int(match.group(1))
             unit = match.group(2)
 
+            # "0second" parsed fine and then scheduled a job that never fired:
+            # no error, no log line, just a cron job that silently does nothing.
+            if number == 0:
+                raise CronJobConfigError(
+                    f"Interval must be greater than zero, got {interval!r}. "
+                    "A zero interval schedules a job that never runs."
+                )
+
             # Map units to scheduling methods
             unit_map = {
                 "second": self.every_seconds,
                 "seconds": self.every_seconds,
                 "minute": self.every_minutes,
                 "minutes": self.every_minutes,
-                "hour": lambda x, task, **kwargs: self.schedule.every(x).hours.do(
-                    self._run_job, task, **kwargs
-                ),
-                "hours": lambda x, task, **kwargs: self.schedule.every(x).hours.do(
+                "hour": lambda x, task, **kwargs: self.schedule.every(
+                    x
+                ).hours.do(self._run_job, task, **kwargs),
+                "hours": lambda x, task, **kwargs: self.schedule.every(
+                    x
+                ).hours.do(
                     self._run_job, task, **kwargs
                 ),
             }
@@ -147,9 +220,9 @@ class CronJob:
                     f"Unsupported time unit: {unit}. Supported units are: {supported_units}"
                 )
 
-            self._interval_method = lambda task, **kwargs: unit_map[unit](
-                number, task, **kwargs
-            )
+            self._interval_method = lambda task, **kwargs: unit_map[
+                unit
+            ](number, task, **kwargs)
             logger.debug(f"Configured {number} {unit} interval")
 
         except ValueError as e:
@@ -204,6 +277,21 @@ class CronJob:
                 f"Failed to run job: {str(e)} Traceback: {traceback.format_exc()}"
             )
 
+    def _raise_if_stopped_by_errors(self):
+        """Surface a schedule that gave up instead of returning normally.
+
+        ``_block_forever`` loops on ``is_running``, which the scheduler clears
+        both on a clean ``stop()`` and on giving up after repeated failures.
+        Without this check the two are indistinguishable to the caller: ``run``
+        hands back a ``Job`` object and the schedule is quietly dead.
+        """
+        if self._stopped_due_to_error:
+            raise CronJobExecutionError(
+                f"Job {self.job_id} stopped after "
+                f"{self.consecutive_errors} consecutive failed executions "
+                f"({self.error_count} total). Last error: {self.last_error}"
+            )
+
     def _block_forever(self):
         """Block until interrupted or stopped."""
         try:
@@ -221,36 +309,64 @@ class CronJob:
             raise
 
     def run(self, task: str, **kwargs):
-        """Schedule a single task and block for the life of the process until KeyboardInterrupt,
-        at which point stop() is called.
+        """Schedule ``task`` and block, running it every interval until stopped.
+
+        Blocks the calling thread. The task runs on a background thread, so use
+        ``KeyboardInterrupt`` (Ctrl-C) or :meth:`stop` from another thread to end
+        it. A failing task is logged and retried on the next tick.
 
         Args:
-            task: The task string to be executed by the agent
-            **kwargs: Additional parameters to pass to the agent's run method
+            task: The task string handed to the agent on every tick.
+            **kwargs: Forwarded to the agent's ``run`` on every tick, for example
+                ``img="chart.png"`` or ``streaming_callback=fn``.
 
         Returns:
-            The scheduled job instance
+            schedule.Job: The scheduled job, returned once the schedule stops.
+
+        Raises:
+            CronJobConfigError: If no agent or interval was configured.
+            CronJobExecutionError: If scheduling failed, or if the job gave up
+                after exhausting ``max_consecutive_errors``. The message names
+                the failure count and the last error.
+
+        Example:
+            >>> job = CronJob(agent=agent, interval="30seconds")
+            >>> job.run("Check the BTC price and flag moves over 2%")
         """
         job = self._run(task, **kwargs)
         self._block_forever()
+        self._raise_if_stopped_by_errors()
         return job
 
     def batched_run(self, tasks: List[str], **kwargs):
-        """Schedule every task in tasks before blocking for the life of the process until
-        KeyboardInterrupt, at which point stop() is called.
+        """Schedule several tasks on the **same** interval, then block.
+
+        Every task in ``tasks`` is registered before blocking, so all of them
+        run on each tick. This is one agent doing several things on one cadence.
+        For several agents on *different* cadences use :meth:`run_many`.
 
         Args:
-            tasks: The list of task strings to be executed by the agent
-            **kwargs: Additional parameters to pass to the agent's run method
+            tasks: Task strings, each scheduled at this job's interval.
+            **kwargs: Forwarded to the agent's ``run`` for every task.
 
         Returns:
-            List of scheduled job instances
+            List[schedule.Job]: One scheduled job per task, in input order.
+
+        Raises:
+            CronJobConfigError: If no agent or interval was configured.
+            CronJobExecutionError: If scheduling failed, or if the job gave up
+                after exhausting ``max_consecutive_errors``.
+
+        Example:
+            >>> job = CronJob(agent=agent, interval="1hour")
+            >>> job.batched_run(["Check inventory", "Check refunds"])
         """
         outputs = []
         for task in tasks:
             output = self._run(task, **kwargs)
             outputs.append(output)
         self._block_forever()
+        self._raise_if_stopped_by_errors()
         return outputs
 
     def __call__(self, task: str, **kwargs):
@@ -279,9 +395,13 @@ class CronJob:
         try:
             logger.debug(f"Executing task for job {self.job_id}")
 
-            # Execute the agent
-            if isinstance(self.agent, Callable):
-                original_output = self.agent.run(task=task, **kwargs)
+            # Execute the agent. Discriminate on having a run() method, not
+            # on isinstance(Callable): a plain function is Callable too, so
+            # that test sent every function down the .run() path and left the
+            # branch below unreachable.
+            runner = getattr(self.agent, "run", None)
+            if callable(runner):
+                original_output = runner(task=task, **kwargs)
             else:
                 original_output = self.agent(task, **kwargs)
 
@@ -386,10 +506,18 @@ class CronJob:
             )
 
     def stop(self):
-        """Stop the scheduled job.
+        """Stop the job and join its scheduler thread.
+
+        Safe to call from another thread while :meth:`run` is blocking, and safe
+        to call on a job that is already stopped. Waits up to 5 seconds for the
+        scheduler thread to exit.
 
         Raises:
-            CronJobExecutionError: If the job fails to stop properly
+            CronJobExecutionError: If the job fails to stop properly.
+
+        Example:
+            >>> threading.Timer(60, job.stop).start()  # stop after a minute
+            >>> job.run("Poll the queue")
         """
         try:
             logger.info(f"Stopping job {self.job_id}")
@@ -418,15 +546,40 @@ class CronJob:
         while self.is_running:
             try:
                 self.schedule.run_pending()
-                time.sleep(1)
+                self.consecutive_errors = 0
             except Exception as e:
+                # Log and keep going. Setting is_running=False and re-raising
+                # here killed the scheduler thread on the first failed
+                # execution, so a single transient error (a rate limit, a
+                # dropped connection) permanently stopped the job -- and
+                # because _block_forever also loops on is_running, run()
+                # returned normally and the caller was never told.
+                self.error_count += 1
+                self.consecutive_errors += 1
+                self.last_error = e
                 logger.error(
-                    f"Error in schedule loop for job {self.job_id}: {str(e)}"
+                    f"Execution failed for job {self.job_id} "
+                    f"(failure {self.consecutive_errors} in a row, "
+                    f"{self.error_count} total): {str(e)}\n"
+                    f"{traceback.format_exc()}"
                 )
-                self.is_running = False
-                raise CronJobExecutionError(
-                    f"Schedule loop failed: {str(e)}"
-                )
+
+                if (
+                    self.max_consecutive_errors is not None
+                    and self.consecutive_errors
+                    >= self.max_consecutive_errors
+                ):
+                    logger.error(
+                        f"Job {self.job_id} stopping: "
+                        f"{self.consecutive_errors} consecutive failures "
+                        f"reached max_consecutive_errors="
+                        f"{self.max_consecutive_errors}"
+                    )
+                    self._stopped_due_to_error = True
+                    self.is_running = False
+                    return
+
+            time.sleep(1)
 
     def set_callback(self, callback: Callable[[Any, str, dict], Any]):
         """Set or update the callback function for output customization.
@@ -439,10 +592,20 @@ class CronJob:
         logger.info(f"Callback updated for job {self.job_id}")
 
     def get_execution_stats(self) -> dict:
-        """Get execution statistics for the cron job.
+        """Snapshot of how the job is doing, safe to poll while it runs.
 
         Returns:
-            dict: Statistics including execution count, start time, running status, etc.
+            dict: ``job_id``, ``is_running``, ``execution_count`` (successes),
+            ``start_time``, ``uptime`` in seconds, ``interval``, plus the failure
+            picture: ``error_count`` (total failures), ``consecutive_errors``
+            (since the last success), ``last_error`` as a string or ``None``, and
+            ``stopped_due_to_error`` which is ``True`` only when the job gave up
+            after exhausting ``max_consecutive_errors``.
+
+        Example:
+            >>> stats = job.get_execution_stats()
+            >>> if stats["consecutive_errors"] > 3:
+            ...     alert(f"{stats['job_id']} is struggling: {stats['last_error']}")
         """
         return {
             "job_id": self.job_id,
@@ -455,7 +618,138 @@ class CronJob:
                 else 0
             ),
             "interval": self.interval,
+            "error_count": self.error_count,
+            "consecutive_errors": self.consecutive_errors,
+            "last_error": (
+                str(self.last_error) if self.last_error else None
+            ),
+            "stopped_due_to_error": self._stopped_due_to_error,
         }
+
+    @classmethod
+    def run_many(
+        cls,
+        schedules: List[Dict[str, Any]],
+        block: bool = True,
+    ) -> List["CronJob"]:
+        """Run several agents together, each on its own interval.
+
+        A ``CronJob`` binds one agent to one interval, so a fleet on mixed
+        cadences needs one job per agent. This builds them, starts them all,
+        and optionally blocks until interrupted.
+
+        Each job keeps its own scheduler thread, so the agents are isolated:
+        one failing does not delay or stop the others, and each carries its
+        own error counters and ``max_consecutive_errors`` budget.
+
+        Args:
+            schedules: One mapping per agent. ``agent``, ``interval`` and
+                ``task`` are required. Optional keys: ``job_id``, ``callback``,
+                ``max_consecutive_errors``, and ``kwargs`` (a dict forwarded to
+                the agent's ``run``).
+            block: Hold the calling thread until KeyboardInterrupt, then stop
+                every job. Pass ``False`` to start them and return immediately,
+                leaving the caller responsible for ``stop_many``.
+
+        Returns:
+            List[CronJob]: The started jobs, in the order given, so they can be
+            inspected via ``get_execution_stats()`` or stopped individually.
+
+        Raises:
+            CronJobConfigError: If ``schedules`` is empty or an entry is
+                missing a required key.
+            CronJobExecutionError: If, once blocking ends, any job had stopped
+                because it exhausted ``max_consecutive_errors``.
+
+        Example:
+            >>> CronJob.run_many([
+            ...     {"agent": price_agent, "interval": "30seconds",
+            ...      "task": "Check BTC price"},
+            ...     {"agent": digest_agent, "interval": "1hour",
+            ...      "task": "Summarise the last hour"},
+            ... ])
+        """
+        if not schedules:
+            raise CronJobConfigError(
+                "run_many requires at least one schedule"
+            )
+
+        jobs: List["CronJob"] = []
+        for index, spec in enumerate(schedules):
+            missing = [
+                key
+                for key in ("agent", "interval", "task")
+                if not spec.get(key)
+            ]
+            if missing:
+                raise CronJobConfigError(
+                    f"schedules[{index}] is missing required "
+                    f"key(s): {', '.join(missing)}"
+                )
+
+            job = cls(
+                agent=spec["agent"],
+                interval=spec["interval"],
+                job_id=spec.get("job_id"),
+                callback=spec.get("callback"),
+                max_consecutive_errors=spec.get(
+                    "max_consecutive_errors"
+                ),
+            )
+            # _run schedules the task and starts this job's own thread; it
+            # does not block, which is what lets the fleet run together.
+            job._run(spec["task"], **(spec.get("kwargs") or {}))
+            jobs.append(job)
+
+        logger.info(
+            f"run_many started {len(jobs)} job(s): "
+            + ", ".join(f"{j.job_id}@{j.interval}" for j in jobs)
+        )
+
+        if not block:
+            return jobs
+
+        try:
+            # Hold here while the per-job threads do the work. Exit as soon as
+            # every job has stopped, so a fleet that has given up does not
+            # leave the caller parked forever.
+            while any(job.is_running for job in jobs):
+                time.sleep(1)
+        except KeyboardInterrupt:
+            logger.info(
+                "run_many received keyboard interrupt, stopping all jobs"
+            )
+        finally:
+            cls.stop_many(jobs)
+
+        failed = [job for job in jobs if job._stopped_due_to_error]
+        if failed:
+            raise CronJobExecutionError(
+                f"{len(failed)} of {len(jobs)} job(s) stopped after "
+                "repeated failures: "
+                + "; ".join(
+                    f"{job.job_id} ({job.consecutive_errors} consecutive, "
+                    f"last error: {job.last_error})"
+                    for job in failed
+                )
+            )
+
+        return jobs
+
+    @staticmethod
+    def stop_many(jobs: List["CronJob"]) -> None:
+        """Stop every job in ``jobs``, continuing past any that fail to stop.
+
+        Args:
+            jobs: The jobs to stop, typically the return value of
+                :meth:`run_many` called with ``block=False``.
+        """
+        for job in jobs:
+            try:
+                job.stop()
+            except Exception as e:
+                # One job refusing to stop must not strand the rest.
+                logger.error(f"Failed to stop job {job.job_id}: {e}")
 
 
 # # Example usage

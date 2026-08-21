@@ -110,9 +110,9 @@ print(result)
 | `interactive` | bool | `False` | REPL mode — prompt user for input each loop |
 | `context_length` | int | `None` | Token budget; triggers compression at 90 % |
 | `context_compression` | bool | `True` | Auto-summarise when near context limit (v12) |
-| `persistent_memory` | bool | `True` | Read/write MEMORY.md across restarts (v12) |
+| `persistent_memory` | bool | `False` | Read/write MEMORY.md across restarts (v12); opt in explicitly |
 | `temperature` | float | `0.5` | Sampling temperature |
-| `max_tokens` | int | `4096` | Max tokens per LLM call |
+| `max_tokens` | int | `16000` | Max tokens per LLM call. Note: currently overwritten during setup by the model's own limit, so passing it has no effect |
 | `reasoning_effort` | str | `None` | `"low"`, `"medium"`, `"high"` for reasoning models |
 | `thinking_tokens` | int | `None` | Extended thinking budget (Claude) |
 | `output_type` | str | `"str-all-except-first"` | How to format returned output |
@@ -173,7 +173,7 @@ result = agent.run(
 
 ## Memory & Persistence (v12)
 
-### `persistent_memory=True` (default)
+### `persistent_memory=True` (opt in)
 
 On startup the agent reads `{workspace}/agents/{agent_name}/MEMORY.md` and injects it as a system preamble. On each response it appends to that file. State survives process restarts automatically.
 
@@ -181,17 +181,22 @@ On startup the agent reads `{workspace}/agents/{agent_name}/MEMORY.md` and injec
 agent = Agent(
     agent_name="ProjectAssistant",
     model_name="gpt-5.4",
-    persistent_memory=True,   # default
+    persistent_memory=True,   # off by default; opt in
 )
 # First run: agent has no prior context
 agent.run("My project is called Helios. Remember that.")
 
-# New process, same agent_name → agent remembers "Helios"
-agent2 = Agent(agent_name="ProjectAssistant", model_name="gpt-5.4")
+# New process, same agent_name → agent remembers "Helios".
+# persistent_memory must be set here too; it is False by default.
+agent2 = Agent(
+    agent_name="ProjectAssistant",
+    model_name="gpt-5.4",
+    persistent_memory=True,
+)
 agent2.run("What is my project called?")
 ```
 
-### `persistent_memory=False`
+### `persistent_memory=False` (default)
 
 Fully stateless — no disk reads or writes. Use for short, isolated tasks where carry-over would be harmful.
 
