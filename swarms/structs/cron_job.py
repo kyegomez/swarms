@@ -118,11 +118,7 @@ class CronJob:
         self.execution_count = 0
         self.start_time = None
 
-        # Failure accounting. A task that raises must not take the schedule
-        # down with it, but the failures still have to be visible: the loop
-        # used to set is_running=False and re-raise, which killed the
-        # scheduler thread on the first error while run() returned normally,
-        # so a dead job was indistinguishable from a healthy one.
+        # Failures stay visible without taking the schedule down.
         self.error_count = 0
         self.consecutive_errors = 0
         self.last_error = None
@@ -139,10 +135,7 @@ class CronJob:
                 "Agent must be provided during initialization"
             )
 
-        # An empty string is not "no interval given", it is a bad interval.
-        # It used to fall through this guard and only surface much later, from
-        # _run(), as "Interval must be provided during initialization" -- which
-        # is confusing, because it was provided.
+        # An empty string is a bad interval, not a missing one: fail here, not in _run().
         if (
             self.interval is not None
             and not str(self.interval).strip()
@@ -395,10 +388,7 @@ class CronJob:
         try:
             logger.debug(f"Executing task for job {self.job_id}")
 
-            # Execute the agent. Discriminate on having a run() method, not
-            # on isinstance(Callable): a plain function is Callable too, so
-            # that test sent every function down the .run() path and left the
-            # branch below unreachable.
+            # Dispatch on having run(), not on Callable: a plain function is Callable too.
             runner = getattr(self.agent, "run", None)
             if callable(runner):
                 original_output = runner(task=task, **kwargs)
@@ -548,12 +538,7 @@ class CronJob:
                 self.schedule.run_pending()
                 self.consecutive_errors = 0
             except Exception as e:
-                # Log and keep going. Setting is_running=False and re-raising
-                # here killed the scheduler thread on the first failed
-                # execution, so a single transient error (a rate limit, a
-                # dropped connection) permanently stopped the job -- and
-                # because _block_forever also loops on is_running, run()
-                # returned normally and the caller was never told.
+                # Log and keep going: one failed execution must not kill the scheduler.
                 self.error_count += 1
                 self.consecutive_errors += 1
                 self.last_error = e
@@ -710,9 +695,7 @@ class CronJob:
             return jobs
 
         try:
-            # Hold here while the per-job threads do the work. Exit as soon as
-            # every job has stopped, so a fleet that has given up does not
-            # leave the caller parked forever.
+            # Wait while the per-job threads work; exit once every job has stopped.
             while any(job.is_running for job in jobs):
                 time.sleep(1)
         except KeyboardInterrupt:
