@@ -163,8 +163,14 @@ class Conversation:
             extension = (
                 ".json" if self.export_method == "json" else ".yaml"
             )
-            self.save_filepath = (
-                f"conversation_{self.name}{extension}"
+            # Under conversations_dir, not the process's working directory:
+            # a bare relative name dropped conversation_<name>.json wherever
+            # the program happened to run from, and two conversations sharing
+            # a name in different directories silently loaded each other's
+            # history.
+            self.save_filepath = os.path.join(
+                self.conversations_dir or get_conversation_dir(),
+                f"conversation_{self.name}{extension}",
             )
             logger.debug(
                 f"Setting default save filepath to: {self.save_filepath}"
@@ -934,6 +940,41 @@ class Conversation:
             )
             raise  # Re-raise to ensure the error is visible
 
+    def _restore(self, data: Union[dict, list]):
+        """Apply a loaded save file to this conversation.
+
+        Accepts both shapes a save file can have. ``save_as_json`` and
+        ``save_as_yaml`` write ``to_dict()``, which is the bare list of
+        messages, while this loader only understood a
+        ``{"metadata": ..., "conversation_history": ...}`` wrapper — so
+        reloading a file this class had just written raised
+        ``AttributeError: 'list' object has no attribute 'get'``.
+
+        Args:
+            data (Union[dict, list]): Parsed contents of a save file.
+        """
+        if isinstance(data, list):
+            self.conversation_history = data
+            self._str_cache = None
+            return
+
+        if not isinstance(data, dict):
+            logger.warning(
+                f"Ignoring save file with unexpected top-level "
+                f"{type(data).__name__}; expected a list or a dict."
+            )
+            return
+
+        # Conversation-level settings, when the file carries the wrapper.
+        for key, value in (data.get("metadata") or {}).items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
+        self.conversation_history = data.get(
+            "conversation_history", []
+        )
+        self._str_cache = None
+
     def load_from_json(self, filename: str):
         """Load the conversation history and metadata from a JSON file.
 
@@ -945,18 +986,7 @@ class Conversation:
                 with open(filename, "r", encoding="utf-8") as f:
                     data = json.load(f)
 
-                # Load metadata
-                metadata = data.get("metadata", {})
-                # Update all metadata attributes
-                for key, value in metadata.items():
-                    if hasattr(self, key):
-                        setattr(self, key, value)
-
-                # Load conversation history
-                self.conversation_history = data.get(
-                    "conversation_history", []
-                )
-                self._str_cache = None
+                self._restore(data)
 
                 logger.info(
                     f"Successfully loaded conversation from {filename}"
@@ -978,18 +1008,7 @@ class Conversation:
                 with open(filename, "r", encoding="utf-8") as f:
                     data = yaml.safe_load(f)
 
-                # Load metadata
-                metadata = data.get("metadata", {})
-                # Update all metadata attributes
-                for key, value in metadata.items():
-                    if hasattr(self, key):
-                        setattr(self, key, value)
-
-                # Load conversation history
-                self.conversation_history = data.get(
-                    "conversation_history", []
-                )
-                self._str_cache = None
+                self._restore(data)
 
                 logger.info(
                     f"Successfully loaded conversation from {filename}"
