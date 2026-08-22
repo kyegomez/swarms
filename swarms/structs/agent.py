@@ -175,6 +175,13 @@ class Agent:
         custom_exit_command (str): The custom exit command
         tool_schema (ToolUsageType): The tool schema
         output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml', 'xml'.
+        output_schema (Optional[BaseModel]): A Pydantic model class (or instance) the LLM
+            response must conform to. When set, the model is passed to the LLM as
+            ``response_format``, every response is validated with ``model_validate``, and
+            schema mismatches are retried inside the existing retry loop. ``run()`` then
+            returns the validated model instance instead of the formatted conversation
+            history. Applies to the standard run loop (``max_loops=N``); the autonomous
+            loop (``max_loops="auto"``) is unaffected. Defaults to None.
         output_cleaner (Callable): The output cleaner function
         list_base_models (List[BaseModel]): The list of base models
         rules (str): The rules
@@ -341,6 +348,7 @@ class Agent:
         # [Tools]
         tool_schema: ToolUsageType = None,
         output_type: OutputType = "str-all-except-first",
+        output_schema: Optional[BaseModel] = None,
         output_cleaner: Optional[Callable] = None,
         list_base_models: Optional[List[BaseModel]] = None,
         rules: str = None,  # type: ignore
@@ -443,6 +451,18 @@ class Agent:
         self.custom_exit_command = custom_exit_command
         self.tool_schema = tool_schema
         self.output_type = output_type
+        self.output_schema = output_schema
+        if output_schema is not None and not (
+            isinstance(output_schema, BaseModel)
+            or (
+                isinstance(output_schema, type)
+                and issubclass(output_schema, BaseModel)
+            )
+        ):
+            raise ValueError(
+                "output_schema must be a Pydantic BaseModel class or "
+                f"instance, got {type(output_schema).__name__}"
+            )
         self.output_cleaner = output_cleaner
         self.list_base_models = list_base_models
         self.planning_prompt = planning_prompt
@@ -1367,6 +1387,7 @@ class Agent:
 
             # Clear the short memory
             response = None
+            success = False
 
             # Autosave
             if self.autosave:
@@ -1469,9 +1490,22 @@ class Agent:
                         # Parse the response from the agent with the output type
                         response = self.parse_llm_output(response)
 
+                        # Validate against the output schema if one is
+                        # configured. A ValidationError raised here is caught
+                        # by the retry loop below and retried like any other
+                        # LLM failure.
+                        if self.output_schema is not None:
+                            response = self._validate_structured_output(
+                                response
+                            )
+
                         self.short_memory.add(
                             role=self.agent_name,
-                            content=response,
+                            content=(
+                                response.model_dump_json()
+                                if isinstance(response, BaseModel)
+                                else response
+                            ),
                         )
 
                         # Print
@@ -1669,6 +1703,12 @@ class Agent:
                 log_agent_data(self.to_dict())
                 self.save()
                 self._autosave_config_step(loop_count=loop_count)
+
+            # Structured output: return the validated model instance. When retries
+            # are exhausted the last raw response never passed validation, so
+            # return None rather than an unvalidated payload.
+            if self.output_schema is not None:
+                return response if success else None
 
             # Output formatting based on output_type
             return history_output_formatter(
@@ -3483,6 +3523,47 @@ Subtask Breakdown:
                 response,
                 f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
             )
+
+    def _validate_structured_output(self, response: Any) -> Any:
+        """Validate the LLM response against ``output_schema``.
+
+        Accepts a Pydantic model class or instance as the schema. The response
+        may arrive as a JSON string, a dict, or a ``BaseModel`` instance; it is
+        normalized and validated with ``model_validate``.
+
+        Returns:
+            BaseModel: The validated model instance.
+
+        Raises:
+            pydantic.ValidationError: When the response does not conform to the
+                schema — the caller's retry loop treats it as a failed attempt.
+            ValueError: When the schema is not a Pydantic model, or the response
+                shape cannot be validated (e.g. a tool-call list).
+        """
+        schema = self.output_schema
+        model_cls = (
+            schema if isinstance(schema, type) else type(schema)
+        )
+
+        if not issubclass(model_cls, BaseModel):
+            raise ValueError(
+                "output_schema must be a Pydantic BaseModel class or "
+                f"instance, got {type(schema).__name__}"
+            )
+
+        if isinstance(response, BaseModel):
+            data = response.model_dump()
+        elif isinstance(response, str):
+            data = json.loads(response)
+        elif isinstance(response, dict):
+            data = response
+        else:
+            raise ValueError(
+                "Cannot validate response of type "
+                f"{type(response).__name__} against output_schema"
+            )
+
+        return model_cls.model_validate(data)
 
     def parse_llm_output(self, response: Any):
         """Parse and standardize the output from the LLM.
