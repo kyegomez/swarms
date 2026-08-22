@@ -2156,10 +2156,7 @@ Subtask Breakdown:
         """
         try:
             logger.info(f"Running concurrent tasks: {tasks}")
-            # Pool is scoped to the call, matching how the rest of the codebase
-            # runs concurrent work (heavy_swarm, majority_voting,
-            # multi_agent_router). An Agent-level pool would keep idle threads
-            # alive for the process lifetime of every agent a swarm builds.
+            # Call-scoped pool, as in heavy_swarm: no idle threads per agent.
             with ContextThreadPoolExecutor(
                 max_workers=os.cpu_count()
             ) as executor:
@@ -2497,10 +2494,7 @@ Subtask Breakdown:
                     rules=self.rules,
                 )
 
-            # No executor to reinitialize: concurrent work creates its own
-            # call-scoped pool. The assignment that used to live here stored an
-            # executor the enclosing `with` had already shut down, so anything
-            # reading it back would have submitted to a dead pool.
+            # Nothing to restore: concurrent work builds its own call-scoped pool.
 
         except Exception as e:
             logger.error(f"Error reinitializing components: {e}")
@@ -3362,9 +3356,7 @@ Subtask Breakdown:
         Returns:
             List[Any]: List of results from each task execution.
         """
-        # `for task, imgs in zip(...)` rebound the parameter to one image per
-        # iteration, so a List[str] field received a bare str -- and with the
-        # documented default of imgs=None the zip raised before any task ran.
+        # Index imgs rather than zip: zip rebound imgs and raised when it was None.
         if imgs is None:
             return [
                 self.run(task=task, *args, **kwargs) for task in tasks
@@ -4127,10 +4119,7 @@ Summary: {summary}
             )
             return
 
-        # execute_tools re-raises whatever the tool raised, and nothing in the
-        # framework raises AgentToolExecutionError, so catching only that type
-        # caught nothing. Catch broadly here, which is also what the docstring
-        # promises ("Other exceptions: Logs error and retries").
+        # Catch broadly: nothing raises AgentToolExecutionError, so that caught nothing.
         attempts = max(1, int(self.tool_retry_attempts or 1))
         last_error: Optional[Exception] = None
 
@@ -4149,10 +4138,7 @@ Summary: {summary}
                     f"Full traceback: {traceback.format_exc()}"
                 )
 
-        # Attempts exhausted. Raising is what the docstring specifies, and it is
-        # the only way the caller learns the tools did not run — returning here
-        # left `short_memory` with no Tool Executor entry, so the model saw the
-        # call as having produced nothing and carried on as if it had succeeded.
+        # Attempts exhausted: raise, or the model reads a silent no-op as success.
         raise AgentToolExecutionError(
             f"Agent '{self.agent_name}' failed to execute tools in loop "
             f"{loop_count} after {attempts} attempt(s): {last_error}"

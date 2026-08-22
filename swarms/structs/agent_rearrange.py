@@ -565,10 +565,7 @@ class AgentRearrange(SerializableMixin):
                 f"Agent(s) {missing} not registered in this AgentRearrange instance."
             )
 
-        # Run agents concurrently
-        # `img` was accepted and dropped, so a flow step written with a comma
-        # ("A, B") silently ran without the image while the sequential path
-        # ("A -> B") forwarded it. The async twin below forwards it too.
+        # Run agents concurrently, forwarding img; this path used to drop it.
         results = run_agents_concurrently(
             agents=agents_to_run,
             task=self.conversation.get_str(),

@@ -199,17 +199,9 @@ class HierarchicalSwarmDashboard:
             status_text.append("RUNTIME: ", style="bold white")
             status_text.append(f"{runtime:.2f}s", style="bold green")
 
-            # Add completion percentage if loops are running.
-            #
-            # current_loop is 1-based and set at the *top* of each iteration
-            # (hiearchical_swarm.py calls update_loop(current_loop + 1)), so
-            # dividing by max_loops reported 100% before the final loop's
-            # agents had run. Count loops finished instead: the loop in
-            # progress is current_loop, so current_loop - 1 are done.
+            # current_loop is 1-based, so count current_loop - 1 as finished.
             if self.max_loops > 0:
-                # Once the swarm reports COMPLETED every loop has finished,
-                # including the last one — otherwise the run would end at
-                # (max_loops - 1) / max_loops and never show 100%.
+                # COMPLETED means the final loop finished, so show 100%.
                 completed_loops = (
                     self.max_loops
                     if self.director_status == "COMPLETED"
@@ -246,10 +238,7 @@ class HierarchicalSwarmDashboard:
         table.add_column("LOOP", style="bold white", width=8)
         table.add_column("STATUS", style="bold white", width=15)
         table.add_column("TASK", style="white", width=40)
-        # OUTPUT takes whatever is left rather than a hardcoded 150, which
-        # made the table ~250 chars and overflowed almost every terminal.
-        # ratio=1 lets Rich shrink it to the console; the minimum keeps it
-        # readable on a narrow one.
+        # OUTPUT takes the remaining width (ratio=1); a fixed 150 overflowed the terminal.
         table.add_column(
             "OUTPUT",
             style="white",
@@ -357,9 +346,7 @@ class HierarchicalSwarmDashboard:
         # Orders section
         director_text.append("CURRENT ORDERS:\n", style="bold white")
         if self.director_orders:
-            # Actually show only the first 5. Without the slice every order
-            # was rendered and the "... and N more" line below contradicted
-            # what the panel had just printed.
+            # Show only the first 5, so the "... and N more" line below is accurate.
             for i, order in enumerate(self.director_orders[:5]):
                 director_text.append(f"{i + 1}. ", style="bold cyan")
                 director_text.append(

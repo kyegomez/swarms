@@ -163,11 +163,7 @@ class Conversation:
             extension = (
                 ".json" if self.export_method == "json" else ".yaml"
             )
-            # Under conversations_dir, not the process's working directory:
-            # a bare relative name dropped conversation_<name>.json wherever
-            # the program happened to run from, and two conversations sharing
-            # a name in different directories silently loaded each other's
-            # history.
+            # Under conversations_dir, not CWD: same-named conversations must not collide.
             self.save_filepath = os.path.join(
                 self.conversations_dir or get_conversation_dir(),
                 f"conversation_{self.name}{extension}",
