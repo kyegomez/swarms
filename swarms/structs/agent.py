@@ -345,7 +345,7 @@ class Agent:
         list_base_models: Optional[List[BaseModel]] = None,
         rules: str = None,  # type: ignore
         planning_prompt: Optional[str] = None,
-        max_tokens: int = 16000,
+        max_tokens: Optional[int] = None,
         temperature: float = 0.5,
         tags: Optional[List[str]] = None,
         auto_generate_prompt: bool = False,
@@ -526,7 +526,8 @@ class Agent:
         if self.context_length is None:
             self.context_length = self._default_context_length()
 
-        self.max_tokens = self._default_max_tokens() or 16000
+        if self.max_tokens is None or self.max_tokens <= 0:
+            self.max_tokens = self._default_max_tokens() or 16000
 
         if self.max_loops == "auto":
             self.system_prompt += (
