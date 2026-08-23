@@ -1,6 +1,9 @@
-import os
 from typing import List, Optional
 
+from swarms.structs.execution_utils import (
+    batched_run,
+    run_concurrently,
+)
 from swarms.prompts.ag_prompt import AGGREGATOR_SYSTEM_PROMPT_MAIN
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -12,7 +15,6 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 from swarms.telemetry.otel import (
-    ContextThreadPoolExecutor,
     capture_init,
     trace_run,
 )
@@ -287,7 +289,7 @@ class MixtureOfAgents:
         Returns:
             A list of formatted responses, one per task.
         """
-        return [self.run(task) for task in tasks]
+        return batched_run(self.run, tasks)
 
     def run_concurrently(self, tasks: List[str]) -> List[str]:
         """Run multiple tasks concurrently through this mixture.
@@ -299,12 +301,4 @@ class MixtureOfAgents:
             A list of formatted responses, one per task, in the order the
             tasks were given.
         """
-        with ContextThreadPoolExecutor(
-            max_workers=os.cpu_count()
-        ) as executor:
-            futures = [
-                executor.submit(self.run, task) for task in tasks
-            ]
-            # Results are read in submission order, not completion order, so
-            # element i is always the response to tasks[i].
-            return [future.result() for future in futures]
+        return run_concurrently(self.run, tasks)

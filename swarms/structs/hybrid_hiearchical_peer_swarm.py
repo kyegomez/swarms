@@ -1,5 +1,6 @@
 import os
 from typing import List
+from swarms.structs.execution_utils import run_concurrently
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import get_swarms_info
@@ -7,7 +8,6 @@ from swarms.structs.swarm_router import SwarmRouter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Union, Callable
 from swarms.utils.history_output_formatter import HistoryOutputType
 
@@ -234,24 +234,18 @@ class HybridHierarchicalClusterSwarm:
         if not tasks:
             raise ValueError("Task list cannot be empty.")
 
-        max_workers = os.cpu_count() * 2
-
-        results = []
-
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # Submit all tasks to the executor
-            future_to_task = {
-                executor.submit(self.run, task): task
-                for task in tasks
-            }
-
-            # Collect results as they complete
-            for future in as_completed(future_to_task):
-                try:
-                    result = future.result()
-                    results.append(result)
-                except Exception as e:
-                    # Handle any errors that occurred during task execution
-                    results.append(f"Error processing task: {str(e)}")
-
-        return results
+        results = run_concurrently(
+            self.run,
+            tasks,
+            max_workers=os.cpu_count() * 2,
+            return_exceptions=True,
+        )
+        # A failed task still gets a slot, so results[i] is always tasks[i].
+        return [
+            (
+                f"Error processing task: {r}"
+                if isinstance(r, Exception)
+                else r
+            )
+            for r in results
+        ]

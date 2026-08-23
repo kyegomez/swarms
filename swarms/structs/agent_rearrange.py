@@ -10,6 +10,7 @@ from typing import (
     get_args,
 )
 import asyncio
+from swarms.structs.execution_utils import run_concurrently
 from swarms.structs.agent import Agent
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
@@ -1075,21 +1076,14 @@ class AgentRearrange(SerializableMixin):
             The number of concurrent executions is limited by max_workers parameter.
             Each task runs independently through the full agent workflow.
         """
-        with ContextThreadPoolExecutor(
-            max_workers=max_workers
-        ) as executor:
-            imgs = img if img else [None] * len(tasks)
-            futures = [
-                executor.submit(
-                    self.run,
-                    task=task,
-                    img=img_path,
-                    *args,
-                    **kwargs,
-                )
-                for task, img_path in zip(tasks, imgs)
-            ]
-            return [future.result() for future in futures]
+        return run_concurrently(
+            self.run,
+            tasks,
+            *args,
+            img=img,
+            max_workers=max_workers,
+            **kwargs,
+        )
 
     async def run_async(
         self,

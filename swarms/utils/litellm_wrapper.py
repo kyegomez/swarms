@@ -1483,23 +1483,10 @@ class LiteLLM:
             responses = llm.batched_run(["Task 1", "Task 2", "Task 3"], batch_size=2)
             ```
         """
-        import concurrent.futures
+        # Imported here, not at module scope: swarms.structs pulls this
+        # module back in, and a top-level import would be circular.
+        from swarms.structs.execution_utils import run_concurrently
 
-        results = []
-        for i in range(0, len(tasks), batch_size):
-            batch = tasks[i : i + batch_size]
-            with concurrent.futures.ThreadPoolExecutor(
-                max_workers=batch_size
-            ) as executor:
-                futures = [
-                    executor.submit(self.run, t) for t in batch
-                ]
-                for future in concurrent.futures.as_completed(
-                    futures
-                ):
-                    # as_completed does not guarantee original order, so collect all and reorder
-                    pass
-                # Ensure order in results matches the order of tasks
-                batch_results = [f.result() for f in futures]
-                results.extend(batch_results)
-        return results
+        return run_concurrently(
+            self.run, tasks, max_workers=batch_size
+        )
