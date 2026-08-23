@@ -51,8 +51,26 @@ from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
 )
+from swarms.structs.transcript import Transcript
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists, format_data_structure
+
+
+def _format_tool_error(function_name: str, error: Exception) -> str:
+    """
+    Render a tool failure as text the model can act on.
+
+    Tool errors are fed back into the conversation as the tool's result so the
+    model can correct itself on the next turn. Swallowing them means the next
+    iteration rebuilds an identical prompt and the model re-emits the identical
+    failing call until the iteration budget is gone.
+    """
+    return (
+        f"ERROR: {function_name} failed with "
+        f"{type(error).__name__}: {error}. "
+        "Review the arguments and either retry with a correction or take a "
+        "different approach. Do not repeat the same call unchanged."
+    )
 
 
 class AutonomousAgentLoop:
@@ -71,6 +89,43 @@ class AutonomousAgentLoop:
 
     def __init__(self, agent: Any):
         self.agent = agent
+        # The real conversation body sent to the model: user turns, assistant
+        # turns carrying `tool_calls`, and `{"role": "tool", ...}` results.
+        # `short_memory` is kept in sync alongside it because persistence,
+        # output formatting and the final summary all read from there.
+        self._transcript = Transcript()
+
+    def _say_user(self, content: str, mirror: bool = True) -> None:
+        """Add a user turn to the transcript (and to short_memory)."""
+        self._transcript.append_user(content)
+        if mirror:
+            self.agent.short_memory.add(
+                role=self.agent.user_name, content=content
+            )
+
+    def _record_assistant(self, parsed: Any) -> List[Dict[str, Any]]:
+        """Add the model's turn; return the tool calls it made."""
+        return self._transcript.record_assistant(parsed)
+
+    def _flush_tool_results(
+        self, calls: List[Dict[str, Any]], results: Dict[str, Any]
+    ) -> None:
+        """Answer every tool call in the preceding assistant turn."""
+        self._transcript.flush_tool_results(calls, results)
+
+    def _map_batch_results(
+        self,
+        tool_calls: List[Dict[str, Any]],
+        output: Any,
+        results: Dict[str, Any],
+    ) -> None:
+        """Attribute a batched tool execution back to individual call ids."""
+        self._transcript.map_batch_results(
+            tool_calls,
+            output,
+            results,
+            formatter=format_data_structure,
+        )
 
     def _run_autonomous_loop(
         self,
@@ -145,16 +200,16 @@ class AutonomousAgentLoop:
         """
         try:
 
-            self.agent.short_memory.add(
-                role=self.agent.user_name, content=task
-            )
-
-            # Reset autonomous loop state
+            # Reset autonomous loop state. The transcript is cleared before
+            # the task is seeded, or the opening turn would be discarded.
+            self._transcript = Transcript()
             self.agent.autonomous_subtasks = []
             self.agent.current_subtask_index = 0
             self.agent.subtask_status = {}
             self.agent.plan_created = False
             self.agent.think_call_count = 0
+
+            self._say_user(task)
 
             # Add planning tools to tools_list_dictionary
             planning_tools = get_autonomous_planning_tools()
@@ -179,15 +234,27 @@ class AutonomousAgentLoop:
                     f"Filtered to {len(planning_tools)} tools: {[t.get('function', {}).get('name', '') for t in planning_tools]}"
                 )
 
-            # The `think` tool is redundant when the model already reasons natively
-            # via extended thinking (thinking_tokens). Drop it to avoid unnecessary
-            # tool-call round-trips and a cluttered tool list.
-            if self.agent.thinking_tokens is not None:
+            # The `think` tool is opt-in via Agent(think_tool=True). It costs a
+            # full round-trip to produce reasoning the model could emit inline
+            # alongside its actions, so it is off unless asked for.
+            #
+            # This replaces an earlier `thinking_tokens is not None` check.
+            # `thinking_tokens` defaults to 1024 rather than None, so that test
+            # was always true and silently stripped `think` for every agent -
+            # the intent was to drop it only when extended thinking was on.
+            if not getattr(self.agent, "think_tool", False):
                 planning_tools = [
                     t
                     for t in planning_tools
                     if t.get("function", {}).get("name") != "think"
                 ]
+            elif self.agent.thinking_tokens:
+                logger.info(
+                    "think_tool=True alongside thinking_tokens="
+                    f"{self.agent.thinking_tokens}: the model reasons natively, "
+                    "so the think tool adds a round-trip without adding "
+                    "information. Consider think_tool=False."
+                )
 
             if self.agent.tools_list_dictionary is None:
                 self.agent.tools_list_dictionary = []
@@ -304,9 +371,7 @@ class AutonomousAgentLoop:
                 )
 
             planning_prompt = get_planning_prompt(task)
-            self.agent.short_memory.add(
-                role=self.agent.user_name, content=planning_prompt
-            )
+            self._say_user(planning_prompt)
 
             plan_created = False
             planning_attempts = 0
@@ -318,14 +383,12 @@ class AutonomousAgentLoop:
             ):
                 planning_attempts += 1
                 try:
-                    task_prompt = (
-                        self.agent.short_memory.return_history_as_string()
-                    )
                     response = self.agent.call_llm(
-                        task=task_prompt,
+                        task=None,
                         img=img,
                         current_loop=0,
                         streaming_callback=streaming_callback,
+                        messages=self._transcript.messages,
                         *args,
                         **kwargs,
                     )
@@ -334,6 +397,8 @@ class AutonomousAgentLoop:
                     self.agent.short_memory.add(
                         role=self.agent.agent_name, content=response
                     )
+                    planning_calls = self._record_assistant(response)
+                    planning_results: Dict[str, Any] = {}
 
                     # Check if response contains create_plan or handoff_task tool call
                     if isinstance(response, list):
@@ -365,6 +430,9 @@ class AutonomousAgentLoop:
                                         role="Tool Executor",
                                         content=f"create_plan result: {result}",
                                     )
+                                    planning_results[
+                                        tool_call.get("id", "")
+                                    ] = result
 
                                 elif (
                                     function_name == "handoff_task"
@@ -397,6 +465,9 @@ class AutonomousAgentLoop:
                                         role="Tool Executor",
                                         content=f"handoff_task result: {result}",
                                     )
+                                    planning_results[
+                                        tool_call.get("id", "")
+                                    ] = result
 
                                 # Show plan creation result
                                 if self.agent.print_on:
@@ -419,6 +490,12 @@ class AutonomousAgentLoop:
 
                                 plan_created = True
                                 break
+
+                    # Every tool_call in the assistant turn must be answered
+                    # before the next request, whether or not the plan landed.
+                    self._flush_tool_results(
+                        planning_calls, planning_results
+                    )
 
                     # Also check if plan was created via tool execution
                     if self.agent.plan_created:
@@ -526,7 +603,7 @@ class AutonomousAgentLoop:
 
                 # Show subtask start
                 if self.agent.print_on:
-                    progress = f"{sum(1 for s in self.agent.autonomous_subtasks if s['status'] in ['completed', 'failed'])}/{len(self.agent.autonomous_subtasks)}"
+                    progress = f"{sum(1 for s in self.agent.autonomous_subtasks if s['status'] in ['completed', 'failed', 'skipped'])}/{len(self.agent.autonomous_subtasks)}"
                     formatter.print_panel(
                         f"Subtask: {subtask_id}\nDescription: {subtask_desc}\nPriority: {subtask_priority}\nProgress: {progress} subtasks completed",
                         title=f"Executing Subtask: {subtask_id}",
@@ -537,6 +614,12 @@ class AutonomousAgentLoop:
                 max_subtask_loops = MAX_SUBTASK_LOOPS
                 subtask_done = False
 
+                # Counts CONSECUTIVE think calls across this subtask's
+                # iterations. It is reset here, once per subtask, and again by
+                # any non-think tool call below - not once per iteration, which
+                # would only ever catch repeats inside a single response.
+                self.agent.think_call_count = 0
+
                 # Add the execution prompt ONCE before the inner loop so the model
                 # doesn't see duplicate copies of it on subsequent iterations and
                 # mistakenly conclude "this task has been run before."
@@ -545,29 +628,21 @@ class AutonomousAgentLoop:
                     subtask_desc,
                     self.agent.autonomous_subtasks,
                 )
-                self.agent.short_memory.add(
-                    role=self.agent.user_name,
-                    content=execution_prompt,
-                )
+                self._say_user(execution_prompt)
 
                 while (
                     not subtask_done
                     and subtask_iterations < max_subtask_loops
                 ):
                     subtask_iterations += 1
-                    self.agent.think_call_count = (
-                        0  # Reset for each subtask
-                    )
 
                     try:
-                        task_prompt = (
-                            self.agent.short_memory.return_history_as_string()
-                        )
                         response = self.agent.call_llm(
-                            task=task_prompt,
+                            task=None,
                             img=img,
                             current_loop=subtask_iterations,
                             streaming_callback=streaming_callback,
+                            messages=self._transcript.messages,
                             *args,
                             **kwargs,
                         )
@@ -580,9 +655,18 @@ class AutonomousAgentLoop:
                             content=response,
                         )
 
+                        # Record the model's turn, then answer every tool call
+                        # it made before the next request goes out.
+                        turn_calls = self._record_assistant(response)
+                        turn_results: Dict[str, Any] = {}
+
                         # Handle tool calls
                         if isinstance(response, list):
                             regular_tool_calls = []
+                            # complete_task sets this instead of returning
+                            # mid-loop, so tool calls batched after it are not
+                            # dropped.
+                            task_complete = False
 
                             for tool_call in response:
                                 if isinstance(
@@ -595,17 +679,42 @@ class AutonomousAgentLoop:
                                     function_name = tool_call[
                                         "function"
                                     ]["name"]
-                                    arguments = json.loads(
-                                        tool_call["function"][
-                                            "arguments"
-                                        ]
-                                    )
+                                    try:
+                                        arguments = json.loads(
+                                            tool_call["function"][
+                                                "arguments"
+                                            ]
+                                        )
+                                    except (
+                                        json.JSONDecodeError,
+                                        TypeError,
+                                    ) as parse_error:
+                                        # Report the malformed payload back to
+                                        # the model instead of aborting the
+                                        # whole iteration on one bad call.
+                                        self.agent.short_memory.add(
+                                            role="Tool Executor",
+                                            content=_format_tool_error(
+                                                function_name,
+                                                parse_error,
+                                            ),
+                                        )
+                                        if self.agent.verbose:
+                                            logger.warning(
+                                                f"Could not parse arguments for {function_name}: {parse_error}"
+                                            )
+                                        continue
 
                                     # Handle planning tools and handoff tool
                                     if (
                                         function_name
                                         in planning_tool_handlers
                                     ):
+                                        # Set when the handler raises, so a
+                                        # failed call is not mistaken for a
+                                        # completed subtask or a finished task.
+                                        tool_failed = False
+
                                         # Special handling for handoff_task tool
                                         if (
                                             function_name
@@ -623,9 +732,18 @@ class AutonomousAgentLoop:
                                                     tool_call,
                                                 )
 
-                                            result = self.agent._handoff_task_tool(
-                                                handoffs=handoffs_list
-                                            )
+                                            try:
+                                                result = self.agent._handoff_task_tool(
+                                                    handoffs=handoffs_list
+                                                )
+                                            except (
+                                                Exception
+                                            ) as tool_error:
+                                                tool_failed = True
+                                                result = _format_tool_error(
+                                                    function_name,
+                                                    tool_error,
+                                                )
                                         else:
                                             # Only pre-visualize tools that won't be shown again
                                             # with their result (subtask_done / complete_task are
@@ -639,17 +757,46 @@ class AutonomousAgentLoop:
                                                     arguments,
                                                 )
 
-                                            result = planning_tool_handlers[
-                                                function_name
-                                            ](
-                                                **arguments
-                                            )
+                                            try:
+                                                result = planning_tool_handlers[
+                                                    function_name
+                                                ](
+                                                    **arguments
+                                                )
+                                            except (
+                                                Exception
+                                            ) as tool_error:
+                                                tool_failed = True
+                                                result = _format_tool_error(
+                                                    function_name,
+                                                    tool_error,
+                                                )
 
                                         # Add result to memory
                                         self.agent.short_memory.add(
                                             role="Tool Executor",
                                             content=f"{function_name} result: {result}",
                                         )
+                                        turn_results[
+                                            tool_call.get("id", "")
+                                        ] = result
+
+                                        # Any tool that is not `think` breaks
+                                        # the streak, which is what makes the
+                                        # limit a *consecutive* one.
+                                        if function_name != "think":
+                                            self.agent.think_call_count = (
+                                                0
+                                            )
+
+                                        if tool_failed:
+                                            if self.agent.print_on:
+                                                formatter.print_panel(
+                                                    result,
+                                                    title=f"Tool Error: {function_name}",
+                                                )
+                                            if self.agent.verbose:
+                                                logger.warning(result)
 
                                         # Visualize result for important tools
                                         if function_name in [
@@ -662,10 +809,12 @@ class AutonomousAgentLoop:
                                                 result,
                                             )
 
-                                        # Check if subtask is done
+                                        # Check if subtask is done. A failed
+                                        # handler does not complete anything.
                                         if (
                                             function_name
                                             == "subtask_done"
+                                            and not tool_failed
                                         ):
                                             if (
                                                 arguments.get(
@@ -689,17 +838,16 @@ class AutonomousAgentLoop:
                                                         f"Subtask {subtask_id} marked as {status}\n\nSummary: {arguments.get('summary', 'N/A')}",
                                                         title=f"Subtask {status.title()}: {subtask_id}",
                                                     )
-                                                break
 
-                                        # Check if main task is complete
+                                        # Check if main task is complete. The
+                                        # return is deferred until every tool
+                                        # call in this response has run.
                                         if (
                                             function_name
                                             == "complete_task"
+                                            and not tool_failed
                                         ):
-                                            # Task is complete, exit all loops
-                                            return self.agent._generate_final_summary(
-                                                streaming_callback=streaming_callback
-                                            )
+                                            task_complete = True
                                     else:
                                         # Collect regular tool calls for batch visualization and execution
                                         regular_tool_calls.append(
@@ -748,6 +896,11 @@ class AutonomousAgentLoop:
                                         content=format_data_structure(
                                             tool_output
                                         ),
+                                    )
+                                    self._map_batch_results(
+                                        regular_tool_calls,
+                                        tool_output,
+                                        turn_results,
                                     )
 
                                     # Display tool execution results using formatter
@@ -799,6 +952,21 @@ class AutonomousAgentLoop:
                                         regular_tool_calls,
                                         subtask_iterations,
                                     )
+                                    self._map_batch_results(
+                                        regular_tool_calls,
+                                        f"tool execution failed: {e}",
+                                        turn_results,
+                                    )
+
+                            self._flush_tool_results(
+                                turn_calls, turn_results
+                            )
+
+                            if task_complete:
+                                return self.agent._generate_final_summary(
+                                    streaming_callback=streaming_callback,
+                                    messages=self._transcript.messages,
+                                )
                         else:
                             # Handle regular tool execution
                             if exists(self.agent.tools):
@@ -895,6 +1063,10 @@ class AutonomousAgentLoop:
                                         response, subtask_iterations
                                     )
 
+                            self._flush_tool_results(
+                                turn_calls, turn_results
+                            )
+
                         # Check if subtask status changed
                         if (
                             subtask_id in self.agent.subtask_status
@@ -917,28 +1089,71 @@ class AutonomousAgentLoop:
                                 logger.warning(
                                     f"Too many consecutive think calls ({self.agent.think_call_count}). Forcing action."
                                 )
-                            # Force action by adding a prompt
-                            self.agent.short_memory.add(
-                                role="system",
-                                content="You have been thinking too much. Take action now using available tools.",
+                            # Force action. The nudge goes into the real
+                            # transcript, not just short_memory, or the model
+                            # never sees it on the next request.
+                            nudge = (
+                                "You have called `think` "
+                                f"{self.agent.think_call_count} times in a row "
+                                "without acting. Stop analysing. Take concrete "
+                                "action now using the available tools, and call "
+                                "subtask_done when the work is finished."
                             )
+                            self.agent.short_memory.add(
+                                role="system", content=nudge
+                            )
+                            self._transcript.append_user(nudge)
+
+                            # Reset so the nudge gets a fair chance to work
+                            # before firing again on the very next iteration.
+                            self.agent.think_call_count = 0
 
                     except Exception as e:
                         if self.agent.verbose:
                             logger.error(
                                 f"Error in subtask execution loop: {e}"
                             )
-                        # Continue to next iteration
+                        # Record the failure in the conversation. Without this
+                        # the next iteration rebuilds an identical prompt and
+                        # the model repeats whatever just failed.
+                        self.agent.short_memory.add(
+                            role="Tool Executor",
+                            content=(
+                                f"ERROR: the previous step failed with "
+                                f"{type(e).__name__}: {e}. Adjust your "
+                                "approach before retrying."
+                            ),
+                        )
 
                 if not subtask_done:
+                    # A subtask that burned its whole iteration budget without
+                    # finishing is recorded as failed, not left pending. Left
+                    # pending it stays eligible, so the outer loop re-selects it
+                    # and re-runs the same doomed budget up to
+                    # MAX_SUBTASK_ITERATIONS times - 100 x 20 = 2000 LLM calls
+                    # for one stuck subtask. Failing it terminates the run,
+                    # cascades `skipped` to its dependents, and reports honestly.
+                    reason = (
+                        f"Exhausted its {max_subtask_loops}-iteration budget "
+                        "without completing."
+                    )
+                    self.agent.subtask_status[subtask_id] = "failed"
+                    for subtask in self.agent.autonomous_subtasks:
+                        if subtask["step_id"] == subtask_id:
+                            subtask["status"] = "failed"
+                            subtask.setdefault("summary", reason)
+                            break
+
                     if self.agent.print_on:
                         formatter.print_panel(
-                            f"Subtask {subtask_id} not completed after {max_subtask_loops} iterations",
+                            f"Subtask {subtask_id} not completed after "
+                            f"{max_subtask_loops} iterations - marking failed.",
                             title="Subtask Timeout",
                         )
                     if self.agent.verbose:
                         logger.warning(
-                            f"Subtask {subtask_id} not completed after {max_subtask_loops} iterations"
+                            f"Subtask {subtask_id} not completed after "
+                            f"{max_subtask_loops} iterations - marking failed."
                         )
 
             # Phase 3: Final Summary
@@ -998,10 +1213,14 @@ class AutonomousAgentLoop:
                 of subtasks created. Format: "Plan created successfully with {n} subtasks"
 
         Note:
-            - This method is called automatically by the autonomous loop during planning phase
-            - The plan replaces any existing autonomous_subtasks
-            - All subtasks start with status "pending"
-            - current_subtask_index is reset to 0
+            - Called during the planning phase, and again at any point during
+              execution when the model revises the plan.
+            - The call is idempotent, not destructive. Steps are merged by
+              ``step_id``: work that already finished keeps its status and
+              summary, still-pending steps are updated in place, unmentioned
+              steps that already finished are retained as history, and
+              unmentioned steps that are still pending are dropped. Only a
+              first call on an empty plan starts from scratch.
             - If verbose=True, plan creation is logged with step details
 
         Examples:
@@ -1028,27 +1247,128 @@ class AutonomousAgentLoop:
         if self.agent.verbose:
             logger.info(f"Creating plan for task: {task_description}")
 
-        # Store the plan
-        self.agent.autonomous_subtasks = []
+        existing = {
+            subtask["step_id"]: subtask
+            for subtask in self.agent.autonomous_subtasks
+        }
+        is_revision = bool(existing)
+
+        incoming: Dict[str, Dict[str, Any]] = {}
+        incoming_order: List[str] = []
+        known_step_ids = {step.get("step_id", "") for step in steps}
+        # A revision may reference work that already finished but is not being
+        # restated, so those ids stay valid dependency targets.
+        known_step_ids |= set(existing)
+
         for step in steps:
-            subtask = {
-                "step_id": step.get("step_id", ""),
+            step_id = step.get("step_id", "")
+
+            # step_id values in `dependencies` are model-generated free text.
+            # A typo or hallucinated id used to satisfy the dependency check
+            # silently; now it is dropped, with a warning, so the plan stays
+            # runnable instead of deadlocking on a reference to nothing.
+            declared = step.get("dependencies", []) or []
+            dependencies = [
+                dep
+                for dep in declared
+                if dep in known_step_ids and dep != step_id
+            ]
+            dangling = [
+                dep for dep in declared if dep not in dependencies
+            ]
+            if dangling:
+                logger.warning(
+                    f"Subtask {step_id!r} declares unknown or self-referential "
+                    f"dependencies {dangling} - dropping them. Known step ids: "
+                    f"{sorted(known_step_ids)}"
+                )
+
+            incoming[step_id] = {
+                "step_id": step_id,
                 "description": step.get("description", ""),
                 "priority": step.get("priority", "medium"),
-                "dependencies": step.get("dependencies", []),
+                "dependencies": dependencies,
                 "status": "pending",
             }
-            self.agent.autonomous_subtasks.append(subtask)
-            self.agent.subtask_status[subtask["step_id"]] = "pending"
+            incoming_order.append(step_id)
+
+        # Merge, preserving the order the plan already had and appending
+        # genuinely new work at the end.
+        merged: List[Dict[str, Any]] = []
+        added, updated, removed, retained = [], [], [], []
+
+        for subtask in self.agent.autonomous_subtasks:
+            step_id = subtask["step_id"]
+            terminal = subtask["status"] in (
+                "completed",
+                "failed",
+                "skipped",
+            )
+            if step_id in incoming:
+                if terminal:
+                    # Finished work is not re-opened by a revision.
+                    merged.append(subtask)
+                    retained.append(step_id)
+                else:
+                    merged.append(incoming[step_id])
+                    updated.append(step_id)
+            elif terminal:
+                # Not restated, but it happened - keep it as history.
+                merged.append(subtask)
+                retained.append(step_id)
+            else:
+                removed.append(step_id)
+                self.agent.subtask_status.pop(step_id, None)
+
+        for step_id in incoming_order:
+            if step_id not in existing:
+                merged.append(incoming[step_id])
+                added.append(step_id)
+
+        self.agent.autonomous_subtasks = merged
+        for subtask in merged:
+            self.agent.subtask_status.setdefault(
+                subtask["step_id"], subtask["status"]
+            )
+            if subtask["status"] == "pending":
+                self.agent.subtask_status[subtask["step_id"]] = (
+                    "pending"
+                )
 
         self.agent.plan_created = True
-        self.agent.current_subtask_index = 0
+        if not is_revision:
+            self.agent.current_subtask_index = 0
 
+        if not is_revision:
+            if self.agent.verbose:
+                logger.info(
+                    f"Plan created with {len(merged)} steps: "
+                    f"{[s['step_id'] for s in merged]}"
+                )
+            return f"Plan created successfully with {len(merged)} subtasks"
+
+        # A revision reports what changed, not the whole plan, so the model
+        # can see the effect of its edit.
+        diff_parts = []
+        if added:
+            diff_parts.append(f"added {added}")
+        if updated:
+            diff_parts.append(f"updated {updated}")
+        if removed:
+            diff_parts.append(f"removed {removed}")
+        if retained:
+            diff_parts.append(f"kept finished {retained}")
+        summary = "; ".join(diff_parts) or "no changes"
+
+        if self.agent.print_on:
+            formatter.print_panel(summary, title="Plan Revised")
         if self.agent.verbose:
-            logger.info(
-                f"Plan created with {len(steps)} steps: {[s['step_id'] for s in self.agent.autonomous_subtasks]}"
-            )
-        return f"Plan created successfully with {len(steps)} subtasks"
+            logger.info(f"Plan revised: {summary}")
+
+        return (
+            f"Plan updated ({summary}). The plan now has "
+            f"{len(merged)} subtasks."
+        )
 
     def _think_tool(
         self,
@@ -1235,17 +1555,65 @@ class AutonomousAgentLoop:
 
         # Find subtasks that are pending and have all dependencies completed
         for subtask in self.agent.autonomous_subtasks:
-            if subtask["status"] == "pending":
-                # Check if all dependencies are completed
-                dependencies = subtask.get("dependencies", [])
-                if not dependencies or all(
-                    self.agent.subtask_status.get(dep, "completed")
-                    in ["completed", "failed"]
-                    for dep in dependencies
-                ):
-                    return subtask
+            if subtask["status"] != "pending":
+                continue
+
+            dependencies = subtask.get("dependencies", [])
+            if not dependencies:
+                return subtask
+
+            statuses = [
+                self.agent.subtask_status.get(dep)
+                for dep in dependencies
+            ]
+
+            # Only an actually completed dependency satisfies. A failed one
+            # cannot produce the output its dependents were planned around,
+            # and an unknown id (None) means the reference is unresolvable --
+            # neither should unblock execution.
+            if all(status == "completed" for status in statuses):
+                return subtask
+
+            # Dependencies that failed or were skipped can never complete, so
+            # this subtask is unreachable. Mark it skipped rather than leaving
+            # it pending forever, so the run terminates and the final summary
+            # can report what was not attempted.
+            blockers = [
+                dep
+                for dep, status in zip(dependencies, statuses)
+                if status in ("failed", "skipped")
+            ]
+            if blockers:
+                self._skip_subtask(subtask, blockers)
 
         return None
+
+    def _skip_subtask(
+        self, subtask: Dict[str, Any], blockers: List[str]
+    ) -> None:
+        """
+        Mark a subtask as skipped because a dependency it needs cannot complete.
+
+        Args:
+            subtask: The subtask being skipped.
+            blockers: The dependency step_ids that failed or were skipped.
+        """
+        step_id = subtask["step_id"]
+        reason = (
+            f"Skipped: depends on {', '.join(blockers)}, which did not "
+            "complete successfully."
+        )
+
+        subtask["status"] = "skipped"
+        subtask["summary"] = reason
+        self.agent.subtask_status[step_id] = "skipped"
+
+        if self.agent.print_on:
+            formatter.print_panel(
+                reason, title=f"Subtask Skipped: {step_id}"
+            )
+        if self.agent.verbose:
+            logger.warning(f"Subtask {step_id} skipped. {reason}")
 
     def _all_subtasks_complete(self) -> bool:
         """
@@ -1258,6 +1626,6 @@ class AutonomousAgentLoop:
             return False
 
         return all(
-            subtask["status"] in ["completed", "failed"]
+            subtask["status"] in ["completed", "failed", "skipped"]
             for subtask in self.agent.autonomous_subtasks
         )

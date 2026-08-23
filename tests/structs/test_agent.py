@@ -22,7 +22,10 @@ from swarms import (
     create_agents_from_yaml,
 )
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
-from swarms.schemas.agent_errors import AgentToolExecutionError
+from swarms.schemas.agent_errors import (
+    AgentInitializationError,
+    AgentToolExecutionError,
+)
 
 # Load environment variables
 load_dotenv()
@@ -2543,7 +2546,9 @@ class TestMaxTokens:
 
     def test_non_positive_falls_back_to_the_model(self):
         for bad in (0, -1, None):
-            agent = self._agent(model_name="gpt-4o-mini", max_tokens=bad)
+            agent = self._agent(
+                model_name="gpt-4o-mini", max_tokens=bad
+            )
             assert agent.max_tokens > 0
 
     def test_unknown_model_falls_back(self):

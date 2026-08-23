@@ -71,6 +71,7 @@ from swarms.structs.autonomous_loop_utils import (
 )
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
+from swarms.structs.transcript import Transcript
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
@@ -193,6 +194,12 @@ class Agent:
             Each subdirectory should contain a SKILL.md file with YAML frontmatter (name, description)
             and markdown instructions. Skills are auto-loaded into system prompt for context-aware activation.
             Example: skills_dir="./skills" loads from ./skills/*/SKILL.md
+        think_tool (bool): Whether the autonomous looper (max_loops="auto") offers the
+            `think` tool. Defaults to False. A `think` call spends a full round-trip to
+            produce reasoning the model could emit inline alongside its actions, so it is
+            off unless asked for. Enable it for models that do not reason natively, or
+            when an explicit analysis step is worth the extra turn. When False, the system
+            prompt is adjusted to match so the model is not told to call a tool it lacks.
         selected_tools (Union[str, List[str]]): Tools to enable for the autonomous looper when max_loops="auto".
             Available tools: "create_plan", "think", "subtask_done", "complete_task", "respond_to_user",
             "create_file", "update_file", "read_file", "list_directory", "delete_file", "run_bash",
@@ -387,6 +394,7 @@ class Agent:
         show_tool_execution_output: bool = True,
         reasoning_effort: Literal[get_reasoning_efforts()] = "medium",
         thinking_tokens: int = 1024,
+        think_tool: bool = False,
         reasoning_enabled: bool = False,
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
         capabilities: Optional[List[str]] = None,
@@ -496,6 +504,13 @@ class Agent:
         self.show_tool_execution_output = show_tool_execution_output
         self.reasoning_effort = reasoning_effort
         self.thinking_tokens = thinking_tokens
+
+        # Whether the autonomous loop offers the `think` tool. Off by default:
+        # a think call costs a full round-trip to produce reasoning the model
+        # could have emitted alongside its actions in the same response. Turn
+        # it on for models that do not reason natively, or when an explicit
+        # analysis step is worth the extra turn.
+        self.think_tool = think_tool
         self.reasoning_enabled = reasoning_enabled
         self.fallback_model_name = fallback_model_name
         self.handoffs = handoffs
@@ -530,8 +545,13 @@ class Agent:
             self.max_tokens = self._default_max_tokens() or 16000
 
         if self.max_loops == "auto":
+            # The prompt must agree with the tool list: without this the model
+            # is instructed to call a `think` tool it was never given.
             self.system_prompt += (
-                "\n\n" + get_autonomous_agent_prompt()
+                "\n\n"
+                + get_autonomous_agent_prompt(
+                    include_think_tool=self.think_tool
+                )
             )
 
         # When False the agent does not read or write MEMORY.md across sessions.
@@ -1366,6 +1386,10 @@ class Agent:
             # Set the loop count
             loop_count = 0
 
+            # Structured conversation for this run. Built lazily below so the
+            # transforms path can keep its flattened prompt.
+            transcript: Optional[Transcript] = None
+
             # Clear the short memory
             response = None
 
@@ -1416,24 +1440,35 @@ class Agent:
                 if self.dynamic_temperature_enabled is True:
                     self.dynamic_temperature()
 
-                # Task prompt with optional transforms
+                # Task prompt with optional transforms.
+                #
+                # `transforms` rewrites the whole history into a single string
+                # by design, so that path keeps the legacy flattened prompt.
+                # Everything else sends a real message list, which preserves
+                # assistant `tool_calls` turns and `tool` results instead of
+                # collapsing them into prose.
+                task_prompt = None
+                use_transcript = self.transforms is None
+
                 if self.transforms is not None:
                     task_prompt = handle_transforms(
                         transforms=self.transforms,
                         short_memory=self.short_memory,
                         model_name=self.model_name,
                     )
-
-                else:
-                    # Use original method if no transforms
-                    task_prompt = (
-                        self.short_memory.return_history_as_string()
-                    )
+                elif transcript is None:
+                    transcript = self._transcript_from_memory()
 
                 # Parameters
                 attempt = 0
                 success = False
                 while attempt < self.retry_attempts and not success:
+                    # Hoisted out of the try: if an attempt fails after the
+                    # assistant turn is recorded, the except below still has to
+                    # answer its tool calls, or the retry would send a dangling
+                    # `tool_calls` turn and be rejected.
+                    turn_calls = []
+                    turn_results = {}
                     try:
 
                         show_loading = (
@@ -1450,6 +1485,12 @@ class Agent:
                         )
 
                         with loading_ctx:
+                            llm_kwargs = dict(kwargs)
+                            if use_transcript:
+                                llm_kwargs["messages"] = (
+                                    transcript.messages
+                                )
+
                             response = self.call_llm(
                                 task=task_prompt,
                                 img=img,
@@ -1457,7 +1498,7 @@ class Agent:
                                 current_loop=loop_count,
                                 streaming_callback=streaming_callback,
                                 *args,
-                                **kwargs,
+                                **llm_kwargs,
                             )
 
                         # If streaming is enabled, then don't print the response
@@ -1474,6 +1515,14 @@ class Agent:
                             role=self.agent_name,
                             content=response,
                         )
+
+                        # Record the model's turn. Any tool calls it made must
+                        # each receive a matching tool result before the next
+                        # request, which `flush_tool_results` guarantees below.
+                        if use_transcript:
+                            turn_calls = transcript.record_assistant(
+                                response
+                            )
 
                         # Print
                         if self.print_on is True:
@@ -1524,6 +1573,9 @@ class Agent:
                                         role="Tool Executor",
                                         content=f"Handoff Result:\n{result}",
                                     )
+                                    turn_results[
+                                        tool_call.get("id", "")
+                                    ] = result
                                     if self.print_on:
                                         delegated_agents = ", ".join(
                                             agent.get(
@@ -1539,9 +1591,19 @@ class Agent:
 
                         # Check and execute callable tools
                         if exists(self.tools):
-                            self.tool_execution_retry(
+                            tool_output = self.tool_execution_retry(
                                 response, loop_count
                             )
+                            if use_transcript and turn_calls:
+                                transcript.map_batch_results(
+                                    [
+                                        {"id": c["id"]}
+                                        for c in turn_calls
+                                    ],
+                                    tool_output,
+                                    turn_results,
+                                    formatter=format_data_structure,
+                                )
 
                         # Handle MCP tools
                         if self.mcp_enabled:
@@ -1555,6 +1617,14 @@ class Agent:
                                 logger.warning(
                                     f"LLM returned None response in loop {loop_count}, skipping MCP tool handling"
                                 )
+
+                        # Answer every tool call in the assistant turn just
+                        # recorded. A gap here makes the *next* request invalid,
+                        # so this runs on every path that reached this point.
+                        if use_transcript and turn_calls:
+                            transcript.flush_tool_results(
+                                turn_calls, turn_results
+                            )
 
                         success = True  # Mark as successful to exit the retry loop
 
@@ -1570,6 +1640,13 @@ class Agent:
                         AuthenticationError,
                         Exception,
                     ) as e:
+
+                        # Close out any tool calls recorded before the failure,
+                        # so the retried request is still well formed.
+                        if use_transcript and turn_calls:
+                            transcript.flush_tool_results(
+                                turn_calls, turn_results
+                            )
 
                         # Track the LLM/generation error via telemetry — the
                         # retry loop swallows it, so capture_run never sees it.
@@ -1894,12 +1971,54 @@ class Agent:
             **kwargs,
         )
 
+    def _transcript_from_memory(self) -> Transcript:
+        """
+        Seed a structured transcript from ``short_memory``.
+
+        Conversation roles are free-form strings ("User", the agent name,
+        "Tool Executor", ...), so they are mapped onto chat roles here. The
+        system prompt is skipped because the LLM wrapper supplies it. Turns
+        added *during* a run are appended structurally on top of this prefix,
+        which is what preserves tool-call fidelity where it matters most.
+        """
+        transcript = Transcript()
+        for message in self.short_memory.conversation_history:
+            if not isinstance(message, dict):
+                continue
+            role = message.get("role")
+            content = message.get("content")
+            if content is None or str(role).lower() == "system":
+                continue
+            if role == self.agent_name:
+                transcript.append_assistant_text(content)
+            else:
+                transcript.append_user(content)
+        return transcript
+
+    def _memory_and_transcript(
+        self, role: str, content: Any, transcript: Transcript
+    ) -> None:
+        """Record a turn in both ``short_memory`` and the live transcript."""
+        self.short_memory.add(role=role, content=content)
+        if role == self.agent_name:
+            transcript.append_assistant_text(content)
+        else:
+            transcript.append_user(content)
+
     def _generate_final_summary(
         self,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        messages: Optional[List[dict]] = None,
     ) -> str:
         """
         Generate a comprehensive final summary of the autonomous task execution.
+
+        Args:
+            streaming_callback: Optional callback receiving streaming tokens.
+            messages: The autonomous loop's structured transcript. When given,
+                the summary is requested against the real conversation - with
+                its tool calls and tool results intact - rather than against a
+                flattened string rendering of it.
 
         Returns:
             str: Comprehensive summary
@@ -1910,11 +2029,21 @@ class Agent:
         )
 
         try:
-            task_prompt = self.short_memory.return_history_as_string()
+            if messages is not None:
+                call_kwargs = {
+                    "task": None,
+                    "messages": messages
+                    + [{"role": "user", "content": summary_prompt}],
+                }
+            else:
+                call_kwargs = {
+                    "task": self.short_memory.return_history_as_string()
+                }
+
             response = self.call_llm(
-                task=task_prompt,
                 current_loop=0,
                 streaming_callback=streaming_callback,
+                **call_kwargs,
             )
 
             response = self.parse_llm_output(response)
@@ -2255,9 +2384,12 @@ Subtask Breakdown:
                 "The agent name is not set. Please set an agent name to improve reliability."
             )
 
-        if self.max_loops is None or self.max_loops == 0:
+        if self.max_loops != "auto" and (
+            not isinstance(self.max_loops, int) or self.max_loops <= 0
+        ):
             raise AgentInitializationError(
-                "Max loops is not provided or is set to 0. Please set max loops to 1 or more."
+                "max_loops must be a positive integer or 'auto', "
+                f"got {self.max_loops!r}."
             )
 
         # Ensure max_tokens is set to a valid value based on the model, with a robust fallback.
@@ -3951,6 +4083,11 @@ Summary: {summary}
             content=format_data_structure(output),
         )
 
+        # Returned so a caller building a structured transcript can attribute
+        # this back to the individual tool_call ids. Callers that do not need
+        # it simply ignore the value.
+        self._last_tool_output = output
+
         if self.print_on is True:
             # Extract tool names and details from response for better display
             tool_names = []
@@ -4129,7 +4266,7 @@ Summary: {summary}
                     response=response,
                     loop_count=loop_count,
                 )
-                return
+                return getattr(self, "_last_tool_output", None)
             except Exception as e:
                 last_error = e
                 logger.error(
