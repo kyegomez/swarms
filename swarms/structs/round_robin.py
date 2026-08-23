@@ -76,11 +76,17 @@ class RoundRobinSwarm(SerializableMixin):
     Agents are visited in their declared insertion order, cycling through the
     full roster once per loop. Over K loops with N agents the schedule is:
 
-        turn t -> agents[t % N]    for t in range(K * N)
+        turn t -> agents[(start + t) % N]    for t in range(K * N)
 
     The order is deterministic and identical on every loop, so each agent
     receives exactly `max_loops` turns and every agent reads the full
     conversation history accumulated by the agents that spoke before it.
+
+    `start` is `index`, and it advances by one after each `run()`. K * N turns
+    is a whole number of rotations, so without that step every call would open
+    with `agents[0]` — and since the opener frames the task and every later
+    agent is instructed to build on the prior speaker, `run_batch` would give
+    one agent that influence on every task and the last agent none.
 
     Args:
         name (str): Name of the swarm. Defaults to "RoundRobinSwarm".
@@ -96,7 +102,7 @@ class RoundRobinSwarm(SerializableMixin):
         agents (List[Agent]): List of agents in the swarm.
         verbose (bool): Flag to enable verbose mode.
         max_loops (int): Maximum number of loops to run.
-        index (int): Current index of the agent being executed.
+        index (int): Roster position that opens the next run().
         output_type (OutputType): Type of output format.
         conversation (Conversation): Conversation history for the swarm.
 
@@ -215,6 +221,11 @@ class RoundRobinSwarm(SerializableMixin):
             n = len(self.agents)
             agent_names = return_all_agent_names(self.agents)
 
+            # Where this run starts in the roster. max_loops * n turns is a
+            # whole number of rotations, so the offset only moves via the
+            # single step taken at the end of this method.
+            start = self.index % n
+
             self._log(
                 "info",
                 f"Starting round-robin execution with task on {n} agents: {agent_names}",
@@ -226,26 +237,26 @@ class RoundRobinSwarm(SerializableMixin):
                     f"Starting loop {loop + 1}/{self.max_loops}",
                 )
 
-                for i, current_agent in enumerate(self.agents):
-                    self.index = (loop * n) + i
+                for i in range(n):
+                    current_agent = self.agents[(start + i) % n]
 
+                    is_first_turn = loop == 0 and i == 0
+                    is_last_turn = (
+                        loop == self.max_loops - 1 and i == n - 1
+                    )
                     prev_name = (
-                        self.agents[i - 1].agent_name
-                        if i > 0
-                        else (
-                            self.agents[-1].agent_name
-                            if loop > 0
-                            else None
-                        )
+                        None
+                        if is_first_turn
+                        else self.agents[
+                            (start + i - 1) % n
+                        ].agent_name
                     )
                     next_name = (
-                        self.agents[i + 1].agent_name
-                        if i + 1 < n
-                        else (
-                            self.agents[0].agent_name
-                            if loop + 1 < self.max_loops
-                            else None
-                        )
+                        None
+                        if is_last_turn
+                        else self.agents[
+                            (start + i + 1) % n
+                        ].agent_name
                     )
 
                     conversation_context = (
@@ -281,6 +292,12 @@ class RoundRobinSwarm(SerializableMixin):
                             f"Agent {current_agent.agent_name} failed: {str(e)}",
                         )
                         raise
+
+            # Hand the opening turn to the next agent. The opener frames the
+            # task and every later agent is told to build on the prior
+            # speaker, so leaving the offset where it started gave agents[0]
+            # that influence on every task in a run_batch and agents[-1] none.
+            self.index = (start + 1) % n
 
             self._log(
                 "success",
