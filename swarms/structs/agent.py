@@ -115,6 +115,7 @@ from swarms.utils.index import (
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
+from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.workspace_utils import get_workspace_dir
 
 
@@ -466,6 +467,9 @@ class Agent:
         # Always use environment variable for workspace_dir, ignore user input
         # Fallback to default if environment variable is not set
         self.workspace_dir = get_workspace_dir()
+        # Built on first use: file tools need the dir even without
+        # autosave, but constructing every agent must not create one.
+        self._workspace = None
         self.tags = tags
         self.use_cases = use_cases
         self.name = agent_name
@@ -680,25 +684,16 @@ class Agent:
                 )
                 self.system_prompt += "\n\n" + handoff_prompt
 
-        # Appended once here, not per run: the prompt must say that most tools
-        # need loading, or the model assumes the tool list it can see is
-        # everything and gives up instead of searching. Skipped when there is
-        # nothing to defer - an agent with no tools and a fixed loop would
-        # otherwise be told to use a `tool_search` it has not been given.
-        if self.dynamic_tools and (
-            exists(self.tools) or self.max_loops == "auto"
-        ):
-            self.system_prompt += DYNAMIC_TOOLS_NOTICE
-
-        # A loader is needed whenever there is anything to defer - local tools,
-        # MCP tools, or the autonomous loop's own set. Gating it on local tools
-        # alone missed the MCP-only case, which is the main reason to defer at
-        # all, and left MCP failures propagating raw out of llm_handling().
-        if self.dynamic_tools and (
+        # One condition so the notice cannot diverge from the loader.
+        defers_tools = self.dynamic_tools and (
             exists(self.tools)
             or self.mcp_enabled
             or self.max_loops == "auto"
-        ):
+        )
+
+        # Appended once here, not per run.
+        if defers_tools:
+            self.system_prompt += DYNAMIC_TOOLS_NOTICE
             self.setup_dynamic_tools()
         elif exists(self.tools):
             self.tool_handling()
@@ -760,6 +755,20 @@ class Agent:
         """
         self.system_prompt += self.skills.prompt_for_task(task)
 
+    @property
+    def workspace(self) -> "WorkspaceManager":
+        """
+        This agent's workspace manager, created on first access.
+
+        Returns:
+            WorkspaceManager: Rooted at ``{workspace}/agents/{name}-{uuid}``.
+        """
+        if self._workspace is None:
+            self._workspace = WorkspaceManager.for_agent(
+                self, verbose=self.verbose
+            )
+        return self._workspace
+
     def _get_agent_workspace_dir(self) -> str:
         """
         Get the agent-specific workspace directory path.
@@ -770,52 +779,7 @@ class Agent:
         Returns:
             str: The full path to the agent-specific workspace directory.
         """
-        # Generate a sanitized agent name in "name-of-agent" format (lowercase with hyphens)
-        if self.agent_name:
-            # Convert to lowercase and replace spaces/special chars with hyphens
-            safe_agent_name = (
-                self.agent_name.lower()
-                .replace(" ", "-")
-                .replace("_", "-")
-                .replace("/", "-")
-                .replace("\\", "-")
-                .replace(":", "-")
-                .replace("*", "-")
-                .replace("?", "-")
-                .replace('"', "-")
-                .replace("<", "-")
-                .replace(">", "-")
-                .replace("|", "-")
-                # Remove multiple consecutive hyphens
-                .replace("--", "-")
-                .replace("--", "-")
-                .strip("-")
-            )
-        else:
-            safe_agent_name = "agent"
-
-        # Extract UUID from agent ID
-        if self.id.startswith("agent-"):
-            agent_uuid = self.id.replace("agent-", "")
-        else:
-            agent_uuid = self.id
-
-        # Limit UUID length for directory name (use last 12 chars for brevity)
-        agent_uuid_short = (
-            agent_uuid[-12:] if len(agent_uuid) > 12 else agent_uuid
-        )
-
-        # Create directory name: {name-of-agent}-{uuid} (no "agent-" prefix)
-        dir_name = f"{safe_agent_name}-{agent_uuid_short}"
-
-        # Create full path: workspace_dir/agents/{name-of-agent}-{uuid}/
-        agents_dir = os.path.join(self.workspace_dir, "agents")
-        agent_workspace = os.path.join(agents_dir, dir_name)
-
-        # Ensure directory exists
-        os.makedirs(agent_workspace, exist_ok=True)
-
-        return agent_workspace
+        return self.workspace.dir
 
     def _get_agent_registry(self) -> Dict[str, Any]:
         """
@@ -1500,10 +1464,7 @@ class Agent:
                 attempt = 0
                 success = False
                 while attempt < self.retry_attempts and not success:
-                    # Hoisted out of the try: if an attempt fails after the
-                    # assistant turn is recorded, the except below still has to
-                    # answer its tool calls, or the retry would send a dangling
-                    # `tool_calls` turn and be rejected.
+                    # Outside the try: except must answer tool calls.
                     turn_calls = []
                     turn_results = {}
                     try:
@@ -1866,60 +1827,27 @@ class Agent:
         self, loop_count: Optional[int] = None
     ) -> None:
         """
-        Save the agent's configuration dictionary to a JSON file in the agent-specific workspace directory.
-        This method is called at each step of the agent's run to maintain an up-to-date
-        configuration snapshot. It only runs when autosave is enabled.
+        Write a config snapshot to the agent workspace, once per step.
 
         Args:
-            loop_count (Optional[int]): The current loop count for logging purposes. Defaults to None.
+            loop_count (Optional[int]): Current loop, recorded in the
+                saved metadata and used only for logging. Defaults to None.
 
         Note:
-            This method handles errors gracefully to ensure it doesn't interrupt the main execution.
-            The saved file will be named `config.json` in the agent-specific workspace directory:
-            workspace_dir/agents/{name-of-agent}-{uuid}/config.json
+            Writes ``config.json`` under
+            workspace_dir/agents/{name-of-agent}-{uuid}/. Never raises -
+            autosave must not interrupt a run.
         """
         if not self.autosave:
             return
 
-        try:
-            # Get agent-specific workspace directory
-            agent_workspace = self._get_agent_workspace_dir()
+        path = self.workspace.save_config(
+            additional_metadata={"loop_count": loop_count}
+        )
 
-            # Save as config.json in the agent-specific directory
-            file_path = os.path.join(agent_workspace, "config.json")
-
-            # Get the current configuration dictionary
-            config_dict = self.to_dict()
-
-            # Add metadata about when this was saved
-            config_dict["_autosave_metadata"] = {
-                "timestamp": time.strftime(
-                    "%Y-%m-%d %H:%M:%S", time.localtime()
-                ),
-                "loop_count": loop_count,
-                "agent_id": self.id,
-                "agent_name": self.agent_name,
-            }
-
-            # Write to JSON file atomically (write to temp file first, then rename)
-            temp_path = file_path + ".tmp"
-            with open(temp_path, "w", encoding="utf-8") as f:
-                json.dump(
-                    config_dict, f, indent=2, ensure_ascii=False
-                )
-
-            # Atomic rename
-            os.replace(temp_path, file_path)
-
-            if self.verbose and loop_count is not None:
-                logger.debug(
-                    f"Autosaved config at loop {loop_count} to {file_path}"
-                )
-
-        except Exception as e:
-            # Log error but don't raise - we don't want autosave to break execution
-            logger.warning(
-                f"Failed to autosave config step for agent '{self.agent_name}': {e}"
+        if path and self.verbose and loop_count is not None:
+            logger.debug(
+                f"Autosaved config at loop {loop_count} to {path}"
             )
 
     def _handle_run_error(self, error: any):
@@ -2121,10 +2049,7 @@ class Agent:
             always_loaded=keep,
         )
 
-        # A rebuilt loader starts empty, so anything fetched earlier has to go
-        # back in. Without this the autonomous loop's own setup silently drops
-        # every MCP tool, and the once-per-agent fetch guard stops them coming
-        # back.
+        # A rebuilt loader is empty; the fetch guard will not refetch.
         for schema in self._mcp_schemas_cache or []:
             self.tool_loader.register_schema(schema)
 
@@ -3865,7 +3790,7 @@ Subtask Breakdown:
         if self.print_on:
             formatter.print_panel(
                 response,
-                f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
+                f"Agent Name {self.agent_name} [Loop: {loop_count}/{self.max_loops}]",
             )
 
     def parse_llm_output(self, response: Any):
@@ -4351,9 +4276,7 @@ Summary: {summary}
             content=format_data_structure(output),
         )
 
-        # Returned so a caller building a structured transcript can attribute
-        # this back to the individual tool_call ids. Callers that do not need
-        # it simply ignore the value.
+        # Stored so a transcript builder can map it to tool_call ids.
         self._last_tool_output = output
 
         if self.print_on is True:

@@ -4,7 +4,6 @@ import os
 from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from loguru import logger as loguru_logger
 from swarms.prompts.agent_acknowledgement_prompt import (
     AGENT_COLLAB_PROMPT,
 )
@@ -17,8 +16,7 @@ from swarms.telemetry.otel import (
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
-from swarms.utils.swarm_autosave import get_swarm_workspace_dir
-from swarms.utils.workspace_utils import get_workspace_dir
+from swarms.utils.workspace_manager import WorkspaceManager
 
 logger = initialize_logger(log_folder="sequential_workflow")
 
@@ -155,7 +153,13 @@ class SequentialWorkflow:
             if drift_detection
             else None
         )
-        self.swarm_workspace_dir = None
+        self.workspace = WorkspaceManager(
+            self,
+            name=self.name or "sequential-workflow",
+            verbose=self.verbose,
+            enabled=self.autosave,
+        )
+        self.swarm_workspace_dir = self.workspace.dir
 
         self.reliability_check()
         self.flow = self.sequential_flow()
@@ -169,10 +173,6 @@ class SequentialWorkflow:
             output_type=self.output_type,
             team_awareness=self.team_awareness,
         )
-
-        # Setup autosave workspace if enabled
-        if self.autosave:
-            self._setup_autosave()
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
@@ -294,6 +294,12 @@ class SequentialWorkflow:
     @trace_run(
         "SequentialWorkflow.run", input_params=("task", "img", "imgs")
     )
+    def _autosave_conversation(self) -> None:
+        """Persist history; SequentialWorkflow keeps it on AgentRearrange."""
+        self.workspace.save_conversation(
+            getattr(self.agent_rearrange, "conversation", None)
+        )
+
     def run(
         self,
         task: str,
@@ -342,26 +348,12 @@ class SequentialWorkflow:
                     task, result, run_kwargs
                 )
 
-            # Save conversation history after successful execution
-            if self.autosave and self.swarm_workspace_dir:
-                try:
-                    self._save_conversation_history()
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to save conversation history: {e}"
-                    )
+            self._autosave_conversation()
 
             return result
 
         except Exception as e:
-            # Save conversation history on error
-            if self.autosave and self.swarm_workspace_dir:
-                try:
-                    self._save_conversation_history()
-                except Exception as save_error:
-                    logger.warning(
-                        f"Failed to save conversation history on error: {save_error}"
-                    )
+            self._autosave_conversation()
 
             logger.error(
                 f"An error occurred while executing the task: {e}"
@@ -550,102 +542,3 @@ class SequentialWorkflow:
                 f"An error occurred while executing the batch of tasks concurrently: {e}"
             )
             raise
-
-    def _setup_autosave(self):
-        """
-        Setup workspace directory for saving conversation history.
-
-        Creates the workspace directory structure if autosave is enabled.
-        Only conversation history will be saved to this directory.
-        """
-        try:
-            # Set default workspace directory if not set
-            if not os.getenv("WORKSPACE_DIR"):
-                default_workspace = os.path.join(
-                    os.getcwd(), "agent_workspace"
-                )
-                os.environ["WORKSPACE_DIR"] = default_workspace
-                # Clear the cache so get_workspace_dir() picks up the new value
-                get_workspace_dir.cache_clear()
-                if self.verbose:
-                    loguru_logger.info(
-                        f"WORKSPACE_DIR not set, using default: {default_workspace}"
-                    )
-
-            class_name = self.__class__.__name__
-            swarm_name = self.name or "sequential-workflow"
-            self.swarm_workspace_dir = get_swarm_workspace_dir(
-                class_name, swarm_name, use_timestamp=True
-            )
-
-            if self.swarm_workspace_dir:
-                if self.verbose:
-                    loguru_logger.info(
-                        f"Autosave enabled. Conversation history will be saved to: {self.swarm_workspace_dir}"
-                    )
-        except Exception as e:
-            loguru_logger.warning(
-                f"Failed to setup autosave for SequentialWorkflow: {e}"
-            )
-            # Don't raise - autosave failures shouldn't break initialization
-            self.swarm_workspace_dir = None
-
-    def _save_conversation_history(self):
-        """
-        Save conversation history as a separate JSON file to the workspace directory.
-
-        Saves the conversation history to:
-        workspace_dir/swarms/SequentialWorkflow/{workflow-name}-{id}/conversation_history.json
-        """
-        if not self.swarm_workspace_dir:
-            return
-
-        try:
-            # Get conversation history from agent_rearrange
-            conversation_data = []
-            if (
-                hasattr(self, "agent_rearrange")
-                and self.agent_rearrange
-            ):
-                if (
-                    hasattr(self.agent_rearrange, "conversation")
-                    and self.agent_rearrange.conversation
-                ):
-                    if hasattr(
-                        self.agent_rearrange.conversation,
-                        "conversation_history",
-                    ):
-                        conversation_data = (
-                            self.agent_rearrange.conversation.conversation_history
-                        )
-                    elif hasattr(
-                        self.agent_rearrange.conversation, "to_dict"
-                    ):
-                        conversation_data = (
-                            self.agent_rearrange.conversation.to_dict()
-                        )
-                    else:
-                        conversation_data = []
-
-            # Create conversation history file path
-            conversation_path = os.path.join(
-                self.swarm_workspace_dir, "conversation_history.json"
-            )
-
-            # Save conversation history as JSON
-            with open(conversation_path, "w", encoding="utf-8") as f:
-                json.dump(
-                    conversation_data,
-                    f,
-                    indent=2,
-                    default=str,
-                )
-
-            if self.verbose:
-                loguru_logger.debug(
-                    f"Saved conversation history to {conversation_path}"
-                )
-        except Exception as e:
-            loguru_logger.warning(
-                f"Failed to save conversation history: {e}"
-            )

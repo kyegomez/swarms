@@ -271,9 +271,13 @@ class DynamicToolLoader:
             wanted = [
                 n.strip() for n in query[len("select:") :].split(",")
             ]
-            return [
+            exact = [
                 self._catalog[n] for n in wanted if n in self._catalog
             ]
+            if exact:
+                return exact
+            # A miss usually means a guessed name, not a missing tool.
+            query = " ".join(wanted)
 
         terms = _tokenize(query)
         if not terms:
