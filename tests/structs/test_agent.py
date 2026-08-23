@@ -11,10 +11,12 @@ import pytest
 import yaml
 from dotenv import load_dotenv
 
+import swarms.structs.agent as agent_module
 import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.schemas.agent_errors import AgentToolExecutionError
+from swarms.utils.workspace_utils import get_workspace_dir
 
 load_dotenv()
 
@@ -1375,3 +1377,136 @@ class TestEmptyToolsList:
         agent = self._agent(tools=[sample])
         assert agent.tools_list_dictionary
         assert "tool_search" in agent.system_prompt
+
+
+class TestStateFilePathAgreement:
+
+    @pytest.fixture(autouse=True)
+    def workspace(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+        get_workspace_dir.cache_clear()
+        yield tmp_path
+        get_workspace_dir.cache_clear()
+
+    @staticmethod
+    def _agent(tmp_path, name="Boss", saved_state_path=None):
+        agent = Agent.__new__(Agent)
+        agent.agent_name = name
+        agent.id = "agent-6fd6a53ba3f2"
+        agent.workspace_dir = str(tmp_path)
+        agent._workspace = None
+        agent.saved_state_path = saved_state_path
+        agent.load_state_path = None
+        agent.verbose = False
+        return agent
+
+    @staticmethod
+    def _paths_used(agent, saved_state_path):
+        agent.saved_state_path = saved_state_path
+
+        saved = {}
+
+        def fake_save_state(_self, path):
+            saved.setdefault("temp", path)
+            with open(path, "w") as handle:
+                handle.write("{}")
+
+        with patch.object(
+            agent_module.SafeStateManager,
+            "save_state",
+            side_effect=fake_save_state,
+        ):
+            Agent.save(agent)
+
+        loaded = {}
+        with patch.object(
+            agent_module.SafeStateManager,
+            "load_state",
+            side_effect=lambda _self, path: loaded.setdefault(
+                "path", path
+            ),
+        ), patch.object(Agent, "_reinitialize_after_load"):
+            Agent.load(agent)
+
+        return saved["temp"][: -len(".temp")], loaded["path"]
+
+    def test_save_and_load_pick_the_same_file(self, tmp_path):
+        agent = self._agent(tmp_path)
+        save_path, load_path = self._paths_used(
+            agent, "my_agent_state.json"
+        )
+
+        assert save_path == load_path
+
+    def test_load_no_longer_doubles_the_extension(self, tmp_path):
+        agent = self._agent(tmp_path)
+        _, load_path = self._paths_used(agent, "my_agent_state.json")
+
+        assert not load_path.endswith(".json.json")
+        assert os.path.basename(load_path) == "my_agent_state.json"
+
+    def test_load_looks_in_the_workspace_not_the_cwd(self, tmp_path):
+        agent = self._agent(tmp_path)
+        _, load_path = self._paths_used(agent, "my_agent_state.json")
+
+        assert os.path.isabs(load_path)
+        assert load_path.startswith(str(tmp_path))
+
+    def test_a_missing_extension_is_added_once_on_both_sides(
+        self, tmp_path
+    ):
+        agent = self._agent(tmp_path)
+        save_path, load_path = self._paths_used(agent, "no_extension")
+
+        assert os.path.basename(save_path) == "no_extension.json"
+        assert save_path == load_path
+
+    def test_the_default_filename_matches_when_nothing_is_configured(
+        self, tmp_path
+    ):
+        agent = self._agent(tmp_path, name="Boss")
+        save_path, load_path = self._paths_used(agent, None)
+
+        assert os.path.basename(save_path) == "Boss_state.json"
+        assert save_path == load_path
+
+    def test_an_absolute_path_is_used_as_given(self, tmp_path):
+        target = str(tmp_path / "elsewhere" / "state.json")
+        agent = self._agent(tmp_path)
+
+        assert Agent._resolve_state_file(agent, target) == target
+
+    def test_an_extensionless_absolute_path_gains_the_extension(
+        self, tmp_path
+    ):
+        agent = self._agent(tmp_path)
+        target = str(tmp_path / "backups" / "state")
+
+        assert (
+            Agent._resolve_state_file(agent, target)
+            == f"{target}.json"
+        )
+
+    def test_no_candidate_resolves_to_none(self, tmp_path):
+        agent = self._agent(tmp_path)
+
+        assert Agent._resolve_state_file(agent, None) is None
+        assert Agent._resolve_state_file(agent, "") is None
+
+    def test_load_state_path_still_wins_over_saved_state_path(
+        self, tmp_path
+    ):
+        agent = self._agent(tmp_path, saved_state_path="ignored.json")
+        agent.load_state_path = "explicit.json"
+
+        loaded = {}
+        with patch.object(
+            agent_module.SafeStateManager,
+            "load_state",
+            side_effect=lambda _self, path: loaded.setdefault(
+                "path", path
+            ),
+        ), patch.object(Agent, "_reinitialize_after_load"):
+            Agent.load(agent)
+
+        assert os.path.basename(loaded["path"]) == "explicit.json"

@@ -2605,64 +2605,45 @@ Subtask Breakdown:
                 f"The model '{self.model_name}' may not be supported. Please use a supported model, or override the model name with the 'llm' parameter, which should be a class with a 'run(task: str)' method or a '__call__' method."
             )
 
+    def _resolve_state_file(
+        self, candidate: Optional[str]
+    ) -> Optional[str]:
+        if not candidate:
+            return None
+
+        if not candidate.endswith(".json"):
+            candidate = f"{candidate}.json"
+
+        if os.path.isabs(candidate):
+            return candidate
+
+        return os.path.join(
+            self._get_agent_workspace_dir(), candidate
+        )
+
     def save(self, file_path: str = None) -> None:
-        """
-        Save the agent state to a file using SafeStateManager with atomic writing
-        and backup functionality. Automatically handles complex objects and class instances.
-        Files are saved in the agent-specific workspace directory: workspace_dir/agent-{agent_name}-{uuid}/
-
-        Args:
-            file_path (str, optional): Custom path to save the state. If relative, will be saved in
-                                    the agent-specific workspace directory. If None, uses configured paths.
-
-        Raises:
-            OSError: If there are filesystem-related errors
-            Exception: For other unexpected errors
-        """
         try:
-            # Get agent-specific workspace directory
-            agent_workspace = self._get_agent_workspace_dir()
-
-            # Determine the save path
-            resolved_path = (
+            full_path = self._resolve_state_file(
                 file_path
                 or self.saved_state_path
                 or f"{self.agent_name}_state.json"
             )
 
-            # Ensure path has .json extension
-            if not resolved_path.endswith(".json"):
-                resolved_path += ".json"
-
-            # If file_path is absolute, use it as-is; otherwise, use agent workspace
-            if file_path and os.path.isabs(file_path):
-                full_path = file_path
-            else:
-                # Create full path in agent-specific workspace directory
-                full_path = os.path.join(
-                    agent_workspace, resolved_path
-                )
-
             backup_path = full_path + ".backup"
             temp_path = full_path + ".temp"
 
-            # Ensure directory exists
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
 
-            # First save to temporary file using SafeStateManager
             SafeStateManager.save_state(self, temp_path)
 
-            # If current file exists, create backup
             if os.path.exists(full_path):
                 try:
                     os.replace(full_path, backup_path)
                 except Exception as e:
                     logger.warning(f"Could not create backup: {e}")
 
-            # Move temporary file to final location
             os.replace(temp_path, full_path)
 
-            # Clean up old backup if everything succeeded
             if os.path.exists(backup_path):
                 try:
                     os.remove(backup_path)
@@ -2671,7 +2652,6 @@ Subtask Breakdown:
                         f"Could not remove backup file: {e}"
                     )
 
-            # Log saved state information if verbose
             if self.verbose:
                 self._log_state_info(full_path, saved=True)
 
@@ -2679,7 +2659,6 @@ Subtask Breakdown:
                 f"Successfully saved agent state to: {full_path}"
             )
 
-            # Handle additional component saves
             self._save_additional_components(full_path)
 
         except OSError as e:
@@ -2734,42 +2713,16 @@ Subtask Breakdown:
             logger.warning(f"Error saving additional components: {e}")
 
     def load(self, file_path: str = None) -> None:
-        """
-        Load agent state from a file using SafeStateManager.
-        Automatically preserves class instances and complex objects.
-
-        Args:
-            file_path (str, optional): Path to load state from.
-                                    If None, uses default path from agent config.
-
-        Raises:
-            FileNotFoundError: If state file doesn't exist
-            Exception: If there's an error during loading
-        """
         try:
-            # Resolve load path conditionally with a check for self.load_state_path
-            resolved_path = (
+            resolved_path = self._resolve_state_file(
                 file_path
                 or self.load_state_path
-                or (
-                    f"{self.saved_state_path}.json"
-                    if self.saved_state_path
-                    else (
-                        f"{self.agent_name}.json"
-                        if self.agent_name
-                        else (
-                            f"{self.workspace_dir}/{self.agent_name}_state.json"
-                            if self.workspace_dir and self.agent_name
-                            else None
-                        )
-                    )
-                )
+                or self.saved_state_path
+                or f"{self.agent_name}_state.json"
             )
 
-            # Load state using SafeStateManager
             SafeStateManager.load_state(self, resolved_path)
 
-            # Reinitialize any necessary runtime components
             self._reinitialize_after_load()
 
             if self.verbose:
