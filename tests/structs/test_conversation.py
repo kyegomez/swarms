@@ -900,17 +900,32 @@ def test_time_enabled_end_to_end(tmp_path):
         datetime.fromisoformat(ts)
 
 
-def _overflowing_conversation(context_length=512, messages=60):
+def _chunking_conversation(tmp_path, **kwargs):
+    """A Conversation that cannot inherit another test's save file.
+
+    Conversation defaults to ``name="conversation-test"``, and since #1925 a
+    bare ``Conversation()`` loads
+    ``conversations/conversation_conversation-test.json`` when it exists. That
+    file is written by an earlier test in this module and survives between
+    runs, so these tests would start with a history they never added --
+    silently, and only when run as part of the file.
+    """
+    return Conversation(conversations_dir=str(tmp_path), **kwargs)
+
+
+def _overflowing_conversation(
+    tmp_path, context_length=512, messages=60
+):
     """A conversation whose history is well past ``context_length``."""
-    conv = Conversation(
-        context_length=context_length, time_enabled=True
+    conv = _chunking_conversation(
+        tmp_path, context_length=context_length, time_enabled=True
     )
     for index in range(messages):
         conv.add("user", f"message {index} " + "word " * 100)
     return conv
 
 
-def test_dynamic_chunking_stays_within_context_length():
+def test_dynamic_chunking_stays_within_context_length(tmp_path):
     """The trimmed history must fit the window it was trimmed for.
 
     Swept across window and message sizes because the per-message budget
@@ -919,8 +934,10 @@ def test_dynamic_chunking_stays_within_context_length():
     """
     for context_length in (64, 200, 512, 2048):
         for words in (5, 40, 100):
-            conv = Conversation(
-                context_length=context_length, time_enabled=True
+            conv = _chunking_conversation(
+                tmp_path,
+                context_length=context_length,
+                time_enabled=True,
             )
             for index in range(40):
                 conv.add("user", f"m{index} " + "word " * words)
@@ -932,9 +949,9 @@ def test_dynamic_chunking_stays_within_context_length():
             ), f"overflow at context_length={context_length}, words={words}"
 
 
-def test_dynamic_chunking_keeps_whole_messages():
+def test_dynamic_chunking_keeps_whole_messages(tmp_path):
     """Trimming happens on message boundaries, not mid-message."""
-    conv = _overflowing_conversation(messages=60)
+    conv = _overflowing_conversation(tmp_path, messages=60)
     result = conv.return_history_as_string()
 
     # Every complete message starts with its [timestamp] under time_enabled.
@@ -944,7 +961,9 @@ def test_dynamic_chunking_keeps_whole_messages():
     assert "message 59 " in result
 
 
-def test_dynamic_chunking_work_is_bounded_by_the_window(monkeypatch):
+def test_dynamic_chunking_work_is_bounded_by_the_window(
+    monkeypatch, tmp_path
+):
     """Trimming must not re-tokenize the whole transcript on every read."""
     import swarms.structs.conversation as conversation_module
 
@@ -959,20 +978,26 @@ def test_dynamic_chunking_work_is_bounded_by_the_window(monkeypatch):
         conversation_module, "count_tokens", recording
     )
 
-    _overflowing_conversation(messages=30).return_history_as_string()
+    _overflowing_conversation(
+        tmp_path, messages=30
+    ).return_history_as_string()
     small = sum(tokenized)
 
     tokenized.clear()
-    _overflowing_conversation(messages=240).return_history_as_string()
+    _overflowing_conversation(
+        tmp_path, messages=240
+    ).return_history_as_string()
     large = sum(tokenized)
 
     # 8x the transcript, same window: tokenized characters should stay flat.
     assert large < small * 2
 
 
-def test_dynamic_chunking_leaves_a_short_history_alone():
+def test_dynamic_chunking_leaves_a_short_history_alone(tmp_path):
     """Under the limit, the full history is returned verbatim."""
-    conv = Conversation(context_length=8192, time_enabled=True)
+    conv = _chunking_conversation(
+        tmp_path, context_length=8192, time_enabled=True
+    )
     conv.add("user", "hello there")
     conv.add("assistant", "general kenobi")
 
@@ -982,9 +1007,13 @@ def test_dynamic_chunking_leaves_a_short_history_alone():
     )
 
 
-def test_dynamic_chunking_handles_a_single_oversized_message():
+def test_dynamic_chunking_handles_a_single_oversized_message(
+    tmp_path,
+):
     """One message bigger than the window is trimmed, not dropped."""
-    conv = Conversation(context_length=40, time_enabled=False)
+    conv = _chunking_conversation(
+        tmp_path, context_length=40, time_enabled=False
+    )
     conv.add("user", "word " * 4000)
     result = conv.return_history_as_string()
 
@@ -992,9 +1021,9 @@ def test_dynamic_chunking_handles_a_single_oversized_message():
     assert count_tokens(result) <= conv.context_length
 
 
-def test_dynamic_chunking_handles_an_empty_history():
+def test_dynamic_chunking_handles_an_empty_history(tmp_path):
     """No messages must not raise on the newest-message fallback."""
-    conv = Conversation(context_length=40)
+    conv = _chunking_conversation(tmp_path, context_length=40)
 
     assert conv.return_history_as_string() == ""
 
