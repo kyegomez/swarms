@@ -134,7 +134,11 @@ agent.run("What are the key benefits of using a multi-agent system?")
 
 ### Autonomous Agent with `max_loops="auto"`
 
-Setting `max_loops="auto"` lets the agent decide for itself when the task is complete — it keeps reasoning and acting until it reaches a stopping condition, rather than halting after a fixed number of iterations. This is the recommended mode for open-ended, multi-step tasks where the number of steps isn't known in advance.
+Setting `max_loops="auto"` lets the agent decide for itself when the task is
+complete instead of halting after one fixed loop count. Configurable run and
+subtask ceilings still bound unattended execution. This is the recommended
+mode for open-ended, multi-step tasks where the number of steps isn't known in
+advance.
 
 ```python
 from swarms import Agent
@@ -147,7 +151,10 @@ agent = Agent(
         "execute each step thoroughly, and signal completion only when the full task is done."
     ),
     model_name="gpt-5.4",
-    max_loops="auto",       # Agent decides when it's done — no fixed iteration cap
+    max_loops="auto",       # Agent decides when the work is complete
+    max_run_tokens=50_000,   # Optional estimated text-token ceiling for this run
+    max_subtask_iterations=50,  # Bound total subtask selections in the run
+    max_subtask_loops=12,    # Bound the LLM turns spent on any one subtask
     autosave=True,
     verbose=True,
 )
@@ -160,6 +167,11 @@ result = agent.run(
 )
 print(result)
 ```
+
+`max_run_tokens` is checked before each autonomous model request and includes
+locally estimated text from the system prompt, messages, tool schemas, and
+responses. Provider-reported usage remains authoritative; image, audio, cache,
+and hidden reasoning tokens are not included in the local estimate.
 
 **When to use `max_loops="auto"`:**
 - Open-ended research or analysis tasks

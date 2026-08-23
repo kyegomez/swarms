@@ -855,5 +855,138 @@ class TestThinkLoopContainment:
         assert agent.think_call_count == 0
 
 
+class TestAutonomousRunBudget:
+    """One autonomous run has caller-owned token and iteration ceilings."""
+
+    def test_limits_are_constructor_configurable(self):
+        agent = build_agent(
+            max_run_tokens=1200,
+            max_subtask_iterations=7,
+            max_subtask_loops=3,
+        )
+
+        assert agent.max_run_tokens == 1200
+        assert agent.max_subtask_iterations == 7
+        assert agent.max_subtask_loops == 3
+        assert agent.autonomous_run_token_count == 0
+        assert agent.autonomous_run_call_count == 0
+
+    @pytest.mark.parametrize(
+        ("name", "value"),
+        [
+            ("max_run_tokens", 0),
+            ("max_subtask_iterations", -1),
+            ("max_subtask_loops", True),
+        ],
+    )
+    def test_limits_reject_non_positive_integers(self, name, value):
+        with pytest.raises(ValueError, match=name):
+            build_agent(**{name: value})
+
+    def test_budget_counts_structured_request_and_caps_output(
+        self, monkeypatch
+    ):
+        agent = build_agent(max_run_tokens=10)
+        agent.tools_list_dictionary = []
+        captured = {}
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            captured.update({"task": task, **kwargs})
+            return "done"
+
+        token_counts = iter([6, 2])
+        monkeypatch.setattr(
+            "swarms.agents.autonomous_loop.count_tokens",
+            lambda *args, **kwargs: next(token_counts),
+        )
+        monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+
+        response = agent.autonomous_loop._call_llm_with_budget(
+            task=None,
+            messages=[{"role": "user", "content": "request"}],
+        )
+
+        assert response == "done"
+        assert captured["task"] is None
+        assert captured["messages"] == [
+            {"role": "user", "content": "request"}
+        ]
+        assert captured["max_tokens"] == 4
+        assert agent.autonomous_run_call_count == 1
+        assert agent.autonomous_run_token_count == 8
+
+    def test_budget_stops_before_over_budget_planning_call(
+        self, monkeypatch
+    ):
+        agent = build_agent(max_run_tokens=5)
+        calls = []
+
+        monkeypatch.setattr(
+            "swarms.agents.autonomous_loop.count_tokens",
+            lambda *args, **kwargs: 6,
+        )
+        monkeypatch.setattr(
+            agent,
+            "call_llm",
+            lambda *args, **kwargs: calls.append(kwargs),
+        )
+
+        output = agent.run("bounded task")
+
+        assert calls == []
+        assert agent.autonomous_budget_exhausted is True
+        assert agent.autonomous_run_call_count == 0
+        assert (
+            "max_run_tokens budget would have been exceeded" in output
+        )
+        assert "LLM calls completed: 0" in output
+
+    def test_configured_subtask_loop_limit_is_enforced(
+        self, monkeypatch
+    ):
+        agent = build_agent(max_subtask_loops=2)
+        calls = script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("s1", ())),
+                "still working",
+                "still working",
+                "summary",
+            ],
+        )
+
+        agent.run("bounded loops")
+
+        assert status_of(agent, "s1") == "failed"
+        assert len(calls) == 4
+
+    def test_final_summary_respects_remaining_budget(
+        self, monkeypatch
+    ):
+        agent = build_agent(max_run_tokens=5)
+        agent.autonomous_run_token_count = 5
+        calls = []
+
+        monkeypatch.setattr(
+            "swarms.agents.autonomous_loop.count_tokens",
+            lambda *args, **kwargs: 1,
+        )
+        monkeypatch.setattr(
+            agent,
+            "call_llm",
+            lambda *args, **kwargs: calls.append(kwargs),
+        )
+
+        output = agent._generate_final_summary(messages=[])
+
+        assert calls == []
+        assert agent.autonomous_budget_exhausted is True
+        assert (
+            "max_run_tokens budget would have been exceeded" in output
+        )
+        assert "LLM calls completed: 0" in output
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-q", "-p", "no:randomly"])

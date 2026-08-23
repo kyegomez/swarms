@@ -29,8 +29,6 @@ from loguru import logger
 from swarms.prompts.handoffs_prompt import get_handoffs_prompt
 from swarms.structs.autonomous_loop_utils import (
     MAX_PLANNING_ATTEMPTS,
-    MAX_SUBTASK_ITERATIONS,
-    MAX_SUBTASK_LOOPS,
     assign_task_tool,
     cancel_sub_agent_tasks_tool,
     check_sub_agent_status_tool,
@@ -54,6 +52,7 @@ from swarms.tools.py_func_to_openai_func_str import (
 from swarms.structs.transcript import Transcript
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists, format_data_structure
+from swarms.utils.litellm_tokenizer import count_tokens
 
 
 def _format_tool_error(function_name: str, error: Exception) -> str:
@@ -71,6 +70,10 @@ def _format_tool_error(function_name: str, error: Exception) -> str:
         "Review the arguments and either retry with a correction or take a "
         "different approach. Do not repeat the same call unchanged."
     )
+
+
+class AutonomousRunBudgetExceeded(RuntimeError):
+    """Raised before an autonomous LLM call would exceed its run budget."""
 
 
 class AutonomousAgentLoop:
@@ -126,6 +129,119 @@ class AutonomousAgentLoop:
             results,
             formatter=format_data_structure,
         )
+
+    @staticmethod
+    def _stringify_for_token_count(value: Any) -> str:
+        """Return a stable text representation for local token estimation."""
+        if isinstance(value, str):
+            return value
+        return json.dumps(value, sort_keys=True, default=str)
+
+    def _estimate_request_tokens(
+        self,
+        task: Any = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
+    ) -> int:
+        """Estimate request text, system prompt, and tool-schema tokens."""
+        request_parts = [self.agent.system_prompt]
+        if task is not None:
+            request_parts.append(
+                self._stringify_for_token_count(task)
+            )
+        if messages:
+            request_parts.append(
+                self._stringify_for_token_count(messages)
+            )
+        if self.agent.tools_list_dictionary:
+            request_parts.append(
+                self._stringify_for_token_count(
+                    self.agent.tools_list_dictionary
+                )
+            )
+        return count_tokens(
+            "\n".join(part for part in request_parts if part),
+            model=self.agent.model_name,
+        )
+
+    def _call_llm_with_budget(
+        self, task: Any = None, *args, **kwargs
+    ) -> Any:
+        """Call the LLM while enforcing and recording the autonomous text budget."""
+        prompt_tokens = self._estimate_request_tokens(
+            task=task, messages=kwargs.get("messages")
+        )
+        token_budget = self.agent.max_run_tokens
+
+        if token_budget is not None:
+            remaining = (
+                token_budget - self.agent.autonomous_run_token_count
+            )
+            output_allowance = remaining - prompt_tokens
+            if output_allowance < 1:
+                self.agent.autonomous_budget_exhausted = True
+                raise AutonomousRunBudgetExceeded
+
+            requested_max_tokens = kwargs.get(
+                "max_tokens", self.agent.max_tokens
+            )
+            if (
+                requested_max_tokens is None
+                or requested_max_tokens > output_allowance
+            ):
+                kwargs["max_tokens"] = output_allowance
+
+        # Count before dispatch: a provider can accept and bill a request even
+        # if response processing later fails locally.
+        self.agent.autonomous_run_token_count += prompt_tokens
+        self.agent.autonomous_run_call_count += 1
+        response = self.agent.call_llm(task=task, *args, **kwargs)
+        self.agent.autonomous_run_token_count += count_tokens(
+            self._stringify_for_token_count(response),
+            model=self.agent.model_name,
+        )
+
+        if (
+            token_budget is not None
+            and self.agent.autonomous_run_token_count >= token_budget
+        ):
+            self.agent.autonomous_budget_exhausted = True
+        return response
+
+    def _usage_report(self) -> str:
+        """Format the locally estimated autonomous-run usage."""
+        budget = self.agent.max_run_tokens
+        budget_text = (
+            f" / {budget} configured" if budget is not None else ""
+        )
+        return (
+            "\n\nAutonomous Run Usage:\n"
+            f"- LLM calls completed: {self.agent.autonomous_run_call_count}\n"
+            "- Estimated text tokens (requests, tools, and responses): "
+            f"{self.agent.autonomous_run_token_count}{budget_text}\n"
+            "- Provider-reported billing remains authoritative; image, audio, "
+            "cache, and hidden reasoning tokens are not included in this local estimate."
+        )
+
+    def _budget_exhausted_summary(self) -> str:
+        """Return a deterministic summary without another LLM request."""
+        summary = (
+            "Task Execution Summary\n\n"
+            "The autonomous run stopped before another LLM request because "
+            "the configured max_run_tokens budget would have been exceeded."
+        )
+        if self.agent.autonomous_subtasks:
+            summary += "\n\nSubtask Breakdown:\n"
+            for subtask in self.agent.autonomous_subtasks:
+                summary += (
+                    f"- {subtask.get('step_id', 'unknown')}: "
+                    f"{subtask.get('status', 'unknown')} - "
+                    f"{subtask.get('description', '')}\n"
+                )
+        summary += self._usage_report()
+        self.agent.short_memory.add(
+            role=self.agent.agent_name, content=summary
+        )
+        return summary
 
     def _run_autonomous_loop(
         self,
@@ -208,6 +324,9 @@ class AutonomousAgentLoop:
             self.agent.subtask_status = {}
             self.agent.plan_created = False
             self.agent.think_call_count = 0
+            self.agent.autonomous_run_token_count = 0
+            self.agent.autonomous_run_call_count = 0
+            self.agent.autonomous_budget_exhausted = False
 
             self._say_user(task)
 
@@ -383,7 +502,7 @@ class AutonomousAgentLoop:
             ):
                 planning_attempts += 1
                 try:
-                    response = self.agent.call_llm(
+                    response = self._call_llm_with_budget(
                         task=None,
                         img=img,
                         current_loop=0,
@@ -502,6 +621,8 @@ class AutonomousAgentLoop:
                         plan_created = True
                         break
 
+                except AutonomousRunBudgetExceeded:
+                    return self._budget_exhausted_summary()
                 except Exception as e:
                     if self.agent.verbose:
                         logger.error(
@@ -565,7 +686,7 @@ class AutonomousAgentLoop:
                     title="Autonomous Loop: Execution Phase",
                 )
 
-            max_subtask_iterations = MAX_SUBTASK_ITERATIONS
+            max_subtask_iterations = self.agent.max_subtask_iterations
             total_iterations = 0
 
             while not self._all_subtasks_complete():
@@ -611,7 +732,7 @@ class AutonomousAgentLoop:
 
                 # Subtask execution loop: thinking -> tool actions -> observation
                 subtask_iterations = 0
-                max_subtask_loops = MAX_SUBTASK_LOOPS
+                max_subtask_loops = self.agent.max_subtask_loops
                 subtask_done = False
 
                 # Counts CONSECUTIVE think calls across this subtask's
@@ -637,7 +758,7 @@ class AutonomousAgentLoop:
                     subtask_iterations += 1
 
                     try:
-                        response = self.agent.call_llm(
+                        response = self._call_llm_with_budget(
                             task=None,
                             img=img,
                             current_loop=subtask_iterations,
@@ -1108,6 +1229,8 @@ class AutonomousAgentLoop:
                             # before firing again on the very next iteration.
                             self.agent.think_call_count = 0
 
+                    except AutonomousRunBudgetExceeded:
+                        return self._budget_exhausted_summary()
                     except Exception as e:
                         if self.agent.verbose:
                             logger.error(
@@ -1164,7 +1287,8 @@ class AutonomousAgentLoop:
                 )
 
             return self.agent._generate_final_summary(
-                streaming_callback=streaming_callback
+                streaming_callback=streaming_callback,
+                messages=self._transcript.messages,
             )
 
         except Exception as error:
