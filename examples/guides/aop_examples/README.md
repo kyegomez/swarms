@@ -22,7 +22,6 @@ This directory contains runnable examples that demonstrate AOP (Agents over Prot
   - [`discovery/example_agent_communication.py`](./discovery/example_agent_communication.py): Illustrates simple agent‑to‑agent or agent‑to‑service communication patterns.
   - [`discovery/example_aop_discovery.py`](./discovery/example_aop_discovery.py): Demonstrates discovering available agents/tools via AOP.
   - [`discovery/simple_discovery_example.py`](./discovery/simple_discovery_example.py): A pared‑down discovery walkthrough.
-  - [`discovery/test_aop_discovery.py`](./discovery/test_aop_discovery.py): Test‑style script validating discovery functionality.
 
 ## Prerequisites
 

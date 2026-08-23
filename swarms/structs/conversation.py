@@ -1507,11 +1507,6 @@ class Conversation:
                 names.append(name)
         return sorted(names)
 
-    def clear_memory(self):
-        """Clear the memory of the conversation."""
-        self.conversation_history = []
-        self._str_cache = None
-
     def _dynamic_auto_chunking_worker(self):
         """
         Dynamically chunk the conversation history to fit within the context length.
