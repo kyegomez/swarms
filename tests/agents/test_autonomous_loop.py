@@ -855,5 +855,80 @@ class TestThinkLoopContainment:
         assert agent.think_call_count == 0
 
 
+# --------------------------------------------------------------------------
+# #1968 — the handoff prompt is appended per run()
+# --------------------------------------------------------------------------
+
+
+class TestHandoffPromptIsAppendedOnce:
+    """`Agent.system_prompt` is durable state; the loop runs per call."""
+
+    @staticmethod
+    def _agent_with_handoffs():
+        worker = Agent(
+            agent_name="Worker",
+            agent_description="does the work",
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+            autosave=False,
+        )
+        return build_agent(handoffs=[worker])
+
+    def test_running_three_times_does_not_stack_three_rosters(
+        self, monkeypatch
+    ):
+        agent = self._agent_with_handoffs()
+        marker = "**Available Agents:**"
+        assert marker in agent.system_prompt, (
+            "Agent.__init__ is expected to append the roster; if this fails "
+            "the premise of the test has changed, not the fix"
+        )
+
+        for _ in range(3):
+            script_llm(
+                agent,
+                monkeypatch,
+                [
+                    plan(("a", [])),
+                    [
+                        tool_call(
+                            "subtask_done",
+                            step_id="a",
+                            summary="ok",
+                            success=True,
+                        )
+                    ],
+                    [tool_call("complete_task", summary="done")],
+                ],
+            )
+            agent.run("demo")
+
+        assert agent.system_prompt.count(marker) == 1, (
+            f"the handoff roster appears {agent.system_prompt.count(marker)} "
+            f"times after three runs; system_prompt grows without bound for "
+            f"any reused agent with handoffs"
+        )
+
+    def test_the_roster_is_still_there_for_the_model(
+        self, monkeypatch
+    ):
+        """Deduplicating must not remove it — the loop needs it present."""
+        agent = self._agent_with_handoffs()
+        script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("a", [])),
+                [tool_call("complete_task", summary="done")],
+            ],
+        )
+        agent.run("demo")
+
+        assert "**Available Agents:**" in agent.system_prompt
+        assert "Worker" in agent.system_prompt
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-q", "-p", "no:randomly"])

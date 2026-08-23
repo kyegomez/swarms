@@ -286,15 +286,19 @@ class AutonomousAgentLoop:
                         self.agent.tools_list_dictionary.append(tool)
                         existing_tool_names.add(tool_name)
 
-                # Add handoff prompt to system prompt
+                # Add handoff prompt to system prompt, once. Agent.__init__
+                # already appended it for handoffs given at construction, and
+                # this runs per run() -- so without the check a reused agent
+                # carries one more copy of the roster after every call.
                 agent_registry = self.agent._get_agent_registry()
                 if agent_registry:
                     handoff_prompt = get_handoffs_prompt(
                         list(agent_registry.values())
                     )
-                    self.agent.system_prompt += (
-                        "\n\n" + handoff_prompt
-                    )
+                    if handoff_prompt not in self.agent.system_prompt:
+                        self.agent.system_prompt += (
+                            "\n\n" + handoff_prompt
+                        )
 
             # Reinitialize LLM with planning tools (and handoff tool if configured)
             if self.agent.llm is not None:
