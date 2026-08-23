@@ -855,5 +855,100 @@ class TestThinkLoopContainment:
         assert agent.think_call_count == 0
 
 
+class TestHandoffPromptIsNotReappended:
+    """#1968 — the handoff prompt was appended to ``system_prompt`` inside the
+    per-run setup, so every ``run()`` stacked another copy and a long-lived
+    agent's prompt grew without bound. Measured before the fix: +1,988
+    characters per run, linearly.
+
+    The loop is driven directly rather than through ``run()``: the append
+    happens during setup, before the model is contacted, so stopping at the
+    first provider call exercises the real code path offline.
+    """
+
+    class _Stop(Exception):
+        """Halts the loop immediately after setup."""
+
+    def _run_setup_only(self, agent, monkeypatch):
+        """Run the loop far enough to apply the handoff prompt, then stop."""
+
+        def boom(*args, **kwargs):
+            raise TestHandoffPromptIsNotReappended._Stop()
+
+        monkeypatch.setattr(type(agent), "llm_handling", boom)
+        try:
+            agent._run_autonomous_loop(task="anything")
+        except Exception:
+            pass
+
+    def test_prompt_does_not_grow_across_runs(self, monkeypatch):
+        worker = build_agent(agent_name="Worker", max_loops=1)
+        agent = build_agent(agent_name="Boss", handoffs=[worker])
+
+        lengths = []
+        for _ in range(3):
+            self._run_setup_only(agent, monkeypatch)
+            lengths.append(len(agent.system_prompt))
+
+        # The regression: these were 17347, 19335, 21323.
+        assert lengths[0] == lengths[1] == lengths[2]
+
+    def test_the_handoff_prompt_is_still_present(self, monkeypatch):
+        """Not growing must not mean never applied — the delegation
+        instructions have to survive, or handoffs stop working entirely.
+        """
+        worker = build_agent(agent_name="Worker", max_loops=1)
+        agent = build_agent(agent_name="Boss", handoffs=[worker])
+
+        self._run_setup_only(agent, monkeypatch)
+
+        assert "Worker" in agent.system_prompt
+
+    def test_a_changed_registry_refreshes_the_prompt(
+        self, monkeypatch
+    ):
+        """A plain "already present" guard would pin the first registry's text
+        forever, so a handoff target added later would never be described.
+        """
+        alpha = build_agent(agent_name="Alpha", max_loops=1)
+        beta = build_agent(agent_name="Beta", max_loops=1)
+        agent = build_agent(agent_name="Boss", handoffs=[alpha])
+
+        self._run_setup_only(agent, monkeypatch)
+        assert "Alpha" in agent.system_prompt
+        assert "Beta" not in agent.system_prompt
+
+        agent.handoffs = [alpha, beta]
+        self._run_setup_only(agent, monkeypatch)
+        assert "Alpha" in agent.system_prompt
+        assert "Beta" in agent.system_prompt
+
+    def test_the_refreshed_prompt_is_still_stable(self, monkeypatch):
+        """After the registry changes, further runs must not resume growing."""
+        alpha = build_agent(agent_name="Alpha", max_loops=1)
+        beta = build_agent(agent_name="Beta", max_loops=1)
+        agent = build_agent(agent_name="Boss", handoffs=[alpha])
+
+        self._run_setup_only(agent, monkeypatch)
+        agent.handoffs = [alpha, beta]
+        self._run_setup_only(agent, monkeypatch)
+        after_change = len(agent.system_prompt)
+
+        self._run_setup_only(agent, monkeypatch)
+        self._run_setup_only(agent, monkeypatch)
+
+        assert len(agent.system_prompt) == after_change
+
+    def test_an_agent_without_handoffs_is_untouched(
+        self, monkeypatch
+    ):
+        agent = build_agent(agent_name="Solo")
+        before = agent.system_prompt
+
+        self._run_setup_only(agent, monkeypatch)
+
+        assert agent.system_prompt == before
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-q", "-p", "no:randomly"])
