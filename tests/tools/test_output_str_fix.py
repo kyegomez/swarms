@@ -120,34 +120,6 @@ def test_agent_integration():
     return True
 
 
-if __name__ == "__main__":
-    print("=" * 60)
-    print("Testing output_str parameter fix")
-    print("=" * 60)
-
-    try:
-        test_base_model_to_openai_function()
-        test_multi_base_model_to_openai_function()
-        test_base_tool_methods()
-
-        if test_agent_integration():
-            print("\n" + "=" * 60)
-            print(
-                "✅ All tests passed! The output_str parameter fix is working correctly."
-            )
-            print("=" * 60)
-        else:
-            print("\n" + "=" * 60)
-            print(
-                "❌ Some tests failed. Please check the implementation."
-            )
-            print("=" * 60)
-
-    except Exception as e:
-        print(f"\n❌ Test failed with error: {e}")
-        import traceback
-
-        traceback.print_exc()
 
 
 def test_function_name_is_the_model_name():
@@ -187,3 +159,33 @@ def test_function_name_is_the_model_name():
     props = result["functions"][0]["parameters"]["properties"]
     assert props["city"]["description"] == "The city to look up."
     assert props["units"]["description"] == "Temperature units."
+
+
+if __name__ == "__main__":
+    print("=" * 60)
+    print("Testing output_str parameter fix")
+    print("=" * 60)
+
+    try:
+        test_base_model_to_openai_function()
+        test_multi_base_model_to_openai_function()
+        test_base_tool_methods()
+
+        if test_agent_integration():
+            print("\n" + "=" * 60)
+            print(
+                "✅ All tests passed! The output_str parameter fix is working correctly."
+            )
+            print("=" * 60)
+        else:
+            print("\n" + "=" * 60)
+            print(
+                "❌ Some tests failed. Please check the implementation."
+            )
+            print("=" * 60)
+
+    except Exception as e:
+        print(f"\n❌ Test failed with error: {e}")
+        import traceback
+
+        traceback.print_exc()

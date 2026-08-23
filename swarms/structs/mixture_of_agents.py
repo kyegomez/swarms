@@ -16,7 +16,9 @@ from swarms.telemetry.otel import (
     capture_init,
     trace_run,
 )
+from typing import Dict, Any
 from swarms.utils.generate_id import generate_id
+from swarms.structs.context_utils import get_final_agent_answer
 
 logger = initialize_logger(log_folder="mixture_of_agents")
 
@@ -74,6 +76,7 @@ class MixtureOfAgents:
         output_type: OutputType = "final",
         aggregator_model_name: str = "claude-sonnet-4-20250514",
         max_workers: Optional[int] = None,
+        aggegrator_args: Dict[str, Any] = None,
     ) -> None:
         """Initialize the mixture with worker and aggregator configuration.
 
@@ -159,10 +162,10 @@ class MixtureOfAgents:
             agent_description="An agent that aggregates the responses of the other agents.",
             system_prompt=self.aggregator_system_prompt,
             model_name=self.aggregator_model_name,
-            temperature=0.5,
             max_loops=1,
-            output_type="str-all-except-first",
+            output_type="final",
             dynamic_context_window=True,
+            **self.aggegrator_args,
         )
 
     def step(
@@ -189,7 +192,10 @@ class MixtureOfAgents:
             max_workers=self.max_workers,
         )
 
-        return agent_outputs
+        # Only the agent's latest message (the answer) is recorded to avoid duplicating history.
+        return get_final_agent_answer(
+            agents=self.agents, agent_outputs=agent_outputs
+        )
 
     def _run(
         self,

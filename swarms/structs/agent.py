@@ -72,6 +72,11 @@ from swarms.structs.autonomous_loop_utils import (
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.structs.transcript import Transcript
+from swarms.tools.dynamic_tool_loader import (
+    DYNAMIC_TOOLS_NOTICE,
+    SEARCH_TOOL_NAME,
+    DynamicToolLoader,
+)
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
@@ -395,6 +400,7 @@ class Agent:
         reasoning_effort: Literal[get_reasoning_efforts()] = "medium",
         thinking_tokens: int = 1024,
         think_tool: bool = False,
+        dynamic_tools: bool = True,
         reasoning_enabled: bool = False,
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
         capabilities: Optional[List[str]] = None,
@@ -504,6 +510,17 @@ class Agent:
         self.show_tool_execution_output = show_tool_execution_output
         self.reasoning_effort = reasoning_effort
         self.thinking_tokens = thinking_tokens
+
+        # Defer tool schemas and let the agent search for what it needs.
+        self.dynamic_tools = dynamic_tools
+        self.tool_loader: Optional[DynamicToolLoader] = None
+        # MCP schemas are fetched over the network, so they are folded into
+        # the catalog once rather than on every LLM rebuild.
+        self._mcp_tools_deferred = False
+        # Fetched MCP schemas, kept so a rebuilt loader can be repopulated
+        # without another network call. The autonomous loop constructs a fresh
+        # loader per run, so a boolean "already deferred" flag is not enough.
+        self._mcp_schemas_cache: Optional[List[dict]] = None
 
         # Whether the autonomous loop offers the `think` tool. Off by default:
         # a think call costs a full round-trip to produce reasoning the model
@@ -663,7 +680,27 @@ class Agent:
                 )
                 self.system_prompt += "\n\n" + handoff_prompt
 
-        if exists(self.tools):
+        # Appended once here, not per run: the prompt must say that most tools
+        # need loading, or the model assumes the tool list it can see is
+        # everything and gives up instead of searching. Skipped when there is
+        # nothing to defer - an agent with no tools and a fixed loop would
+        # otherwise be told to use a `tool_search` it has not been given.
+        if self.dynamic_tools and (
+            exists(self.tools) or self.max_loops == "auto"
+        ):
+            self.system_prompt += DYNAMIC_TOOLS_NOTICE
+
+        # A loader is needed whenever there is anything to defer - local tools,
+        # MCP tools, or the autonomous loop's own set. Gating it on local tools
+        # alone missed the MCP-only case, which is the main reason to defer at
+        # all, and left MCP failures propagating raw out of llm_handling().
+        if self.dynamic_tools and (
+            exists(self.tools)
+            or self.mcp_enabled
+            or self.max_loops == "auto"
+        ):
+            self.setup_dynamic_tools()
+        elif exists(self.tools):
             self.tool_handling()
 
         if self.llm is None:
@@ -1540,6 +1577,66 @@ class Agent:
                                     response, loop_count
                                 )
 
+                        # Handle tool_search calls. It is dispatched here
+                        # rather than through tool_struct because it is an
+                        # agent method, not one of the user's callables.
+                        if (
+                            isinstance(response, list)
+                            and self.tool_loader
+                        ):
+                            remaining = []
+                            for tool_call in response:
+                                name = (
+                                    tool_call.get("function", {}).get(
+                                        "name"
+                                    )
+                                    if isinstance(tool_call, dict)
+                                    else None
+                                )
+                                if name != SEARCH_TOOL_NAME:
+                                    remaining.append(tool_call)
+                                    continue
+
+                                try:
+                                    arguments = json.loads(
+                                        tool_call["function"][
+                                            "arguments"
+                                        ]
+                                    )
+                                except (
+                                    json.JSONDecodeError,
+                                    TypeError,
+                                ):
+                                    arguments = {}
+
+                                result = self._tool_search_tool(
+                                    **arguments
+                                )
+                                self.short_memory.add(
+                                    role="Tool Executor",
+                                    content=f"tool_search result: {result}",
+                                )
+                                turn_results[
+                                    tool_call.get("id", "")
+                                ] = result
+                                if self.print_on:
+                                    formatter.print_panel(
+                                        result, title="Tool Search"
+                                    )
+
+                            # Anything left goes on to normal execution. If
+                            # tool_search was the whole response there is
+                            # nothing to execute, and falling through would log
+                            # misleading "no function calls found" warnings.
+                            response = remaining
+                            if not remaining:
+                                if use_transcript and turn_calls:
+                                    transcript.flush_tool_results(
+                                        turn_calls, turn_results
+                                    )
+                                success = True
+                                continue
+
                         # Handle handoff tool calls
                         if isinstance(response, list):
                             for tool_call in response:
@@ -1970,6 +2067,168 @@ class Agent:
             *args,
             **kwargs,
         )
+
+    def setup_dynamic_tools(
+        self, always_loaded: Optional[List[dict]] = None
+    ) -> DynamicToolLoader:
+        """
+        Defer this agent's tool schemas behind a ``tool_search`` tool.
+
+        Tool definitions are re-sent on every request and sit in the cached
+        prefix, so a large tool set is paid for continuously. Deferring sends
+        only ``tool_search`` up front; the agent loads what it needs, and the
+        loaded schemas are included from the next request onwards.
+
+        Args:
+            always_loaded: Schemas that must never be deferred. Control-flow
+                tools belong here - an agent that has to search for its own
+                ``complete_task`` cannot finish.
+
+        Returns:
+            The loader, also stored on ``self.tool_loader``.
+        """
+        # Anything already registered - handoff tools, MCP tools - was
+        # configured explicitly and must survive. Assigning schemas() straight
+        # over tools_list_dictionary would silently drop it, which is how
+        # handoffs stopped working when dynamic_tools was first added.
+        user_tool_names = {
+            schema.get("function", {}).get("name")
+            for schema in convert_multiple_functions_to_openai_function_schema(
+                list(self.tools or [])
+            )
+        }
+        # The search tool is excluded: schemas() re-adds it, and setup runs
+        # twice for an autonomous agent (once in __init__, once in the loop),
+        # so keeping it here would list it twice in the tool array.
+        preserved = [
+            schema
+            for schema in (self.tools_list_dictionary or [])
+            if isinstance(schema, dict)
+            and schema.get("function", {}).get("name")
+            not in user_tool_names | {SEARCH_TOOL_NAME}
+        ]
+
+        keep: List[dict] = []
+        seen: set = set()
+        for schema in list(always_loaded or []) + preserved:
+            name = schema.get("function", {}).get("name")
+            if name and name not in seen:
+                seen.add(name)
+                keep.append(schema)
+
+        self.tool_loader = DynamicToolLoader(
+            tools=self.tools or [],
+            always_loaded=keep,
+        )
+
+        # A rebuilt loader starts empty, so anything fetched earlier has to go
+        # back in. Without this the autonomous loop's own setup silently drops
+        # every MCP tool, and the once-per-agent fetch guard stops them coming
+        # back.
+        for schema in self._mcp_schemas_cache or []:
+            self.tool_loader.register_schema(schema)
+
+        self.tools_list_dictionary = self.tool_loader.schemas()
+        return self.tool_loader
+
+    def defer_tool_schemas(self, schemas: List[dict]) -> None:
+        """Add pre-built schemas to the deferred catalog (MCP, loop tools)."""
+        if self.tool_loader is None:
+            return
+        for schema in schemas:
+            self.tool_loader.register_schema(schema)
+        self.tools_list_dictionary = self.tool_loader.schemas()
+
+    def defer_mcp_tools(self) -> int:
+        """
+        Move this agent's MCP tool schemas into the deferred catalog.
+
+        MCP is the case dynamic tools exist for: a single server can expose
+        dozens of tools, and every one of them is otherwise re-sent with every
+        request. Deferring them makes them searchable instead, so the request
+        carries only what the agent actually loaded.
+
+        The fetch is a network call, and rebuilding the LLM after each
+        ``tool_search`` would repeat it, so it runs once per agent.
+
+        Returns:
+            int: How many schemas were added to the catalog. 0 if MCP is not
+            configured, dynamic tools are off, or this already ran.
+        """
+        if self.tool_loader is None or not self.mcp_enabled:
+            return 0
+
+        # Already registered in the *current* loader - nothing to do. Keyed on
+        # the loader's contents rather than a boolean, because the autonomous
+        # loop builds a fresh loader per run and a flag would stop the rebuilt
+        # one from ever being repopulated.
+        cached = self._mcp_schemas_cache
+        if cached is not None and all(
+            schema.get("function", {}).get("name") in self.tool_loader
+            for schema in cached
+        ):
+            return 0
+
+        if cached is None:
+            try:
+                cached = self.add_mcp_tools_to_memory()
+            except Exception as error:
+                # A server being unreachable must not take down agent setup;
+                # the agent simply runs without those tools.
+                logger.error(
+                    f"Could not fetch MCP tools to defer: {error}"
+                )
+                self._mcp_schemas_cache = []
+                self._mcp_tools_deferred = True
+                return 0
+            self._mcp_schemas_cache = cached
+
+        schemas = cached
+        self._mcp_tools_deferred = True
+        self.defer_tool_schemas(schemas)
+
+        if self.verbose:
+            logger.info(
+                f"Deferred {len(schemas)} MCP tool(s) into the catalog: "
+                f"{[s.get('function', {}).get('name') for s in schemas]}"
+            )
+        return len(schemas)
+
+    def _tool_search_tool(
+        self,
+        query: str,
+        max_results: int = 5,
+        min_score_ratio: float = 0.0,
+        **kwargs,
+    ) -> str:
+        """
+        Handler for the ``tool_search`` tool.
+
+        Loading changes the tool list, so the LLM is rebuilt here - otherwise
+        the newly loaded schemas would not be sent and the model could not
+        call what it just found.
+        """
+        if self.tool_loader is None:
+            return (
+                "Tool search is unavailable: this agent was not built with "
+                "dynamic_tools=True."
+            )
+
+        result = self.tool_loader.run_search(
+            query=query,
+            max_results=max_results,
+            min_score_ratio=min_score_ratio,
+        )
+        self.tools_list_dictionary = self.tool_loader.schemas()
+        if self.llm is not None:
+            self.llm = self.llm_handling()
+
+        if self.verbose:
+            logger.info(
+                f"tool_search({query!r}) -> loaded "
+                f"{self.tool_loader.loaded_names}"
+            )
+        return result
 
     def _transcript_from_memory(self) -> Transcript:
         """
@@ -3628,6 +3887,15 @@ Subtask Breakdown:
                     return response["choices"][0]["message"][
                         "content"
                     ]
+
+                # A lone tool call. With MCP enabled the wrapper returns a
+                # bare dict for one call and a list for several, so callers
+                # that test `isinstance(response, list)` silently ignored
+                # single calls - which broke planning outright whenever MCP
+                # was configured. Normalise to the list form.
+                if "function" in response:
+                    return [response]
+
                 return json.dumps(
                     response
                 )  # Convert other dicts to string

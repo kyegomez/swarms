@@ -1056,5 +1056,140 @@ def test_reassignment_targets_nested_swarm_worker_by_name():
     assert "[RECOVERY NOTICE]" not in swarm.conversation.get_str()
 
 
+
+# ============================================================================
+# Context management: how much each agent is re-sent
+# ============================================================================
+
+
+def _scripted_hs_agent(name, seen, director=False):
+    """A real Agent with a stubbed LLM call, so short_memory is real."""
+    import json as _json
+
+    from swarms import Agent
+
+    agent = Agent(
+        agent_name=name,
+        model_name="gpt-4o-mini",
+        max_loops=1,
+        persistent_memory=False,
+        print_on=False,
+        autosave=False,
+    )
+
+    def fake_call_llm(task=None, *args, **kwargs):
+        messages = kwargs.get("messages") or []
+        seen.append((name, messages))
+        if director:
+            return [
+                {
+                    "id": "d1",
+                    "type": "function",
+                    "function": {
+                        "name": "handoff",
+                        "arguments": _json.dumps(
+                            {
+                                "plan": "do it",
+                                "orders": [
+                                    {
+                                        "agent_name": "W1",
+                                        "task": "do part 1",
+                                    }
+                                ],
+                            }
+                        ),
+                    },
+                }
+            ]
+        return f"[{name}-out]"
+
+    agent.call_llm = fake_call_llm
+    return agent
+
+
+class TestHierarchicalContextManagement:
+    """
+    Every agent used to receive ``History: <entire conversation>`` on each
+    invocation. That history lands in the agent's own memory, so the next
+    invocation re-sent all of it on top - the director's prompt grew about
+    sevenfold across two loops.
+    """
+
+    def _run_two_loops(self):
+        from swarms import HierarchicalSwarm
+
+        seen = []
+        swarm = HierarchicalSwarm(
+            director=_scripted_hs_agent(
+                "Director", seen, director=True
+            ),
+            agents=[_scripted_hs_agent("W1", seen)],
+            max_loops=2,
+        )
+        swarm.run("Build something.")
+        return swarm, seen
+
+    def test_the_director_prompt_does_not_balloon(self):
+        _, seen = self._run_two_loops()
+        director_turns = [
+            sum(len(str(m.get("content"))) for m in messages)
+            for name, messages in seen
+            if name == "Director"
+        ]
+        assert len(director_turns) >= 2, "the director ran only once"
+
+        first, second = director_turns[0], director_turns[1]
+        assert second < first * 5, (
+            f"director context grew {second / max(first, 1):.1f}x "
+            f"across one loop: {director_turns}"
+        )
+
+    def test_a_worker_is_not_re_sent_the_whole_history(self):
+        _, seen = self._run_two_loops()
+        worker_turns = [
+            sum(len(str(m.get("content"))) for m in messages)
+            for name, messages in seen
+            if name == "W1"
+        ]
+        if len(worker_turns) >= 2:
+            assert (
+                worker_turns[1] < worker_turns[0] * 5
+            ), f"worker context grew too fast: {worker_turns}"
+
+    def test_the_director_tool_call_is_stored_readably(self):
+        """
+        A raw tool-call list renders as a Python repr in the history that
+        every later agent then has to read.
+        """
+        swarm, _ = self._run_two_loops()
+        director_messages = [
+            str(m["content"])
+            for m in swarm.conversation.conversation_history
+            if m["role"] == "Director"
+        ]
+        assert director_messages, "the director recorded nothing"
+        assert not any(
+            c.startswith("[{'id'") for c in director_messages
+        ), "the director's tool call was stored as a Python repr"
+
+    def test_the_conversation_starts_clean(self):
+        from swarms import HierarchicalSwarm
+
+        seen = []
+        swarm = HierarchicalSwarm(
+            director=_scripted_hs_agent(
+                "Director", seen, director=True
+            ),
+            agents=[_scripted_hs_agent("W1", seen)],
+            max_loops=1,
+        )
+        roles = [
+            m["role"] for m in swarm.conversation.conversation_history
+        ]
+        assert (
+            "user" not in roles
+        ), f"stale messages loaded from disk: {roles}"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

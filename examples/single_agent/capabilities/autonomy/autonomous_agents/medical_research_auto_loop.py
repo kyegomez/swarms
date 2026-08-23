@@ -30,6 +30,7 @@ agent = Agent(
     reasoning_effort=None,
     persistent_memory=False,
     output_type="list",
+    dynamic_tools=True,
 )
 
 out = agent.run(

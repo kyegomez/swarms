@@ -17,9 +17,16 @@ from swarms.telemetry.otel import (
     log_agent_data,
     trace_run,
 )
+from swarms.structs.context_utils import (
+    agent_answer,
+    new_context_for,
+)
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_blocks import find_agent_by_name
-from swarms.structs.multi_agent_exec import run_agents_concurrently
+from swarms.structs.multi_agent_exec import (
+    run_agents_concurrently,
+    run_agents_with_different_tasks,
+)
 from swarms.structs.serialization import SerializableMixin
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.history_output_formatter import (
@@ -166,6 +173,14 @@ class AgentRearrange(SerializableMixin):
         self.autosave = autosave
         self.time_enabled = time_enabled
         self.message_id_on = message_id_on
+
+        # How much of the shared conversation each agent has already been
+        # given. Without this an agent receives the entire history on every
+        # invocation, that history lands in its own short_memory, and the next
+        # invocation re-sends it on top - so context grows exponentially across
+        # loops and the agent sees its own output twice, the second time
+        # mislabelled as something the user said.
+        self._delivered: Dict[str, int] = {}
 
         self.conversation = Conversation(
             name=f"{self.name}-Conversation",
@@ -519,6 +534,12 @@ class AgentRearrange(SerializableMixin):
         """
         return self._get_sequential_flow_info()
 
+    def _context_for(self, agent_name: str) -> str:
+        """What this agent has not been given yet. See context_utils."""
+        return new_context_for(
+            agent_name, self.conversation, self._delivered
+        )
+
     def _run_concurrent_workflow(
         self,
         agent_names: List[str],
@@ -565,12 +586,23 @@ class AgentRearrange(SerializableMixin):
                 f"Agent(s) {missing} not registered in this AgentRearrange instance."
             )
 
-        # Run agents concurrently, forwarding img; this path used to drop it.
-        results = run_agents_concurrently(
-            agents=agents_to_run,
-            task=self.conversation.get_str(),
-            img=img,
-        )
+        # Concurrent agents in the same flow step each get their own slice of
+        # what is new for them; a shared task string would re-send history the
+        # agent already holds, which is what compounded across loops.
+        contexts = [self._context_for(name) for name in agent_names]
+
+        if len(set(contexts)) == 1:
+            # Identical context for everyone (the common case on the first
+            # step) - the cheaper shared-task path still applies.
+            results = run_agents_concurrently(
+                agents=agents_to_run,
+                task=contexts[0],
+                img=img,
+            )
+        else:
+            results = run_agents_with_different_tasks(
+                list(zip(agents_to_run, contexts))
+            )
 
         # Process results and update conversation
         response_dict = {}
@@ -654,7 +686,7 @@ class AgentRearrange(SerializableMixin):
                 )
 
             current_task = agent.run(
-                task=self.conversation.get_str(),
+                task=self._context_for(agent_name),
                 img=img,
                 *args,
                 **kwargs,
@@ -665,6 +697,15 @@ class AgentRearrange(SerializableMixin):
 
         if not isinstance(current_task, str):
             current_task = any_to_str(current_task)
+
+        # `agent.run` honours the agent's own output_type, which defaults to
+        # "str-all-except-first" - the agent's WHOLE conversation, not its
+        # answer. Recording that as the agent's contribution re-injects
+        # everything it was given, so each loop carried the previous loop's
+        # transcript and context grew exponentially. Take the last message,
+        # which is the answer.
+        # Record the agent's answer, not the whole transcript run() returns.
+        current_task = agent_answer(agent, fallback=current_task)
 
         self.conversation.add(agent.agent_name, current_task)
 
@@ -713,6 +754,11 @@ class AgentRearrange(SerializableMixin):
             based on the flow syntax. It also supports custom task injection
             and multiple execution loops as configured.
         """
+        # A new task starts a new delivery window. Without this the cursor
+        # carries over between tasks on a reused instance (batch_run), so the
+        # second task's agents are told there is nothing new and never see it.
+        self._delivered = {}
+
         self.conversation.add("User", task)
 
         # Flow is validated at construction (and again in
@@ -1115,7 +1161,7 @@ class AgentRearrange(SerializableMixin):
             yield {"type": "agent_start", "agent": agent_name}
 
         chunks: List[str] = []
-        run_kwargs = {"task": self.conversation.get_str()}
+        run_kwargs = {"task": self._context_for(agent_name)}
         if img is not None:
             run_kwargs["img"] = img
         run_kwargs.update(kwargs)
@@ -1160,7 +1206,9 @@ class AgentRearrange(SerializableMixin):
         q: asyncio.Queue = asyncio.Queue()
         DONE = object()
         ERROR = object()
-        base_input = self.conversation.get_str()
+        base_inputs = {
+            name: self._context_for(name) for name in agent_names
+        }
         results: Dict[str, List[str]] = {
             name: [] for name in agent_names
         }
@@ -1172,7 +1220,7 @@ class AgentRearrange(SerializableMixin):
         async def producer(name: str):
             try:
                 agent = find_agent_by_name(self.agents, name)
-                run_kwargs = {"task": base_input}
+                run_kwargs = {"task": base_inputs[name]}
                 if img is not None:
                     run_kwargs["img"] = img
                 run_kwargs.update(kwargs)
@@ -1252,6 +1300,11 @@ class AgentRearrange(SerializableMixin):
         Not yet supported in streaming mode: ``max_loops > 1``,
         ``custom_tasks``. Use ``run()`` for those.
         """
+        # A new task starts a new delivery window. Without this the cursor
+        # carries over between tasks on a reused instance (batch_run), so the
+        # second task's agents are told there is nothing new and never see it.
+        self._delivered = {}
+
         self.conversation.add("User", task)
 
         # Flow is validated at construction (and again in

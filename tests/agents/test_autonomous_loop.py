@@ -748,9 +748,9 @@ class TestThinkToolParameter:
         without = build_agent()
         with_think = build_agent(think_tool=True)
 
-        assert "TOOL AVAILABILITY OVERRIDE" in without.system_prompt
+        assert "THE THINK TOOL IS NOT AVAILABLE" in without.system_prompt
         assert (
-            "TOOL AVAILABILITY OVERRIDE"
+            "THE THINK TOOL IS NOT AVAILABLE"
             not in with_think.system_prompt
         )
 

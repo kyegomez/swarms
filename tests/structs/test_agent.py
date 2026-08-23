@@ -2903,11 +2903,6 @@ def run_all_tests():
     }
 
 
-if __name__ == "__main__":
-    # Run all tests
-    results = run_all_tests()
-
-    print(results)
 
 
 # ============================================================================
@@ -3255,3 +3250,10 @@ class TestRunBatchedImagePairing:
                 Agent.run_batched(
                     agent, ["t1", "t2", "t3"], imgs=["a.png"]
                 )
+
+
+if __name__ == "__main__":
+    # Run all tests
+    results = run_all_tests()
+
+    print(results)
