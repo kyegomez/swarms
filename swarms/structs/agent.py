@@ -37,7 +37,10 @@ from swarms.agents.agent_marketplace_handler import (
 )
 from swarms.agents.ape_agent import auto_generate_prompt
 from swarms.agents.context_compressor import ContextCompressor
-from swarms.agents.autonomous_loop import AutonomousAgentLoop
+from swarms.agents.autonomous_loop import (
+    AutonomousAgentLoop,
+    AutonomousRunBudgetExceeded,
+)
 from swarms.agents.llm_manager import LLMManager
 from swarms.agents.skills_manager import SkillsManager
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
@@ -206,6 +209,10 @@ class Agent:
             "create_sub_agent", "assign_task".
             Defaults to "all" (all tools enabled). Pass a list of tool names to restrict tools, or "all"
             for unrestricted access. Use this to control which tools the agent can use during autonomous execution.
+        max_run_tokens (int): Optional estimated text-token budget for one autonomous run.
+            Checked before every autonomous LLM call. Provider billing remains authoritative.
+        max_subtask_iterations (int): Maximum outer autonomous execution iterations.
+        max_subtask_loops (int): Maximum LLM iterations for one autonomous subtask.
         prompt_caching (bool): Enable provider-side prompt caching. When True, ephemeral
             cache_control breakpoints are added to the stable prefix of each request (system
             prompt, tools, and the last message) so it is cached and re-billed at a discount.
@@ -406,6 +413,9 @@ class Agent:
         selected_tools: Optional[Union[str, List[str]]] = "all",
         context_compression: bool = True,
         persistent_memory: bool = False,
+        max_run_tokens: Optional[int] = None,
+        max_subtask_iterations: int = 100,
+        max_subtask_loops: int = 20,
         *args,
         **kwargs,
     ):
@@ -415,6 +425,25 @@ class Agent:
         self.selected_tools = selected_tools
         self.llm = llm
         self.max_loops = max_loops
+        for limit_name, limit_value in (
+            ("max_run_tokens", max_run_tokens),
+            ("max_subtask_iterations", max_subtask_iterations),
+            ("max_subtask_loops", max_subtask_loops),
+        ):
+            if limit_value is not None and (
+                isinstance(limit_value, bool)
+                or not isinstance(limit_value, int)
+                or limit_value < 1
+            ):
+                raise ValueError(
+                    f"{limit_name} must be a positive integer"
+                )
+        self.max_run_tokens = max_run_tokens
+        self.max_subtask_iterations = max_subtask_iterations
+        self.max_subtask_loops = max_subtask_loops
+        self.autonomous_run_token_count = 0
+        self.autonomous_run_call_count = 0
+        self.autonomous_budget_exhausted = False
         self.stopping_condition = stopping_condition
         self.loop_interval = loop_interval
         self.retry_attempts = retry_attempts
@@ -2040,11 +2069,18 @@ class Agent:
                     "task": self.short_memory.return_history_as_string()
                 }
 
-            response = self.call_llm(
-                current_loop=0,
-                streaming_callback=streaming_callback,
-                **call_kwargs,
-            )
+            if self.max_loops == "auto":
+                response = self.autonomous_loop._call_llm_with_budget(
+                    current_loop=0,
+                    streaming_callback=streaming_callback,
+                    **call_kwargs,
+                )
+            else:
+                response = self.call_llm(
+                    current_loop=0,
+                    streaming_callback=streaming_callback,
+                    **call_kwargs,
+                )
 
             response = self.parse_llm_output(response)
 
@@ -2085,7 +2121,10 @@ class Agent:
                                 title="Task Completion Summary",
                             )
 
-                        return result
+                        return (
+                            result
+                            + self.autonomous_loop._usage_report()
+                        )
 
             # If complete_task wasn't called, generate summary manually
             comprehensive_summary = f"""Task Execution Summary
@@ -2107,6 +2146,10 @@ Subtask Breakdown:
                     )
 
             comprehensive_summary += f"\nFinal Response:\n{response}"
+            if self.max_loops == "auto":
+                comprehensive_summary += (
+                    self.autonomous_loop._usage_report()
+                )
 
             self.short_memory.add(
                 role=self.agent_name, content=comprehensive_summary
@@ -2122,6 +2165,8 @@ Subtask Breakdown:
                 self.short_memory, type=self.output_type
             )
 
+        except AutonomousRunBudgetExceeded:
+            return self.autonomous_loop._budget_exhausted_summary()
         except Exception as e:
             if self.verbose:
                 logger.error(f"Error generating final summary: {e}")
