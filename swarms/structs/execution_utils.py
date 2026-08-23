@@ -1,23 +1,3 @@
-"""
-One batch runner, shared by every structure that exposes a batch method.
-
-Thirty methods across twenty-eight files spelled this out by hand under five
-different names (``batch_run``, ``batched_run``, ``run_batch``,
-``run_batched``, ``abatch_run``); twelve of them were the identical
-one-liner. :func:`batched_run` is that one-liner, with concurrency and
-per-task error capture available when a caller wants them.
-
-Example:
-    >>> batched_run(agent.run, ["summarise A", "summarise B"])
-    ['...A...', '...B...']
-    >>> batched_run(agent.run, tasks, max_workers=8)      # concurrent
-    >>> batched_run(agent.run, tasks, return_agent_output_dict=True)
-    {'summarise A': '...', 'summarise B': '...'}
-
-Defaults match what the hand-written methods did: sequential, a list in task
-order, and exceptions propagating to the caller.
-"""
-
 import os
 from typing import (
     Any,
