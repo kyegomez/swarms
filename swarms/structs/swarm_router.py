@@ -1,4 +1,3 @@
-import os
 import traceback
 from typing import (
     Any,
@@ -23,6 +22,7 @@ from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.debate_with_judge import DebateWithJudge
+from swarms.structs.execution_utils import run_concurrently
 from swarms.structs.groupchat import GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
@@ -36,13 +36,12 @@ from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.serialization import SerializableMixin
 from swarms.telemetry.otel import (
-    ContextThreadPoolExecutor,
     capture_init,
     trace_run,
 )
+from swarms.utils.generate_id import generate_id
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
-from swarms.utils.generate_id import generate_id
 
 _DOCS_URL = "https://docs.swarms.world/api/swarm-router"
 _REARRANGE_DOCS_URL = "https://docs.swarms.world/api/agent-rearrange"
@@ -984,51 +983,43 @@ class SwarmRouter(SerializableMixin):
 
     def concurrent_run(
         self,
-        task: str,
-        img: Optional[str] = None,
+        tasks: List[str],
         imgs: Optional[List[str]] = None,
         *args,
         **kwargs,
-    ) -> Any:
-        """Execute one task through :meth:`run` in a thread pool.
+    ) -> List[Any]:
+        """Execute ``tasks`` through :meth:`run` in parallel.
 
-        This helper submits a single router execution to a
-        ``ThreadPoolExecutor`` and waits for its result. It does not split the
-        task across workers; concurrency is limited to the wrapper thread.
+        The concurrent counterpart to :meth:`batch_run`, which runs the same
+        tasks one after another. Results come back in task order, so element
+        ``i`` is always the result for ``tasks[i]``.
 
         Args:
-            task (str): Task to execute.
-            img (str, optional): Image payload passed to :meth:`run`.
-            imgs (List[str], optional): Additional image payload forwarded via
-                ``kwargs`` to swarm implementations that support it.
-            *args: Positional arguments forwarded to :meth:`run`.
-            **kwargs: Keyword arguments forwarded to :meth:`run`.
+            tasks (List[str]): Tasks to execute in parallel.
+            imgs (List[str], optional): One image per task, paired by
+                position. Must be the same length as ``tasks``.
+            *args: Positional arguments forwarded to each :meth:`run` call.
+            **kwargs: Keyword arguments forwarded to each :meth:`run` call.
 
         Returns:
-            Any: Result returned by :meth:`run`.
+            List[Any]: One result per task, in task order.
 
         Raises:
-            Exception: Re-raised if the submitted execution fails.
+            ValueError: If ``imgs`` is given and is not one per task.
+            Exception: Re-raised if any execution fails.
         """
-        self._log("info", f"Executing task concurrently: {task}")
+        self._log(
+            "info",
+            f"SwarmRouter '{self.name}': Executing {len(tasks)} task(s) concurrently",
+        )
 
         try:
-            with ContextThreadPoolExecutor(
-                max_workers=os.cpu_count()
-            ) as executor:
-                future = executor.submit(
-                    self.run,
-                    task,
-                    img=img,
-                    imgs=imgs,
-                    *args,
-                    **kwargs,
-                )
-                result = future.result()
-                return result
+            return run_concurrently(
+                self.run, tasks, *args, imgs=imgs, **kwargs
+            )
         except Exception as e:
             self._log(
                 "error",
-                f"Error executing task concurrently: {e} Traceback: {traceback.format_exc()}",
+                f"Error executing tasks concurrently: {e} Traceback: {traceback.format_exc()}",
             )
             raise e

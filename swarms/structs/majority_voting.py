@@ -1,6 +1,10 @@
 import os
 from typing import Any, Callable, List, Optional
 
+from swarms.structs.execution_utils import (
+    batched_run,
+    run_concurrently,
+)
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
@@ -11,7 +15,6 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.telemetry.otel import (
-    ContextThreadPoolExecutor,
     capture_init,
     trace_run,
 )
@@ -277,7 +280,7 @@ class MajorityVoting:
         Returns:
             List[Any]: List of majority votes for each task.
         """
-        return [self.run(task, *args, **kwargs) for task in tasks]
+        return batched_run(self.run, tasks, *args, **kwargs)
 
     def run_concurrently(
         self, tasks: List[str], *args, **kwargs
@@ -293,13 +296,4 @@ class MajorityVoting:
         Returns:
             List[Any]: List of majority votes for each task.
         """
-        with ContextThreadPoolExecutor(
-            max_workers=os.cpu_count()
-        ) as executor:
-            futures = [
-                executor.submit(self.run, task, *args, **kwargs)
-                for task in tasks
-            ]
-            # Results are read in submission order, not completion order, so
-            # element i is always the vote for tasks[i].
-            return [future.result() for future in futures]
+        return run_concurrently(self.run, tasks, *args, **kwargs)

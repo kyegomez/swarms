@@ -62,6 +62,7 @@ import json
 from collections import deque
 from typing import Any, Callable, List, Optional, Tuple
 
+from swarms.structs.execution_utils import batched_run
 from swarms.prompts.groupchat_prompt import GROUPCHAT_DECIDE_PROMPT
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -563,4 +564,4 @@ class GroupChat(SerializableMixin):
         Returns:
             List of formatted conversation outputs from ``_run_async``.
         """
-        return [self.run(task) for task in tasks]
+        return batched_run(self.run, tasks)

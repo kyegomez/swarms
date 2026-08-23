@@ -1,6 +1,7 @@
 import asyncio
 import json
 import uuid
+from swarms.structs.execution_utils import batched_run
 from swarms.utils.file_processing import create_file_in_folder
 from abc import ABC
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -350,7 +351,7 @@ class BaseSwarm(ABC):
             tasks (List[Any]): _description_
         """
         # Implement batched run
-        return [self.run(task, *args, **kwargs) for task in tasks]
+        return batched_run(self.run, tasks, *args, **kwargs)
 
     async def abatch_run(self, tasks: List[str], *args, **kwargs):
         """Asynchronous batch run with language model

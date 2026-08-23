@@ -2,6 +2,7 @@ from typing import List, Optional, Union
 
 from loguru import logger
 
+from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
@@ -552,4 +553,4 @@ class DebateWithJudge:
         Returns:
             List[str]: The list of final refined answers.
         """
-        return [self.run(task) for task in tasks]
+        return batched_run(self.run, tasks)

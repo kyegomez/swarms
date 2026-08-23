@@ -11,7 +11,6 @@ from swarms.structs.auto_agent_builder import (
     AutoAgentBuilder,
 )
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
-from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.batch_agent_execution import batch_agent_execution
 from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
@@ -84,7 +83,6 @@ from swarms.structs.swarming_architectures import (
 __all__ = [
     "AdvisorSwarm",
     "Agent",
-    "BaseStructure",
     "BaseSwarm",
     "ConcurrentWorkflow",
     "SocialAlgorithms",

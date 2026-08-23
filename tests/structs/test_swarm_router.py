@@ -569,5 +569,92 @@ def test_run_with_llm_council():
     assert result is not None
 
 
+class TestConcurrentRun:
+    """``concurrent_run`` runs a task list in parallel, in task order."""
+
+    @staticmethod
+    def _router(run_impl):
+        from unittest.mock import patch
+
+        from swarms import Agent, SwarmRouter
+
+        with patch("swarms.structs.agent.LiteLLM"):
+            agent = Agent(
+                agent_name="A",
+                model_name="gpt-5.4",
+                max_loops=1,
+                autosave=False,
+                print_on=False,
+            )
+            router = SwarmRouter(
+                name="r",
+                agents=[agent],
+                swarm_type="SequentialWorkflow",
+                autosave=False,
+            )
+        router.run = run_impl
+        return router
+
+    def test_returns_one_result_per_task(self):
+        r = self._router(lambda task=None, **kw: f"ran:{task}")
+        assert r.concurrent_run(["a", "b"]) == ["ran:a", "ran:b"]
+
+    def test_results_are_in_task_order(self):
+        """The slowest task is first; it must still come back first."""
+        import time
+
+        def slow_first(task=None, **kw):
+            time.sleep(0.05 if task == "0" else 0)
+            return task
+
+        r = self._router(slow_first)
+        tasks = [str(i) for i in range(5)]
+        assert r.concurrent_run(tasks) == tasks
+
+    def test_tasks_actually_run_in_parallel(self):
+        import time
+
+        def slow(task=None, **kw):
+            time.sleep(0.05)
+            return task
+
+        r = self._router(slow)
+        start = time.time()
+        r.concurrent_run([str(i) for i in range(6)])
+        assert time.time() - start < 0.2
+
+    def test_imgs_are_paired_with_tasks_by_position(self):
+        seen = []
+
+        def spy(task=None, img=None, **kw):
+            seen.append((task, img))
+            return task
+
+        r = self._router(spy)
+        r.concurrent_run(["a", "b"], imgs=["one.png", "two.png"])
+        assert sorted(seen) == [
+            ("a", "one.png"),
+            ("b", "two.png"),
+        ]
+
+    def test_mismatched_imgs_length_raises(self):
+        """Zipping would silently drop the extra task instead."""
+        r = self._router(lambda task=None, **kw: task)
+        with pytest.raises(ValueError, match="one image per task"):
+            r.concurrent_run(["a", "b"], imgs=["only-one.png"])
+
+    def test_empty_task_list(self):
+        r = self._router(lambda task=None, **kw: task)
+        assert r.concurrent_run([]) == []
+
+    def test_exceptions_propagate(self):
+        def boom(task=None, **kw):
+            raise ValueError("nope")
+
+        r = self._router(boom)
+        with pytest.raises(ValueError, match="nope"):
+            r.concurrent_run(["a"])
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

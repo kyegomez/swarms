@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from loguru import logger
 
+from swarms.structs.execution_utils import batched_run
 from swarms.prompts.reasoning_prompt import REASONING_PROMPT
 from swarms.structs.agent import Agent
 from swarms.utils.output_types import OutputType
@@ -143,18 +144,13 @@ class ReasoningDuo:
 
         Args:
             tasks (list[str]): A list of tasks to be processed.
-            imgs (Optional[List[str]]): Optional list of images corresponding to tasks.
+            imgs (Optional[List[str]]): One image per task, paired by
+                position. Must be the same length as ``tasks``.
 
         Returns:
             list: A list of outputs from the main agent for each task.
+
+        Raises:
+            ValueError: If ``imgs`` is given and is not one per task.
         """
-        outputs = []
-
-        # Handle case where imgs is None
-        if imgs is None:
-            imgs = [None] * len(tasks)
-
-        for task, img in zip(tasks, imgs):
-            logger.info(f"Processing task: {task}")
-            outputs.append(self.run(task, img=img))
-        return outputs
+        return batched_run(self.run, tasks, imgs=imgs)
