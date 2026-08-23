@@ -20,19 +20,17 @@ Two distinct fault-injection techniques are used, because they exercise
 different layers and are **not interchangeable**:
 
 1. ``FakeLLM.run`` raising. This is the injection point suggested by the
-   task brief, so every section includes one such test. Empirically (see
-   ``TestAgentSwallowsLLMErrors`` and the mirrored per-architecture tests)
-   this is *always* swallowed by ``Agent.run``'s own retry loop
-   (``swarms/structs/agent.py``, the ``while attempt < self.retry_attempts``
-   block catches bare ``Exception``) before it ever reaches the calling
-   architecture. The observable effect is uniform across every architecture
-   tested here: the member ``Agent.run`` span still reports
-   ``swarms.status == "completed"``, a separate ``Agent.llm_error`` span is
-   emitted via ``capture_error``, and the parent ``<Class>.run`` span is
-   unaffected (still ``completed`` / OK). This is a real and slightly
-   surprising finding: no multi-agent structure's own error-handling code
-   (``ConcurrentWorkflow``'s ``on_error`` branch, ``AgentRearrange``'s
-   ``_catch_error``, etc.) is ever reached via this route.
+   task brief, so every section includes one such test. ``Agent.run``'s
+   retry loop retries the call ``retry_attempts`` times (emitting an
+   ``Agent.llm_error`` span via ``capture_error`` on each failed attempt)
+   and then **raises ``AgentLLMError``** instead of returning the raw
+   conversation transcript as if it were the answer
+   (``swarms/structs/agent.py``, the ``if not success`` block after the
+   ``while attempt < self.retry_attempts`` loop). The observable effect is
+   therefore identical to technique 2 below — each architecture handles the
+   propagating ``AgentLLMError`` with its own error-handling code — with
+   one addition: the ``Agent.llm_error`` span is always present, because
+   the retry loop emits it before the raise.
 
 2. Patching the member ``Agent`` instance's bound ``.run`` attribute directly
    (``agent.run = <raising callable>``), bypassing ``Agent.run`` entirely.
@@ -70,6 +68,7 @@ uniform contract.
 import os
 
 import pytest
+from litellm.exceptions import BadRequestError
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
     InMemorySpanExporter,
@@ -87,6 +86,7 @@ from swarms import (
     SwarmRouter,
 )
 from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
+from swarms.structs.agent import AgentLLMError
 
 # ---------------------------------------------------------------------------
 # Fixtures — same pattern as tests/telemetry/test_telemetry.py
@@ -156,7 +156,14 @@ class FakeLLM:
 
     def run(self, task=None, img=None, **kwargs):
         if self.raise_exc:
-            raise RuntimeError(f"llm blew up for task: {task!r}"[:80])
+            # A realistic retryable LLM failure: Agent.run's retry loop
+            # catches litellm errors, retries, and raises AgentLLMError
+            # after exhaustion (it no longer swallows the failure).
+            raise BadRequestError(
+                message=f"llm blew up for task: {task!r}"[:80],
+                model="gpt-4o-mini",
+                llm_provider="fake",
+            )
         return self.reply
 
 
@@ -228,23 +235,24 @@ class TestSequentialWorkflowTelemetry:
             s.status.status_code.name == "OK" for s in agent_runs
         )
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
-        """A raising FakeLLM never reaches SequentialWorkflow at all."""
+    def test_error_llm_raise_propagates_as_agent_llm_error(self, spans):
+        """A raising FakeLLM surfaces as AgentLLMError from Agent.run."""
         a, b = fake_agent("Seq-Ok"), fake_agent(
             "Seq-Bad", raise_exc=True
         )
         wf = SequentialWorkflow(
             agents=[a, b], max_loops=1, autosave=False
         )
-        result = wf.run(task="hello")  # does not raise
-        assert result is not None
+        with pytest.raises(AgentLLMError):
+            wf.run(task="hello")
 
         top = _by_name(spans, "SequentialWorkflow.run")
         assert top is not None
-        assert _attrs(top)["swarms.status"] == "completed"
-        assert top.status.status_code.name == "OK"
+        assert _attrs(top)["swarms.status"] == "error"
+        assert top.status.status_code.name == "ERROR"
+        assert _attrs(top)["swarms.error.type"] == "AgentLLMError"
 
-        # The LLM failure is only visible as a distinct Agent.llm_error span.
+        # The LLM failure is also visible as a distinct Agent.llm_error span.
         err = _by_name(spans, "Agent.llm_error")
         assert err is not None
         assert _attrs(err)["swarms.status"] == "error"
@@ -304,7 +312,8 @@ class TestConcurrentWorkflowTelemetry:
         agent_runs = _all_by_name(spans, "Agent.run")
         assert len(agent_runs) == 2
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_raise_swallowed_by_default_on_error(self, spans):
+        """AgentLLMError from a member is stored per-agent by default."""
         a, b = fake_agent("Conc-Ok"), fake_agent(
             "Conc-Bad", raise_exc=True
         )
@@ -314,11 +323,12 @@ class TestConcurrentWorkflowTelemetry:
 
         top = _by_name(spans, "ConcurrentWorkflow.run")
         assert _attrs(top)["swarms.status"] == "completed"
-        # No ConcurrentWorkflow.agent_error span — the future never raised,
-        # because Agent.run() itself never propagated the LLM failure.
-        assert (
-            _by_name(spans, "ConcurrentWorkflow.agent_error") is None
-        )
+        # The future raised AgentLLMError, so the on_error='store' branch
+        # re-emits it as a standalone agent_error span.
+        err = _by_name(spans, "ConcurrentWorkflow.agent_error")
+        assert err is not None
+        assert _attrs(err)["swarms.error.type"] == "AgentLLMError"
+        assert _attrs(err)["swarms.agent"] == "Conc-Bad"
         assert _by_name(spans, "Agent.llm_error") is not None
 
     def test_error_member_failure_swallowed_by_default(self, spans):
@@ -397,7 +407,7 @@ class TestAgentRearrangeTelemetry:
         agent_runs = _all_by_name(spans, "Agent.run")
         assert len(agent_runs) == 2
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_raise_propagates_on_sequential_flow(self, spans):
         a, b = fake_agent("AR-Ok"), fake_agent(
             "AR-Bad", raise_exc=True
         )
@@ -407,11 +417,12 @@ class TestAgentRearrangeTelemetry:
             max_loops=1,
             autosave=False,
         )
-        result = ar.run(task="hello")
-        assert result is not None
+        with pytest.raises(AgentLLMError):
+            ar.run(task="hello")
 
         top = _by_name(spans, "AgentRearrange.run")
-        assert _attrs(top)["swarms.status"] == "completed"
+        assert top.status.status_code.name == "ERROR"
+        assert _attrs(top)["swarms.error.type"] == "AgentLLMError"
         assert _by_name(spans, "Agent.llm_error") is not None
 
     def test_error_member_failure_propagates_on_sequential_flow(
@@ -490,16 +501,17 @@ class TestRoundRobinSwarmTelemetry:
         agent_runs = _all_by_name(spans, "Agent.run")
         assert len(agent_runs) == 2
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_raise_propagates(self, spans):
         a, b = fake_agent("RR-Ok"), fake_agent(
             "RR-Bad", raise_exc=True
         )
         rr = RoundRobinSwarm(agents=[a, b], max_loops=1)
-        result = rr.run(task="hello")
-        assert result is not None
+        with pytest.raises(AgentLLMError):
+            rr.run(task="hello")
 
         top = _by_name(spans, "RoundRobinSwarm.run")
-        assert _attrs(top)["swarms.status"] == "completed"
+        assert top.status.status_code.name == "ERROR"
+        assert _attrs(top)["swarms.error.type"] == "AgentLLMError"
         assert _by_name(spans, "Agent.llm_error") is not None
 
     def test_error_member_failure_propagates(self, spans):
@@ -550,7 +562,10 @@ class TestMixtureOfAgentsTelemetry:
         agent_runs = _all_by_name(spans, "Agent.run")
         assert len(agent_runs) == 3
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_raise_silently_swallowed_into_result(self, spans):
+        """Workers run via run_agents_concurrently: the AgentLLMError is
+        caught and returned as the result value; the mixture still
+        completes, but the failure is visible as Agent.llm_error."""
         workers = [
             fake_agent("MOA-Ok"),
             fake_agent("MOA-Bad", raise_exc=True),
@@ -559,7 +574,7 @@ class TestMixtureOfAgentsTelemetry:
         moa = MixtureOfAgents(
             agents=workers, aggregator_agent=aggregator, layers=1
         )
-        result = moa.run(task="hello")
+        result = moa.run(task="hello")  # does not raise
         assert result is not None
 
         top = _by_name(spans, "MixtureOfAgents.run")
@@ -619,7 +634,10 @@ class TestMajorityVotingTelemetry:
         agent_runs = _all_by_name(spans, "Agent.run")
         assert len(agent_runs) == 3
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_raise_silently_swallowed_into_result(self, spans):
+        """Voters run via run_agents_concurrently: the AgentLLMError is
+        caught and returned as the result value; the vote still completes,
+        but the failure is visible as Agent.llm_error."""
         voters = [
             fake_agent("MV-Ok"),
             fake_agent("MV-Bad", raise_exc=True),
@@ -627,7 +645,7 @@ class TestMajorityVotingTelemetry:
         mv = MajorityVoting(agents=voters, max_loops=1)
         mv.consensus_agent.llm = FakeLLM("consensus reached")
 
-        result = mv.run(task="hello")
+        result = mv.run(task="hello")  # does not raise
         assert result is not None
 
         top = _by_name(spans, "MajorityVoting.run")
@@ -682,12 +700,15 @@ class TestBatchedGridWorkflowTelemetry:
         agent_runs = _all_by_name(spans, "Agent.run")
         assert len(agent_runs) == 2
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_raise_silently_swallowed_into_result(self, spans):
+        """Runs via batched_grid_agent_execution: the AgentLLMError is
+        caught and returned as the result value; the batch still completes,
+        but the failure is visible as Agent.llm_error."""
         a, b = fake_agent("BGW-Ok"), fake_agent(
             "BGW-Bad", raise_exc=True
         )
         bgw = BatchedGridWorkflow(agents=[a, b], max_loops=1)
-        result = bgw.run(tasks=["t1", "t2"])
+        result = bgw.run(tasks=["t1", "t2"])  # does not raise
         assert result is not None
 
         top = _by_name(spans, "BatchedGridWorkflow.run")
@@ -771,7 +792,7 @@ class TestSwarmRouterTelemetry:
         assert _by_name(spans, "ConcurrentWorkflow.run") is not None
         assert len(_all_by_name(spans, "Agent.run")) == 2
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_raise_propagates_for_sequential(self, spans):
         a, b = fake_agent("SR-Ok"), fake_agent(
             "SR-Bad", raise_exc=True
         )
@@ -781,11 +802,12 @@ class TestSwarmRouterTelemetry:
             swarm_type="SequentialWorkflow",
             autosave=False,
         )
-        result = router.run(task="hello")
-        assert result is not None
+        with pytest.raises(AgentLLMError):
+            router.run(task="hello")
 
         top = _by_name(spans, "SwarmRouter.run")
-        assert _attrs(top)["swarms.status"] == "completed"
+        assert top.status.status_code.name == "ERROR"
+        assert _attrs(top)["swarms.error.type"] == "AgentLLMError"
         assert _by_name(spans, "Agent.llm_error") is not None
 
     def test_error_member_failure_propagates_for_sequential(

@@ -1638,7 +1638,6 @@ class Agent:
                         BadRequestError,
                         InternalServerError,
                         AuthenticationError,
-                        Exception,
                     ) as e:
 
                         # Close out any tool calls recorded before the failure,
@@ -1678,11 +1677,16 @@ class Agent:
                             loop_count=loop_count
                         )
 
-                    logger.error(
-                        "Failed to generate a valid response after"
-                        " retry attempts."
+                    # Surface the failure instead of returning the raw conversation
+                    # transcript as if it were the answer: the docstring
+                    # promises AgentLLMError on LLM failure, and a silent
+                    # transcript return lets callers act on garbage output
+                    # with no signal that the model never responded.
+                    raise AgentLLMError(
+                        f"Agent '{self.agent_name}' failed to generate a "
+                        f"valid response after {self.retry_attempts} retry "
+                        f"attempt(s) in loop {loop_count}."
                     )
-                    break  # Exit the loop if all retry attempts fail
 
                 # Check stopping conditions
                 if (
@@ -3237,7 +3241,6 @@ Subtask Breakdown:
             BadRequestError,
             InternalServerError,
             AuthenticationError,
-            Exception,
         ) as e:
 
             # Try fallback models if available
