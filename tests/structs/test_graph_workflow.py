@@ -1483,8 +1483,6 @@ if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 
 
-
-
 class _StubAgent:
     """Agent stand-in that records calls and returns a canned string."""
 
