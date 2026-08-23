@@ -41,10 +41,7 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 from swarms.utils.output_types import OutputType
-from swarms.utils.swarm_autosave import (
-    autosave_swarm,
-    get_swarm_workspace_dir,
-)
+from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.generate_id import generate_id
 
 _DOCS_URL = "https://docs.swarms.world/api/swarm-router"
@@ -127,14 +124,6 @@ def _msg_swarm_cached(swarm_type: str) -> str:
 
 def _msg_autosave_enabled(workspace_dir: str) -> str:
     return f"Autosave enabled. Swarm workspace: {workspace_dir}"
-
-
-def _msg_autosave_setup_failed(err: Exception) -> str:
-    return f"Failed to setup autosave for SwarmRouter: {err}"
-
-
-def _msg_autosave_after_exec_failed(err: Exception) -> str:
-    return f"Failed to autosave after execution: {err}"
 
 
 def _msg_batch_run_error(err: Exception, tb: str) -> str:
@@ -394,9 +383,8 @@ class SwarmRouter(SerializableMixin):
         self._swarm_factory = self._initialize_swarm_factory()
         self._swarm_cache = {}  # Cache for created swarms
 
-        # Setup autosave workspace if enabled
-        if self.autosave:
-            self._setup_autosave()
+        # Always built: a disabled manager no-ops, an absent one raises.
+        self._setup_autosave()
 
         # Reliability check
         self.reliability_check()
@@ -405,35 +393,21 @@ class SwarmRouter(SerializableMixin):
         capture_init(self)
 
     def _setup_autosave(self):
-        """Set up autosave storage and persist the initial router config.
+        """Create the autosave workspace and write the initial config."""
+        self.workspace = WorkspaceManager(
+            self,
+            name=self.name or "swarm-router",
+            use_timestamp=self.autosave_use_timestamp,
+            enabled=self.autosave,
+        )
+        self.swarm_workspace_dir = self.workspace.dir
 
-        Autosave failures are logged as warnings and do not prevent the router
-        from initializing.
-        """
-        try:
-            class_name = self.__class__.__name__
-            swarm_name = self.name or "swarm-router"
-            self.swarm_workspace_dir = get_swarm_workspace_dir(
-                class_name, swarm_name, self.autosave_use_timestamp
+        if self.swarm_workspace_dir:
+            self.workspace.save_config()
+            self._log(
+                "info",
+                _msg_autosave_enabled(self.swarm_workspace_dir),
             )
-
-            if self.swarm_workspace_dir:
-                # Save initial configuration
-                autosave_swarm(
-                    self,
-                    self.swarm_workspace_dir,
-                    save_config=True,
-                    save_state=False,
-                    save_metadata=False,
-                )
-                self._log(
-                    "info",
-                    _msg_autosave_enabled(self.swarm_workspace_dir),
-                )
-        except Exception as e:
-            self._log("warning", _msg_autosave_setup_failed(e))
-            # Don't raise - autosave failures shouldn't break initialization
-            self.swarm_workspace_dir = None
 
     def reliability_check(self):
         """Validate the router configuration and finish setup.
@@ -867,29 +841,16 @@ class SwarmRouter(SerializableMixin):
 
         result = self.swarm.run(**args, **kwargs)
 
-        # Autosave after successful execution
-        if self.autosave and self.swarm_workspace_dir:
-            try:
-                autosave_swarm(
-                    self,
-                    self.swarm_workspace_dir,
-                    save_config=False,  # Don't overwrite initial config
-                    save_state=True,
-                    save_metadata=True,
-                    execution_result=result,
-                    additional_data={
-                        "execution_metadata": {
-                            "task": task if task else None,
-                            "tasks": tasks if tasks else None,
-                            "status": "completed",
-                        }
-                    },
-                )
-            except Exception as e:
-                self._log(
-                    "warning",
-                    _msg_autosave_after_exec_failed(e),
-                )
+        # Config is written at init; overwriting it here would lose it.
+        self.workspace.save_state()
+        self.workspace.save_metadata(
+            execution_result=result,
+            execution_metadata={
+                "task": task if task else None,
+                "tasks": tasks if tasks else None,
+                "status": "completed",
+            },
+        )
 
         return result
 

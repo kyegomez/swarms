@@ -9,6 +9,7 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.output_types import OutputType
+from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_init,
@@ -128,6 +129,13 @@ class MajorityVoting:
         self.description = description
         self.agents = agents
         self.autosave = autosave
+        self.workspace = WorkspaceManager(
+            self,
+            name=self.name or "majority-voting",
+            verbose=verbose,
+            enabled=autosave,
+        )
+        self.swarm_workspace_dir = self.workspace.dir
         self.verbose = verbose
         self.max_loops = max_loops
         self.output_type = output_type
@@ -247,6 +255,8 @@ class MajorityVoting:
                 role=self.consensus_agent.agent_name,
                 content=consensus_output,
             )
+
+        self.workspace.save_conversation()
 
         return history_output_formatter(
             conversation=self.conversation,

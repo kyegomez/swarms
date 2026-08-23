@@ -1,7 +1,6 @@
 import asyncio
 import inspect
 import json
-import os
 import queue as _queue
 import threading
 import traceback
@@ -43,8 +42,7 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.output_types import OutputType
-from swarms.utils.swarm_autosave import get_swarm_workspace_dir
-from swarms.utils.workspace_utils import get_workspace_dir
+from swarms.utils.workspace_manager import WorkspaceManager
 
 
 class HierarchicalOrder(BaseModel):
@@ -380,11 +378,13 @@ class HierarchicalSwarm:
         )
         self.agent_as_judge = agent_as_judge
         self.judge_agent_model_name = judge_agent_model_name
-        self.swarm_workspace_dir = None
-
-        # Setup autosave workspace if enabled
-        if self.autosave:
-            self._setup_autosave()
+        self.workspace = WorkspaceManager(
+            self,
+            name=self.name or "hierarchical-swarm",
+            verbose=self.verbose,
+            enabled=self.autosave,
+        )
+        self.swarm_workspace_dir = self.workspace.dir
 
         self.initialize_swarm()
 
@@ -496,98 +496,6 @@ class HierarchicalSwarm:
         for agent in agents:
             if hasattr(agent, "output_type"):
                 agent.output_type = "final"
-
-    def _setup_autosave(self):
-        """
-        Setup workspace directory for saving conversation history.
-
-        Creates the workspace directory structure if autosave is enabled.
-        Only conversation history will be saved to this directory.
-        """
-        try:
-            # Set default workspace directory if not set
-            if not os.getenv("WORKSPACE_DIR"):
-                default_workspace = os.path.join(
-                    os.getcwd(), "agent_workspace"
-                )
-                os.environ["WORKSPACE_DIR"] = default_workspace
-                # Clear the cache so get_workspace_dir() picks up the new value
-                get_workspace_dir.cache_clear()
-                if self.verbose:
-                    logger.info(
-                        f"WORKSPACE_DIR not set, using default: {default_workspace}"
-                    )
-
-            class_name = self.__class__.__name__
-            swarm_name = self.name or "hierarchical-swarm"
-            self.swarm_workspace_dir = get_swarm_workspace_dir(
-                class_name, swarm_name, use_timestamp=True
-            )
-
-            if self.swarm_workspace_dir:
-                if self.verbose:
-                    logger.info(
-                        f"Autosave enabled. Conversation history will be saved to: {self.swarm_workspace_dir}"
-                    )
-        except Exception as e:
-            logger.warning(
-                f"Failed to setup autosave for HierarchicalSwarm: {e}"
-            )
-            # Don't raise - autosave failures shouldn't break initialization
-            self.swarm_workspace_dir = None
-
-    def _save_conversation_history(self):
-        """
-        Save conversation history as a separate JSON file to the workspace directory.
-
-        Saves the conversation history to:
-        workspace_dir/swarms/HierarchicalSwarm/{swarm-name}-{id}/conversation_history.json
-        """
-        if not self.swarm_workspace_dir:
-            return
-
-        try:
-            # Get conversation history
-            if hasattr(self, "conversation") and self.conversation:
-                if hasattr(self.conversation, "conversation_history"):
-                    conversation_data = (
-                        self.conversation.conversation_history
-                    )
-                elif hasattr(self.conversation, "to_dict"):
-                    conversation_data = self.conversation.to_dict()
-                else:
-                    conversation_data = []
-
-                # Create conversation history file path
-                conversation_path = os.path.join(
-                    self.swarm_workspace_dir,
-                    "conversation_history.json",
-                )
-
-                # Save conversation history as JSON
-                with open(
-                    conversation_path, "w", encoding="utf-8"
-                ) as f:
-                    json.dump(
-                        conversation_data,
-                        f,
-                        indent=2,
-                        default=str,
-                    )
-
-                if self.verbose:
-                    logger.debug(
-                        f"Saved conversation history to {conversation_path}"
-                    )
-            else:
-                if self.verbose:
-                    logger.debug(
-                        "No conversation object found, skipping conversation history save"
-                    )
-        except Exception as e:
-            logger.warning(
-                f"Failed to save conversation history: {e}"
-            )
 
     def add_context_to_director(self):
         """
@@ -1003,14 +911,7 @@ class HierarchicalSwarm:
                 conversation=self.conversation, type=self.output_type
             )
 
-            # Save conversation history after successful execution
-            if self.autosave and self.swarm_workspace_dir:
-                try:
-                    self._save_conversation_history()
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to save conversation history: {e}"
-                    )
+            self.workspace.save_conversation()
 
             return result
 
@@ -1020,14 +921,7 @@ class HierarchicalSwarm:
                 self.dashboard.update_director_status("ERROR")
                 self.dashboard.stop()
 
-            # Save conversation history on error
-            if self.autosave and self.swarm_workspace_dir:
-                try:
-                    self._save_conversation_history()
-                except Exception as save_error:
-                    logger.warning(
-                        f"Failed to save conversation history on error: {save_error}"
-                    )
+            self.workspace.save_conversation()
 
             error_msg = f"[ERROR] Swarm run failed: {str(e)}"
             logger.error(
