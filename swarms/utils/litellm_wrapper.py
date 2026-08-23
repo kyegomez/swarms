@@ -573,6 +573,7 @@ class LiteLLM:
         task: Optional[str] = None,
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
+        messages: Optional[List[dict]] = None,
     ):
         """
         Prepare the messages list for the LLM API call.
@@ -587,6 +588,13 @@ class LiteLLM:
             img (Optional[str]): Image input (file path, URL, data URI, or base64 string).
                 If provided, the task and image are combined into a vision message.
                 Defaults to None.
+            messages (Optional[List[dict]]): A prebuilt conversation body in
+                OpenAI chat format - user/assistant turns, ``tool_calls`` on
+                assistant messages, and ``{"role": "tool", "tool_call_id": ...}``
+                results. When given, it is appended after the system prompt and
+                ``task`` is ignored. This is the path an agentic loop uses to
+                preserve real tool-call structure instead of flattening the
+                conversation into a single user string.
 
         Returns:
             list: A list of messages formatted for the LLM API. Includes the system
@@ -630,21 +638,34 @@ class LiteLLM:
                     # If splitting fails for any reason, fall back to original task
                     pass
 
-        # Start with a fresh copy of messages to avoid duplication.
-        # Also drop any empty system blocks to satisfy Anthropic validation.
-        messages = []
+        # Start with a fresh copy of this instance's own turns (the system
+        # prompt) to avoid duplication. Also drop any empty system blocks to
+        # satisfy Anthropic validation. Named `base` rather than `messages` so
+        # it cannot shadow the `messages` parameter below.
+        base = []
         for m in self.messages:
             if not isinstance(m, dict):
                 continue
             if m.get("role") != "system":
-                messages.append(m)
+                base.append(m)
                 continue
             content = m.get("content")
             if content is None:
                 continue
             if isinstance(content, str) and not content.strip():
                 continue
-            messages.append(m)
+            base.append(m)
+
+        # A prebuilt conversation body replaces the single-user-turn path
+        # entirely: the caller has already structured the turns, so the only
+        # thing to add is this instance's system prompt.
+        if messages is not None:
+            prepared = base + list(messages)
+            if self.prompt_caching and prepared:
+                self._apply_prompt_caching(prepared)
+            return prepared
+
+        messages = base
 
         # Check if model supports vision if any image is provided
         images = [
@@ -1124,6 +1145,7 @@ class LiteLLM:
         imgs: Optional[List[str]] = None,
         runtime_args: tuple = (),
         runtime_kwargs: Optional[dict] = None,
+        messages: Optional[List[dict]] = None,
     ) -> dict:
         """
         Assemble the full parameter dict for a litellm completion call.
@@ -1141,7 +1163,7 @@ class LiteLLM:
         completion_params = {
             "model": self.model_name,
             "messages": self._prepare_messages(
-                task=task, img=img, imgs=imgs
+                task=task, img=img, imgs=imgs, messages=messages
             ),
             "stream": self.stream,
             "max_tokens": self.max_tokens,
@@ -1313,10 +1335,11 @@ class LiteLLM:
 
     def run(
         self,
-        task: str,
+        task: Optional[str] = None,
         audio: Optional[str] = None,
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
+        messages: Optional[List[dict]] = None,
         *args,
         **kwargs,
     ):
@@ -1360,6 +1383,7 @@ class LiteLLM:
                 imgs=imgs,
                 runtime_args=args,
                 runtime_kwargs=kwargs,
+                messages=messages,
             )
             response = completion(**completion_params)
             return self._process_response(response)
@@ -1378,10 +1402,11 @@ class LiteLLM:
 
     async def arun(
         self,
-        task: str,
+        task: Optional[str] = None,
         audio: Optional[str] = None,
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
+        messages: Optional[List[dict]] = None,
         *args,
         **kwargs,
     ):
@@ -1398,6 +1423,7 @@ class LiteLLM:
                 imgs=imgs,
                 runtime_args=args,
                 runtime_kwargs=kwargs,
+                messages=messages,
             )
             response = await acompletion(**completion_params)
             return self._process_response(response)

@@ -146,7 +146,17 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "create_plan",
-                "description": "Create a detailed plan for completing a task",
+                "description": (
+                    "Create or revise the plan for completing a task. Call it "
+                    "once up front, and again at any point during execution "
+                    "when what you have learned changes the plan - to add work "
+                    "you discovered, split a step that turned out to be "
+                    "several, drop a step that is no longer needed, or fix a "
+                    "dependency. Revising is cheap and expected: pass the full "
+                    "step list you now believe in. Steps are merged by "
+                    "step_id, and steps you already finished keep their "
+                    "results, so a revision never discards completed work."
+                ),
                 "parameters": {
                     "type": "object",
                     "properties": {
