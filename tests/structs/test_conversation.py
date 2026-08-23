@@ -1009,7 +1009,6 @@ def generate_markdown_report(results):
     return report
 
 
-
 # ============================================================================
 # Context isolation: an unnamed conversation must not resume someone else's
 # ============================================================================

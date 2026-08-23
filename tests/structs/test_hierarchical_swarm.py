@@ -1056,7 +1056,6 @@ def test_reassignment_targets_nested_swarm_worker_by_name():
     assert "[RECOVERY NOTICE]" not in swarm.conversation.get_str()
 
 
-
 # ============================================================================
 # Context management: how much each agent is re-sent
 # ============================================================================

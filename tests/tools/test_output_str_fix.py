@@ -120,8 +120,6 @@ def test_agent_integration():
     return True
 
 
-
-
 def test_function_name_is_the_model_name():
     """The emitted schema must name the model, not the metaclass or a field.
 
