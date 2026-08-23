@@ -52,6 +52,7 @@ from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
 )
 from swarms.structs.transcript import Transcript
+from swarms.tools.dynamic_tool_loader import SEARCH_TOOL_NAME
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists, format_data_structure
 
@@ -71,6 +72,26 @@ def _format_tool_error(function_name: str, error: Exception) -> str:
         "Review the arguments and either retry with a correction or take a "
         "different approach. Do not repeat the same call unchanged."
     )
+
+
+# Tools the loop itself depends on. These are never deferred - an agent that
+# has to search for its own `subtask_done` cannot finish a subtask.
+# How many tools a plan may pre-load in one go. Enough to cover a typical plan
+# without pulling in the whole catalog and undoing the saving.
+PREWARM_TOOL_LIMIT = 8
+
+# Pre-warm matches must score at least this fraction of the best match.
+PREWARM_MIN_SCORE_RATIO = 0.6
+
+ALWAYS_LOADED_TOOLS = frozenset(
+    {
+        "create_plan",
+        "think",
+        "subtask_done",
+        "complete_task",
+        "respond_to_user",
+    }
+)
 
 
 class AutonomousAgentLoop:
@@ -259,6 +280,23 @@ class AutonomousAgentLoop:
             if self.agent.tools_list_dictionary is None:
                 self.agent.tools_list_dictionary = []
 
+            # With dynamic_tools, only the control tools are always present.
+            # The rest of the loop's tools - file, shell, grep, sub-agents -
+            # go into the catalog and are loaded on demand via tool_search.
+            if self.agent.dynamic_tools:
+                control = [
+                    t
+                    for t in planning_tools
+                    if t.get("function", {}).get("name")
+                    in ALWAYS_LOADED_TOOLS
+                ]
+                deferred = [
+                    t for t in planning_tools if t not in control
+                ]
+                self.agent.setup_dynamic_tools(always_loaded=control)
+                self.agent.defer_tool_schemas(deferred)
+                planning_tools = []
+
             # Get existing tool names to avoid duplicates
             existing_tool_names = set()
             if self.agent.tools_list_dictionary:
@@ -302,6 +340,7 @@ class AutonomousAgentLoop:
 
             # Register planning tool handlers
             all_planning_tool_handlers = {
+                SEARCH_TOOL_NAME: self.agent._tool_search_tool,
                 "create_plan": self._create_plan_tool,
                 "think": self._think_tool,
                 "subtask_done": self._subtask_done_tool,
@@ -515,8 +554,12 @@ class AutonomousAgentLoop:
                     "Failed to create plan after maximum attempts"
                 )
 
-            # Integrate user tools after planning phase
-            if exists(self.agent.tools):
+            # Integrate user tools after planning phase. With dynamic_tools
+            # they are already in the catalog, reachable through tool_search.
+            if (
+                exists(self.agent.tools)
+                and not self.agent.dynamic_tools
+            ):
                 # Convert user tools to function schema
                 user_tools = convert_multiple_functions_to_openai_function_schema(
                     self.agent.tools
@@ -855,6 +898,24 @@ class AutonomousAgentLoop:
                                         )
 
                             # Handle all regular tools together
+                            # MCP tools are served by the MCP manager, not by
+                            # tool_struct, which resolves against self.tools
+                            # only. Split them out first or every MCP call
+                            # raises ToolNotFoundError.
+                            if regular_tool_calls:
+                                (
+                                    mcp_calls,
+                                    regular_tool_calls,
+                                ) = self._split_mcp_calls(
+                                    regular_tool_calls
+                                )
+                                if mcp_calls:
+                                    self._execute_mcp_calls(
+                                        mcp_calls,
+                                        turn_results,
+                                        subtask_iterations,
+                                    )
+
                             if regular_tool_calls and exists(
                                 self.agent.tools
                             ):
@@ -1345,7 +1406,17 @@ class AutonomousAgentLoop:
                     f"Plan created with {len(merged)} steps: "
                     f"{[s['step_id'] for s in merged]}"
                 )
-            return f"Plan created successfully with {len(merged)} subtasks"
+            message = f"Plan created successfully with {len(merged)} subtasks"
+            prewarmed = self._prewarm_tools_from_plan(
+                task_description, steps
+            )
+            if prewarmed:
+                message += (
+                    f". Pre-loaded the tools this plan implies: "
+                    f"{', '.join(prewarmed)}. They are callable from your "
+                    "next turn - do not search for them again."
+                )
+            return message
 
         # A revision reports what changed, not the whole plan, so the model
         # can see the effect of its edit.
@@ -1365,10 +1436,135 @@ class AutonomousAgentLoop:
         if self.agent.verbose:
             logger.info(f"Plan revised: {summary}")
 
-        return (
+        message = (
             f"Plan updated ({summary}). The plan now has "
             f"{len(merged)} subtasks."
         )
+        prewarmed = self._prewarm_tools_from_plan(
+            task_description, steps
+        )
+        if prewarmed:
+            message += (
+                f" Pre-loaded for the new steps: "
+                f"{', '.join(prewarmed)}."
+            )
+        return message
+
+    def _mcp_tool_names(self) -> set:
+        """Names of the tools the configured MCP servers expose."""
+        agent = self.agent
+        if not getattr(agent, "mcp_enabled", False):
+            return set()
+
+        # Prefer the cache the dynamic loader already populated, so this does
+        # not add a network call per turn.
+        schemas = getattr(agent, "_mcp_schemas_cache", None)
+        if schemas is None:
+            try:
+                schemas = agent.add_mcp_tools_to_memory()
+            except Exception as error:
+                logger.error(f"Could not list MCP tools: {error}")
+                return set()
+
+        return {
+            schema.get("function", {}).get("name")
+            for schema in (schemas or [])
+            if isinstance(schema, dict)
+        }
+
+    def _split_mcp_calls(self, tool_calls: List[Dict[str, Any]]):
+        """Partition tool calls into (mcp_calls, everything_else)."""
+        mcp_names = self._mcp_tool_names()
+        if not mcp_names:
+            return [], tool_calls
+
+        mcp_calls, others = [], []
+        for call in tool_calls:
+            name = (
+                call.get("function", {}).get("name")
+                if isinstance(call, dict)
+                else None
+            )
+            (mcp_calls if name in mcp_names else others).append(call)
+        return mcp_calls, others
+
+    def _execute_mcp_calls(
+        self,
+        mcp_calls: List[Dict[str, Any]],
+        results: Dict[str, Any],
+        current_loop: int,
+    ) -> None:
+        """
+        Run MCP tool calls through the agent's MCP manager.
+
+        Failures become the tool's result rather than propagating, so the model
+        sees what went wrong and the transcript keeps one result per call id.
+        """
+        for call in mcp_calls:
+            name = call.get("function", {}).get("name", "unknown")
+            if self.agent.print_on:
+                self.agent._visualize_function_call(name, {})
+
+            try:
+                self.agent.mcp_tool_handling(
+                    response=[call], current_loop=current_loop
+                )
+                outcome = f"{name} executed via MCP. See the tool output above."
+            except Exception as error:
+                outcome = _format_tool_error(name, error)
+                if self.agent.verbose:
+                    logger.error(outcome)
+
+            self.agent.short_memory.add(
+                role="Tool Executor", content=f"{name}: {outcome}"
+            )
+            results[call.get("id", "")] = outcome
+
+    def _prewarm_tools_from_plan(
+        self, task_description: str, steps: List[Dict]
+    ) -> List[str]:
+        """
+        Load the tools a plan implies, before any subtask starts.
+
+        With ``dynamic_tools`` the model otherwise discovers tools one subtask
+        at a time, because ``get_execution_prompt`` deliberately scopes each
+        turn to a single subtask - so it cannot know what later steps need and
+        searches again for each one, at a full round-trip each.
+
+        The plan is the best statement of what the whole run needs and it
+        exists before any subtask starts, so it is used as the query here.
+        This costs no extra turn: it happens inside the ``create_plan`` call
+        that just succeeded. If it misses nothing breaks - the model can still
+        search mid-run exactly as before.
+
+        Returns:
+            Names of tools newly loaded, for reporting back to the model.
+        """
+        agent = self.agent
+        if not getattr(agent, "dynamic_tools", False):
+            return []
+        if getattr(agent, "tool_loader", None) is None:
+            return []
+
+        query = " ".join(
+            [task_description or ""]
+            + [str(step.get("description", "")) for step in steps]
+        )
+        before = set(agent.tool_loader.loaded_names)
+        agent._tool_search_tool(
+            query=query,
+            max_results=PREWARM_TOOL_LIMIT,
+            # Speculative, so it demands stronger relevance than an explicit
+            # search. A whole plan as the query contains enough common words
+            # ("task", "data", "current") to give unrelated tools a nonzero
+            # score, which would load the catalog and undo the saving.
+            min_score_ratio=PREWARM_MIN_SCORE_RATIO,
+        )
+        return [
+            name
+            for name in agent.tool_loader.loaded_names
+            if name not in before
+        ]
 
     def _think_tool(
         self,

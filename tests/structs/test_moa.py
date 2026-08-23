@@ -264,3 +264,96 @@ def test_mixture_of_agents_real_world_scenario():
     )
 
     assert result is not None
+
+
+# ============================================================================
+# Context management: what each worker contributes to the shared conversation
+# ============================================================================
+
+
+def _scripted_agent(name):
+    """A real Agent whose LLM call is stubbed, so short_memory is real."""
+    from swarms import Agent
+
+    agent = Agent(
+        agent_name=name,
+        model_name="gpt-4o-mini",
+        max_loops=1,
+        persistent_memory=False,
+        print_on=False,
+        autosave=False,
+    )
+    agent.call_llm = lambda task=None, *a, **k: f"[{name}-out]"
+    return agent
+
+
+class TestWorkerContributions:
+    """
+    Workers must contribute their answer, not their whole transcript.
+
+    ``agent.run`` honours each agent's output_type, which defaults to
+    "str-all-except-first" - the agent's entire conversation. Recording that
+    re-injected the task and the previous layer's synthesis into the shared
+    history, so later layers and the aggregator read the same text repeatedly.
+    """
+
+    def test_workers_record_only_their_answer(self):
+        from swarms import MixtureOfAgents
+
+        moa = MixtureOfAgents(
+            agents=[_scripted_agent("W1"), _scripted_agent("W2")],
+            aggregator_agent=_scripted_agent("Agg"),
+            layers=2,
+        )
+        moa.run("Question?")
+
+        worker_messages = [
+            m["content"]
+            for m in moa.conversation.conversation_history
+            if m["role"] in ("W1", "W2")
+        ]
+        assert worker_messages == [
+            "[W1-out]",
+            "[W2-out]",
+            "[W1-out]",
+            "[W2-out]",
+        ], f"workers recorded more than their answers: {worker_messages}"
+
+    def test_the_task_is_not_re_injected_by_workers(self):
+        from swarms import MixtureOfAgents
+
+        moa = MixtureOfAgents(
+            agents=[_scripted_agent("W1")],
+            aggregator_agent=_scripted_agent("Agg"),
+            layers=2,
+        )
+        moa.run("a very distinctive question")
+
+        worker_messages = [
+            str(m["content"])
+            for m in moa.conversation.conversation_history
+            if m["role"] == "W1"
+        ]
+        assert not any(
+            "a very distinctive question" in c
+            for c in worker_messages
+        ), "a worker echoed the task back into the shared conversation"
+
+    def test_the_conversation_starts_clean(self):
+        """
+        Conversation used to auto-load a default-named file from disk, so
+        every swarm began with messages left by an unrelated run.
+        """
+        from swarms import MixtureOfAgents
+
+        moa = MixtureOfAgents(
+            agents=[_scripted_agent("W1")],
+            aggregator_agent=_scripted_agent("Agg"),
+            layers=1,
+        )
+        roles = [
+            m["role"] for m in moa.conversation.conversation_history
+        ]
+        assert (
+            "user" not in roles
+        ), f"stale messages loaded from disk: {roles}"

@@ -22,7 +22,9 @@ from swarms.prompts.multi_agent_collab_prompt import (
     MULTI_AGENT_COLLAB_PROMPT_TWO,
 )
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import new_context_for
 from swarms.structs.conversation import Conversation
+from swarms.utils.any_to_str import any_to_str
 from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.omni_agent_types import AgentListType
@@ -458,6 +460,9 @@ class HierarchicalSwarm:
         Raises:
             ValueError: If the swarm configuration is invalid.
         """
+        # How much of the shared conversation each agent has already seen.
+        self._delivered: Dict[str, int] = {}
+
         self.conversation = Conversation(time_enabled=False)
 
         # Reliability checks
@@ -739,6 +744,15 @@ class HierarchicalSwarm:
         for agent in self.agents:
             agent.print_on = False
 
+    def _context_for(self, agent_name: str) -> str:
+        """What this agent has not been given yet. See context_utils."""
+        return new_context_for(
+            agent_name,
+            self.conversation,
+            self._delivered,
+            empty_message="(no new messages)",
+        )
+
     def run_director(
         self,
         task: str,
@@ -763,7 +777,7 @@ class HierarchicalSwarm:
         try:
             if self.planning_enabled is True:
                 out = self.setup_director_with_planning(
-                    task=f"History: {self.conversation.get_str()} \n\n Task: {task}",
+                    task=f"History: {self._context_for(self.director.agent_name)} \n\n Task: {task}",
                     img=img,
                 )
                 self.conversation.add(
@@ -772,12 +786,19 @@ class HierarchicalSwarm:
 
             # Run the director with the context
             function_call = self.director.run(
-                task=f"History: {self.conversation.get_str()} \n\n Task: {task}",
+                task=f"History: {self._context_for(self.director.agent_name)} \n\n Task: {task}",
                 img=img,
             )
 
+            # A tool-call list stored raw renders as a Python repr in the
+            # history that every later agent reads. Keep it readable.
             self.conversation.add(
-                role="Director", content=function_call
+                role="Director",
+                content=(
+                    function_call
+                    if isinstance(function_call, str)
+                    else any_to_str(function_call)
+                ),
             )
 
             return function_call
@@ -1174,7 +1195,7 @@ class HierarchicalSwarm:
                     agent_name, "RUNNING", task, "Executing task..."
                 )
 
-            worker_task = f"History: {self.conversation.get_str()} \n\n Task: {task}"
+            worker_task = f"History: {self._context_for(agent_name)} \n\n Task: {task}"
 
             # Handle streaming callback if provided and the worker's run()
             # actually supports it. A worker may be a leaf Agent or a nested

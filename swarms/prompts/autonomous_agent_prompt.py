@@ -259,7 +259,7 @@ Now, begin your mission with excellence.
 
 NO_THINK_TOOL_OVERRIDE = """
 
-## TOOL AVAILABILITY OVERRIDE
+## THE THINK TOOL IS NOT AVAILABLE
 
 The `think` tool is NOT available in this run. Disregard every instruction
 above that tells you to call it, along with the limits described for it.

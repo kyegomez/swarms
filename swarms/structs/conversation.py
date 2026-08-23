@@ -50,6 +50,11 @@ def get_conversation_dir():
     return conversation_dir
 
 
+# Conversations built without a name share this one, so they must not resume
+# from each other's files. See setup_file_path.
+DEFAULT_CONVERSATION_NAME = "conversation-test"
+
+
 class Conversation:
     """
     A class to manage a conversation history, allowing for the addition, deletion,
@@ -77,7 +82,7 @@ class Conversation:
     def __init__(
         self,
         id: Optional[str] = None,
-        name: str = "conversation-test",
+        name: str = "conversation-test",  # see DEFAULT_NAME below
         system_prompt: Optional[str] = None,
         time_enabled: bool = False,
         autosave: bool = False,
@@ -104,6 +109,9 @@ class Conversation:
         self.id = id or generate_id()
         self.name = name
         self.save_filepath = save_filepath
+        # Whether the caller chose the file, as opposed to it being derived
+        # from the default name. Only an explicit choice resumes from disk.
+        self._explicit_save_filepath = save_filepath is not None
         self.system_prompt = system_prompt
         self.time_enabled = time_enabled
         self.autosave = autosave
@@ -189,8 +197,20 @@ class Conversation:
             "%Y-%m-%d_%H-%M-%S"
         )
 
+        # Only resume from disk when the caller actually asked for a named,
+        # persistent conversation. `name` defaults to "conversation-test", so
+        # every anonymous Conversation() resolved to the SAME file and silently
+        # loaded whatever a previous, unrelated run had left there - every
+        # swarm in the process started with someone else's messages, and
+        # re-sent them on every agent call.
+        wants_persistence = (
+            self._explicit_save_filepath
+            or self.load_filepath is not None
+            or self.name != DEFAULT_CONVERSATION_NAME
+        )
+
         # Check if file exists and load it
-        if os.path.exists(self.save_filepath):
+        if wants_persistence and os.path.exists(self.save_filepath):
             logger.debug(
                 f"Found existing conversation file at: {self.save_filepath}"
             )

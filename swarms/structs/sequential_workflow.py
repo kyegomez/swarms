@@ -5,8 +5,8 @@ from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger as loguru_logger
-from swarms.prompts.multi_agent_collab_prompt import (
-    MULTI_AGENT_COLLAB_PROMPT,
+from swarms.prompts.agent_acknowledgement_prompt import (
+    AGENT_COLLAB_PROMPT,
 )
 from swarms.structs.agent import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
@@ -200,7 +200,7 @@ class SequentialWorkflow:
                 if hasattr(agent, "system_prompt"):
                     if agent.system_prompt is None:
                         agent.system_prompt = ""
-                    agent.system_prompt += MULTI_AGENT_COLLAB_PROMPT
+                    agent.system_prompt += AGENT_COLLAB_PROMPT
                 else:
                     logger.warning(
                         f"Agent {getattr(agent, 'name', str(agent))} does not have a 'system_prompt' attribute."
@@ -325,14 +325,15 @@ class SequentialWorkflow:
             Exception: If any error occurs during task execution.
         """
         try:
-            # prompt = f"{MULTI_AGENT_COLLAB_PROMPT}\n\n{task}"
-            # Annotated because imgs is a list: without it the dict is
-            # inferred as Dict[str, str] from the task entry alone.
+            # Ensure imgs is annotated since it's a list; otherwise type inference assumes Dict[str, str].
+
             run_kwargs: Dict[str, Any] = {"task": task}
+
             if img is not None:
                 run_kwargs["img"] = img
             if imgs is not None:
                 run_kwargs["imgs"] = imgs
+
             result = self.agent_rearrange.run(**run_kwargs)
 
             # Run drift detection if configured

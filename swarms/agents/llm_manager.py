@@ -235,6 +235,19 @@ class LLMManager:
                 "api_key": agent.llm_api_key,
             }
 
+            # With dynamic tools, MCP schemas go into the searchable catalog
+            # instead of being appended to every request. This runs before the
+            # tool list is read, because deferring updates
+            # `tools_list_dictionary` in place. It is a no-op without a loader,
+            # and it fetches only once per agent.
+            deferred_mcp = False
+            if (
+                agent.mcp_enabled
+                and getattr(agent, "tool_loader", None) is not None
+            ):
+                agent.defer_mcp_tools()
+                deferred_mcp = True
+
             # Initialize tools_list_dictionary, if applicable
             tools_list = []
 
@@ -242,7 +255,7 @@ class LLMManager:
             if agent.tools_list_dictionary is not None:
                 tools_list.extend(agent.tools_list_dictionary)
 
-            if agent.mcp_enabled:
+            if agent.mcp_enabled and not deferred_mcp:
                 if agent.verbose:
                     logger.info(
                         f"Adding MCP tools to memory for {agent.agent_name}"
