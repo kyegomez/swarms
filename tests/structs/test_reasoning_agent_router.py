@@ -349,7 +349,9 @@ def test_run_forwards_kwargs_and_rejects_stray_positionals():
         router, "select_swarm", return_value=mock_swarm
     ):
         router.run("task", key="value")
-        mock_swarm.run.assert_called_once_with(task="task", key="value")
+        mock_swarm.run.assert_called_once_with(
+            task="task", key="value"
+        )
 
         with pytest.raises(TypeError):
             router.run("task", "extra_arg")
@@ -414,7 +416,8 @@ def test_batched_run_empty_list():
 
 def test_batched_run_forwards_kwargs_to_every_task():
     """batched_run reached self.run(task) with no kwargs, so img,
-    streaming_callback and everything else were dropped for batched callers."""
+    streaming_callback and everything else were dropped for batched callers.
+    """
     router = ReasoningAgentRouter(swarm_type="reasoning-duo")
     with patch.object(router, "run", return_value="x") as mock_run:
         router.batched_run(["a", "b"], kw="val")
