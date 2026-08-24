@@ -1137,15 +1137,33 @@ class GraphWorkflow:
                 f"Found {len(isolated)} isolated nodes: {isolated}"
             )
 
+        # An error, not a warning: execution does not run cycles as loops. It
+        # flattens them into one parallel layer, runs each node once, and
+        # ignores the declared edge ordering inside the cycle.
+        _CYCLE_CONSEQUENCE = (
+            "Cycles are not executed as loops: these nodes are flattened "
+            "into a single parallel layer, run once concurrently, and the "
+            "edge ordering between them is ignored. Break the cycle, or "
+            "re-run the whole graph iteratively with max_loops."
+        )
         try:
             if enumerate_cycles:
                 cycles = self.graph_backend.simple_cycles()
                 if cycles:
-                    warnings.append(
-                        f"Found {len(cycles)} cycles in workflow"
+                    errors.append(
+                        f"Found {len(cycles)} cycle(s) in workflow: "
+                        f"{cycles}. {_CYCLE_CONSEQUENCE}"
                     )
-            elif not self.graph_backend.is_dag():
-                warnings.append("Found cycles in workflow")
+            else:
+                # Kahn peel doubles as the acyclicity test and names the
+                # offending nodes, without enumerating every simple cycle,
+                # which is exponential in the number of cycles.
+                cyclic_nodes = self._nodes_on_cycles(succ, pred)
+                if cyclic_nodes:
+                    errors.append(
+                        f"Found cycle(s) involving nodes {cyclic_nodes}. "
+                        f"{_CYCLE_CONSEQUENCE}"
+                    )
         except Exception as e:
             warnings.append(f"Could not check for cycles: {e}")
 
@@ -1198,6 +1216,37 @@ class GraphWorkflow:
         enumeration. Returns ``(errors, warnings)``."""
         errors, warnings, _ = self._structural_checks(succ, pred)
         return errors, warnings
+
+    def _nodes_on_cycles(
+        self,
+        succ: Dict[str, List[str]],
+        pred: Dict[str, List[str]],
+    ) -> List[str]:
+        """
+        Return the sorted node ids that sit on at least one directed cycle.
+
+        Kahn's peel: repeatedly remove in-degree-0 nodes; whatever survives is
+        on a cycle. O(V+E), no cycle enumeration.
+
+        Args:
+            succ (Dict[str, List[str]]): Successor map from ``adjacency()``.
+            pred (Dict[str, List[str]]): Predecessor map from ``adjacency()``.
+
+        Returns:
+            List[str]: Node ids on a cycle, sorted; empty for a DAG.
+        """
+        indegree = {
+            node_id: len(pred.get(node_id, ()))
+            for node_id in self.nodes
+        }
+        stack = [n for n, d in indegree.items() if d == 0]
+        while stack:
+            node_id = stack.pop()
+            for child in succ.get(node_id, ()):
+                indegree[child] -= 1
+                if indegree[child] == 0:
+                    stack.append(child)
+        return sorted(n for n, d in indegree.items() if d > 0)
 
     def add_node(
         self,
@@ -3629,9 +3678,10 @@ class GraphWorkflow:
                     f"to exit points"
                 )
 
+            # Cycles are reported as errors above, so only reachability
+            # remains warning-severity here.
             has_serious_warnings = any(
-                "cycle" in warning.lower()
-                or "unreachable" in warning.lower()
+                "unreachable" in warning.lower()
                 for warning in result["warnings"]
             )
 
