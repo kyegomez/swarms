@@ -27,6 +27,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from datetime import timedelta
+from functools import lru_cache
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
@@ -140,6 +141,7 @@ def _server_origin(url: str) -> str:
     return f"{parsed.scheme}://{parsed.netloc}"
 
 
+@lru_cache(maxsize=1)
 def _mcp_is_v2() -> bool:
     """
     True when the installed mcp is 2.x.
@@ -147,6 +149,10 @@ def _mcp_is_v2() -> bool:
     Detected by the factory rename rather than a version string, so it tracks
     the actual API rather than packaging. 2.x also changed timeout types from
     ``timedelta`` to plain seconds.
+
+    Cached rather than computed into a module-level constant: the probe
+    imports mcp, and doing that at import time pulls the whole package in at
+    ``import swarms``, which is what #1754 is about.
     """
     try:
         from mcp.client.streamable_http import (  # noqa: F401
@@ -158,12 +164,9 @@ def _mcp_is_v2() -> bool:
         return True
 
 
-MCP_IS_V2 = _mcp_is_v2()
-
-
 def _read_timeout(seconds: float):
     """Session read timeout in the type the installed mcp expects."""
-    return seconds if MCP_IS_V2 else timedelta(seconds=seconds)
+    return seconds if _mcp_is_v2() else timedelta(seconds=seconds)
 
 
 def _http_timeout(connect: float, read: float):
