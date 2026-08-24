@@ -105,17 +105,25 @@ def install_get_transport(monkeypatch, handler):
 def install_post_transport(monkeypatch, handler):
     """Route ``with httpx.Client(...) as client:`` (used by POST/add_prompt)
     through a real ``httpx.Client`` subclass backed by ``MockTransport``.
+
+    Returns the list of timeouts the client was constructed with, so tests can
+    assert the ``timeout`` argument was honored end to end.
     """
     transport = httpx.MockTransport(handler)
     real_client_cls = httpx.Client
+    calls = []
 
     class _MockedClient(real_client_cls):
         def __init__(self, *args, **kwargs):
+            if "timeout" in kwargs:
+                calls.append(kwargs["timeout"])
+            elif args:
+                calls.append(args[0])
             kwargs["transport"] = transport
             super().__init__(*args, **kwargs)
 
     monkeypatch.setattr(httpx, "Client", _MockedClient)
-    return transport
+    return calls
 
 
 def agent_marketplace_handler_module():
@@ -515,9 +523,10 @@ class TestAddPrompt:
         with pytest.raises(ValueError, match=missing_field):
             AgentMarketplaceHandler.add_prompt(**kwargs)
 
-    def test_4xx_raises(self, api_key, monkeypatch):
+    @pytest.mark.parametrize("status", [400, 401, 403, 404])
+    def test_4xx_raises(self, api_key, monkeypatch, status):
         def handler(request):
-            return json_response(400, {"error": "bad request"})
+            return json_response(status, {"error": "bad request"})
 
         install_post_transport(monkeypatch, handler)
         with pytest.raises(httpx.HTTPStatusError):
@@ -556,6 +565,21 @@ class TestAddPrompt:
         )
 
         assert result == "not json at all"
+
+    def test_timeout_argument_is_honored(self, api_key, monkeypatch):
+        def handler(request):
+            return json_response(200, {})
+
+        calls = install_post_transport(monkeypatch, handler)
+        AgentMarketplaceHandler.add_prompt(
+            name="N",
+            prompt="P",
+            description="D",
+            use_cases=[{"title": "T", "description": "D"}],
+            timeout=5.0,
+        )
+
+        assert calls == [5.0]
 
     def test_add_prompt_without_api_key_raises(self, no_api_key):
         with pytest.raises(ValueError):
