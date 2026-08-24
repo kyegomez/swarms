@@ -128,3 +128,12 @@ class TestAnyToStr:
             pytest.fail(
                 f"test_mixed_types_in_list failed with error: {e}"
             )
+
+    def test_table_compact_vs_detailed(self):
+        """Table test pinning the exact output for a nested fixture in each style."""
+        from swarms.utils.index import format_data_structure
+        fixture = {"a": [1, 2], "b": {"c": "d"}}
+        compact_expected = 'a: [1, 2]\nb: c: "d"'
+        detailed_expected = "a:\n  [0]:\n    1\n  [1]:\n    2\nb:\n  c: d"
+        assert format_data_structure(fixture, style="compact") == compact_expected
+        assert format_data_structure(fixture, style="detailed") == detailed_expected

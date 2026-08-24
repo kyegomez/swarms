@@ -10,41 +10,8 @@ def exists(val):
     return val is not None
 
 
-def format_dict_to_string(data: dict, indent_level=0, use_colon=True):
-    """
-    Recursively format a dictionary into a multi-line string.
-
-    Args:
-        data (dict): The dictionary to format.
-        indent_level (int, optional): The current indentation level for nested structures.
-        use_colon (bool, optional): If True, use "key: value" formatting;
-            if False, use "key value" formatting.
-
-    Returns:
-        str: Multi-line readable string representing the structure of the input dictionary.
-    """
-    if not isinstance(data, dict):
-        return str(data)
-
-    lines = []
-    indent = "  " * indent_level
-    separator = ": " if use_colon else " "
-
-    for key, value in data.items():
-        if isinstance(value, dict):
-            lines.append(f"{indent}{key}:")
-            nested_string = format_dict_to_string(
-                value, indent_level + 1, use_colon
-            )
-            lines.append(nested_string)
-        else:
-            lines.append(f"{indent}{key}{separator}{value}")
-
-    return "\n".join(lines)
-
-
 def format_data_structure(
-    data: any, indent_level: int = 0, max_depth: int = 10
+    data: any, indent_level: int = 0, max_depth: int = 10, style: str = "detailed"
 ) -> str:
     """
     Format any Python data structure into a readable, indented, multi-line string.
@@ -53,10 +20,33 @@ def format_data_structure(
         data: The data structure to format.
         indent_level (int, optional): The current indentation level. Default is 0.
         max_depth (int, optional): The maximum depth to recurse. Defaults to 10.
+        style (str, optional): The formatting style, either "detailed" or "compact". Defaults to "detailed".
 
     Returns:
         str: Readable multi-line string representation of the input structure.
     """
+    if style == "compact":
+        try:
+            if isinstance(data, dict):
+                items = []
+                for k, v in data.items():
+                    value = format_data_structure(v, style="compact")
+                    items.append(f"{k}: {value}")
+                return "\n".join(items)
+            elif isinstance(data, (list, tuple)):
+                items = [format_data_structure(x, style="compact") for x in data]
+                if len(items) == 0:
+                    return "[]" if isinstance(data, list) else "()"
+                return f"[{', '.join(items)}]" if isinstance(data, list) else f"({', '.join(items)})"
+            elif data is None:
+                return "None"
+            else:
+                if isinstance(data, str):
+                    return f'"{data}"'
+                return str(data)
+        except Exception as e:
+            return f"Error converting data: {str(e)}"
+
     if indent_level >= max_depth:
         return f"{'  ' * indent_level}... (max depth reached)"
 

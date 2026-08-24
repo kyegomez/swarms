@@ -4,7 +4,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from pydantic import BaseModel, Field
 
-from swarms.tools.func_to_str import function_to_str, functions_to_str
 from swarms.tools.function_util import process_tool_docs
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
