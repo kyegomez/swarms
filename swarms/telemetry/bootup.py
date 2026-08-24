@@ -21,10 +21,13 @@ def bootup():
         # Silence wandb
         os.environ["WANDB_SILENT"] = "true"
 
-        # Setup workspace dir only if needed
-        if not workspace_path.exists():
-            workspace_path.mkdir(parents=True, exist_ok=True)
-        os.environ["WORKSPACE_DIR"] = str(workspace_path)
+        # Only default it. Assigning unconditionally discarded whatever the
+        # caller had exported, so WORKSPACE_DIR never survived `import swarms`.
+        if not os.getenv("WORKSPACE_DIR"):
+            os.environ["WORKSPACE_DIR"] = str(workspace_path)
+        Path(os.environ["WORKSPACE_DIR"]).mkdir(
+            parents=True, exist_ok=True
+        )
 
         # Suppress deprecation warnings
         warnings.filterwarnings("ignore", category=DeprecationWarning)
