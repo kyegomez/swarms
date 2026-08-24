@@ -2234,25 +2234,6 @@ class GraphWorkflow:
             / f"{task_key}_layer_{layer_idx}.json"
         )
 
-    @staticmethod
-    def _safe_output(
-        agent_name: str, produce: Callable[[], Any]
-    ) -> Tuple[bool, Any]:
-        """
-        Run ``produce``, turning a failure into an ``[ERROR]`` string.
-
-        One node blowing up degrades that node's output rather than the whole
-        layer, so downstream agents still receive something to work with.
-        Returns ``(succeeded, output)``.
-        """
-        try:
-            return True, produce()
-        except Exception as e:
-            logger.exception(
-                f"Error in GraphWorkflow agent execution for {agent_name}: {e}"
-            )
-            return False, f"[ERROR] Agent {agent_name} failed: {e}"
-
     @trace_run(
         "GraphWorkflow.run",
         input_params=("task", "tasks", "img", "imgs"),
