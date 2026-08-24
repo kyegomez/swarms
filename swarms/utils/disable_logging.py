@@ -9,8 +9,6 @@ def disable_logging():
     Disables logging for specific modules and sets up file and stream handlers.
     Runs in a separate thread to avoid blocking the main thread.
     """
-    os.environ["WORKSPACE_DIR"] = "agent_workspace"
-
     warnings.filterwarnings("ignore", category=UserWarning)
 
     # disable tensorflow warnings
@@ -46,7 +44,7 @@ def disable_logging():
     logging.getLogger().handlers = []
 
     # Get the workspace directory from the environment variables
-    workspace_dir = os.environ["WORKSPACE_DIR"]
+    workspace_dir = os.getenv("WORKSPACE_DIR") or "agent_workspace"
 
     # Check if the workspace directory exists, if not, create it
     if not os.path.exists(workspace_dir):
