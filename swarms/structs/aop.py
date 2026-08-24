@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import json
 from contextlib import AbstractAsyncContextManager
@@ -13,10 +15,17 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Union
 from uuid import uuid4
 
 from loguru import logger
-from mcp.server.auth.settings import AuthSettings
-from mcp.server.fastmcp import FastMCP
-from mcp.server.lowlevel.server import LifespanResultT
-from mcp.server.transport_security import TransportSecuritySettings
+from typing import TYPE_CHECKING
+
+if (
+    TYPE_CHECKING
+):  # Deferred: mcp must not load at `import swarms` (#1754)
+    from mcp.server.auth.settings import AuthSettings
+    from mcp.server.fastmcp import FastMCP
+    from mcp.server.lowlevel.server import LifespanResultT
+    from mcp.server.transport_security import (
+        TransportSecuritySettings,
+    )
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
@@ -686,6 +695,9 @@ class AOP:
         self.tool_configs: Dict[str, AgentToolConfig] = {}
         self.task_queues: Dict[str, TaskQueue] = {}
         self.transport = transport
+
+        # Deferred: mcp must not load at `import swarms` time (#1754).
+        from mcp.server.fastmcp import FastMCP
 
         self.mcp_server = FastMCP(
             name=server_name,

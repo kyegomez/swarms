@@ -9,10 +9,12 @@ budget for an unbounded run.
 
 from typing import Any, Optional
 
-from litellm import completion
 from loguru import logger
 
 from swarms.utils.litellm_tokenizer import count_tokens
+
+# Bound on first use; see summarize(). Patched directly by tests.
+completion = None
 
 
 COMPRESSION_SYSTEM_PROMPT = """
@@ -98,6 +100,14 @@ class ContextCompressor:
             raise ValueError(
                 "No summarizer_model configured and agent has no model_name"
             )
+        # Deferred: litellm must not load at `import swarms` time (#1754).
+        # Bound into the module global so an active test patch survives.
+        global completion
+        if completion is None:
+            from litellm import completion as _completion
+
+            completion = _completion
+
         response = completion(
             model=model,
             messages=[

@@ -1,11 +1,10 @@
 import inspect
 from functools import lru_cache
-from typing import Tuple, get_args
+from typing import Literal, Tuple, get_args
 
-# Fallback set, matching the levels accepted by litellm 1.76.x. Also unioned
-# with whatever the installed litellm advertises so a downgrade never narrows
-# the values Agent already accepts.
-REASONING_EFFORTS: Tuple[str, ...] = (
+# Spelled out because a Literal needs literal members: `Literal[SOME_TUPLE]`
+# is rejected by type checkers even though it works at runtime.
+ReasoningEffort = Literal[
     "none",
     "minimal",
     "low",
@@ -14,7 +13,11 @@ REASONING_EFFORTS: Tuple[str, ...] = (
     "xhigh",
     "ultra",
     "max",
-)
+]
+
+# Unioned with whatever the installed litellm advertises, so a downgrade never
+# narrows the values Agent already accepts.
+REASONING_EFFORTS: Tuple[str, ...] = get_args(ReasoningEffort)
 
 
 @lru_cache(maxsize=1)

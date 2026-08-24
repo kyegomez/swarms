@@ -16,6 +16,7 @@ This module owns every piece of MCP behaviour that used to be inlined in
 ``MCPManager`` is the only object an ``Agent`` needs to hold.
 """
 
+from __future__ import annotations
 import asyncio
 import json
 import os
@@ -32,8 +33,13 @@ from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 from urllib.parse import parse_qs, urlparse
 
 from loguru import logger
-from mcp import ClientSession
-from mcp.types import Tool as MCPTool
+from typing import TYPE_CHECKING
+
+if (
+    TYPE_CHECKING
+):  # Deferred: mcp must not load at `import swarms` (#1754)
+    from mcp import ClientSession
+    from mcp.types import Tool as MCPTool
 
 from swarms.schemas.agent_mcp_errors import (
     AgentMCPConnectionError,
@@ -920,6 +926,8 @@ class MCPManager:
         if isinstance(tool, dict):
             function = tool.get("function") or {}
             return function.get("name") or tool.get("name")
+        from mcp.types import Tool as MCPTool
+
         if isinstance(tool, MCPTool):
             return tool.name
         return getattr(tool, "name", None)
@@ -1562,6 +1570,8 @@ class MCPManager:
             )
 
         try:
+            from mcp import ClientSession
+
             async with client_cm as ctx:
                 read, write = ctx[0], ctx[1]
                 async with ClientSession(
