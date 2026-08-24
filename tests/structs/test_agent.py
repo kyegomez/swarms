@@ -2563,8 +2563,11 @@ class TestFunctionCallingWarning:
 
     @staticmethod
     def _warnings_for(**kwargs):
+        # Patched at the source module, not on swarms.structs.agent: the
+        # import is deferred into the method body (#1754), so there is no
+        # module-level name to replace.
         with patch("swarms.structs.agent.LiteLLM"), patch(
-            "swarms.structs.agent.supports_function_calling",
+            "litellm.utils.supports_function_calling",
             return_value=False,
         ), patch("swarms.structs.agent.logger") as log:
             Agent(
