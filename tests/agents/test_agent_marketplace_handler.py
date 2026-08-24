@@ -944,8 +944,6 @@ ERROR_CLASS_NAMES = [
     "AgentInitializationError",
     "AgentRunError",
     "AgentLLMError",
-    "AgentToolError",
-    "AgentMemoryError",
     "AgentLLMInitializationError",
     "AgentToolExecutionError",
 ]

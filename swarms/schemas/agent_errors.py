@@ -32,18 +32,6 @@ class AgentLLMError(AgentError):
     pass
 
 
-class AgentToolError(AgentError):
-    """Exception raised when the agent fails to utilize a tool. Check the tool's configuration and availability."""
-
-    pass
-
-
-class AgentMemoryError(AgentError):
-    """Exception raised when the agent encounters a memory-related issue. Ensure that memory resources are properly allocated and accessible."""
-
-    pass
-
-
 class AgentLLMInitializationError(AgentError):
     """Exception raised when the LLM fails to initialize properly. Please check the configuration and parameters."""
 

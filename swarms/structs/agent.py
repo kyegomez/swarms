@@ -57,9 +57,6 @@ from swarms.schemas.agent_errors import (
     AgentRunError,
     AgentToolExecutionError,
 )
-from swarms.schemas.base_schemas import (
-    AgentChatCompletionResponse,
-)
 from swarms.schemas.mcp_schemas import (
     MCPConnection,
     MCPOAuthConfig,
@@ -3832,11 +3829,11 @@ Subtask Breakdown:
 
             return response
 
-        except AgentChatCompletionResponse as e:
+        except Exception as e:
             logger.error(f"Error parsing LLM output: {e}")
             raise ValueError(
                 f"Failed to parse LLM output: {type(response)}"
-            )
+            ) from e
 
     def _complete_task_tool(
         self,
