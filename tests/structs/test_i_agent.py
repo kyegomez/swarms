@@ -1,5 +1,25 @@
+import os
+import pytest
 from swarms.agents.i_agent import IterativeReflectiveExpansion
 
+
+
+# Live-LLM tests: they call agent.run() against a real model and can only
+# pass with an API key. Without one, Agent.run now honestly raises
+# AgentLLMError after retry exhaustion, so these tests are skipped instead
+# of failing (same convention as tests/telemetry/test_telemetry.py).
+_LLM_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GROQ_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENROUTER_API_KEY",
+)
+_HAS_LLM_KEY = any(os.getenv(k) for k in _LLM_KEYS)
+requires_llm = pytest.mark.skipif(
+    not _HAS_LLM_KEY,
+    reason="no LLM API key set (OPENAI_API_KEY etc.) - live-LLM test skipped",
+)
 
 def test_ire_agent_initialization():
     """Test IRE agent initialization with default parameters"""
@@ -28,6 +48,7 @@ def test_ire_agent_custom_initialization():
     assert agent.output_type == "string"
 
 
+@requires_llm
 def test_ire_agent_execution():
     """Test IRE agent execution with a simple problem"""
     agent = IterativeReflectiveExpansion(
@@ -47,6 +68,7 @@ def test_ire_agent_execution():
     assert isinstance(result, (str, dict))
 
 
+@requires_llm
 def test_ire_agent_generate_hypotheses():
     """Test IRE agent hypothesis generation"""
     agent = IterativeReflectiveExpansion(
@@ -62,6 +84,7 @@ def test_ire_agent_generate_hypotheses():
     assert len(hypotheses) > 0
 
 
+@requires_llm
 def test_ire_agent_workflow():
     """Test complete IRE agent workflow with iterative refinement"""
     agent = IterativeReflectiveExpansion(

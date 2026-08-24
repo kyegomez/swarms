@@ -1,3 +1,4 @@
+import os
 import pytest
 
 from swarms.structs.swarm_router import (
@@ -41,6 +42,24 @@ def create_sample_agents():
 # Initialization Tests
 # ============================================================================
 
+
+
+# Live-LLM tests: they call agent.run() against a real model and can only
+# pass with an API key. Without one, Agent.run now honestly raises
+# AgentLLMError after retry exhaustion, so these tests are skipped instead
+# of failing (same convention as tests/telemetry/test_telemetry.py).
+_LLM_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GROQ_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENROUTER_API_KEY",
+)
+_HAS_LLM_KEY = any(os.getenv(k) for k in _LLM_KEYS)
+requires_llm = pytest.mark.skipif(
+    not _HAS_LLM_KEY,
+    reason="no LLM API key set (OPENAI_API_KEY etc.) - live-LLM test skipped",
+)
 
 def test_initialization_with_heavy_swarm_config():
     """Test SwarmRouter with HeavySwarm specific configuration."""
@@ -152,6 +171,7 @@ def test_router_with_config():
 # ============================================================================
 
 
+@requires_llm
 def test_run_with_sequential_workflow():
     """Test running SwarmRouter with SequentialWorkflow."""
     sample_agents = create_sample_agents()
@@ -174,6 +194,7 @@ def test_run_with_no_agents():
         router.run("Test task")
 
 
+@requires_llm
 def test_run_with_empty_task():
     """Test running SwarmRouter with empty task."""
     sample_agents = create_sample_agents()
@@ -185,6 +206,7 @@ def test_run_with_empty_task():
     assert result is not None
 
 
+@requires_llm
 def test_run_with_none_task():
     """Test running SwarmRouter with None task."""
     sample_agents = create_sample_agents()
@@ -201,6 +223,7 @@ def test_run_with_none_task():
 # ============================================================================
 
 
+@requires_llm
 def test_batch_run_with_tasks():
     """Test batch processing with multiple tasks."""
     sample_agents = create_sample_agents()
@@ -240,6 +263,7 @@ def test_batch_run_with_no_agents():
 # ============================================================================
 
 
+@requires_llm
 def test_call_method():
     """Test __call__ method."""
     sample_agents = create_sample_agents()
@@ -253,6 +277,7 @@ def test_call_method():
     assert result is not None
 
 
+@requires_llm
 def test_call_with_image():
     """Test __call__ method with image."""
     sample_agents = create_sample_agents()
@@ -272,6 +297,7 @@ def test_call_with_image():
 # ============================================================================
 
 
+@requires_llm
 def test_different_output_types():
     """Test router with different output types."""
     sample_agents = create_sample_agents()
@@ -309,6 +335,7 @@ def test_swarm_router_config_error():
 # ============================================================================
 
 
+@requires_llm
 def test_complete_workflow():
     """Test complete workflow from initialization to execution."""
     # Create agents
@@ -341,6 +368,7 @@ def test_complete_workflow():
     assert all(result is not None for result in batch_results)
 
 
+@requires_llm
 def test_router_reconfiguration():
     """Test reconfiguring router after initialization."""
     sample_agents = create_sample_agents()
@@ -371,6 +399,7 @@ def test_router_reconfiguration():
 # correctness of each underlying swarm is its own test file's responsibility.
 
 
+@requires_llm
 def test_run_with_agent_rearrange():
     """SwarmRouter dispatches to AgentRearrange."""
     sample_agents = create_sample_agents()
@@ -402,6 +431,7 @@ def test_run_with_mixture_of_agents():
     assert result is not None
 
 
+@requires_llm
 def test_run_with_sequential_workflow_type():
     """SwarmRouter dispatches to SequentialWorkflow."""
     sample_agents = create_sample_agents()
@@ -492,6 +522,7 @@ def test_run_with_auto():
     assert result is not None
 
 
+@requires_llm
 def test_run_with_majority_voting():
     """SwarmRouter dispatches to MajorityVoting."""
     sample_agents = create_sample_agents()
@@ -507,6 +538,7 @@ def test_run_with_majority_voting():
     assert result is not None
 
 
+@requires_llm
 def test_run_with_council_as_judge():
     """SwarmRouter dispatches to CouncilAsAJudge."""
     sample_agents = create_sample_agents()
@@ -554,6 +586,7 @@ def test_run_with_batched_grid_workflow():
     assert result is not None
 
 
+@requires_llm
 def test_run_with_llm_council():
     """SwarmRouter dispatches to LLMCouncil."""
     sample_agents = create_sample_agents()

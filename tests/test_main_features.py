@@ -1,3 +1,5 @@
+import os
+import pytest
 import json
 import os
 from datetime import datetime
@@ -112,6 +114,25 @@ def create_test_agent(
 # --- Basic Agent Tests ---
 
 
+
+# Live-LLM tests: they call agent.run() against a real model and can only
+# pass with an API key. Without one, Agent.run now honestly raises
+# AgentLLMError after retry exhaustion, so these tests are skipped instead
+# of failing (same convention as tests/telemetry/test_telemetry.py).
+_LLM_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GROQ_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENROUTER_API_KEY",
+)
+_HAS_LLM_KEY = any(os.getenv(k) for k in _LLM_KEYS)
+requires_llm = pytest.mark.skipif(
+    not _HAS_LLM_KEY,
+    reason="no LLM API key set (OPENAI_API_KEY etc.) - live-LLM test skipped",
+)
+
+@requires_llm
 def test_basic_agent_functionality():
     """Test basic agent creation and execution"""
     agent = create_test_agent("BasicAgent")
@@ -125,6 +146,7 @@ def test_basic_agent_functionality():
     }
 
 
+@requires_llm
 def test_agent_with_custom_prompt():
     """Test agent with custom system prompt"""
     custom_prompt = "You are a mathematician who only responds with numbers and mathematical expressions."
@@ -141,6 +163,7 @@ def test_agent_with_custom_prompt():
     }
 
 
+@requires_llm
 def test_tool_execution_with_agent():
     """Test agent's ability to use tools"""
 
@@ -299,6 +322,7 @@ def test_concurrent_workflow():
 # --- Advanced Swarm Tests ---
 
 
+@requires_llm
 def test_agent_rearrange():
     """Test AgentRearrange dynamic workflow"""
     agents = [
@@ -454,6 +478,7 @@ def test_hierarchical_swarm():
         }
 
 
+@requires_llm
 def test_majority_voting():
     """Test MajorityVoting consensus mechanism"""
     agents = [
@@ -484,6 +509,7 @@ def test_majority_voting():
     }
 
 
+@requires_llm
 def test_round_robin_swarm():
     """Test RoundRobinSwarm task distribution"""
     agents = [
@@ -513,6 +539,7 @@ def test_round_robin_swarm():
     }
 
 
+@requires_llm
 def test_swarm_router():
     """Test SwarmRouter dynamic routing"""
     agents = [
@@ -672,6 +699,7 @@ def test_forest_swarm():
 # --- Performance & Features Tests ---
 
 
+@requires_llm
 def test_streaming_mode():
     """Test streaming response generation"""
     agent = create_test_agent("StreamingAgent", streaming_on=True)
@@ -687,6 +715,7 @@ def test_streaming_mode():
     }
 
 
+@requires_llm
 def test_agent_memory_persistence():
     """Test agent memory functionality"""
     agent = create_test_agent(

@@ -1,5 +1,6 @@
 """Tests for async subagent execution."""
 
+import os
 import time
 import threading
 from concurrent.futures import Future
@@ -54,6 +55,24 @@ def make_agent(
 
 # ── SubagentRegistry Tests ──────────────────────────────────
 
+
+
+# Live-LLM tests: they call agent.run() against a real model and can only
+# pass with an API key. Without one, Agent.run now honestly raises
+# AgentLLMError after retry exhaustion, so these tests are skipped instead
+# of failing (same convention as tests/telemetry/test_telemetry.py).
+_LLM_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GROQ_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENROUTER_API_KEY",
+)
+_HAS_LLM_KEY = any(os.getenv(k) for k in _LLM_KEYS)
+requires_llm = pytest.mark.skipif(
+    not _HAS_LLM_KEY,
+    reason="no LLM API key set (OPENAI_API_KEY etc.) - live-LLM test skipped",
+)
 
 class TestSubagentRegistry:
     def test_spawn_returns_task_id(self):
@@ -453,6 +472,7 @@ class TestAutonomousLoopSubAgentTools:
         msg = check_sub_agent_status_tool(parent, agent_name="worker")
         assert "No sub-agents found" in msg
 
+    @requires_llm
     def test_check_status_reports_tasks_for_named_sub_agent(self):
         parent = self._AgentWithRegistryStub(
             sub_agent_name="worker", run_result="done"
@@ -843,6 +863,7 @@ class TestErrorPropagation:
 # ── Integration Tests (Real LLM) ────────────────────────────
 
 
+@requires_llm
 def test_1_async_execution():
     """
     FEATURE 1: Async Subagent Execution
@@ -907,6 +928,7 @@ def test_1_async_execution():
     print("  PASSED")
 
 
+@requires_llm
 def test_2_background_task_registry():
     """
     FEATURE 2: Background Task Registry
@@ -1086,6 +1108,7 @@ def test_4_result_aggregation():
     print("  PASSED")
 
 
+@requires_llm
 def test_5_error_handling():
     """
     FEATURE 5: Error Handling & Fault Tolerance
@@ -1192,6 +1215,7 @@ def test_5_error_handling():
     print("  PASSED")
 
 
+@requires_llm
 def test_6_observability():
     """
     FEATURE 6: Observability
