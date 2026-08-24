@@ -113,7 +113,6 @@ class TestBasicAgent:
         assert basic_flow.stopping_condition is None
         assert basic_flow.loop_interval == 1
         assert basic_flow.retry_attempts == 3
-        assert basic_flow.retry_interval == 1
         assert basic_flow.feedback == []
         assert basic_flow.memory == []
         assert basic_flow.task is None
@@ -412,7 +411,6 @@ class TestAgentFeatures:
             model_name="gpt-5.4",
             max_loops=1,
             retry_attempts=3,
-            retry_interval=1,
         )
 
         # Test invalid tool execution
@@ -491,7 +489,6 @@ class TestAgentFeatures:
             model_name="gpt-5.4",
             max_loops=1,
             retry_attempts=3,
-            retry_interval=1,
         )
 
         response = agent.run("Tell me a joke.")
@@ -724,7 +721,6 @@ class TestAgentLogging:
         }
 
         self.agent = Agent(
-            tokenizer=self.mock_tokenizer,
             short_memory=self.mock_short_memory,
             long_term_memory=self.mock_long_memory,
         )

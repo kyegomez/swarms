@@ -1117,7 +1117,6 @@ def create_resilient_agent(agent_name, system_prompt):
         system_prompt=f"{system_prompt}\n\nIf you encounter errors, provide partial results and clearly indicate limitations.",
         max_loops=1,
         temperature=0.1,  # More deterministic
-        retry_interval=1,  # Quick retries
         verbose=False,
     )
 ```

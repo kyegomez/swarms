@@ -151,7 +151,6 @@ class Agent:
         stopping_condition (Callable): The stopping condition to use
         loop_interval (int): The loop interval
         retry_attempts (int): The number of retry attempts
-        retry_interval (int): The retry interval
         stopping_token (str): The stopping token
         dynamic_loops (bool): Enable dynamic loops
         interactive (bool): Enable interactive mode
@@ -169,7 +168,6 @@ class Agent:
         transforms (Optional[Union[TransformConfig, dict]]): Message transformation configuration for handling context limits
         user_name (str): The user name
         multi_modal (bool): Enable multimodal
-        tokenizer (Any): The tokenizer
         long_term_memory (BaseVectorDatabase): The long term memory
         fallback_model_name (str): The fallback model name to use if primary model fails
         fallback_models (List[str]): List of model names to try in order. First model is primary, rest are fallbacks
@@ -324,7 +322,6 @@ class Agent:
         stopping_condition: Optional[Callable[[str], bool]] = None,
         loop_interval: Optional[int] = 0,
         retry_attempts: Optional[int] = 3,
-        retry_interval: Optional[int] = 1,
         stopping_token: Optional[str] = None,
         dynamic_loops: Optional[bool] = False,
         interactive: Optional[bool] = False,
@@ -340,7 +337,6 @@ class Agent:
         transforms: Optional[Union[TransformConfig, dict]] = None,
         user_name: Optional[str] = "Human",
         multi_modal: Optional[bool] = None,
-        tokenizer: Optional[Any] = None,
         long_term_memory: Optional[Union[Callable, Any]] = None,
         fallback_model_name: Optional[str] = None,
         fallback_models: Optional[List[str]] = None,
@@ -425,7 +421,6 @@ class Agent:
         self.stopping_condition = stopping_condition
         self.loop_interval = loop_interval
         self.retry_attempts = retry_attempts
-        self.retry_interval = retry_interval
         self.task = None
         self.stopping_token = stopping_token
         self.interactive = interactive
@@ -447,7 +442,6 @@ class Agent:
         )
         self.autosave = autosave
         self.multi_modal = multi_modal
-        self.tokenizer = tokenizer
         self.long_term_memory = long_term_memory
         self.preset_stopping_token = preset_stopping_token
         self.streaming_on = streaming_on
