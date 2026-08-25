@@ -13,6 +13,7 @@ ReasoningEffort = Literal[
     "xhigh",
     "ultra",
     "max",
+    "None",
 ]
 
 # Unioned with whatever the installed litellm advertises, so a downgrade never

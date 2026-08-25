@@ -1086,8 +1086,6 @@ from swarms import Agent
 
 **Don't instantiate heavyweight structures inside tight loops** — create agents and workflows once, reuse them across calls.
 
-**Don't pass `tools=[]` (empty list)** — pass `tools=None` instead. An empty list can confuse schema generation.
-
 **Don't use `streaming_on=True` and `streaming_callback` together on the same agent** — `streaming_on` streams to stdout; `streaming_callback` streams to your function. Pick one.
 
 **Don't set `context_compression=False` on very long autonomous sessions** — without compression the agent will eventually hit the context limit and raise an error.

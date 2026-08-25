@@ -8,10 +8,6 @@ from swarms.structs.swarm_router import (
 )
 from swarms.structs.agent import Agent
 
-# ============================================================================
-# Helper Functions
-# ============================================================================
-
 
 def create_sample_agents():
     """Create sample agents for testing."""

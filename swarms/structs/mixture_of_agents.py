@@ -94,6 +94,10 @@ class MixtureOfAgents:
             max_loops: Stored configuration value for compatibility.
             output_type: Desired formatted output type.
             aggregator_model_name: Model used for the default aggregator.
+            max_workers: Cap on concurrent worker agents per layer.
+            aggegrator_args: Extra keyword arguments forwarded to the
+                default aggregator agent. Ignored when ``aggregator_agent``
+                is supplied.
 
         Raises:
             ValueError: If no agents, aggregator system prompt, or layers
@@ -110,6 +114,7 @@ class MixtureOfAgents:
         self.output_type = output_type
         self.aggregator_model_name = aggregator_model_name
         self.max_workers = max_workers
+        self.aggegrator_args = aggegrator_args or {}
 
         self.reliability_check()
 

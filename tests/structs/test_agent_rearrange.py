@@ -1,15 +1,3 @@
-"""
-Unit and integration tests for AgentRearrange.
-
-Covers:
-- Initialization, agent management, flow validation
-- Sequential and concurrent flow execution
-- Sequential awareness (including repeated agents)
-- Error propagation through run/__call__/batch_run
-- batch_run concurrency, ordering, conversation isolation, image forwarding,
-  and batch_size validation (mock-based unit tests)
-"""
-
 import threading
 import time
 from typing import List, Optional
@@ -18,11 +6,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from swarms import Agent, AgentRearrange
-
-
-# ============================================================================
-# Helper Functions
-# ============================================================================
 
 
 def create_sample_agents():
