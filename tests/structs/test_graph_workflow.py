@@ -1478,5 +1478,30 @@ def test_save_spec_round_trips_through_from_topology_spec(tmp_path):
     assert rebuilt.max_loops == wf.max_loops
 
 
+def test_export_summary_reports_node_type_value():
+    """`export_summary` must report the enum value, not its repr.
+
+    `str(node.type)` renders as "NodeType.AGENT". Every other serializer
+    (`to_dict`, `to_json`, `to_spec`) emits the enum *value* ("agent"), so
+    reporting the repr here makes the summary disagree with the exports and
+    leaks a Python-internal spelling into user-facing output.
+    """
+    import json
+
+    wf = _two_node_workflow()
+
+    summary = wf.export_summary()
+
+    reported = [agent["type"] for agent in summary["agents"]]
+    assert reported == ["agent", "agent"]
+
+    # Agrees with the deep export, which is the serializer that carries
+    # node types (to_dict/to_spec default to the shallow shape).
+    exported = [
+        node["type"] for node in json.loads(wf.to_json())["nodes"]
+    ]
+    assert reported == exported
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
