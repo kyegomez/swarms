@@ -1,5 +1,5 @@
-import os
-from typing import Any, Callable, List, Optional
+from concurrent.futures import as_completed
+from typing import Any, Callable, Dict, List, Optional
 
 from swarms.structs.execution_utils import (
     batched_run,
@@ -7,14 +7,19 @@ from swarms.structs.execution_utils import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from swarms.structs.multi_agent_exec import run_agents_concurrently
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
+from swarms.structs.context_utils import (
+    agent_answer,
+    messages_for,
+    split_last_turn,
+)
 from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
     capture_init,
     trace_run,
 )
@@ -180,6 +185,45 @@ class MajorityVoting:
             title="Majority Voting",
         )
 
+    def _run_voters(self) -> Dict[str, Any]:
+        """
+        Run every voter on the shared conversation, concurrently.
+
+        Each voter receives the history as typed turns and contributes its
+        answer. Recording ``run``'s return value instead would store the
+        voter's whole conversation - which already contains this history - so
+        the shared transcript would compound on every loop.
+
+        Returns:
+            Maps agent name to that voter's answer.
+        """
+        answers: Dict[str, Any] = {}
+        with ContextThreadPoolExecutor(
+            max_workers=len(self.agents)
+        ) as executor:
+            future_to_agent = {}
+            for agent in self.agents:
+                prior, vote_task = split_last_turn(
+                    messages_for(agent.agent_name, self.conversation)
+                )
+                future = executor.submit(
+                    agent.run, task=vote_task, messages=prior
+                )
+                future_to_agent[future] = agent
+
+            for future in as_completed(future_to_agent):
+                agent = future_to_agent[future]
+                try:
+                    result = future.result()
+                except Exception as error:
+                    answers[agent.agent_name] = error
+                    continue
+                answers[agent.agent_name] = agent_answer(
+                    agent, fallback=result
+                )
+
+        return answers
+
     @trace_run(
         "MajorityVoting.run",
         input_params=("task", "tasks", "img", "imgs"),
@@ -206,6 +250,10 @@ class MajorityVoting:
 
         """
 
+        # A reused instance would otherwise serve the previous task's votes
+        # as context for this one.
+        self.conversation = Conversation(time_enabled=False)
+
         self.conversation.add(
             role="user",
             content=task,
@@ -213,16 +261,12 @@ class MajorityVoting:
 
         for i in range(self.max_loops):
 
-            output = run_agents_concurrently(
-                agents=self.agents,
-                task=self.conversation.get_str(),
-                max_workers=os.cpu_count(),
-            )
+            outputs = self._run_voters()
 
-            for agent, output in zip(self.agents, output):
+            for agent in self.agents:
                 self.conversation.add(
                     role=agent.agent_name,
-                    content=output,
+                    content=outputs[agent.agent_name],
                 )
 
             # Set streaming_on for the consensus agent based on the provided streaming_callback
@@ -249,9 +293,18 @@ class MajorityVoting:
                 consensus_streaming_callback = None
 
             # Run the consensus agent with the streaming callback, if any
+            prior, consensus_task = split_last_turn(
+                messages_for(
+                    self.consensus_agent.agent_name, self.conversation
+                )
+            )
             consensus_output = self.consensus_agent.run(
-                task=(f"History: {self.conversation.get_str()}"),
+                task=consensus_task,
+                messages=prior,
                 streaming_callback=consensus_streaming_callback,
+            )
+            consensus_output = agent_answer(
+                self.consensus_agent, fallback=consensus_output
             )
 
             self.conversation.add(

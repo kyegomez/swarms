@@ -525,24 +525,6 @@ class DebateWithJudge:
 
         return prompt
 
-    def get_conversation_history(self) -> List[dict]:
-        """
-        Get the full conversation history.
-
-        Returns:
-            List[dict]: List of message dictionaries containing the conversation history.
-        """
-        return self.conversation.return_messages_as_list()
-
-    def get_final_answer(self) -> str:
-        """
-        Get the final refined answer from the judge.
-
-        Returns:
-            str: The content of the final judge synthesis.
-        """
-        return self.conversation.get_final_message_content()
-
     def batched_run(self, tasks: List[str]) -> List[str]:
         """
         Run the debate with judge refinement process for a batch of tasks.

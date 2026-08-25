@@ -1,7 +1,7 @@
 GROUPCHAT_DECIDE_PROMPT = """You are {agent_name} in a groupchat with: {other_agents}.
 
-Conversation so far:
-{history}
+The conversation so far is in the messages above; your own turns appear as
+your own replies.
 
 Latest message from {sender}:
 {message}

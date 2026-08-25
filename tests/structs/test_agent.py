@@ -3311,6 +3311,116 @@ class TestRunBatchedImagePairing:
                 )
 
 
+# ============================================================================
+# CALLER-SUPPLIED MESSAGES
+# ============================================================================
+
+
+def _stub_completion_response(content="stubbed answer"):
+    """The smallest object shaped like a litellm ModelResponse."""
+    return SimpleNamespace(
+        choices=[
+            SimpleNamespace(
+                message=SimpleNamespace(
+                    content=content, tool_calls=None
+                ),
+                finish_reason="stop",
+                index=0,
+            )
+        ],
+        usage=SimpleNamespace(
+            prompt_tokens=1, completion_tokens=1, total_tokens=2
+        ),
+        model="gpt-4o-mini",
+    )
+
+
+class TestCallerSuppliedMessages:
+    """`agent.run(messages=[...])` used to be discarded.
+
+    `_run` overwrote `llm_kwargs["messages"]` with a transcript rebuilt from
+    the agent's own memory, so turns handed in by a caller that owns the
+    conversation - a multi-agent structure - never reached the provider.
+    """
+
+    @staticmethod
+    def _agent(name):
+        return Agent(
+            agent_name=name,
+            system_prompt="You are a test agent.",
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+            dynamic_tools=False,
+            autosave=False,
+        )
+
+    @staticmethod
+    def _capture_messages(monkeypatch):
+        """Replace the provider call; return the list of message lists sent."""
+        captured = []
+
+        def fake_completion(**params):
+            captured.append(params.get("messages"))
+            return _stub_completion_response()
+
+        monkeypatch.setattr(
+            litellm_wrapper, "completion", fake_completion
+        )
+        return captured
+
+    def test_supplied_messages_reach_the_provider(self, monkeypatch):
+        """Both injected turns arrive, roles intact, task last."""
+        captured = self._capture_messages(monkeypatch)
+        agent = self._agent("supplied-messages-probe")
+
+        agent.run(
+            task="the task",
+            messages=[
+                {"role": "user", "content": "INJECTED_USER"},
+                {
+                    "role": "assistant",
+                    "content": "INJECTED_ASSISTANT",
+                },
+            ],
+        )
+
+        assert captured, "completion() was never called"
+        sent = captured[0]
+        pairs = [(m["role"], m["content"]) for m in sent]
+
+        assert ("user", "INJECTED_USER") in pairs
+        assert ("assistant", "INJECTED_ASSISTANT") in pairs
+
+        # The task is the new user turn, appended after the supplied prefix.
+        assert pairs[-1] == ("user", "the task")
+
+    def test_memory_derived_transcript_is_unchanged_without_messages(
+        self, monkeypatch
+    ):
+        """No `messages` kwarg -> the agent still builds typed turns itself."""
+        captured = self._capture_messages(monkeypatch)
+        agent = self._agent("memory-transcript-probe")
+
+        agent.run(task="first task")
+        agent.run(task="second task")
+
+        assert len(captured) == 2
+        second = captured[1]
+        roles = [m["role"] for m in second]
+
+        assert "system" in roles
+        assert "user" in roles
+        assert "assistant" in roles
+        assert roles[-1] == "user"
+
+        # Not one flattened blob: the prior exchange is separate turns.
+        contents = [m["content"] for m in second]
+        assert "first task" in contents
+        assert "second task" == contents[-1]
+
+
 if __name__ == "__main__":
     # Run all tests
     results = run_all_tests()

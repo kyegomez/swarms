@@ -1478,5 +1478,50 @@ def test_save_spec_round_trips_through_from_topology_spec(tmp_path):
     assert rebuilt.max_loops == wf.max_loops
 
 
+# ============================================================================
+# Fan-in attribution — each predecessor's output must carry its own name
+# ============================================================================
+
+
+def test_fan_in_attributes_outputs_to_the_correct_predecessor():
+    """A missing predecessor must not shift every remaining label.
+
+    ``pred_outputs`` is filtered by presence in ``prev_outputs``; zipping it
+    against the unfiltered predecessor list used to pair B's output with A's
+    name and drop the last output entirely.
+    """
+    wf = GraphWorkflow(auto_compile=False)
+    for name in ["A", "B", "C", "D"]:
+        wf.add_node(create_test_agent(name))
+    for parent in ["A", "B", "C"]:
+        wf.add_edge(parent, "D")
+
+    # A produced nothing this run - failed, skipped, or behind a false branch.
+    prev_outputs = {"B": "OUT_B", "C": "OUT_C"}
+    prompt = wf._build_prompt(
+        "D", "the task", prev_outputs, layer_idx=1
+    )
+
+    assert "Output from B:\nOUT_B" in prompt
+    assert "Output from C:\nOUT_C" in prompt
+    assert "Output from A:" not in prompt
+
+
+def test_fan_in_with_all_predecessors_present_is_unaffected():
+    """The all-present case keeps working."""
+    wf = GraphWorkflow(auto_compile=False)
+    for name in ["A", "B", "C"]:
+        wf.add_node(create_test_agent(name))
+    for parent in ["A", "B"]:
+        wf.add_edge(parent, "C")
+
+    prompt = wf._build_prompt(
+        "C", "the task", {"A": "OUT_A", "B": "OUT_B"}, layer_idx=1
+    )
+
+    assert "Output from A:\nOUT_A" in prompt
+    assert "Output from B:\nOUT_B" in prompt
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

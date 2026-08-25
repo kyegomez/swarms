@@ -1251,6 +1251,7 @@ class Agent:
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -1449,7 +1450,12 @@ class Agent:
                         model_name=self.model_name,
                     )
                 elif transcript is None:
-                    transcript = self._transcript_from_memory()
+                    # A caller that owns the conversation - a multi-agent
+                    # structure - supplies the prior turns typed, so they are
+                    # not re-derived from this agent's own flattened memory.
+                    transcript = self._transcript_from_messages(
+                        messages, task
+                    )
 
                 # Parameters
                 attempt = 0
@@ -2168,6 +2174,32 @@ class Agent:
                 transcript.append_assistant_text(content)
             else:
                 transcript.append_user(content)
+        return transcript
+
+    def _transcript_from_messages(
+        self,
+        messages: Optional[List[Dict[str, Any]]],
+        task: Optional[Any],
+    ) -> Transcript:
+        """
+        Build this run's transcript, preferring caller-supplied turns.
+
+        Args:
+            messages: Prior conversation as typed chat messages. When given,
+                these replace the memory-derived prefix and ``task`` is
+                appended as the new user turn. ``None`` falls back to
+                :meth:`_transcript_from_memory`.
+            task: The instruction for this turn.
+
+        Returns:
+            The transcript to send with the next request.
+        """
+        if messages is None:
+            return self._transcript_from_memory()
+
+        transcript = Transcript(list(messages))
+        if task is not None:
+            transcript.append_user(task)
         return transcript
 
     def _memory_and_transcript(

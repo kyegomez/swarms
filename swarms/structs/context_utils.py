@@ -28,6 +28,107 @@ NO_NEW_MESSAGES = (
     "previous response."
 )
 
+# Roles a structure writes for its own bookkeeping - rosters, flow diagrams,
+# loop markers. They are not turns any agent took, so they are not rendered.
+_STRUCTURE_ROLES = frozenset({"system"})
+
+_USER_ROLES = frozenset({"user", "human"})
+
+
+def messages_for(
+    agent_name: str,
+    conversation: Any,
+) -> List[Dict[str, str]]:
+    """
+    A shared conversation as typed chat turns, from one agent's point of view.
+
+    The string form built by :func:`new_context_for` collapses every speaker
+    into one ``user`` message, so the model cannot tell its own prior output
+    from a peer's, and the request has no stable prefix to cache. This returns
+    the same history as real turns instead: the recipient's own messages
+    become ``assistant`` turns and everyone else's become ``user`` turns
+    labelled with the speaker's name.
+
+    Unlike :func:`new_context_for` there is no delivery cursor. A chat request
+    carries the whole conversation every time; sending only the delta is what
+    the flattened form had to do because it was writing into the agent's own
+    memory.
+
+    Args:
+        agent_name: The agent about to run. Its own messages in the shared
+            conversation carry this as their role.
+        conversation: A :class:`~swarms.structs.conversation.Conversation`.
+
+    Returns:
+        Chat-completions messages, oldest first. Structure bookkeeping
+        (``system`` rows such as team rosters) is omitted - it belongs in a
+        system prompt, not in the conversation body.
+
+    Example:
+        >>> messages_for("Writer", conversation)
+        [{'role': 'user', 'content': 'draft it'},
+         {'role': 'assistant', 'content': 'here is a draft'},
+         {'role': 'user', 'content': 'Editor: needs a stronger opening'}]
+    """
+    history = (
+        getattr(conversation, "conversation_history", None) or []
+    )
+
+    messages: List[Dict[str, str]] = []
+    for message in history:
+        if not isinstance(message, dict):
+            continue
+
+        role = message.get("role")
+        content = message.get("content")
+        if content is None:
+            continue
+        content = str(content)
+
+        if role == agent_name:
+            messages.append({"role": "assistant", "content": content})
+            continue
+
+        role_key = str(role).lower()
+        if role_key in _STRUCTURE_ROLES:
+            continue
+
+        if role_key in _USER_ROLES:
+            messages.append({"role": "user", "content": content})
+        else:
+            messages.append(
+                {"role": "user", "content": f"{role}: {content}"}
+            )
+
+    return messages
+
+
+def split_last_turn(
+    messages: List[Dict[str, str]],
+    fallback: str = NO_NEW_MESSAGES,
+) -> tuple:
+    """
+    Split typed turns into a prefix and the instruction for this run.
+
+    ``Agent.run`` still takes a ``task``, so the newest turn is handed over
+    separately rather than being duplicated at the end of ``messages``.
+
+    Args:
+        messages: Turns from :func:`messages_for`, oldest first.
+        fallback: Task text used when there are no turns to split.
+
+    Returns:
+        ``(prior_messages, task)``.
+    """
+    if not messages:
+        return [], fallback
+    # A blank newest turn would reach Agent.run as an empty task, which it
+    # rejects; the flattened form used to smuggle one through as "User: ".
+    task = messages[-1]["content"]
+    if not str(task).strip():
+        return messages[:-1], fallback
+    return messages[:-1], task
+
 
 def new_context_for(
     agent_name: str,
