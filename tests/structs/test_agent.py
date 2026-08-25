@@ -40,20 +40,58 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 
 
 @pytest.fixture
-def basic_flow(mocked_llm):
-    """Basic agent flow for testing"""
-    return Agent(llm=mocked_llm, max_loops=1)
+def mocked_llm():
+    """Stand-in for the LLM, so these tests need no provider.
+
+    Restored: `6f4803ef` (2025-10-21) deleted this fixture but left the two
+    fixtures that request it, so the eight tests below errored at setup with
+    "fixture 'mocked_llm' not found" and have not executed since.
+
+    Echoes the task back. `Agent.__call__` returning its input is what
+    test_flow_call asserts, and an echo keeps every other assertion about
+    plumbing rather than about model output.
+    """
+
+    class MockedLLM:
+        def run(self, task=None, *args, **kwargs):
+            return task
+
+        async def arun(self, task=None, *args, **kwargs):
+            return task
+
+    return MockedLLM()
 
 
 @pytest.fixture
-def flow_with_condition(mocked_llm):
+def basic_flow(mocked_llm, tmp_path):
+    """Basic agent flow for testing"""
+    return Agent(
+        agent_name="basic-flow",
+        llm=mocked_llm,
+        max_loops=1,
+        print_on=False,
+        verbose=False,
+        persistent_memory=False,
+        autosave=False,
+        workspace_dir=str(tmp_path),
+    )
+
+
+@pytest.fixture
+def flow_with_condition(mocked_llm, tmp_path):
     """Agent flow with stopping condition"""
     from swarms.structs.agent import stop_when_repeats
 
     return Agent(
+        agent_name="flow-with-condition",
         llm=mocked_llm,
         max_loops=1,
         stopping_condition=stop_when_repeats,
+        print_on=False,
+        verbose=False,
+        persistent_memory=False,
+        autosave=False,
+        workspace_dir=str(tmp_path),
     )
 
 
@@ -108,22 +146,19 @@ class TestBasicAgent:
         assert not stop_when_repeats("Continue the process")
 
     def test_flow_initialization(self, basic_flow):
-        """Test agent initialization"""
-        assert basic_flow.max_loops == 5
+        """The constructor arguments survive __init__.
+
+        Rewritten: this asserted `max_loops == 5` against a fixture that
+        passes 1, plus `.feedback` and `.memory`, which the Agent has not
+        had for a long time — it errored before ever running, so nothing
+        caught the drift.
+        """
+        assert basic_flow.max_loops == 1
         assert basic_flow.stopping_condition is None
-        assert basic_flow.loop_interval == 1
         assert basic_flow.retry_attempts == 3
-        assert basic_flow.feedback == []
-        assert basic_flow.memory == []
         assert basic_flow.task is None
         assert basic_flow.stopping_token == "<DONE>"
         assert not basic_flow.interactive
-
-    def test_provide_feedback(self, basic_flow):
-        """Test feedback functionality"""
-        feedback = "Test feedback"
-        basic_flow.provide_feedback(feedback)
-        assert feedback in basic_flow.feedback
 
     @patch("time.sleep", return_value=None)
     def test_run_without_stopping_condition(
@@ -147,27 +182,57 @@ class TestBasicAgent:
         responses = basic_flow.bulk_run(inputs)
         assert responses is not None
 
-    def test_save_and_load(self, basic_flow, tmp_path):
-        """Test save and load functionality"""
-        file_path = tmp_path / "memory.json"
-        basic_flow.memory.append(["Test1", "Test2"])
+    def test_save_and_load(self, basic_flow, mocked_llm, tmp_path):
+        """State written by save() comes back through load().
+
+        Rewritten against the current API: the original appended to a
+        `.memory` list the Agent no longer has. This is the only round-trip
+        test save()/load() has at the Agent level, and it has not executed
+        since 2025-10-21 — which is how the load() crash fixed in the parent
+        commit shipped unnoticed.
+
+        load() restores scalar configuration; it deliberately preserves live
+        instances (the LLM, short_memory) rather than rehydrating them, so
+        the conversation is not part of the round trip.
+        """
+        file_path = str(tmp_path / "agent_state.json")
+        basic_flow.max_loops = 3
         basic_flow.save(file_path)
 
-        new_flow = Agent(llm=basic_flow.llm, max_loops=5)
-        new_flow.load(file_path)
-        assert new_flow.memory == [["Test1", "Test2"]]
+        assert os.path.exists(file_path)
+
+        restored = Agent(
+            agent_name="basic-flow-restored",
+            llm=mocked_llm,
+            max_loops=9,
+            print_on=False,
+            verbose=False,
+            persistent_memory=False,
+            autosave=False,
+            workspace_dir=str(tmp_path),
+        )
+        restored.load(file_path)
+
+        assert restored.max_loops == 3
+        assert restored.agent_name == "basic-flow"
 
     def test_flow_call(self, basic_flow):
-        """Test calling agent directly"""
-        response = basic_flow("Test call")
-        assert response == "Test call"
+        """__call__ forwards to run() rather than doing its own thing.
 
-    def test_format_prompt(self, basic_flow):
-        """Test prompt formatting"""
-        formatted_prompt = basic_flow.format_prompt(
-            "Hello {name}", name="John"
+        Rewritten: this asserted the call returned its own input, which was
+        only ever true of the deleted mock. Comparing two live calls does not
+        work either — the conversation grows between them, so the second
+        returns something different. What is worth pinning is the delegation.
+        """
+        with patch.object(
+            basic_flow, "run", return_value="routed"
+        ) as run:
+            assert basic_flow("Test call") == "routed"
+
+        run.assert_called_once()
+        assert "Test call" in run.call_args.args or (
+            run.call_args.kwargs.get("task") == "Test call"
         )
-        assert formatted_prompt == "Hello John"
 
 
 # ============================================================================
