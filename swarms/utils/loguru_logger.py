@@ -9,6 +9,9 @@ load_dotenv()
 # Ensure handlers are only configured once to prevent conflicts between modules.
 _CONFIGURED = False
 
+# Directory that current log handlers point to; may change during early boot.
+_CONFIGURED_DIR = None
+
 # Ceiling for a single per-module log file before it is rolled to ".1".
 MODULE_LOG_MAX_BYTES = 10 * 1024 * 1024
 
@@ -89,12 +92,20 @@ def initialize_logger(log_folder: str = "swarms"):
     Returns:
         logger: The logger instance.
     """
-    global _CONFIGURED
-    if _CONFIGURED:
-        return logger
+    global _CONFIGURED, _CONFIGURED_DIR
 
     log_dir = get_log_dir()
-    os.makedirs(log_dir, exist_ok=True)
+    if _CONFIGURED and log_dir == _CONFIGURED_DIR:
+        return logger
+    try:
+        os.makedirs(log_dir, exist_ok=True)
+        file_logging = True
+    except OSError as e:
+        # WORKSPACE_DIR is caller-supplied and may be unwritable, or may
+        # already exist as a file. Console logging still works, and being
+        # unable to write logs must never stop `import swarms`.
+        file_logging = False
+        log_dir_error = e
 
     # Reset loguru handlers
     logger.remove()
@@ -110,27 +121,34 @@ def initialize_logger(log_folder: str = "swarms"):
         enqueue=True,
     )
 
-    # Add file logging (rotating)
-    log_file_path = os.path.join(
-        log_dir, "swarms_{time:YYYY-MM-DD}.log"
-    )
-    logger.add(
-        log_file_path,
-        rotation="1 day",
-        retention="10 days",
-        level="INFO",
-        backtrace=True,
-        diagnose=True,
-        enqueue=True,
-        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
-    )
+    if file_logging:
+        # Add file logging (rotating)
+        log_file_path = os.path.join(
+            log_dir, "swarms_{time:YYYY-MM-DD}.log"
+        )
+        logger.add(
+            log_file_path,
+            rotation="1 day",
+            retention="10 days",
+            level="INFO",
+            backtrace=True,
+            diagnose=True,
+            enqueue=True,
+            format=LOG_FORMAT,
+        )
 
-    # Per-module files, routed by the emitting module rather than the caller.
-    logger.add(
-        _module_log_router,
-        level="INFO",
-        format=LOG_FORMAT,
-    )
+        # Per-module files, routed by the emitting module, not the caller.
+        logger.add(
+            _module_log_router,
+            level="INFO",
+            format=LOG_FORMAT,
+        )
+    else:
+        logger.warning(
+            f"Log directory {log_dir!r} is unavailable "
+            f"({log_dir_error}); logging to the console only."
+        )
 
     _CONFIGURED = True
+    _CONFIGURED_DIR = log_dir
     return logger
