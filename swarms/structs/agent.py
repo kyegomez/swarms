@@ -675,10 +675,7 @@ class Agent:
                 )
                 self.system_prompt += "\n\n" + handoff_prompt
 
-        # One condition so the notice cannot diverge from the loader.
-        # Truthiness, not exists(): exists() is `is not None`, so tools=[]
-        # counted as having tools and bought an empty agent the tool_search
-        # schema plus the notice in every prompt.
+        # Not exists(): exists([]) is True, so tools=[] deferred.
         defers_tools = self.dynamic_tools and (
             bool(self.tools)
             or self.mcp_enabled

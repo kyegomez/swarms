@@ -1,17 +1,3 @@
-"""
-One-on-one debate.
-
-The feature has two implementations, and this file covers both so their
-behaviour cannot drift apart unnoticed:
-
-* ``swarms.structs.deep_discussion.one_on_one_debate`` — the function API
-* ``swarms.structs.multi_agent_debates.OneOnOneDebate`` — the class API
-
-Merged from the former ``test_deep_discussion.py`` and the one-on-one half of
-``test_multi_agent_debate.py``; the two class-API tests whose names collided
-with function-API tests carry a ``_class_`` infix.
-"""
-
 import pytest
 from loguru import logger
 

@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-Hierarchical Swarm Batch Processing Demo
-
-This demo shows how to use streaming callbacks with batch processing
-to handle multiple tasks sequentially with real-time feedback.
-"""
 
 import time
 from typing import Callable

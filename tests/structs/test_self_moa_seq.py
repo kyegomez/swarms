@@ -4,10 +4,6 @@ import pytest
 
 from swarms.structs.self_moa_seq import SelfMoASeq
 
-# ============================================================================
-# Fixtures
-# ============================================================================
-
 
 @pytest.fixture
 def basic_seq():
