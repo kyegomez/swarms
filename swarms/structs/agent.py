@@ -391,7 +391,7 @@ class Agent:
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
         show_tool_execution_output: bool = True,
-        reasoning_effort: Literal[get_reasoning_efforts()] = "medium",
+        reasoning_effort: Literal[get_reasoning_efforts()] = None,
         thinking_tokens: int = 1024,
         think_tool: bool = False,
         dynamic_tools: bool = True,
@@ -422,7 +422,6 @@ class Agent:
         self.stopping_token = stopping_token
         self.interactive = interactive
         self.dashboard = dashboard
-        self.saved_state_path = saved_state_path
         self.dynamic_temperature_enabled = dynamic_temperature_enabled
         self.dynamic_loops = dynamic_loops
         self.user_name = user_name
@@ -433,8 +432,8 @@ class Agent:
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
         self.agent_description = agent_description
-        # self.saved_state_path = f"{self.agent_name}_{generate_api_key(prefix='agent-')}_state.json"
-        self.saved_state_path = (
+        # Fallback: this once overwrote the caller's own path.
+        self.saved_state_path = saved_state_path or (
             f"{generate_api_key(prefix='agent-')}_state.json"
         )
         self.autosave = autosave

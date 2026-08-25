@@ -7,6 +7,7 @@ import pytest
 
 from swarms import Agent, AgentRearrange
 
+
 def create_sample_agents():
     """Create sample agents for integration tests against a real LLM."""
     return [
