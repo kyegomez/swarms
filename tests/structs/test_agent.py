@@ -3311,6 +3311,50 @@ class TestRunBatchedImagePairing:
                 )
 
 
+class TestEmptyToolsList:
+    """`tools=[]` must mean the same as `tools=None`.
+
+    `exists()` is `is not None`, so an empty list counted as having tools:
+    the agent was given the `tool_search` schema it had nothing to search and
+    DYNAMIC_TOOLS_NOTICE in every prompt.
+    """
+
+    @staticmethod
+    def _agent(**kwargs):
+        return Agent(
+            agent_name="empty_tools_agent",
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            **kwargs,
+        )
+
+    def test_empty_list_advertises_no_tools(self):
+        assert self._agent(tools=[]).tools_list_dictionary == []
+
+    def test_empty_list_matches_none(self):
+        empty = self._agent(tools=[])
+        none = self._agent(tools=None)
+        assert (
+            empty.tools_list_dictionary == none.tools_list_dictionary
+        )
+        assert ("tool_search" in empty.system_prompt) == (
+            "tool_search" in none.system_prompt
+        )
+
+    def test_a_real_tool_still_defers(self):
+        def sample(x: str) -> str:
+            """Return x.
+
+            Args:
+                x: anything
+            """
+            return x
+
+        agent = self._agent(tools=[sample])
+        assert agent.tools_list_dictionary
+        assert "tool_search" in agent.system_prompt
+
+
 if __name__ == "__main__":
     # Run all tests
     results = run_all_tests()
