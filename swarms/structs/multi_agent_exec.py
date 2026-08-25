@@ -169,6 +169,16 @@ def run_agents_concurrently(
                         or getattr(agent, "name", None)
                         or str(agent)
                     )
+                    # agent_name defaults to the same string for every
+                    # Agent, so a swarm whose agents did not set one had
+                    # every result land on one key and only the last
+                    # survive. Suffix instead of overwrite: callers ask for
+                    # this dict to get one entry per agent.
+                    if name in output_dict:
+                        suffix = 2
+                        while f"{name} ({suffix})" in output_dict:
+                            suffix += 1
+                        name = f"{name} ({suffix})"
                     output_dict[name] = result
                 return output_dict
             else:

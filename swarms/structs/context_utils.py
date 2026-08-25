@@ -131,11 +131,10 @@ def get_final_agent_answer(
     Returns:
         The same mapping with transcripts replaced by answers.
     """
+    # Paired by position, not by name: the mapping is built in agent order
+    # and duplicate names are suffixed to keep one entry per agent, so a
+    # name lookup would resolve every duplicate to the first agent's key.
     answers = dict(agent_outputs)
-    for agent in agents:
-        name = getattr(agent, "agent_name", None)
-        if name in answers:
-            answers[name] = agent_answer(
-                agent, fallback=answers[name]
-            )
+    for agent, key in zip(agents, answers):
+        answers[key] = agent_answer(agent, fallback=answers[key])
     return answers
