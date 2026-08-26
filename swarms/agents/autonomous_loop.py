@@ -115,6 +115,10 @@ class AutonomousAgentLoop:
         # `short_memory` is kept in sync alongside it because persistence,
         # output formatting and the final summary all read from there.
         self._transcript = Transcript()
+        # The handoff block this loop last appended to the agent's
+        # system_prompt. Held so a later run can remove it before appending the
+        # current one, instead of stacking a fresh copy every run.
+        self._applied_handoff_block: Optional[str] = None
 
     def _say_user(self, content: str, mirror: bool = True) -> None:
         """Add a user turn to the transcript (and to short_memory)."""
@@ -324,15 +328,39 @@ class AutonomousAgentLoop:
                         self.agent.tools_list_dictionary.append(tool)
                         existing_tool_names.add(tool_name)
 
-                # Add handoff prompt to system prompt
+                # Add handoff prompt to system prompt.
+                #
+                # This runs on every run(), so a bare append accumulated a
+                # fresh copy each time and grew the prompt without bound on a
+                # reused agent. The block this loop last applied is remembered
+                # and removed before the current one goes on, which keeps the
+                # prompt the same size across runs while still refreshing it
+                # when the registry changes — a plain "already present" guard
+                # would pin the first registry's text forever.
                 agent_registry = self.agent._get_agent_registry()
                 if agent_registry:
                     handoff_prompt = get_handoffs_prompt(
                         list(agent_registry.values())
                     )
-                    self.agent.system_prompt += (
-                        "\n\n" + handoff_prompt
-                    )
+                    handoff_block = "\n\n" + handoff_prompt
+
+                    previous_block = self._applied_handoff_block
+                    if (
+                        previous_block
+                        and previous_block in self.agent.system_prompt
+                    ):
+                        self.agent.system_prompt = (
+                            self.agent.system_prompt.replace(
+                                previous_block, "", 1
+                            )
+                        )
+
+                    # Only append when it is not already there, so a prompt
+                    # that carries the text for another reason is left alone.
+                    if handoff_block not in self.agent.system_prompt:
+                        self.agent.system_prompt += handoff_block
+
+                    self._applied_handoff_block = handoff_block
 
             # Reinitialize LLM with planning tools (and handoff tool if configured)
             if self.agent.llm is not None:
