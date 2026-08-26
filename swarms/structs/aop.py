@@ -23,6 +23,25 @@ from swarms.structs.omni_agent_types import AgentType
 from swarms.tools.mcp_manager import MCPManager
 from swarms.structs.ma_blocks import find_agent_by_name
 
+_ISOLATION_LOCKS_GUARD = threading.Lock()
+
+
+def _agent_execution_lock(agent: AgentType) -> threading.Lock:
+    lock = getattr(agent, "_aop_execution_lock", None)
+    if lock is None:
+        with _ISOLATION_LOCKS_GUARD:
+            lock = getattr(agent, "_aop_execution_lock", None)
+            if lock is None:
+                lock = threading.Lock()
+                agent._aop_execution_lock = lock
+    return lock
+
+
+def run_agent_isolated(agent: AgentType, **run_kwargs: Any) -> Any:
+    with _agent_execution_lock(agent):
+        agent.short_memory = agent.short_memory_init()
+        return agent.run(**run_kwargs)
+
 
 class TaskStatus(Enum):
     """Status of a task in the queue."""
@@ -459,8 +478,8 @@ class TaskQueue:
                     f"Processing task '{task.task_id}' for agent '{self.agent_name}'"
                 )
 
-            # Execute the agent
-            result = self.agent.run(
+            result = run_agent_isolated(
+                self.agent,
                 task=task.task,
                 img=task.img,
                 imgs=task.imgs,
@@ -1322,7 +1341,8 @@ class AOP:
                 f"Executing agent '{agent.agent_name}' with timeout {timeout}s"
             )
 
-            out = agent.run(
+            out = run_agent_isolated(
+                agent,
                 task=task,
                 img=img,
                 imgs=imgs,
