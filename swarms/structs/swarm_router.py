@@ -18,7 +18,6 @@ from swarms.prompts.multi_agent_collab_prompt import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
-from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.debate_with_judge import DebateWithJudge
@@ -140,7 +139,6 @@ SwarmType = Literal[
     "MajorityVoting",
     "CouncilAsAJudge",
     "HeavySwarm",
-    "BatchedGridWorkflow",
     "LLMCouncil",
     "DebateWithJudge",
     "RoundRobin",
@@ -215,7 +213,7 @@ class SwarmRouter(SerializableMixin):
             ``SequentialWorkflow``, ``ConcurrentWorkflow``, ``AgentRearrange``,
             ``MixtureOfAgents``, ``HierarchicalSwarm``, ``GroupChat``,
             ``MultiAgentRouter``, ``MajorityVoting``, ``CouncilAsAJudge``,
-            ``HeavySwarm``, ``BatchedGridWorkflow``, ``LLMCouncil``,
+            ``HeavySwarm``, ``LLMCouncil``,
             ``DebateWithJudge``, ``RoundRobin``, and ``PlannerWorkerSwarm``.
         autosave (bool, optional): When ``True``, save ``config.json`` on init
             and ``state.json`` + ``metadata.json`` after each run to
@@ -279,7 +277,7 @@ class SwarmRouter(SerializableMixin):
         ``SequentialWorkflow``, ``ConcurrentWorkflow``, ``AgentRearrange``,
         ``MixtureOfAgents``, ``HierarchicalSwarm``, ``GroupChat``,
         ``MultiAgentRouter``, ``MajorityVoting``, ``CouncilAsAJudge``,
-        ``HeavySwarm``, ``BatchedGridWorkflow``, ``LLMCouncil``,
+        ``HeavySwarm``, ``LLMCouncil``,
         ``DebateWithJudge``, ``RoundRobin``, ``PlannerWorkerSwarm``.
 
     Example:
@@ -521,7 +519,6 @@ class SwarmRouter(SerializableMixin):
             "MultiAgentRouter": self._create_multi_agent_router,
             "SequentialWorkflow": self._create_sequential_workflow,
             "ConcurrentWorkflow": self._create_concurrent_workflow,
-            "BatchedGridWorkflow": self._create_batched_grid_workflow,
             "LLMCouncil": self._create_llm_council,
             "DebateWithJudge": self._create_debate_with_judge,
             "RoundRobin": self._create_round_robin_swarm,
@@ -589,15 +586,6 @@ class SwarmRouter(SerializableMixin):
             *args,
             **self._base_kwargs(flow=self.rearrange_flow),
             **kwargs,
-        )
-
-    def _create_batched_grid_workflow(self, *args, **kwargs):
-        """Create a ``BatchedGridWorkflow`` for grid-style batch execution."""
-        return BatchedGridWorkflow(
-            name=self.name,
-            description=self.description,
-            agents=self.agents,
-            max_loops=self.max_loops,
         )
 
     def _create_council_as_judge(self, *args, **kwargs):
