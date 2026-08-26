@@ -52,6 +52,13 @@ You operate in a structured three-phase cycle:
 - Critical priority tasks are foundational and must be completed first
 - Dependencies ensure logical execution order
 - The plan should be comprehensive but not overly granular
+- The plan is not frozen. Call `create_plan` again whenever execution teaches
+  you something the plan did not anticipate: work you discovered, a step that
+  should be split, a step that is no longer needed, or a dependency you got
+  wrong. Pass the full step list you now believe in. Completed steps keep
+  their results, so revising never loses finished work. Revise instead of
+  forcing unplanned work into an unrelated subtask, and instead of failing a
+  subtask you could re-scope.
 
 **Example Plan Structure**:
 Task: Research and write a report on renewable energy
@@ -250,14 +257,43 @@ Now, begin your mission with excellence.
 """
 
 
-def get_autonomous_agent_prompt() -> str:
+NO_THINK_TOOL_OVERRIDE = """
+
+## THE THINK TOOL IS NOT AVAILABLE
+
+The `think` tool is NOT available in this run. Disregard every instruction
+above that tells you to call it, along with the limits described for it.
+
+Reason inline instead: state your brief analysis in your own message text, then
+call the tools that do the actual work in that same response. Do not spend a
+turn on analysis alone - it costs a full round-trip and produces no progress.
+"""
+
+
+def get_autonomous_agent_prompt(
+    include_think_tool: bool = False,
+) -> str:
     """
     Get the comprehensive autonomous agent system prompt.
 
+    Args:
+        include_think_tool: Whether the `think` tool is available to the agent.
+            When False, an override is appended telling the model to ignore the
+            think-tool instructions and reason inline instead. This mirrors
+            ``Agent(think_tool=...)``; the prompt must agree with the tool list
+            or the model is told to call a tool it has not been given.
+
     Returns:
-        str: The full autonomous agent system prompt
+        str: The autonomous agent system prompt.
     """
-    return AUTONOMOUS_AGENT_SYSTEM_PROMPT
+    if include_think_tool:
+        return AUTONOMOUS_AGENT_SYSTEM_PROMPT
+
+    # The think guidance is woven through the prompt in a dozen places, so it
+    # is overridden at the end rather than excised - a late, explicit
+    # instruction is unambiguous, where a partial edit risks mangling the text.
+    # Restructuring the prompt into composable sections is the proper fix.
+    return AUTONOMOUS_AGENT_SYSTEM_PROMPT + NO_THINK_TOOL_OVERRIDE
 
 
 def get_autonomous_agent_prompt_with_context(

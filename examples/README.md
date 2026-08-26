@@ -84,7 +84,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [base_tool_examples/](tools/base_tool_examples/) | Base tool implementation examples |
 | [base_tool_examples.py](tools/base_tool_examples/base_tool_examples.py) | Base tool examples |
 | [conver_funcs_to_schema.py](tools/base_tool_examples/conver_funcs_to_schema.py) | Convert functions to schema |
-| [convert_basemodels.py](tools/base_tool_examples/convert_basemodels.py) | Convert base models |
 | [exa_search_test.py](tools/base_tool_examples/exa_search_test.py) | Exa search test |
 | [example_usage.py](tools/base_tool_examples/example_usage.py) | Base tool usage example |
 | [schema_validation_example.py](tools/base_tool_examples/schema_validation_example.py) | Schema validation example |
@@ -169,7 +168,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [list_agents_and_call_them.py](aop_examples/client/list_agents_and_call_them.py) | List and call agents example |
 | [discovery/](aop_examples/discovery/) | Agent discovery examples including communication and discovery testing |
 | [example_agent_communication.py](aop_examples/discovery/example_agent_communication.py) | Agent communication example |
-| [test_aop_discovery.py](aop_examples/discovery/test_aop_discovery.py) | AOP discovery testing |
 | [simple_discovery_example.py](aop_examples/discovery/simple_discovery_example.py) | Simple discovery example |
 | [example_aop_discovery.py](aop_examples/discovery/example_aop_discovery.py) | AOP discovery example |
 | [medical_aop/](aop_examples/medical_aop/) | Medical AOP implementations |
@@ -279,7 +277,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [visualizer_test.py](utils/misc/visualizer_test.py) | Visualizer test |
 | [aop/](utils/misc/aop/) | AOP utility examples |
 | [client.py](utils/misc/aop/client.py) | AOP client utility |
-| [test_aop.py](utils/misc/aop/test_aop.py) | AOP test |
 | [telemetry/](utils/telemetry/) | Telemetry and monitoring utilities |
 
 ### User Interface

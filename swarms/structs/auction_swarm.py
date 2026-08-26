@@ -51,6 +51,7 @@ import ast
 import json
 from typing import Any, Callable, List, Optional, Tuple, Union
 
+from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
@@ -477,4 +478,4 @@ class AuctionSwarm(SerializableMixin):
         Returns:
             List of formatted conversation outputs from :meth:`run`.
         """
-        return [self.run(task) for task in tasks]
+        return batched_run(self.run, tasks)

@@ -18,7 +18,6 @@ This directory contains miscellaneous utility examples and helper functions.
 
 - [aop/](aop/) - AOP-related utilities
   - [client.py](aop/client.py) - AOP client utility
-  - [test_aop.py](aop/test_aop.py) - AOP testing
 
 ## Overview
 

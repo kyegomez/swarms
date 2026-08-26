@@ -1,6 +1,9 @@
-import os
 from typing import List, Optional
 
+from swarms.structs.execution_utils import (
+    batched_run,
+    run_concurrently,
+)
 from swarms.prompts.ag_prompt import AGGREGATOR_SYSTEM_PROMPT_MAIN
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -12,11 +15,12 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 from swarms.telemetry.otel import (
-    ContextThreadPoolExecutor,
     capture_init,
     trace_run,
 )
+from typing import Dict, Any
 from swarms.utils.generate_id import generate_id
+from swarms.structs.context_utils import get_final_agent_answer
 
 logger = initialize_logger(log_folder="mixture_of_agents")
 
@@ -74,6 +78,7 @@ class MixtureOfAgents:
         output_type: OutputType = "final",
         aggregator_model_name: str = "claude-sonnet-4-20250514",
         max_workers: Optional[int] = None,
+        aggegrator_args: Dict[str, Any] = None,
     ) -> None:
         """Initialize the mixture with worker and aggregator configuration.
 
@@ -89,6 +94,10 @@ class MixtureOfAgents:
             max_loops: Stored configuration value for compatibility.
             output_type: Desired formatted output type.
             aggregator_model_name: Model used for the default aggregator.
+            max_workers: Cap on concurrent worker agents per layer.
+            aggegrator_args: Extra keyword arguments forwarded to the
+                default aggregator agent. Ignored when ``aggregator_agent``
+                is supplied.
 
         Raises:
             ValueError: If no agents, aggregator system prompt, or layers
@@ -105,6 +114,7 @@ class MixtureOfAgents:
         self.output_type = output_type
         self.aggregator_model_name = aggregator_model_name
         self.max_workers = max_workers
+        self.aggegrator_args = aggegrator_args or {}
 
         self.reliability_check()
 
@@ -159,10 +169,10 @@ class MixtureOfAgents:
             agent_description="An agent that aggregates the responses of the other agents.",
             system_prompt=self.aggregator_system_prompt,
             model_name=self.aggregator_model_name,
-            temperature=0.5,
             max_loops=1,
-            output_type="str-all-except-first",
+            output_type="final",
             dynamic_context_window=True,
+            **self.aggegrator_args,
         )
 
     def step(
@@ -189,7 +199,10 @@ class MixtureOfAgents:
             max_workers=self.max_workers,
         )
 
-        return agent_outputs
+        # Only the agent's latest message (the answer) is recorded to avoid duplicating history.
+        return get_final_agent_answer(
+            agents=self.agents, agent_outputs=agent_outputs
+        )
 
     def _run(
         self,
@@ -281,7 +294,7 @@ class MixtureOfAgents:
         Returns:
             A list of formatted responses, one per task.
         """
-        return [self.run(task) for task in tasks]
+        return batched_run(self.run, tasks)
 
     def run_concurrently(self, tasks: List[str]) -> List[str]:
         """Run multiple tasks concurrently through this mixture.
@@ -293,12 +306,4 @@ class MixtureOfAgents:
             A list of formatted responses, one per task, in the order the
             tasks were given.
         """
-        with ContextThreadPoolExecutor(
-            max_workers=os.cpu_count()
-        ) as executor:
-            futures = [
-                executor.submit(self.run, task) for task in tasks
-            ]
-            # Results are read in submission order, not completion order, so
-            # element i is always the response to tasks[i].
-            return [future.result() for future in futures]
+        return run_concurrently(self.run, tasks)

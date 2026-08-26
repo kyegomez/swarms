@@ -40,6 +40,31 @@ class SafeLoaderUtils:
         )
 
     @staticmethod
+    def is_settable(obj: Any, key: str) -> bool:
+        """Can ``key`` actually be assigned on ``obj``?
+
+        A read-only ``property`` on the class raises AttributeError on
+        assignment. ``create_state_dict`` reads instance state and happily
+        serialises such values, so a state file can carry a key that cannot
+        be written back — Agent has two, ``workspace`` and ``mcp_enabled``,
+        which made ``Agent.load()`` raise for every agent.
+
+        These are derived values in any case: whatever they should be is
+        recomputed from the state that *is* restorable, so skipping them
+        loses nothing.
+
+        Args:
+            obj: Object the state is being loaded into, or its class
+            key: Attribute name from the state file
+
+        Returns:
+            bool: False only for a class-level property with no setter
+        """
+        owner = obj if isinstance(obj, type) else type(obj)
+        attr = getattr(owner, key, None)
+        return not (isinstance(attr, property) and attr.fset is None)
+
+    @staticmethod
     def is_safe_type(value: Any) -> bool:
         """
         Check if a value is of a safe, serializable type.
@@ -220,12 +245,14 @@ class SafeStateManager:
                     not key.startswith("_")
                     and key not in preserved
                     and SafeLoaderUtils.is_safe_type(value)
+                    and SafeLoaderUtils.is_settable(obj, key)
                 ):
                     setattr(obj, key, value)
 
             # Restore preserved instances
             for key, value in preserved.items():
-                setattr(obj, key, value)
+                if SafeLoaderUtils.is_settable(obj, key):
+                    setattr(obj, key, value)
 
             logger.info(
                 f"Successfully loaded state from: {file_path}"

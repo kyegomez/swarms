@@ -1,15 +1,3 @@
-"""
-Unit and integration tests for AgentRearrange.
-
-Covers:
-- Initialization, agent management, flow validation
-- Sequential and concurrent flow execution
-- Sequential awareness (including repeated agents)
-- Error propagation through run/__call__/batch_run
-- batch_run concurrency, ordering, conversation isolation, image forwarding,
-  and batch_size validation (mock-based unit tests)
-"""
-
 import threading
 import time
 from typing import List, Optional
@@ -18,11 +6,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from swarms import Agent, AgentRearrange
-
-
-# ============================================================================
-# Helper Functions
-# ============================================================================
 
 
 def create_sample_agents():
@@ -173,7 +156,9 @@ def test_add_agent():
     )
 
     agent_rearrange.add_agent(new_agent)
-    assert "EditorAgent" in agent_rearrange.agents
+    assert "EditorAgent" in [
+        a.agent_name for a in agent_rearrange.agents
+    ]
     assert len(agent_rearrange.agents) == 3
 
 
@@ -188,8 +173,13 @@ def test_remove_agent():
     )
 
     agent_rearrange.remove_agent("ReviewerAgent")
-    assert "ReviewerAgent" not in agent_rearrange.agents
+    assert "ReviewerAgent" not in [
+        a.agent_name for a in agent_rearrange.agents
+    ]
     assert len(agent_rearrange.agents) == 2
+
+    with pytest.raises(ValueError):
+        agent_rearrange.remove_agent("ReviewerAgent")
 
 
 def test_add_agents():
@@ -1214,6 +1204,171 @@ class TestBatchSizeBoundaries:
             pipeline.batch_run(
                 tasks=["t1", "t2"], img=["img1.png"], batch_size=5
             )
+
+
+# ============================================================================
+# Context management: what each agent is actually sent
+# ============================================================================
+
+
+def _scripted_agent(name, seen):
+    """
+    A real Agent whose LLM call is stubbed.
+
+    Real, not a MagicMock, because the behaviour under test lives in the
+    agent's own conversation state - short_memory and the message list built
+    from it - which a mock does not have.
+    """
+    agent = Agent(
+        agent_name=name,
+        model_name="gpt-4o-mini",
+        max_loops=1,
+        persistent_memory=False,
+        print_on=False,
+        autosave=False,
+    )
+
+    def fake_call_llm(task=None, *args, **kwargs):
+        messages = kwargs.get("messages") or []
+        seen.append((name, messages))
+        return f"[{name}-out]"
+
+    agent.call_llm = fake_call_llm
+    return agent
+
+
+class TestAgentContextManagement:
+    """
+    Each agent must receive only what is new to it.
+
+    Previously every agent was handed the whole shared conversation on every
+    invocation. That history landed in the agent's own memory, so the next
+    invocation re-sent it on top - context grew exponentially across loops and
+    the agent saw its own output twice, the second time mislabelled as the
+    user's words.
+    """
+
+    def test_context_does_not_grow_exponentially(self):
+        seen = []
+        rearrange = AgentRearrange(
+            agents=[
+                _scripted_agent("A", seen),
+                _scripted_agent("B", seen),
+            ],
+            flow="A -> B",
+            max_loops=3,
+        )
+        rearrange.run("Draft a plan.")
+
+        sizes = [
+            sum(len(str(m.get("content"))) for m in messages)
+            for _, messages in seen
+        ]
+        assert len(sizes) == 6, f"expected 6 turns, got {len(sizes)}"
+
+        # Exponential growth roughly doubled every turn and reached ~1150
+        # characters by turn 6 for this tiny task.
+        assert (
+            sizes[-1] < 400
+        ), f"context grew to {sizes[-1]} chars by turn 6: {sizes}"
+
+    def test_an_agent_does_not_receive_its_own_output_twice(self):
+        seen = []
+        rearrange = AgentRearrange(
+            agents=[
+                _scripted_agent("A", seen),
+                _scripted_agent("B", seen),
+            ],
+            flow="A -> B",
+            max_loops=2,
+        )
+        rearrange.run("Draft a plan.")
+
+        # A's second turn is the third entry.
+        _, messages = seen[2]
+        blob = "".join(str(m.get("content")) for m in messages)
+        assert (
+            blob.count("[A-out]") == 1
+        ), f"A saw its own output {blob.count('[A-out]')} times: {messages}"
+
+    def test_an_agents_own_output_arrives_as_an_assistant_turn(self):
+        seen = []
+        rearrange = AgentRearrange(
+            agents=[
+                _scripted_agent("A", seen),
+                _scripted_agent("B", seen),
+            ],
+            flow="A -> B",
+            max_loops=2,
+        )
+        rearrange.run("Draft a plan.")
+
+        _, messages = seen[2]
+        assistant = [m for m in messages if m["role"] == "assistant"]
+        assert any(
+            "[A-out]" in str(m["content"]) for m in assistant
+        ), "the agent's own prior answer was not an assistant turn"
+
+        users = [m for m in messages if m["role"] == "user"]
+        assert not any(
+            "A: [A-out]" in str(m["content"]) for m in users
+        ), "the agent's own output came back mislabelled as the user's"
+
+    def test_the_shared_conversation_records_answers_not_transcripts(
+        self,
+    ):
+        """
+        agent.run() honours output_type, which defaults to
+        "str-all-except-first" - the agent's whole conversation. Recording
+        that as the agent's contribution re-injected everything it had been
+        given, which is what made the growth exponential.
+        """
+        seen = []
+        rearrange = AgentRearrange(
+            agents=[
+                _scripted_agent("A", seen),
+                _scripted_agent("B", seen),
+            ],
+            flow="A -> B",
+            max_loops=2,
+        )
+        rearrange.run("Draft a plan.")
+
+        contributions = [
+            m["content"]
+            for m in rearrange.conversation.conversation_history
+            if m["role"] in ("A", "B")
+        ]
+        assert contributions == [
+            "[A-out]",
+            "[B-out]",
+            "[A-out]",
+            "[B-out]",
+        ], f"agents recorded more than their answers: {contributions}"
+
+    def test_a_second_task_still_receives_the_full_context(self):
+        """
+        The per-agent delivery cursor must reset per task, or a reused
+        instance tells the next task's agents there is nothing new.
+        """
+        seen = []
+        rearrange = AgentRearrange(
+            agents=[
+                _scripted_agent("A", seen),
+                _scripted_agent("B", seen),
+            ],
+            flow="A -> B",
+            max_loops=1,
+        )
+        rearrange.run("first task")
+        seen.clear()
+        rearrange.run("second task")
+
+        _, messages = seen[0]
+        blob = "".join(str(m.get("content")) for m in messages)
+        assert (
+            "second task" in blob
+        ), f"the second task never reached the agent: {messages}"
 
 
 if __name__ == "__main__":

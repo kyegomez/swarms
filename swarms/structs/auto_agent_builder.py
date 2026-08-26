@@ -5,6 +5,7 @@ from swarms.prompts.auto_agent_builder_prompt import (
     AUTO_AGENT_BUILDER_SYSTEM_PROMPT,
 )
 from swarms.structs.agent import Agent
+from swarms.structs.execution_utils import batched_run
 from swarms.telemetry.otel import capture_init, trace_run
 from swarms.utils.loguru_logger import initialize_logger
 
@@ -430,3 +431,14 @@ class AutoAgentBuilder:
             returns for this builder's ``return_dict`` setting.
         """
         return self.run(task)
+
+    def batch_run(self, tasks: List[str]) -> Any:
+        """Generate the roster for each task in sequence.
+
+        Args:
+            tasks (List[str]): The tasks the generated team should be able to handle.
+
+        Returns:
+            List[Union[List[Agent], List[Dict[str, str]]]]: The rosters for each task.
+        """
+        return batched_run(self.run, tasks)

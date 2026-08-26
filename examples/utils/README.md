@@ -27,7 +27,6 @@ This directory contains utility examples and helper functions for various Swarms
 
 ### AOP (Aspect-Oriented Programming)
 - [client.py](misc/aop/client.py) - AOP client implementation
-- [test_aop.py](misc/aop/test_aop.py) - AOP testing
 
 ### Conversation Structure
 - [conversation_example_supabase.py](misc/conversation_structure/conversation_example_supabase.py) - Supabase conversation example

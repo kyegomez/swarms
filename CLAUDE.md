@@ -112,7 +112,7 @@ print(result)
 | `context_compression` | bool | `True` | Auto-summarise when near context limit (v12) |
 | `persistent_memory` | bool | `False` | Read/write MEMORY.md across restarts (v12); opt in explicitly |
 | `temperature` | float | `0.5` | Sampling temperature |
-| `max_tokens` | int | `16000` | Max tokens per LLM call. Note: currently overwritten during setup by the model's own limit, so passing it has no effect |
+| `max_tokens` | int | model's max output | Max tokens per LLM call. Unset resolves to the model's own output limit |
 | `reasoning_effort` | str | `None` | `"low"`, `"medium"`, `"high"` for reasoning models |
 | `thinking_tokens` | int | `None` | Extended thinking budget (Claude) |
 | `output_type` | str | `"str-all-except-first"` | How to format returned output |
@@ -510,7 +510,6 @@ result = router.run("Write a blog post about transformer architectures.")
 | `"BatchedGridWorkflow"` | Grid-based batch execution |
 | `"LLMCouncil"` | LLM-based council decisions |
 | `"AutoSwarmBuilder"` | Auto-configures everything |
-| `"auto"` | Router selects swarm_type automatically |
 
 ---
 
@@ -938,7 +937,7 @@ agent = Agent(
 | High-stakes ruling with deliberation | `CouncilAsAJudge` |
 | Structured adversarial debate | `DebateWithJudge` |
 | Deep research, many loops | `HeavySwarm` |
-| Don't know yet / rapid prototyping | `AutoSwarmBuilder` or `SwarmRouter(swarm_type="auto")` |
+| Don't know yet / rapid prototyping | `AutoSwarmBuilder` |
 | Need to switch architectures easily | `SwarmRouter` |
 
 ---
@@ -1085,8 +1084,6 @@ from swarms import Agent
 **Don't give all agents the same `agent_name`** — `persistent_memory` and `MEMORY.md` are keyed on `agent_name`. Duplicate names cause agents to share and corrupt each other's memory.
 
 **Don't instantiate heavyweight structures inside tight loops** — create agents and workflows once, reuse them across calls.
-
-**Don't pass `tools=[]` (empty list)** — pass `tools=None` instead. An empty list can confuse schema generation.
 
 **Don't use `streaming_on=True` and `streaming_callback` together on the same agent** — `streaming_on` streams to stdout; `streaming_callback` streams to your function. Pick one.
 

@@ -1,7 +1,6 @@
 import asyncio
 import inspect
 import json
-import os
 import queue as _queue
 import threading
 import traceback
@@ -22,7 +21,9 @@ from swarms.prompts.multi_agent_collab_prompt import (
     MULTI_AGENT_COLLAB_PROMPT_TWO,
 )
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import new_context_for
 from swarms.structs.conversation import Conversation
+from swarms.utils.any_to_str import any_to_str
 from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.omni_agent_types import AgentListType
@@ -41,8 +42,7 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.output_types import OutputType
-from swarms.utils.swarm_autosave import get_swarm_workspace_dir
-from swarms.utils.workspace_utils import get_workspace_dir
+from swarms.utils.workspace_manager import WorkspaceManager
 
 
 class HierarchicalOrder(BaseModel):
@@ -378,11 +378,13 @@ class HierarchicalSwarm:
         )
         self.agent_as_judge = agent_as_judge
         self.judge_agent_model_name = judge_agent_model_name
-        self.swarm_workspace_dir = None
-
-        # Setup autosave workspace if enabled
-        if self.autosave:
-            self._setup_autosave()
+        self.workspace = WorkspaceManager(
+            self,
+            name=self.name or "hierarchical-swarm",
+            verbose=self.verbose,
+            enabled=self.autosave,
+        )
+        self.swarm_workspace_dir = self.workspace.dir
 
         self.initialize_swarm()
 
@@ -458,6 +460,9 @@ class HierarchicalSwarm:
         Raises:
             ValueError: If the swarm configuration is invalid.
         """
+        # How much of the shared conversation each agent has already seen.
+        self._delivered: Dict[str, int] = {}
+
         self.conversation = Conversation(time_enabled=False)
 
         # Reliability checks
@@ -491,98 +496,6 @@ class HierarchicalSwarm:
         for agent in agents:
             if hasattr(agent, "output_type"):
                 agent.output_type = "final"
-
-    def _setup_autosave(self):
-        """
-        Setup workspace directory for saving conversation history.
-
-        Creates the workspace directory structure if autosave is enabled.
-        Only conversation history will be saved to this directory.
-        """
-        try:
-            # Set default workspace directory if not set
-            if not os.getenv("WORKSPACE_DIR"):
-                default_workspace = os.path.join(
-                    os.getcwd(), "agent_workspace"
-                )
-                os.environ["WORKSPACE_DIR"] = default_workspace
-                # Clear the cache so get_workspace_dir() picks up the new value
-                get_workspace_dir.cache_clear()
-                if self.verbose:
-                    logger.info(
-                        f"WORKSPACE_DIR not set, using default: {default_workspace}"
-                    )
-
-            class_name = self.__class__.__name__
-            swarm_name = self.name or "hierarchical-swarm"
-            self.swarm_workspace_dir = get_swarm_workspace_dir(
-                class_name, swarm_name, use_timestamp=True
-            )
-
-            if self.swarm_workspace_dir:
-                if self.verbose:
-                    logger.info(
-                        f"Autosave enabled. Conversation history will be saved to: {self.swarm_workspace_dir}"
-                    )
-        except Exception as e:
-            logger.warning(
-                f"Failed to setup autosave for HierarchicalSwarm: {e}"
-            )
-            # Don't raise - autosave failures shouldn't break initialization
-            self.swarm_workspace_dir = None
-
-    def _save_conversation_history(self):
-        """
-        Save conversation history as a separate JSON file to the workspace directory.
-
-        Saves the conversation history to:
-        workspace_dir/swarms/HierarchicalSwarm/{swarm-name}-{id}/conversation_history.json
-        """
-        if not self.swarm_workspace_dir:
-            return
-
-        try:
-            # Get conversation history
-            if hasattr(self, "conversation") and self.conversation:
-                if hasattr(self.conversation, "conversation_history"):
-                    conversation_data = (
-                        self.conversation.conversation_history
-                    )
-                elif hasattr(self.conversation, "to_dict"):
-                    conversation_data = self.conversation.to_dict()
-                else:
-                    conversation_data = []
-
-                # Create conversation history file path
-                conversation_path = os.path.join(
-                    self.swarm_workspace_dir,
-                    "conversation_history.json",
-                )
-
-                # Save conversation history as JSON
-                with open(
-                    conversation_path, "w", encoding="utf-8"
-                ) as f:
-                    json.dump(
-                        conversation_data,
-                        f,
-                        indent=2,
-                        default=str,
-                    )
-
-                if self.verbose:
-                    logger.debug(
-                        f"Saved conversation history to {conversation_path}"
-                    )
-            else:
-                if self.verbose:
-                    logger.debug(
-                        "No conversation object found, skipping conversation history save"
-                    )
-        except Exception as e:
-            logger.warning(
-                f"Failed to save conversation history: {e}"
-            )
 
     def add_context_to_director(self):
         """
@@ -739,6 +652,15 @@ class HierarchicalSwarm:
         for agent in self.agents:
             agent.print_on = False
 
+    def _context_for(self, agent_name: str) -> str:
+        """What this agent has not been given yet. See context_utils."""
+        return new_context_for(
+            agent_name,
+            self.conversation,
+            self._delivered,
+            empty_message="(no new messages)",
+        )
+
     def run_director(
         self,
         task: str,
@@ -762,9 +684,8 @@ class HierarchicalSwarm:
         """
         try:
             if self.planning_enabled is True:
-                self.director.tools_list_dictionary = None
                 out = self.setup_director_with_planning(
-                    task=f"History: {self.conversation.get_str()} \n\n Task: {task}",
+                    task=f"History: {self._context_for(self.director.agent_name)} \n\n Task: {task}",
                     img=img,
                 )
                 self.conversation.add(
@@ -773,12 +694,19 @@ class HierarchicalSwarm:
 
             # Run the director with the context
             function_call = self.director.run(
-                task=f"History: {self.conversation.get_str()} \n\n Task: {task}",
+                task=f"History: {self._context_for(self.director.agent_name)} \n\n Task: {task}",
                 img=img,
             )
 
+            # A tool-call list stored raw renders as a Python repr in the
+            # history that every later agent reads. Keep it readable.
             self.conversation.add(
-                role="Director", content=function_call
+                role="Director",
+                content=(
+                    function_call
+                    if isinstance(function_call, str)
+                    else any_to_str(function_call)
+                ),
             )
 
             return function_call
@@ -983,14 +911,7 @@ class HierarchicalSwarm:
                 conversation=self.conversation, type=self.output_type
             )
 
-            # Save conversation history after successful execution
-            if self.autosave and self.swarm_workspace_dir:
-                try:
-                    self._save_conversation_history()
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to save conversation history: {e}"
-                    )
+            self.workspace.save_conversation()
 
             return result
 
@@ -1000,14 +921,7 @@ class HierarchicalSwarm:
                 self.dashboard.update_director_status("ERROR")
                 self.dashboard.stop()
 
-            # Save conversation history on error
-            if self.autosave and self.swarm_workspace_dir:
-                try:
-                    self._save_conversation_history()
-                except Exception as save_error:
-                    logger.warning(
-                        f"Failed to save conversation history on error: {save_error}"
-                    )
+            self.workspace.save_conversation()
 
             error_msg = f"[ERROR] Swarm run failed: {str(e)}"
             logger.error(
@@ -1175,7 +1089,7 @@ class HierarchicalSwarm:
                     agent_name, "RUNNING", task, "Executing task..."
                 )
 
-            worker_task = f"History: {self.conversation.get_str()} \n\n Task: {task}"
+            worker_task = f"History: {self._context_for(agent_name)} \n\n Task: {task}"
 
             # Handle streaming callback if provided and the worker's run()
             # actually supports it. A worker may be a leaf Agent or a nested
@@ -2000,7 +1914,6 @@ class HierarchicalSwarm:
             # Optional planning sub-step (non-streaming — creates a
             # throwaway agent with modified tools)
             if self.planning_enabled:
-                self.director.tools_list_dictionary = None
                 plan_out = await asyncio.to_thread(
                     self.setup_director_with_planning,
                     task=director_task_str,

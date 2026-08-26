@@ -73,7 +73,6 @@ Tests for utility functions and helpers:
 - `test_auto_check_download.py` - Automatic download checking
 - `test_display_markdown_message.py` - Markdown message display
 - `test_docstring_parser.py` - Docstring parsing utilities
-- `test_extract_code_from_markdown.py` - Code extraction from markdown
 - `test_formatter.py` - Text formatting utilities
 - `test_litellm_wrapper.py` - LiteLLM wrapper functionality
 - `test_math_eval.py` - Mathematical expression evaluation

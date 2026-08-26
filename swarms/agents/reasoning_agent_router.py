@@ -5,6 +5,7 @@ from typing import (
     Optional,
 )
 
+from swarms.structs.execution_utils import batched_run
 from swarms.agents.consistency_agent import SelfConsistencyAgent
 from swarms.agents.flexion_agent import ReflexionAgent
 from swarms.agents.gkp_agent import GKPAgent
@@ -305,4 +306,4 @@ class ReasoningAgentRouter:
         Returns:
             A list of reasoning process results for each task.
         """
-        return [self.run(task) for task in tasks]
+        return batched_run(self.run, tasks)

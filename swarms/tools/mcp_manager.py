@@ -134,6 +134,49 @@ def _server_origin(url: str) -> str:
     return f"{parsed.scheme}://{parsed.netloc}"
 
 
+def _mcp_is_v2() -> bool:
+    """
+    True when the installed mcp is 2.x.
+
+    Detected by the factory rename rather than a version string, so it tracks
+    the actual API rather than packaging. 2.x also changed timeout types from
+    ``timedelta`` to plain seconds.
+    """
+    try:
+        from mcp.client.streamable_http import (  # noqa: F401
+            streamablehttp_client,
+        )
+
+        return False
+    except ImportError:
+        return True
+
+
+MCP_IS_V2 = _mcp_is_v2()
+
+
+def _read_timeout(seconds: float):
+    """Session read timeout in the type the installed mcp expects."""
+    return seconds if MCP_IS_V2 else timedelta(seconds=seconds)
+
+
+def _http_timeout(connect: float, read: float):
+    """
+    Build a timeout object for mcp 2.x's ``create_mcp_http_client``.
+
+    It expects the httpx flavour that the installed mcp bundles, which is
+    ``httpx2`` on 2.x and ``httpx`` on 1.x. Falling back to ``None`` simply
+    accepts the library defaults rather than failing the connection.
+    """
+    for module_name in ("httpx2", "httpx"):
+        try:
+            module = __import__(module_name)
+            return module.Timeout(connect, read=read)
+        except Exception:
+            continue
+    return None
+
+
 def run_async(coro: Any) -> Any:
     """
     Run a coroutine from sync code, whether or not a loop is already running.
@@ -901,10 +944,15 @@ class MCPManager:
     @staticmethod
     def _mcp_tool_to_openai(tool: MCPTool) -> Dict[str, Any]:
         """Convert an MCP tool definition into an OpenAI tool schema."""
-        parameters = tool.inputSchema or {
-            "type": "object",
-            "properties": {},
-        }
+        # mcp 2.x renamed `inputSchema` to `input_schema`.
+        parameters = (
+            getattr(tool, "inputSchema", None)
+            or getattr(tool, "input_schema", None)
+            or {
+                "type": "object",
+                "properties": {},
+            }
+        )
         return {
             "type": "function",
             "function": {
@@ -1453,7 +1501,28 @@ class MCPManager:
                 auth=auth,
             )
 
-        from mcp.client.streamable_http import streamablehttp_client
+        try:
+            # mcp 1.x
+            from mcp.client.streamable_http import (
+                streamablehttp_client,
+            )
+        except ImportError:
+            # mcp 2.x renamed the factory and changed its signature: headers,
+            # timeout and auth now go into an http client that is passed in,
+            # rather than being arguments of the transport itself.
+            from mcp.client.streamable_http import (
+                create_mcp_http_client,
+                streamable_http_client,
+            )
+
+            return streamable_http_client(
+                url=connection.url,
+                http_client=create_mcp_http_client(
+                    headers=headers or None,
+                    timeout=_http_timeout(timeout, sse_read_timeout),
+                    auth=auth,
+                ),
+            )
 
         return streamablehttp_client(
             url=connection.url,
@@ -1498,8 +1567,8 @@ class MCPManager:
                 async with ClientSession(
                     read,
                     write,
-                    read_timeout_seconds=timedelta(
-                        seconds=float(
+                    read_timeout_seconds=_read_timeout(
+                        float(
                             connection.tool_timeout
                             or connection.timeout
                             or 120

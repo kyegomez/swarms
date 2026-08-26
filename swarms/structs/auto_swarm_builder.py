@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from loguru import logger
 from pydantic import BaseModel, Field, ValidationError
 
+from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.swarm_router import SwarmRouter, SwarmType
@@ -730,7 +731,7 @@ class AutoSwarmBuilder:
         Returns:
             List[Any]: List of results from each task execution.
         """
-        return [self.run(task) for task in tasks]
+        return batched_run(self.run, tasks)
 
     def create_agents_from_specs(
         self, agents_dictionary: Any
