@@ -99,6 +99,9 @@ pytest = "*"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Without this, pytest-asyncio's strict default silently skips every bare
+# `async def test_`, reporting it as a failure that never ran.
+asyncio_mode = "auto"
 markers = [
     "remote: tests that hit a real remote MCP server over the network",
 ]

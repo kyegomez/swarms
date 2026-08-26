@@ -68,7 +68,7 @@ class AgentRearrange(SerializableMixin):
         id (str): Unique identifier for the agent rearrange system
         name (str): Human-readable name for the system
         description (str): Description of the system's purpose
-        agents (Dict[str, Agent]): Dictionary mapping agent names to Agent objects
+        agents (List[Agent]): The agents in the swarm, in flow order
         flow (str): Flow pattern defining agent execution order
         max_loops (int): Maximum number of execution loops
         verbose (bool): Whether to enable verbose logging
@@ -337,8 +337,20 @@ class AgentRearrange(SerializableMixin):
 
         Args:
             agent_name (str): The name of the agent to be removed.
+
+        Raises:
+            ValueError: If no agent in the swarm has that name.
         """
-        del self.agents[agent_name]
+        for index, agent in enumerate(self.agents):
+            if agent.agent_name == agent_name:
+                logger.info(
+                    f"Removing agent {agent_name} from the swarm."
+                )
+                del self.agents[index]
+                return
+        raise ValueError(
+            f"No agent named {agent_name!r} in the swarm."
+        )
 
     def add_agents(self, agents: List[Agent]):
         """

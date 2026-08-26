@@ -12,6 +12,7 @@ REASONING_EFFORTS: Tuple[str, ...] = (
     "xhigh",
     "ultra",
     "max",
+    "None",
 )
 
 

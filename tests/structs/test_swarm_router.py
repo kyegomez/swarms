@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+from typing import get_args
 
 from swarms.structs.swarm_router import (
     SwarmRouter,
@@ -9,10 +10,6 @@ from swarms.structs.swarm_router import (
     SwarmRouterConfigError,
 )
 from swarms.structs.agent import Agent
-
-# ============================================================================
-# Helper Functions
-# ============================================================================
 
 
 def create_sample_agents():
@@ -479,19 +476,21 @@ def test_run_with_hierarchical_swarm():
     assert result is not None
 
 
-def test_run_with_auto():
-    """SwarmRouter dispatches to 'auto' (embedding-based selection)."""
-    sample_agents = create_sample_agents()
-
-    router = SwarmRouter(
-        agents=sample_agents,
-        swarm_type="auto",
-        max_loops=1,
-        verbose=False,
+def test_auto_is_rejected_at_construction():
+    from swarms.structs.swarm_router import (
+        SwarmRouterConfigError,
+        SwarmType,
     )
 
-    result = router.run("What is 1+1?")
-    assert result is not None
+    assert "auto" not in get_args(SwarmType)
+
+    with pytest.raises(SwarmRouterConfigError):
+        SwarmRouter(
+            agents=create_sample_agents(),
+            swarm_type="auto",
+            max_loops=1,
+            verbose=False,
+        )
 
 
 def test_run_with_majority_voting():

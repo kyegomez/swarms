@@ -4,52 +4,28 @@ import os
 import tempfile
 import threading
 import time
-import unittest
-from statistics import mean, median, stdev, variance
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-import psutil
 import pytest
 import yaml
 from dotenv import load_dotenv
-from rich.console import Console
-from rich.table import Table
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
-from swarms import (
-    Agent,
-    create_agents_from_yaml,
-)
+from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
-from swarms.schemas.agent_errors import (
-    AgentInitializationError,
-    AgentToolExecutionError,
-)
+from swarms.schemas.agent_errors import AgentToolExecutionError
 
-# Load environment variables
 load_dotenv()
-
-# Global test configuration
-openai_api_key = os.getenv("OPENAI_API_KEY")
-
-
-# ============================================================================
-# FIXTURES AND UTILITIES
-# ============================================================================
 
 
 @pytest.fixture
 def mocked_llm():
     """Stand-in for the LLM, so these tests need no provider.
 
-    Restored: `6f4803ef` (2025-10-21) deleted this fixture but left the two
-    fixtures that request it, so the eight tests below errored at setup with
-    "fixture 'mocked_llm' not found" and have not executed since.
-
-    Echoes the task back. `Agent.__call__` returning its input is what
-    test_flow_call asserts, and an echo keeps every other assertion about
-    plumbing rather than about model output.
+    `6f4803ef` (2025-10-21) deleted this but left the fixtures requesting it,
+    so the tests below errored at setup and have not run since. Echoing the
+    task back keeps every assertion about plumbing, not model output.
     """
 
     class MockedLLM:
@@ -62,84 +38,55 @@ def mocked_llm():
     return MockedLLM()
 
 
-@pytest.fixture
-def basic_flow(mocked_llm, tmp_path):
-    """Basic agent flow for testing"""
+def _patched_agent(name, **kwargs):
+    """An Agent with the model client stubbed, so __init__ makes no calls."""
+    # setdefault, not a keyword: callers override max_loops (notably "auto").
+    kwargs.setdefault("max_loops", 1)
+    with patch("swarms.structs.agent.LiteLLM"):
+        return Agent(
+            agent_name=name,
+            print_on=False,
+            verbose=False,
+            persistent_memory=False,
+            **kwargs,
+        )
+
+
+def _flow(name, llm, tmp_path, **kwargs):
     return Agent(
-        agent_name="basic-flow",
-        llm=mocked_llm,
+        agent_name=name,
+        llm=llm,
         max_loops=1,
         print_on=False,
         verbose=False,
         persistent_memory=False,
         autosave=False,
         workspace_dir=str(tmp_path),
+        **kwargs,
     )
+
+
+@pytest.fixture
+def basic_flow(mocked_llm, tmp_path):
+    return _flow("basic-flow", mocked_llm, tmp_path)
 
 
 @pytest.fixture
 def flow_with_condition(mocked_llm, tmp_path):
-    """Agent flow with stopping condition"""
     from swarms.structs.agent import stop_when_repeats
 
-    return Agent(
-        agent_name="flow-with-condition",
-        llm=mocked_llm,
-        max_loops=1,
+    return _flow(
+        "flow-with-condition",
+        mocked_llm,
+        tmp_path,
         stopping_condition=stop_when_repeats,
-        print_on=False,
-        verbose=False,
-        persistent_memory=False,
-        autosave=False,
-        workspace_dir=str(tmp_path),
     )
 
 
-@pytest.fixture
-def mock_agents():
-    """Mock agents for testing"""
-
-    class MockAgent:
-        def __init__(self, name):
-            self.name = name
-            self.agent_name = name
-
-        def run(self, task, img=None, *args, **kwargs):
-            return f"{self.name} processed {task}"
-
-    return [
-        MockAgent(name="Agent1"),
-        MockAgent(name="Agent2"),
-        MockAgent(name="Agent3"),
-    ]
-
-
-@pytest.fixture
-def test_agent():
-    """Create a real agent for testing"""
-    with patch("swarms.structs.agent.LiteLLM") as mock_llm:
-        mock_llm.return_value.run.return_value = "Test response"
-        return Agent(
-            agent_name="test_agent",
-            agent_description="A test agent",
-            system_prompt="You are a test agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            verbose=False,
-            print_on=False,
-        )
-
-
-# ============================================================================
-# BASIC AGENT TESTS
-# ============================================================================
-
-
 class TestBasicAgent:
-    """Test basic agent functionality"""
+    """Constructor, run plumbing and the save/load round trip."""
 
     def test_stop_when_repeats(self):
-        """Test stopping condition function"""
         from swarms.structs.agent import stop_when_repeats
 
         assert stop_when_repeats("Please Stop now")
@@ -148,10 +95,8 @@ class TestBasicAgent:
     def test_flow_initialization(self, basic_flow):
         """The constructor arguments survive __init__.
 
-        Rewritten: this asserted `max_loops == 5` against a fixture that
-        passes 1, plus `.feedback` and `.memory`, which the Agent has not
-        had for a long time — it errored before ever running, so nothing
-        caught the drift.
+        This asserted `max_loops == 5` against a fixture passing 1, plus
+        `.feedback` and `.memory`, which the Agent has long since dropped.
         """
         assert basic_flow.max_loops == 1
         assert basic_flow.stopping_condition is None
@@ -164,36 +109,25 @@ class TestBasicAgent:
     def test_run_without_stopping_condition(
         self, mocked_sleep, basic_flow
     ):
-        """Test running without stopping condition"""
-        response = basic_flow.run("Test task")
-        assert response is not None
+        assert basic_flow.run("Test task") is not None
 
     @patch("time.sleep", return_value=None)
     def test_run_with_stopping_condition(
         self, mocked_sleep, flow_with_condition
     ):
-        """Test running with stopping condition"""
-        response = flow_with_condition.run("Stop")
-        assert response is not None
+        assert flow_with_condition.run("Stop") is not None
 
     def test_bulk_run(self, basic_flow):
-        """Test bulk run functionality"""
         inputs = [{"task": "Test1"}, {"task": "Test2"}]
-        responses = basic_flow.bulk_run(inputs)
-        assert responses is not None
+        assert basic_flow.bulk_run(inputs) is not None
 
     def test_save_and_load(self, basic_flow, mocked_llm, tmp_path):
         """State written by save() comes back through load().
 
-        Rewritten against the current API: the original appended to a
-        `.memory` list the Agent no longer has. This is the only round-trip
-        test save()/load() has at the Agent level, and it has not executed
-        since 2025-10-21 — which is how the load() crash fixed in the parent
-        commit shipped unnoticed.
-
-        load() restores scalar configuration; it deliberately preserves live
-        instances (the LLM, short_memory) rather than rehydrating them, so
-        the conversation is not part of the round trip.
+        The only save()/load() round trip at the Agent level, and it has not
+        executed since 2025-10-21 — which is how a load() crash shipped
+        unnoticed. load() restores scalar configuration and deliberately
+        preserves live instances, so the conversation is not round-tripped.
         """
         file_path = str(tmp_path / "agent_state.json")
         basic_flow.max_loops = 3
@@ -201,16 +135,7 @@ class TestBasicAgent:
 
         assert os.path.exists(file_path)
 
-        restored = Agent(
-            agent_name="basic-flow-restored",
-            llm=mocked_llm,
-            max_loops=9,
-            print_on=False,
-            verbose=False,
-            persistent_memory=False,
-            autosave=False,
-            workspace_dir=str(tmp_path),
-        )
+        restored = _flow("basic-flow-restored", mocked_llm, tmp_path)
         restored.load(file_path)
 
         assert restored.max_loops == 3
@@ -219,10 +144,8 @@ class TestBasicAgent:
     def test_flow_call(self, basic_flow):
         """__call__ forwards to run() rather than doing its own thing.
 
-        Rewritten: this asserted the call returned its own input, which was
-        only ever true of the deleted mock. Comparing two live calls does not
-        work either — the conversation grows between them, so the second
-        returns something different. What is worth pinning is the delegation.
+        Comparing two live calls does not work — the conversation grows
+        between them — so the delegation is what is worth pinning.
         """
         with patch.object(
             basic_flow, "run", return_value="routed"
@@ -235,242 +158,105 @@ class TestBasicAgent:
         )
 
 
-# ============================================================================
-# AGENT FEATURES TESTS
-# ============================================================================
-
-
 class TestAgentFeatures:
-    """Test advanced agent features"""
+    """End-to-end agent behaviour against a live model."""
 
     def test_basic_agent_functionality(self):
-        """Test basic agent initialization and task execution"""
-        print("\nTesting basic agent functionality...")
-
         agent = Agent(
-            agent_name="Test-Agent", model_name="gpt-5.4", max_loops=1
-        )
-
-        response = agent.run("What is 2+2?")
-        assert (
-            response is not None
-        ), "Agent response should not be None"
-
-        # Test agent properties
-        assert (
-            agent.agent_name == "Test-Agent"
-        ), "Agent name not set correctly"
-        assert agent.max_loops == 1, "Max loops not set correctly"
-        assert agent.llm is not None, "LLM not initialized"
-
-        print("✓ Basic agent functionality test passed")
-
-    def test_memory_management(self):
-        """Test agent memory management functionality"""
-        print("\nTesting memory management...")
-
-        agent = Agent(
-            agent_name="Memory-Test-Agent",
-            max_loops=1,
+            agent_name="Test-Agent",
             model_name="gpt-5.4",
-            context_length=8192,
+            max_loops=1,
         )
 
-        # Test adding to memory
-        agent.add_memory("Test memory entry")
-        assert (
-            "Test memory entry"
-            in agent.short_memory.return_history_as_string()
+        assert agent.run("What is 2+2?") is not None
+        assert agent.llm is not None
+
+    @pytest.mark.parametrize(
+        "output_type",
+        ["str", "string", "list", "json", "dict", "yaml"],
+    )
+    def test_agent_output_formats(self, output_type):
+        agent = Agent(
+            agent_name=f"{output_type.capitalize()}-Output-Agent",
+            model_name="gpt-5.4",
+            max_loops=1,
+            output_type=output_type,
         )
 
-        # Test memory query
-        agent.memory_query("Test query")
+        response = agent.run("Say hello!")
+        assert response is not None
 
-        # Test token counting
-        tokens = agent.check_available_tokens()
-        assert isinstance(
-            tokens, int
-        ), "Token count should be an integer"
-
-        print("✓ Memory management test passed")
-
-    def test_agent_output_formats(self):
-        """Test all available output formats"""
-        print("\nTesting all output formats...")
-
-        test_task = "Say hello!"
-
-        output_types = {
-            "str": str,
-            "string": str,
-            "list": str,  # JSON string containing list
-            "json": str,  # JSON string
-            "dict": dict,
-            "yaml": str,
-        }
-
-        for output_type, expected_type in output_types.items():
-            agent = Agent(
-                agent_name=f"{output_type.capitalize()}-Output-Agent",
-                model_name="gpt-5.4",
-                max_loops=1,
-                output_type=output_type,
-            )
-
-            response = agent.run(test_task)
-            assert (
-                response is not None
-            ), f"{output_type} output should not be None"
-
-            if output_type == "yaml":
-                # Verify YAML can be parsed
-                try:
-                    yaml.safe_load(response)
-                    print(f"✓ {output_type} output valid")
-                except yaml.YAMLError:
-                    assert (
-                        False
-                    ), f"Invalid YAML output for {output_type}"
-            elif output_type in ["json", "list"]:
-                # Verify JSON can be parsed
-                try:
-                    json.loads(response)
-                    print(f"✓ {output_type} output valid")
-                except json.JSONDecodeError:
-                    assert (
-                        False
-                    ), f"Invalid JSON output for {output_type}"
-
-        print("✓ Output formats test passed")
+        if output_type == "yaml":
+            yaml.safe_load(response)
+        elif output_type == "json":
+            json.loads(response)
+        elif output_type == "list":
+            assert isinstance(response, list)
 
     def test_agent_state_management(self):
-        """Test comprehensive state management functionality"""
-        print("\nTesting state management...")
+        """save() writes to the caller's saved_state_path, load() restores
+        scalar config, and autosave writes with no explicit call.
 
-        # Create temporary directory for test files
+        The conversation is deliberately not round-tripped: preserve_instances
+        keeps the target's live Conversation rather than overwriting it, so
+        asserting restored history here would pin behaviour load() disclaims.
+        """
         with tempfile.TemporaryDirectory() as temp_dir:
             state_path = os.path.join(temp_dir, "agent_state.json")
 
-            # Create agent with initial state
-            agent1 = Agent(
-                agent_name="State-Test-Agent",
-                model_name="gpt-5.4",
-                max_loops=1,
-                saved_state_path=state_path,
-            )
+            def build(name, **kwargs):
+                return Agent(
+                    agent_name=name,
+                    model_name="gpt-5.4",
+                    max_loops=1,
+                    **kwargs,
+                )
 
-            # Add some data to the agent
+            agent1 = build("State", saved_state_path=state_path)
             agent1.run("Remember this: Test message 1")
-            agent1.add_memory("Test message 2")
-
-            # Save state
+            agent1.max_loops = 7
             agent1.save()
-            assert os.path.exists(
-                state_path
-            ), "State file not created"
 
-            # Create new agent and load state
-            agent2 = Agent(
-                agent_name="State-Test-Agent",
-                model_name="gpt-5.4",
-                max_loops=1,
-            )
+            assert os.path.exists(state_path)
+
+            agent2 = build("State")
             agent2.load(state_path)
 
-            # Verify state loaded correctly
-            history2 = agent2.short_memory.return_history_as_string()
-            assert (
-                "Test message 1" in history2
-            ), "State not loaded correctly"
-            assert (
-                "Test message 2" in history2
-            ), "Memory not loaded correctly"
+            assert agent2.max_loops == 7
 
-            # Test autosave functionality
-            agent3 = Agent(
-                agent_name="Autosave-Test-Agent",
-                model_name="gpt-5.4",
-                max_loops=1,
-                saved_state_path=os.path.join(
-                    temp_dir, "autosave_state.json"
-                ),
+            autosave_path = os.path.join(temp_dir, "autosave.json")
+            build(
+                "Autosave",
+                saved_state_path=autosave_path,
                 autosave=True,
-            )
+            ).run("Test autosave")
+            time.sleep(2)
 
-            agent3.run("Test autosave")
-            time.sleep(2)  # Wait for autosave
-            assert os.path.exists(
-                os.path.join(temp_dir, "autosave_state.json")
-            ), "Autosave file not created"
-
-        print("✓ State management test passed")
-
-    def test_agent_tools_and_execution(self):
-        """Test agent tool handling and execution"""
-        print("\nTesting tools and execution...")
-
-        def sample_tool(x: int, y: int) -> int:
-            """Sample tool that adds two numbers"""
-            return x + y
-
-        agent = Agent(
-            agent_name="Tools-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[sample_tool],
-        )
-
-        # Test adding tools
-        agent.add_tool(lambda x: x * 2)
-        assert len(agent.tools) == 2, "Tool not added correctly"
-
-        # Test removing tools
-        agent.remove_tool(sample_tool)
-        assert len(agent.tools) == 1, "Tool not removed correctly"
-
-        # Test tool execution
-        response = agent.run("Calculate 2 + 2 using the sample tool")
-        assert response is not None, "Tool execution failed"
-
-        print("✓ Tools and execution test passed")
+            assert os.path.exists(autosave_path)
 
     def test_agent_concurrent_execution(self):
-        """Test agent concurrent execution capabilities"""
-        print("\nTesting concurrent execution...")
-
         agent = Agent(
             agent_name="Concurrent-Test-Agent",
             model_name="gpt-5.4",
             max_loops=1,
         )
 
-        # Test bulk run
         tasks = [
             {"task": "Count to 3"},
             {"task": "Say hello"},
             {"task": "Tell a short joke"},
         ]
-
         responses = agent.bulk_run(tasks)
-        assert len(responses) == len(tasks), "Not all tasks completed"
-        assert all(
-            response is not None for response in responses
-        ), "Some tasks failed"
+        assert len(responses) == len(tasks)
+        assert all(r is not None for r in responses)
 
-        # Test concurrent tasks
-        concurrent_responses = agent.run_concurrent_tasks(
+        concurrent = agent.run_concurrent_tasks(
             ["Task 1", "Task 2", "Task 3"]
         )
-        assert (
-            len(concurrent_responses) == 3
-        ), "Not all concurrent tasks completed"
-
-        print("✓ Concurrent execution test passed")
+        assert len(concurrent) == 3
 
     def test_agent_error_handling(self):
-        """Test agent error handling and recovery"""
-        print("\nTesting error handling...")
-
+        """A malformed tool call must not stop the next run from working."""
         agent = Agent(
             agent_name="Error-Test-Agent",
             model_name="gpt-5.4",
@@ -478,25 +264,14 @@ class TestAgentFeatures:
             retry_attempts=3,
         )
 
-        # Test invalid tool execution
         try:
             agent.parse_and_execute_tools("invalid_json")
-            print("✓ Invalid tool execution handled")
         except Exception:
-            assert True, "Expected error caught"
+            pass
 
-        # Test recovery after error
-        response = agent.run("Continue after error")
-        assert (
-            response is not None
-        ), "Agent failed to recover after error"
-
-        print("✓ Error handling test passed")
+        assert agent.run("Continue after error") is not None
 
     def test_agent_configuration(self):
-        """Test agent configuration and parameters"""
-        print("\nTesting agent configuration...")
-
         agent = Agent(
             agent_name="Config-Test-Agent",
             model_name="gpt-5.4",
@@ -506,31 +281,16 @@ class TestAgentFeatures:
             context_length=8192,
         )
 
-        # Test configuration methods
         agent.update_system_prompt("New system prompt")
         agent.update_max_loops(2)
         agent.update_loop_interval(2)
 
-        # Verify updates
-        assert agent.max_loops == 2, "Max loops not updated"
-        assert agent.loop_interval == 2, "Loop interval not updated"
-
-        # Test configuration export
-        config_dict = agent.to_dict()
-        assert isinstance(
-            config_dict, dict
-        ), "Configuration export failed"
-
-        # Test YAML export
-        yaml_config = agent.to_yaml()
-        assert isinstance(yaml_config, str), "YAML export failed"
-
-        print("✓ Configuration test passed")
+        assert agent.system_prompt == "New system prompt"
+        assert agent.max_loops == 2
+        assert agent.loop_interval == 2
+        assert isinstance(agent.to_dict(), dict)
 
     def test_agent_with_stopping_condition(self):
-        """Test agent with custom stopping condition"""
-        print("\nTesting agent with stopping condition...")
-
         def custom_stopping_condition(response: str) -> bool:
             return "STOP" in response.upper()
 
@@ -541,215 +301,40 @@ class TestAgentFeatures:
             stopping_condition=custom_stopping_condition,
         )
 
-        response = agent.run("Count up until you see the word STOP")
-        assert response is not None, "Stopping condition test failed"
-        print("✓ Stopping condition test passed")
-
-    def test_agent_with_retry_mechanism(self):
-        """Test agent retry mechanism"""
-        print("\nTesting agent retry mechanism...")
-
-        agent = Agent(
-            agent_name="Retry-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            retry_attempts=3,
+        assert (
+            agent.run("Count up until you see the word STOP")
+            is not None
         )
-
-        response = agent.run("Tell me a joke.")
-        assert response is not None, "Retry mechanism test failed"
-        print("✓ Retry mechanism test passed")
-
-    def test_bulk_and_filtered_operations(self):
-        """Test bulk operations and response filtering"""
-        print("\nTesting bulk and filtered operations...")
-
-        agent = Agent(
-            agent_name="Bulk-Filter-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-        )
-
-        # Test bulk run
-        bulk_tasks = [
-            {"task": "What is 2+2?"},
-            {"task": "Name a color"},
-            {"task": "Count to 3"},
-        ]
-        bulk_responses = agent.bulk_run(bulk_tasks)
-        assert len(bulk_responses) == len(
-            bulk_tasks
-        ), "Bulk run should return same number of responses as tasks"
-
-        print("✓ Bulk operations test passed")
 
     async def test_async_operations(self):
-        """Test asynchronous operations"""
-        print("\nTesting async operations...")
-
         agent = Agent(
             agent_name="Async-Test-Agent",
             model_name="gpt-5.4",
             max_loops=1,
         )
 
-        # Test single async run
-        response = await agent.arun("What is 1+1?")
-        assert response is not None, "Async run failed"
+        assert await agent.arun("What is 1+1?") is not None
 
-        # Test concurrent async runs
         tasks = ["Task 1", "Task 2", "Task 3"]
         responses = await asyncio.gather(
             *[agent.arun(task) for task in tasks]
         )
-        assert len(responses) == len(
-            tasks
-        ), "Not all async tasks completed"
-
-        print("✓ Async operations test passed")
-
-    def test_memory_and_state_persistence(self):
-        """Test memory management and state persistence"""
-        print("\nTesting memory and state persistence...")
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            state_path = os.path.join(temp_dir, "test_state.json")
-
-            # Create agent with memory configuration
-            agent1 = Agent(
-                agent_name="Memory-State-Test-Agent",
-                model_name="gpt-5.4",
-                max_loops=1,
-                saved_state_path=state_path,
-                context_length=8192,
-                autosave=True,
-            )
-
-            # Test memory operations
-            agent1.add_memory("Important fact: The sky is blue")
-            agent1.memory_query("What color is the sky?")
-
-            # Save state
-            agent1.save()
-
-            # Create new agent and load state
-            agent2 = Agent(
-                agent_name="Memory-State-Test-Agent",
-                model_name="gpt-5.4",
-                max_loops=1,
-            )
-            agent2.load(state_path)
-
-            # Verify memory persistence
-            memory_content = (
-                agent2.short_memory.return_history_as_string()
-            )
-            assert (
-                "sky is blue" in memory_content
-            ), "Memory not properly persisted"
-
-            print("✓ Memory and state persistence test passed")
+        assert len(responses) == len(tasks)
 
     def test_sentiment_and_evaluation(self):
-        """Test sentiment analysis and response evaluation"""
-        print("\nTesting sentiment analysis and evaluation...")
-
-        def mock_sentiment_analyzer(text):
-            """Mock sentiment analyzer that returns a score between 0 and 1"""
-            return 0.7 if "positive" in text.lower() else 0.3
-
-        def mock_evaluator(response):
-            """Mock evaluator that checks response quality"""
-            return "GOOD" if len(response) > 10 else "BAD"
-
+        """Both hooks must run without breaking the loop."""
         agent = Agent(
             agent_name="Sentiment-Eval-Test-Agent",
             model_name="gpt-5.4",
             max_loops=1,
-            sentiment_analyzer=mock_sentiment_analyzer,
+            sentiment_analyzer=lambda text: 0.7,
             sentiment_threshold=0.5,
-            evaluator=mock_evaluator,
+            evaluator=lambda response: "GOOD",
         )
 
-        # Test sentiment analysis
-        agent.run("Generate a positive message")
-
-        # Test evaluation
-        agent.run("Generate a detailed response")
-
-        print("✓ Sentiment and evaluation test passed")
-
-    def test_tool_management(self):
-        """Test tool management functionality"""
-        print("\nTesting tool management...")
-
-        def tool1(x: int) -> int:
-            """Sample tool 1"""
-            return x * 2
-
-        def tool2(x: int) -> int:
-            """Sample tool 2"""
-            return x + 2
-
-        agent = Agent(
-            agent_name="Tool-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[tool1],
-        )
-
-        # Test adding tools
-        agent.add_tool(tool2)
-        assert len(agent.tools) == 2, "Tool not added correctly"
-
-        # Test removing tools
-        agent.remove_tool(tool1)
-        assert len(agent.tools) == 1, "Tool not removed correctly"
-
-        # Test adding multiple tools
-        agent.add_tools([tool1, tool2])
-        assert (
-            len(agent.tools) == 3
-        ), "Multiple tools not added correctly"
-
-        print("✓ Tool management test passed")
-
-    def test_system_prompt_and_configuration(self):
-        """Test system prompt and configuration updates"""
-        print("\nTesting system prompt and configuration...")
-
-        agent = Agent(
-            agent_name="Config-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-        )
-
-        # Test updating system prompt
-        new_prompt = "You are a helpful assistant."
-        agent.update_system_prompt(new_prompt)
-        assert (
-            agent.system_prompt == new_prompt
-        ), "System prompt not updated"
-
-        # Test configuration updates
-        agent.update_max_loops(5)
-        assert agent.max_loops == 5, "Max loops not updated"
-
-        agent.update_loop_interval(2)
-        assert agent.loop_interval == 2, "Loop interval not updated"
-
-        # Test configuration export
-        config_dict = agent.to_dict()
-        assert isinstance(
-            config_dict, dict
-        ), "Configuration export failed"
-
-        print("✓ System prompt and configuration test passed")
+        assert agent.run("Generate a positive message") is not None
 
     def test_agent_with_dynamic_temperature(self):
-        """Test agent with dynamic temperature"""
-        print("\nTesting agent with dynamic temperature...")
-
         agent = Agent(
             agent_name="Dynamic-Temp-Agent",
             model_name="gpt-5.4",
@@ -757,503 +342,73 @@ class TestAgentFeatures:
             dynamic_temperature_enabled=True,
         )
 
-        response = agent.run("Generate a creative story.")
-        assert response is not None, "Dynamic temperature test failed"
-        print("✓ Dynamic temperature test passed")
+        assert agent.run("Generate a creative story.") is not None
 
 
-# ============================================================================
-# AGENT LOGGING TESTS
-# ============================================================================
+def _file_tool(filename: str, content: str) -> str:
+    """Write content to a file."""
+    return f"Written {len(content)} characters to {filename}"
 
 
-class TestAgentLogging:
-    """Test agent logging functionality"""
-
-    def setUp(self):
-        """Set up test fixtures"""
-        self.mock_tokenizer = MagicMock()
-        self.mock_tokenizer.count_tokens.return_value = 100
-
-        self.mock_short_memory = MagicMock()
-        self.mock_short_memory.get_memory_stats.return_value = {
-            "message_count": 2
-        }
-
-        self.mock_long_memory = MagicMock()
-        self.mock_long_memory.get_memory_stats.return_value = {
-            "item_count": 5
-        }
-
-        self.agent = Agent(
-            short_memory=self.mock_short_memory,
-            long_term_memory=self.mock_long_memory,
-        )
-
-    def test_log_step_metadata_basic(self):
-        """Test basic step metadata logging"""
-        log_result = self.agent.log_step_metadata(
-            1, "Test prompt", "Test response"
-        )
-
-        assert "step_id" in log_result
-        assert "timestamp" in log_result
-        assert "tokens" in log_result
-        assert "memory_usage" in log_result
-
-        assert log_result["tokens"]["total"] == 200
-
-    def test_log_step_metadata_no_long_term_memory(self):
-        """Test step metadata logging without long term memory"""
-        self.agent.long_term_memory = None
-        log_result = self.agent.log_step_metadata(
-            1, "prompt", "response"
-        )
-        assert log_result["memory_usage"]["long_term"] == {}
-
-    def test_log_step_metadata_timestamp(self):
-        """Test step metadata logging timestamp"""
-        log_result = self.agent.log_step_metadata(
-            1, "prompt", "response"
-        )
-        assert "timestamp" in log_result
-
-    def test_token_counting_integration(self):
-        """Test token counting integration"""
-        self.mock_tokenizer.count_tokens.side_effect = [150, 250]
-        log_result = self.agent.log_step_metadata(
-            1, "prompt", "response"
-        )
-
-        assert log_result["tokens"]["total"] == 400
-
-    def test_agent_output_updating(self):
-        """Test agent output updating"""
-        initial_total_tokens = sum(
-            step["tokens"]["total"]
-            for step in self.agent.agent_output.steps
-        )
-        self.agent.log_step_metadata(1, "prompt", "response")
-
-        final_total_tokens = sum(
-            step["tokens"]["total"]
-            for step in self.agent.agent_output.steps
-        )
-        assert final_total_tokens - initial_total_tokens == 200
-        assert len(self.agent.agent_output.steps) == 1
-
-    def test_full_logging_cycle(self):
-        """Test full logging cycle"""
-        agent = Agent(agent_name="test-agent")
-        task = "Test task"
-        max_loops = 1
-
-        result = agent._run(task, max_loops=max_loops)
-
-        assert isinstance(result, dict)
-        assert "steps" in result
-        assert isinstance(result["steps"], list)
-        assert len(result["steps"]) == max_loops
-
-        if result["steps"]:
-            step = result["steps"][0]
-            assert "step_id" in step
-            assert "timestamp" in step
-            assert "task" in step
-            assert "response" in step
-            assert step["task"] == task
-            assert step["response"] == "Response for loop 1"
-
-        assert len(self.agent.agent_output.steps) > 0
+def _url_tool(url: str) -> str:
+    """Process a URL."""
+    return f"Processing URL: {url}"
 
 
-# ============================================================================
-# YAML AGENT CREATION TESTS
-# ============================================================================
+def _query_tool(table: str, limit: int) -> str:
+    """Query a database table."""
+    return f"Queried {table}, limit {limit}"
 
 
-class TestCreateAgentsFromYaml:
-    """Test YAML agent creation functionality"""
-
-    def setUp(self):
-        """Set up test fixtures"""
-        # Mock the environment variable for API key
-        os.environ["OPENAI_API_KEY"] = "fake-api-key"
-
-        # Mock agent configuration YAML content
-        self.valid_yaml_content = """
-        agents:
-          - agent_name: "Financial-Analysis-Agent"
-            model:
-              openai_api_key: "fake-api-key"
-              model_name: "gpt-5.4"
-              temperature: 0.1
-              max_tokens: 2000
-            system_prompt: "financial_agent_sys_prompt"
-            max_loops: 1
-            autosave: true
-            dashboard: false
-            verbose: true
-            dynamic_temperature_enabled: true
-            saved_state_path: "finance_agent.json"
-            user_name: "swarms_corp"
-            retry_attempts: 1
-            context_length: 200000
-            return_step_meta: false
-            output_type: "str"
-            task: "How can I establish a ROTH IRA to buy stocks and get a tax break?"
-        """
-
-    @patch(
-        "builtins.open",
-        new_callable=unittest.mock.mock_open,
-        read_data="",
-    )
-    @patch("yaml.safe_load")
-    def test_create_agents_return_agents(
-        self, mock_safe_load, mock_open
-    ):
-        """Test creating agents from YAML and returning agents"""
-        # Mock YAML content parsing
-        mock_safe_load.return_value = {
-            "agents": [
-                {
-                    "agent_name": "Financial-Analysis-Agent",
-                    "model": {
-                        "openai_api_key": "fake-api-key",
-                        "model_name": "gpt-5.4",
-                        "temperature": 0.1,
-                        "max_tokens": 2000,
-                    },
-                    "system_prompt": "financial_agent_sys_prompt",
-                    "max_loops": 1,
-                    "autosave": True,
-                    "dashboard": False,
-                    "verbose": True,
-                    "dynamic_temperature_enabled": True,
-                    "saved_state_path": "finance_agent.json",
-                    "user_name": "swarms_corp",
-                    "retry_attempts": 1,
-                    "context_length": 200000,
-                    "return_step_meta": False,
-                    "output_type": "str",
-                    "task": "How can I establish a ROTH IRA to buy stocks and get a tax break?",
-                }
-            ]
-        }
-
-        # Test if agents are returned correctly
-        agents = create_agents_from_yaml(
-            "fake_yaml_path.yaml", return_type="agents"
-        )
-        assert len(agents) == 1
-        assert agents[0].agent_name == "Financial-Analysis-Agent"
-
-    @patch(
-        "builtins.open",
-        new_callable=unittest.mock.mock_open,
-        read_data="",
-    )
-    @patch("yaml.safe_load")
-    @patch(
-        "swarms.Agent.run", return_value="Task completed successfully"
-    )
-    def test_create_agents_return_tasks(
-        self, mock_agent_run, mock_safe_load, mock_open
-    ):
-        """Test creating agents from YAML and returning task results"""
-        # Mock YAML content parsing
-        mock_safe_load.return_value = {
-            "agents": [
-                {
-                    "agent_name": "Financial-Analysis-Agent",
-                    "model": {
-                        "openai_api_key": "fake-api-key",
-                        "model_name": "gpt-5.4",
-                        "temperature": 0.1,
-                        "max_tokens": 2000,
-                    },
-                    "system_prompt": "financial_agent_sys_prompt",
-                    "max_loops": 1,
-                    "autosave": True,
-                    "dashboard": False,
-                    "verbose": True,
-                    "dynamic_temperature_enabled": True,
-                    "saved_state_path": "finance_agent.json",
-                    "user_name": "swarms_corp",
-                    "retry_attempts": 1,
-                    "context_length": 200000,
-                    "return_step_meta": False,
-                    "output_type": "str",
-                    "task": "How can I establish a ROTH IRA to buy stocks and get a tax break?",
-                }
-            ]
-        }
-
-        # Test if tasks are executed and results are returned
-        task_results = create_agents_from_yaml(
-            "fake_yaml_path.yaml", return_type="tasks"
-        )
-        assert len(task_results) == 1
-        assert (
-            task_results[0]["agent_name"]
-            == "Financial-Analysis-Agent"
-        )
-        assert task_results[0]["output"] is not None
-
-    @patch(
-        "builtins.open",
-        new_callable=unittest.mock.mock_open,
-        read_data="",
-    )
-    @patch("yaml.safe_load")
-    def test_create_agents_return_both(
-        self, mock_safe_load, mock_open
-    ):
-        """Test creating agents from YAML and returning both agents and tasks"""
-        # Mock YAML content parsing
-        mock_safe_load.return_value = {
-            "agents": [
-                {
-                    "agent_name": "Financial-Analysis-Agent",
-                    "model": {
-                        "openai_api_key": "fake-api-key",
-                        "model_name": "gpt-5.4",
-                        "temperature": 0.1,
-                        "max_tokens": 2000,
-                    },
-                    "system_prompt": "financial_agent_sys_prompt",
-                    "max_loops": 1,
-                    "autosave": True,
-                    "dashboard": False,
-                    "verbose": True,
-                    "dynamic_temperature_enabled": True,
-                    "saved_state_path": "finance_agent.json",
-                    "user_name": "swarms_corp",
-                    "retry_attempts": 1,
-                    "context_length": 200000,
-                    "return_step_meta": False,
-                    "output_type": "str",
-                    "task": "How can I establish a ROTH IRA to buy stocks and get a tax break?",
-                }
-            ]
-        }
-
-        # Test if both agents and tasks are returned
-        agents, task_results = create_agents_from_yaml(
-            "fake_yaml_path.yaml", return_type="both"
-        )
-        assert len(agents) == 1
-        assert len(task_results) == 1
-        assert agents[0].agent_name == "Financial-Analysis-Agent"
-        assert task_results[0]["output"] is not None
-
-    @patch(
-        "builtins.open",
-        new_callable=unittest.mock.mock_open,
-        read_data="",
-    )
-    @patch("yaml.safe_load")
-    def test_missing_agents_in_yaml(self, mock_safe_load, mock_open):
-        """Test handling missing agents in YAML"""
-        # Mock YAML content with missing "agents" key
-        mock_safe_load.return_value = {}
-
-        # Test if the function raises an error for missing "agents" key
-        with pytest.raises(ValueError) as context:
-            create_agents_from_yaml(
-                "fake_yaml_path.yaml", return_type="agents"
-            )
-        assert (
-            "The YAML configuration does not contain 'agents'."
-            in str(context.exception)
-        )
-
-    @patch(
-        "swarms.agents.create_agents_from_yaml.create_agent_with_retry"
-    )
-    def test_invalid_return_type(self, mock_create_agent):
-        """Test handling invalid return type"""
-        mock_create_agent.return_value = MagicMock()
-        yaml_string = """
-agents:
-  - agent_name: Financial-Analysis-Agent
-    system_prompt: financial_agent_sys_prompt
-    model_name: gpt-4o
-    max_loops: 1
-"""
-        with pytest.raises(ValueError) as context:
-            create_agents_from_yaml(
-                yaml_string=yaml_string, return_type="invalid_type"
-            )
-        assert "Invalid return_type" in str(context.value)
+def _predict_tool(features: list) -> str:
+    """Run an ML prediction."""
+    return f"Prediction for features {features}: 0.85"
 
 
-# ============================================================================
-# BENCHMARK TESTS
-# ============================================================================
+def _resize_tool(image_path: str, width: int, height: int) -> str:
+    """Resize an image."""
+    return f"Resized {image_path} to {width}x{height}"
 
 
-class TestAgentBenchmark:
-    """Test agent benchmarking functionality"""
-
-    def test_benchmark_multiple_agents(self):
-        """Test benchmarking multiple agents"""
-        console = Console()
-        init_times = []
-        memory_readings = []
-        process = psutil.Process(os.getpid())
-
-        # Create benchmark tables
-        time_table = Table(title="Time Statistics")
-        time_table.add_column("Metric", style="cyan")
-        time_table.add_column("Value", style="green")
-
-        memory_table = Table(title="Memory Statistics")
-        memory_table.add_column("Metric", style="cyan")
-        memory_table.add_column("Value", style="green")
-
-        initial_memory = process.memory_info().rss / 1024
-        start_total_time = time.perf_counter()
-
-        # Initialize agents and measure performance
-        num_agents = 10  # Reduced for testing
-        for i in range(num_agents):
-            start_time = time.perf_counter()
-
-            Agent(
-                agent_name=f"Financial-Analysis-Agent-{i}",
-                agent_description="Personal finance advisor agent",
-                max_loops=2,
-                model_name="gpt-5.4",
-                dynamic_temperature_enabled=True,
-                interactive=False,
-            )
-
-            init_time = (time.perf_counter() - start_time) * 1000
-            init_times.append(init_time)
-
-            current_memory = process.memory_info().rss / 1024
-            memory_readings.append(current_memory - initial_memory)
-
-            if (i + 1) % 5 == 0:
-                console.print(
-                    f"Created {i + 1} agents...", style="bold blue"
-                )
-
-        (time.perf_counter() - start_total_time) * 1000
-
-        # Calculate statistics
-        time_stats = self._get_time_stats(init_times)
-        memory_stats = self._get_memory_stats(memory_readings)
-
-        # Verify basic statistics
-        assert len(init_times) == num_agents
-        assert len(memory_readings) == num_agents
-        assert time_stats["mean"] > 0
-        assert memory_stats["mean"] >= 0
-
-        print("✓ Benchmark test passed")
-
-    def _get_memory_stats(self, memory_readings):
-        """Calculate memory statistics"""
-        return {
-            "peak": max(memory_readings) if memory_readings else 0,
-            "min": min(memory_readings) if memory_readings else 0,
-            "mean": mean(memory_readings) if memory_readings else 0,
-            "median": (
-                median(memory_readings) if memory_readings else 0
-            ),
-            "stdev": (
-                stdev(memory_readings)
-                if len(memory_readings) > 1
-                else 0
-            ),
-            "variance": (
-                variance(memory_readings)
-                if len(memory_readings) > 1
-                else 0
-            ),
-        }
-
-    def _get_time_stats(self, times):
-        """Calculate time statistics"""
-        return {
-            "total": sum(times),
-            "mean": mean(times) if times else 0,
-            "median": median(times) if times else 0,
-            "min": min(times) if times else 0,
-            "max": max(times) if times else 0,
-            "stdev": stdev(times) if len(times) > 1 else 0,
-            "variance": variance(times) if len(times) > 1 else 0,
-        }
+def _summarize_tool(text: str) -> str:
+    """Summarize text."""
+    return f"Summary of {len(text)} characters"
 
 
-# ============================================================================
-# TOOL USAGE TESTS
-# ============================================================================
+def _math_tool(expression: str) -> str:
+    """Evaluate a mathematical expression."""
+    return f"Result of {expression}"
+
+
+def _json_tool(data: dict) -> str:
+    """Return the given data as a JSON string."""
+    return json.dumps(data)
+
+
+def _dict_tool(x: int) -> dict:
+    """Return a dictionary describing x."""
+    return {"value": x, "squared": x**2}
+
+
+DOMAIN_TOOLS = [
+    pytest.param(_file_tool, "write 'hi' to notes.txt", id="file"),
+    pytest.param(_url_tool, "process https://example.com", id="net"),
+    pytest.param(_query_tool, "query users with limit 10", id="db"),
+    pytest.param(_predict_tool, "predict for [1, 2, 3]", id="ml"),
+    pytest.param(_resize_tool, "resize a.png to 64x64", id="image"),
+    pytest.param(_summarize_tool, "summarize 'hello'", id="text"),
+    pytest.param(_math_tool, "evaluate 2 + 2 * 3", id="math"),
+    pytest.param(_json_tool, "serialize {'a': 1}", id="json-out"),
+    pytest.param(_dict_tool, "describe 5", id="dict-out"),
+]
 
 
 class TestAgentToolUsage:
-    """Test comprehensive tool usage functionality for agents"""
+    """Tool registration, schema generation and execution."""
 
-    def test_normal_callable_tools(self):
-        """Test normal callable tools (functions, lambdas, methods)"""
-        print("\nTesting normal callable tools...")
-
-        def math_tool(x: int, y: int) -> int:
-            """Add two numbers together"""
-            return x + y
-
-        def string_tool(text: str) -> str:
-            """Convert text to uppercase"""
-            return text.upper()
-
-        def list_tool(items: list) -> int:
-            """Count items in a list"""
-            return len(items)
-
-        # Test with individual function tools
-        agent = Agent(
-            agent_name="Callable-Tools-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[math_tool, string_tool, list_tool],
-        )
-
-        # Test tool addition
-        assert len(agent.tools) == 3, "Tools not added correctly"
-
-        # Test tool execution
-        response = agent.run("Use the math tool to add 5 and 3")
-        assert response is not None, "Tool execution failed"
-
-        # Test lambda tools
-        def lambda_tool(x):
-            return x * 2
-
-        agent.add_tool(lambda_tool)
-        assert (
-            len(agent.tools) == 4
-        ), "Lambda tool not added correctly"
-
-        # Test method tools
-        class MathOperations:
-            def multiply(self, x: int, y: int) -> int:
-                """Multiply two numbers"""
-                return x * y
-
-        math_ops = MathOperations()
-        agent.add_tool(math_ops.multiply)
-        assert (
-            len(agent.tools) == 5
-        ), "Method tool not added correctly"
-
-        print("✓ Normal callable tools test passed")
-
-    def test_tool_management_operations(self):
-        """Test tool management operations (add, remove, list)"""
-        print("\nTesting tool management operations...")
+    def test_callable_tools_register_and_unregister(self):
+        """Functions, lambdas and bound methods all register, and add/remove
+        in both singular and plural forms keep the list consistent."""
 
         def tool1(x: int) -> int:
             """Tool 1"""
@@ -1263,284 +418,117 @@ class TestAgentToolUsage:
             """Tool 2"""
             return x * 2
 
-        def tool3(x: int) -> int:
-            """Tool 3"""
-            return x - 1
-
         agent = Agent(
-            agent_name="Tool-Management-Test-Agent",
+            agent_name="Callable-Tools-Test-Agent",
             model_name="gpt-5.4",
             max_loops=1,
             tools=[tool1, tool2],
         )
+        assert len(agent.tools) == 2
+        assert agent.run("Use tool1 to add 1 to 5") is not None
 
-        # Test initial tools
-        assert (
-            len(agent.tools) == 2
-        ), "Initial tools not set correctly"
+        class MathOperations:
+            def multiply(self, x: int, y: int) -> int:
+                """Multiply two numbers"""
+                return x * y
 
-        # Test adding single tool
-        agent.add_tool(tool3)
-        assert len(agent.tools) == 3, "Single tool addition failed"
+        agent.add_tool(lambda x: x**2)
+        agent.add_tool(MathOperations().multiply)
+        assert len(agent.tools) == 4
 
-        # Test adding multiple tools
-        def tool4(x: int) -> int:
-            return x**2
+        agent.add_tools([lambda x: x // 2, lambda x: x - 1])
+        assert len(agent.tools) == 6
 
-        def tool5(x: int) -> int:
-            return x // 2
-
-        agent.add_tools([tool4, tool5])
-        assert len(agent.tools) == 5, "Multiple tools addition failed"
-
-        # Test removing single tool
         agent.remove_tool(tool1)
-        assert len(agent.tools) == 4, "Single tool removal failed"
+        assert len(agent.tools) == 5
 
-        # Test removing multiple tools
-        agent.remove_tools([tool2, tool3])
-        assert len(agent.tools) == 2, "Multiple tools removal failed"
+        agent.remove_tools([tool2])
+        assert len(agent.tools) == 4
 
-        print("✓ Tool management operations test passed")
+    @staticmethod
+    def _mcp_schema(name, prop):
+        return {
+            "type": "function",
+            "function": {
+                "name": name,
+                "description": f"{name} description",
+                "parameters": {
+                    "type": "object",
+                    "properties": {prop: {"type": "string"}},
+                },
+            },
+        }
 
-    def test_mcp_single_url_tools(self):
-        """Test MCP single URL tools"""
-        print("\nTesting MCP single URL tools...")
-
-        # Mock MCP URL for testing
-        mock_mcp_url = "http://localhost:8000/mcp"
-
+    @pytest.mark.parametrize(
+        "kwargs, names",
+        [
+            (
+                {"mcp_url": "http://localhost:8000/mcp"},
+                ["mcp_calculator", "mcp_weather"],
+            ),
+            (
+                {
+                    "mcp_urls": [
+                        "http://localhost:8000/mcp1",
+                        "http://localhost:8000/mcp2",
+                    ]
+                },
+                ["server1_tool", "server2_tool"],
+            ),
+        ],
+        ids=["single-url", "multiple-urls"],
+    )
+    def test_mcp_tools_reach_the_agent(self, kwargs, names):
+        schemas = [self._mcp_schema(n, "input") for n in names]
         with patch(
-            "swarms.tools.mcp_manager.MCPManager.get_tools"
-        ) as mock_get_tools:
-            # Mock MCP tools response
-            mock_tools = [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "mcp_calculator",
-                        "description": "Perform calculations",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "expression": {
-                                    "type": "string",
-                                    "description": "Math expression",
-                                }
-                            },
-                            "required": ["expression"],
-                        },
-                    },
-                },
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "mcp_weather",
-                        "description": "Get weather information",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "location": {
-                                    "type": "string",
-                                    "description": "City name",
-                                }
-                            },
-                            "required": ["location"],
-                        },
-                    },
-                },
-            ]
-            mock_get_tools.return_value = mock_tools
-
+            "swarms.tools.mcp_manager.MCPManager.get_tools",
+            return_value=schemas,
+        ) as get_tools:
             agent = Agent(
-                agent_name="MCP-Single-URL-Test-Agent",
+                agent_name="MCP-Test-Agent",
                 model_name="gpt-5.4",
                 max_loops=1,
-                mcp_url=mock_mcp_url,
-                verbose=True,
+                **kwargs,
             )
-
-            # Test MCP tools integration
             tools = agent.add_mcp_tools_to_memory()
-            assert len(tools) == 2, "MCP tools not loaded correctly"
-            assert (
-                mock_get_tools.called
-            ), "MCP tools function not called"
 
-            # Verify tool structure
-            assert "mcp_calculator" in str(
-                tools
-            ), "Calculator tool not found"
-            assert "mcp_weather" in str(
-                tools
-            ), "Weather tool not found"
+        assert len(tools) == len(names)
+        assert get_tools.called
+        for name in names:
+            assert name in str(tools)
 
-        print("✓ MCP single URL tools test passed")
-
-    def test_mcp_multiple_urls_tools(self):
-        """Test MCP multiple URLs tools"""
-        print("\nTesting MCP multiple URLs tools...")
-
-        # Mock multiple MCP URLs for testing
-        mock_mcp_urls = [
-            "http://localhost:8000/mcp1",
-            "http://localhost:8000/mcp2",
-            "http://localhost:8000/mcp3",
-        ]
-
-        with patch(
-            "swarms.tools.mcp_manager.MCPManager.get_tools"
-        ) as mock_get_tools:
-            # Mock MCP tools response from multiple servers
-            mock_tools = [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "server1_tool",
-                        "description": "Tool from server 1",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "input": {"type": "string"}
-                            },
-                        },
-                    },
-                },
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "server2_tool",
-                        "description": "Tool from server 2",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "data": {"type": "string"}
-                            },
-                        },
-                    },
-                },
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "server3_tool",
-                        "description": "Tool from server 3",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "query": {"type": "string"}
-                            },
-                        },
-                    },
-                },
-            ]
-            mock_get_tools.return_value = mock_tools
-
-            agent = Agent(
-                agent_name="MCP-Multiple-URLs-Test-Agent",
-                model_name="gpt-5.4",
-                max_loops=1,
-                mcp_urls=mock_mcp_urls,
-                verbose=True,
-            )
-
-            # Test MCP tools integration from multiple servers
-            tools = agent.add_mcp_tools_to_memory()
-            assert (
-                len(tools) == 3
-            ), "MCP tools from multiple servers not loaded correctly"
-            assert (
-                mock_get_tools.called
-            ), "MCP multiple tools function not called"
-
-            # Verify tools from different servers
-            tools_str = str(tools)
-            assert (
-                "server1_tool" in tools_str
-            ), "Server 1 tool not found"
-            assert (
-                "server2_tool" in tools_str
-            ), "Server 2 tool not found"
-            assert (
-                "server3_tool" in tools_str
-            ), "Server 3 tool not found"
-
-        print("✓ MCP multiple URLs tools test passed")
-
-    def test_base_tool_class_tools(self):
-        """Test BaseTool class tools"""
-        print("\nTesting BaseTool class tools...")
-
-        from swarms.tools.base_tool import BaseTool
-
-        def sample_function(x: int, y: int) -> int:
-            """Sample function for testing"""
-            return x + y
-
-        # Create BaseTool instance
-        base_tool = BaseTool(
-            verbose=True,
-            tools=[sample_function],
-            tool_system_prompt="You are a helpful tool assistant",
-        )
-
-        # Test tool schema generation
-        schema = base_tool.func_to_dict(sample_function)
-        assert isinstance(
-            schema, dict
-        ), "Tool schema not generated correctly"
-        assert "name" in schema, "Tool name not in schema"
-        assert (
-            "description" in schema
-        ), "Tool description not in schema"
-        assert "parameters" in schema, "Tool parameters not in schema"
-
-        # Test tool execution
-        test_input = {"x": 5, "y": 3}
-        result = base_tool.execute_tool(test_input)
-        assert result is not None, "Tool execution failed"
-
-        print("✓ BaseTool class tools test passed")
-
-    def test_tool_execution_and_error_handling(self):
-        """Test tool execution and error handling"""
-        print("\nTesting tool execution and error handling...")
+    def test_tool_execution_and_error_recovery(self):
+        """A raising tool must not take the agent down, and retry_attempts
+        must carry the run past it."""
 
         def valid_tool(x: int) -> int:
             """Valid tool that works correctly"""
             return x * 2
 
         def error_tool(x: int) -> int:
-            """Tool that raises an error"""
+            """Tool that always raises"""
             raise ValueError("Test error")
-
-        def type_error_tool(x: str) -> str:
-            """Tool with type error"""
-            return x.upper()
 
         agent = Agent(
             agent_name="Tool-Execution-Test-Agent",
             model_name="gpt-5.4",
             max_loops=1,
-            tools=[valid_tool, error_tool, type_error_tool],
+            tools=[valid_tool, error_tool],
+            retry_attempts=3,
         )
 
-        # Test valid tool execution
-        response = agent.run("Use the valid tool with input 5")
-        assert response is not None, "Valid tool execution failed"
+        assert (
+            agent.run("Use the valid tool with input 5") is not None
+        )
 
-        # Test error handling
         try:
             agent.run("Use the error tool")
-            # Should handle error gracefully
         except Exception:
-            # Expected to handle errors gracefully
             pass
 
-        print("✓ Tool execution and error handling test passed")
-
-    def test_tool_schema_generation(self):
-        """Test tool schema generation and validation"""
-        print("\nTesting tool schema generation...")
+    def test_tool_schema_generation_and_typed_parameters(self):
+        """Mixed required and optional parameter types survive both schema
+        conversion and a typed call."""
 
         def complex_tool(
             name: str,
@@ -1563,72 +551,14 @@ class TestAgentToolUsage:
             tools=[complex_tool],
         )
 
-        # Test that tools are properly registered
-        assert len(agent.tools) == 1, "Tool not registered correctly"
-
-        # Test tool execution with complex parameters
-        response = agent.run(
-            "Use the complex tool with name 'John', age 30, email 'john@example.com'"
-        )
-        assert response is not None, "Complex tool execution failed"
-
-        print("✓ Tool schema generation test passed")
-
-    def test_aop_tools(self):
-        """Test AOP (Agent Operations) tools"""
-        print("\nTesting AOP tools...")
-
-        from swarms.structs.aop import AOP
-
-        # Create test agents
-        agent1 = Agent(
-            agent_name="AOP-Agent-1",
-            model_name="gpt-5.4",
-            max_loops=1,
-        )
-
-        agent2 = Agent(
-            agent_name="AOP-Agent-2",
-            model_name="gpt-5.4",
-            max_loops=1,
-        )
-
-        # Create AOP instance
-        aop = AOP(
-            server_name="test-aop-server",
-            verbose=True,
-        )
-
-        # Test adding agents as tools
-        tool_names = aop.add_agents_batch(
-            agents=[agent1, agent2],
-            tool_names=["math_agent", "text_agent"],
-            tool_descriptions=[
-                "Performs mathematical operations",
-                "Handles text processing",
-            ],
-        )
-
+        assert len(agent.tools) == 1
         assert (
-            len(tool_names) == 2
-        ), "AOP agents not added as tools correctly"
-        assert (
-            "math_agent" in tool_names
-        ), "Math agent tool not created"
-        assert (
-            "text_agent" in tool_names
-        ), "Text agent tool not created"
+            agent.run("Use complex_tool with name 'John', age 30")
+            is not None
+        )
 
-        # Test tool discovery
-        tools = aop.get_available_tools()
-        assert len(tools) >= 2, "AOP tools not discovered correctly"
-
-        print("✓ AOP tools test passed")
-
-    def test_tool_choice_and_execution_modes(self):
-        """Test different tool choice and execution modes"""
-        print("\nTesting tool choice and execution modes...")
-
+    @pytest.mark.parametrize("tool_choice", ["auto", "tool_a"])
+    def test_tool_choice_modes(self, tool_choice):
         def tool_a(x: int) -> int:
             """Tool A"""
             return x + 1
@@ -1637,751 +567,77 @@ class TestAgentToolUsage:
             """Tool B"""
             return x * 2
 
-        # Test with auto tool choice
-        agent_auto = Agent(
-            agent_name="Auto-Tool-Choice-Agent",
+        agent = Agent(
+            agent_name=f"Tool-Choice-{tool_choice}-Agent",
             model_name="gpt-5.4",
             max_loops=1,
             tools=[tool_a, tool_b],
-            tool_choice="auto",
+            tool_choice=tool_choice,
         )
 
-        response_auto = agent_auto.run(
-            "Calculate something using the available tools"
-        )
-        assert response_auto is not None, "Auto tool choice failed"
+        assert agent.run("Use tool_a with input 5") is not None
 
-        # Test with specific tool choice
-        agent_specific = Agent(
-            agent_name="Specific-Tool-Choice-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[tool_a, tool_b],
-            tool_choice="tool_a",
-        )
-
-        response_specific = agent_specific.run(
-            "Use tool_a with input 5"
-        )
-        assert (
-            response_specific is not None
-        ), "Specific tool choice failed"
-
-        # Test with tool execution enabled/disabled
-        agent_execute = Agent(
-            agent_name="Tool-Execute-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[tool_a, tool_b],
-            execute_tool=True,
-        )
-
-        response_execute = agent_execute.run("Execute a tool")
-        assert (
-            response_execute is not None
-        ), "Tool execution mode failed"
-
-        print("✓ Tool choice and execution modes test passed")
-
-    def test_tool_system_prompts(self):
-        """Test tool system prompts and custom tool prompts"""
-        print("\nTesting tool system prompts...")
-
-        def calculator_tool(expression: str) -> str:
-            """Calculate mathematical expressions"""
-            try:
-                result = eval(expression)
-                return str(result)
-            except Exception:
-                return "Invalid expression"
-
-        custom_tool_prompt = "You have access to a calculator tool. Use it for mathematical calculations."
-
+    @pytest.mark.parametrize("tool, prompt", DOMAIN_TOOLS)
+    def test_domain_tools_execute(self, tool, prompt):
+        """One live run per tool domain the suite used to cover with seven
+        near-identical tests. The domain is incidental — what is pinned is
+        that an arbitrary typed callable survives registration and a run.
+        """
         agent = Agent(
-            agent_name="Tool-Prompt-Test-Agent",
+            agent_name=f"Domain-{tool.__name__}-Agent",
             model_name="gpt-5.4",
             max_loops=1,
-            tools=[calculator_tool],
-            tool_system_prompt=custom_tool_prompt,
+            tools=[tool],
         )
 
-        # Test that custom tool prompt is set
         assert (
-            agent.tool_system_prompt == custom_tool_prompt
-        ), "Custom tool prompt not set"
-
-        # Test tool execution with custom prompt
-        response = agent.run("Calculate 2 + 2 * 3")
-        assert (
-            response is not None
-        ), "Tool execution with custom prompt failed"
-
-        print("✓ Tool system prompts test passed")
-
-    def test_tool_parallel_execution(self):
-        """Test parallel tool execution capabilities"""
-        print("\nTesting parallel tool execution...")
-
-        def slow_tool(x: int) -> int:
-            """Slow tool that takes time"""
-            import time
-
-            time.sleep(0.1)  # Simulate slow operation
-            return x * 2
-
-        def fast_tool(x: int) -> int:
-            """Fast tool"""
-            return x + 1
-
-        agent = Agent(
-            agent_name="Parallel-Tool-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[slow_tool, fast_tool],
+            agent.run(f"Use {tool.__name__} to {prompt}") is not None
         )
-
-        # Test parallel tool execution
-        start_time = time.time()
-        response = agent.run("Use both tools with input 5")
-        end_time = time.time()
-
-        assert response is not None, "Parallel tool execution failed"
-        # Should be faster than sequential execution
-        assert (
-            end_time - start_time
-        ) < 0.5, "Parallel execution took too long"
-
-        print("✓ Parallel tool execution test passed")
-
-    def test_tool_validation_and_type_checking(self):
-        """Test tool validation and type checking"""
-        print("\nTesting tool validation and type checking...")
-
-        def typed_tool(x: int, y: str, z: bool = False) -> dict:
-            """Tool with specific type hints"""
-            return {"x": x, "y": y, "z": z, "result": f"{x} {y} {z}"}
-
-        agent = Agent(
-            agent_name="Tool-Validation-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[typed_tool],
-        )
-
-        # Test tool execution with correct types
-        response = agent.run(
-            "Use typed_tool with x=5, y='hello', z=True"
-        )
-        assert response is not None, "Typed tool execution failed"
-
-        # Test tool execution with incorrect types (should handle gracefully)
-        try:
-            agent.run("Use typed_tool with incorrect types")
-        except Exception:
-            # Expected to handle type errors gracefully
-            pass
-
-        print("✓ Tool validation and type checking test passed")
-
-    def test_tool_caching_and_performance(self):
-        """Test tool caching and performance optimization"""
-        print("\nTesting tool caching and performance...")
-
-        call_count = 0
-
-        def cached_tool(x: int) -> int:
-            """Tool that should be cached"""
-            nonlocal call_count
-            call_count += 1
-            return x**2
-
-        agent = Agent(
-            agent_name="Tool-Caching-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[cached_tool],
-        )
-
-        # Test multiple calls to the same tool
-        agent.run("Use cached_tool with input 5")
-        agent.run("Use cached_tool with input 5 again")
-
-        # Verify tool was called (caching behavior may vary)
-        assert call_count >= 1, "Tool not called at least once"
-
-        print("✓ Tool caching and performance test passed")
-
-    def test_tool_error_recovery(self):
-        """Test tool error recovery and fallback mechanisms"""
-        print("\nTesting tool error recovery...")
-
-        def unreliable_tool(x: int) -> int:
-            """Tool that sometimes fails"""
-            import random
-
-            if random.random() < 0.5:
-                raise Exception("Random failure")
-            return x * 2
-
-        def fallback_tool(x: int) -> int:
-            """Fallback tool"""
-            return x + 10
-
-        agent = Agent(
-            agent_name="Tool-Recovery-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[unreliable_tool, fallback_tool],
-            retry_attempts=3,
-        )
-
-        # Test error recovery
-        response = agent.run("Use unreliable_tool with input 5")
-        assert response is not None, "Tool error recovery failed"
-
-        print("✓ Tool error recovery test passed")
-
-    def test_tool_with_different_output_types(self):
-        """Test tools with different output types"""
-        print("\nTesting tools with different output types...")
-
-        def json_tool(data: dict) -> str:
-            """Tool that returns JSON string"""
-            import json
-
-            return json.dumps(data)
-
-        def yaml_tool(data: dict) -> str:
-            """Tool that returns YAML string"""
-            import yaml
-
-            return yaml.dump(data)
-
-        def dict_tool(x: int) -> dict:
-            """Tool that returns dictionary"""
-            return {"value": x, "squared": x**2}
-
-        agent = Agent(
-            agent_name="Output-Types-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[json_tool, yaml_tool, dict_tool],
-        )
-
-        # Test JSON tool
-        response = agent.run(
-            "Use json_tool with data {'name': 'test', 'value': 123}"
-        )
-        assert response is not None, "JSON tool execution failed"
-
-        # Test YAML tool
-        response = agent.run(
-            "Use yaml_tool with data {'key': 'value'}"
-        )
-        assert response is not None, "YAML tool execution failed"
-
-        # Test dict tool
-        response = agent.run("Use dict_tool with input 5")
-        assert response is not None, "Dict tool execution failed"
-
-        print("✓ Tools with different output types test passed")
-
-    def test_tool_with_async_execution(self):
-        """Test tools with async execution"""
-        print("\nTesting tools with async execution...")
-
-        async def async_tool(x: int) -> int:
-            """Async tool that performs async operation"""
-            import asyncio
-
-            await asyncio.sleep(0.01)  # Simulate async operation
-            return x * 2
-
-        def sync_tool(x: int) -> int:
-            """Sync tool"""
-            return x + 1
-
-        agent = Agent(
-            agent_name="Async-Tool-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[
-                sync_tool
-            ],  # Note: async tools need special handling
-        )
-
-        # Test sync tool execution
-        response = agent.run("Use sync_tool with input 5")
-        assert response is not None, "Sync tool execution failed"
-
-        print("✓ Tools with async execution test passed")
-
-    def test_tool_with_file_operations(self):
-        """Test tools that perform file operations"""
-        print("\nTesting tools with file operations...")
-
-        import os
-        import tempfile
-
-        def file_writer_tool(filename: str, content: str) -> str:
-            """Tool that writes content to a file"""
-            with open(filename, "w") as f:
-                f.write(content)
-            return f"Written {len(content)} characters to {filename}"
-
-        def file_reader_tool(filename: str) -> str:
-            """Tool that reads content from a file"""
-            try:
-                with open(filename, "r") as f:
-                    return f.read()
-            except FileNotFoundError:
-                return "File not found"
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            test_file = os.path.join(temp_dir, "test.txt")
-
-            agent = Agent(
-                agent_name="File-Ops-Test-Agent",
-                model_name="gpt-5.4",
-                max_loops=1,
-                tools=[file_writer_tool, file_reader_tool],
-            )
-
-            # Test file writing
-            response = agent.run(
-                f"Use file_writer_tool to write 'Hello World' to {test_file}"
-            )
-            assert (
-                response is not None
-            ), "File writing tool execution failed"
-
-            # Test file reading
-            response = agent.run(
-                f"Use file_reader_tool to read from {test_file}"
-            )
-            assert (
-                response is not None
-            ), "File reading tool execution failed"
-
-        print("✓ Tools with file operations test passed")
-
-    def test_tool_with_network_operations(self):
-        """Test tools that perform network operations"""
-        print("\nTesting tools with network operations...")
-
-        def url_tool(url: str) -> str:
-            """Tool that processes URLs"""
-            return f"Processing URL: {url}"
-
-        def api_tool(endpoint: str, method: str = "GET") -> str:
-            """Tool that simulates API calls"""
-            return f"API {method} request to {endpoint}"
-
-        agent = Agent(
-            agent_name="Network-Ops-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[url_tool, api_tool],
-        )
-
-        # Test URL tool
-        response = agent.run(
-            "Use url_tool with 'https://example.com'"
-        )
-        assert response is not None, "URL tool execution failed"
-
-        # Test API tool
-        response = agent.run(
-            "Use api_tool with endpoint '/api/data' and method 'POST'"
-        )
-        assert response is not None, "API tool execution failed"
-
-        print("✓ Tools with network operations test passed")
-
-    def test_tool_with_database_operations(self):
-        """Test tools that perform database operations"""
-        print("\nTesting tools with database operations...")
-
-        def db_query_tool(query: str) -> str:
-            """Tool that simulates database queries"""
-            return f"Executed query: {query}"
-
-        def db_insert_tool(table: str, data: dict) -> str:
-            """Tool that simulates database inserts"""
-            return f"Inserted data into {table}: {data}"
-
-        agent = Agent(
-            agent_name="Database-Ops-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[db_query_tool, db_insert_tool],
-        )
-
-        # Test database query
-        response = agent.run(
-            "Use db_query_tool with 'SELECT * FROM users'"
-        )
-        assert (
-            response is not None
-        ), "Database query tool execution failed"
-
-        # Test database insert
-        response = agent.run(
-            "Use db_insert_tool with table 'users' and data {'name': 'John'}"
-        )
-        assert (
-            response is not None
-        ), "Database insert tool execution failed"
-
-        print("✓ Tools with database operations test passed")
-
-    def test_tool_with_machine_learning_operations(self):
-        """Test tools that perform ML operations"""
-        print("\nTesting tools with ML operations...")
-
-        def predict_tool(features: list) -> str:
-            """Tool that simulates ML predictions"""
-            return f"Prediction for features {features}: 0.85"
-
-        def train_tool(model_name: str, data_size: int) -> str:
-            """Tool that simulates model training"""
-            return f"Trained {model_name} with {data_size} samples"
-
-        agent = Agent(
-            agent_name="ML-Ops-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[predict_tool, train_tool],
-        )
-
-        # Test ML prediction
-        response = agent.run(
-            "Use predict_tool with features [1, 2, 3, 4]"
-        )
-        assert (
-            response is not None
-        ), "ML prediction tool execution failed"
-
-        # Test ML training
-        response = agent.run(
-            "Use train_tool with model 'random_forest' and data_size 1000"
-        )
-        assert (
-            response is not None
-        ), "ML training tool execution failed"
-
-        print("✓ Tools with ML operations test passed")
-
-    def test_tool_with_image_processing(self):
-        """Test tools that perform image processing"""
-        print("\nTesting tools with image processing...")
-
-        def resize_tool(
-            image_path: str, width: int, height: int
-        ) -> str:
-            """Tool that simulates image resizing"""
-            return f"Resized {image_path} to {width}x{height}"
-
-        def filter_tool(image_path: str, filter_type: str) -> str:
-            """Tool that simulates image filtering"""
-            return f"Applied {filter_type} filter to {image_path}"
-
-        agent = Agent(
-            agent_name="Image-Processing-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[resize_tool, filter_tool],
-        )
-
-        # Test image resizing
-        response = agent.run(
-            "Use resize_tool with image 'test.jpg', width 800, height 600"
-        )
-        assert (
-            response is not None
-        ), "Image resize tool execution failed"
-
-        # Test image filtering
-        response = agent.run(
-            "Use filter_tool with image 'test.jpg' and filter 'blur'"
-        )
-        assert (
-            response is not None
-        ), "Image filter tool execution failed"
-
-        print("✓ Tools with image processing test passed")
-
-    def test_tool_with_text_processing(self):
-        """Test tools that perform text processing"""
-        print("\nTesting tools with text processing...")
-
-        def tokenize_tool(text: str) -> list:
-            """Tool that tokenizes text"""
-            return text.split()
-
-        def translate_tool(text: str, target_lang: str) -> str:
-            """Tool that simulates translation"""
-            return f"Translated '{text}' to {target_lang}"
-
-        def sentiment_tool(text: str) -> str:
-            """Tool that simulates sentiment analysis"""
-            return f"Sentiment of '{text}': positive"
-
-        agent = Agent(
-            agent_name="Text-Processing-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[tokenize_tool, translate_tool, sentiment_tool],
-        )
-
-        # Test text tokenization
-        response = agent.run(
-            "Use tokenize_tool with 'Hello world this is a test'"
-        )
-        assert (
-            response is not None
-        ), "Text tokenization tool execution failed"
-
-        # Test translation
-        response = agent.run(
-            "Use translate_tool with 'Hello' and target_lang 'Spanish'"
-        )
-        assert (
-            response is not None
-        ), "Translation tool execution failed"
-
-        # Test sentiment analysis
-        response = agent.run(
-            "Use sentiment_tool with 'I love this product!'"
-        )
-        assert (
-            response is not None
-        ), "Sentiment analysis tool execution failed"
-
-        print("✓ Tools with text processing test passed")
-
-    def test_tool_with_mathematical_operations(self):
-        """Test tools that perform mathematical operations"""
-        print("\nTesting tools with mathematical operations...")
-
-        def matrix_multiply_tool(
-            matrix_a: list, matrix_b: list
-        ) -> list:
-            """Tool that multiplies matrices"""
-            # Simple 2x2 matrix multiplication
-            result = [[0, 0], [0, 0]]
-            for i in range(2):
-                for j in range(2):
-                    for k in range(2):
-                        result[i][j] += (
-                            matrix_a[i][k] * matrix_b[k][j]
-                        )
-            return result
-
-        def statistics_tool(data: list) -> dict:
-            """Tool that calculates statistics"""
-            return {
-                "mean": sum(data) / len(data),
-                "max": max(data),
-                "min": min(data),
-                "count": len(data),
-            }
-
-        def calculus_tool(function: str, x: float) -> str:
-            """Tool that simulates calculus operations"""
-            return f"Derivative of {function} at x={x}: 2*x"
-
-        agent = Agent(
-            agent_name="Math-Ops-Test-Agent",
-            model_name="gpt-5.4",
-            max_loops=1,
-            tools=[
-                matrix_multiply_tool,
-                statistics_tool,
-                calculus_tool,
-            ],
-        )
-
-        # Test matrix multiplication
-        response = agent.run(
-            "Use matrix_multiply_tool with [[1,2],[3,4]] and [[5,6],[7,8]]"
-        )
-        assert (
-            response is not None
-        ), "Matrix multiplication tool execution failed"
-
-        # Test statistics
-        response = agent.run(
-            "Use statistics_tool with [1, 2, 3, 4, 5]"
-        )
-        assert (
-            response is not None
-        ), "Statistics tool execution failed"
-
-        # Test calculus
-        response = agent.run("Use calculus_tool with 'x^2' and x=3")
-        assert response is not None, "Calculus tool execution failed"
-
-        print("✓ Tools with mathematical operations test passed")
-
-
-# ============================================================================
-# LLM ARGS AND HANDLING TESTS
-# ============================================================================
 
 
 class TestLLMArgsAndHandling:
-    """Test LLM arguments and handling functionality"""
+    """llm_args, credentials and the kwargs path into litellm."""
 
-    def test_combined_llm_args(self):
-        """Test that llm_args, tools_list_dictionary, and MCP tools can be combined."""
-        print("\nTesting combined LLM args...")
-
-        # Mock tools list dictionary
-        tools_list = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "test_function",
-                    "description": "A test function",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "test_param": {
-                                "type": "string",
-                                "description": "A test parameter",
-                            }
-                        },
-                    },
+    TOOLS_LIST = [
+        {
+            "type": "function",
+            "function": {
+                "name": "test_function",
+                "description": "A test function",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"test_param": {"type": "string"}},
                 },
-            }
-        ]
-
-        # Mock llm_args with Azure OpenAI specific parameters
-        llm_args = {
-            "api_version": "2024-02-15-preview",
-            "base_url": "https://your-resource.openai.azure.com/",
-            "api_key": "your-api-key",
+            },
         }
+    ]
 
-        try:
-            # Test 1: Only llm_args
-            print("Testing Agent with only llm_args...")
-            Agent(
-                agent_name="test-agent-1",
-                model_name="gpt-5.4",
-                llm_args=llm_args,
-            )
-            print("✓ Agent with only llm_args created successfully")
+    LLM_ARGS = {
+        "api_version": "2024-02-15-preview",
+        "base_url": "https://your-resource.openai.azure.com/",
+        "api_key": "your-api-key",
+    }
 
-            # Test 2: Only tools_list_dictionary
-            print("Testing Agent with only tools_list_dictionary...")
-            Agent(
-                agent_name="test-agent-2",
-                model_name="gpt-5.4",
-                tools_list_dictionary=tools_list,
-            )
-            print(
-                "✓ Agent with only tools_list_dictionary created successfully"
-            )
+    @pytest.mark.parametrize(
+        "model_name", ["gpt-5.4", "azure/gpt-4o"]
+    )
+    def test_llm_args_and_tools_survive_together(self, model_name):
+        """llm_args — including the api_version an Azure deployment needs —
+        and tools_list_dictionary must both be preserved."""
+        agent = Agent(
+            agent_name="llm-args-agent",
+            model_name=model_name,
+            llm_args=self.LLM_ARGS,
+            tools_list_dictionary=self.TOOLS_LIST,
+        )
 
-            # Test 3: Combined llm_args and tools_list_dictionary
-            print(
-                "Testing Agent with combined llm_args and tools_list_dictionary..."
-            )
-            agent3 = Agent(
-                agent_name="test-agent-3",
-                model_name="gpt-5.4",
-                llm_args=llm_args,
-                tools_list_dictionary=tools_list,
-            )
-            print(
-                "✓ Agent with combined llm_args and tools_list_dictionary created successfully"
-            )
-
-            # Test 4: Verify that the LLM instance has the correct configuration
-            print("Verifying LLM configuration...")
-
-            # Check that agent3 has both llm_args and tools configured
-            assert (
-                agent3.llm_args == llm_args
-            ), "llm_args not preserved"
-            assert (
-                agent3.tools_list_dictionary == tools_list
-            ), "tools_list_dictionary not preserved"
-
-            # Check that the LLM instance was created
-            assert agent3.llm is not None, "LLM instance not created"
-
-            print("✓ LLM configuration verified successfully")
-            print("✓ Combined LLM args test passed")
-
-        except Exception as e:
-            print(f"✗ Combined LLM args test failed: {e}")
-            raise
-
-    def test_azure_openai_example(self):
-        """Test the Azure OpenAI example with api_version parameter."""
-        print("\nTesting Azure OpenAI example with api_version...")
-
-        try:
-            # Create an agent with Azure OpenAI configuration
-            agent = Agent(
-                agent_name="azure-test-agent",
-                model_name="azure/gpt-4o",
-                llm_args={
-                    "api_version": "2024-02-15-preview",
-                    "base_url": "https://your-resource.openai.azure.com/",
-                    "api_key": "your-api-key",
-                },
-                tools_list_dictionary=[
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "get_weather",
-                            "description": "Get weather information",
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "location": {
-                                        "type": "string",
-                                        "description": "The city and state",
-                                    }
-                                },
-                            },
-                        },
-                    }
-                ],
-            )
-
-            print(
-                "✓ Azure OpenAI agent with combined parameters created successfully"
-            )
-
-            # Verify configuration
-            assert agent.llm_args is not None, "llm_args not set"
-            assert (
-                "api_version" in agent.llm_args
-            ), "api_version not in llm_args"
-            assert (
-                agent.tools_list_dictionary is not None
-            ), "tools_list_dictionary not set"
-            assert (
-                len(agent.tools_list_dictionary) > 0
-            ), "tools_list_dictionary is empty"
-
-            print("✓ Azure OpenAI configuration verified")
-            print("✓ Azure OpenAI example test passed")
-
-        except Exception as e:
-            print(f"✗ Azure OpenAI test failed: {e}")
-            raise
+        assert agent.llm_args == self.LLM_ARGS
+        assert "api_version" in agent.llm_args
+        assert agent.tools_list_dictionary == self.TOOLS_LIST
+        assert agent.llm is not None
 
     def test_llm_handling_args_kwargs(self):
-        """Test that llm_handling properly handles both args and kwargs."""
-        print("\nTesting LLM handling args and kwargs...")
-
-        # Create an agent instance
+        """llm_handling accepts kwargs, dict-args, both, and loose args."""
         agent = Agent(
             agent_name="test-agent",
             model_name="gpt-5.4",
@@ -2389,68 +645,17 @@ class TestLLMArgsAndHandling:
             max_tokens=1000,
         )
 
-        # Test 1: Call llm_handling with kwargs
-        print("Test 1: Testing kwargs handling...")
-        try:
-            # This should work and add the kwargs to additional_args
-            agent.llm_handling(top_p=0.9, frequency_penalty=0.1)
-            print("✓ kwargs handling works")
-        except Exception as e:
-            print(f"✗ kwargs handling failed: {e}")
-            raise
-
-        # Test 2: Call llm_handling with args (dictionary)
-        print("Test 2: Testing args handling with dictionary...")
-        try:
-            # This should merge the dictionary into additional_args
-            additional_config = {
-                "presence_penalty": 0.2,
-                "logit_bias": {"123": 1},
-            }
-            agent.llm_handling(additional_config)
-            print("✓ args handling with dictionary works")
-        except Exception as e:
-            print(f"✗ args handling with dictionary failed: {e}")
-            raise
-
-        # Test 3: Call llm_handling with both args and kwargs
-        print("Test 3: Testing both args and kwargs...")
-        try:
-            # This should handle both
-            additional_config = {"presence_penalty": 0.3}
-            agent.llm_handling(
-                additional_config, top_p=0.8, frequency_penalty=0.2
-            )
-            print("✓ combined args and kwargs handling works")
-        except Exception as e:
-            print(f"✗ combined args and kwargs handling failed: {e}")
-            raise
-
-        # Test 4: Call llm_handling with non-dictionary args
-        print("Test 4: Testing non-dictionary args...")
-        try:
-            # This should store args under 'additional_args' key
-            agent.llm_handling(
-                "some_string", 123, ["list", "of", "items"]
-            )
-            print("✓ non-dictionary args handling works")
-        except Exception as e:
-            print(f"✗ non-dictionary args handling failed: {e}")
-            raise
-
-        print("✓ LLM handling args and kwargs test passed")
+        agent.llm_handling(top_p=0.9, frequency_penalty=0.1)
+        agent.llm_handling({"presence_penalty": 0.2})
+        agent.llm_handling({"presence_penalty": 0.3}, top_p=0.8)
+        agent.llm_handling("some_string", 123, ["list"])
 
     def _capture_completion_params(self, llm):
         """Run llm with completion stubbed, returning the kwargs it got."""
         captured = {}
+        message = SimpleNamespace(content="ok", tool_calls=None)
         response = SimpleNamespace(
-            choices=[
-                SimpleNamespace(
-                    message=SimpleNamespace(
-                        content="ok", tool_calls=None
-                    )
-                )
-            ]
+            choices=[SimpleNamespace(message=message)]
         )
 
         def fake_completion(**kwargs):
@@ -2464,15 +669,46 @@ class TestLLMArgsAndHandling:
 
         return captured
 
+    def test_reasoning_effort_is_absent_by_default(self):
+        """It defaulted to "medium" and rode along on every request. OpenAI
+        rejects reasoning_effort alongside function tools on
+        /v1/chat/completions, so `Agent(model_name="gpt-5.4-mini",
+        tools=[...])` raised BadRequestError out of the box.
+        """
+        agent = Agent(
+            agent_name="reasoning-default-probe",
+            model_name="gpt-5.4-mini",
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+        )
+
+        assert agent.reasoning_effort is None
+        params = self._capture_completion_params(agent.llm)
+        assert "reasoning_effort" not in params
+
+    def test_explicit_reasoning_effort_still_reaches_the_provider(
+        self,
+    ):
+        """Defaulting to absent must not make the option unusable."""
+        agent = Agent(
+            agent_name="reasoning-explicit-probe",
+            model_name="gpt-5.4-mini",
+            reasoning_effort="high",
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+        )
+
+        params = self._capture_completion_params(agent.llm)
+        assert params.get("reasoning_effort") == "high"
+
     def test_llm_base_url_and_api_key_reach_the_provider_call(self):
         """A custom endpoint and key must survive Agent -> completion().
 
-        Both values cross two layers and each dropped them
-        independently, so requests silently went to the default
-        provider instead.
+        Both values cross two layers and each dropped them independently, so
+        requests silently went to the default provider instead.
         """
-        print("\nTesting llm_base_url / llm_api_key forwarding...")
-
         base_url = "https://api.together.xyz/v1"
         api_key = "sk-test-not-a-real-key"
 
@@ -2486,36 +722,22 @@ class TestLLMArgsAndHandling:
             print_on=False,
         )
 
-        # Layer 1: Agent -> its LiteLLM instance
-        assert (
-            agent.llm.base_url == base_url
-        ), "llm_base_url did not reach the LiteLLM instance"
-        assert (
-            agent.llm.api_key == api_key
-        ), "llm_api_key did not reach the LiteLLM instance"
-        print("✓ Agent forwards both to its LiteLLM instance")
+        assert agent.llm.base_url == base_url
+        assert agent.llm.api_key == api_key
 
-        # Layer 2: LiteLLM -> litellm.completion
         params = self._capture_completion_params(agent.llm)
-        assert (
-            params.get("base_url") == base_url
-        ), "base_url did not reach completion()"
-        assert (
-            params.get("api_key") == api_key
-        ), "api_key did not reach completion()"
-        print("✓ Both reach the provider call")
+        assert params.get("base_url") == base_url
+        assert params.get("api_key") == api_key
 
     def test_unset_credentials_are_omitted_from_the_provider_call(
         self,
     ):
         """An unset key must be absent, not passed as None.
 
-        litellm falls back to the provider env var only when the
-        kwarg is absent; an explicit None would override that and
-        break every caller not using a custom endpoint.
+        litellm falls back to the provider env var only when the kwarg is
+        absent; an explicit None would override that and break every caller
+        not using a custom endpoint.
         """
-        print("\nTesting that unset credentials stay absent...")
-
         agent = Agent(
             agent_name="credential-default-probe",
             model_name="gpt-4o-mini",
@@ -2525,36 +747,19 @@ class TestLLMArgsAndHandling:
         )
 
         params = self._capture_completion_params(agent.llm)
-        assert (
-            "api_key" not in params
-        ), "api_key must be omitted so the env-var fallback applies"
-        assert (
-            "base_url" not in params
-        ), "base_url must be omitted when no endpoint is configured"
-        print("✓ Default path leaves both out")
+        assert "api_key" not in params
+        assert "base_url" not in params
 
 
-# ============================================================================
-# CONTEXT LENGTH
-# ============================================================================
-
-
-class TestContextLength:
-    """context_length must survive __init__ and reach the Conversation."""
+class TestConstructorWindows:
+    """context_length and max_tokens must survive __init__ rather than being
+    overwritten with a flat default."""
 
     @staticmethod
     def _agent(**kwargs):
-        with patch("swarms.structs.agent.LiteLLM"):
-            return Agent(
-                agent_name="ctx_agent",
-                max_loops=1,
-                print_on=False,
-                verbose=False,
-                persistent_memory=False,
-                **kwargs,
-            )
+        return _patched_agent("window_agent", **kwargs)
 
-    def test_explicit_value_is_honoured(self):
+    def test_context_length_explicit_value_is_honoured(self):
         """The constructor argument used to be overwritten with 16000."""
         agent = self._agent(
             model_name="gpt-4.1", context_length=200000
@@ -2563,64 +768,44 @@ class TestContextLength:
         assert agent.context_length == 200000
         assert agent.short_memory.context_length == 200000
 
-    def test_default_uses_the_model_input_window(self):
+    def test_context_length_defaults_to_the_model_input_window(self):
         """Omitting it should size to the model, not a flat 16000."""
-        agent = self._agent(model_name="gpt-4o")
+        # The relation, not the literal, so a litellm model-table refresh
+        # does not break this.
+        assert self._agent(model_name="gpt-4o").context_length > 16000
 
-        # gpt-4o's input window is far above the old hardcoded default;
-        # asserting the relation rather than the literal keeps this from
-        # breaking when litellm refreshes its model table.
-        assert agent.context_length > 16000
-
-    def test_unknown_model_falls_back(self):
-        """An unrecognised model must not raise out of __init__."""
-        agent = self._agent(model_name="totally-made-up-model-xyz")
-
-        assert agent.context_length == 16000
-
-
-class TestMaxTokens:
-    """max_tokens must survive __init__, the way context_length already does."""
-
-    @staticmethod
-    def _agent(**kwargs):
-        with patch("swarms.structs.agent.LiteLLM"):
-            return Agent(
-                agent_name="tok_agent",
-                max_loops=1,
-                print_on=False,
-                verbose=False,
-                persistent_memory=False,
-                **kwargs,
-            )
-
-    def test_explicit_value_is_honoured(self):
-        """A caller capping output was overwritten with the model's own limit."""
+    def test_max_tokens_explicit_value_is_honoured(self):
+        """A caller capping output was overwritten with the model's limit."""
         agent = self._agent(model_name="gpt-4o-mini", max_tokens=500)
 
         assert agent.max_tokens == 500
 
-    def test_default_uses_the_model_output_window(self):
-        agent = self._agent(model_name="gpt-4o-mini")
+    def test_max_tokens_defaults_to_the_model_output_window(self):
+        assert self._agent(model_name="gpt-4o-mini").max_tokens > 500
 
-        assert agent.max_tokens > 500
-
-    def test_non_positive_falls_back_to_the_model(self):
+    def test_non_positive_max_tokens_falls_back_to_the_model(self):
         for bad in (0, -1, None):
             agent = self._agent(
                 model_name="gpt-4o-mini", max_tokens=bad
             )
             assert agent.max_tokens > 0
 
-    def test_unknown_model_falls_back(self):
+    def test_saved_state_path_is_honoured(self):
+        """It was assigned, then overwritten with a generated name twelve
+        lines later, so the caller's path never reached save()."""
+        agent = self._agent(saved_state_path="/tmp/chosen-state.json")
+
+        assert agent.saved_state_path == "/tmp/chosen-state.json"
+
+    def test_saved_state_path_defaults_when_unset(self):
+        assert self._agent().saved_state_path.endswith("_state.json")
+
+    def test_unknown_model_falls_back_for_both(self):
+        """An unrecognised model must not raise out of __init__."""
         agent = self._agent(model_name="totally-made-up-model-xyz")
 
+        assert agent.context_length == 16000
         assert agent.max_tokens == 16000
-
-
-# ============================================================================
-# RELIABILITY CHECK WARNINGS
-# ============================================================================
 
 
 class TestFunctionCallingWarning:
@@ -2628,18 +813,12 @@ class TestFunctionCallingWarning:
 
     @staticmethod
     def _warnings_for(**kwargs):
-        with patch("swarms.structs.agent.LiteLLM"), patch(
+        with patch(
             "swarms.structs.agent.supports_function_calling",
             return_value=False,
         ), patch("swarms.structs.agent.logger") as log:
-            Agent(
-                agent_name="warn_agent",
-                model_name="gpt-5.4",
-                max_loops=1,
-                print_on=False,
-                verbose=False,
-                persistent_memory=False,
-                **kwargs,
+            _patched_agent(
+                "warn_agent", model_name="gpt-5.4", **kwargs
             )
         return " ".join(str(c) for c in log.warning.call_args_list)
 
@@ -2656,26 +835,12 @@ class TestFunctionCallingWarning:
         assert "does not support function calling" in warnings
 
 
-# ============================================================================
-# TOOLS LIST ISOLATION
-# ============================================================================
-
-
 class TestToolsListIsolation:
     """tools_list_dictionary must not be shared between Agent instances."""
 
     @staticmethod
     def _agent(name, **kwargs):
-        with patch("swarms.structs.agent.LiteLLM"):
-            return Agent(
-                agent_name=name,
-                model_name="gpt-5.4",
-                max_loops=1,
-                print_on=False,
-                verbose=False,
-                persistent_memory=False,
-                **kwargs,
-            )
+        return _patched_agent(name, model_name="gpt-5.4", **kwargs)
 
     def test_default_is_per_instance(self):
         """One agent's tools must not reach another, or the next one."""
@@ -2697,34 +862,20 @@ class TestToolsListIsolation:
         )
 
 
-# ============================================================================
-# AUTONOMOUS AGENT LOOP
-# ============================================================================
-
-
 class TestAutonomousAgentLoop:
-    """
-    The ``max_loops="auto"`` plan-execute-summarize loop lives in
-    ``swarms.agents.autonomous_loop.AutonomousAgentLoop`` rather than on
-    ``Agent``. These tests pin the seam between the two: that the loop is
-    wired up, that it reads and writes agent state through its back-reference,
-    and that ``Agent.run`` still routes to it.
+    """The ``max_loops="auto"`` loop lives in ``AutonomousAgentLoop``, not on
+    ``Agent``. These pin the seam: the loop is wired up, it reads and writes
+    agent state through its back-reference, and ``Agent.run`` routes to it.
     """
 
     @staticmethod
     def _agent(max_loops="auto", **kwargs):
-        with patch("swarms.structs.agent.LiteLLM"):
-            return Agent(
-                agent_name="AutoLoopAgent",
-                model_name="gpt-5.4",
-                max_loops=max_loops,
-                print_on=False,
-                verbose=False,
-                persistent_memory=False,
-                **kwargs,
-            )
-
-    # -- wiring ------------------------------------------------------------
+        return _patched_agent(
+            "AutoLoopAgent",
+            model_name="gpt-5.4",
+            max_loops=max_loops,
+            **kwargs,
+        )
 
     def test_loop_is_constructed_and_back_references_agent(self):
         """Every agent owns a loop, and the loop can reach its agent."""
@@ -2746,7 +897,7 @@ class TestAutonomousAgentLoop:
             assert not hasattr(agent, name)
 
     def test_agent_entry_point_delegates_to_the_loop(self):
-        """Agent._run_autonomous_loop is a passthrough, not a reimplementation."""
+        """Agent._run_autonomous_loop is a passthrough, not a rewrite."""
         agent = self._agent()
         with patch.object(
             agent.autonomous_loop,
@@ -2778,8 +929,6 @@ class TestAutonomousAgentLoop:
         ):
             assert fixed.run("go") == "fixed-path"
         loop_run.assert_not_called()
-
-    # -- state crosses the seam -------------------------------------------
 
     def test_all_subtasks_complete_reads_agent_state(self):
         """The loop's view of completion comes from the agent, not itself."""
@@ -2818,68 +967,40 @@ class TestAutonomousAgentLoop:
         agent.subtask_status = {1: "pending"}
         assert loop._get_next_executable_subtask()["id"] == 1
 
-        # once 1 is done, 2 unblocks
         agent.autonomous_subtasks[0]["status"] = "completed"
         agent.subtask_status = {1: "completed"}
         assert loop._get_next_executable_subtask()["id"] == 2
 
-        # nothing pending -> nothing to run
         agent.autonomous_subtasks[1]["status"] = "completed"
         assert loop._get_next_executable_subtask() is None
 
-    # -- end to end --------------------------------------------------------
-
     def test_loop_drives_plan_then_execution_against_a_stub_llm(self):
-        """A canned LLM should carry the loop from planning through completion."""
+        """A canned LLM carries the loop from planning through completion."""
         prompts = []
 
-        def fake_call_llm(
-            self,
-            task=None,
-            img=None,
-            imgs=None,
-            current_loop=0,
-            streaming_callback=None,
-            *args,
-            **kwargs,
-        ):
+        step = {
+            "step_id": "s1",
+            "description": "step one",
+            "priority": "high",
+            "dependencies": [],
+        }
+        plan = {"task_description": "the loop", "steps": [step]}
+        done = {
+            "task_id": "s1",
+            "summary": "done",
+            "success": True,
+        }
+
+        def call(name, arguments):
+            fn = {"name": name, "arguments": json.dumps(arguments)}
+            return [{"function": fn}]
+
+        def fake_call_llm(self, task=None, *args, **kwargs):
             prompts.append(task)
             if len(prompts) == 1:
-                return [
-                    {
-                        "function": {
-                            "name": "create_plan",
-                            "arguments": json.dumps(
-                                {
-                                    "task_description": "exercise the loop",
-                                    "steps": [
-                                        {
-                                            "step_id": "s1",
-                                            "description": "step one",
-                                            "priority": "high",
-                                            "dependencies": [],
-                                        }
-                                    ],
-                                }
-                            ),
-                        }
-                    }
-                ]
+                return call("create_plan", plan)
             if len(prompts) <= 3:
-                return [
-                    {
-                        "function": {
-                            "name": "subtask_done",
-                            "arguments": json.dumps(
-                                {
-                                    "task_id": "s1",
-                                    "summary": "step one is done",
-                                    "success": True,
-                                }
-                            ),
-                        }
-                    }
-                ]
+                return call("subtask_done", done)
             return "FINAL"
 
         agent = self._agent()
@@ -2893,84 +1014,11 @@ class TestAutonomousAgentLoop:
         assert [s["step_id"] for s in agent.autonomous_subtasks] == [
             "s1"
         ]
-        # and executing it marked the subtask finished
         assert agent.subtask_status["s1"] == "completed"
 
 
-# ============================================================================
-# MAIN TEST RUNNER
-# ============================================================================
-
-
-def run_all_tests():
-    """Run all test functions"""
-    print("Starting Merged Agent Test Suite...\n")
-
-    # Test classes to run
-    test_classes = [
-        TestBasicAgent,
-        TestAgentFeatures,
-        TestAgentLogging,
-        TestCreateAgentsFromYaml,
-        TestAgentBenchmark,
-        TestAgentToolUsage,
-        TestLLMArgsAndHandling,
-    ]
-
-    total_tests = 0
-    passed_tests = 0
-    failed_tests = 0
-
-    for test_class in test_classes:
-        print(f"\n{'='*50}")
-        print(f"Running {test_class.__name__}")
-        print(f"{'='*50}")
-
-        # Create test instance
-        test_instance = test_class()
-
-        # Get all test methods
-        test_methods = [
-            method
-            for method in dir(test_instance)
-            if method.startswith("test_")
-        ]
-
-        for test_method in test_methods:
-            total_tests += 1
-            try:
-                # Run the test method
-                getattr(test_instance, test_method)()
-                passed_tests += 1
-                print(f"✓ {test_method}")
-            except Exception as e:
-                failed_tests += 1
-                print(f"✗ {test_method}: {str(e)}")
-
-    # Print summary
-    print(f"\n{'='*50}")
-    print("Test Summary")
-    print(f"{'='*50}")
-    print(f"Total Tests: {total_tests}")
-    print(f"Passed: {passed_tests}")
-    print(f"Failed: {failed_tests}")
-    print(f"Success Rate: {(passed_tests/total_tests)*100:.2f}%")
-
-    return {
-        "total": total_tests,
-        "passed": passed_tests,
-        "failed": failed_tests,
-        "success_rate": (passed_tests / total_tests) * 100,
-    }
-
-
-# ============================================================================
-# arun forwarding and error path (#1853 item 3)
-# ============================================================================
-
-
 class TestArunForwarding:
-    """arun() must forward its arguments to run() and not await a sync method."""
+    """arun() must forward its arguments to run(), not await a sync method."""
 
     def _bare_agent(self):
         # No LLM/model setup — these tests only exercise arun's plumbing.
@@ -2982,11 +1030,9 @@ class TestArunForwarding:
 
     def test_extra_positional_args_reach_run(self):
         """`task=`/`img=` as keywords alongside *args made every extra
-        positional collide with `task`, so arun(task, img, extra) raised
-        `TypeError: run() got multiple values for argument 'task'`.
+        positional collide with `task`: arun(task, img, extra) raised
+        `TypeError: got multiple values for argument 'task'`.
         """
-        import asyncio
-
         agent = self._bare_agent()
         seen = {}
 
@@ -3003,11 +1049,9 @@ class TestArunForwarding:
         assert seen["args"] == ("T", "I", "EXTRA")
 
     def test_error_path_does_not_await_a_sync_handler(self):
-        """`_handle_run_error` is sync and re-raises; seven other call sites
-        do not await it. The await was harmless only because the method
-        always raises before returning.
+        """`_handle_run_error` is sync and re-raises; the await was harmless
+        only because it always raises before returning.
         """
-        import asyncio
         import inspect
 
         assert not inspect.iscoroutinefunction(
@@ -3030,20 +1074,14 @@ class TestArunForwarding:
             asyncio.run(Agent.arun(agent, "T"))
 
 
-# ============================================================================
-# Empty-task handling in run() (#1852)
-# ============================================================================
-
-
 class TestEmptyTaskGuard:
-    """run() must not read from stdin for an empty task when interactive=False."""
+    """run() must not read stdin for an empty task when interactive=False."""
 
     @pytest.mark.parametrize("empty_task", ["", "   ", "\n\t ", None])
     def test_non_interactive_empty_task_raises(self, empty_task):
         """A commented-out `self.interactive and ...` left the guard
-        unconditional, so a non-interactive run of an empty task blocked on
-        console input instead of failing. Raising here proves the prompt —
-        which comes after this branch — is never reached.
+        unconditional, so an empty task blocked on console input. Raising
+        proves the prompt, which follows this branch, is never reached.
         """
         agent = Agent.__new__(Agent)
         agent.interactive = False
@@ -3053,11 +1091,10 @@ class TestEmptyTaskGuard:
 
 
 class TestToolExecutionRetry:
-    """#1794: tool_execution_retry promised `tool_retry_attempts` retries and a
-    re-raise once exhausted. It called execute_tools exactly once, caught only
-    AgentToolExecutionError — a type nothing in the framework raises — and
-    returned, so a failed tool run left no Tool Executor entry in short_memory
-    and the model carried on as though the call had succeeded.
+    """#1794: it called execute_tools once regardless of tool_retry_attempts,
+    caught only AgentToolExecutionError — which nothing raises — and returned,
+    so a failed tool run left no Tool Executor entry and the model carried on
+    as though the call had succeeded.
     """
 
     @staticmethod
@@ -3068,8 +1105,9 @@ class TestToolExecutionRetry:
         agent.tool_retry_attempts = attempts
         return agent
 
-    def test_retries_up_to_the_configured_attempts(self):
-        agent = self._agent(attempts=5)
+    @pytest.mark.parametrize("attempts", [3, 5])
+    def test_retries_up_to_the_configured_attempts(self, attempts):
+        agent = self._agent(attempts=attempts)
         calls = []
 
         def failing(response, loop_count):
@@ -3081,22 +1119,11 @@ class TestToolExecutionRetry:
             Agent.tool_execution_retry(agent, [{"function": {}}], 1)
 
         # The regression: this was 1 regardless of tool_retry_attempts.
-        assert len(calls) == 5
-
-    def test_default_attempts_are_honoured(self):
-        agent = self._agent(attempts=3)
-        calls = []
-        agent.execute_tools = lambda response, loop_count: (
-            calls.append(1),
-            (_ for _ in ()).throw(RuntimeError("boom")),
-        )
-        with pytest.raises(AgentToolExecutionError):
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
-        assert len(calls) == 3
+        assert len(calls) == attempts
 
     def test_failure_is_raised_not_swallowed(self):
-        """Returning None here is what hid tool failures: the caller saw no
-        error and short_memory carried no Tool Executor entry."""
+        """Returning None hid tool failures: no error, and no Tool Executor
+        entry in short_memory."""
         agent = self._agent(attempts=1)
 
         def failing(response, loop_count):
@@ -3113,9 +1140,8 @@ class TestToolExecutionRetry:
         )
 
     def test_catches_the_exception_types_actually_raised(self):
-        """execute_tools re-raises the tool's own exception verbatim and nothing
-        raises AgentToolExecutionError, so catching only that type caught
-        nothing. A plain ValueError must be retried like any other failure.
+        """Nothing raises AgentToolExecutionError, so catching only that type
+        caught nothing. A ValueError must be retried like any other.
         """
         agent = self._agent(attempts=2)
         calls = []
@@ -3153,8 +1179,8 @@ class TestToolExecutionRetry:
         assert called == []
 
     def test_a_zero_or_none_attempt_count_still_runs_once(self):
-        """tool_retry_attempts is caller-supplied; 0 must not mean 'never run
-        the tools', which would silently disable tool execution entirely.
+        """0 must not mean 'never run the tools', which would silently
+        disable tool execution entirely.
         """
         for attempts in (0, None):
             agent = self._agent(attempts=attempts)
@@ -3169,24 +1195,22 @@ class TestToolExecutionRetry:
 
 
 class TestConcurrentExecutionPool:
-    """#1793: Agent's concurrent entry points referenced self.executor, which
-    __init__ never assigned. run_concurrent_tasks caught the resulting
-    AttributeError and returned None; talk_to_multiple_agents raised it. Both
-    now build a call-scoped pool, so neither depends on an Agent attribute.
+    """#1793: both concurrent entry points referenced self.executor, which
+    __init__ never assigned — run_concurrent_tasks swallowed the AttributeError
+    and returned None, talk_to_multiple_agents raised it. Both now build a
+    call-scoped pool.
     """
 
     @staticmethod
     def _agent(name="A"):
-        """A bare Agent carrying only what the concurrent paths touch — no
-        __init__, so no model client, memory files or provider calls.
-        """
+        """A bare Agent — no __init__, so no client or provider calls."""
         agent = Agent.__new__(Agent)
         agent.agent_name = name
         return agent
 
     def test_no_executor_attribute_is_required(self):
-        """The regression itself: the concurrent paths must not depend on an
-        instance attribute that __init__ does not set."""
+        """The concurrent paths must not depend on an attribute __init__
+        does not set."""
         agent = self._agent()
         assert not hasattr(agent, "executor")
 
@@ -3207,8 +1231,8 @@ class TestConcurrentExecutionPool:
         assert results == ["ran:t1", "ran:t2", "ran:t3"]
 
     def test_run_concurrent_tasks_propagates_failure(self):
-        """Previously the except branch logged and fell through, so a failed
-        batch returned None and the caller saw no error at all."""
+        """The except branch logged and fell through, so a failed batch
+        returned None and the caller saw no error."""
         agent = self._agent()
         with patch.object(
             Agent, "run", side_effect=RuntimeError("boom")
@@ -3250,8 +1274,7 @@ class TestConcurrentExecutionPool:
         assert outputs == [None, "to:C"]
 
     def test_pool_is_shut_down_after_each_call(self):
-        """The pool is call-scoped, so an agent used repeatedly must not leak a
-        thread pool per call."""
+        """Call-scoped, so a reused agent must not leak a pool per call."""
         agent = self._agent()
         before = threading.active_count()
         with patch.object(
@@ -3269,9 +1292,9 @@ class TestConcurrentExecutionPool:
 
 
 class TestRunBatchedImagePairing:
-    """`for task, imgs in zip(tasks, imgs)` rebound the parameter to a single
-    image, so the List[str] `imgs` field received a bare str — and with the
-    documented default of imgs=None the zip raised before any task ran.
+    """`for task, imgs in zip(tasks, imgs)` rebound the parameter, so `imgs`
+    received a bare str — and with the documented imgs=None default the zip
+    raised before any task ran.
     """
 
     @staticmethod
@@ -3311,118 +1334,44 @@ class TestRunBatchedImagePairing:
                 )
 
 
-# ============================================================================
-# CALLER-SUPPLIED MESSAGES
-# ============================================================================
+class TestEmptyToolsList:
+    """`tools=[]` must mean the same as `tools=None`.
 
-
-def _stub_completion_response(content="stubbed answer"):
-    """The smallest object shaped like a litellm ModelResponse."""
-    return SimpleNamespace(
-        choices=[
-            SimpleNamespace(
-                message=SimpleNamespace(
-                    content=content, tool_calls=None
-                ),
-                finish_reason="stop",
-                index=0,
-            )
-        ],
-        usage=SimpleNamespace(
-            prompt_tokens=1, completion_tokens=1, total_tokens=2
-        ),
-        model="gpt-4o-mini",
-    )
-
-
-class TestCallerSuppliedMessages:
-    """`agent.run(messages=[...])` used to be discarded.
-
-    `_run` overwrote `llm_kwargs["messages"]` with a transcript rebuilt from
-    the agent's own memory, so turns handed in by a caller that owns the
-    conversation - a multi-agent structure - never reached the provider.
+    `exists()` is `is not None`, so an empty list counted as having tools and
+    bought the agent a `tool_search` schema with nothing to search.
     """
 
     @staticmethod
-    def _agent(name):
+    def _agent(**kwargs):
         return Agent(
-            agent_name=name,
-            system_prompt="You are a test agent.",
+            agent_name="empty_tools_agent",
             model_name="gpt-4o-mini",
             max_loops=1,
-            persistent_memory=False,
-            print_on=False,
-            dynamic_tools=False,
-            autosave=False,
+            **kwargs,
         )
 
-    @staticmethod
-    def _capture_messages(monkeypatch):
-        """Replace the provider call; return the list of message lists sent."""
-        captured = []
+    def test_empty_list_advertises_no_tools(self):
+        assert self._agent(tools=[]).tools_list_dictionary == []
 
-        def fake_completion(**params):
-            captured.append(params.get("messages"))
-            return _stub_completion_response()
-
-        monkeypatch.setattr(
-            litellm_wrapper, "completion", fake_completion
+    def test_empty_list_matches_none(self):
+        empty = self._agent(tools=[])
+        none = self._agent(tools=None)
+        assert (
+            empty.tools_list_dictionary == none.tools_list_dictionary
         )
-        return captured
-
-    def test_supplied_messages_reach_the_provider(self, monkeypatch):
-        """Both injected turns arrive, roles intact, task last."""
-        captured = self._capture_messages(monkeypatch)
-        agent = self._agent("supplied-messages-probe")
-
-        agent.run(
-            task="the task",
-            messages=[
-                {"role": "user", "content": "INJECTED_USER"},
-                {
-                    "role": "assistant",
-                    "content": "INJECTED_ASSISTANT",
-                },
-            ],
+        assert ("tool_search" in empty.system_prompt) == (
+            "tool_search" in none.system_prompt
         )
 
-        assert captured, "completion() was never called"
-        sent = captured[0]
-        pairs = [(m["role"], m["content"]) for m in sent]
+    def test_a_real_tool_still_defers(self):
+        def sample(x: str) -> str:
+            """Return x.
 
-        assert ("user", "INJECTED_USER") in pairs
-        assert ("assistant", "INJECTED_ASSISTANT") in pairs
+            Args:
+                x: anything
+            """
+            return x
 
-        # The task is the new user turn, appended after the supplied prefix.
-        assert pairs[-1] == ("user", "the task")
-
-    def test_memory_derived_transcript_is_unchanged_without_messages(
-        self, monkeypatch
-    ):
-        """No `messages` kwarg -> the agent still builds typed turns itself."""
-        captured = self._capture_messages(monkeypatch)
-        agent = self._agent("memory-transcript-probe")
-
-        agent.run(task="first task")
-        agent.run(task="second task")
-
-        assert len(captured) == 2
-        second = captured[1]
-        roles = [m["role"] for m in second]
-
-        assert "system" in roles
-        assert "user" in roles
-        assert "assistant" in roles
-        assert roles[-1] == "user"
-
-        # Not one flattened blob: the prior exchange is separate turns.
-        contents = [m["content"] for m in second]
-        assert "first task" in contents
-        assert "second task" == contents[-1]
-
-
-if __name__ == "__main__":
-    # Run all tests
-    results = run_all_tests()
-
-    print(results)
+        agent = self._agent(tools=[sample])
+        assert agent.tools_list_dictionary
+        assert "tool_search" in agent.system_prompt

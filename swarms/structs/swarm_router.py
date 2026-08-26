@@ -155,7 +155,6 @@ SwarmType = Literal[
     "GroupChat",
     "MultiAgentRouter",
     "HierarchicalSwarm",
-    "auto",
     "MajorityVoting",
     "CouncilAsAJudge",
     "HeavySwarm",
@@ -321,7 +320,7 @@ class SwarmRouter(SerializableMixin):
         description: str = "Routes your task to the desired swarm",
         max_loops: int = 1,
         agents: List[Union[Agent, Callable]] = [],
-        swarm_type: SwarmType = "SequentialWorkflow",  # "ConcurrentWorkflow" # "auto"
+        swarm_type: SwarmType = "SequentialWorkflow",
         autosave: bool = False,
         rearrange_flow: str = None,
         output_type: OutputType = "dict",
