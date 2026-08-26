@@ -510,7 +510,6 @@ result = router.run("Write a blog post about transformer architectures.")
 | `"BatchedGridWorkflow"` | Grid-based batch execution |
 | `"LLMCouncil"` | LLM-based council decisions |
 | `"AutoSwarmBuilder"` | Auto-configures everything |
-| `"auto"` | Router selects swarm_type automatically |
 
 ---
 
@@ -938,7 +937,7 @@ agent = Agent(
 | High-stakes ruling with deliberation | `CouncilAsAJudge` |
 | Structured adversarial debate | `DebateWithJudge` |
 | Deep research, many loops | `HeavySwarm` |
-| Don't know yet / rapid prototyping | `AutoSwarmBuilder` or `SwarmRouter(swarm_type="auto")` |
+| Don't know yet / rapid prototyping | `AutoSwarmBuilder` |
 | Need to switch architectures easily | `SwarmRouter` |
 
 ---
