@@ -163,8 +163,11 @@ class MajorityVoting:
 
     def reliability_check(self):
 
-        if self.agents is None:
-            raise ValueError("Agents list is empty")
+        if not self.agents:
+            raise ValueError("Agents list cannot be None or empty")
+
+        if self.max_loops <= 0:
+            raise ValueError("max_loops must be greater than 0")
 
         # Log the agents in a more formatted, readable way
         agent_list = "\n".join(

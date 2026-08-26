@@ -174,6 +174,14 @@ def test_majority_voting_error_handling():
     except ValueError as e:
         assert "max_loops" in str(e).lower() or "0" in str(e)
 
+    try:
+        MajorityVoting(agents=[analyst], max_loops=-1)
+        assert (
+            False
+        ), "Should have raised ValueError for negative max_loops"
+    except ValueError as e:
+        assert "max_loops" in str(e).lower()
+
 
 def test_majority_voting_different_output_types():
     """Test MajorityVoting with different output types"""
