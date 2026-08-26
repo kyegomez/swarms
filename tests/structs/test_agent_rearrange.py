@@ -156,7 +156,9 @@ def test_add_agent():
     )
 
     agent_rearrange.add_agent(new_agent)
-    assert "EditorAgent" in agent_rearrange.agents
+    assert "EditorAgent" in [
+        a.agent_name for a in agent_rearrange.agents
+    ]
     assert len(agent_rearrange.agents) == 3
 
 
@@ -171,8 +173,13 @@ def test_remove_agent():
     )
 
     agent_rearrange.remove_agent("ReviewerAgent")
-    assert "ReviewerAgent" not in agent_rearrange.agents
+    assert "ReviewerAgent" not in [
+        a.agent_name for a in agent_rearrange.agents
+    ]
     assert len(agent_rearrange.agents) == 2
+
+    with pytest.raises(ValueError):
+        agent_rearrange.remove_agent("ReviewerAgent")
 
 
 def test_add_agents():
