@@ -1,6 +1,6 @@
 import time
 import uuid
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Set
 from dataclasses import dataclass
 
 from swarms.structs.agent import Agent
@@ -533,6 +533,78 @@ class SocialAlgorithms:
 
         return algorithm_result
 
+    def _patch_agent_for_logging(
+        self, agent: AgentType
+    ) -> Callable[[], None]:
+        """
+        Route one agent's ``run`` and ``talk_to`` through communication logging.
+
+        Args:
+            agent (AgentType): The agent to wrap. Anything without a callable
+                ``run`` is skipped.
+
+        Returns:
+            Callable[[], None]: A no-argument callable that undoes the patch.
+
+        Notes:
+            The wrappers are installed as *instance* attributes. Assigning to
+            ``Agent.run`` instead would wrap every agent in the process for the
+            duration of the call, including agents owned by unrelated structures
+            on other threads, and two overlapping instances would capture each
+            other's wrappers as "the original" and leave the class permanently
+            patched once both had finished.
+
+            The wrappers take ``*args``/``**kwargs`` and forward them unchanged
+            rather than restating ``Agent.run``'s signature, so a parameter added
+            to ``Agent.run`` later keeps working here with no edit.
+        """
+        original_run = getattr(agent, "run", None)
+        if not callable(original_run):
+            return lambda: None
+
+        sender = getattr(agent, "agent_name", str(agent))
+
+        # An agent may already carry its own instance-level override; remember
+        # it so the restore puts that back rather than exposing the class method.
+        overridden: Dict[str, Any] = {
+            name: agent.__dict__[name]
+            for name in ("run", "talk_to")
+            if name in agent.__dict__
+        }
+
+        def logged_run(*args: Any, **kwargs: Any) -> Any:
+            task = args[0] if args else kwargs.get("task")
+            self._log_communication(sender, sender, task)
+            return original_run(*args, **kwargs)
+
+        agent.run = logged_run
+
+        original_talk_to = getattr(agent, "talk_to", None)
+        if callable(original_talk_to):
+
+            def logged_talk_to(*args: Any, **kwargs: Any) -> Any:
+                receiver = args[0] if args else kwargs.get("agent")
+                task = (
+                    args[1] if len(args) > 1 else kwargs.get("task")
+                )
+                self._log_communication(
+                    sender,
+                    getattr(receiver, "agent_name", str(receiver)),
+                    task,
+                )
+                return original_talk_to(*args, **kwargs)
+
+            agent.talk_to = logged_talk_to
+
+        def restore() -> None:
+            for name in ("run", "talk_to"):
+                if name in overridden:
+                    setattr(agent, name, overridden[name])
+                else:
+                    agent.__dict__.pop(name, None)
+
+        return restore
+
     def _wrap_algorithm_with_logging(self) -> Callable:
         """
         Wrap the social algorithm with communication logging.
@@ -541,47 +613,27 @@ class SocialAlgorithms:
             Callable: The wrapped algorithm with logging capabilities.
         """
 
-        def wrapped_algorithm(agents, task, **kwargs):
-            # Store original agent methods
-            original_talk_to = Agent.talk_to
-            original_run = Agent.run
+        def wrapped_algorithm(
+            agents: List[AgentType], task: str, **kwargs: Any
+        ) -> Any:
+            restores: List[Callable[[], None]] = []
+            patched: Set[int] = set()
 
-            def logged_talk_to(
-                agent_self, agent, task, img=None, *args, **kwargs
-            ):
-                # Log the communication
-                self._log_communication(
-                    agent_self.agent_name, agent.agent_name, task
-                )
-                # Call original method
-                return original_talk_to(
-                    agent_self, agent, task, img, *args, **kwargs
-                )
-
-            def logged_run(
-                agent_self, task, img=None, *args, **kwargs
-            ):
-                # Log the communication (self-communication)
-                self._log_communication(
-                    agent_self.agent_name, agent_self.agent_name, task
-                )
-                # Call original method
-                return original_run(
-                    agent_self, task, img, *args, **kwargs
-                )
-
-            # Temporarily replace methods
-            Agent.talk_to = logged_talk_to
-            Agent.run = logged_run
+            # The same agent can legitimately appear twice in one roster;
+            # patching it twice would nest the wrapper and log every call twice.
+            for agent in agents:
+                if id(agent) in patched:
+                    continue
+                patched.add(id(agent))
+                restores.append(self._patch_agent_for_logging(agent))
 
             try:
                 # Execute the algorithm
                 result = self.social_algorithm(agents, task, **kwargs)
                 return result
             finally:
-                # Restore original methods
-                Agent.talk_to = original_talk_to
-                Agent.run = original_run
+                for restore in reversed(restores):
+                    restore()
 
         return wrapped_algorithm
 
