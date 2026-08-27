@@ -45,7 +45,6 @@ import pytest
 from swarms import Agent
 from swarms.agents.agent_marketplace_handler import (
     AgentMarketplaceHandler,
-    DEFAULT_AGENT_NAME,
     DEFAULT_CATEGORY,
     MARKETPLACE_BASE_URL,
     _client,
@@ -598,7 +597,6 @@ class TestAddPrompt:
 
 def make_offline_agent(**overrides):
     kwargs = dict(
-        agent_name=DEFAULT_AGENT_NAME,
         model_name="gpt-4o-mini",
         persistent_memory=False,
         print_on=False,
@@ -645,7 +643,7 @@ class TestLoadPrompt:
             )
 
         install_get_transport(monkeypatch, handler)
-        agent = make_offline_agent(agent_name=DEFAULT_AGENT_NAME)
+        agent = make_offline_agent()
 
         agent.marketplace.load_prompt("some-id")
 

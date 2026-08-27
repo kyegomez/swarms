@@ -100,7 +100,7 @@ print(result)
 
 | Parameter | Type | Default | Purpose |
 |---|---|---|---|
-| `agent_name` | str | `"swarm-worker-01"` | Unique name — used for memory file paths |
+| `agent_name` | str | generated `agent-k3f9q` | Unique name — used for memory file paths; set it explicitly to keep it stable across restarts |
 | `agent_description` | str | generic | Shown to orchestrators for routing |
 | `system_prompt` | str | built-in | The agent's persona / instructions |
 | `model_name` | str | `"gpt-5.4"` | Any LiteLLM model string |
