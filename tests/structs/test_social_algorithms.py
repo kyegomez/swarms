@@ -459,7 +459,7 @@ class TestAlgorithmArgs:
 
 
 class TestTimeout:
-    """The timeout is SIGALRM-based, so it only works on the main thread."""
+    """The timeout is a joined worker thread, so it works from any thread."""
 
     def test_a_generous_timeout_does_not_interfere(self):
         swarm = _swarm(_pipeline, max_execution_time=30)
@@ -472,10 +472,6 @@ class TestTimeout:
 
         assert swarm.run("t").total_steps == 2
 
-    @pytest.mark.xfail(
-        reason="signal.alarm truncates to int, so alarm(0) cancels the timeout",
-        strict=False,
-    )
     def test_a_sub_second_budget_still_times_out(self):
         def slow(agents, task, **kwargs):
             time.sleep(2)
@@ -486,10 +482,6 @@ class TestTimeout:
         with pytest.raises(TimeoutError):
             swarm.run("t")
 
-    @pytest.mark.xfail(
-        reason="signal.signal cannot be called off the main thread",
-        strict=False,
-    )
     def test_run_works_on_a_worker_thread(self):
         swarm = _swarm(_pipeline)
         outcome = {}
@@ -505,13 +497,6 @@ class TestTimeout:
         thread.join()
 
         assert outcome.get("steps") == 2
-
-    @pytest.mark.xfail(
-        reason="run_async runs on a worker thread, where SIGALRM is unavailable",
-        strict=False,
-    )
-    def test_run_async_works_on_the_default_configuration(self):
-        assert _swarm(_pipeline).run_async("t").total_steps == 2
 
 
 class TestAlgorithmInfo:

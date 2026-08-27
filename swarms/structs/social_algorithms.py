@@ -1,3 +1,4 @@
+import threading
 import time
 import uuid
 from contextlib import contextmanager
@@ -321,24 +322,25 @@ class SocialAlgorithms:
         Raises:
             TimeoutError: If the function execution exceeds max_execution_time.
         """
-        import signal
+        outcome: Dict[str, Any] = {}
 
-        def timeout_handler(signum, frame):
+        def target() -> None:
+            try:
+                outcome["result"] = func(*args, **kwargs)
+            except BaseException as exc:
+                outcome["error"] = exc
+
+        worker = threading.Thread(target=target, daemon=True)
+        worker.start()
+        worker.join(self.max_execution_time)
+
+        if worker.is_alive():
             raise TimeoutError(
                 f"Algorithm execution exceeded {self.max_execution_time} seconds"
             )
-
-        # Set up timeout
-        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(int(self.max_execution_time))
-
-        try:
-            result = func(*args, **kwargs)
-            return result
-        finally:
-            # Restore original handler
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, old_handler)
+        if "error" in outcome:
+            raise outcome["error"]
+        return outcome.get("result")
 
     def _format_output(self, result: Any) -> Any:
         """
