@@ -437,8 +437,7 @@ class SocialAlgorithms:
                 "additional_kwargs": kwargs,
             },
         )
-        algorithm_kwargs = algorithm_args or {}
-        algorithm_kwargs.update(kwargs)
+        algorithm_kwargs = {**(algorithm_args or {}), **kwargs}
 
         # Add communication logging wrapper if enabled
         if self.enable_communication_logging:
