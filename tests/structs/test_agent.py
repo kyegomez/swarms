@@ -12,6 +12,7 @@ import yaml
 from dotenv import load_dotenv
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
+from swarms.structs.conversation import Conversation
 from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.schemas.agent_errors import AgentToolExecutionError
@@ -1375,3 +1376,165 @@ class TestEmptyToolsList:
         agent = self._agent(tools=[sample])
         assert agent.tools_list_dictionary
         assert "tool_search" in agent.system_prompt
+
+
+class TestRetryMemoryRollback:
+    """A retried loop must not leave the failed attempt's messages behind."""
+
+    MALFORMED_HANDOFF = [
+        {
+            "function": {
+                "name": "handoff_task",
+                "arguments": "{not valid json",
+            }
+        }
+    ]
+
+    @staticmethod
+    def _agent():
+        with patch("swarms.structs.agent.LiteLLM"):
+            return Agent(
+                agent_name="rollback_agent",
+                model_name="gpt-5.4",
+                max_loops=1,
+                retry_attempts=3,
+                print_on=False,
+                verbose=False,
+                persistent_memory=False,
+            )
+
+    @staticmethod
+    def _assistant_turns(agent):
+        return [
+            message["content"]
+            for message in agent.short_memory.conversation_history
+            if message["role"] == agent.agent_name
+        ]
+
+    def test_retry_does_not_duplicate_the_response(self):
+        """Malformed handoff arguments raise after the response is stored."""
+        agent = self._agent()
+
+        with patch.object(
+            agent,
+            "call_llm",
+            side_effect=[self.MALFORMED_HANDOFF, "final answer"],
+        ):
+            agent.run("task")
+
+        assert self._assistant_turns(agent) == ["final answer"]
+        # also pins the cache invalidation: a stale _str_cache would still
+        # feed the dropped turn into the next prompt
+        assert "not valid json" not in (
+            agent.short_memory.return_history_as_string()
+        )
+
+    def test_exhausted_retries_leave_no_partial_turns(self):
+        """Every attempt failing must leave the history as it was found."""
+        agent = self._agent()
+
+        with patch.object(
+            agent, "call_llm", return_value=self.MALFORMED_HANDOFF
+        ):
+            agent.run("task")
+
+        assert self._assistant_turns(agent) == []
+
+    def test_rollback_also_rewinds_memory_md(self, tmp_path):
+        """A rolled-back message must not survive on disk.
+
+        MEMORY.md is append-only and is replayed into the next process by
+        _preload_memory_md, so leaving the block there would reintroduce
+        the duplicate turn across restarts.
+        """
+        memory_md = tmp_path / "MEMORY.md"
+        conversation = Conversation(memory_md_path=str(memory_md))
+        conversation.add("user", "keep me")
+        checkpoint = conversation.checkpoint()
+        conversation.add("assistant", "drop me")
+        assert "drop me" in memory_md.read_text()
+
+        conversation.rollback(checkpoint)
+
+        contents = memory_md.read_text()
+        assert "drop me" not in contents
+        assert "keep me" in contents
+
+
+# ============================================================================
+# MAIN TEST RUNNER
+# ============================================================================
+
+
+def run_all_tests():
+    """Run all test functions"""
+    print("Starting Merged Agent Test Suite...\n")
+
+    # Test classes to run
+    test_classes = [
+        TestBasicAgent,
+        TestAgentFeatures,
+        TestAgentLogging,
+        TestCreateAgentsFromYaml,
+        TestAgentBenchmark,
+        TestAgentToolUsage,
+        TestLLMArgsAndHandling,
+    ]
+
+    total_tests = 0
+    passed_tests = 0
+    failed_tests = 0
+
+    for test_class in test_classes:
+        print(f"\n{'='*50}")
+        print(f"Running {test_class.__name__}")
+        print(f"{'='*50}")
+
+        # Create test instance
+        test_instance = test_class()
+
+        # Get all test methods
+        test_methods = [
+            method
+            for method in dir(test_instance)
+            if method.startswith("test_")
+        ]
+
+        for test_method in test_methods:
+            total_tests += 1
+            try:
+                # Run the test method
+                getattr(test_instance, test_method)()
+                passed_tests += 1
+                print(f"✓ {test_method}")
+            except Exception as e:
+                failed_tests += 1
+                print(f"✗ {test_method}: {str(e)}")
+
+    # Print summary
+    print(f"\n{'='*50}")
+    print("Test Summary")
+    print(f"{'='*50}")
+    print(f"Total Tests: {total_tests}")
+    print(f"Passed: {passed_tests}")
+    print(f"Failed: {failed_tests}")
+    print(f"Success Rate: {(passed_tests/total_tests)*100:.2f}%")
+
+    return {
+        "total": total_tests,
+        "passed": passed_tests,
+        "failed": failed_tests,
+        "success_rate": (passed_tests / total_tests) * 100,
+    }
+
+
+if __name__ == "__main__":
+    # Run all tests
+    results = run_all_tests()
+
+    print(results)
+
+
+# ============================================================================
+# arun forwarding and error path (#1853 item 3)
+# ============================================================================

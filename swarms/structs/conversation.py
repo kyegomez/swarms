@@ -11,6 +11,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Union,
 )
 
@@ -653,6 +654,53 @@ class Conversation:
         """Delete a message from the conversation history."""
         self.conversation_history.pop(int(index))
         self._str_cache = None
+
+    def checkpoint(self) -> Tuple[int, int]:
+        """Capture the current state so a failed block can be undone.
+
+        Returns:
+            Tuple[int, int]: An opaque token for :meth:`rollback`.
+        """
+        # Bound to a local so the None check narrows the type for the
+        # os.path calls below.
+        path = self.memory_md_path
+
+        memory_md_size = 0
+        if path and os.path.exists(path):
+            memory_md_size = os.path.getsize(path)
+
+        return (len(self.conversation_history), memory_md_size)
+
+    def rollback(self, checkpoint: Tuple[int, int]):
+        """Restore the state captured by :meth:`checkpoint`.
+
+        Drops the messages added since, from the in-memory history and from
+        MEMORY.md alike — the log is append-only, so rewinding it to the
+        recorded size removes exactly the blocks written since the snapshot.
+        Without that, a rolled-back message still reaches the next process
+        through ``_preload_memory_md``.
+
+        Args:
+            checkpoint (Tuple[int, int]): A token from :meth:`checkpoint`.
+        """
+        length, memory_md_size = checkpoint
+
+        del self.conversation_history[length:]
+        self._str_cache = None
+
+        path = self.memory_md_path
+        if not path:
+            return
+
+        try:
+            with self._memory_md_lock:
+                if (
+                    os.path.exists(path)
+                    and os.path.getsize(path) > memory_md_size
+                ):
+                    os.truncate(path, memory_md_size)
+        except Exception as e:
+            logger.error(f"Failed to roll back {path}: {e}")
 
     def update(self, index: str, role, content):
         """Update a message in the conversation history.
