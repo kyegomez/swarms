@@ -1371,5 +1371,70 @@ class TestAgentContextManagement:
         ), f"the second task never reached the agent: {messages}"
 
 
+# ============================================================================
+# concurrent_run — per-task isolation
+# ============================================================================
+
+
+class TestConcurrentRunIsolation:
+    def test_each_task_gets_own_clone_conversation(self):
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        tasks = ["alpha", "beta", "gamma"]
+        seen_conversations = []
+        parent_conversation = pipeline.conversation
+        parent_message_count = len(
+            parent_conversation.conversation_history
+        )
+
+        def _mock_run(self_inner, task=None, img=None, *a, **kw):
+            seen_conversations.append(self_inner.conversation)
+            self_inner.conversation.add("user", task)
+            return f"result:{task}"
+
+        with patch.object(AgentRearrange, "_run", _mock_run):
+            results = pipeline.concurrent_run(
+                tasks=tasks, max_workers=1
+            )
+
+        assert results == [f"result:{task}" for task in tasks]
+        assert len(seen_conversations) == len(tasks)
+        assert all(
+            conversation is not parent_conversation
+            for conversation in seen_conversations
+        )
+        assert len({id(c) for c in seen_conversations}) == len(tasks)
+        assert (
+            len(parent_conversation.conversation_history)
+            == parent_message_count
+        )
+
+    def test_img_pairing_survives_isolated_closure(self):
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        tasks = ["t1", "t2", "t3"]
+        images = ["img1.png", "img2.png", "img3.png"]
+        received = []
+        parent_conversation = pipeline.conversation
+
+        def _mock_run(self_inner, task=None, img=None, *a, **kw):
+            received.append((task, img, self_inner.conversation))
+            return f"{task}:{img}"
+
+        with patch.object(AgentRearrange, "_run", _mock_run):
+            results = pipeline.concurrent_run(
+                tasks=tasks, img=images, max_workers=1
+            )
+
+        assert results == [
+            f"{task}:{img}" for task, img in zip(tasks, images)
+        ]
+        assert [(task, img) for task, img, _ in received] == list(
+            zip(tasks, images)
+        )
+        assert all(
+            conversation is not parent_conversation
+            for _, _, conversation in received
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

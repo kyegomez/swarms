@@ -944,7 +944,7 @@ class AgentRearrange(SerializableMixin):
         return self.run(task=task, *args, **kwargs)
 
     def _clone_for_task(self) -> "AgentRearrange":
-        """Build an isolated clone of this orchestrator for one batch_run task.
+        """Build an isolated clone of this orchestrator for one task.
 
         Each clone gets:
         - A fresh ``Conversation`` so per-task history does not bleed across
@@ -1088,8 +1088,14 @@ class AgentRearrange(SerializableMixin):
             The number of concurrent executions is limited by max_workers parameter.
             Each task runs independently through the full agent workflow.
         """
+
+        def run_isolated(task, *run_args, **run_kwargs):
+            return self._clone_for_task().run(
+                task, *run_args, **run_kwargs
+            )
+
         return run_concurrently(
-            self.run,
+            run_isolated,
             tasks,
             *args,
             img=img,
