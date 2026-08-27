@@ -56,3 +56,29 @@ def test_remove_agent_raises_agent_not_found_for_empty_agent_list():
 
     with pytest.raises(AgentNotFoundError):
         social_algorithm.remove_agent("researcher")
+
+
+def test_run_does_not_write_kwargs_into_the_callers_algorithm_args():
+    seen = {}
+
+    def algorithm(agents, task, **kwargs):
+        seen.clear()
+        seen.update(kwargs)
+        return "ok"
+
+    social_algorithm = SocialAlgorithms(
+        agents=[_agent("worker")],
+        social_algorithm=algorithm,
+    )
+    shared = {"depth": 3}
+
+    social_algorithm.run(
+        "first", algorithm_args=shared, temperature=0.2
+    )
+
+    assert shared == {"depth": 3}
+    assert seen == {"depth": 3, "temperature": 0.2}
+
+    social_algorithm.run("second", algorithm_args=shared)
+
+    assert seen == {"depth": 3}
