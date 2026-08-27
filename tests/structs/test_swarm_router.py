@@ -6,6 +6,7 @@ from swarms.structs.swarm_router import (
     SwarmRouterConfig,
     SwarmRouterRunError,
     SwarmRouterConfigError,
+    SwarmType,
 )
 from swarms.structs.agent import Agent
 
@@ -538,19 +539,17 @@ def test_run_with_heavy_swarm():
     assert result is not None
 
 
-def test_run_with_batched_grid_workflow():
-    """SwarmRouter dispatches to BatchedGridWorkflow."""
-    sample_agents = create_sample_agents()
+def test_batched_grid_workflow_is_rejected_at_construction():
+    """BatchedGridWorkflow is not routable and is not offered as a SwarmType."""
+    assert "BatchedGridWorkflow" not in get_args(SwarmType)
 
-    router = SwarmRouter(
-        agents=sample_agents,
-        swarm_type="BatchedGridWorkflow",
-        max_loops=1,
-        verbose=False,
-    )
-
-    result = router.run("What is 1+1?")
-    assert result is not None
+    with pytest.raises(SwarmRouterConfigError):
+        SwarmRouter(
+            agents=create_sample_agents(),
+            swarm_type="BatchedGridWorkflow",
+            max_loops=1,
+            verbose=False,
+        )
 
 
 def test_run_with_llm_council():
