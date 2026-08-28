@@ -21,7 +21,11 @@ from swarms.prompts.multi_agent_collab_prompt import (
     MULTI_AGENT_COLLAB_PROMPT_TWO,
 )
 from swarms.structs.agent import Agent
-from swarms.structs.context_utils import new_context_for
+from swarms.structs.context_utils import (
+    messages_for,
+    new_context_for,
+    split_last_turn,
+)
 from swarms.structs.conversation import Conversation
 from swarms.utils.any_to_str import any_to_str
 from swarms.structs.ma_blocks import find_agent_by_name
@@ -661,6 +665,21 @@ class HierarchicalSwarm:
             empty_message="(no new messages)",
         )
 
+    def _messages_for(self, agent_name: str) -> tuple:
+        """
+        The shared conversation as typed turns for one agent.
+
+        Args:
+            agent_name: The agent about to run.
+
+        Returns:
+            ``(prior_messages, task)``.
+        """
+        return split_last_turn(
+            messages_for(agent_name, self.conversation),
+            fallback="(no new messages)",
+        )
+
     def run_director(
         self,
         task: str,
@@ -789,7 +808,10 @@ class HierarchicalSwarm:
 
             if self.agent_as_judge:
                 feedback = self.run_judge_agent(outputs)
-            elif self.director_feedback_on is True:
+            elif (
+                self.director_feedback_on is True
+                and self.max_loops > 1
+            ):
                 feedback = self.feedback_director(outputs)
             else:
                 feedback = outputs
@@ -847,6 +869,9 @@ class HierarchicalSwarm:
             # Handle interactive mode task input
             if task is None and self.interactive:
                 task = self._get_interactive_task()
+
+            if task is not None:
+                self.conversation.add(role="User", content=task)
 
             current_loop = 0
             last_output = None
@@ -1003,7 +1028,9 @@ class HierarchicalSwarm:
         Create a one-shot judge agent that scores each worker agent's output.
 
         Args:
-            outputs (list): List of agent outputs to evaluate.
+            outputs (list): Accepted for call-site compatibility. The outputs
+                scored are read from the shared conversation, where they carry
+                their author's name.
 
         Returns:
             str: The structured JudgeReport as a string, also added to conversation.
@@ -1025,12 +1052,11 @@ class HierarchicalSwarm:
                 output_type="final",
             )
 
-            task = (
-                f"Conversation history:\n{self.conversation.get_str()}\n\n"
-                f"Agent outputs to evaluate:\n{outputs}"
-            )
-
-            result = judge.run(task=task)
+            # The workers' outputs are already in the conversation under
+            # their own names; interpolating the raw list here dropped those
+            # names and handed the judge a Python repr to score.
+            prior, judge_task = self._messages_for(judge.agent_name)
+            result = judge.run(task=judge_task, messages=prior)
             self.conversation.add(role="JudgeAgent", content=result)
             logger.info(f"Judge agent completed scoring:\n{result}")
             return result
@@ -1089,7 +1115,17 @@ class HierarchicalSwarm:
                     agent_name, "RUNNING", task, "Executing task..."
                 )
 
-            worker_task = f"History: {self._context_for(agent_name)} \n\n Task: {task}"
+            # The order's task is this turn's instruction; the history it
+            # needs rides alongside it as typed turns. A nested orchestrator
+            # has no `messages` parameter, so it keeps the flattened form.
+            worker_task = task
+            worker_extra = {}
+            if self._agent_supports_messages(agent):
+                worker_extra["messages"] = messages_for(
+                    agent_name, self.conversation
+                )
+            else:
+                worker_task = f"History: {self._context_for(agent_name)} \n\n Task: {task}"
 
             # Handle streaming callback if provided and the worker's run()
             # actually supports it. A worker may be a leaf Agent or a nested
@@ -1140,9 +1176,10 @@ class HierarchicalSwarm:
                     agent.streaming_on = True
                 try:
                     output = agent.run(
+                        *args,
                         task=worker_task,
                         streaming_callback=agent_streaming_callback,
-                        *args,
+                        **worker_extra,
                         **kwargs,
                     )
                 finally:
@@ -1159,8 +1196,9 @@ class HierarchicalSwarm:
                     )
             else:
                 output = agent.run(
-                    task=worker_task,
                     *args,
+                    task=worker_task,
+                    **worker_extra,
                     **kwargs,
                 )
                 if streaming_callback is not None:
@@ -1278,6 +1316,27 @@ class HierarchicalSwarm:
             or getattr(agent, "name", None)
             or str(agent)
         )
+
+    @staticmethod
+    def _agent_supports_messages(agent: Any) -> bool:
+        """Check whether ``agent.run`` accepts a ``messages`` kwarg.
+
+        Leaf agents take typed turns; nested orchestrators do not, and
+        passing the kwarg to one would raise ``TypeError``.
+        """
+        run_method = getattr(agent, "run", None)
+        if run_method is None:
+            return False
+        try:
+            signature = inspect.signature(run_method)
+        except (TypeError, ValueError):
+            return False
+        for parameter in signature.parameters.values():
+            if parameter.name == "messages":
+                return True
+            if parameter.kind is inspect.Parameter.VAR_KEYWORD:
+                return True
+        return False
 
     @staticmethod
     def _agent_supports_streaming_callback(agent: Any) -> bool:
@@ -1886,6 +1945,9 @@ class HierarchicalSwarm:
                 "loop": 0,
             }
 
+        if task is not None:
+            self.conversation.add(role="User", content=task)
+
         current_loop = 0
         last_output = None
 
@@ -1907,7 +1969,7 @@ class HierarchicalSwarm:
             # DIRECTOR PHASE
             # =============================================================
             director_task_str = (
-                f"History: {self.conversation.get_str()} "
+                f"History: {self._context_for(self.director.agent_name)} "
                 f"\n\n Task: {loop_task}"
             )
 
@@ -1924,7 +1986,7 @@ class HierarchicalSwarm:
                 )
                 # Refresh context after planning output was added
                 director_task_str = (
-                    f"History: {self.conversation.get_str()} "
+                    f"History: {self._context_for(self.director.agent_name)} "
                     f"\n\n Task: {loop_task}"
                 )
 
@@ -1994,7 +2056,7 @@ class HierarchicalSwarm:
                         self.agents, order.agent_name
                     )
                     w_task = (
-                        f"History: {self.conversation.get_str()} "
+                        f"History: {self._context_for(order.agent_name)} "
                         f"\n\n Task: {order.task}"
                     )
                     w_chunks: List[str] = []
@@ -2088,7 +2150,7 @@ class HierarchicalSwarm:
                         self.agents, order.agent_name
                     )
                     w_task = (
-                        f"History: {self.conversation.get_str()} "
+                        f"History: {self._context_for(order.agent_name)} "
                         f"\n\n Task: {order.task}"
                     )
 

@@ -1089,6 +1089,74 @@ class TestDefaultConversationDoesNotResumeFromDisk:
         assert "explicit save" in contents
 
 
+# ============================================================================
+# MESSAGE ACCESSORS: STRINGS VS REAL MESSAGE DICTS
+# ============================================================================
+
+
+def _two_turn_conversation():
+    conv = Conversation()
+    conv.add("user", "Hello, world!")
+    conv.add("assistant", "Hello, user!")
+    return conv
+
+
+def test_return_messages_as_strings_formats_role_colon_content():
+    """The flattener returns renderings, not messages."""
+    conv = _two_turn_conversation()
+
+    strings = conv.return_messages_as_strings()
+
+    assert isinstance(strings, list)
+    assert all(isinstance(s, str) for s in strings)
+    assert strings == [
+        "user: Hello, world!",
+        "assistant: Hello, user!",
+    ]
+
+
+def test_return_messages_as_list_returns_message_dicts():
+    """The name promises a message list, so it returns dicts, not strings."""
+    conversation = Conversation()
+    conversation.add("user", "Hello, world!")
+    conversation.add("assistant", "Hello, user!")
+
+    messages = conversation.return_messages_as_list()
+
+    assert all(isinstance(message, dict) for message in messages)
+    assert [m["role"] for m in messages] == ["user", "assistant"]
+    assert [m["content"] for m in messages] == [
+        "Hello, world!",
+        "Hello, user!",
+    ]
+    # The string rendering lives under its own name.
+    assert conversation.return_messages_as_strings() == [
+        "user: Hello, world!",
+        "assistant: Hello, user!",
+    ]
+
+
+def test_return_messages_as_dictionary_preserves_roles():
+    """The real message-list accessor: dicts with exactly role and content.
+
+    Asserting the type and the role keeps a future rename from silently
+    swapping this with the "role: content" flattener.
+    """
+    conv = _two_turn_conversation()
+
+    messages = conv.return_messages_as_dictionary()
+
+    assert isinstance(messages, list)
+    for message in messages:
+        assert isinstance(message, dict)
+        assert set(message.keys()) == {"role", "content"}
+
+    assert messages[0]["role"] == "user"
+    assert messages[0]["content"] == "Hello, world!"
+    assert messages[1]["role"] == "assistant"
+    assert messages[1]["content"] == "Hello, user!"
+
+
 if __name__ == "__main__":
     logger.info("Starting test execution")
     results = run_all_tests()

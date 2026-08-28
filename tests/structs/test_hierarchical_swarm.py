@@ -1143,17 +1143,36 @@ class TestHierarchicalContextManagement:
             f"across one loop: {director_turns}"
         )
 
-    def test_a_worker_is_not_re_sent_the_whole_history(self):
+    def test_a_worker_sees_its_own_output_once_as_assistant(self):
+        """The compounding this guards against is the agent re-reading itself.
+
+        Typed turns carry the whole conversation every request, so raw growth
+        is linear and no longer the signal. What must not happen is the
+        worker's own output coming back a second time, mislabelled as
+        something someone else said - that is what compounded across loops.
+        """
         _, seen = self._run_two_loops()
-        worker_turns = [
-            sum(len(str(m.get("content"))) for m in messages)
-            for name, messages in seen
-            if name == "W1"
+        worker_calls = [
+            messages for name, messages in seen if name == "W1"
         ]
-        if len(worker_turns) >= 2:
-            assert (
-                worker_turns[1] < worker_turns[0] * 5
-            ), f"worker context grew too fast: {worker_turns}"
+        if len(worker_calls) < 2:
+            return
+
+        second = worker_calls[1]
+        # Turns that are the output, not ones quoting it inside a larger
+        # blob: the feedback director still interpolates a flattened history
+        # (#2033), which is a separate unconverted path.
+        own = [
+            message
+            for message in second
+            if str(message.get("content")).strip() == "[W1-out]"
+        ]
+        assert (
+            len(own) == 1
+        ), f"the worker saw its own output {len(own)} times: {own}"
+        assert (
+            own[0]["role"] == "assistant"
+        ), f"own output arrived as {own[0]['role']!r}, not 'assistant'"
 
     def test_the_director_tool_call_is_stored_readably(self):
         """
