@@ -1,4 +1,3 @@
-from litellm import encode, model_list
 from loguru import logger
 from typing import Optional
 from functools import lru_cache
@@ -32,6 +31,8 @@ def count_tokens(
 
     # Set fallback encoder
     fallback_model = default_encoder or DEFAULT_MODEL
+
+    from litellm import encode
 
     # First attempt with the requested model
     try:
@@ -74,6 +75,8 @@ def count_tokens(
 def get_supported_models() -> list:
     """Get list of supported models from litellm."""
     try:
+        from litellm import model_list
+
         return model_list
     except Exception as e:
         logger.warning(f"Could not retrieve model list: {e}")

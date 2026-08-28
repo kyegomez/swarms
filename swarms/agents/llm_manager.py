@@ -31,16 +31,6 @@ import time
 import traceback
 from typing import Any, Callable, List, Optional, Union
 
-from litellm.exceptions import (
-    AuthenticationError,
-    BadRequestError,
-    InternalServerError,
-)
-from litellm.utils import (
-    supports_function_calling,
-    supports_parallel_function_calling,
-    supports_vision,
-)
 from loguru import logger
 
 from swarms.schemas.agent_errors import AgentLLMInitializationError
@@ -323,6 +313,12 @@ class LLMManager:
         Args:
             img (str, optional): Image input to check vision support for.
         """
+        from litellm.utils import (
+            supports_function_calling,
+            supports_parallel_function_calling,
+            supports_vision,
+        )
+
         agent = self.agent
 
         # Only check vision support if an image is provided
@@ -517,6 +513,12 @@ class LLMManager:
             AgentLLMError, BadRequestError, InternalServerError,
             AuthenticationError, Exception: re-raised for upstream handling.
         """
+        from litellm.exceptions import (
+            AuthenticationError,
+            BadRequestError,
+            InternalServerError,
+        )
+
         agent = self.agent
 
         # Filter out is_last from kwargs if present

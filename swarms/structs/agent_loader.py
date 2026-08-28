@@ -14,7 +14,6 @@ from typing import (
 )
 
 import yaml
-from litellm import model_list
 from pydantic import BaseModel
 from tqdm import tqdm
 
@@ -99,6 +98,8 @@ class AgentValidator:
         config: Union[BaseModel, Dict[str, Any]],
     ) -> AgentConfigDict:
         """Validate a config supplied as a pydantic model or a plain dict."""
+        from litellm import model_list
+
         try:
             if isinstance(config, BaseModel):
                 config = config.model_dump()

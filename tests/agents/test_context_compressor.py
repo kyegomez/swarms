@@ -176,7 +176,7 @@ class TestSummarize:
         agent = _make_agent(model_name="claude-sonnet-4-5")
         resp = _make_completion_response("summary text")
         with patch(
-            "swarms.agents.context_compressor.completion",
+            "litellm.completion",
             return_value=resp,
         ) as mock_comp:
             cc._summarize(agent, "history")
@@ -189,7 +189,7 @@ class TestSummarize:
         agent = _make_agent(model_name="claude-sonnet-4-5")
         resp = _make_completion_response("summary")
         with patch(
-            "swarms.agents.context_compressor.completion",
+            "litellm.completion",
             return_value=resp,
         ) as mock_comp:
             cc._summarize(agent, "history")
@@ -205,7 +205,7 @@ class TestSummarize:
         agent = _make_agent()
         resp = _make_completion_response()
         with patch(
-            "swarms.agents.context_compressor.completion",
+            "litellm.completion",
             return_value=resp,
         ) as mock_comp:
             cc._summarize(agent, "history")
@@ -219,7 +219,7 @@ class TestSummarize:
         history = "turn 1\nturn 2"
         resp = _make_completion_response()
         with patch(
-            "swarms.agents.context_compressor.completion",
+            "litellm.completion",
             return_value=resp,
         ) as mock_comp:
             cc._summarize(agent, history)
@@ -238,7 +238,7 @@ class TestSummarize:
         expected = "My compressed summary."
         resp = _make_completion_response(expected)
         with patch(
-            "swarms.agents.context_compressor.completion",
+            "litellm.completion",
             return_value=resp,
         ):
             result = cc._summarize(agent, "history")

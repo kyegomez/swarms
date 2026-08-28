@@ -22,9 +22,7 @@ import traceback
 from functools import lru_cache
 from typing import List, Optional, Union
 
-import litellm
 import requests
-from litellm import acompletion, completion, supports_vision
 from loguru import logger
 from pydantic import BaseModel
 
@@ -40,12 +38,16 @@ from swarms.utils.image_file_b64 import (
 @lru_cache(maxsize=None)
 def _model_supports_vision(model: str) -> bool:
     """Cached litellm.supports_vision lookup (pure function of model name)."""
+    from litellm import supports_vision
+
     return supports_vision(model=model)
 
 
 @lru_cache(maxsize=None)
 def _model_supports_reasoning(model: str) -> bool:
     """Cached litellm.supports_reasoning lookup (pure function of model name)."""
+    import litellm
+
     return litellm.supports_reasoning(model=model)
 
 
@@ -312,17 +314,17 @@ class LiteLLM:
         self.verbose = verbose
         self.response_format = response_format
         self.agent_name = agent_name
+
+        # Initialize attributes
         self.modalities = []
-        self.messages = []  # Initialize messages list
+        self.messages = []
+
+        import litellm
 
         # Configure litellm settings
-        litellm.set_verbose = (
-            verbose  # Disable verbose mode for better performance
-        )
+        litellm.set_verbose = verbose
         litellm.ssl_verify = ssl_verify
-        litellm.num_retries = (
-            retries  # Add retries for better reliability
-        )
+        litellm.num_retries = retries
 
         litellm.drop_params = drop_params
 
@@ -342,9 +344,6 @@ class LiteLLM:
         # Store additional args and kwargs for use in run method
         self.init_args = args
         self.init_kwargs = kwargs
-
-        # if self.reasoning_enabled is True:
-        #     self.reasoning_check()
 
     def reasoning_check(self):
         """
@@ -1372,6 +1371,8 @@ class LiteLLM:
                 runtime_kwargs=kwargs,
                 messages=messages,
             )
+            from litellm import completion
+
             response = completion(**completion_params)
             return self._process_response(response)
         except self._NETWORK_ERRORS as network_error:
@@ -1412,6 +1413,8 @@ class LiteLLM:
                 runtime_kwargs=kwargs,
                 messages=messages,
             )
+            from litellm import acompletion
+
             response = await acompletion(**completion_params)
             return self._process_response(response)
         except self._NETWORK_ERRORS as network_error:
@@ -1470,8 +1473,6 @@ class LiteLLM:
             responses = llm.batched_run(["Task 1", "Task 2", "Task 3"], batch_size=2)
             ```
         """
-        # Imported here, not at module scope: swarms.structs pulls this
-        # module back in, and a top-level import would be circular.
         from swarms.structs.execution_utils import run_concurrently
 
         return run_concurrently(
