@@ -118,25 +118,13 @@ class Prompt(BaseModel):
                 "New content must be different from the current content."
             )
 
-        # logger.info(
-        #     f"Editing prompt {self.id}. Current content: '{self.content}'"
-        # )
         self.edit_history.append(new_content)
         self.content = new_content
         self.edit_count += 1
         self.last_modified_at = time.strftime("%Y-%m-%d %H:%M:%S")
 
-        # logger.debug(
-        #     f"Prompt {self.id} updated. Edit count: {self.edit_count}. New content: '{self.content}'"
-        # )
-
         if self.autosave:
             self._autosave()
-
-    # def log_telemetry(self):
-    #     system_data = capture_system_data()
-    #     merged_data = {**system_data, **self.model_dump()}
-    #     log_agent_data(merged_data)
 
     def rollback(self, version: int) -> None:
         """
@@ -181,9 +169,6 @@ class Prompt(BaseModel):
         Returns:
             str: The current prompt content.
         """
-        # logger.debug(f"Returning prompt {self.id} as a string.")
-        # self.log_telemetry()
-
         return self.content
 
     def save_to_storage(self) -> None:
@@ -194,7 +179,6 @@ class Prompt(BaseModel):
         Raises:
             NotImplementedError: This method is a placeholder for storage integration.
         """
-        # logger.info(f"Saving prompt {self.id} to persistent storage.")
         raise NotImplementedError(
             "Persistent storage integration is required."
         )
@@ -212,9 +196,6 @@ class Prompt(BaseModel):
         Raises:
             NotImplementedError: This method is a placeholder for storage integration.
         """
-        # logger.info(
-        #     f"Loading prompt {prompt_id} from persistent storage."
-        # )
         raise NotImplementedError(
             "Persistent storage integration is required."
         )
@@ -250,19 +231,6 @@ class Prompt(BaseModel):
         )
         with open(file_path, "w") as file:
             json.dump(self.model_dump(), file)
-        # logger.info(f"Autosaved prompt {self.id} to {file_path}.")
-
-        # return "Prompt autosaved successfully."
-
-    # def auto_generate_prompt(self):
-    #     logger.info(f"Auto-generating prompt for {self.name}")
-    #     task = self.name + " " + self.description + " " + self.content
-    #     prompt = auto_generate_prompt(task, llm=self.llm, max_tokens=4000, use_second_sys_prompt=True)
-    #     logger.info("Generated prompt successfully, updating content")
-    #     self.edit_prompt(prompt)
-    #     logger.info("Prompt content updated")
-
-    #     return "Prompt auto-generated successfully."
 
     class Config:
         """Pydantic configuration for better JSON serialization."""
