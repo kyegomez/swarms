@@ -354,9 +354,7 @@ class AgentJudge:
             # The agent will run in a loop, remembering and updating the conversation context at each step.
             self.conversation.add(role="user", content=task)
             for _ in range(self.max_loops):
-                # The judge's own earlier evaluations, as `assistant` turns.
-                # The seeded task turn is dropped because step() re-sends it
-                # wrapped in the evaluation prompt.
+                # Prior verdicts as assistant turns; [1:] drops the task, which step() re-sends.
                 prior = messages_for(
                     self.agent.agent_name, self.conversation
                 )[1:]

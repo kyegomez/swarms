@@ -41,8 +41,7 @@ def _run_on_conversation(
     )
     response = agent.run(task=task, messages=prior)
 
-    # run() honours the agent's own output_type, which by default is its
-    # whole conversation rather than its answer.
+    # run() honours output_type, which by default is the whole conversation, not the answer.
     answer = agent_answer(agent, fallback=response)
     conversation.add(agent.agent_name, answer)
     return answer
@@ -83,8 +82,7 @@ def circular_swarm(
     conversation = Conversation()
 
     for task in tasks:
-        # Once per task, not once per agent: the turn is already in the
-        # conversation every agent reads.
+        # Once per task, not once per agent: every agent reads the same turn.
         conversation.add(
             role="User",
             content=task,

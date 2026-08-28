@@ -60,9 +60,7 @@ class ReasoningDuo:
 
         self.conversation = Conversation()
 
-        # Distinct names: a shared one made both agents the same speaker in
-        # the conversation, so neither could tell its own turns from the
-        # other's.
+        # Distinct names: a shared one made both agents the same speaker.
         self.reasoning_agent = Agent(
             agent_name=f"{self.agent_name}-reasoning",
             description=self.agent_description,
@@ -143,15 +141,13 @@ class ReasoningDuo:
         logger.info(
             f"Running task: {task} with max_loops: {self.max_loops}"
         )
-        # The task is appended by _run_agent on the first iteration; adding it
-        # here too would give the reasoning agent the same turn twice.
+        # _run_agent appends the task on the first iteration; adding it here would duplicate it.
         for loop_iteration in range(self.max_loops):
             logger.info(
                 f"Loop iteration {loop_iteration + 1}/{self.max_loops}"
             )
 
-            # Prior turns reach the agents as messages, so a later loop only
-            # needs the new instruction rather than a re-rendered transcript.
+            # Prior turns arrive as messages, so later loops need only the new instruction.
             current_task = (
                 task
                 if loop_iteration == 0
