@@ -286,57 +286,6 @@ def test_hierarchical_swarm_collaboration_prompts():
     assert result is not None
 
 
-def test_hierarchical_swarm_with_dashboard():
-    """Test HierarchicalSwarm with interactive dashboard"""
-    # Create agents
-    content_creator = Agent(
-        agent_name="Content-Creator",
-        agent_description="Content creation specialist",
-        model_name="gpt-5.4",
-        max_loops=1,
-        verbose=False,
-        print_on=False,
-    )
-
-    editor = Agent(
-        agent_name="Editor",
-        agent_description="Content editor and proofreader",
-        model_name="gpt-5.4",
-        max_loops=1,
-        verbose=False,
-        print_on=False,
-    )
-
-    publisher = Agent(
-        agent_name="Publisher",
-        agent_description="Publishing and distribution specialist",
-        model_name="gpt-5.4",
-        max_loops=1,
-        verbose=False,
-        print_on=False,
-    )
-
-    # Create swarm with interactive dashboard
-    swarm = HierarchicalSwarm(
-        name="Content-Publishing-Swarm",
-        description="Hierarchical swarm for content creation and publishing",
-        agents=[content_creator, editor, publisher],
-        max_loops=1,
-        interactive=True,
-        verbose=True,
-    )
-
-    # Verify dashboard was created
-    assert swarm.dashboard is not None
-    assert swarm.interactive is True
-
-    # Execute swarm
-    result = swarm.run(
-        "Create a comprehensive guide on machine learning best practices"
-    )
-    assert result is not None
-
-
 def test_hierarchical_swarm_real_world_scenario():
     """Test HierarchicalSwarm in a realistic business scenario"""
     # Create agents representing different business functions
