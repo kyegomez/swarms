@@ -1,5 +1,6 @@
 import copy
 import os
+from concurrent.futures import as_completed
 from typing import (
     Any,
     Callable,
@@ -20,14 +21,11 @@ from swarms.telemetry.otel import (
 )
 from swarms.structs.context_utils import (
     agent_answer,
-    new_context_for,
+    messages_for,
+    split_last_turn,
 )
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_blocks import find_agent_by_name
-from swarms.structs.multi_agent_exec import (
-    run_agents_concurrently,
-    run_agents_with_different_tasks,
-)
 from swarms.structs.serialization import SerializableMixin
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.history_output_formatter import (
@@ -120,6 +118,7 @@ class AgentRearrange(SerializableMixin):
         team_awareness: bool = False,
         time_enabled: bool = False,
         message_id_on: bool = False,
+        collab_prompt: Optional[str] = None,
     ):
         """
         Initialize the AgentRearrange system.
@@ -153,6 +152,9 @@ class AgentRearrange(SerializableMixin):
                 Defaults to False.
             message_id_on (bool): Whether to include message IDs in conversations.
                 Defaults to False.
+            collab_prompt (str, optional): Guidance prepended as a system turn
+                for every agent. Not written to the shared conversation.
+                Defaults to None.
 
         Raises:
             ValueError: If agents list is None or empty, max_loops is 0,
@@ -174,21 +176,10 @@ class AgentRearrange(SerializableMixin):
         self.autosave = autosave
         self.time_enabled = time_enabled
         self.message_id_on = message_id_on
+        self.team_awareness = team_awareness
+        self.collab_prompt = collab_prompt
 
-        # How much of the shared conversation each agent has already been
-        # given. Without this an agent receives the entire history on every
-        # invocation, that history lands in its own short_memory, and the next
-        # invocation re-sends it on top - so context grows exponentially across
-        # loops and the agent sees its own output twice, the second time
-        # mislabelled as something the user said.
-        self._delivered: Dict[str, int] = {}
-
-        self.conversation = Conversation(
-            name=f"{self.name}-Conversation",
-            time_enabled=self.time_enabled,
-            token_count=False,
-            message_id_on=self.message_id_on,
-        )
+        self._reset_conversation()
 
         if team_awareness is True:
             # agents_info = get_agents_info(agents=self.agents, team_name=self.name)
@@ -547,11 +538,49 @@ class AgentRearrange(SerializableMixin):
         """
         return self._get_sequential_flow_info()
 
-    def _context_for(self, agent_name: str) -> str:
-        """What this agent has not been given yet. See context_utils."""
-        return new_context_for(
-            agent_name, self.conversation, self._delivered
+    def _reset_conversation(self) -> None:
+        """Start a fresh shared conversation, re-seeding team awareness."""
+        self.conversation = Conversation(
+            name=f"{self.name}-Conversation",
+            time_enabled=self.time_enabled,
+            token_count=False,
+            message_id_on=self.message_id_on,
         )
+
+        if self.team_awareness is True:
+            sequential_info = self._get_sequential_flow_info()
+            if sequential_info:
+                self.conversation.add("system", sequential_info)
+
+    def _messages_for(
+        self, agent_name: str, extra_system: Optional[str] = None
+    ) -> tuple:
+        """
+        The shared conversation as typed turns for one agent.
+
+        Args:
+            agent_name: The agent about to run.
+            extra_system: Per-agent guidance - collaboration rules, flow
+                position - prepended as a system turn. It is not written to
+                the shared conversation, so other agents never see it.
+
+        Returns:
+            ``(prior_messages, task)`` - the conversation prefix as chat
+            messages, and the newest turn as this run's task.
+        """
+        prior, task = split_last_turn(
+            messages_for(agent_name, self.conversation)
+        )
+
+        preamble = "\n\n".join(
+            part
+            for part in (self.collab_prompt, extra_system)
+            if part
+        )
+        if preamble:
+            prior = [{"role": "system", "content": preamble}] + prior
+
+        return prior, task
 
     def _run_concurrent_workflow(
         self,
@@ -599,30 +628,44 @@ class AgentRearrange(SerializableMixin):
                 f"Agent(s) {missing} not registered in this AgentRearrange instance."
             )
 
-        # Concurrent agents in the same flow step each get their own slice of
-        # what is new for them; a shared task string would re-send history the
-        # agent already holds, which is what compounded across loops.
-        contexts = [self._context_for(name) for name in agent_names]
+        # Every agent in the step sees the same history, but each sees its own
+        # turns as `assistant`, so the message list is built per agent rather
+        # than shared.
+        results = [None] * len(agents_to_run)
+        with ContextThreadPoolExecutor(
+            max_workers=len(agents_to_run)
+        ) as executor:
+            future_to_index = {}
+            for index, (agent, name) in enumerate(
+                zip(agents_to_run, agent_names)
+            ):
+                prior, step_task = self._messages_for(name)
+                future = executor.submit(
+                    agent.run,
+                    task=step_task,
+                    messages=prior,
+                    img=img,
+                    **kwargs,
+                )
+                future_to_index[future] = index
 
-        if len(set(contexts)) == 1:
-            # Identical context for everyone (the common case on the first
-            # step) - the cheaper shared-task path still applies.
-            results = run_agents_concurrently(
-                agents=agents_to_run,
-                task=contexts[0],
-                img=img,
-            )
-        else:
-            results = run_agents_with_different_tasks(
-                list(zip(agents_to_run, contexts))
-            )
+            for future in as_completed(future_to_index):
+                index = future_to_index[future]
+                try:
+                    results[index] = future.result()
+                except Exception as error:
+                    results[index] = error
 
-        # Process results and update conversation
         response_dict = {}
         for i, agent_name in enumerate(agent_names):
             result = results[i]
 
-            # print(f"Result: {result}")
+            # `run` honours the agent's own output_type, which by default is
+            # its whole conversation; record the answer instead.
+            if not isinstance(result, Exception):
+                result = agent_answer(
+                    agents_to_run[i], fallback=result
+                )
 
             self.conversation.add(agent_name, result)
             response_dict[agent_name] = result
@@ -674,39 +717,27 @@ class AgentRearrange(SerializableMixin):
                 f"Agent '{agent_name}' is not registered in this AgentRearrange instance."
             )
 
-        # Sequential awareness is delivered through a temporary extension
-        # of the agent's system prompt rather than being added to the
-        # shared conversation. Two reasons:
-        #   1. The shared transcript stays clean — downstream agents do
-        #      not see other agents' private awareness payloads.
-        #   2. System-prompt content is excluded from the agent's default
-        #      response format ("str-all-except-first"), so the awareness
-        #      text cannot leak back into the conversation through the
-        #      agent's echo of its prompt.
-        # Mutation is safe here because sequential agents run one at a
-        # time, and batch_run gives each task its own orchestrator clone.
+        # Awareness rides in the message list rather than the agent's
+        # system_prompt: the prompt is baked into the LLM when it is built,
+        # so assigning to it here would never reach the request.
         awareness_info = self._get_sequential_awareness(
             agent_name, tasks, task_idx=task_idx
         )
-        original_system_prompt = getattr(agent, "system_prompt", None)
-        try:
-            if awareness_info and original_system_prompt is not None:
-                agent.system_prompt = (
-                    f"{original_system_prompt}\n\n{awareness_info}"
-                )
-                logger.info(
-                    f"Added sequential awareness for {agent_name}: {awareness_info}"
-                )
-
-            current_task = agent.run(
-                task=self._context_for(agent_name),
-                img=img,
-                *args,
-                **kwargs,
+        if awareness_info:
+            logger.info(
+                f"Added sequential awareness for {agent_name}: {awareness_info}"
             )
-        finally:
-            if awareness_info and original_system_prompt is not None:
-                agent.system_prompt = original_system_prompt
+
+        prior, step_task = self._messages_for(
+            agent_name, extra_system=awareness_info
+        )
+        current_task = agent.run(
+            task=step_task,
+            messages=prior,
+            img=img,
+            *args,
+            **kwargs,
+        )
 
         if not isinstance(current_task, str):
             current_task = any_to_str(current_task)
@@ -767,10 +798,9 @@ class AgentRearrange(SerializableMixin):
             based on the flow syntax. It also supports custom task injection
             and multiple execution loops as configured.
         """
-        # A new task starts a new delivery window. Without this the cursor
-        # carries over between tasks on a reused instance (batch_run), so the
-        # second task's agents are told there is nothing new and never see it.
-        self._delivered = {}
+        # A reused instance would otherwise serve the previous task's whole
+        # transcript as context for this one.
+        self._reset_conversation()
 
         self.conversation.add("User", task)
 
@@ -904,10 +934,6 @@ class AgentRearrange(SerializableMixin):
             The result from executing the task through the agent rearrange system.
             The format depends on the configured output_type.
 
-        Note:
-            This method automatically logs agent data before and after execution
-            for telemetry and debugging purposes. Any exceptions are caught and
-            handled by the _catch_error method.
         """
         try:
             out = self._run(
@@ -928,18 +954,6 @@ class AgentRearrange(SerializableMixin):
 
         Enables the AgentRearrange instance to be called directly as a function,
         providing a convenient interface for task execution.
-
-        Args:
-            task (str): The task to execute through the agent workflow.
-            *args: Additional positional arguments passed to run().
-            **kwargs: Additional keyword arguments passed to run().
-
-        Returns:
-            The result from executing the task through the agent rearrange system.
-
-        Example:
-            >>> rearrange_system = AgentRearrange(agents=[agent1, agent2], flow="agent1 -> agent2")
-            >>> result = rearrange_system("Process this data")
         """
         return self.run(task=task, *args, **kwargs)
 
@@ -1173,7 +1187,8 @@ class AgentRearrange(SerializableMixin):
             yield {"type": "agent_start", "agent": agent_name}
 
         chunks: List[str] = []
-        run_kwargs = {"task": self._context_for(agent_name)}
+        prior, step_task = self._messages_for(agent_name)
+        run_kwargs = {"task": step_task, "messages": prior}
         if img is not None:
             run_kwargs["img"] = img
         run_kwargs.update(kwargs)
@@ -1219,7 +1234,7 @@ class AgentRearrange(SerializableMixin):
         DONE = object()
         ERROR = object()
         base_inputs = {
-            name: self._context_for(name) for name in agent_names
+            name: self._messages_for(name) for name in agent_names
         }
         results: Dict[str, List[str]] = {
             name: [] for name in agent_names
@@ -1232,7 +1247,11 @@ class AgentRearrange(SerializableMixin):
         async def producer(name: str):
             try:
                 agent = find_agent_by_name(self.agents, name)
-                run_kwargs = {"task": base_inputs[name]}
+                prior, step_task = base_inputs[name]
+                run_kwargs = {
+                    "task": step_task,
+                    "messages": prior,
+                }
                 if img is not None:
                     run_kwargs["img"] = img
                 run_kwargs.update(kwargs)
@@ -1312,10 +1331,9 @@ class AgentRearrange(SerializableMixin):
         Not yet supported in streaming mode: ``max_loops > 1``,
         ``custom_tasks``. Use ``run()`` for those.
         """
-        # A new task starts a new delivery window. Without this the cursor
-        # carries over between tasks on a reused instance (batch_run), so the
-        # second task's agents are told there is nothing new and never see it.
-        self._delivered = {}
+        # A reused instance would otherwise serve the previous task's whole
+        # transcript as context for this one.
+        self._reset_conversation()
 
         self.conversation.add("User", task)
 
@@ -1413,39 +1431,6 @@ def rearrange(
     instance and immediately executing a task with it. It's useful for quick
     prototyping or when you don't need to reuse the rearrange system.
 
-    Parameters:
-        name (str, optional): Name for the agent rearrange system.
-            Defaults to None (uses AgentRearrange default).
-        description (str, optional): Description of the system.
-            Defaults to None (uses AgentRearrange default).
-        agents (List[Agent]): The list of agents to be included in the system.
-        flow (str): The flow pattern defining agent execution order.
-            Uses '->' for sequential and ',' for concurrent execution.
-        task (str, optional): The task to be performed during rearrangement.
-            Defaults to None.
-        img (str, optional): Image input for agents that support it.
-            Defaults to None.
-        *args: Additional positional arguments passed to AgentRearrange constructor.
-        **kwargs: Additional keyword arguments passed to AgentRearrange constructor.
-
-    Returns:
-        The result of running the agent system with the specified task.
-        The format depends on the output_type configuration.
-
-    Example:
-        >>> from swarms import Agent, rearrange
-        >>>
-        >>> # Create agents
-        >>> agent1 = Agent(name="researcher", ...)
-        >>> agent2 = Agent(name="writer", ...)
-        >>> agent3 = Agent(name="reviewer", ...)
-        >>>
-        >>> # Execute task with flow
-        >>> result = rearrange(
-        ...     agents=[agent1, agent2, agent3],
-        ...     flow="researcher -> writer, reviewer",
-        ...     task="Research and write a report"
-        ... )
     """
     agent_system = AgentRearrange(
         name=name,

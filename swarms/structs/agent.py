@@ -505,22 +505,11 @@ class Agent:
         self.reasoning_effort = reasoning_effort
         self.thinking_tokens = thinking_tokens
 
-        # Defer tool schemas and let the agent search for what it needs.
         self.dynamic_tools = dynamic_tools
         self.tool_loader: Optional[DynamicToolLoader] = None
-        # MCP schemas are fetched over the network, so they are folded into
-        # the catalog once rather than on every LLM rebuild.
         self._mcp_tools_deferred = False
-        # Fetched MCP schemas, kept so a rebuilt loader can be repopulated
-        # without another network call. The autonomous loop constructs a fresh
-        # loader per run, so a boolean "already deferred" flag is not enough.
         self._mcp_schemas_cache: Optional[List[dict]] = None
 
-        # Whether the autonomous loop offers the `think` tool. Off by default:
-        # a think call costs a full round-trip to produce reasoning the model
-        # could have emitted alongside its actions in the same response. Turn
-        # it on for models that do not reason natively, or when an explicit
-        # analysis step is worth the extra turn.
         self.think_tool = think_tool
         self.reasoning_enabled = reasoning_enabled
         self.fallback_model_name = fallback_model_name
@@ -530,9 +519,6 @@ class Agent:
         self.publish_to_marketplace = publish_to_marketplace
         self.marketplace_prompt_id = marketplace_prompt_id
 
-        # All MCP (Model Context Protocol) behaviour — connection handling,
-        # API key / bearer token / OAuth authentication, transport selection,
-        # tool discovery and tool execution — lives in MCPManager.
         self.mcp_manager = MCPManager(
             mcp_url=self.mcp_url,
             mcp_urls=self.mcp_urls,
@@ -1250,6 +1236,7 @@ class Agent:
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -1432,12 +1419,6 @@ class Agent:
                     self.dynamic_temperature()
 
                 # Task prompt with optional transforms.
-                #
-                # `transforms` rewrites the whole history into a single string
-                # by design, so that path keeps the legacy flattened prompt.
-                # Everything else sends a real message list, which preserves
-                # assistant `tool_calls` turns and `tool` results instead of
-                # collapsing them into prose.
                 task_prompt = None
                 use_transcript = self.transforms is None
 
@@ -1448,7 +1429,9 @@ class Agent:
                         model_name=self.model_name,
                     )
                 elif transcript is None:
-                    transcript = self._transcript_from_memory()
+                    transcript = self._transcript_from_messages(
+                        messages, task
+                    )
 
                 # Parameters
                 attempt = 0
@@ -4461,3 +4444,29 @@ Summary: {summary}
             f"Agent '{self.agent_name}' failed to execute tools in loop "
             f"{loop_count} after {attempts} attempt(s): {last_error}"
         ) from last_error
+
+    def _transcript_from_messages(
+        self,
+        messages: Optional[List[Dict[str, Any]]],
+        task: Optional[Any],
+    ) -> Transcript:
+        """
+        Build this run's transcript, preferring caller-supplied turns.
+
+        Args:
+            messages: Prior conversation as typed chat messages. When given,
+                these replace the memory-derived prefix and ``task`` is
+                appended as the new user turn. ``None`` falls back to
+                :meth:`_transcript_from_memory`.
+            task: The instruction for this turn.
+
+        Returns:
+            The transcript to send with the next request.
+        """
+        if messages is None:
+            return self._transcript_from_memory()
+
+        transcript = Transcript(list(messages))
+        if task is not None:
+            transcript.append_user(task)
+        return transcript
