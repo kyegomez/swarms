@@ -724,9 +724,8 @@ def test_repeated_agent_awareness_position_0():
         flow="Writer -> Reviewer -> Writer",
     )
 
-    tasks = agent_rearrange.flow.split("->")
     awareness = agent_rearrange._get_sequential_awareness(
-        "Writer", tasks, task_idx=0
+        "Writer", agent_rearrange.steps, task_idx=0
     )
 
     assert "Agent behind" in awareness
@@ -743,9 +742,8 @@ def test_repeated_agent_awareness_position_2():
         flow="Writer -> Reviewer -> Writer",
     )
 
-    tasks = agent_rearrange.flow.split("->")
     awareness = agent_rearrange._get_sequential_awareness(
-        "Writer", tasks, task_idx=2
+        "Writer", agent_rearrange.steps, task_idx=2
     )
 
     assert "Agent ahead" in awareness
@@ -782,9 +780,8 @@ def test_repeated_agent_awareness_fallback_without_idx():
         flow="Writer -> Reviewer -> Writer",
     )
 
-    tasks = agent_rearrange.flow.split("->")
     awareness = agent_rearrange._get_sequential_awareness(
-        "Writer", tasks
+        "Writer", agent_rearrange.steps
     )
 
     assert awareness is not None

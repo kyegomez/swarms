@@ -37,6 +37,22 @@ from swarms.utils.generate_id import generate_id
 
 logger = initialize_logger(log_folder="rearrange")
 
+
+def _split_steps(segments: List[str]) -> List[List[str]]:
+    """Split ``->`` segments into their comma-separated agent names.
+
+    Args:
+        segments (List[str]): Flow segments, already split on ``->``.
+
+    Returns:
+        List[List[str]]: One inner list of agent names per segment.
+    """
+    return [
+        [name.strip() for name in seg.split(",") if name.strip()]
+        for seg in segments
+    ]
+
+
 # Resolved at import time from the canonical Literal type so it stays in
 # sync if HistoryOutputType ever gains/loses members.
 _VALID_OUTPUT_TYPES = set(get_args(OutputType))
@@ -179,18 +195,9 @@ class AgentRearrange(SerializableMixin):
         self.team_awareness = team_awareness
         self.collab_prompt = collab_prompt
 
+        # Seeds team awareness itself; seeding again here added the same
+        # system message twice, so every agent read it twice on every call.
         self._reset_conversation()
-
-        if team_awareness is True:
-            # agents_info = get_agents_info(agents=self.agents, team_name=self.name)
-
-            # Add sequential flow information if available
-            sequential_info = self._get_sequential_flow_info()
-            if sequential_info:
-                # agents_info += "\n\n" + sequential_info
-                self.conversation.add("system", sequential_info)
-
-            # self.conversation.add("system", agents_info)
 
         self.reliability_check()
 
@@ -292,11 +299,9 @@ class AgentRearrange(SerializableMixin):
         """
         self.validate_flow()
 
-        steps = [s.strip() for s in self.flow.split("->")]
         total_invocations = 0
         rows: List[tuple] = []
-        for i, step in enumerate(steps, start=1):
-            agent_names = [name.strip() for name in step.split(",")]
+        for i, agent_names in enumerate(self.steps, start=1):
             total_invocations += len(agent_names)
             label = ", ".join(agent_names)
             if len(agent_names) == 1:
@@ -311,7 +316,7 @@ class AgentRearrange(SerializableMixin):
             lines.append(f"Step {i}: {label:<{width}}  {kind}")
         lines.append("")
         lines.append(
-            f"{len(steps)} steps, {total_invocations} agent invocations "
+            f"{len(self.steps)} steps, {total_invocations} agent invocations "
             f"across {self.max_loops} loop(s)."
         )
 
@@ -361,6 +366,22 @@ class AgentRearrange(SerializableMixin):
         """
         self.agents.extend(agents)
 
+    @property
+    def steps(self) -> List[List[str]]:
+        """The flow as steps, each a list of agent names that run together.
+
+        ``"a -> b, c"`` parses to ``[["a"], ["b", "c"]]``. Cached against the
+        flow string, so reassigning ``flow`` (as ``set_custom_flow`` does)
+        re-parses on next access without an explicit invalidation call.
+
+        Returns:
+            List[List[str]]: One inner list per ``->`` step.
+        """
+        if getattr(self, "_steps_for", None) != self.flow:
+            self._steps = _split_steps((self.flow or "").split("->"))
+            self._steps_for = self.flow
+        return self._steps
+
     def validate_flow(self):
         """
         Validates the flow pattern.
@@ -381,23 +402,20 @@ class AgentRearrange(SerializableMixin):
         if not self.flow or not self.flow.strip():
             raise ValueError("flow cannot be empty")
 
-        agents_in_flow: List[str] = []
-        steps = self.flow.split("->")
-
-        for step in steps:
-            agent_names = [name.strip() for name in step.split(",")]
+        for raw_step, agent_names in zip(
+            self.flow.split("->"), self.steps
+        ):
+            if not agent_names:
+                raise ValueError(
+                    f"Empty agent name in flow segment {raw_step!r}"
+                )
             for agent_name in agent_names:
-                if not agent_name:
-                    raise ValueError(
-                        f"Empty agent name in flow segment {step!r}"
-                    )
                 try:
                     find_agent_by_name(self.agents, agent_name)
                 except (TypeError, ValueError):
                     raise ValueError(
                         f"Agent '{agent_name}' is not registered."
                     )
-                agents_in_flow.append(agent_name)
 
         logger.info(f"Flow: {self.flow} is valid.")
         return True
@@ -405,7 +423,7 @@ class AgentRearrange(SerializableMixin):
     def _get_sequential_awareness(
         self,
         agent_name: str,
-        tasks: List[str],
+        steps: List[List[str]],
         task_idx: int = None,
     ) -> str:
         """
@@ -413,7 +431,9 @@ class AgentRearrange(SerializableMixin):
 
         Args:
             agent_name (str): The name of the current agent.
-            tasks (List[str]): The list of tasks in the flow.
+            steps (List[List[str]]): The parsed flow, one list of agent names
+                per step. Passed in rather than read from ``self.steps`` so a
+                ``custom_tasks`` run reflects the spliced flow it executes.
             task_idx (int, optional): The exact position index of this agent invocation
                 in the flow. When provided, uses this directly instead of searching by name.
                 This is essential for repeated agents (e.g., "writer -> reviewer -> writer")
@@ -422,50 +442,33 @@ class AgentRearrange(SerializableMixin):
         Returns:
             str: A string describing the agents ahead and behind in the sequence.
         """
-        # Use provided position index if available, otherwise search by name
         if task_idx is not None:
-            agent_position = task_idx
+            position = task_idx
         else:
-            agent_position = None
-            for i, task in enumerate(tasks):
-                agent_names = [
-                    name.strip() for name in task.split(",")
-                ]
-                if agent_name in agent_names:
-                    agent_position = i
-                    break
+            position = next(
+                (
+                    i
+                    for i, names in enumerate(steps)
+                    if agent_name in names
+                ),
+                None,
+            )
 
-        if agent_position is None:
+        if position is None:
             return ""
 
-        awareness_info = []
-
-        # Check if there's an agent before (ahead in the sequence)
-        if agent_position > 0:
-            prev_task = tasks[agent_position - 1]
-            prev_agents = [
-                name.strip() for name in prev_task.split(",")
-            ]
-            if prev_agents:
-                awareness_info.append(
-                    f"Agent ahead: {', '.join(prev_agents)}"
-                )
-
-        # Check if there's an agent after (behind in the sequence)
-        if agent_position < len(tasks) - 1:
-            next_task = tasks[agent_position + 1]
-            next_agents = [
-                name.strip() for name in next_task.split(",")
-            ]
-            if next_agents:
-                awareness_info.append(
-                    f"Agent behind: {', '.join(next_agents)}"
-                )
-
-        if awareness_info:
-            return (
-                f"Sequential awareness: {' | '.join(awareness_info)}"
+        parts = []
+        if position > 0:
+            parts.append(
+                f"Agent ahead: {', '.join(steps[position - 1])}"
             )
+        if position < len(steps) - 1:
+            parts.append(
+                f"Agent behind: {', '.join(steps[position + 1])}"
+            )
+
+        if parts:
+            return f"Sequential awareness: {' | '.join(parts)}"
         return ""
 
     def _get_sequential_flow_info(self) -> str:
@@ -478,34 +481,18 @@ class AgentRearrange(SerializableMixin):
         if not self.flow or "->" not in self.flow:
             return ""
 
-        tasks = self.flow.split("->")
+        steps = self.steps
         flow_info = []
 
-        for i, task in enumerate(tasks):
-            agent_names = [name.strip() for name in task.split(",")]
-            if agent_names:
-                position_info = (
-                    f"Step {i+1}: {', '.join(agent_names)}"
-                )
-                if i > 0:
-                    prev_task = tasks[i - 1]
-                    prev_agents = [
-                        name.strip() for name in prev_task.split(",")
-                    ]
-                    if prev_agents:
-                        position_info += (
-                            f" (follows: {', '.join(prev_agents)})"
-                        )
-                if i < len(tasks) - 1:
-                    next_task = tasks[i + 1]
-                    next_agents = [
-                        name.strip() for name in next_task.split(",")
-                    ]
-                    if next_agents:
-                        position_info += (
-                            f" (leads to: {', '.join(next_agents)})"
-                        )
-                flow_info.append(position_info)
+        for i, agent_names in enumerate(steps):
+            if not agent_names:
+                continue
+            line = f"Step {i + 1}: {', '.join(agent_names)}"
+            if i > 0:
+                line += f" (follows: {', '.join(steps[i - 1])})"
+            if i < len(steps) - 1:
+                line += f" (leads to: {', '.join(steps[i + 1])})"
+            flow_info.append(line)
 
         if flow_info:
             return "Sequential Flow Structure:\n" + "\n".join(
@@ -526,8 +513,7 @@ class AgentRearrange(SerializableMixin):
         if not self.flow or "->" not in self.flow:
             return ""
 
-        tasks = self.flow.split("->")
-        return self._get_sequential_awareness(agent_name, tasks)
+        return self._get_sequential_awareness(agent_name, self.steps)
 
     def get_sequential_flow_structure(self) -> str:
         """
@@ -674,7 +660,7 @@ class AgentRearrange(SerializableMixin):
     def _run_sequential_workflow(
         self,
         agent_name: str,
-        tasks: List[str],
+        steps: List[List[str]],
         task_idx: int = None,
         img: str = None,
         *args,
@@ -717,7 +703,7 @@ class AgentRearrange(SerializableMixin):
 
         # The system_prompt is baked into the LLM at build time, so assigning to it here never reaches the request.
         awareness_info = self._get_sequential_awareness(
-            agent_name, tasks, task_idx=task_idx
+            agent_name, steps, task_idx=task_idx
         )
         if awareness_info:
             logger.info(
@@ -794,8 +780,8 @@ class AgentRearrange(SerializableMixin):
 
         self.conversation.add("User", task)
 
-        # Flow is validated at construction (and again in
-        # ``set_custom_flow``); skip the per-call re-split here.
+        # A raw copy, because custom_tasks splices new segments into it below;
+        # self.steps is the unmutated flow.
         tasks = self.flow.split("->")
         response_dict = {}
 
@@ -820,10 +806,9 @@ class AgentRearrange(SerializableMixin):
                 f"Starting loop {loop_count + 1}/{self.max_loops}"
             )
 
-            for task_idx, task in enumerate(tasks):
-                agent_names = [
-                    name.strip() for name in task.split(",")
-                ]
+            steps = _split_steps(tasks)
+
+            for task_idx, agent_names in enumerate(steps):
 
                 if len(agent_names) > 1:
                     # Concurrent processing - comma detected
@@ -842,7 +827,7 @@ class AgentRearrange(SerializableMixin):
                     agent_name = agent_names[0]
                     result = self._run_sequential_workflow(
                         agent_name=agent_name,
-                        tasks=tasks,
+                        steps=steps,
                         task_idx=task_idx,
                         img=img,
                         *args,
@@ -850,7 +835,6 @@ class AgentRearrange(SerializableMixin):
                     )
 
                     # Use indexed key to preserve all outputs
-                    # from repeated agents (e.g., "Writer_0", "Writer_2")
                     if agent_name in response_dict:
                         response_dict[f"{agent_name}_{task_idx}"] = (
                             result
@@ -1145,7 +1129,7 @@ class AgentRearrange(SerializableMixin):
     async def _run_sequential_workflow_stream(
         self,
         agent_name: str,
-        tasks: List[str],
+        steps: List[List[str]],
         task_idx: int = None,
         img: str = None,
         with_events: bool = False,
@@ -1161,7 +1145,7 @@ class AgentRearrange(SerializableMixin):
         # Awareness is injected via a temporary system-prompt extension.
         # See _run_sequential_workflow for rationale.
         awareness_info = self._get_sequential_awareness(
-            agent_name, tasks, task_idx=task_idx
+            agent_name, steps, task_idx=task_idx
         )
         original_system_prompt = getattr(agent, "system_prompt", None)
         if awareness_info and original_system_prompt is not None:
@@ -1321,14 +1305,7 @@ class AgentRearrange(SerializableMixin):
 
         self.conversation.add("User", task)
 
-        # Flow is validated at construction (and again in
-        # ``set_custom_flow``); skip the per-call re-split here.
-        tasks_list = self.flow.split("->")
-
-        for task_idx, task_segment in enumerate(tasks_list):
-            agent_names = [
-                name.strip() for name in task_segment.split(",")
-            ]
+        for task_idx, agent_names in enumerate(self.steps):
 
             if len(agent_names) > 1:
                 async for evt in self._run_concurrent_workflow_stream(
@@ -1341,7 +1318,7 @@ class AgentRearrange(SerializableMixin):
             else:
                 async for evt in self._run_sequential_workflow_stream(
                     agent_name=agent_names[0],
-                    tasks=tasks_list,
+                    steps=self.steps,
                     task_idx=task_idx,
                     img=img,
                     with_events=with_events,
