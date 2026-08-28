@@ -1783,8 +1783,7 @@ class GraphWorkflow:
             messages = [{"role": "user", "content": str(task)}]
 
             if pred_outputs and layer_idx > 0:
-                # One turn per predecessor, labelled with its node id, rather
-                # than every output joined into a single user block.
+                # One turn per predecessor rather than every output joined into one block.
                 messages += [
                     {"role": "user", "content": f"{pred}: {out}"}
                     for pred, out in pred_outputs

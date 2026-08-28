@@ -44,8 +44,7 @@ def test_context_does_not_compound_across_loops():
     judge, calls = _judge(max_loops=3)
     judge.run(task="rate this answer")
 
-    # call_llm receives the whole transcript: the prior turns plus the
-    # instruction appended last. The cacheable part is everything before it.
+    # call_llm receives the whole transcript: prior turns plus the instruction, appended last.
     priors = [
         [m["content"] for m in call["messages"][:-1]]
         for call in calls

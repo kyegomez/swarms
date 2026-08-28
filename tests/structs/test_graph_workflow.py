@@ -1081,8 +1081,7 @@ def test_subgraph_executes_and_output_reaches_downstream():
     inner_agent.run.assert_called_once()
     # Downstream agent must have been called with the inner graph's output
     downstream.run.assert_called_once()
-    # The subgraph's output now arrives as its own turn rather than being
-    # joined into the prompt string.
+    # The subgraph's output arrives as its own turn, not joined into the prompt.
     call_kwargs = downstream.run.call_args.kwargs
     delivered = [
         m["content"] for m in call_kwargs.get("messages") or []
@@ -1550,7 +1549,6 @@ def test_predecessor_outputs_are_typed_turns_not_one_user_blob():
         "A: OUT_A",
         "B: OUT_B",
     ]
-    # The instruction no longer carries the outputs.
     assert "OUT_A" not in prompt and "OUT_B" not in prompt
 
 

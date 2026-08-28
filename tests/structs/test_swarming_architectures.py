@@ -50,8 +50,7 @@ def test_circular_swarm_delivers_typed_turns_not_one_blob():
     assert first["messages"] == []
 
     assert second["agent"] == "B"
-    # split_last_turn hands the newest turn over as the task, so A's answer
-    # is either the task or one of the prior turns - never inside a blob.
+    # split_last_turn hands the newest turn over as the task, so A's answer is task or prior.
     seen = _contents(second) + [second["task"]]
     assert any(
         "A-answer" in str(c) for c in seen
