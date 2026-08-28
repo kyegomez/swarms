@@ -132,10 +132,7 @@ class Conversation:
         self.output_metadata = output_metadata
         self.memory_md_path = memory_md_path
         self._memory_md_lock = threading.Lock()
-        # Suppress disk writes during initial setup so the static
-        # system_prompt and rules aren't re-appended to MEMORY.md on every
-        # construction. Only user tasks and agent responses added via
-        # later add() calls should be persisted.
+        # Suppressed so the static system_prompt and rules are not re-appended to MEMORY.md every construction.
         self._suppress_memory_md = True
 
         if self.name is None:
@@ -197,12 +194,7 @@ class Conversation:
             "%Y-%m-%d_%H-%M-%S"
         )
 
-        # Only resume from disk when the caller actually asked for a named,
-        # persistent conversation. `name` defaults to "conversation-test", so
-        # every anonymous Conversation() resolved to the SAME file and silently
-        # loaded whatever a previous, unrelated run had left there - every
-        # swarm in the process started with someone else's messages, and
-        # re-sent them on every agent call.
+        # Named conversations only: `name` defaults to "conversation-test", so every anonymous one shared a file.
         wants_persistence = (
             self._explicit_save_filepath
             or self.load_filepath is not None

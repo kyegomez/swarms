@@ -5,9 +5,7 @@ from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.generate_id import generate_id
 
-# =============================================================================
-# PROMPT FUNCTIONS FOR AGENT JUDGE
-# =============================================================================
+# Prompt functions.
 
 
 def get_reward(input: str) -> int:
@@ -111,9 +109,7 @@ Output(s) to evaluate:
 {outputs}"""
 
 
-# =============================================================================
-# EXCEPTION CLASSES
-# =============================================================================
+# Exception classes.
 
 
 class AgentJudgeInitializationError(Exception):

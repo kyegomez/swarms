@@ -449,9 +449,7 @@ class RustworkxBackend(GraphBackend):
                 )
             ]
         except Exception as e:
-            # Raised when the graph contains a cycle. Fall back to Kahn's
-            # algorithm so the cyclic remainder is still surfaced as a final
-            # layer, matching the previous behaviour.
+            # Cycle: fall back to Kahn's so the cyclic remainder still surfaces as a final layer.
             logger.warning(
                 f"rustworkx topological_generations failed ({e}); "
                 "falling back to Kahn's algorithm"
@@ -996,10 +994,7 @@ class GraphWorkflow:
                 for node_id, parents in pred.items()
             }
 
-            # Structural validation, surfaced at build time rather than
-            # mid-execution.  We never raise here so that compile() stays
-            # backward-compatible; callers that want strict enforcement
-            # should call validate(raise_on_error=True) explicitly.
+            # Never raises, so compile() stays compatible; use validate(raise_on_error=True) for strict.
             if self.nodes:
                 errors, warnings = self._fast_validate(succ, pred)
                 if errors:
@@ -1607,11 +1602,7 @@ class GraphWorkflow:
                             f"Added Edge object {i+1}/{len(edges)}: {e.source} -> {e.target}"
                         )
                 elif isinstance(e, (tuple, list)) and len(e) >= 2:
-                    # Support various edge formats:
-                    # - (source, target) - single edge
-                    # - (source, [target1, target2]) - fan-out from source
-                    # - ([source1, source2], target) - fan-in to target
-                    # - ([source1, source2], [target1, target2]) - parallel chain
+                    # Accepts (src, tgt), (src, [tgts]), ([srcs], tgt) and ([srcs], [tgts]).
                     source, target = e[0], e[1]
 
                     if isinstance(
@@ -1743,9 +1734,7 @@ class GraphWorkflow:
         Returns:
             Tuple[str, ...]: Tuple of predecessor node IDs.
         """
-        # Instance-level caching instead of @lru_cache to avoid hashing issues.
-        # compile() populates this map wholesale from a single adjacency pass;
-        # this path only fills gaps for nodes queried before compilation.
+        # Instance-level rather than @lru_cache, which cannot hash self; compile() fills it wholesale.
         cache = self._predecessors_cache
         preds = cache.get(node_id)
         if preds is None:
@@ -1783,9 +1772,7 @@ class GraphWorkflow:
 
         try:
             preds = self._get_predecessors(node_id)
-            # Pair each name with its own output; zipping a filtered output
-            # list against the unfiltered names shifts every label when a
-            # predecessor is missing.
+            # Pair each name with its own output: zipping a filtered list shifts every label.
             pred_outputs = [
                 (pred, prev_outputs[pred])
                 for pred in preds
@@ -1990,10 +1977,7 @@ class GraphWorkflow:
                 f"Using cached compilation for {self.max_loops} loops (compiled at {getattr(self, '_compilation_timestamp', 'unknown time')})"
             )
 
-        # One executor for the whole run instead of one per layer per loop.
-        # Thread creation and pool shutdown dominated execution time on graphs
-        # with many layers.  Sized to the widest layer, capped at _max_workers,
-        # and created lazily so purely sequential graphs spawn no threads.
+        # One executor for the whole run; per-layer pools dominated runtime on deep graphs.
         widest_layer = max(
             (len(layer) for layer in self._execution_plan), default=1
         )
@@ -2038,9 +2022,7 @@ class GraphWorkflow:
                 execution_results = {}
                 prev_outputs = {}
 
-                # Derive a deterministic key for this task so checkpoints
-                # survive process restarts (Python's hash() is salted and
-                # is NOT stable across runs).  Only needed when checkpointing.
+                # Deterministic key, not hash(): Python salts hashes, so they differ across runs.
                 task_key = (
                     self._task_key(task)
                     if self.checkpoint_dir
@@ -2057,10 +2039,7 @@ class GraphWorkflow:
                 ):
                     layer_start_time = time.time()
 
-                    # ----------------------------------------------------------
-                    # Checkpoint resume: if this layer already has a saved result
-                    # for the current task, load it and skip re-execution.
-                    # ----------------------------------------------------------
+                    # Resume: skip any layer already checkpointed for this task.
                     if self.checkpoint_dir:
                         checkpoint_path = self._checkpoint_path(
                             task_key, layer_idx
@@ -2145,9 +2124,7 @@ class GraphWorkflow:
                     def _make_call(node_id, agent, node_type, prompt):
                         """Bind one node's invocation into a zero-arg callable."""
                         if node_type == NodeType.SUBGRAPH:
-                            # Subgraphs receive the prompt as their task and
-                            # run in isolation.  Checkpoint state is stored
-                            # under a sub-directory keyed by the parent node.
+                            # Subgraphs take the prompt as their task and checkpoint under a per-parent directory.
                             inner: GraphWorkflow = agent
                             _prev_cp = inner.checkpoint_dir
                             if (
@@ -2208,10 +2185,7 @@ class GraphWorkflow:
                         node_id, agent_name, node_type, output
                     ):
                         """Persist one node's output into the run's state."""
-                        # Subgraph nodes return a dict; flatten to a readable
-                        # string for downstream agents.  Only applied to
-                        # SUBGRAPH nodes so that agent nodes returning
-                        # structured dicts are not silently coerced.
+                        # SUBGRAPH nodes only, so an agent returning a dict is not silently flattened.
                         if (
                             node_type == NodeType.SUBGRAPH
                             and isinstance(output, dict)
@@ -2325,10 +2299,7 @@ class GraphWorkflow:
                         time.time() - layer_start_time
                     )
 
-                    # ----------------------------------------------------------
-                    # Checkpoint save: persist this layer's outputs so a crash
-                    # on a later layer doesn't force re-running this one.
-                    # ----------------------------------------------------------
+                    # Save now so a crash on a later layer does not force re-running this one.
                     if self.checkpoint_dir:
                         try:
                             Path(self.checkpoint_dir).mkdir(
@@ -2398,9 +2369,7 @@ class GraphWorkflow:
                     f"Final execution results: {list(execution_results.keys())}"
                 )
 
-            # For single-loop (the common case), return results directly.
-            # For multi-loop, merge the per-loop history with the final
-            # loop's results so callers can access both.
+            # Multi-loop merges per-loop history with the final results; single-loop returns them directly.
             if self.max_loops > 1:
                 all_loop_results.update(execution_results)
                 return all_loop_results
@@ -2460,10 +2429,7 @@ class GraphWorkflow:
             ImportError: If graphviz is not installed.
             Exception: If visualization generation fails.
         """
-        # Sanitize here, in the path that is actually used. graphviz treats
-        # the argument as a filesystem path, so a name containing "/" (or
-        # any other separator) renders into a directory that does not exist
-        # instead of producing a file.
+        # graphviz reads this as a path, so a "/" in the name renders into a directory that does not exist.
         safe_name = "".join(
             c if c.isalnum() or c in "-_" else "_"
             for c in (self.name or "GraphWorkflow")
@@ -2829,9 +2795,7 @@ class GraphWorkflow:
             )
         return deleted
 
-    # Persistence. Two shapes: shallow (topology only, each node names its
-    # agent) and deep (agents embedded). Everything public picks one and
-    # delegates to to_dict / _write_json / from_*.
+    # Persistence comes in two shapes: shallow (topology only) and deep (agents embedded).
 
     @staticmethod
     def _edge_payload(edge: "Edge") -> Dict[str, Any]:
@@ -3138,10 +3102,6 @@ class GraphWorkflow:
         """Write :meth:`to_spec` to ``path`` — the form to commit. Rebuild with
         :meth:`from_topology_spec`."""
         self.save(path, shallow=True)
-
-    # ------------------------------------------------------------------
-    # Reconstruction
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _parse_node_type(raw: Any) -> "NodeType":
@@ -3588,9 +3548,7 @@ class GraphWorkflow:
                 result["is_valid"] = False
                 return result
 
-            # Missing entry/end points are repaired before the reachability
-            # checks run, so auto_fix does not report nodes as unreachable
-            # from a set of entry points it is about to populate.
+            # Repair entry/end points before the reachability checks, which would otherwise flag nodes it is about to fix.
             if not self.entry_points:
                 result["warnings"].append("No entry points defined")
                 if auto_fix:

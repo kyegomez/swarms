@@ -72,9 +72,7 @@ def batched_run(
             "task), not both."
         )
 
-    # A sequence in img means per-task images: callers pass a list here
-    # (some even type the parameter that way), and broadcasting it would
-    # hand every task the whole list as its image.
+    # A sequence in img means per-task images; broadcasting would hand every task the whole list.
     if imgs is None and isinstance(img, (list, tuple)):
         imgs, img = list(img), None
 

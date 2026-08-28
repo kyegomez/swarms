@@ -63,9 +63,7 @@ def _module_log_router(message) -> None:
         get_log_dir(), f"{name.rsplit('.', 1)[-1]}.log"
     )
     try:
-        # Rotate by size. The combined log gets loguru's own time-based
-        # rotation; these per-module views only need a ceiling so a chatty
-        # module cannot fill the disk.
+        # Size only: the combined log gets loguru's time-based rotation, this just caps a chatty module.
         if os.path.getsize(path) > MODULE_LOG_MAX_BYTES:
             os.replace(path, f"{path}.1")
     except OSError:
@@ -101,9 +99,7 @@ def initialize_logger(log_folder: str = "swarms"):
         os.makedirs(log_dir, exist_ok=True)
         file_logging = True
     except OSError as e:
-        # WORKSPACE_DIR is caller-supplied and may be unwritable, or may
-        # already exist as a file. Console logging still works, and being
-        # unable to write logs must never stop `import swarms`.
+        # WORKSPACE_DIR may be unwritable, and failing to write logs must never stop `import swarms`.
         file_logging = False
         log_dir_error = e
 

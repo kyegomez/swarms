@@ -235,9 +235,7 @@ class MixtureOfAgents:
 
         self.conversation.add(role="User", content=task)
 
-        # Workers receive only the original task on the first layer, and
-        # task + previous-layer synthesis on subsequent layers. This avoids
-        # re-sending the full growing transcript to every worker on every layer.
+        # Task plus the previous layer's synthesis, rather than the full growing transcript.
         worker_input = task
         prev_layer_output: Optional[str] = None
 
