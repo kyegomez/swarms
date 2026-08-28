@@ -1081,8 +1081,13 @@ def test_subgraph_executes_and_output_reaches_downstream():
     inner_agent.run.assert_called_once()
     # Downstream agent must have been called with the inner graph's output
     downstream.run.assert_called_once()
-    call_prompt = downstream.run.call_args[0][0]
-    assert "inner result" in call_prompt
+    # The subgraph's output now arrives as its own turn rather than being
+    # joined into the prompt string.
+    call_kwargs = downstream.run.call_args.kwargs
+    delivered = [
+        m["content"] for m in call_kwargs.get("messages") or []
+    ] + [str(call_kwargs.get("task"))]
+    assert any("inner result" in c for c in delivered), delivered
 
 
 def test_subgraph_result_in_outer_output():
@@ -1498,13 +1503,14 @@ def test_fan_in_attributes_outputs_to_the_correct_predecessor():
 
     # A produced nothing this run - failed, skipped, or behind a false branch.
     prev_outputs = {"B": "OUT_B", "C": "OUT_C"}
-    prompt = wf._build_prompt(
+    _, messages = wf._build_prompt(
         "D", "the task", prev_outputs, layer_idx=1
     )
 
-    assert "Output from B:\nOUT_B" in prompt
-    assert "Output from C:\nOUT_C" in prompt
-    assert "Output from A:" not in prompt
+    contents = [m["content"] for m in messages]
+    assert "B: OUT_B" in contents
+    assert "C: OUT_C" in contents
+    assert not any(c.startswith("A: ") for c in contents)
 
 
 def test_fan_in_with_all_predecessors_present_is_unaffected():
@@ -1515,12 +1521,37 @@ def test_fan_in_with_all_predecessors_present_is_unaffected():
     for parent in ["A", "B"]:
         wf.add_edge(parent, "C")
 
-    prompt = wf._build_prompt(
+    _, messages = wf._build_prompt(
         "C", "the task", {"A": "OUT_A", "B": "OUT_B"}, layer_idx=1
     )
 
-    assert "Output from A:\nOUT_A" in prompt
-    assert "Output from B:\nOUT_B" in prompt
+    contents = [m["content"] for m in messages]
+    assert "A: OUT_A" in contents
+    assert "B: OUT_B" in contents
+
+
+def test_predecessor_outputs_are_typed_turns_not_one_user_blob():
+    """Each predecessor is its own labelled turn, not joined into the prompt."""
+    wf = GraphWorkflow(auto_compile=False)
+    for name in ["A", "B", "C"]:
+        wf.add_node(create_test_agent(name))
+    for parent in ["A", "B"]:
+        wf.add_edge(parent, "C")
+
+    prompt, messages = wf._build_prompt(
+        "C", "the task", {"A": "OUT_A", "B": "OUT_B"}, layer_idx=1
+    )
+
+    assert all(
+        isinstance(m, dict) and m["role"] == "user" for m in messages
+    )
+    assert [m["content"] for m in messages] == [
+        "the task",
+        "A: OUT_A",
+        "B: OUT_B",
+    ]
+    # The instruction no longer carries the outputs.
+    assert "OUT_A" not in prompt and "OUT_B" not in prompt
 
 
 if __name__ == "__main__":
