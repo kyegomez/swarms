@@ -1,10 +1,3 @@
-"""
-Comprehensive prompt for autonomous agent operating in auto loop mode.
-
-This prompt guides the agent through the structured workflow:
-plan -> think -> action -> subtask_done -> complete_task
-"""
-
 from datetime import datetime
 
 

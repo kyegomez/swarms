@@ -5,7 +5,6 @@ from swarms.prompts.tools import (
 
 from swarms.prompts.autonomous_agent_prompt import get_time
 
-# PROMPTS
 AGENT_SYSTEM_PROMPT_V2 = """
 You are an elite autonomous agent operating within an autonomous loop structure.
 Your primary function is to reliably complete user's tasks.

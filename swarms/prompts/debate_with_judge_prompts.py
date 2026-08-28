@@ -1,5 +1,3 @@
-"""Prompts for the DebateWithJudge multi-agent structure."""
-
 PRO_AGENT_SYSTEM_PROMPT = """You are an expert debater specializing in arguing IN FAVOR of propositions.
 
 Your Role:

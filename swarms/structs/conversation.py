@@ -132,6 +132,7 @@ class Conversation:
         self.output_metadata = output_metadata
         self.memory_md_path = memory_md_path
         self._memory_md_lock = threading.Lock()
+        
         # Suppressed so the static system_prompt and rules are not re-appended to MEMORY.md every construction.
         self._suppress_memory_md = True
 
