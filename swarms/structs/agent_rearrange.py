@@ -1,3 +1,4 @@
+import asyncio
 import copy
 import os
 from concurrent.futures import as_completed
@@ -10,30 +11,30 @@ from typing import (
     Union,
     get_args,
 )
-import asyncio
-from swarms.structs.execution_utils import run_concurrently
+
 from swarms.structs.agent import Agent
-from swarms.telemetry.otel import (
-    ContextThreadPoolExecutor,
-    capture_init,
-    log_agent_data,
-    trace_run,
-)
 from swarms.structs.context_utils import (
     agent_answer,
     messages_for,
     split_last_turn,
 )
 from swarms.structs.conversation import Conversation
+from swarms.structs.execution_utils import run_concurrently
 from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.serialization import SerializableMixin
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    log_agent_data,
+    trace_run,
+)
 from swarms.utils.any_to_str import any_to_str
+from swarms.utils.generate_id import generate_id
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
-from swarms.utils.generate_id import generate_id
 
 logger = initialize_logger(log_folder="rearrange")
 
@@ -127,7 +128,7 @@ class AgentRearrange(SerializableMixin):
         agents: List[Union[Agent, Callable]] = None,
         flow: str = None,
         max_loops: int = 1,
-        verbose: bool = True,
+        verbose: bool = False,
         memory_system: Any = None,
         output_type: OutputType = "all",
         autosave: bool = True,
@@ -269,7 +270,7 @@ class AgentRearrange(SerializableMixin):
         except ValueError:
             self.flow = previous_flow
             raise
-        logger.info(f"Custom flow set: {flow}")
+        self._log("info", f"Custom flow set: {flow}")
 
     def explain(self, return_str: bool = False) -> Optional[str]:
         """Print or return the resolved execution plan for this flow.
@@ -333,7 +334,9 @@ class AgentRearrange(SerializableMixin):
         Args:
             agent (Agent): The agent to be added.
         """
-        logger.info(f"Adding agent {agent.agent_name} to the swarm.")
+        self._log(
+            "info", f"Adding agent {agent.agent_name} to the swarm."
+        )
         self.agents.append(agent)
 
     def remove_agent(self, agent_name: str):
@@ -348,8 +351,9 @@ class AgentRearrange(SerializableMixin):
         """
         for index, agent in enumerate(self.agents):
             if agent.agent_name == agent_name:
-                logger.info(
-                    f"Removing agent {agent_name} from the swarm."
+                self._log(
+                    "info",
+                    f"Removing agent {agent_name} from the swarm.",
                 )
                 del self.agents[index]
                 return
@@ -417,7 +421,7 @@ class AgentRearrange(SerializableMixin):
                         f"Agent '{agent_name}' is not registered."
                     )
 
-        logger.info(f"Flow: {self.flow} is valid.")
+        self._log("info", f"Flow: {self.flow} is valid.")
         return True
 
     def _get_sequential_awareness(
@@ -598,7 +602,9 @@ class AgentRearrange(SerializableMixin):
             This method uses the run_agents_concurrently utility function
             to handle the actual parallel execution and result collection.
         """
-        logger.info(f"Running agents in parallel: {agent_names}")
+        self._log(
+            "info", f"Running agents in parallel: {agent_names}"
+        )
 
         agents_to_run = []
         missing = []
@@ -653,7 +659,7 @@ class AgentRearrange(SerializableMixin):
 
             self.conversation.add(agent_name, result)
             response_dict[agent_name] = result
-            logger.debug(f"Agent {agent_name} output: {result}")
+            self._log("debug", f"Agent {agent_name} output: {result}")
 
         return response_dict
 
@@ -692,7 +698,7 @@ class AgentRearrange(SerializableMixin):
             information to the conversation before executing the agent, informing
             the agent about its position in the workflow sequence.
         """
-        logger.info(f"Running agent sequentially: {agent_name}")
+        self._log("info", f"Running agent sequentially: {agent_name}")
 
         try:
             agent = find_agent_by_name(self.agents, agent_name)
@@ -706,8 +712,9 @@ class AgentRearrange(SerializableMixin):
             agent_name, steps, task_idx=task_idx
         )
         if awareness_info:
-            logger.info(
-                f"Added sequential awareness for {agent_name}: {awareness_info}"
+            self._log(
+                "info",
+                f"Added sequential awareness for {agent_name}: {awareness_info}",
             )
 
         prior, step_task = self._messages_for(
@@ -785,13 +792,13 @@ class AgentRearrange(SerializableMixin):
         tasks = self.flow.split("->")
         response_dict = {}
 
-        logger.info(
-            f"Starting task execution with {len(tasks)} steps"
+        self._log(
+            "info", f"Starting task execution with {len(tasks)} steps"
         )
 
         # Handle custom tasks
         if custom_tasks is not None:
-            logger.info("Processing custom tasks")
+            self._log("info", "Processing custom tasks")
             c_agent_name, c_task = next(iter(custom_tasks.items()))
             position = tasks.index(c_agent_name)
 
@@ -802,8 +809,9 @@ class AgentRearrange(SerializableMixin):
 
         loop_count = 0
         while loop_count < self.max_loops:
-            logger.info(
-                f"Starting loop {loop_count + 1}/{self.max_loops}"
+            self._log(
+                "info",
+                f"Starting loop {loop_count + 1}/{self.max_loops}",
             )
 
             steps = _split_steps(tasks)
@@ -844,7 +852,7 @@ class AgentRearrange(SerializableMixin):
 
             loop_count += 1
 
-        logger.info("Task execution completed")
+        self._log("info", "Task execution completed")
 
         return history_output_formatter(
             conversation=self.conversation,
@@ -872,8 +880,9 @@ class AgentRearrange(SerializableMixin):
         if self.autosave is True:
             log_agent_data(self.to_dict())
 
-        logger.error(
-            f"AgentRearrange: Id: {self.id}, Name: {self.name}. An error occurred with your agent '{self.name}': Error: {e}. Traceback: {e.__traceback__}"
+        self._log(
+            "error",
+            f"AgentRearrange: Id: {self.id}, Name: {self.name}. An error occurred with your agent '{self.name}': Error: {e}. Traceback: {e.__traceback__}",
         )
 
         raise e
