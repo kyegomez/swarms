@@ -1052,9 +1052,7 @@ class HierarchicalSwarm:
                 output_type="final",
             )
 
-            # The workers' outputs are already in the conversation under
-            # their own names; interpolating the raw list here dropped those
-            # names and handed the judge a Python repr to score.
+            # Interpolating the raw list dropped the author names and handed the judge a Python repr.
             prior, judge_task = self._messages_for(judge.agent_name)
             result = judge.run(task=judge_task, messages=prior)
             self.conversation.add(role="JudgeAgent", content=result)
@@ -1115,9 +1113,7 @@ class HierarchicalSwarm:
                     agent_name, "RUNNING", task, "Executing task..."
                 )
 
-            # The order's task is this turn's instruction; the history it
-            # needs rides alongside it as typed turns. A nested orchestrator
-            # has no `messages` parameter, so it keeps the flattened form.
+            # A nested orchestrator has no messages parameter, so it keeps the flattened form.
             worker_task = task
             worker_extra = {}
             if self._agent_supports_messages(agent):
@@ -1127,11 +1123,7 @@ class HierarchicalSwarm:
             else:
                 worker_task = f"History: {self._context_for(agent_name)} \n\n Task: {task}"
 
-            # Handle streaming callback if provided and the worker's run()
-            # actually supports it. A worker may be a leaf Agent or a nested
-            # orchestrator (another HierarchicalSwarm, ConcurrentWorkflow,
-            # MixtureOfAgents, etc.), and not all of them accept a
-            # streaming_callback kwarg.
+            # A worker may be a nested orchestrator, which need not accept streaming_callback.
             if (
                 streaming_callback is not None
                 and self._agent_supports_streaming_callback(agent)
@@ -1165,9 +1157,7 @@ class HierarchicalSwarm:
                             f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}"
                         )
 
-                # Temporarily enable streaming so call_llm honours the
-                # callback. Nested orchestrators without a streaming_on
-                # toggle already stream purely via the callback param.
+                # Temporarily enable streaming so call_llm honours the callback.
                 has_streaming_toggle = hasattr(agent, "streaming_on")
                 original_streaming_on = getattr(
                     agent, "streaming_on", None
@@ -1202,9 +1192,7 @@ class HierarchicalSwarm:
                     **kwargs,
                 )
                 if streaming_callback is not None:
-                    # Worker doesn't support incremental streaming — still
-                    # surface its final output through the callback so
-                    # callers see a consistent stream of completions.
+                    # No incremental streaming: surface the final output so callers still see a completion.
                     try:
                         streaming_callback(
                             agent_name, str(output), True
@@ -1353,9 +1341,7 @@ class HierarchicalSwarm:
         try:
             signature = inspect.signature(run_method)
         except (TypeError, ValueError):
-            # Signature introspection isn't always possible (e.g. some
-            # C-extension callables); fail open rather than silently
-            # dropping streaming support.
+            # Some C-extension callables cannot be introspected; fail open rather than drop streaming.
             return True
         for parameter in signature.parameters.values():
             if parameter.name == "streaming_callback":
@@ -1837,9 +1823,7 @@ class HierarchicalSwarm:
             **kwargs,
         )
 
-    # ------------------------------------------------------------------
-    # Streaming helpers
-    # ------------------------------------------------------------------
+    # Streaming helpers.
 
     async def _stream_agent_in_thread(
         self,
@@ -1965,9 +1949,7 @@ class HierarchicalSwarm:
                     "of the analysis."
                 )
 
-            # =============================================================
-            # DIRECTOR PHASE
-            # =============================================================
+            # Director phase.
             director_task_str = (
                 f"History: {self._context_for(self.director.agent_name)} "
                 f"\n\n Task: {loop_task}"
@@ -2031,9 +2013,7 @@ class HierarchicalSwarm:
             # Parse orders from director output
             plan, orders = self.parse_orders(director_output)
 
-            # =============================================================
-            # WORKER PHASE
-            # =============================================================
+            # Worker phase.
             if self.parallel_execution and len(orders) > 1:
                 # --- Parallel workers with interleaving ---
                 worker_q: asyncio.Queue = asyncio.Queue()
@@ -2192,9 +2172,7 @@ class HierarchicalSwarm:
                             "loop": current_loop,
                         }
 
-            # =============================================================
-            # AGGREGATION PHASE (feedback director or judge)
-            # =============================================================
+            # Aggregation phase: feedback director or judge.
             if self.agent_as_judge:
                 agg_name = "JudgeAgent"
                 if with_events:

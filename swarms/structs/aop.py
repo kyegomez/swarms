@@ -424,11 +424,7 @@ class TaskQueue:
                         self._stats.pending_tasks -= 1
                         self._stats.processing_tasks += 1
 
-                # Idle-wait outside the lock. Holding it across the wait let
-                # idle workers own the lock ~100% of the time, so any caller
-                # needing it — get_stats, get_queue_status, add_task, and
-                # AOP.get_server_info through them — could block for tens of
-                # seconds waiting on workers that were doing nothing.
+                # Wait outside the lock: holding it let idle workers starve get_stats, add_task and friends.
                 if idle:
                     self._stop_event.wait(0.1)
                     continue
@@ -2456,13 +2452,7 @@ class AOP:
                 started_at = time.time()
                 self.start_server()
 
-                # start_server() returning means the server stopped. Only
-                # treat that as a success if it actually stayed up; a server
-                # that exits immediately is restarting, not running.
-                # Resetting unconditionally (as this did) pinned the count at
-                # 0 forever, so max_restart_attempts never fired and the
-                # delay below was never reached — a server that died on
-                # startup respawned in a hot loop instead.
+                # Only a server that stayed up counts; resetting unconditionally pinned the count at 0 and respawned in a hot loop.
                 if time.time() - started_at >= self.restart_delay:
                     self._restart_count = 0
                 else:
@@ -2577,13 +2567,7 @@ class AOP:
         Returns:
             bool: True if the error is network-related
         """
-        # Not bare OSError: almost every local failure is one, including
-        # EADDRINUSE from a port already in use, EACCES from a privileged
-        # port and ENOENT from a bad path. Those were classified as network
-        # errors and sent to _handle_network_error, which retries the
-        # network, something that can never resolve them. The keyword check
-        # below still catches the genuinely network-ish plain OSErrors such
-        # as "Network is unreachable" and "No route to host".
+        # Not bare OSError: EADDRINUSE, EACCES and ENOENT are local and can never be resolved by a network retry.
         network_errors = (
             ConnectionError,
             TimeoutError,
@@ -2594,12 +2578,7 @@ class AOP:
         if isinstance(error, network_errors):
             return True
 
-        # Check error message for network-related keywords. Keep these
-        # specific: bare tokens like "socket", "network", "connection",
-        # "reset" or "aborted" match ordinary non-network messages (e.g.
-        # "reset the counter", "socket_id must be an int") and would route
-        # them into the network-retry loop, which can never resolve them.
-        # The isinstance check above already covers the typed network errors.
+        # Keep these specific: bare tokens like "socket" or "reset" match ordinary messages too.
         error_msg = str(error).lower()
         network_keywords = [
             "connection refused",

@@ -628,9 +628,7 @@ class AgentRearrange(SerializableMixin):
                 f"Agent(s) {missing} not registered in this AgentRearrange instance."
             )
 
-        # Every agent in the step sees the same history, but each sees its own
-        # turns as `assistant`, so the message list is built per agent rather
-        # than shared.
+        # Built per agent, not shared: each sees its own turns as `assistant`.
         results = [None] * len(agents_to_run)
         with ContextThreadPoolExecutor(
             max_workers=len(agents_to_run)
@@ -717,9 +715,7 @@ class AgentRearrange(SerializableMixin):
                 f"Agent '{agent_name}' is not registered in this AgentRearrange instance."
             )
 
-        # Awareness rides in the message list rather than the agent's
-        # system_prompt: the prompt is baked into the LLM when it is built,
-        # so assigning to it here would never reach the request.
+        # The system_prompt is baked into the LLM at build time, so assigning to it here never reaches the request.
         awareness_info = self._get_sequential_awareness(
             agent_name, tasks, task_idx=task_idx
         )
@@ -742,13 +738,7 @@ class AgentRearrange(SerializableMixin):
         if not isinstance(current_task, str):
             current_task = any_to_str(current_task)
 
-        # `agent.run` honours the agent's own output_type, which defaults to
-        # "str-all-except-first" - the agent's WHOLE conversation, not its
-        # answer. Recording that as the agent's contribution re-injects
-        # everything it was given, so each loop carried the previous loop's
-        # transcript and context grew exponentially. Take the last message,
-        # which is the answer.
-        # Record the agent's answer, not the whole transcript run() returns.
+        # Record the answer: run() honours output_type, which defaults to the whole transcript.
         current_task = agent_answer(agent, fallback=current_task)
 
         self.conversation.add(agent.agent_name, current_task)
@@ -1042,11 +1032,7 @@ class AgentRearrange(SerializableMixin):
                 else [None] * len(batch_tasks)
             )
 
-            # Process batch concurrently. Each task gets an isolated clone so
-            # conversation history and agent state cannot bleed across tasks.
-            # ``_clone_for_task`` is robust to agents that contain non-picklable
-            # resources (thread locks, sockets) which a full ``deepcopy(self)``
-            # would have choked on.
+            # Each task gets an isolated clone; _clone_for_task survives agents a full deepcopy(self) would choke on.
             max_workers = min(len(batch_tasks), os.cpu_count() or 4)
             futures_ordered = []
             with ContextThreadPoolExecutor(
@@ -1294,9 +1280,7 @@ class AgentRearrange(SerializableMixin):
                     }
                 else:
                     yield (kind, payload)
-                # Yield control so the other producer(s) can run; without
-                # this the consumer drains a full burst from one agent
-                # before the scheduler hops to the next.
+                # Yield so the consumer does not drain one agent's full burst before the scheduler hops.
                 await asyncio.sleep(0)
         finally:
             await asyncio.gather(

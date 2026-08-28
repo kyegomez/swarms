@@ -42,9 +42,7 @@ logger = initialize_logger(
 )
 
 
-# =============================================================================
-# ENUMS AND DATA MODELS
-# =============================================================================
+# Enums and data models.
 
 
 class CommunicationType(str, Enum):
@@ -114,9 +112,7 @@ class EvaluationResult(BaseModel):
     confidence: float = Field(description="Confidence in evaluation")
 
 
-# =============================================================================
-# SCHEMAS
-# =============================================================================
+# Schemas.
 
 
 class StructuredMessageSchema(BaseModel):
@@ -230,9 +226,7 @@ class RefinerResponseSchema(BaseModel):
     )
 
 
-# =============================================================================
-# SPECIALIZED AGENT CLASSES
-# =============================================================================
+# Specialized agent classes.
 
 
 class HierarchicalStructuredCommunicationGenerator(Agent):
@@ -1068,9 +1062,7 @@ Provide your coordination decision following the structured response format.
             }
 
 
-# =============================================================================
-# MAIN SWARM ORCHESTRATOR
-# =============================================================================
+# Main swarm orchestrator.
 
 
 class HierarchicalStructuredCommunicationFramework:

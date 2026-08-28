@@ -326,32 +326,3 @@ class Artifact(BaseModel):
                 c.showPage()
                 y = 750
         c.save()
-
-
-# # Example usage
-# artifact = Artifact(file_path="example.txt", file_type=".txt")
-# artifact.create("Initial content")
-# artifact.edit("First edit")
-# artifact.edit("Second edit")
-# artifact.save()
-
-# # Export to JSON
-# artifact.export_to_json("artifact.json")
-
-# # Import from JSON
-# imported_artifact = Artifact.import_from_json("artifact.json")
-
-# # # Get metrics
-# print(artifact.get_metrics())
-
-
-# Testing saving in different artifact types
-# Create an artifact
-# artifact = Artifact(file_path="/path/to/file", file_type=".txt",contents="",  edit_count=0  )
-# artifact.create("This is some content\nWith multiple lines")
-
-# Save in different formats
-# artifact.save_as(".md")    # Creates example.md
-# artifact.save_as(".txt")   # Creates example.txt
-# artifact.save_as(".pdf")   # Creates example.pdf
-# artifact.save_as(".py")    # Creates example.py

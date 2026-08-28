@@ -73,9 +73,7 @@ class AgentMarketplaceHandler:
     def __init__(self, agent: Any = None):
         self.agent = agent
 
-    ########################################################
-    # Auth & transport
-    ########################################################
+    # Auth and transport.
 
     @staticmethod
     def check_api_key() -> str:
@@ -107,9 +105,7 @@ class AgentMarketplaceHandler:
             "Content-Type": "application/json",
         }
 
-    ########################################################
-    # Fetching
-    ########################################################
+    # Fetching.
 
     @classmethod
     def fetch(
@@ -257,9 +253,7 @@ class AgentMarketplaceHandler:
                 loop_count=0,
             )
 
-    ########################################################
-    # Publishing
-    ########################################################
+    # Publishing.
 
     @classmethod
     def add_prompt(

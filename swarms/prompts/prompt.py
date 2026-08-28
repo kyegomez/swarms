@@ -144,15 +144,9 @@ class Prompt(BaseModel):
             )
             raise IndexError("Invalid version number for rollback.")
 
-        # logger.info(
-        #     f"Rolling back prompt {self.id} to version {version}."
-        # )
         self.content = self.edit_history[version]
         self.edit_count = version
         self.last_modified_at = time.strftime("%Y-%m-%d %H:%M:%S")
-        # logger.debug(
-        #     f"Prompt {self.id} rolled back to version {version}. Current content: '{self.content}'"
-        # )
 
         # self.log_telemetry()
 
