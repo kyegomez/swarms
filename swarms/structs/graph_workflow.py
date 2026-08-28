@@ -1749,9 +1749,9 @@ class GraphWorkflow:
         prev_outputs: Dict[str, Any],
         layer_idx: int,
         loop_idx: int = 0,
-    ) -> str:
+    ) -> tuple:
         """
-        Optimized prompt building with minimal string operations.
+        Build this node's instruction and the prior turns that precede it.
 
         Args:
             node_id (str): The node ID to build a prompt for.
@@ -1763,7 +1763,8 @@ class GraphWorkflow:
             loop_idx (int): The current loop iteration (0-based).
 
         Returns:
-            str: The built prompt.
+            tuple: ``(prompt, messages)`` - this turn's instruction, and the
+            predecessor outputs as typed chat turns to send alongside it.
         """
         if self.verbose:
             logger.debug(
@@ -1779,43 +1780,42 @@ class GraphWorkflow:
                 if pred in prev_outputs
             ]
 
+            messages = [{"role": "user", "content": str(task)}]
+
             if pred_outputs and layer_idx > 0:
-                # Use list comprehension and join for faster string building
-                predecessor_parts = [
-                    f"Output from {pred}:\n{out}"
+                # One turn per predecessor, labelled with its node id, rather
+                # than every output joined into a single user block.
+                messages += [
+                    {"role": "user", "content": f"{pred}: {out}"}
                     for pred, out in pred_outputs
                     if out is not None
                 ]
-                predecessor_context = "\n\n".join(predecessor_parts)
-
                 prompt = (
-                    f"Original Task: {task}\n\n"
-                    f"Previous Agent Outputs:\n{predecessor_context}\n\n"
-                    f"Instructions: Please carefully review the work done by your predecessor agents above. "
-                    f"Acknowledge their contributions, verify their findings, and build upon their work. "
-                    f"If you agree with their analysis, say so and expand on it. "
-                    f"If you disagree or find gaps, explain why and provide corrections or improvements. "
-                    f"Your goal is to collaborate and create a comprehensive response that builds on all previous work."
+                    "Instructions: Please carefully review the work done by your predecessor agents above. "
+                    "Acknowledge their contributions, verify their findings, and build upon their work. "
+                    "If you agree with their analysis, say so and expand on it. "
+                    "If you disagree or find gaps, explain why and provide corrections or improvements. "
+                    "Your goal is to collaborate and create a comprehensive response that builds on all previous work."
                 )
             elif loop_idx > 0 and layer_idx == 0 and prev_outputs:
                 # Entry-point nodes in subsequent loops receive end-point
                 # outputs from the previous loop as refinement context.
-                prior_parts = [
-                    f"Output from {nid} (previous iteration):\n{out}"
+                messages += [
+                    {
+                        "role": "user",
+                        "content": f"{nid} (previous iteration): {out}",
+                    }
                     for nid, out in prev_outputs.items()
                     if out is not None
                 ]
-                prior_context = "\n\n".join(prior_parts)
-
                 prompt = (
-                    f"Original Task: {task}\n\n"
-                    f"Previous Iteration Outputs:\n{prior_context}\n\n"
                     f"Instructions: This is iteration {loop_idx + 1} of the workflow. "
-                    f"Review the outputs from the previous iteration above. "
-                    f"Refine, correct, or expand upon the previous results. "
-                    f"Focus on improving accuracy, filling gaps, and strengthening the analysis."
+                    "Review the outputs from the previous iteration above. "
+                    "Refine, correct, or expand upon the previous results. "
+                    "Focus on improving accuracy, filling gaps, and strengthening the analysis."
                 )
             else:
+                messages = []
                 prompt = (
                     f"{task}\n\n"
                     f"You are starting the workflow analysis. Please provide your best comprehensive response to this task."
@@ -1823,10 +1823,10 @@ class GraphWorkflow:
 
             if self.verbose:
                 logger.debug(
-                    f"Built prompt for node {node_id} ({len(prompt)} characters)"
+                    f"Built {len(messages)} prior turns for node {node_id}"
                 )
 
-            return prompt
+            return prompt, messages
 
         except Exception as e:
             logger.exception(
@@ -2098,12 +2098,14 @@ class GraphWorkflow:
                         agent_name,
                     ) in layer:
                         try:
-                            prompt = self._build_prompt(
-                                node_id,
-                                task,
-                                prev_outputs,
-                                layer_idx,
-                                loop,
+                            prompt, prior_messages = (
+                                self._build_prompt(
+                                    node_id,
+                                    task,
+                                    prev_outputs,
+                                    layer_idx,
+                                    loop,
+                                )
                             )
                         except Exception as e:
                             logger.exception(
@@ -2111,6 +2113,7 @@ class GraphWorkflow:
                             )
                             # Continue with an error prompt as fallback
                             prompt = f"Error building prompt: {e}"
+                            prior_messages = []
                         layer_data.append(
                             (
                                 node_id,
@@ -2118,11 +2121,19 @@ class GraphWorkflow:
                                 node_type,
                                 agent_name,
                                 prompt,
+                                prior_messages,
                             )
                         )
 
-                    def _make_call(node_id, agent, node_type, prompt):
+                    def _make_call(
+                        node_id,
+                        agent,
+                        node_type,
+                        prompt,
+                        messages=None,
+                    ):
                         """Bind one node's invocation into a zero-arg callable."""
+                        messages = messages or []
                         if node_type == NodeType.SUBGRAPH:
                             # Subgraphs take the prompt as their task and checkpoint under a per-parent directory.
                             inner: GraphWorkflow = agent
@@ -2136,9 +2147,14 @@ class GraphWorkflow:
                                     / node_id
                                 )
 
+                            flattened = "\n\n".join(
+                                [m["content"] for m in messages]
+                                + [prompt]
+                            )
+
                             def _run_inner(
                                 _inner=inner,
-                                _prompt=prompt,
+                                _prompt=flattened,
                                 _prev=_prev_cp,
                             ):
                                 try:
@@ -2156,10 +2172,16 @@ class GraphWorkflow:
                         if _streaming_callback is None:
                             # Common path: no per-node kwargs copy needed.
                             def _run_agent(
-                                _agent=agent, _prompt=prompt
+                                _agent=agent,
+                                _prompt=prompt,
+                                _messages=messages,
                             ):
                                 return _agent.run(
-                                    _prompt, img, *args, **kwargs
+                                    task=_prompt,
+                                    img=img,
+                                    messages=_messages,
+                                    *args,
+                                    **kwargs,
                                 )
 
                             return _run_agent
@@ -2168,6 +2190,7 @@ class GraphWorkflow:
                             _agent=agent,
                             _prompt=prompt,
                             _nid=node_id,
+                            _messages=messages,
                         ):
                             call_kwargs = dict(kwargs)
                             call_kwargs["streaming_callback"] = (
@@ -2176,7 +2199,11 @@ class GraphWorkflow:
                                 )
                             )
                             return _agent.run(
-                                _prompt, img, *args, **call_kwargs
+                                task=_prompt,
+                                img=img,
+                                messages=_messages,
+                                *args,
+                                **call_kwargs,
                             )
 
                         return _run_agent_streaming
@@ -2225,11 +2252,16 @@ class GraphWorkflow:
                             node_type,
                             agent_name,
                             prompt,
+                            prior_messages,
                         ) = layer_data[0]
                         _, output = self._safe_output(
                             agent_name,
                             _make_call(
-                                node_id, agent, node_type, prompt
+                                node_id,
+                                agent,
+                                node_type,
+                                prompt,
+                                prior_messages,
                             ),
                         )
                         _record(
@@ -2246,6 +2278,7 @@ class GraphWorkflow:
                             node_type,
                             agent_name,
                             prompt,
+                            prior_messages,
                         ) in layer_data:
                             try:
                                 future = pool.submit(
@@ -2254,6 +2287,7 @@ class GraphWorkflow:
                                         agent,
                                         node_type,
                                         prompt,
+                                        prior_messages,
                                     )
                                 )
                                 future_to_data[future] = (

@@ -2,6 +2,10 @@ import traceback
 from typing import Dict, List, Optional
 
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import (
+    agent_answer,
+    messages_for,
+)
 from swarms.structs.conversation import Conversation
 from swarms.utils.generate_id import generate_id
 
@@ -250,6 +254,7 @@ class AgentJudge:
         self,
         task: str = None,
         img: Optional[str] = None,
+        messages: Optional[List[Dict[str, str]]] = None,
     ) -> str:
         """
         Processes a single task and returns the agent's evaluation.
@@ -306,6 +311,7 @@ class AgentJudge:
             response = self.agent.run(
                 task=task_instruction,
                 img=img,
+                messages=messages,
             )
 
             return response
@@ -348,21 +354,23 @@ class AgentJudge:
             # The agent will run in a loop, remembering and updating the conversation context at each step.
             self.conversation.add(role="user", content=task)
             for _ in range(self.max_loops):
-                # Retrieve the full conversation context as a string
-                context = self.conversation.get_str()
-                # Build the contextualized task, always including the full conversation so far
-                contextualized_task = f"{context}\n"
-                # Get response for current iteration
+                # The judge's own earlier evaluations, as `assistant` turns.
+                # The seeded task turn is dropped because step() re-sends it
+                # wrapped in the evaluation prompt.
+                prior = messages_for(
+                    self.agent.agent_name, self.conversation
+                )[1:]
                 current_response = self.step(
-                    task=contextualized_task,
+                    task=task,
                     img=img,
+                    messages=prior,
                 )
-                # Add the agent's response to the conversation history
                 self.conversation.add(
                     role=self.agent.agent_name,
-                    content=current_response,
+                    content=agent_answer(
+                        self.agent, fallback=current_response
+                    ),
                 )
-                # The context will be updated automatically in the next loop iteration
 
             # After all loops, return either the reward or the full conversation
             if self.return_score:

@@ -2,6 +2,11 @@ from typing import List, Union, Dict, Any
 
 
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import (
+    agent_answer,
+    messages_for,
+    split_last_turn,
+)
 from swarms.structs.omni_agent_types import AgentListType
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.conversation import Conversation
@@ -11,6 +16,36 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.output_types import OutputType
 
 logger = initialize_logger(log_folder="swarming_architectures")
+
+
+def _run_on_conversation(
+    agent: Agent, conversation: Conversation
+) -> str:
+    """Run ``agent`` on the shared conversation and record its answer.
+
+    The conversation is delivered as typed chat turns - the agent's own
+    messages as ``assistant``, everyone else's as labelled ``user`` turns -
+    so the model can tell its own prior output from a peer's and the request
+    keeps a stable prefix for caching.
+
+    Args:
+        agent (Agent): The agent to run.
+        conversation (Conversation): The shared conversation, appended to
+            in place with the agent's answer.
+
+    Returns:
+        str: The agent's answer.
+    """
+    prior, task = split_last_turn(
+        messages_for(agent.agent_name, conversation)
+    )
+    response = agent.run(task=task, messages=prior)
+
+    # run() honours the agent's own output_type, which by default is its
+    # whole conversation rather than its answer.
+    answer = agent_answer(agent, fallback=response)
+    conversation.add(agent.agent_name, answer)
+    return answer
 
 
 def circular_swarm(
@@ -48,16 +83,15 @@ def circular_swarm(
     conversation = Conversation()
 
     for task in tasks:
+        # Once per task, not once per agent: the turn is already in the
+        # conversation every agent reads.
+        conversation.add(
+            role="User",
+            content=task,
+        )
+
         for agent in flat_agents:
-            conversation.add(
-                role="User",
-                content=task,
-            )
-            response = agent.run(conversation.get_str())
-            conversation.add(
-                role=agent.agent_name,
-                content=response,
-            )
+            _run_on_conversation(agent, conversation)
 
     return history_output_formatter(conversation, output_type)
 
@@ -140,11 +174,7 @@ def star_swarm(
             role="User",
             content=task,
         )
-        center_response = center_agent.run(conversation.get_str())
-        conversation.add(
-            role=center_agent.agent_name,
-            content=center_response,
-        )
+        _run_on_conversation(center_agent, conversation)
 
         # Other agents process the same task
         for agent in agents[1:]:
@@ -338,20 +368,11 @@ async def broadcast(
 
     try:
         # First get the sender's broadcast message
-        broadcast_message = sender.run(conversation.get_str())
-
-        conversation.add(
-            role=sender.agent_name,
-            content=broadcast_message,
-        )
+        _run_on_conversation(sender, conversation)
 
         # Then have all agents process it
         for agent in agents:
-            response = agent.run(conversation.get_str())
-            conversation.add(
-                role=agent.agent_name,
-                content=response,
-            )
+            _run_on_conversation(agent, conversation)
 
         return history_output_formatter(conversation, output_type)
 
