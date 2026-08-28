@@ -17,6 +17,7 @@ The main class `LiteLLM` provides a simple interface for running LLM tasks with 
 for various input modalities and output formats.
 """
 
+import os
 import socket
 import traceback
 from functools import lru_cache
@@ -1170,6 +1171,22 @@ class LiteLLM:
             "caching": self.caching,
             "temperature": self.temperature,
         }
+
+        # OrcaRouter is an OpenAI-compatible gateway. Model names can carry the
+        # ``orcarouter/`` provider prefix; route them to OrcaRouter's endpoint
+        # instead of letting litellm fail on the unknown provider.
+        if self.model_name.startswith("orcarouter/"):
+            completion_params["model"] = self.model_name[
+                len("orcarouter/") :
+            ]
+            completion_params["base_url"] = (
+                self.base_url or "https://api.orcarouter.ai/v1"
+            )
+            completion_params["api_key"] = (
+                self.api_key
+                or os.environ.get("ORCAROUTER_API_KEY", "")
+            )
+            completion_params["custom_llm_provider"] = "openai"
 
         # Only include top_p if explicitly set (not None)
         if self.top_p is not None:

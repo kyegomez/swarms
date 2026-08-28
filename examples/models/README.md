@@ -59,6 +59,9 @@ Set the matching API key as an environment variable before running any example (
 - [glm_or.py](openrouter/glm_or.py) — GLM via OpenRouter
 - [hy3_or.py](openrouter/hy3_or.py) — Hunyuan 3 via OpenRouter
 
+### OrcaRouter
+- [qwen3_orca.py](orcarouter/qwen3_orca.py) — Qwen3 via OrcaRouter
+
 ### Qwen
 - [qwen_3_base.py](qwen/qwen_3_base.py) — Qwen 3 base model
 

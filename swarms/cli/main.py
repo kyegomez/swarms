@@ -1825,6 +1825,11 @@ def handle_init(args: argparse.Namespace) -> None:
             "OpenRouter",
             "any model via openrouter.ai",
         ),
+        (
+            "ORCAROUTER_API_KEY",
+            "OrcaRouter",
+            "OpenAI-compatible gateway via orcarouter.ai",
+        ),
     ]
 
     table = Table(

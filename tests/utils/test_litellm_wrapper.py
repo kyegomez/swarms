@@ -23,6 +23,8 @@ Still uncovered by any assertion, from the dropped script: streaming via
 image handling, and image message preparation.
 """
 
+import os
+
 import pytest
 from dotenv import load_dotenv
 
@@ -578,3 +580,59 @@ class TestGeminiProvider:
         )
         result = agent.run(SIMPLE_TASK)
         assert result is not None
+
+
+# ===================================================================
+# OrcaRouter — parameter construction (no network)
+# ===================================================================
+
+
+class TestOrcaRouterProvider:
+    """OrcaRouter provider — parameter construction tests."""
+
+    def test_orcarouter_prefix_maps_to_gateway(self):
+        llm = LiteLLM(
+            model_name="orcarouter/qwen/qwen3-vl-235b-a22b-instruct",
+            system_prompt=SIMPLE_PROMPT,
+            max_tokens=50,
+        )
+        params = llm._build_completion_params(SIMPLE_TASK)
+        assert params["model"] == "qwen/qwen3-vl-235b-a22b-instruct"
+        assert params["base_url"] == "https://api.orcarouter.ai/v1"
+        assert params["custom_llm_provider"] == "openai"
+        assert params["api_key"] == os.environ.get(
+            "ORCAROUTER_API_KEY", ""
+        )
+
+    def test_orcarouter_prefix_respects_explicit_base_url(self):
+        llm = LiteLLM(
+            model_name="orcarouter/gpt-4o-mini",
+            system_prompt=SIMPLE_PROMPT,
+            max_tokens=50,
+            base_url="https://example.orca-proxy.test/v1",
+        )
+        params = llm._build_completion_params(SIMPLE_TASK)
+        assert params["model"] == "gpt-4o-mini"
+        assert (
+            params["base_url"] == "https://example.orca-proxy.test/v1"
+        )
+
+    def test_orcarouter_prefix_preserves_api_key(self):
+        llm = LiteLLM(
+            model_name="orcarouter/gpt-4o-mini",
+            system_prompt=SIMPLE_PROMPT,
+            max_tokens=50,
+            api_key="sk-orca-test-key",
+        )
+        params = llm._build_completion_params(SIMPLE_TASK)
+        assert params["api_key"] == "sk-orca-test-key"
+
+    def test_non_orcarouter_model_untouched(self):
+        llm = LiteLLM(
+            model_name=OPENAI_MODEL,
+            system_prompt=SIMPLE_PROMPT,
+            max_tokens=50,
+        )
+        params = llm._build_completion_params(SIMPLE_TASK)
+        assert params["model"] == OPENAI_MODEL
+        assert "custom_llm_provider" not in params
