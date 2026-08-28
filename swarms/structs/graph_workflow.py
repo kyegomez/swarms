@@ -1783,8 +1783,11 @@ class GraphWorkflow:
 
         try:
             preds = self._get_predecessors(node_id)
+            # Pair each name with its own output; zipping a filtered output
+            # list against the unfiltered names shifts every label when a
+            # predecessor is missing.
             pred_outputs = [
-                prev_outputs.get(pred)
+                (pred, prev_outputs[pred])
                 for pred in preds
                 if pred in prev_outputs
             ]
@@ -1793,7 +1796,7 @@ class GraphWorkflow:
                 # Use list comprehension and join for faster string building
                 predecessor_parts = [
                     f"Output from {pred}:\n{out}"
-                    for pred, out in zip(preds, pred_outputs)
+                    for pred, out in pred_outputs
                     if out is not None
                 ]
                 predecessor_context = "\n\n".join(predecessor_parts)
