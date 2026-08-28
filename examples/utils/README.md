@@ -25,8 +25,6 @@ This directory contains utility examples and helper functions for various Swarms
 - [test_load_conversation.py](misc/test_load_conversation.py) - Conversation loading tests
 - [visualizer_test.py](misc/visualizer_test.py) - Visualization testing
 
-### AOP (Aspect-Oriented Programming)
-- [client.py](misc/aop/client.py) - AOP client implementation
 
 ### Conversation Structure
 - [conversation_example_supabase.py](misc/conversation_structure/conversation_example_supabase.py) - Supabase conversation example

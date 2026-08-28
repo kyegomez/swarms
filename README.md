@@ -729,69 +729,6 @@ Perfect for implementing complex multi-agent workflows, collaborative problem-so
 
 ---
 
-### Agent Orchestration Protocol (AOP)
-
-The **Agent Orchestration Protocol (AOP)** is a powerful framework for deploying and managing agents as distributed services. AOP enables agents to be discovered, managed, and executed through a standardized protocol, making it perfect for building scalable multi-agent systems. [Learn more about AOP](https://docs.swarms.world/api/aop)
-
-```python
-from swarms import Agent, AOP
-
-# Create specialized agents
-research_agent = Agent(
-    agent_name="Research-Agent",
-    agent_description="Expert in research and data collection",
-    model_name="anthropic/claude-sonnet-4-5",
-    max_loops=1,
-    tags=["research", "data-collection", "analysis"],
-    capabilities=["web-search", "data-gathering", "report-generation"],
-    role="researcher"
-)
-
-analysis_agent = Agent(
-    agent_name="Analysis-Agent", 
-    agent_description="Expert in data analysis and insights",
-    model_name="anthropic/claude-sonnet-4-5",
-    max_loops=1,
-    tags=["analysis", "data-processing", "insights"],
-    capabilities=["statistical-analysis", "pattern-recognition", "visualization"],
-    role="analyst"
-)
-
-# Create AOP server
-deployer = AOP(
-    server_name="ResearchCluster",
-    port=8000,
-    verbose=True
-)
-
-# Add agents to the server
-deployer.add_agent(
-    agent=research_agent,
-    tool_name="research_tool",
-    tool_description="Research and data collection tool",
-    timeout=30,
-    max_retries=3
-)
-
-deployer.add_agent(
-    agent=analysis_agent,
-    tool_name="analysis_tool", 
-    tool_description="Data analysis and insights tool",
-    timeout=30,
-    max_retries=3
-)
-
-# List all registered agents
-print("Registered agents:", deployer.list_agents())
-
-# Start the AOP server
-deployer.run()
-```
-
-Perfect for deploying large scale multi-agent systems. [Read the complete AOP documentation](https://docs.swarms.world/api/aop)
-
----
-
 ## Documentation
 
 The full documentation lives at **[docs.swarms.world](https://docs.swarms.world)**. Below are the resources most useful when building with Swarms — both for humans and for AI coding assistants.
@@ -837,7 +774,6 @@ Swarms seamlessly integrates with industry-standard protocols and open specifica
 |----------|-------------|---------------|
 | **[MCP (Model Context Protocol)](https://docs.swarms.world/integrations/mcp)** | Standardized protocol for AI agents to interact with external tools and services through MCP servers. Enables dynamic tool discovery and execution. | [MCP Integration Guide](https://docs.swarms.world/integrations/mcp) |
 | **[X402](https://docs.swarms.world/examples/integrations/x402-payment)** | Cryptocurrency payment protocol for API endpoints. Enables monetization of agents with pay-per-use models. | [X402 Quickstart](https://docs.swarms.world/examples/integrations/x402-payment) |
-| **[AOP (Agent Orchestration Protocol)](https://docs.swarms.world/examples/multi-agent/aop-medical)** | Framework for deploying and managing agents as distributed services. Enables agent discovery, management, and execution through standardized protocols. | [AOP Reference](https://docs.swarms.world/api/aop) |
 | **[Swarms Marketplace](https://swarms.world)** | Platform for discovering and sharing production-ready prompts, agents, and tools. Enables automatic prompt loading from the marketplace and publishing your own prompts directly from code. | [Marketplace Tutorial](https://docs.swarms.world/integrations/marketplace) |
 | **[Open Responses](https://www.openresponses.org/)** | Open-source specification and ecosystem for multi-provider, interoperable LLM interfaces based on the OpenAI Responses API. Provides a unified schema and tooling for calling language models, streaming results, and composing agentic workflows—independent of provider. | [Open Responses Website](https://www.openresponses.org/) |
 | **[Agent Skills](https://docs.swarms.world/agents/agent-skills)** | Lightweight, markdown-based format for defining modular, reusable agent capabilities introduced by Anthropic. Enables specialization of agents without modifying code by loading skill definitions from simple SKILL.md files. | [Agent Skills Documentation](https://docs.swarms.world/agents/agent-skills) |
