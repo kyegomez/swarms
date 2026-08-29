@@ -308,25 +308,13 @@ class SpreadSheetSwarm:
         if not self.agents and self.load_path:
             self.load_from_csv()
 
-        # Prepare agents and tasks for concurrent execution
-        agents_to_run = []
-        tasks_to_run = []
-
         for _ in range(self.max_loops):
-            for agent in self.agents:
-                agents_to_run.append(agent)
-                tasks_to_run.append(task)
+            results = run_agents_with_different_tasks(
+                [(agent, task) for agent in self.agents]
+            )
 
-        # Run all tasks concurrently using the multi_agent_exec function
-        results = run_agents_with_different_tasks(
-            list(zip(agents_to_run, tasks_to_run))
-        )
-
-        # Process the results
-        for i, result in enumerate(results):
-            agent = agents_to_run[i]
-            task_str = tasks_to_run[i]
-            self._track_output(agent.agent_name, task_str, result)
+            for agent, result in zip(self.agents, results):
+                self._track_output(agent.agent_name, task, result)
 
     def _track_output(self, agent_name: str, task: str, result: str):
         """

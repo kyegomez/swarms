@@ -567,3 +567,32 @@ def test_reliability_check_verbose(temp_workspace):
     )
 
     assert swarm.verbose is True
+
+
+def test_max_loops_never_runs_one_agent_concurrently(temp_workspace):
+    import threading
+    import time
+
+    class TrackingAgent:
+        def __init__(self, name):
+            self.agent_name = name
+            self._live = 0
+            self.peak = 0
+            self._lock = threading.Lock()
+
+        def run(self, task=None, *args, **kwargs):
+            with self._lock:
+                self._live += 1
+                self.peak = max(self.peak, self._live)
+            time.sleep(0.05)
+            with self._lock:
+                self._live -= 1
+            return "done"
+
+    agents = [TrackingAgent("A"), TrackingAgent("B")]
+    swarm = SpreadSheetSwarm(agents=agents, max_loops=4, autosave=False)
+
+    swarm.run("task")
+
+    assert max(agent.peak for agent in agents) == 1
+    assert len(swarm.outputs) == 8
