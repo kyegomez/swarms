@@ -22,7 +22,7 @@ writes agent state through it, mirroring the existing
 """
 
 import json
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from loguru import logger
 
@@ -31,6 +31,7 @@ from swarms.structs.autonomous_loop_utils import (
     MAX_PLANNING_ATTEMPTS,
     MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
+    READONLY_PLANNING_TOOLS,
     assign_task_tool,
     cancel_sub_agent_tasks_tool,
     check_sub_agent_status_tool,
@@ -47,6 +48,7 @@ from swarms.structs.autonomous_loop_utils import (
     run_bash_tool,
     update_file_tool,
 )
+from swarms.telemetry.otel import ContextThreadPoolExecutor
 from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
@@ -144,6 +146,54 @@ class AutonomousAgentLoop:
             results,
             formatter=format_data_structure,
         )
+
+    def _run_readonly_planning_tools(
+        self,
+        batch: List[Tuple[str, Dict[str, Any]]],
+        handlers: Dict[str, Callable],
+    ) -> None:
+        """Execute buffered read-only built-in tool calls concurrently.
+
+        ``read_file``, ``grep`` and ``list_directory`` are I/O-bound and
+        mutate nothing, so when one model response fires several of them
+        they run in a thread pool instead of one at a time -- the same
+        treatment user tools already get via
+        ``execute_function_calls_from_api_response``. Results are recorded
+        into memory in the original call order, and the batch only ever
+        holds *consecutive* read-only calls, so a read is never reordered
+        past a write.
+
+        Args:
+            batch: ``(function_name, arguments)`` pairs, in call order.
+                Cleared in place after execution.
+            handlers: The planning-tool handler map to dispatch through.
+        """
+        if not batch:
+            return
+
+        for name, args in batch:
+            self.agent._visualize_function_call(name, args)
+
+        if len(batch) == 1:
+            name, args = batch[0]
+            results = [handlers[name](**args)]
+        else:
+            with ContextThreadPoolExecutor(
+                max_workers=min(len(batch), 4)
+            ) as pool:
+                futures = [
+                    pool.submit(handlers[name], **args)
+                    for name, args in batch
+                ]
+                results = [f.result() for f in futures]
+
+        for (name, args), result in zip(batch, results):
+            self.agent.short_memory.add(
+                role="Tool Executor",
+                content=f"{name} result: {result}",
+            )
+
+        batch.clear()
 
     def _run_autonomous_loop(
         self,
@@ -702,6 +752,7 @@ class AutonomousAgentLoop:
                             regular_tool_calls = []
                             # Set, not returned, so later calls run.
                             task_complete = False
+                            readonly_batch = []
 
                             for tool_call in response:
                                 if isinstance(
@@ -745,6 +796,23 @@ class AutonomousAgentLoop:
                                     ):
                                         # A raise is not a completion.
                                         tool_failed = False
+
+                                        if (
+                                            function_name
+                                            in READONLY_PLANNING_TOOLS
+                                        ):
+                                            readonly_batch.append(
+                                                (
+                                                    function_name,
+                                                    arguments,
+                                                )
+                                            )
+                                            continue
+
+                                        self._run_readonly_planning_tools(
+                                            readonly_batch,
+                                            planning_tool_handlers,
+                                        )
 
                                         # Special handling for handoff_task tool
                                         if (
@@ -877,6 +945,11 @@ class AutonomousAgentLoop:
                                         regular_tool_calls.append(
                                             tool_call
                                         )
+
+                            self._run_readonly_planning_tools(
+                                readonly_batch,
+                                planning_tool_handlers,
+                            )
 
                             # MCP resolves elsewhere; split first.
                             if regular_tool_calls:

@@ -45,6 +45,10 @@ MAX_SUBTASK_ITERATIONS = 100
 MAX_SUBTASK_LOOPS = 20
 MAX_CONSECUTIVE_THINKS = 2
 
+READONLY_PLANNING_TOOLS = frozenset(
+    {"read_file", "grep", "list_directory"}
+)
+
 
 # Prompts.
 
