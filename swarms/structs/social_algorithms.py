@@ -1,5 +1,7 @@
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
@@ -321,24 +323,16 @@ class SocialAlgorithms:
         Raises:
             TimeoutError: If the function execution exceeds max_execution_time.
         """
-        import signal
-
-        def timeout_handler(signum, frame):
+        executor = ThreadPoolExecutor(max_workers=1)
+        future = executor.submit(func, *args, **kwargs)
+        try:
+            return future.result(timeout=self.max_execution_time)
+        except FuturesTimeoutError:
             raise TimeoutError(
                 f"Algorithm execution exceeded {self.max_execution_time} seconds"
             )
-
-        # Set up timeout
-        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(int(self.max_execution_time))
-
-        try:
-            result = func(*args, **kwargs)
-            return result
         finally:
-            # Restore original handler
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, old_handler)
+            executor.shutdown(wait=False)
 
     def _format_output(self, result: Any) -> Any:
         """

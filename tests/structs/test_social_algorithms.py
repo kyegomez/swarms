@@ -535,5 +535,36 @@ class TestAlgorithmInfo:
         assert swarm.get_algorithm_info()["has_algorithm"] is False
 
 
+class TestTimeoutOffMainThread:
+    def test_timeout_path_runs_off_the_main_thread(self):
+        swarm = SocialAlgorithms(agents=[FakeAgent("A")])
+        swarm.max_execution_time = 5.0
+        results = {}
+
+        def worker():
+            try:
+                results["value"] = swarm._execute_with_timeout(
+                    lambda: "ok"
+                )
+            except Exception as exc:
+                results["value"] = f"{type(exc).__name__}: {exc}"
+
+        thread = threading.Thread(target=worker)
+        thread.start()
+        thread.join()
+
+        assert results["value"] == "ok"
+
+    def test_sub_second_timeout_still_fires(self):
+        swarm = SocialAlgorithms(agents=[FakeAgent("A")])
+        swarm.max_execution_time = 0.2
+
+        def slow():
+            time.sleep(2)
+
+        with pytest.raises(TimeoutError):
+            swarm._execute_with_timeout(slow)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
