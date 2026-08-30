@@ -1,17 +1,3 @@
-"""SafeStateManager must be able to load back what it saved.
-
-Agent.load() raised AttributeError for *every* agent: create_state_dict
-serialises instance state including class-level read-only properties, and
-load_state then tried to setattr them back. Agent has two — `workspace` and
-`mcp_enabled` — so the very first one hit ended the load.
-
-Nothing caught it because the only save/load round-trip test in the repo,
-TestBasicAgent::test_save_and_load, has errored at setup since 2025-10-21
-on a fixture that was deleted out from under it (#2010).
-
-Offline: the LLM is a stub, and the workspace is a tmp_path.
-"""
-
 import os
 
 import pytest

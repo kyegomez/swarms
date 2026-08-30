@@ -1,16 +1,16 @@
+from unittest.mock import patch
+
 import pytest
+from typing import get_args
 
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmRouterConfig,
     SwarmRouterRunError,
     SwarmRouterConfigError,
+    SwarmType,
 )
 from swarms.structs.agent import Agent
-
-# ============================================================================
-# Helper Functions
-# ============================================================================
 
 
 def create_sample_agents():
@@ -477,19 +477,21 @@ def test_run_with_hierarchical_swarm():
     assert result is not None
 
 
-def test_run_with_auto():
-    """SwarmRouter dispatches to 'auto' (embedding-based selection)."""
-    sample_agents = create_sample_agents()
-
-    router = SwarmRouter(
-        agents=sample_agents,
-        swarm_type="auto",
-        max_loops=1,
-        verbose=False,
+def test_auto_is_rejected_at_construction():
+    from swarms.structs.swarm_router import (
+        SwarmRouterConfigError,
+        SwarmType,
     )
 
-    result = router.run("What is 1+1?")
-    assert result is not None
+    assert "auto" not in get_args(SwarmType)
+
+    with pytest.raises(SwarmRouterConfigError):
+        SwarmRouter(
+            agents=create_sample_agents(),
+            swarm_type="auto",
+            max_loops=1,
+            verbose=False,
+        )
 
 
 def test_run_with_majority_voting():
@@ -539,19 +541,17 @@ def test_run_with_heavy_swarm():
     assert result is not None
 
 
-def test_run_with_batched_grid_workflow():
-    """SwarmRouter dispatches to BatchedGridWorkflow."""
-    sample_agents = create_sample_agents()
+def test_batched_grid_workflow_is_rejected_at_construction():
+    """BatchedGridWorkflow is not routable and is not offered as a SwarmType."""
+    assert "BatchedGridWorkflow" not in get_args(SwarmType)
 
-    router = SwarmRouter(
-        agents=sample_agents,
-        swarm_type="BatchedGridWorkflow",
-        max_loops=1,
-        verbose=False,
-    )
-
-    result = router.run("What is 1+1?")
-    assert result is not None
+    with pytest.raises(SwarmRouterConfigError):
+        SwarmRouter(
+            agents=create_sample_agents(),
+            swarm_type="BatchedGridWorkflow",
+            max_loops=1,
+            verbose=False,
+        )
 
 
 def test_run_with_llm_council():
@@ -658,3 +658,176 @@ class TestConcurrentRun:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+# ============================================================================
+# multi_agent_collab_prompt — delivered, not welded onto the caller's agents
+# ============================================================================
+
+
+def _collab_recording_agents(names):
+    """Agents whose run() records the system turns it was handed."""
+    from swarms import Agent
+
+    calls = []
+    agents = []
+    for name in names:
+        agent = Agent(
+            agent_name=name,
+            system_prompt=f"You are {name}.",
+            model_name="gpt-5.4",
+            max_loops=1,
+            verbose=False,
+        )
+
+        def _make(agent_obj, agent_name):
+            def _run(task=None, messages=None, **kwargs):
+                calls.append(
+                    {
+                        "agent": agent_name,
+                        "messages": list(messages or []),
+                    }
+                )
+                answer = f"{agent_name}-answer"
+                agent_obj.short_memory.add(
+                    role=agent_name, content=answer
+                )
+                return answer
+
+            return _run
+
+        agent.run = _make(agent, name)
+        agents.append(agent)
+    return agents, calls
+
+
+def test_collab_prompt_never_mutates_the_callers_agents():
+    """Building routers must not append to the caller's system_prompt.
+
+    The preamble used to be appended with ``+=`` at construction. It never
+    reached the model (the prompt is baked into the LLM when the agent is
+    built) and it accumulated once per router.
+    """
+    agents, _ = _collab_recording_agents(["A", "B"])
+    originals = [a.system_prompt for a in agents]
+
+    SwarmRouter(
+        agents=agents,
+        swarm_type="SequentialWorkflow",
+        multi_agent_collab_prompt=True,
+    )
+    SwarmRouter(
+        agents=agents,
+        swarm_type="SequentialWorkflow",
+        multi_agent_collab_prompt=True,
+    )
+
+    assert [a.system_prompt for a in agents] == originals
+
+
+def test_collab_prompt_is_delivered_as_a_system_turn():
+    """The preamble must actually reach the agent at run time."""
+    from swarms.prompts.multi_agent_collab_prompt import (
+        MULTI_AGENT_COLLAB_PROMPT_TWO,
+    )
+
+    agents, calls = _collab_recording_agents(["A", "B"])
+    router = SwarmRouter(
+        agents=agents,
+        swarm_type="SequentialWorkflow",
+        multi_agent_collab_prompt=True,
+    )
+    router.run("Go.")
+
+    delivered = [
+        m["content"]
+        for call in calls
+        for m in call["messages"]
+        if m["role"] == "system"
+    ]
+    assert any(
+        MULTI_AGENT_COLLAB_PROMPT_TWO in text for text in delivered
+    )
+    assert [a.system_prompt for a in agents] == [
+        "You are A.",
+        "You are B.",
+    ]
+
+
+def test_collab_prompt_warns_when_the_swarm_type_cannot_deliver_it():
+    """A flag that does nothing must say so, regardless of verbose."""
+    agents, _ = _collab_recording_agents(["A", "B"])
+
+    with patch("swarms.structs.swarm_router.logger.warning") as warn:
+        SwarmRouter(
+            agents=agents,
+            swarm_type="ConcurrentWorkflow",
+            multi_agent_collab_prompt=True,
+            verbose=False,
+        )
+
+    assert warn.called
+    assert "multi_agent_collab_prompt is ignored" in str(
+        warn.call_args
+    )
+
+
+def test_list_all_agents_does_not_crash_at_construction():
+    """The swarm is built lazily, so setup() must not reach for it.
+
+    ``setup()`` used to call ``list_agents_to_eachother()``, which reads
+    ``self.swarm`` — created only on the first ``run()`` — so constructing a
+    router with ``list_all_agents=True`` raised ``AttributeError``.
+    """
+    agents, _ = _collab_recording_agents(["A", "B"])
+
+    router = SwarmRouter(
+        agents=agents,
+        swarm_type="SequentialWorkflow",
+        list_all_agents=True,
+    )
+
+    assert router.swarm is None
+
+
+def test_list_all_agents_delivers_the_roster_as_a_system_turn():
+    """The roster reaches agents, and the caller's agents are untouched.
+
+    It cannot be seeded into the shared conversation: structures reset that
+    conversation per task, which would discard it before any agent ran.
+    """
+    agents, calls = _collab_recording_agents(["A", "B"])
+    originals = [a.system_prompt for a in agents]
+
+    router = SwarmRouter(
+        agents=agents,
+        swarm_type="SequentialWorkflow",
+        list_all_agents=True,
+        multi_agent_collab_prompt=False,
+    )
+    router.run("Go.")
+
+    delivered = [
+        m["content"]
+        for call in calls
+        for m in call["messages"]
+        if m["role"] == "system"
+    ]
+    assert any("Total Agents" in text for text in delivered)
+    assert [a.system_prompt for a in agents] == originals
+
+
+def test_conversation_points_at_the_live_swarm_conversation_after_run():
+    """``router.conversation`` must be the conversation the run actually used."""
+    agents, _ = _collab_recording_agents(["A", "B"])
+    router = SwarmRouter(
+        agents=agents, swarm_type="SequentialWorkflow", max_loops=1
+    )
+
+    assert router.conversation is None
+    router.run("Go.")
+
+    roles = [
+        m["role"] for m in router.conversation.conversation_history
+    ]
+    assert "A" in roles and "B" in roles

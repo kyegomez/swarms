@@ -58,9 +58,7 @@ from swarms.utils.formatter import formatter
 load_swarms_env()
 
 
-# Single source of truth for valid CLI commands. Used by argparse for
-# strict validation and by the typo-correction pre-check in main() to
-# suggest the closest match when a user mistypes a command.
+# Single source of truth: argparse validates against it and main() suggests the closest match.
 COMMAND_CHOICES: List[str] = [
     "init",
     "onboarding",
@@ -1437,9 +1435,6 @@ def handle_agent(args: argparse.Namespace) -> None:
         in interactive mode, ready for user input. The function handles conversion
         of max_loops from string to int or "auto" as appropriate.
     """
-    # Validate required arguments
-    # system_prompt not required if marketplace_prompt_id provided
-    # task is now optional
     required_args = ["name", "description"]
     if not getattr(args, "marketplace_prompt_id", None):
         required_args.append("system_prompt")

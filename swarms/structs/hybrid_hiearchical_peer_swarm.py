@@ -10,6 +10,7 @@ from swarms.utils.history_output_formatter import (
 )
 from typing import Union, Callable
 from swarms.utils.history_output_formatter import HistoryOutputType
+from swarms.utils.str_to_dict import str_to_dict
 
 tools = [
     {
@@ -129,20 +130,6 @@ class HybridHierarchicalClusterSwarm:
             output_type="final",
         )
 
-    def convert_str_to_dict(self, response: str):
-        # Handle response whether it's a string or dictionary
-        if isinstance(response, str):
-            try:
-                import json
-
-                response = json.loads(response)
-            except json.JSONDecodeError:
-                raise ValueError(
-                    "Invalid JSON response from router agent"
-                )
-
-        return response
-
     def run(self, task: str, *args, **kwargs):
         """
         Runs the routing process for a given task.
@@ -164,9 +151,11 @@ class HybridHierarchicalClusterSwarm:
         response = self.router_agent.run(task=task)
 
         if isinstance(response, str):
-            response = self.convert_str_to_dict(response)
+            response = str_to_dict(response)
         else:
-            pass
+            raise ValueError(
+                f"Invalid response from router agent: response must be a string. Got {type(response)}."
+            )
 
         swarm_name = response.get("swarm_name")
         task_description = response.get("task_description")
