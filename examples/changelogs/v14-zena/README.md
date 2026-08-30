@@ -24,7 +24,6 @@ A few examples reference other providers (`claude-sonnet-4-6` in the hierarchica
 | [05_auction_swarm.py](05_auction_swarm.py) | AuctionSwarm | Agents bidding on a task; default and custom scoring |
 | [06_groupchat_turn_based.py](06_groupchat_turn_based.py) | Turn-Based GroupChat | Single-speaker bidding with a recency penalty |
 | [07_hierarchical_swarm_recovery.py](07_hierarchical_swarm_recovery.py) | HierarchicalSwarm | Worker retry, task reassignment, planning, judge, director overrides |
-| [08_computer_use_tools.py](08_computer_use_tools.py) | Computer-Use Tools | Full toolset, and a read-only subset |
 | [09_class_to_pydantic.py](09_class_to_pydantic.py) | Pydantic Schemas | Schema from a constructor, and the round-trip back to an `Agent` |
 | [10_concurrent_workflow_on_error.py](10_concurrent_workflow_on_error.py) | ConcurrentWorkflow | `on_error` failure policy |
 | [11_graph_workflow.py](11_graph_workflow.py) | Performance | Fan-out/fan-in DAG on native rustworkx |

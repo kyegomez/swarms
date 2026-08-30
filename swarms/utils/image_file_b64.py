@@ -157,9 +157,7 @@ def is_base64_encoded(image_source: str) -> bool:
     if image_source.startswith("data:image"):
         return True
 
-    # Check if it's a raw base64 string (no data URI prefix)
-    # Base64 strings are typically long and contain only base64 characters
-    # We check for reasonable length and base64 character set
+    # Length plus character set, since a raw base64 string has no data URI prefix to match on.
     if len(image_source) > 100:  # Base64 images are typically long
         try:
             # Try to decode a sample to verify it's valid base64
@@ -213,9 +211,7 @@ def get_image_base64(image_source: str) -> str:
     if is_base64_encoded(
         image_source
     ) and not image_source.startswith(("http://", "https://")):
-        # It's a raw base64 string, convert to data URI format
-        # Default to JPEG if we can't determine the format
-        # In practice, users should provide data URI format, but we support raw base64 for flexibility
+        # Default to JPEG when the format cannot be determined.
         mime_type = "image/jpeg"  # Default MIME type
         return f"data:{mime_type};base64,{image_source}"
 

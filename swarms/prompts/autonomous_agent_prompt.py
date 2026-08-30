@@ -1,10 +1,3 @@
-"""
-Comprehensive prompt for autonomous agent operating in auto loop mode.
-
-This prompt guides the agent through the structured workflow:
-plan -> think -> action -> subtask_done -> complete_task
-"""
-
 from datetime import datetime
 
 
@@ -259,7 +252,7 @@ Now, begin your mission with excellence.
 
 NO_THINK_TOOL_OVERRIDE = """
 
-## TOOL AVAILABILITY OVERRIDE
+## THE THINK TOOL IS NOT AVAILABLE
 
 The `think` tool is NOT available in this run. Disregard every instruction
 above that tells you to call it, along with the limits described for it.
@@ -289,10 +282,7 @@ def get_autonomous_agent_prompt(
     if include_think_tool:
         return AUTONOMOUS_AGENT_SYSTEM_PROMPT
 
-    # The think guidance is woven through the prompt in a dozen places, so it
-    # is overridden at the end rather than excised - a late, explicit
-    # instruction is unambiguous, where a partial edit risks mangling the text.
-    # Restructuring the prompt into composable sections is the proper fix.
+    # Overridden at the end rather than excised; the think guidance is woven through in a dozen places.
     return AUTONOMOUS_AGENT_SYSTEM_PROMPT + NO_THINK_TOOL_OVERRIDE
 
 

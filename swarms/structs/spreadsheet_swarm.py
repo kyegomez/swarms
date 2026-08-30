@@ -9,7 +9,7 @@ from swarms.structs.multi_agent_exec import (
     run_agents_with_different_tasks,
 )
 from swarms.structs.omni_agent_types import AgentType
-from swarms.utils.file_processing import create_file_in_folder
+from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.workspace_utils import get_workspace_dir
 
@@ -69,20 +69,25 @@ class SpreadSheetSwarm:
         self.load_path = load_path
         self.verbose = verbose
 
-        # --------------- NEW CHANGE START ---------------
-        # The save_file_path now uses the formatted_time and uuid_hex
-        # Save CSV files in the workspace_dir instead of root directory
-        if self.workspace_dir:
-            os.makedirs(self.workspace_dir, exist_ok=True)
+        self.workspace = WorkspaceManager(
+            self,
+            name=self.name or "spreadsheet-swarm",
+            verbose=verbose,
+            enabled=autosave,
+        )
+        self.swarm_workspace_dir = self.workspace.dir
+
+        # An explicitly passed save_file_path used to be overwritten here.
+        if not self.save_file_path:
+            base = (
+                self.workspace.dir
+                or self.workspace_dir
+                or os.getcwd()
+            )
+            os.makedirs(base, exist_ok=True)
             self.save_file_path = os.path.join(
-                self.workspace_dir,
-                f"spreadsheet_swarm_run_id_{uuid_hex}.csv",
+                base, f"spreadsheet_swarm_run_id_{uuid_hex}.csv"
             )
-        else:
-            self.save_file_path = (
-                f"spreadsheet_swarm_run_id_{uuid_hex}.csv"
-            )
-        # --------------- NEW CHANGE END ---------------
 
         self.outputs = []
         self.tasks_completed = 0
@@ -367,12 +372,9 @@ class SpreadSheetSwarm:
         """
         Save the swarm metadata to a JSON file.
         """
-        out = self.export_to_json()
-
-        create_file_in_folder(
-            folder_path=f"{self.workspace_dir}/Spreedsheet-Swarm-{self.name}/{self.name}",
-            file_name=f"spreedsheet-swarm-{uuid_hex}-metadata.json",
-            content=out,
+        self.workspace.save_text(
+            f"spreadsheet-swarm-{uuid_hex}-metadata.json",
+            self.export_to_json(),
         )
 
     def _save_metadata(self):

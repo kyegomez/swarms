@@ -57,9 +57,6 @@ from swarms.schemas.agent_errors import (
     AgentRunError,
     AgentToolExecutionError,
 )
-from swarms.schemas.base_schemas import (
-    AgentChatCompletionResponse,
-)
 from swarms.schemas.mcp_schemas import (
     MCPConnection,
     MCPOAuthConfig,
@@ -72,6 +69,11 @@ from swarms.structs.autonomous_loop_utils import (
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.structs.transcript import Transcript
+from swarms.tools.dynamic_tool_loader import (
+    DYNAMIC_TOOLS_NOTICE,
+    SEARCH_TOOL_NAME,
+    DynamicToolLoader,
+)
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
@@ -110,6 +112,7 @@ from swarms.utils.index import (
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
+from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.workspace_utils import get_workspace_dir
 
 
@@ -145,7 +148,6 @@ class Agent:
         stopping_condition (Callable): The stopping condition to use
         loop_interval (int): The loop interval
         retry_attempts (int): The number of retry attempts
-        retry_interval (int): The retry interval
         stopping_token (str): The stopping token
         dynamic_loops (bool): Enable dynamic loops
         interactive (bool): Enable interactive mode
@@ -163,7 +165,6 @@ class Agent:
         transforms (Optional[Union[TransformConfig, dict]]): Message transformation configuration for handling context limits
         user_name (str): The user name
         multi_modal (bool): Enable multimodal
-        tokenizer (Any): The tokenizer
         long_term_memory (BaseVectorDatabase): The long term memory
         fallback_model_name (str): The fallback model name to use if primary model fails
         fallback_models (List[str]): List of model names to try in order. First model is primary, rest are fallbacks
@@ -318,7 +319,6 @@ class Agent:
         stopping_condition: Optional[Callable[[str], bool]] = None,
         loop_interval: Optional[int] = 0,
         retry_attempts: Optional[int] = 3,
-        retry_interval: Optional[int] = 1,
         stopping_token: Optional[str] = None,
         dynamic_loops: Optional[bool] = False,
         interactive: Optional[bool] = False,
@@ -334,7 +334,6 @@ class Agent:
         transforms: Optional[Union[TransformConfig, dict]] = None,
         user_name: Optional[str] = "Human",
         multi_modal: Optional[bool] = None,
-        tokenizer: Optional[Any] = None,
         long_term_memory: Optional[Union[Callable, Any]] = None,
         fallback_model_name: Optional[str] = None,
         fallback_models: Optional[List[str]] = None,
@@ -392,9 +391,10 @@ class Agent:
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
         show_tool_execution_output: bool = True,
-        reasoning_effort: Literal[get_reasoning_efforts()] = "medium",
+        reasoning_effort: Literal[get_reasoning_efforts()] = None,
         thinking_tokens: int = 1024,
         think_tool: bool = False,
+        dynamic_tools: bool = True,
         reasoning_enabled: bool = False,
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
         capabilities: Optional[List[str]] = None,
@@ -418,12 +418,10 @@ class Agent:
         self.stopping_condition = stopping_condition
         self.loop_interval = loop_interval
         self.retry_attempts = retry_attempts
-        self.retry_interval = retry_interval
         self.task = None
         self.stopping_token = stopping_token
         self.interactive = interactive
         self.dashboard = dashboard
-        self.saved_state_path = saved_state_path
         self.dynamic_temperature_enabled = dynamic_temperature_enabled
         self.dynamic_loops = dynamic_loops
         self.user_name = user_name
@@ -434,13 +432,12 @@ class Agent:
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
         self.agent_description = agent_description
-        # self.saved_state_path = f"{self.agent_name}_{generate_api_key(prefix='agent-')}_state.json"
-        self.saved_state_path = (
+        # Fallback: this once overwrote the caller's own path.
+        self.saved_state_path = saved_state_path or (
             f"{generate_api_key(prefix='agent-')}_state.json"
         )
         self.autosave = autosave
         self.multi_modal = multi_modal
-        self.tokenizer = tokenizer
         self.long_term_memory = long_term_memory
         self.preset_stopping_token = preset_stopping_token
         self.streaming_on = streaming_on
@@ -460,6 +457,9 @@ class Agent:
         # Always use environment variable for workspace_dir, ignore user input
         # Fallback to default if environment variable is not set
         self.workspace_dir = get_workspace_dir()
+        # Built on first use: file tools need the dir even without
+        # autosave, but constructing every agent must not create one.
+        self._workspace = None
         self.tags = tags
         self.use_cases = use_cases
         self.name = agent_name
@@ -473,9 +473,7 @@ class Agent:
         self.load_state_path = load_state_path
         self.role = role
         self.print_on = print_on
-        # Own list per agent. The default used to be a literal [], so every
-        # agent that skipped this argument shared one object and inherited
-        # the tool schemas any other agent appended to it.
+        # Own list per agent: a literal [] default made every agent share one object.
         self.tools_list_dictionary = (
             tools_list_dictionary
             if tools_list_dictionary is not None
@@ -505,11 +503,11 @@ class Agent:
         self.reasoning_effort = reasoning_effort
         self.thinking_tokens = thinking_tokens
 
-        # Whether the autonomous loop offers the `think` tool. Off by default:
-        # a think call costs a full round-trip to produce reasoning the model
-        # could have emitted alongside its actions in the same response. Turn
-        # it on for models that do not reason natively, or when an explicit
-        # analysis step is worth the extra turn.
+        self.dynamic_tools = dynamic_tools
+        self.tool_loader: Optional[DynamicToolLoader] = None
+        self._mcp_tools_deferred = False
+        self._mcp_schemas_cache: Optional[List[dict]] = None
+
         self.think_tool = think_tool
         self.reasoning_enabled = reasoning_enabled
         self.fallback_model_name = fallback_model_name
@@ -519,9 +517,6 @@ class Agent:
         self.publish_to_marketplace = publish_to_marketplace
         self.marketplace_prompt_id = marketplace_prompt_id
 
-        # All MCP (Model Context Protocol) behaviour — connection handling,
-        # API key / bearer token / OAuth authentication, transport selection,
-        # tool discovery and tool execution — lives in MCPManager.
         self.mcp_manager = MCPManager(
             mcp_url=self.mcp_url,
             mcp_urls=self.mcp_urls,
@@ -617,9 +612,7 @@ class Agent:
         # self.init_handling()
         self.setup_config()
 
-        # Initialize the short memory. The Conversation manages the
-        # persistent MEMORY.md file at
-        # $WORKSPACE_DIR/agents/{agent_name}-{id}/MEMORY.md.
+        # Conversation owns MEMORY.md under $WORKSPACE_DIR/agents/{agent_name}-{id}/.
         self.short_memory = self.short_memory_init()
 
         # Initialize the tools
@@ -663,7 +656,18 @@ class Agent:
                 )
                 self.system_prompt += "\n\n" + handoff_prompt
 
-        if exists(self.tools):
+        # Not exists(): exists([]) is True, so tools=[] deferred.
+        defers_tools = self.dynamic_tools and (
+            bool(self.tools)
+            or self.mcp_enabled
+            or self.max_loops == "auto"
+        )
+
+        # Appended once here, not per run.
+        if defers_tools:
+            self.system_prompt += DYNAMIC_TOOLS_NOTICE
+            self.setup_dynamic_tools()
+        elif self.tools:
             self.tool_handling()
 
         if self.llm is None:
@@ -723,6 +727,20 @@ class Agent:
         """
         self.system_prompt += self.skills.prompt_for_task(task)
 
+    @property
+    def workspace(self) -> "WorkspaceManager":
+        """
+        This agent's workspace manager, created on first access.
+
+        Returns:
+            WorkspaceManager: Rooted at ``{workspace}/agents/{name}-{uuid}``.
+        """
+        if self._workspace is None:
+            self._workspace = WorkspaceManager.for_agent(
+                self, verbose=self.verbose
+            )
+        return self._workspace
+
     def _get_agent_workspace_dir(self) -> str:
         """
         Get the agent-specific workspace directory path.
@@ -733,52 +751,7 @@ class Agent:
         Returns:
             str: The full path to the agent-specific workspace directory.
         """
-        # Generate a sanitized agent name in "name-of-agent" format (lowercase with hyphens)
-        if self.agent_name:
-            # Convert to lowercase and replace spaces/special chars with hyphens
-            safe_agent_name = (
-                self.agent_name.lower()
-                .replace(" ", "-")
-                .replace("_", "-")
-                .replace("/", "-")
-                .replace("\\", "-")
-                .replace(":", "-")
-                .replace("*", "-")
-                .replace("?", "-")
-                .replace('"', "-")
-                .replace("<", "-")
-                .replace(">", "-")
-                .replace("|", "-")
-                # Remove multiple consecutive hyphens
-                .replace("--", "-")
-                .replace("--", "-")
-                .strip("-")
-            )
-        else:
-            safe_agent_name = "agent"
-
-        # Extract UUID from agent ID
-        if self.id.startswith("agent-"):
-            agent_uuid = self.id.replace("agent-", "")
-        else:
-            agent_uuid = self.id
-
-        # Limit UUID length for directory name (use last 12 chars for brevity)
-        agent_uuid_short = (
-            agent_uuid[-12:] if len(agent_uuid) > 12 else agent_uuid
-        )
-
-        # Create directory name: {name-of-agent}-{uuid} (no "agent-" prefix)
-        dir_name = f"{safe_agent_name}-{agent_uuid_short}"
-
-        # Create full path: workspace_dir/agents/{name-of-agent}-{uuid}/
-        agents_dir = os.path.join(self.workspace_dir, "agents")
-        agent_workspace = os.path.join(agents_dir, dir_name)
-
-        # Ensure directory exists
-        os.makedirs(agent_workspace, exist_ok=True)
-
-        return agent_workspace
+        return self.workspace.dir
 
     def _get_agent_registry(self) -> Dict[str, Any]:
         """
@@ -1007,13 +980,7 @@ class Agent:
             prompt += "\n\n"
             prompt += SAFETY_PROMPT
 
-        # Compute the persistent MEMORY.md path under the workspace dir.
-        # Only resolved when persistent_memory=True (the default). When False
-        # the Conversation receives no path and operates as a pure in-process
-        # store with no on-disk read or write across sessions.
-        # Key on agent_name only (not self.id) so memory is stable across
-        # process restarts — self.id defaults to a fresh uuid every run,
-        # which would otherwise create a new empty MEMORY.md each time.
+        # Keyed on agent_name, not self.id, which is a fresh uuid per run and would orphan MEMORY.md.
         memory_md_path = None
         if self.persistent_memory:
             try:
@@ -1259,6 +1226,7 @@ class Agent:
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -1441,12 +1409,6 @@ class Agent:
                     self.dynamic_temperature()
 
                 # Task prompt with optional transforms.
-                #
-                # `transforms` rewrites the whole history into a single string
-                # by design, so that path keeps the legacy flattened prompt.
-                # Everything else sends a real message list, which preserves
-                # assistant `tool_calls` turns and `tool` results instead of
-                # collapsing them into prose.
                 task_prompt = None
                 use_transcript = self.transforms is None
 
@@ -1457,16 +1419,15 @@ class Agent:
                         model_name=self.model_name,
                     )
                 elif transcript is None:
-                    transcript = self._transcript_from_memory()
+                    transcript = self._transcript_from_messages(
+                        messages, task
+                    )
 
                 # Parameters
                 attempt = 0
                 success = False
                 while attempt < self.retry_attempts and not success:
-                    # Hoisted out of the try: if an attempt fails after the
-                    # assistant turn is recorded, the except below still has to
-                    # answer its tool calls, or the retry would send a dangling
-                    # `tool_calls` turn and be rejected.
+                    # Outside the try: except must answer tool calls.
                     turn_calls = []
                     turn_results = {}
                     try:
@@ -1516,9 +1477,7 @@ class Agent:
                             content=response,
                         )
 
-                        # Record the model's turn. Any tool calls it made must
-                        # each receive a matching tool result before the next
-                        # request, which `flush_tool_results` guarantees below.
+                        # Every tool call in this turn needs a matching result before the next request.
                         if use_transcript:
                             turn_calls = transcript.record_assistant(
                                 response
@@ -1539,6 +1498,61 @@ class Agent:
                                 self.pretty_print(
                                     response, loop_count
                                 )
+
+                        # Dispatched here rather than through tool_struct: it is an agent method, not a user callable.
+                        if (
+                            isinstance(response, list)
+                            and self.tool_loader
+                        ):
+                            remaining = []
+                            for tool_call in response:
+                                name = (
+                                    tool_call.get("function", {}).get(
+                                        "name"
+                                    )
+                                    if isinstance(tool_call, dict)
+                                    else None
+                                )
+                                if name != SEARCH_TOOL_NAME:
+                                    remaining.append(tool_call)
+                                    continue
+
+                                try:
+                                    arguments = json.loads(
+                                        tool_call["function"][
+                                            "arguments"
+                                        ]
+                                    )
+                                except (
+                                    json.JSONDecodeError,
+                                    TypeError,
+                                ):
+                                    arguments = {}
+
+                                result = self._tool_search_tool(
+                                    **arguments
+                                )
+                                self.short_memory.add(
+                                    role="Tool Executor",
+                                    content=f"tool_search result: {result}",
+                                )
+                                turn_results[
+                                    tool_call.get("id", "")
+                                ] = result
+                                if self.print_on:
+                                    formatter.print_panel(
+                                        result, title="Tool Search"
+                                    )
+
+                            # Falling through with nothing left would log a misleading "no function calls found".
+                            response = remaining
+                            if not remaining:
+                                if use_transcript and turn_calls:
+                                    transcript.flush_tool_results(
+                                        turn_calls, turn_results
+                                    )
+                                success = True
+                                continue
 
                         # Handle handoff tool calls
                         if isinstance(response, list):
@@ -1618,9 +1632,7 @@ class Agent:
                                     f"LLM returned None response in loop {loop_count}, skipping MCP tool handling"
                                 )
 
-                        # Answer every tool call in the assistant turn just
-                        # recorded. A gap here makes the *next* request invalid,
-                        # so this runs on every path that reached this point.
+                        # Answer every tool call just recorded; a gap makes the next request invalid.
                         if use_transcript and turn_calls:
                             transcript.flush_tool_results(
                                 turn_calls, turn_results
@@ -1769,60 +1781,27 @@ class Agent:
         self, loop_count: Optional[int] = None
     ) -> None:
         """
-        Save the agent's configuration dictionary to a JSON file in the agent-specific workspace directory.
-        This method is called at each step of the agent's run to maintain an up-to-date
-        configuration snapshot. It only runs when autosave is enabled.
+        Write a config snapshot to the agent workspace, once per step.
 
         Args:
-            loop_count (Optional[int]): The current loop count for logging purposes. Defaults to None.
+            loop_count (Optional[int]): Current loop, recorded in the
+                saved metadata and used only for logging. Defaults to None.
 
         Note:
-            This method handles errors gracefully to ensure it doesn't interrupt the main execution.
-            The saved file will be named `config.json` in the agent-specific workspace directory:
-            workspace_dir/agents/{name-of-agent}-{uuid}/config.json
+            Writes ``config.json`` under
+            workspace_dir/agents/{name-of-agent}-{uuid}/. Never raises -
+            autosave must not interrupt a run.
         """
         if not self.autosave:
             return
 
-        try:
-            # Get agent-specific workspace directory
-            agent_workspace = self._get_agent_workspace_dir()
+        path = self.workspace.save_config(
+            additional_metadata={"loop_count": loop_count}
+        )
 
-            # Save as config.json in the agent-specific directory
-            file_path = os.path.join(agent_workspace, "config.json")
-
-            # Get the current configuration dictionary
-            config_dict = self.to_dict()
-
-            # Add metadata about when this was saved
-            config_dict["_autosave_metadata"] = {
-                "timestamp": time.strftime(
-                    "%Y-%m-%d %H:%M:%S", time.localtime()
-                ),
-                "loop_count": loop_count,
-                "agent_id": self.id,
-                "agent_name": self.agent_name,
-            }
-
-            # Write to JSON file atomically (write to temp file first, then rename)
-            temp_path = file_path + ".tmp"
-            with open(temp_path, "w", encoding="utf-8") as f:
-                json.dump(
-                    config_dict, f, indent=2, ensure_ascii=False
-                )
-
-            # Atomic rename
-            os.replace(temp_path, file_path)
-
-            if self.verbose and loop_count is not None:
-                logger.debug(
-                    f"Autosaved config at loop {loop_count} to {file_path}"
-                )
-
-        except Exception as e:
-            # Log error but don't raise - we don't want autosave to break execution
-            logger.warning(
-                f"Failed to autosave config step for agent '{self.agent_name}': {e}"
+        if path and self.verbose and loop_count is not None:
+            logger.debug(
+                f"Autosaved config at loop {loop_count} to {path}"
             )
 
     def _handle_run_error(self, error: any):
@@ -1970,6 +1949,157 @@ class Agent:
             *args,
             **kwargs,
         )
+
+    def setup_dynamic_tools(
+        self, always_loaded: Optional[List[dict]] = None
+    ) -> DynamicToolLoader:
+        """
+        Defer this agent's tool schemas behind a ``tool_search`` tool.
+
+        Tool definitions are re-sent on every request and sit in the cached
+        prefix, so a large tool set is paid for continuously. Deferring sends
+        only ``tool_search`` up front; the agent loads what it needs, and the
+        loaded schemas are included from the next request onwards.
+
+        Args:
+            always_loaded: Schemas that must never be deferred. Control-flow
+                tools belong here - an agent that has to search for its own
+                ``complete_task`` cannot finish.
+
+        Returns:
+            The loader, also stored on ``self.tool_loader``.
+        """
+        # Keep already-registered handoff and MCP tools: overwriting here is what broke handoffs.
+        user_tool_names = {
+            schema.get("function", {}).get("name")
+            for schema in convert_multiple_functions_to_openai_function_schema(
+                list(self.tools or [])
+            )
+        }
+        # Excluded because schemas() re-adds it, and setup runs twice for an autonomous agent.
+        preserved = [
+            schema
+            for schema in (self.tools_list_dictionary or [])
+            if isinstance(schema, dict)
+            and schema.get("function", {}).get("name")
+            not in user_tool_names | {SEARCH_TOOL_NAME}
+        ]
+
+        keep: List[dict] = []
+        seen: set = set()
+        for schema in list(always_loaded or []) + preserved:
+            name = schema.get("function", {}).get("name")
+            if name and name not in seen:
+                seen.add(name)
+                keep.append(schema)
+
+        self.tool_loader = DynamicToolLoader(
+            tools=self.tools or [],
+            always_loaded=keep,
+        )
+
+        # A rebuilt loader is empty; the fetch guard will not refetch.
+        for schema in self._mcp_schemas_cache or []:
+            self.tool_loader.register_schema(schema)
+
+        self.tools_list_dictionary = self.tool_loader.schemas()
+        return self.tool_loader
+
+    def defer_tool_schemas(self, schemas: List[dict]) -> None:
+        """Add pre-built schemas to the deferred catalog (MCP, loop tools)."""
+        if self.tool_loader is None:
+            return
+        for schema in schemas:
+            self.tool_loader.register_schema(schema)
+        self.tools_list_dictionary = self.tool_loader.schemas()
+
+    def defer_mcp_tools(self) -> int:
+        """
+        Move this agent's MCP tool schemas into the deferred catalog.
+
+        MCP is the case dynamic tools exist for: a single server can expose
+        dozens of tools, and every one of them is otherwise re-sent with every
+        request. Deferring them makes them searchable instead, so the request
+        carries only what the agent actually loaded.
+
+        The fetch is a network call, and rebuilding the LLM after each
+        ``tool_search`` would repeat it, so it runs once per agent.
+
+        Returns:
+            int: How many schemas were added to the catalog. 0 if MCP is not
+            configured, dynamic tools are off, or this already ran.
+        """
+        if self.tool_loader is None or not self.mcp_enabled:
+            return 0
+
+        # Keyed on loader contents, not a flag: the autonomous loop builds a fresh loader per run.
+        cached = self._mcp_schemas_cache
+        if cached is not None and all(
+            schema.get("function", {}).get("name") in self.tool_loader
+            for schema in cached
+        ):
+            return 0
+
+        if cached is None:
+            try:
+                cached = self.add_mcp_tools_to_memory()
+            except Exception as error:
+                # A server being unreachable must not take down agent setup;
+                # the agent simply runs without those tools.
+                logger.error(
+                    f"Could not fetch MCP tools to defer: {error}"
+                )
+                self._mcp_schemas_cache = []
+                self._mcp_tools_deferred = True
+                return 0
+            self._mcp_schemas_cache = cached
+
+        schemas = cached
+        self._mcp_tools_deferred = True
+        self.defer_tool_schemas(schemas)
+
+        if self.verbose:
+            logger.info(
+                f"Deferred {len(schemas)} MCP tool(s) into the catalog: "
+                f"{[s.get('function', {}).get('name') for s in schemas]}"
+            )
+        return len(schemas)
+
+    def _tool_search_tool(
+        self,
+        query: str,
+        max_results: int = 5,
+        min_score_ratio: float = 0.0,
+        **kwargs,
+    ) -> str:
+        """
+        Handler for the ``tool_search`` tool.
+
+        Loading changes the tool list, so the LLM is rebuilt here - otherwise
+        the newly loaded schemas would not be sent and the model could not
+        call what it just found.
+        """
+        if self.tool_loader is None:
+            return (
+                "Tool search is unavailable: this agent was not built with "
+                "dynamic_tools=True."
+            )
+
+        result = self.tool_loader.run_search(
+            query=query,
+            max_results=max_results,
+            min_score_ratio=min_score_ratio,
+        )
+        self.tools_list_dictionary = self.tool_loader.schemas()
+        if self.llm is not None:
+            self.llm = self.llm_handling()
+
+        if self.verbose:
+            logger.info(
+                f"tool_search({query!r}) -> loaded "
+                f"{self.tool_loader.loaded_names}"
+            )
+        return result
 
     def _transcript_from_memory(self) -> Transcript:
         """
@@ -2154,11 +2284,7 @@ Subtask Breakdown:
             Exception: If an error occurs during the asynchronous operation.
         """
         try:
-            # Forward positionally, in run()'s own parameter order. Passing
-            # task/img as keywords while also splatting *args made every
-            # extra positional collide with `task`:
-            #   TypeError: run() got multiple values for argument 'task'
-            # so arun(task, img, extra) raised instead of running.
+            # Positional, in run()'s order: keywords plus *args made every extra positional collide with task.
             return await asyncio.to_thread(
                 self.run,
                 task,
@@ -2167,10 +2293,7 @@ Subtask Breakdown:
                 **kwargs,
             )
         except Exception as error:
-            # _handle_run_error is sync and re-raises; the other seven call
-            # sites do not await it. The await was only harmless because the
-            # method always raises before returning — the day it stops, this
-            # becomes `await None`.
+            # Not awaited: _handle_run_error is sync and always raises, as the other seven call sites assume.
             self._handle_run_error(error)
 
     def __call__(
@@ -2358,10 +2481,7 @@ Subtask Breakdown:
         Returns:
             int: The maximum number of output tokens for the model. Returns 16000 if undetermined.
         """
-        # get_model_info raises for an unmapped model id rather than
-        # returning an empty mapping, so an unknown, custom or self-hosted
-        # model would otherwise take down Agent.__init__. The sibling
-        # _default_context_length guards the same call the same way.
+        # get_model_info raises for unmapped ids, which would otherwise take down __init__ for custom models.
         try:
             return (
                 get_model_info(self.model_name).get(
@@ -2408,9 +2528,7 @@ Subtask Breakdown:
                 "Context length is not provided. Please set a valid context length."
             )
 
-        # Truthiness, not "is not None": the attribute is normalised to an
-        # empty list for every agent built without tools, so the None check
-        # warned about function calling for agents that never use it.
+        # Truthiness, not "is not None": tools is normalised to [], so the None check never matched.
         if self.tools_list_dictionary:
             if not supports_function_calling(self.model_name):
                 logger.warning(
@@ -3198,10 +3316,6 @@ Subtask Breakdown:
         if not isinstance(task, str):
             task = format_data_structure(task)
 
-        # Use instance streaming_callback if not provided in method call
-        # Priority: local callback (method parameter) > instance callback (__init__)
-        # Check both: use local if provided, otherwise fall back to instance callback
-        # If both are None, streaming_callback remains None
         if streaming_callback is None:
             if self.streaming_callback is not None:
                 streaming_callback = self.streaming_callback
@@ -3606,7 +3720,7 @@ Subtask Breakdown:
         if self.print_on:
             formatter.print_panel(
                 response,
-                f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
+                f"Agent Name {self.agent_name} [Loop: {loop_count}/{self.max_loops}]",
             )
 
     def parse_llm_output(self, response: Any):
@@ -3628,6 +3742,11 @@ Subtask Breakdown:
                     return response["choices"][0]["message"][
                         "content"
                     ]
+
+                # MCP returns a bare dict for one call and a list for several; normalise so isinstance(list) holds.
+                if "function" in response:
+                    return [response]
+
                 return json.dumps(
                     response
                 )  # Convert other dicts to string
@@ -3645,11 +3764,11 @@ Subtask Breakdown:
 
             return response
 
-        except AgentChatCompletionResponse as e:
+        except Exception as e:
             logger.error(f"Error parsing LLM output: {e}")
             raise ValueError(
                 f"Failed to parse LLM output: {type(response)}"
-            )
+            ) from e
 
     def _complete_task_tool(
         self,
@@ -4083,9 +4202,7 @@ Summary: {summary}
             content=format_data_structure(output),
         )
 
-        # Returned so a caller building a structured transcript can attribute
-        # this back to the individual tool_call ids. Callers that do not need
-        # it simply ignore the value.
+        # Stored so a transcript builder can map it to tool_call ids.
         self._last_tool_output = output
 
         if self.print_on is True:
@@ -4157,9 +4274,7 @@ Summary: {summary}
                         title="Tool Execution",
                     )
 
-        # Now run the LLM again without tools - create a temporary LLM instance
-        # instead of modifying the cached one
-        # Create a temporary LLM instance without tools for the follow-up call
+        # A temporary LLM instead of mutating the cached one.
         if self.tool_call_summary is True:
             temp_llm = self.temp_llm_instance_for_tool_summary()
 
@@ -4280,3 +4395,29 @@ Summary: {summary}
             f"Agent '{self.agent_name}' failed to execute tools in loop "
             f"{loop_count} after {attempts} attempt(s): {last_error}"
         ) from last_error
+
+    def _transcript_from_messages(
+        self,
+        messages: Optional[List[Dict[str, Any]]],
+        task: Optional[Any],
+    ) -> Transcript:
+        """
+        Build this run's transcript, preferring caller-supplied turns.
+
+        Args:
+            messages: Prior conversation as typed chat messages. When given,
+                these replace the memory-derived prefix and ``task`` is
+                appended as the new user turn. ``None`` falls back to
+                :meth:`_transcript_from_memory`.
+            task: The instruction for this turn.
+
+        Returns:
+            The transcript to send with the next request.
+        """
+        if messages is None:
+            return self._transcript_from_memory()
+
+        transcript = Transcript(list(messages))
+        if task is not None:
+            transcript.append_user(task)
+        return transcript

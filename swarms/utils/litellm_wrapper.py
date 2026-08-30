@@ -539,9 +539,7 @@ class LiteLLM:
             and message.thinking_blocks
         )
 
-        # Prefer thinking_blocks for Anthropic; fall back to reasoning_content
-        # for all other providers. Both fields carry the same text on Anthropic,
-        # so only collect one to avoid duplicates.
+        # Anthropic carries the same text in both fields, so collect only one.
         if has_thinking_blocks:
             for block in message.thinking_blocks:
                 thinking = block.get("thinking", "")
@@ -617,9 +615,7 @@ class LiteLLM:
             - The method creates a copy of the existing messages to avoid modifying
               the original message history.
         """
-        # Normalize orchestrator-style "System:/Human:" prompts where the System
-        # section is effectively empty (e.g. "System: \\n\\nHuman: Say hi").
-        # This prevents Anthropic API errors about empty system text blocks.
+        # An empty System section ("System: \n\nHuman: hi") makes Anthropic reject the system block.
         if isinstance(task, str) and "Human:" in task:
             stripped = task.lstrip()
             if stripped.startswith("System:"):
@@ -638,10 +634,7 @@ class LiteLLM:
                     # If splitting fails for any reason, fall back to original task
                     pass
 
-        # Start with a fresh copy of this instance's own turns (the system
-        # prompt) to avoid duplication. Also drop any empty system blocks to
-        # satisfy Anthropic validation. Named `base` rather than `messages` so
-        # it cannot shadow the `messages` parameter below.
+        # Named `base` so it cannot shadow the `messages` parameter below.
         base = []
         for m in self.messages:
             if not isinstance(m, dict):
@@ -656,9 +649,7 @@ class LiteLLM:
                 continue
             base.append(m)
 
-        # A prebuilt conversation body replaces the single-user-turn path
-        # entirely: the caller has already structured the turns, so the only
-        # thing to add is this instance's system prompt.
+        # A prebuilt body is already structured, so only this instance's system prompt is added.
         if messages is not None:
             prepared = base + list(messages)
             if self.prompt_caching and prepared:
@@ -1222,9 +1213,7 @@ class LiteLLM:
             completion_params["reasoning_effort"] = (
                 self.reasoning_effort
             )
-            # litellm maps reasoning_effort to thinking budget_tokens
-            # (low=5000, medium=10000, high=15000) and max_tokens must
-            # exceed that budget.
+            # litellm maps reasoning_effort to a thinking budget that max_tokens must exceed.
             self._apply_anthropic_thinking_constraints(
                 completion_params, threshold=16000, target=16000
             )
@@ -1281,9 +1270,7 @@ class LiteLLM:
         if self.stream:
             return response
 
-        # Tool calls are checked before the reasoning branch: reasoning
-        # models still emit tool_calls, and routing them to
-        # output_for_reasoning would drop the call.
+        # Before the reasoning branch: reasoning models still emit tool_calls, which would be dropped.
         if self.tools_list_dictionary is not None and getattr(
             response.choices[0].message, "tool_calls", None
         ):
@@ -1483,23 +1470,10 @@ class LiteLLM:
             responses = llm.batched_run(["Task 1", "Task 2", "Task 3"], batch_size=2)
             ```
         """
-        import concurrent.futures
+        # Imported here, not at module scope: swarms.structs pulls this
+        # module back in, and a top-level import would be circular.
+        from swarms.structs.execution_utils import run_concurrently
 
-        results = []
-        for i in range(0, len(tasks), batch_size):
-            batch = tasks[i : i + batch_size]
-            with concurrent.futures.ThreadPoolExecutor(
-                max_workers=batch_size
-            ) as executor:
-                futures = [
-                    executor.submit(self.run, t) for t in batch
-                ]
-                for future in concurrent.futures.as_completed(
-                    futures
-                ):
-                    # as_completed does not guarantee original order, so collect all and reorder
-                    pass
-                # Ensure order in results matches the order of tasks
-                batch_results = [f.result() for f in futures]
-                results.extend(batch_results)
-        return results
+        return run_concurrently(
+            self.run, tasks, max_workers=batch_size
+        )

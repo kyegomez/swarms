@@ -26,6 +26,7 @@ boost" (Anthropic, April 2026)
 
 from typing import Any, Callable, List, Optional
 
+from swarms.structs.execution_utils import batched_run
 from swarms.prompts.advisor_swarm_prompts import (
     ADVISOR_SYSTEM_PROMPT,
     EXECUTOR_SYSTEM_PROMPT,
@@ -263,7 +264,7 @@ class AdvisorSwarm:
         Returns:
             List of results, one per task.
         """
-        return [self.run(task=t, *args, **kwargs) for t in tasks]
+        return batched_run(self.run, tasks, *args, **kwargs)
 
     def __call__(self, task: str, *args, **kwargs) -> Any:
         """Make the swarm callable."""

@@ -174,6 +174,14 @@ def test_majority_voting_error_handling():
     except ValueError as e:
         assert "max_loops" in str(e).lower() or "0" in str(e)
 
+    try:
+        MajorityVoting(agents=[analyst], max_loops=-1)
+        assert (
+            False
+        ), "Should have raised ValueError for negative max_loops"
+    except ValueError as e:
+        assert "max_loops" in str(e).lower()
+
 
 def test_majority_voting_different_output_types():
     """Test MajorityVoting with different output types"""
@@ -266,3 +274,146 @@ def test_streaming_majority_voting():
         print("Error in test_streaming_majority_voting:", e)
         print("Logs so far:", logs)
         raise
+
+
+# ============================================================================
+# Context shape — voters receive typed chat turns, not one flattened blob
+# ============================================================================
+
+
+def _record(agent, calls):
+    """Replace an agent's run() with a stub that records the context it got."""
+    name = agent.agent_name
+    turns = [0]
+
+    def _run(task=None, messages=None, **kwargs):
+        turns[0] += 1
+        answer = f"{name}-answer-{turns[0]}"
+        calls.append(
+            {
+                "agent": name,
+                "task": task,
+                "messages": list(messages or []),
+                "answer": answer,
+            }
+        )
+        # Structures read the answer back through short_memory, not the
+        # return value, so the stub has to write it there too.
+        agent.short_memory.add(role=name, content=answer)
+        return answer
+
+    agent.run = _run
+    return agent
+
+
+def _recording_agents(names):
+    """Real agents whose run() records the context it was handed."""
+    calls = []
+    agents = []
+    for name in names:
+        agent = Agent(
+            agent_name=name,
+            agent_description=f"Recording voter {name}",
+            model_name="gpt-4o",
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+            autosave=False,
+        )
+        agents.append(_record(agent, calls))
+    return agents, calls
+
+
+def _voting_system(names, max_loops):
+    """A MajorityVoting whose voters and consensus agent are both recorded."""
+    agents, calls = _recording_agents(names)
+    mv = MajorityVoting(agents=agents, max_loops=max_loops)
+    _record(mv.consensus_agent, calls)
+    return mv, calls
+
+
+def test_voters_receive_typed_turns_not_one_user_blob():
+    """Shared history reaches a voter as chat turns, not concatenated onto the task."""
+    mv, calls = _voting_system(["Voter-A", "Voter-B"], max_loops=2)
+    mv.run("the original question")
+
+    a_calls = [c for c in calls if c["agent"] == "Voter-A"]
+    b_calls = [c for c in calls if c["agent"] == "Voter-B"]
+    assert len(a_calls) == 2 and len(b_calls) == 2
+
+    for call in a_calls + b_calls:
+        assert isinstance(call["messages"], list)
+        for message in call["messages"]:
+            assert isinstance(message, dict)
+            assert message["role"] in ("user", "assistant", "system")
+            assert isinstance(message["content"], str)
+        assert "History:" not in str(call["task"])
+
+    # The first round is the bare task: there is no history to send yet.
+    assert a_calls[0]["task"] == "the original question"
+    assert a_calls[0]["messages"] == []
+
+    # The second round carries the first round as turns, not as task text.
+    assert len(a_calls[1]["messages"]) >= 2
+    assert b_calls[0]["answer"] not in str(a_calls[1]["task"])
+    assert b_calls[0]["answer"] in "\n".join(
+        m["content"] for m in a_calls[1]["messages"]
+    )
+
+
+def test_votes_recorded_are_answers_not_transcripts():
+    """A voter contributes its answer to the shared conversation, not its transcript."""
+    task = "a very distinctive question about tungsten supply"
+    mv, calls = _voting_system(["Voter-A", "Voter-B"], max_loops=2)
+    mv.run(task)
+
+    for name in ("Voter-A", "Voter-B"):
+        expected = [c["answer"] for c in calls if c["agent"] == name]
+        recorded = [
+            m["content"]
+            for m in mv.conversation.conversation_history
+            if m["role"] == name
+        ]
+        assert recorded == expected, (
+            f"{name} recorded something other than its answers: "
+            f"{recorded}"
+        )
+        assert not any(
+            task in content for content in recorded
+        ), f"{name} echoed the task back into the shared conversation"
+
+
+def test_consensus_agent_sees_its_own_prior_consensus_as_assistant():
+    """The consensus agent's own turn must not come back labelled as the user's."""
+    mv, calls = _voting_system(["Voter-A", "Voter-B"], max_loops=2)
+    mv.run("go")
+
+    consensus_calls = [
+        c
+        for c in calls
+        if c["agent"] == mv.consensus_agent.agent_name
+    ]
+    assert len(consensus_calls) == 2
+    second = consensus_calls[1]
+
+    assistant = [
+        m["content"]
+        for m in second["messages"]
+        if m["role"] == "assistant"
+    ]
+    assert consensus_calls[0]["answer"] in assistant
+
+    user_text = "\n".join(
+        m["content"]
+        for m in second["messages"]
+        if m["role"] == "user"
+    )
+    for name in ("Voter-A", "Voter-B"):
+        for call in [c for c in calls if c["agent"] == name]:
+            labelled = f"{name}: {call['answer']}"
+            assert labelled in user_text or labelled == str(
+                second["task"]
+            ), f"{name}'s vote never reached the consensus agent as a user turn"
+            assert not any(
+                call["answer"] in content for content in assistant
+            ), f"{name}'s vote arrived as the consensus agent's own turn"
