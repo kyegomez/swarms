@@ -44,8 +44,6 @@ This directory contains comprehensive guides and tutorials for using Swarms effe
 - [README.md](840_update/README.md) - 840 update documentation
 
 ### 850 Workshop
-- [aop_raw_client_code.py](850_workshop/aop_raw_client_code.py) - AOP raw client implementation
-- [aop_raw_task_example.py](850_workshop/aop_raw_task_example.py) - AOP raw task example
 - [moa_seq_example.py](850_workshop/moa_seq_example.py) - MOA sequential example
 - [peer_review_example.py](850_workshop/peer_review_example.py) - Peer review example
 - [test_agent_concurrent.py](850_workshop/test_agent_concurrent.py) - Concurrent agent testing

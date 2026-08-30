@@ -18,10 +18,7 @@ def _prepare_workspace() -> None:
     instead of raising: an unusable workspace should not stop ``import
     swarms``, which is what an uncaught ``OSError`` here would do.
     """
-    # Imported here, not at module scope: swarms.utils.workspace_manager pulls
-    # in swarms/utils/__init__, which calls initialize_logger at import. At
-    # module scope that would run before WORKSPACE_DIR is settled, so the
-    # logger would resolve its directory from the unprepared value.
+    # Imported here, not at module scope, which would run initialize_logger before WORKSPACE_DIR settles.
     from swarms.utils.workspace_manager import ensure_workspace_env
     from swarms.utils.workspace_utils import get_workspace_dir
 

@@ -286,57 +286,6 @@ def test_hierarchical_swarm_collaboration_prompts():
     assert result is not None
 
 
-def test_hierarchical_swarm_with_dashboard():
-    """Test HierarchicalSwarm with interactive dashboard"""
-    # Create agents
-    content_creator = Agent(
-        agent_name="Content-Creator",
-        agent_description="Content creation specialist",
-        model_name="gpt-5.4",
-        max_loops=1,
-        verbose=False,
-        print_on=False,
-    )
-
-    editor = Agent(
-        agent_name="Editor",
-        agent_description="Content editor and proofreader",
-        model_name="gpt-5.4",
-        max_loops=1,
-        verbose=False,
-        print_on=False,
-    )
-
-    publisher = Agent(
-        agent_name="Publisher",
-        agent_description="Publishing and distribution specialist",
-        model_name="gpt-5.4",
-        max_loops=1,
-        verbose=False,
-        print_on=False,
-    )
-
-    # Create swarm with interactive dashboard
-    swarm = HierarchicalSwarm(
-        name="Content-Publishing-Swarm",
-        description="Hierarchical swarm for content creation and publishing",
-        agents=[content_creator, editor, publisher],
-        max_loops=1,
-        interactive=True,
-        verbose=True,
-    )
-
-    # Verify dashboard was created
-    assert swarm.dashboard is not None
-    assert swarm.interactive is True
-
-    # Execute swarm
-    result = swarm.run(
-        "Create a comprehensive guide on machine learning best practices"
-    )
-    assert result is not None
-
-
 def test_hierarchical_swarm_real_world_scenario():
     """Test HierarchicalSwarm in a realistic business scenario"""
     # Create agents representing different business functions
@@ -1143,17 +1092,36 @@ class TestHierarchicalContextManagement:
             f"across one loop: {director_turns}"
         )
 
-    def test_a_worker_is_not_re_sent_the_whole_history(self):
+    def test_a_worker_sees_its_own_output_once_as_assistant(self):
+        """The compounding this guards against is the agent re-reading itself.
+
+        Typed turns carry the whole conversation every request, so raw growth
+        is linear and no longer the signal. What must not happen is the
+        worker's own output coming back a second time, mislabelled as
+        something someone else said - that is what compounded across loops.
+        """
         _, seen = self._run_two_loops()
-        worker_turns = [
-            sum(len(str(m.get("content"))) for m in messages)
-            for name, messages in seen
-            if name == "W1"
+        worker_calls = [
+            messages for name, messages in seen if name == "W1"
         ]
-        if len(worker_turns) >= 2:
-            assert (
-                worker_turns[1] < worker_turns[0] * 5
-            ), f"worker context grew too fast: {worker_turns}"
+        if len(worker_calls) < 2:
+            return
+
+        second = worker_calls[1]
+        # Turns that are the output, not ones quoting it inside a larger
+        # blob: the feedback director still interpolates a flattened history
+        # (#2033), which is a separate unconverted path.
+        own = [
+            message
+            for message in second
+            if str(message.get("content")).strip() == "[W1-out]"
+        ]
+        assert (
+            len(own) == 1
+        ), f"the worker saw its own output {len(own)} times: {own}"
+        assert (
+            own[0]["role"] == "assistant"
+        ), f"own output arrived as {own[0]['role']!r}, not 'assistant'"
 
     def test_the_director_tool_call_is_stored_readably(self):
         """

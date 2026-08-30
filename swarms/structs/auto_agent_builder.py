@@ -80,6 +80,15 @@ REQUIRED_FIELDS = (
     "model_name",
 )
 
+# Agent keyword arguments the builder fills in from the generated roster.
+# Passing any of these in agent_kwargs would collide with the generated value.
+GENERATED_AGENT_FIELDS = (
+    "agent_name",
+    "agent_description",
+    "system_prompt",
+    "model_name",
+)
+
 
 def _extract_agents(tool_output: Any) -> List[Dict[str, str]]:
     """Parse the roster out of a forced ``build_agents`` tool call.
@@ -259,7 +268,17 @@ class AutoAgentBuilder:
         self.max_agents = max_agents
         self.num_agents = num_agents
         self.system_prompt = system_prompt
-        self.agent_kwargs = agent_kwargs or {}
+        self.agent_kwargs = {
+            k: v
+            for k, v in (agent_kwargs or {}).items()
+            if k not in GENERATED_AGENT_FIELDS
+        }
+        for k in sorted(
+            set(agent_kwargs or {}) & set(GENERATED_AGENT_FIELDS)
+        ):
+            logger.warning(
+                f"Ignoring agent_kwargs[{k!r}]: it is generated per agent."
+            )
         self.return_dict = return_dict
         self.verbose = verbose
 
@@ -285,7 +304,6 @@ class AutoAgentBuilder:
             top_p=None,
             print_on=False,
             tools_list_dictionary=[BUILD_AGENTS_TOOL],
-            **self.agent_kwargs,
         )
 
     @trace_run("AutoAgentBuilder.build_configs")

@@ -507,7 +507,6 @@ result = router.run("Write a blog post about transformer architectures.")
 | `"HeavySwarm"` | Intensive multi-loop deep analysis |
 | `"RoundRobin"` | Round-robin task distribution |
 | `"PlannerWorkerSwarm"` | Planner + worker delegation |
-| `"BatchedGridWorkflow"` | Grid-based batch execution |
 | `"LLMCouncil"` | LLM-based council decisions |
 | `"AutoSwarmBuilder"` | Auto-configures everything |
 

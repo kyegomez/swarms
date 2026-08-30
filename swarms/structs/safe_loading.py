@@ -261,25 +261,3 @@ class SafeStateManager:
         except Exception as e:
             logger.error(f"Error loading state: {e}")
             raise
-
-
-# # Example decorator for easy integration
-# def safe_state_methods(cls: Type) -> Type:
-#     """
-#     Class decorator to add safe state loading/saving methods to a class.
-
-#     Args:
-#         cls: Class to decorate
-
-#     Returns:
-#         Type: Decorated class
-#     """
-#     def save(self, file_path: str) -> None:
-#         SafeStateManager.save_state(self, file_path)
-
-#     def load(self, file_path: str) -> None:
-#         SafeStateManager.load_state(self, file_path)
-
-#     cls.save = save
-#     cls.load = load
-#     return cls

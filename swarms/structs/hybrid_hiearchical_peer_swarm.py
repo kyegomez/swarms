@@ -97,7 +97,6 @@ class HybridHierarchicalClusterSwarm:
         swarms (List[SwarmRouter]): A list of available swarm routers.
         max_loops (int): The maximum number of loops for task processing.
         output_type (str): The format of the output (e.g., list).
-        conversation (Conversation): An instance of the Conversation class to manage interactions.
         router_agent (Agent): An instance of the Agent class responsible for routing tasks.
     """
 

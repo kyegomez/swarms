@@ -1,9 +1,13 @@
+import json
 import os
+
+import time
 
 import pytest
 
 from swarms.structs.agent import Agent
 from swarms.structs.multi_agent_router import MultiAgentRouter
+from swarms.structs.conversation import Conversation
 
 
 def _minimal_agents():
@@ -429,5 +433,151 @@ def test_route_task_with_empty_task_raises():
         router.route_task("")
 
 
+def _local_router(agents=None, delay=0.0):
+    """A router whose agents answer locally, so no model is contacted."""
+    from swarms.structs.conversation import Conversation
+
+    ran = []
+
+    class LocalAgent(Agent):
+        def __init__(self, name):
+            self.agent_name = name
+            self.description = name
+
+        def run(self, task, *args, **kwargs):
+            if delay:
+                time.sleep(delay)
+            ran.append((self.agent_name, task))
+            return f"{self.agent_name}-out"
+
+    router = MultiAgentRouter.__new__(MultiAgentRouter)
+    router.agents = [LocalAgent(n) for n in (agents or ["A1", "A2"])]
+    router.skip_null_tasks = True
+    router.print_on = False
+    router.conversation = Conversation()
+    router.output_type = "dict"
+    return router, ran
+
+
+def test_skip_null_tasks_actually_skips_on_the_single_path():
+    """The single path logged "Skipping" and then ran the agent anyway."""
+    router, ran = _local_router()
+
+    router.handle_single_handoff(
+        {"handoffs": [{"agent_name": "A1", "task": None}]},
+        "",
+        Conversation(),
+    )
+
+    assert ran == [], f"the agent ran despite a null task: {ran}"
+
+
+def test_a_handoff_without_a_task_key_falls_back_to_the_original():
+    """HandOffsResponse.task is Optional, so the key may be absent."""
+    router, ran = _local_router()
+
+    router.handle_single_handoff(
+        {"handoffs": [{"agent_name": "A1"}]},
+        "the original task",
+        Conversation(),
+    )
+
+    assert ran == [("A1", "the original task")]
+
+
+def test_multiple_handoffs_without_a_task_key_fall_back():
+    router, ran = _local_router()
+
+    router.handle_multiple_handoffs(
+        {"handoffs": [{"agent_name": "A1"}, {"agent_name": "A2"}]},
+        "the original task",
+        Conversation(),
+    )
+
+    assert [task for _, task in ran] == [
+        "the original task",
+        "the original task",
+    ]
+
+
+def test_selected_agents_run_concurrently():
+    """Independent agents used to run one after another."""
+    router, ran = _local_router(agents=["S0", "S1", "S2"], delay=0.35)
+    handoffs = {
+        "handoffs": [
+            {"agent_name": f"S{i}", "task": f"t{i}"} for i in range(3)
+        ]
+    }
+
+    started = time.time()
+    router.handle_multiple_handoffs(handoffs, "x", Conversation())
+    elapsed = time.time() - started
+
+    assert len(ran) == 3
+    assert (
+        elapsed < 0.35 * 3 * 0.7
+    ), f"three 0.35s agents took {elapsed:.2f}s, so they ran in series"
+
+
+def test_an_unknown_agent_raises_before_any_agent_runs():
+    router, ran = _local_router()
+
+    with pytest.raises(ValueError, match="unknown agent"):
+        router.handle_multiple_handoffs(
+            {
+                "handoffs": [
+                    {"agent_name": "A1", "task": "a"},
+                    {"agent_name": "NOPE", "task": "b"},
+                ]
+            },
+            "x",
+            Conversation(),
+        )
+
+    assert ran == [], f"an agent ran before validation failed: {ran}"
+
+
+def test_concurrent_batch_run_returns_results_in_input_order():
+    """Results used to come back in completion order, unlike batch_run."""
+    router, _ = _local_router()
+
+    def flaky(task):
+        if task == "bad":
+            raise RuntimeError("boom")
+        return f"ok:{task}"
+
+    router.route_task = flaky
+
+    assert router.concurrent_batch_run(["a", "bad", "c"]) == [
+        "ok:a",
+        "ok:c",
+    ]
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+def test_concurrent_batch_run_keeps_each_task_history_separate():
+    router, ran = _local_router(agents=["A1"], delay=0.05)
+
+    class Boss:
+        def run(self, task):
+            return json.dumps(
+                {"handoffs": [{"agent_name": "A1", "task": task}]}
+            )
+
+    router.function_caller = Boss()
+    router.print_on = False
+    router.output_type = "str"
+
+    tasks = ["alpha", "beta", "gamma"]
+    results = router.concurrent_batch_run(tasks)
+
+    assert len(results) == 3
+    for task, result in zip(tasks, results):
+        assert task in result
+        for other in set(tasks) - {task}:
+            assert (
+                other not in result
+            ), f"{task!r} history leaked {other!r}: {result!r}"

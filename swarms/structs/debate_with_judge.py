@@ -9,66 +9,21 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.telemetry.otel import capture_init, trace_run
-
-
-# Pre-built system prompts for debate agents
-PRO_AGENT_SYSTEM_PROMPT = """You are an expert debater specializing in arguing IN FAVOR of propositions.
-
-Your Role:
-- Present compelling, well-reasoned arguments supporting your assigned position
-- Use evidence, logic, and persuasive rhetoric to make your case
-- Anticipate and preemptively address potential counterarguments
-- Build upon previous arguments when refining your position
-
-Debate Guidelines:
-1. Structure your arguments clearly with main points and supporting evidence
-2. Use concrete examples and data when available
-3. Acknowledge valid opposing points while explaining why your position is stronger
-4. Maintain a professional, respectful tone throughout the debate
-5. Focus on the strongest aspects of your position
-
-Your goal is to present the most compelling case possible for the Pro position."""
-
-CON_AGENT_SYSTEM_PROMPT = """You are an expert debater specializing in arguing AGAINST propositions.
-
-Your Role:
-- Present compelling, well-reasoned counter-arguments opposing the given position
-- Identify weaknesses, flaws, and potential negative consequences
-- Challenge assumptions and evidence presented by the opposing side
-- Build upon previous arguments when refining your position
-
-Debate Guidelines:
-1. Structure your counter-arguments clearly with main points and supporting evidence
-2. Use concrete examples and data to support your opposition
-3. Directly address and refute the Pro's arguments
-4. Maintain a professional, respectful tone throughout the debate
-5. Focus on the most significant weaknesses of the opposing position
-
-Your goal is to present the most compelling case possible against the proposition."""
-
-JUDGE_AGENT_SYSTEM_PROMPT = """You are an impartial judge and critical evaluator of debates.
-
-Your Role:
-- Objectively evaluate arguments from both Pro and Con sides
-- Identify strengths and weaknesses in each position
-- Provide constructive feedback for improvement
-- Synthesize the best elements from both sides when appropriate
-- Render fair verdicts based on argument quality, not personal bias
-
-Evaluation Criteria:
-1. Logical coherence and reasoning quality
-2. Evidence and supporting data quality
-3. Persuasiveness and rhetorical effectiveness
-4. Responsiveness to opposing arguments
-5. Overall argument structure and clarity
-
-Judgment Guidelines:
-- Be specific about what makes arguments strong or weak
-- Provide actionable feedback for improvement
-- When synthesizing, explain how elements from both sides complement each other
-- In final rounds, provide clear conclusions with justification
-
-Your goal is to facilitate productive debate and arrive at well-reasoned conclusions."""
+from swarms.prompts.debate_with_judge_prompts import (
+    CON_AGENT_INTRO_PROMPT,
+    CON_AGENT_SYSTEM_PROMPT,
+    CON_FIRST_ROUND_PROMPT,
+    CON_REFINEMENT_ROUND_PROMPT,
+    JUDGE_AGENT_INTRO_PROMPT,
+    JUDGE_AGENT_SYSTEM_PROMPT,
+    JUDGE_FINAL_ROUND_INSTRUCTIONS,
+    JUDGE_INTERMEDIATE_ROUND_INSTRUCTIONS,
+    JUDGE_ROUND_PROMPT,
+    PRO_AGENT_INTRO_PROMPT,
+    PRO_AGENT_SYSTEM_PROMPT,
+    PRO_FIRST_ROUND_PROMPT,
+    PRO_REFINEMENT_ROUND_PROMPT,
+)
 
 
 class DebateWithJudge:
@@ -128,7 +83,7 @@ class DebateWithJudge:
         con_agent: Optional[Agent] = None,
         judge_agent: Optional[Agent] = None,
         agents: Optional[List[Agent]] = None,
-        preset_agents: bool = False,
+        preset_agents: bool = True,
         max_loops: int = 3,
         output_type: str = "str-all-except-first",
         verbose: bool = True,
@@ -389,40 +344,22 @@ class DebateWithJudge:
         Args:
             task (str): The initial task/topic for context.
         """
-        # Initialize Pro agent
-        pro_intro = (
-            f"You are {self.pro_agent.agent_name}, arguing in favor (Pro position) "
-            f"of the topic: {task}. Your role is to present strong, well-reasoned "
-            f"arguments supporting your position. You will debate against "
-            f"{self.con_agent.agent_name}, who will argue against your position. "
-            f"A judge ({self.judge_agent.agent_name}) will evaluate both arguments "
-            f"and provide synthesis. Present compelling evidence and reasoning."
-        )
-        self.pro_agent.run(task=pro_intro)
+        names = {
+            "task": task,
+            "pro_agent_name": self.pro_agent.agent_name,
+            "con_agent_name": self.con_agent.agent_name,
+            "judge_agent_name": self.judge_agent.agent_name,
+        }
 
-        # Initialize Con agent
-        con_intro = (
-            f"You are {self.con_agent.agent_name}, arguing against (Con position) "
-            f"of the topic: {task}. Your role is to present strong, well-reasoned "
-            f"counter-arguments. You will debate against {self.pro_agent.agent_name}, "
-            f"who will argue in favor. A judge ({self.judge_agent.agent_name}) will "
-            f"evaluate both arguments and provide synthesis. Present compelling "
-            f"counter-evidence and reasoning."
+        self.pro_agent.run(
+            task=PRO_AGENT_INTRO_PROMPT.format(**names)
         )
-        self.con_agent.run(task=con_intro)
-
-        # Initialize Judge agent
-        judge_intro = (
-            f"You are {self.judge_agent.agent_name}, an impartial judge evaluating "
-            f"a debate between {self.pro_agent.agent_name} (Pro) and "
-            f"{self.con_agent.agent_name} (Con) on the topic: {task}. "
-            f"Your role is to carefully evaluate both arguments, identify strengths "
-            f"and weaknesses, and provide a refined synthesis that incorporates the "
-            f"best elements from both sides. You may declare a winner or provide a "
-            f"balanced synthesis. Your output will be used to refine the discussion "
-            f"in subsequent loops."
+        self.con_agent.run(
+            task=CON_AGENT_INTRO_PROMPT.format(**names)
         )
-        self.judge_agent.run(task=judge_intro)
+        self.judge_agent.run(
+            task=JUDGE_AGENT_INTRO_PROMPT.format(**names)
+        )
 
     def _create_pro_prompt(self, topic: str, round_num: int) -> str:
         """
@@ -436,17 +373,11 @@ class DebateWithJudge:
             str: The prompt for the Pro agent.
         """
         if round_num == 0:
-            return (
-                f"Present your argument in favor of: {topic}\n\n"
-                f"Provide a strong, well-reasoned argument with evidence and examples."
-            )
-        else:
-            return (
-                f"Loop {round_num + 1}: Based on the judge's previous evaluation, "
-                f"present an improved argument in favor of: {topic}\n\n"
-                f"Address any weaknesses identified and strengthen your position "
-                f"with additional evidence and reasoning."
-            )
+            return PRO_FIRST_ROUND_PROMPT.format(topic=topic)
+
+        return PRO_REFINEMENT_ROUND_PROMPT.format(
+            loop_number=round_num + 1, topic=topic
+        )
 
     def _create_con_prompt(
         self, topic: str, pro_argument: str, round_num: int
@@ -463,20 +394,15 @@ class DebateWithJudge:
             str: The prompt for the Con agent.
         """
         if round_num == 0:
-            return (
-                f"Present your counter-argument against: {topic}\n\n"
-                f"Pro's argument:\n{pro_argument}\n\n"
-                f"Provide a strong, well-reasoned counter-argument that addresses "
-                f"the Pro's points and presents evidence against the position."
+            return CON_FIRST_ROUND_PROMPT.format(
+                topic=topic, pro_argument=pro_argument
             )
-        else:
-            return (
-                f"Loop {round_num + 1}: Based on the judge's previous evaluation, "
-                f"present an improved counter-argument against: {topic}\n\n"
-                f"Pro's current argument:\n{pro_argument}\n\n"
-                f"Address any weaknesses identified and strengthen your counter-position "
-                f"with additional evidence and reasoning."
-            )
+
+        return CON_REFINEMENT_ROUND_PROMPT.format(
+            loop_number=round_num + 1,
+            topic=topic,
+            pro_argument=pro_argument,
+        )
 
     def _create_judge_prompt(
         self,
@@ -499,49 +425,20 @@ class DebateWithJudge:
         """
         is_final_round = round_num == self.max_loops - 1
 
-        prompt = (
-            f"Loop {round_num + 1}/{self.max_loops}: Evaluate the debate on: {topic}\n\n"
-            f"Pro's argument ({self.pro_agent.agent_name}):\n{pro_argument}\n\n"
-            f"Con's argument ({self.con_agent.agent_name}):\n{con_argument}\n\n"
+        prompt = JUDGE_ROUND_PROMPT.format(
+            loop_number=round_num + 1,
+            max_loops=self.max_loops,
+            topic=topic,
+            pro_agent_name=self.pro_agent.agent_name,
+            pro_argument=pro_argument,
+            con_agent_name=self.con_agent.agent_name,
+            con_argument=con_argument,
         )
 
         if is_final_round:
-            prompt += (
-                "This is the final loop. Provide a comprehensive final evaluation:\n"
-                "- Identify the strongest points from both sides\n"
-                "- Determine a winner OR provide a balanced synthesis\n"
-                "- Present a refined, well-reasoned answer that incorporates the best "
-                "elements from both arguments\n"
-                "- This will be the final output of the debate"
-            )
-        else:
-            prompt += (
-                "Evaluate both arguments and provide:\n"
-                "- Assessment of strengths and weaknesses in each argument\n"
-                "- A refined synthesis that incorporates the best elements from both sides\n"
-                "- Specific feedback for improvement in the next loop\n"
-                "- Your synthesis will be used as the topic for the next loop"
-            )
+            return prompt + JUDGE_FINAL_ROUND_INSTRUCTIONS
 
-        return prompt
-
-    def get_conversation_history(self) -> List[dict]:
-        """
-        Get the full conversation history.
-
-        Returns:
-            List[dict]: List of message dictionaries containing the conversation history.
-        """
-        return self.conversation.return_messages_as_list()
-
-    def get_final_answer(self) -> str:
-        """
-        Get the final refined answer from the judge.
-
-        Returns:
-            str: The content of the final judge synthesis.
-        """
-        return self.conversation.get_final_message_content()
+        return prompt + JUDGE_INTERMEDIATE_ROUND_INSTRUCTIONS
 
     def batched_run(self, tasks: List[str]) -> List[str]:
         """
