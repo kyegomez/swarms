@@ -1082,8 +1082,12 @@ def test_subgraph_executes_and_output_reaches_downstream():
     inner_agent.run.assert_called_once()
     # Downstream agent must have been called with the inner graph's output
     downstream.run.assert_called_once()
-    call_prompt = downstream.run.call_args[0][0]
-    assert "inner result" in call_prompt
+    # The subgraph's output arrives as its own turn, not joined into the prompt.
+    call_kwargs = downstream.run.call_args.kwargs
+    delivered = [
+        m["content"] for m in call_kwargs.get("messages") or []
+    ] + [str(call_kwargs.get("task"))]
+    assert any("inner result" in c for c in delivered), delivered
 
 
 def test_subgraph_result_in_outer_output():
@@ -1479,6 +1483,76 @@ def test_save_spec_round_trips_through_from_topology_spec(tmp_path):
     assert rebuilt.max_loops == wf.max_loops
 
 
+# ============================================================================
+# Fan-in attribution — each predecessor's output must carry its own name
+# ============================================================================
+
+
+def test_fan_in_attributes_outputs_to_the_correct_predecessor():
+    """A missing predecessor must not shift every remaining label.
+
+    ``pred_outputs`` is filtered by presence in ``prev_outputs``; zipping it
+    against the unfiltered predecessor list used to pair B's output with A's
+    name and drop the last output entirely.
+    """
+    wf = GraphWorkflow(auto_compile=False)
+    for name in ["A", "B", "C", "D"]:
+        wf.add_node(create_test_agent(name))
+    for parent in ["A", "B", "C"]:
+        wf.add_edge(parent, "D")
+
+    # A produced nothing this run - failed, skipped, or behind a false branch.
+    prev_outputs = {"B": "OUT_B", "C": "OUT_C"}
+    _, messages = wf._build_prompt(
+        "D", "the task", prev_outputs, layer_idx=1
+    )
+
+    contents = [m["content"] for m in messages]
+    assert "B: OUT_B" in contents
+    assert "C: OUT_C" in contents
+    assert not any(c.startswith("A: ") for c in contents)
+
+
+def test_fan_in_with_all_predecessors_present_is_unaffected():
+    """The all-present case keeps working."""
+    wf = GraphWorkflow(auto_compile=False)
+    for name in ["A", "B", "C"]:
+        wf.add_node(create_test_agent(name))
+    for parent in ["A", "B"]:
+        wf.add_edge(parent, "C")
+
+    _, messages = wf._build_prompt(
+        "C", "the task", {"A": "OUT_A", "B": "OUT_B"}, layer_idx=1
+    )
+
+    contents = [m["content"] for m in messages]
+    assert "A: OUT_A" in contents
+    assert "B: OUT_B" in contents
+
+
+def test_predecessor_outputs_are_typed_turns_not_one_user_blob():
+    """Each predecessor is its own labelled turn, not joined into the prompt."""
+    wf = GraphWorkflow(auto_compile=False)
+    for name in ["A", "B", "C"]:
+        wf.add_node(create_test_agent(name))
+    for parent in ["A", "B"]:
+        wf.add_edge(parent, "C")
+
+    prompt, messages = wf._build_prompt(
+        "C", "the task", {"A": "OUT_A", "B": "OUT_B"}, layer_idx=1
+    )
+
+    assert all(
+        isinstance(m, dict) and m["role"] == "user" for m in messages
+    )
+    assert [m["content"] for m in messages] == [
+        "the task",
+        "A: OUT_A",
+        "B: OUT_B",
+    ]
+    assert "OUT_A" not in prompt and "OUT_B" not in prompt
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 
@@ -1695,12 +1769,13 @@ def test_prompt_labels_stay_aligned_when_a_predecessor_is_missing():
     wf.set_end_points(["c"])
     wf.compile()
 
-    prompt = wf._build_prompt(
+    _, messages = wf._build_prompt(
         "c", "task", {"b": "B-OUTPUT"}, layer_idx=1
     )
 
-    assert "Output from b:\nB-OUTPUT" in prompt
-    assert "Output from a" not in prompt
+    contents = [m["content"] for m in messages]
+    assert "b: B-OUTPUT" in contents
+    assert not any(c.startswith("a: ") for c in contents)
 
 
 def test_conditions_are_flagged_when_serialized():

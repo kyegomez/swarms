@@ -1,13 +1,3 @@
-"""
-Exception hierarchy for :class:`swarms.structs.agent.Agent`.
-
-These live here rather than in ``agent.py`` so that agent collaborators
-(``LLMManager``, ``SkillsManager``, ``MCPManager``, …) can raise and catch them
-without importing ``Agent`` itself, which would be circular. They remain
-importable from ``swarms.structs.agent`` for backwards compatibility.
-"""
-
-
 class AgentError(Exception):
     """Base class for all agent-related exceptions."""
 

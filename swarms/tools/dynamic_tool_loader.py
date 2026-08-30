@@ -127,9 +127,7 @@ class DeferredTool:
         return _tokenize(text)
 
 
-# Filtering these matters more than it looks: without it a query like
-# "weather in a city" matches every tool whose description contains "a",
-# which loads the whole catalog and defeats the point of deferring.
+# Without this, a query like "weather in a city" matches every description containing "a".
 _STOPWORDS = frozenset(
     """
     a an the and or of to in on for with from by at as is are be it its
@@ -190,9 +188,7 @@ class DynamicToolLoader:
         for schema in schemas:
             self.register_schema(schema)
 
-    # ------------------------------------------------------------------
-    # building the catalog
-    # ------------------------------------------------------------------
+    # Building the catalog.
 
     def register(self, *tools: Callable) -> "DynamicToolLoader":
         """Defer one or more Python callables."""
@@ -218,9 +214,7 @@ class DynamicToolLoader:
         if not name:
             return self
 
-        # A catalog entry with this name would collide with the search tool
-        # itself: both would appear in the tool list and the model could not
-        # tell which it was calling.
+        # A catalog entry with this name would collide with the search tool itself.
         if name == SEARCH_TOOL_NAME:
             logger.warning(
                 f"Ignoring a tool named {SEARCH_TOOL_NAME!r}: that name is "
@@ -237,9 +231,7 @@ class DynamicToolLoader:
         )
         return self
 
-    # ------------------------------------------------------------------
-    # searching and loading
-    # ------------------------------------------------------------------
+    # Searching and loading.
 
     def search(
         self,
@@ -334,9 +326,7 @@ class DynamicToolLoader:
             min_score_ratio=min_score_ratio,
         )
         if not matches:
-            # Listing what exists turns a miss into a usable next step: the
-            # model can retry with 'select:'. Capped so a large catalog does
-            # not dump hundreds of names into the conversation.
+            # Listing what exists turns a miss into a retry with 'select:'; capped so a big catalog is not dumped.
             names = sorted(self._catalog)
             shown = ", ".join(names[:_MISS_LISTING_LIMIT]) or "none"
             extra = (
@@ -366,9 +356,7 @@ class DynamicToolLoader:
 
         return "\n".join(lines)
 
-    # ------------------------------------------------------------------
-    # what the model actually sees
-    # ------------------------------------------------------------------
+    # What the model actually sees.
 
     def schemas(self) -> List[Dict[str, Any]]:
         """

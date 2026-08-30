@@ -1,11 +1,3 @@
-"""
-Handoffs prompt for agent-to-agent task delegation.
-
-This module provides prompts and instructions for agents to dynamically
-delegate tasks to other specialized agents.
-"""
-
-
 def get_handoffs_prompt(available_agents: list) -> str:
     """
     Generate a system prompt for handoffs functionality.

@@ -1,6 +1,3 @@
-# prompts.py
-
-# Analyze the user's idea to extract key concepts, requirements, and desired outcomes
 IDEA_INTAKE_PROMPT = """
 Analyze and expand upon the user's idea, extracting key concepts, requirements, and desired outcomes. Represent the user's idea in a highly detailed structured format, including key features, constraints, and desired outcomes. Idea: {idea}
 """

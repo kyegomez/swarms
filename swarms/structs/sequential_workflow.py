@@ -87,6 +87,7 @@ class SequentialWorkflow:
         output_type: OutputType = "dict",
         shared_memory_system: callable = None,
         multi_agent_collab_prompt: bool = False,
+        collab_prompt: Optional[str] = None,
         team_awareness: bool = False,
         autosave: bool = True,
         verbose: bool = False,
@@ -108,7 +109,10 @@ class SequentialWorkflow:
             max_loops (int, optional): Maximum number of times to execute the workflow. Defaults to 1.
             output_type (OutputType, optional): Output format for the workflow. Defaults to "dict".
             shared_memory_system (callable, optional): Callable for shared memory management. Defaults to None.
-            multi_agent_collab_prompt (bool, optional): If True, appends a collaborative prompt to each agent.
+            multi_agent_collab_prompt (bool, optional): If True, each agent receives a collaboration
+                preamble as a system turn for the duration of the run.
+            collab_prompt (str, optional): Overrides the default preamble text. Ignored unless
+                multi_agent_collab_prompt is True.
             autosave (bool, optional): Whether to enable autosaving of conversation history. Defaults to False.
             verbose (bool, optional): Whether to enable verbose logging. Defaults to False.
             drift_detection (bool, optional): If True, a judge agent scores the final output's semantic
@@ -135,6 +139,7 @@ class SequentialWorkflow:
         self.output_type = output_type
         self.shared_memory_system = shared_memory_system
         self.multi_agent_collab_prompt = multi_agent_collab_prompt
+        self.collab_prompt = collab_prompt
         self.team_awareness = team_awareness
         self.autosave = autosave
         self.verbose = verbose
@@ -172,6 +177,11 @@ class SequentialWorkflow:
             max_loops=self.max_loops,
             output_type=self.output_type,
             team_awareness=self.team_awareness,
+            collab_prompt=(
+                (self.collab_prompt or AGENT_COLLAB_PROMPT)
+                if self.multi_agent_collab_prompt
+                else None
+            ),
         )
 
         # Capture the full __init__ configuration if telemetry is enabled.
@@ -197,11 +207,7 @@ class SequentialWorkflow:
 
         if self.multi_agent_collab_prompt is True:
             for agent in self.agents:
-                if hasattr(agent, "system_prompt"):
-                    if agent.system_prompt is None:
-                        agent.system_prompt = ""
-                    agent.system_prompt += AGENT_COLLAB_PROMPT
-                else:
+                if not hasattr(agent, "system_prompt"):
                     logger.warning(
                         f"Agent {getattr(agent, 'name', str(agent))} does not have a 'system_prompt' attribute."
                     )
