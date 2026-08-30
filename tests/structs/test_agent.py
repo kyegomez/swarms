@@ -1375,3 +1375,74 @@ class TestEmptyToolsList:
         agent = self._agent(tools=[sample])
         assert agent.tools_list_dictionary
         assert "tool_search" in agent.system_prompt
+
+
+COMPLETE_TASK_CALL = [
+    {
+        "type": "function",
+        "function": {
+            "name": "complete_task",
+            "arguments": json.dumps(
+                {
+                    "task_id": "task-1",
+                    "summary": "did the thing",
+                    "success": True,
+                }
+            ),
+        },
+    }
+]
+
+
+class TestFinalSummaryOutputType:
+    """`_generate_final_summary` must honour `output_type` on every path.
+
+    The `complete_task` branch returned the tool's raw string while the two
+    other paths returned `history_output_formatter(...)`, so the shape a
+    caller got depended on whether the model called the tool.
+    """
+
+    @staticmethod
+    def _summarise(output_type, llm_response):
+        agent = Agent(
+            agent_name="summary_agent",
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            output_type=output_type,
+            print_on=False,
+        )
+        agent.short_memory.add(role="User", content="original task")
+        with patch.object(
+            Agent, "call_llm", return_value=llm_response
+        ), patch.object(
+            Agent,
+            "parse_llm_output",
+            side_effect=lambda response: response,
+        ):
+            return agent._generate_final_summary()
+
+    @pytest.mark.parametrize(
+        "output_type",
+        [
+            "list",
+            "dict",
+            "str",
+            "final",
+            "dict-final",
+            "str-all-except-first",
+        ],
+    )
+    def test_complete_task_path_matches_fallback_path(
+        self, output_type
+    ):
+        fallback = self._summarise(output_type, "plain text answer")
+        completed = self._summarise(output_type, COMPLETE_TASK_CALL)
+        assert type(completed) is type(fallback)
+
+    def test_list_output_type_is_not_a_bare_string(self):
+        completed = self._summarise("list", COMPLETE_TASK_CALL)
+        assert isinstance(completed, list)
+
+    def test_summary_text_survives_into_the_conversation(self):
+        completed = self._summarise("str", COMPLETE_TASK_CALL)
+        assert "did the thing" in completed
