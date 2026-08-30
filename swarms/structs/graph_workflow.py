@@ -722,8 +722,6 @@ class Node:
         self.type = type
         self.agent = agent
         self.metadata = metadata or {}
-        # None means "use the workflow default", resolved at run time so the
-        # default can be set after the nodes were added.
         self.retry = retry
 
         if not self.id:
@@ -990,7 +988,6 @@ class GraphWorkflow:
 
         # Checkpoint configuration
         self.checkpoint_dir = checkpoint_dir
-        # None means no retrying, the historical behaviour.
         self.retry_policy = retry_policy
         if on_node_failure not in (
             "skip_downstream",
@@ -1002,7 +999,6 @@ class GraphWorkflow:
                 f"'propagate_error', got {on_node_failure!r}"
             )
         self.on_node_failure = on_node_failure
-        # node_id -> error, so callers need not grep outputs for '[ERROR]'.
         self.failed_nodes: Dict[str, str] = {}
 
         # Private optimization attributes
@@ -2025,8 +2021,6 @@ class GraphWorkflow:
         if self.on_node_failure == "propagate_error":
             return f"[ERROR] Agent {agent_name} failed: {exc}"
 
-        # skip_downstream: dependents are pruned rather than handed an error
-        # string that reads like an answer.
         skipped.add(node_id)
         logger.warning(
             f"Node {node_id} failed; skipping its dependents "
