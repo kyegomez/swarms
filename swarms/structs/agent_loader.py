@@ -10,29 +10,23 @@ from typing import (
     Dict,
     List,
     TypedDict,
-    TypeVar,
     Union,
 )
 
 import yaml
 from litellm import model_list
+from pydantic import BaseModel
 from tqdm import tqdm
 
 from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
 )
-from swarms.schemas.swarms_api_schemas import AgentSpec
 from swarms.utils.types import ReturnTypes
 from swarms.structs.agent import Agent
 from swarms.utils.agent_loader_markdown import (
     load_agent_from_markdown,
     load_agents_from_markdown,
     MarkdownAgentLoader,
-)
-
-# Type variable for agent configuration
-AgentConfigType = TypeVar(
-    "AgentConfigType", bound=Union[AgentSpec, Dict[str, Any]]
 )
 
 
@@ -102,12 +96,11 @@ class AgentValidator:
 
     @staticmethod
     def validate_config(
-        config: Union[AgentSpec, Dict[str, Any]],
+        config: Union[BaseModel, Dict[str, Any]],
     ) -> AgentConfigDict:
-        """Validate and convert agent configuration from either AgentSpec or Dict"""
+        """Validate a config supplied as a pydantic model or a plain dict."""
         try:
-            # Convert AgentSpec to dict if needed
-            if isinstance(config, AgentSpec):
+            if isinstance(config, BaseModel):
                 config = config.model_dump()
 
             # Validate model name using litellm model list
@@ -221,7 +214,7 @@ class CSVAgentLoader:
             raise ValueError(f"Unsupported file type: {ext}")
 
     def create_agent_file(
-        self, agents: List[Union[AgentSpec, Dict[str, Any]]]
+        self, agents: List[Union[BaseModel, Dict[str, Any]]]
     ) -> None:
         """Create a file with validated agent configurations"""
         validated_agents = []
@@ -290,7 +283,7 @@ class CSVAgentLoader:
         return agents
 
     def _process_agent(
-        self, agent_data: Union[AgentSpec, Dict[str, Any]]
+        self, agent_data: Union[BaseModel, Dict[str, Any]]
     ) -> Union[Agent, None]:
         """Process a single agent configuration"""
         try:

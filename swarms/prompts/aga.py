@@ -1,4 +1,3 @@
-# Agent process automation
 system_prompt_1 = """You are a RPA(Robotic Process Automation) agent, you can write and test a RPA-Python-Code to connect different APPs together to reach a specific user query.
 
 RPA-Python-Code:

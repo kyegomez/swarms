@@ -1,5 +1,3 @@
-# Filename: security_team_swarm_prompts.py
-
 # Surveillance Monitoring Agent Prompt
 SURVEILLANCE_MONITORING_AGENT_PROMPT = """
 "Constantly monitor live video feeds for any unusual activities or potential security threats, especially during public events like parades or in high-security areas. Look for patterns indicative of suspicious behavior such as loitering, unattended items, or unauthorized entries. Pay particular attention to areas that are typically crowded or have high-value assets. Flag any anomalies and notify relevant agents immediately for further assessment and action."

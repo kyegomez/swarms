@@ -7,6 +7,7 @@ This directory contains examples demonstrating Multi-Agent Router patterns for i
 - [model_router_example.py](model_router_example.py) - Model routing example
 - [multi_agent_router_example.py](multi_agent_router_example.py) - Multi-agent router implementation
 - [multi_agent_router_minimal.py](multi_agent_router_minimal.py) - Minimal router setup
+- [multi_agent_router_specialist_routing.py](multi_agent_router_specialist_routing.py) - Routing to one specialist vs. several, driven by each agent's description
 
 ## Overview
 

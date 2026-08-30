@@ -46,9 +46,7 @@ class Transcript:
     ):
         self._messages: List[Dict[str, Any]] = list(messages or [])
 
-    # ------------------------------------------------------------------
-    # reading
-    # ------------------------------------------------------------------
+    # Reading.
 
     @property
     def messages(self) -> List[Dict[str, Any]]:
@@ -70,9 +68,7 @@ class Transcript:
     def clear(self) -> None:
         self._messages.clear()
 
-    # ------------------------------------------------------------------
-    # writing
-    # ------------------------------------------------------------------
+    # Writing.
 
     def append_user(self, content: Any) -> None:
         """Add a user turn."""

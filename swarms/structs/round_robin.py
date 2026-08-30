@@ -1,5 +1,6 @@
 from typing import List, Union
 
+from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
@@ -318,4 +319,4 @@ class RoundRobinSwarm(SerializableMixin):
             >>> swarm = RoundRobinSwarm(agents=[agent1, agent2])
             >>> results = swarm.run_batch(["Task 1", "Task 2", "Task 3"])
         """
-        return [self.run(task) for task in tasks]
+        return batched_run(self.run, tasks)

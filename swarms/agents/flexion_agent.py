@@ -529,28 +529,3 @@ class ReflexionAgent:
                 all_results.append(best_response)
 
         return all_results
-
-
-# # Example usage
-# if __name__ == "__main__":
-#     # Initialize the Reflexion Agent
-#     agent = ReflexionAgent(
-#         agent_name="reflexion-agent",
-#         model_name="gpt-5.4",  # Using OpenAI's model
-#         max_loops=1,  # Maximum of 3 reflection iterations
-#     )
-
-#     # Example tasks
-#     tasks = [
-#         "Explain QFT to a high school student.",
-#     ]
-
-#     # Run the agent
-#     results = agent.run(tasks)
-
-#     # Print results
-#     for i, result in enumerate(results):
-#         print(f"\n\nTASK {i+1}:")
-#         print(f"{tasks[i]}\n")
-#         print("FINAL RESPONSE:")
-#         print(f"{result}")
