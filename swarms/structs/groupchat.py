@@ -57,6 +57,7 @@ Example:
     result = chat.run("Discuss the tradeoffs of autonomous multi-agent systems.")
 """
 
+import ast
 import asyncio
 import json
 from collections import deque
@@ -64,6 +65,7 @@ from typing import Any, Callable, List, Optional, Tuple
 
 from swarms.structs.execution_utils import batched_run
 from swarms.prompts.groupchat_prompt import GROUPCHAT_DECIDE_PROMPT
+from swarms.structs.context_utils import messages_for
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.serialization import SerializableMixin
@@ -119,16 +121,19 @@ def _extract_args(tool_output: Any) -> Tuple[float, str]:
         silent decision: ``(0.0, "")``. Scores are clamped into the ``0..1``
         range and messages are stripped of surrounding whitespace.
     """
+    # An agent whose output_type renders to text hands back the repr of the tool-call list, not the list.
+    if isinstance(tool_output, str):
+        try:
+            tool_output = ast.literal_eval(tool_output)
+        except (ValueError, SyntaxError):
+            return 0.0, ""
+
     if isinstance(tool_output, list):
         tool_output = tool_output[0] if tool_output else None
     if not tool_output:
         return 0.0, ""
 
-    # Providers return tool calls in two shapes: a plain dict
-    # ``{"function": {"name", "arguments"}}`` (the MCP-normalized form), or a
-    # raw provider object such as litellm's ``ChatCompletionMessageToolCall``
-    # where ``function`` and ``arguments`` are *attributes*, not keys. Normalize
-    # any pydantic-style object to a dict so both shapes parse identically.
+    # Providers return either a plain dict or a pydantic object whose function/arguments are attributes.
     if not isinstance(tool_output, dict) and hasattr(
         tool_output, "model_dump"
     ):
@@ -241,7 +246,7 @@ class GroupChat(SerializableMixin):
         self.verbose = verbose
         self.auto_equip = auto_equip
 
-        self.conversation = Conversation(time_enabled=True)
+        self.conversation = Conversation(time_enabled=False)
 
         if len(self.agents) < 2:
             raise ValueError("GroupChat requires at least 2 agents.")
@@ -285,7 +290,7 @@ class GroupChat(SerializableMixin):
         )
 
     def _decide_sync(
-        self, agent: Agent, sender: str, message: str, history: str
+        self, agent: Agent, sender: str, message: str
     ) -> Tuple[float, str]:
         """Ask one agent whether it wants to respond to a message.
 
@@ -299,17 +304,20 @@ class GroupChat(SerializableMixin):
         prompt = GROUPCHAT_DECIDE_PROMPT.format(
             agent_name=agent.agent_name,
             other_agents=self._other_agents(agent.agent_name),
-            history=history,
             sender=sender,
             message=message,
         )
         try:
-            tool_output = agent.run(task=prompt)
+            # Typed turns let the agent tell its own prior speech from a peer's.
+            tool_output = agent.run(
+                task=prompt,
+                messages=messages_for(
+                    agent.agent_name, self.conversation
+                ),
+            )
             # print(f"Agent {agent.agent_name} response: {tool_output}")
         except Exception as e:
-            # Surface failures unconditionally — a swallowed error here looks
-            # exactly like "the agent chose to stay silent", which makes a bad
-            # model name or missing API key impossible to diagnose.
+            # Surface failures: a swallowed error looks exactly like "the agent chose to stay silent".
             logger.warning(
                 f"[{self.name}] {agent.agent_name} failed to bid: "
                 f"{type(e).__name__}: {e}"
@@ -385,7 +393,7 @@ class GroupChat(SerializableMixin):
         streaming_callback(sender, "", True)
 
     async def _collect_bids(
-        self, sender: str, message: str, history: str
+        self, sender: str, message: str
     ) -> List[Tuple[Agent, float, str]]:
         """Ask every agent, concurrently, for a speaking bid this turn.
 
@@ -399,7 +407,7 @@ class GroupChat(SerializableMixin):
         results = await asyncio.gather(
             *(
                 asyncio.to_thread(
-                    self._decide_sync, agent, sender, message, history
+                    self._decide_sync, agent, sender, message
                 )
                 for agent in self.agents
             )
@@ -451,7 +459,7 @@ class GroupChat(SerializableMixin):
     ) -> Any:
         """Run the turn-based groupchat and return formatted history.
 
-        Each turn: snapshot the shared history, collect a bid from every agent,
+        Each turn: collect a bid from every agent,
         let the single highest (recency-adjusted) bidder speak, and post only
         that reply. The loop stops at the first lull — a turn where no agent
         clears ``threshold`` — or once ``max_loops`` messages have been posted.
@@ -482,18 +490,11 @@ class GroupChat(SerializableMixin):
         message_count = 1  # the user task counts as the first message
 
         while message_count < self.max_loops:
-            history = self.conversation.return_history_as_string()
-            bids = await self._collect_bids(
-                last_sender, last_message, history
-            )
+            bids = await self._collect_bids(last_sender, last_message)
 
             selection = self._select_speaker(bids, set(recent))
             if selection is None:
-                # Distinguish a genuine conversational lull from a misconfigured
-                # room. If not a single agent produced a non-empty reply on the
-                # very first turn, the cause is almost never "nobody had
-                # anything to say" — it's a bad model name, missing API key, or
-                # a model that can't make the forced ``respond`` tool call.
+                # No reply at all on the first turn is almost never a lull; it is a bad model name or missing key.
                 if message_count == 1 and not any(
                     reply for _, _, reply in bids
                 ):

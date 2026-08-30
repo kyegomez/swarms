@@ -486,9 +486,6 @@ def convert_multiple_functions_to_openai_function_schema(
     functions: List[Callable[..., Any]],
 ) -> List[Dict[str, Any]]:
     """Convert a list of functions to a list of OpenAI function schemas"""
-    # return [
-    #     get_openai_function_schema_from_func(function) for function in functions
-    # ]
     # Use 40% of cpu cores
     max_workers = int(os.cpu_count() * 0.8)
 
