@@ -1,4 +1,3 @@
-import os
 import traceback
 from typing import (
     Any,
@@ -19,15 +18,16 @@ from swarms.prompts.multi_agent_collab_prompt import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
-from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.debate_with_judge import DebateWithJudge
+from swarms.structs.execution_utils import run_concurrently
 from swarms.structs.groupchat import GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 from swarms.structs.llm_council import LLMCouncil
 from swarms.structs.ma_utils import list_all_agents
+from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.majority_voting import MajorityVoting
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.multi_agent_router import MultiAgentRouter
@@ -36,16 +36,12 @@ from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.serialization import SerializableMixin
 from swarms.telemetry.otel import (
-    ContextThreadPoolExecutor,
     capture_init,
     trace_run,
 )
-from swarms.utils.output_types import OutputType
-from swarms.utils.swarm_autosave import (
-    autosave_swarm,
-    get_swarm_workspace_dir,
-)
 from swarms.utils.generate_id import generate_id
+from swarms.utils.output_types import OutputType
+from swarms.utils.workspace_manager import WorkspaceManager
 
 _DOCS_URL = "https://docs.swarms.world/api/swarm-router"
 _REARRANGE_DOCS_URL = "https://docs.swarms.world/api/agent-rearrange"
@@ -129,16 +125,25 @@ def _msg_autosave_enabled(workspace_dir: str) -> str:
     return f"Autosave enabled. Swarm workspace: {workspace_dir}"
 
 
-def _msg_autosave_setup_failed(err: Exception) -> str:
-    return f"Failed to setup autosave for SwarmRouter: {err}"
-
-
-def _msg_autosave_after_exec_failed(err: Exception) -> str:
-    return f"Failed to autosave after execution: {err}"
+logger = initialize_logger(log_folder="swarm_router")
 
 
 def _msg_batch_run_error(err: Exception, tb: str) -> str:
     return f"SwarmRouter: Error executing batch task on swarm: {err} Traceback: {tb}"
+
+
+def _msg_collab_prompt_ignored(swarm_type: str) -> str:
+    return (
+        f"multi_agent_collab_prompt is ignored for swarm_type={swarm_type!r}; "
+        f"it is delivered only by {', '.join(sorted(_COLLAB_PROMPT_SWARM_TYPES))}."
+    )
+
+
+# Swarm types whose constructor carries the collaboration preamble through to
+# the agents. Everywhere else the flag has nothing to deliver it.
+_COLLAB_PROMPT_SWARM_TYPES = frozenset(
+    {"SequentialWorkflow", "AgentRearrange"}
+)
 
 
 SwarmType = Literal[
@@ -149,11 +154,9 @@ SwarmType = Literal[
     "GroupChat",
     "MultiAgentRouter",
     "HierarchicalSwarm",
-    "auto",
     "MajorityVoting",
     "CouncilAsAJudge",
     "HeavySwarm",
-    "BatchedGridWorkflow",
     "LLMCouncil",
     "DebateWithJudge",
     "RoundRobin",
@@ -228,7 +231,7 @@ class SwarmRouter(SerializableMixin):
             ``SequentialWorkflow``, ``ConcurrentWorkflow``, ``AgentRearrange``,
             ``MixtureOfAgents``, ``HierarchicalSwarm``, ``GroupChat``,
             ``MultiAgentRouter``, ``MajorityVoting``, ``CouncilAsAJudge``,
-            ``HeavySwarm``, ``BatchedGridWorkflow``, ``LLMCouncil``,
+            ``HeavySwarm``, ``LLMCouncil``,
             ``DebateWithJudge``, ``RoundRobin``, and ``PlannerWorkerSwarm``.
         autosave (bool, optional): When ``True``, save ``config.json`` on init
             and ``state.json`` + ``metadata.json`` after each run to
@@ -292,7 +295,7 @@ class SwarmRouter(SerializableMixin):
         ``SequentialWorkflow``, ``ConcurrentWorkflow``, ``AgentRearrange``,
         ``MixtureOfAgents``, ``HierarchicalSwarm``, ``GroupChat``,
         ``MultiAgentRouter``, ``MajorityVoting``, ``CouncilAsAJudge``,
-        ``HeavySwarm``, ``BatchedGridWorkflow``, ``LLMCouncil``,
+        ``HeavySwarm``, ``LLMCouncil``,
         ``DebateWithJudge``, ``RoundRobin``, ``PlannerWorkerSwarm``.
 
     Example:
@@ -315,7 +318,7 @@ class SwarmRouter(SerializableMixin):
         description: str = "Routes your task to the desired swarm",
         max_loops: int = 1,
         agents: List[Union[Agent, Callable]] = [],
-        swarm_type: SwarmType = "SequentialWorkflow",  # "ConcurrentWorkflow" # "auto"
+        swarm_type: SwarmType = "SequentialWorkflow",
         autosave: bool = False,
         rearrange_flow: str = None,
         output_type: OutputType = "dict",
@@ -393,10 +396,11 @@ class SwarmRouter(SerializableMixin):
         # Initialize swarm factory for O(1) lookup performance
         self._swarm_factory = self._initialize_swarm_factory()
         self._swarm_cache = {}  # Cache for created swarms
+        # Built lazily on the first run.
+        self.swarm = None
 
-        # Setup autosave workspace if enabled
-        if self.autosave:
-            self._setup_autosave()
+        # Always built: a disabled manager no-ops, an absent one raises.
+        self._setup_autosave()
 
         # Reliability check
         self.reliability_check()
@@ -405,35 +409,21 @@ class SwarmRouter(SerializableMixin):
         capture_init(self)
 
     def _setup_autosave(self):
-        """Set up autosave storage and persist the initial router config.
+        """Create the autosave workspace and write the initial config."""
+        self.workspace = WorkspaceManager(
+            self,
+            name=self.name or "swarm-router",
+            use_timestamp=self.autosave_use_timestamp,
+            enabled=self.autosave,
+        )
+        self.swarm_workspace_dir = self.workspace.dir
 
-        Autosave failures are logged as warnings and do not prevent the router
-        from initializing.
-        """
-        try:
-            class_name = self.__class__.__name__
-            swarm_name = self.name or "swarm-router"
-            self.swarm_workspace_dir = get_swarm_workspace_dir(
-                class_name, swarm_name, self.autosave_use_timestamp
+        if self.swarm_workspace_dir:
+            self.workspace.save_config()
+            self._log(
+                "info",
+                _msg_autosave_enabled(self.swarm_workspace_dir),
             )
-
-            if self.swarm_workspace_dir:
-                # Save initial configuration
-                autosave_swarm(
-                    self,
-                    self.swarm_workspace_dir,
-                    save_config=True,
-                    save_state=False,
-                    save_metadata=False,
-                )
-                self._log(
-                    "info",
-                    _msg_autosave_enabled(self.swarm_workspace_dir),
-                )
-        except Exception as e:
-            self._log("warning", _msg_autosave_setup_failed(e))
-            # Don't raise - autosave failures shouldn't break initialization
-            self.swarm_workspace_dir = None
 
     def reliability_check(self):
         """Validate the router configuration and finish setup.
@@ -502,15 +492,21 @@ class SwarmRouter(SerializableMixin):
     def setup(self):
         """Apply post-validation configuration to the agent roster.
 
-        Appends the multi-agent collaboration preamble and (if enabled) lists
-        every agent to every other agent. Called from
+        Warns when the collaboration preamble cannot be delivered for this
+        swarm type. The preamble itself is passed to the swarm at
+        construction, and the agent roster is seeded once the swarm exists
+        (see :meth:`list_agents_to_eachother`). Called from
         :meth:`reliability_check`; not intended to be called directly.
         """
-        if self.multi_agent_collab_prompt is True:
-            self.update_system_prompt_for_agent_in_swarm()
-
-        if self.list_all_agents is True:
-            self.list_agents_to_eachother()
+        if (
+            self.multi_agent_collab_prompt is True
+            and self.swarm_type not in _COLLAB_PROMPT_SWARM_TYPES
+        ):
+            # Not self._log: that is gated on verbose, and a flag that
+            # silently does nothing is the thing being warned about.
+            logger.warning(
+                _msg_collab_prompt_ignored(self.swarm_type)
+            )
 
     def fetch_message_history_as_string(self):
         """Return the underlying swarm's conversation history as a string.
@@ -549,7 +545,6 @@ class SwarmRouter(SerializableMixin):
             "MultiAgentRouter": self._create_multi_agent_router,
             "SequentialWorkflow": self._create_sequential_workflow,
             "ConcurrentWorkflow": self._create_concurrent_workflow,
-            "BatchedGridWorkflow": self._create_batched_grid_workflow,
             "LLMCouncil": self._create_llm_council,
             "DebateWithJudge": self._create_debate_with_judge,
             "RoundRobin": self._create_round_robin_swarm,
@@ -615,17 +610,11 @@ class SwarmRouter(SerializableMixin):
         """Create an ``AgentRearrange`` using ``rearrange_flow``."""
         return AgentRearrange(
             *args,
-            **self._base_kwargs(flow=self.rearrange_flow),
+            **self._base_kwargs(
+                flow=self.rearrange_flow,
+                collab_prompt=self._collab_preamble(),
+            ),
             **kwargs,
-        )
-
-    def _create_batched_grid_workflow(self, *args, **kwargs):
-        """Create a ``BatchedGridWorkflow`` for grid-style batch execution."""
-        return BatchedGridWorkflow(
-            name=self.name,
-            description=self.description,
-            agents=self.agents,
-            max_loops=self.max_loops,
         )
 
     def _create_council_as_judge(self, *args, **kwargs):
@@ -682,10 +671,45 @@ class SwarmRouter(SerializableMixin):
             output_type=self.output_type,
         )
 
+    def _collab_preamble(self) -> Optional[str]:
+        """Team context delivered to each agent as a system turn.
+
+        Built here rather than written into the shared conversation because
+        structures reset that conversation per task, which would discard
+        anything seeded before the run.
+
+        Returns:
+            The preamble, or ``None`` when neither option is enabled.
+        """
+        parts = []
+
+        if self.list_all_agents is True:
+            parts.append(
+                list_all_agents(
+                    agents=self.agents,
+                    name=self.name,
+                    description=self.description,
+                    add_collaboration_prompt=False,
+                    add_to_conversation=False,
+                )
+            )
+
+        if self.multi_agent_collab_prompt is True:
+            parts.append(MULTI_AGENT_COLLAB_PROMPT_TWO)
+
+        return "\n\n".join(part for part in parts if part) or None
+
     def _create_sequential_workflow(self, *args, **kwargs):
         """Create a ``SequentialWorkflow`` from the configured agents."""
         return SequentialWorkflow(
-            *args, **self._base_kwargs(), **kwargs
+            *args,
+            **self._base_kwargs(
+                multi_agent_collab_prompt=(
+                    self._collab_preamble() is not None
+                ),
+                collab_prompt=self._collab_preamble(),
+            ),
+            **kwargs,
         )
 
     def _create_concurrent_workflow(self, *args, **kwargs):
@@ -803,31 +827,22 @@ class SwarmRouter(SerializableMixin):
                 _msg_factory_failed(self.swarm_type, e)
             ) from e
 
-    def update_system_prompt_for_agent_in_swarm(self):
-        """Append the collaboration prompt to each configured agent."""
-        # Use list comprehension for faster iteration
-        for agent in self.agents:
-            if agent.system_prompt is None:
-                agent.system_prompt = ""
-            agent.system_prompt += MULTI_AGENT_COLLAB_PROMPT_TWO
-
     def list_agents_to_eachother(self):
-        """Add the configured agent roster to the swarm conversation."""
+        """Point ``self.conversation`` at the underlying swarm's conversation.
+
+        Called after each run, because the swarm is built lazily and several
+        structures replace their conversation object per task.
+        """
+        if self.swarm is None:
+            return
+
         if self.swarm_type == "SequentialWorkflow":
-            self.conversation = (
-                self.swarm.agent_rearrange.conversation
+            self.conversation = getattr(
+                self.swarm.agent_rearrange, "conversation", None
             )
         else:
-            self.conversation = self.swarm.conversation
-
-        if self.list_all_agents is True:
-            list_all_agents(
-                agents=self.agents,
-                conversation=self.swarm.conversation,
-                name=self.name,
-                description=self.description,
-                add_collaboration_prompt=True,
-                add_to_conversation=True,
+            self.conversation = getattr(
+                self.swarm, "conversation", None
             )
 
     def _run(
@@ -867,29 +882,18 @@ class SwarmRouter(SerializableMixin):
 
         result = self.swarm.run(**args, **kwargs)
 
-        # Autosave after successful execution
-        if self.autosave and self.swarm_workspace_dir:
-            try:
-                autosave_swarm(
-                    self,
-                    self.swarm_workspace_dir,
-                    save_config=False,  # Don't overwrite initial config
-                    save_state=True,
-                    save_metadata=True,
-                    execution_result=result,
-                    additional_data={
-                        "execution_metadata": {
-                            "task": task if task else None,
-                            "tasks": tasks if tasks else None,
-                            "status": "completed",
-                        }
-                    },
-                )
-            except Exception as e:
-                self._log(
-                    "warning",
-                    _msg_autosave_after_exec_failed(e),
-                )
+        self.list_agents_to_eachother()
+
+        # Config is written at init; overwriting it here would lose it.
+        self.workspace.save_state()
+        self.workspace.save_metadata(
+            execution_result=result,
+            execution_metadata={
+                "task": task if task else None,
+                "tasks": tasks if tasks else None,
+                "status": "completed",
+            },
+        )
 
         return result
 
@@ -1023,51 +1027,43 @@ class SwarmRouter(SerializableMixin):
 
     def concurrent_run(
         self,
-        task: str,
-        img: Optional[str] = None,
+        tasks: List[str],
         imgs: Optional[List[str]] = None,
         *args,
         **kwargs,
-    ) -> Any:
-        """Execute one task through :meth:`run` in a thread pool.
+    ) -> List[Any]:
+        """Execute ``tasks`` through :meth:`run` in parallel.
 
-        This helper submits a single router execution to a
-        ``ThreadPoolExecutor`` and waits for its result. It does not split the
-        task across workers; concurrency is limited to the wrapper thread.
+        The concurrent counterpart to :meth:`batch_run`, which runs the same
+        tasks one after another. Results come back in task order, so element
+        ``i`` is always the result for ``tasks[i]``.
 
         Args:
-            task (str): Task to execute.
-            img (str, optional): Image payload passed to :meth:`run`.
-            imgs (List[str], optional): Additional image payload forwarded via
-                ``kwargs`` to swarm implementations that support it.
-            *args: Positional arguments forwarded to :meth:`run`.
-            **kwargs: Keyword arguments forwarded to :meth:`run`.
+            tasks (List[str]): Tasks to execute in parallel.
+            imgs (List[str], optional): One image per task, paired by
+                position. Must be the same length as ``tasks``.
+            *args: Positional arguments forwarded to each :meth:`run` call.
+            **kwargs: Keyword arguments forwarded to each :meth:`run` call.
 
         Returns:
-            Any: Result returned by :meth:`run`.
+            List[Any]: One result per task, in task order.
 
         Raises:
-            Exception: Re-raised if the submitted execution fails.
+            ValueError: If ``imgs`` is given and is not one per task.
+            Exception: Re-raised if any execution fails.
         """
-        self._log("info", f"Executing task concurrently: {task}")
+        self._log(
+            "info",
+            f"SwarmRouter '{self.name}': Executing {len(tasks)} task(s) concurrently",
+        )
 
         try:
-            with ContextThreadPoolExecutor(
-                max_workers=os.cpu_count()
-            ) as executor:
-                future = executor.submit(
-                    self.run,
-                    task,
-                    img=img,
-                    imgs=imgs,
-                    *args,
-                    **kwargs,
-                )
-                result = future.result()
-                return result
+            return run_concurrently(
+                self.run, tasks, *args, imgs=imgs, **kwargs
+            )
         except Exception as e:
             self._log(
                 "error",
-                f"Error executing task concurrently: {e} Traceback: {traceback.format_exc()}",
+                f"Error executing tasks concurrently: {e} Traceback: {traceback.format_exc()}",
             )
             raise e

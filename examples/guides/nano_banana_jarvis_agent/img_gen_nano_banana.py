@@ -12,7 +12,6 @@ image_gen_agent = Agent(
     dynamic_temperature_enabled=True,
     max_loops=1,
     dynamic_context_window=True,
-    retry_interval=1,
 )
 
 image_gen_out = image_gen_agent.run(

@@ -32,7 +32,6 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
 from swarms.structs.agent import Agent
-from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 
@@ -43,9 +42,7 @@ logger = initialize_logger(
 )
 
 
-# =============================================================================
-# ENUMS AND DATA MODELS
-# =============================================================================
+# Enums and data models.
 
 
 class CommunicationType(str, Enum):
@@ -115,9 +112,7 @@ class EvaluationResult(BaseModel):
     confidence: float = Field(description="Confidence in evaluation")
 
 
-# =============================================================================
-# SCHEMAS
-# =============================================================================
+# Schemas.
 
 
 class StructuredMessageSchema(BaseModel):
@@ -231,9 +226,7 @@ class RefinerResponseSchema(BaseModel):
     )
 
 
-# =============================================================================
-# SPECIALIZED AGENT CLASSES
-# =============================================================================
+# Specialized agent classes.
 
 
 class HierarchicalStructuredCommunicationGenerator(Agent):
@@ -1069,12 +1062,10 @@ Provide your coordination decision following the structured response format.
             }
 
 
-# =============================================================================
-# MAIN SWARM ORCHESTRATOR
-# =============================================================================
+# Main swarm orchestrator.
 
 
-class HierarchicalStructuredCommunicationFramework(BaseSwarm):
+class HierarchicalStructuredCommunicationFramework:
     """
     Talk Structurally, Act Hierarchically: A Collaborative Framework for LLM Multi-Agent Systems
 
@@ -1183,8 +1174,7 @@ class HierarchicalStructuredCommunicationFramework(BaseSwarm):
         if self.evaluation_supervisor:
             all_agents.append(self.evaluation_supervisor)
 
-        # Call parent constructor with agents
-        super().__init__(agents=all_agents, *args, **kwargs)
+        self.agents = all_agents
 
     def init_swarm(self):
         """Initialize the swarm components"""

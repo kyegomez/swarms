@@ -6,7 +6,6 @@ This directory contains examples demonstrating base tool functionality and tool 
 
 - [base_tool_examples.py](base_tool_examples.py) - Core base tool functionality
 - [conver_funcs_to_schema.py](conver_funcs_to_schema.py) - Function to schema conversion
-- [convert_basemodels.py](convert_basemodels.py) - BaseModel conversion utilities
 - [exa_search_test.py](exa_search_test.py) - Exa search testing
 - [example_usage.py](example_usage.py) - Basic usage examples
 - [schema_validation_example.py](schema_validation_example.py) - Schema validation

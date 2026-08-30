@@ -50,6 +50,11 @@ def get_conversation_dir():
     return conversation_dir
 
 
+# Conversations built without a name share this one, so they must not resume
+# from each other's files. See setup_file_path.
+DEFAULT_CONVERSATION_NAME = "conversation-test"
+
+
 class Conversation:
     """
     A class to manage a conversation history, allowing for the addition, deletion,
@@ -77,7 +82,7 @@ class Conversation:
     def __init__(
         self,
         id: Optional[str] = None,
-        name: str = "conversation-test",
+        name: str = "conversation-test",  # see DEFAULT_NAME below
         system_prompt: Optional[str] = None,
         time_enabled: bool = False,
         autosave: bool = False,
@@ -104,6 +109,9 @@ class Conversation:
         self.id = id or generate_id()
         self.name = name
         self.save_filepath = save_filepath
+        # Whether the caller chose the file, as opposed to it being derived
+        # from the default name. Only an explicit choice resumes from disk.
+        self._explicit_save_filepath = save_filepath is not None
         self.system_prompt = system_prompt
         self.time_enabled = time_enabled
         self.autosave = autosave
@@ -124,10 +132,8 @@ class Conversation:
         self.output_metadata = output_metadata
         self.memory_md_path = memory_md_path
         self._memory_md_lock = threading.Lock()
-        # Suppress disk writes during initial setup so the static
-        # system_prompt and rules aren't re-appended to MEMORY.md on every
-        # construction. Only user tasks and agent responses added via
-        # later add() calls should be persisted.
+
+        # Suppressed so the static system_prompt and rules are not re-appended to MEMORY.md every construction.
         self._suppress_memory_md = True
 
         if self.name is None:
@@ -163,8 +169,10 @@ class Conversation:
             extension = (
                 ".json" if self.export_method == "json" else ".yaml"
             )
-            self.save_filepath = (
-                f"conversation_{self.name}{extension}"
+            # Under conversations_dir, not CWD: same-named conversations must not collide.
+            self.save_filepath = os.path.join(
+                self.conversations_dir or get_conversation_dir(),
+                f"conversation_{self.name}{extension}",
             )
             logger.debug(
                 f"Setting default save filepath to: {self.save_filepath}"
@@ -187,8 +195,15 @@ class Conversation:
             "%Y-%m-%d_%H-%M-%S"
         )
 
+        # Named conversations only: `name` defaults to "conversation-test", so every anonymous one shared a file.
+        wants_persistence = (
+            self._explicit_save_filepath
+            or self.load_filepath is not None
+            or self.name != DEFAULT_CONVERSATION_NAME
+        )
+
         # Check if file exists and load it
-        if os.path.exists(self.save_filepath):
+        if wants_persistence and os.path.exists(self.save_filepath):
             logger.debug(
                 f"Found existing conversation file at: {self.save_filepath}"
             )
@@ -934,6 +949,41 @@ class Conversation:
             )
             raise  # Re-raise to ensure the error is visible
 
+    def _restore(self, data: Union[dict, list]):
+        """Apply a loaded save file to this conversation.
+
+        Accepts both shapes a save file can have. ``save_as_json`` and
+        ``save_as_yaml`` write ``to_dict()``, which is the bare list of
+        messages, while this loader only understood a
+        ``{"metadata": ..., "conversation_history": ...}`` wrapper — so
+        reloading a file this class had just written raised
+        ``AttributeError: 'list' object has no attribute 'get'``.
+
+        Args:
+            data (Union[dict, list]): Parsed contents of a save file.
+        """
+        if isinstance(data, list):
+            self.conversation_history = data
+            self._str_cache = None
+            return
+
+        if not isinstance(data, dict):
+            logger.warning(
+                f"Ignoring save file with unexpected top-level "
+                f"{type(data).__name__}; expected a list or a dict."
+            )
+            return
+
+        # Conversation-level settings, when the file carries the wrapper.
+        for key, value in (data.get("metadata") or {}).items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
+        self.conversation_history = data.get(
+            "conversation_history", []
+        )
+        self._str_cache = None
+
     def load_from_json(self, filename: str):
         """Load the conversation history and metadata from a JSON file.
 
@@ -945,18 +995,7 @@ class Conversation:
                 with open(filename, "r", encoding="utf-8") as f:
                     data = json.load(f)
 
-                # Load metadata
-                metadata = data.get("metadata", {})
-                # Update all metadata attributes
-                for key, value in metadata.items():
-                    if hasattr(self, key):
-                        setattr(self, key, value)
-
-                # Load conversation history
-                self.conversation_history = data.get(
-                    "conversation_history", []
-                )
-                self._str_cache = None
+                self._restore(data)
 
                 logger.info(
                     f"Successfully loaded conversation from {filename}"
@@ -978,18 +1017,7 @@ class Conversation:
                 with open(filename, "r", encoding="utf-8") as f:
                     data = yaml.safe_load(f)
 
-                # Load metadata
-                metadata = data.get("metadata", {})
-                # Update all metadata attributes
-                for key, value in metadata.items():
-                    if hasattr(self, key):
-                        setattr(self, key, value)
-
-                # Load conversation history
-                self.conversation_history = data.get(
-                    "conversation_history", []
-                )
-                self._str_cache = None
+                self._restore(data)
 
                 logger.info(
                     f"Successfully loaded conversation from {filename}"
@@ -1231,8 +1259,11 @@ class Conversation:
             return f"{self.conversation_history[-1]['role']}: {self.conversation_history[-1]['content']}"
         return ""
 
-    def return_messages_as_list(self):
+    def return_messages_as_strings(self):
         """Return the conversation messages as a list of formatted strings.
+
+        This is a rendering, not a message list. To build a request body use
+        :meth:`return_messages_as_dictionary`, which preserves roles.
 
         Returns:
             list: List of messages formatted as 'role: content'.
@@ -1242,11 +1273,14 @@ class Conversation:
             for message in self.conversation_history
         ]
 
-    def return_messages_as_dictionary(self):
-        """Return the conversation messages as a list of dictionaries.
+    def return_messages_as_list(self):
+        """Return the conversation as a list of message dictionaries.
+
+        For the ``'role: content'`` string rendering use
+        :meth:`return_messages_as_strings`.
 
         Returns:
-            list: List of dictionaries containing role and content of each message.
+            list: One ``{"role", "content"}`` dict per message.
         """
         return [
             {
@@ -1255,6 +1289,14 @@ class Conversation:
             }
             for message in self.conversation_history
         ]
+
+    def return_messages_as_dictionary(self):
+        """Return the conversation messages as a list of dictionaries.
+
+        Returns:
+            list: List of dictionaries containing role and content of each message.
+        """
+        return self.return_messages_as_list()
 
     def add_tool_output_to_agent(self, role: str, tool_output: dict):
         """
@@ -1492,11 +1534,6 @@ class Conversation:
                 names.append(name)
         return sorted(names)
 
-    def clear_memory(self):
-        """Clear the memory of the conversation."""
-        self.conversation_history = []
-        self._str_cache = None
-
     def _dynamic_auto_chunking_worker(self):
         """
         Dynamically chunk the conversation history to fit within the context length.
@@ -1554,23 +1591,3 @@ class Conversation:
         except Exception as e:
             logger.error(f"Dynamic auto chunking failed: {e}")
             return self._return_history_as_string_worker()
-
-
-# Example usage
-# conversation = Conversation()
-# conversation = Conversation(token_count=True, context_length=14)
-# conversation.add("user", "Hello, how are you?")
-# conversation.add("assistant", "I am doing well, thanks.")
-# conversation.add("user", "What is the weather in Tokyo?")
-# print(conversation.dynamic_auto_chunking())
-# # conversation.add(
-# #     "assistant", {"name": "tool_1", "output": "Hello, how are you?"}
-# )
-# print(conversation.return_json())
-
-# # print(conversation.get_last_message_as_string())
-# print(conversation.return_json())
-# # conversation.add("assistant", "I am doing well, thanks.")
-# # # print(conversation.to_json())
-# print(type(conversation.to_dict()))
-# print(conversation.to_yaml())

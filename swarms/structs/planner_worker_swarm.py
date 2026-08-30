@@ -23,6 +23,7 @@ from swarms.schemas.planner_worker_schemas import (
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.tools.base_tool import BaseTool
+from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -361,10 +362,12 @@ class WorkerPool:
         max_workers: Optional[int] = None,
         poll_interval: float = 0.1,
         task_timeout: Optional[float] = None,
+        img: Optional[str] = None,
     ):
         self.agents = agents
         self.task_queue = task_queue
         self.conversation = conversation
+        self.img = img
         self.max_workers = max_workers or min(
             len(agents), os.cpu_count() or 4
         )
@@ -462,7 +465,7 @@ class WorkerPool:
                         max_workers=1
                     ) as task_executor:
                         future = task_executor.submit(
-                            agent.run, task=context
+                            agent.run, task=context, img=self.img
                         )
                         try:
                             result = future.result(
@@ -473,7 +476,7 @@ class WorkerPool:
                                 f"Task execution exceeded {self.task_timeout}s timeout"
                             )
                 else:
-                    result = agent.run(task=context)
+                    result = agent.run(task=context, img=self.img)
 
                 current = self.task_queue.get_task(task.id)
                 if current and self.task_queue.complete(
@@ -569,6 +572,13 @@ class PlannerWorkerSwarm:
         self.max_workers = max_workers
         self.output_type = output_type
         self.autosave = autosave
+        self.workspace = WorkspaceManager(
+            self,
+            name=self.name or "planner-worker-swarm",
+            verbose=verbose,
+            enabled=autosave,
+        )
+        self.swarm_workspace_dir = self.workspace.dir
         self.verbose = verbose
 
         # Internal state
@@ -691,6 +701,7 @@ class PlannerWorkerSwarm:
         task: str,
         depth: int = 0,
         parent_task_id: Optional[str] = None,
+        img: Optional[str] = None,
     ) -> List[PlannerTask]:
         """Run a planner and add produced tasks to the queue.
 
@@ -711,7 +722,7 @@ class PlannerWorkerSwarm:
             f"[PlannerWorkerSwarm] Running {planner_name} (depth={depth})"
         )
 
-        raw_output = planner.run(task=task)
+        raw_output = planner.run(task=task, img=img)
 
         spec = self._parse_structured_output(
             raw_output, PlannerTaskSpec
@@ -759,12 +770,13 @@ class PlannerWorkerSwarm:
                         task=f"Decompose this task into smaller subtasks:\n\n{ptask.description}",
                         depth=depth + 1,
                         parent_task_id=ptask.id,
+                        img=img,
                     )
                     added_tasks.extend(sub_tasks)
 
         return added_tasks
 
-    def _run_judge(self) -> CycleVerdict:
+    def _run_judge(self, img: Optional[str] = None) -> CycleVerdict:
         """Run the judge agent to evaluate cycle results."""
         schema = BaseTool().base_model_to_dict(CycleVerdict)
 
@@ -795,7 +807,7 @@ class PlannerWorkerSwarm:
             "If not, identify specific gaps and provide instructions for the next planning cycle."
         )
 
-        raw_output = judge.run(task=eval_task)
+        raw_output = judge.run(task=eval_task, img=img)
 
         try:
             verdict = self._parse_structured_output(
@@ -889,7 +901,7 @@ class PlannerWorkerSwarm:
                     "Create new tasks to address these gaps."
                 )
 
-            self._run_planner(planner_task)
+            self._run_planner(planner_task, img=img)
 
             # Phase 2: Worker execution
             worker_pool = WorkerPool(
@@ -898,6 +910,7 @@ class PlannerWorkerSwarm:
                 conversation=self.conversation,
                 max_workers=self.max_workers,
                 task_timeout=self.task_timeout,
+                img=img,
             )
             worker_pool.run(timeout=self.worker_timeout)
 
@@ -910,7 +923,7 @@ class PlannerWorkerSwarm:
             )
 
             # Phase 3: Judge evaluation
-            verdict = self._run_judge()
+            verdict = self._run_judge(img=img)
 
             logger.info(
                 f"[PlannerWorkerSwarm] Cycle {cycle + 1} done. "
@@ -922,6 +935,8 @@ class PlannerWorkerSwarm:
                     f"[PlannerWorkerSwarm] Goal achieved in cycle {cycle + 1}"
                 )
                 break
+
+        self.workspace.save_conversation()
 
         return history_output_formatter(
             conversation=self.conversation,
