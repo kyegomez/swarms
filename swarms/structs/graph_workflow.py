@@ -828,7 +828,7 @@ class Edge:
 
         # Put all kwargs into metadata dict
         condition = kwargs.pop("condition", None)
-        metadata = kwargs if kwargs else None
+        metadata = kwargs
         return cls(
             source=src,
             target=tgt,
